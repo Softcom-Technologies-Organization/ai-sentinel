@@ -1,0 +1,35 @@
+<div class="bottom-panel" aria-label="Détails du space">
+  <div class="panel-actions">
+    <div class="left">
+      @if (scanning()) {
+        <i class="pi pi-sync pi-spin"></i>
+        <span class="ml-2">Scan en cours</span>
+        @if (currentSpaceKey(); as key) {
+          @if (progress()[key]; as p) {
+            <span class="ml-2">{{ (p.index || 0) }} / {{ (p.total || 0) }} pages</span>
+          }
+        }
+        @if (space()) {
+          <span class="ml-2">• {{ items()?.length || 0 }} éléments</span>
+        }
+      } @else {
+        <span>Détails du space sélectionné</span>
+      }
+    </div>
+    <div class="right"></div>
+  </div>
+
+  @if (space(); as s) {
+    <h3 class="mt-0">{{ s.name }}</h3>
+    <div class="mb-2">
+      <p-tag [value]="statusLabel(s.status)" [severity]="statusSeverity(s.status)"></p-tag>
+    </div>
+    <div class="pii-cards">
+      <p-dataView [value]="items()" layout="list" [paginator]="true" [rows]="10">
+        <ng-template let-item pTemplate="listItem">
+          <app-pii-item-card [item]="item" [maskByDefault]="true"></app-pii-item-card>
+        </ng-template>
+      </p-dataView>
+    </div>
+  }
+</div>

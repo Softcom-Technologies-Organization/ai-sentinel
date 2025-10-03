@@ -1,0 +1,226 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sentinelle-pii-detector-ms"
+version = "1.0.0"
+description = "PII Detection gRPC Microservice using Piiranha model with advanced memory management"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Sentinelle Team", email = "team@sentinelle.com"},
+]
+keywords = ["pii", "grpc", "microservice", "nlp", "privacy", "data-protection"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Security",
+]
+
+dependencies = [
+    # ML and NLP dependencies
+    "transformers>=4.35.0",
+    "torch>=2.0.0",
+    "huggingface-hub>=0.19.0",
+    
+    # ONNX runtime optimization
+    "optimum[onnxruntime]>=1.14.0",
+    "onnx>=1.15.0",
+    "onnxruntime>=1.16.0",
+    
+    # gRPC core dependencies
+    "grpcio>=1.60.0",
+    "grpcio-tools>=1.60.0",
+    "grpcio-reflection>=1.60.0",
+    "protobuf>=4.25.0",
+    
+    # Modern gRPC alternative (betterproto)
+    "betterproto[compiler]>=2.0.0b6",
+    "grpclib>=0.4.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Testing framework
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-xdist>=3.5.0",
+    "pytest-grpc>=0.8.0",
+    
+    # Code quality and formatting
+    "black>=24.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.8.0",
+    
+    # Type stubs
+    "types-protobuf>=4.24.0",
+    
+    # Documentation
+    "sphinx>=7.2.0",
+    "sphinx-rtd-theme>=2.0.0",
+]
+
+test = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-xdist>=3.5.0",
+    "pytest-grpc>=0.8.0",
+]
+
+docs = [
+    "sphinx>=7.2.0",
+    "sphinx-rtd-theme>=2.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/sentinelle/sentinelle-pii-detector-ms"
+Documentation = "https://github.com/sentinelle/sentinelle-pii-detector-ms/blob/main/README.md"
+Repository = "https://github.com/sentinelle/sentinelle-pii-detector-ms"
+"Bug Tracker" = "https://github.com/sentinelle/sentinelle-pii-detector-ms/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pii-grpc-service"]
+
+# Pytest configuration
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--verbose",
+    "--cov=pii_grpc_service",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+    "--strict-markers",
+    "--tb=short",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+# Black configuration
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | pii-grpc-service/proto/.*_pb2\.py
+  | pii-grpc-service/proto/.*_pb2_grpc\.py
+  | pii-grpc-service/pii_detection\.py
+)/
+'''
+
+# Ruff configuration
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+extend-exclude = [
+    "pii-grpc-service/proto/*_pb2.py",
+    "pii-grpc-service/proto/*_pb2_grpc.py",
+    "pii-grpc-service/pii_detection.py",
+    "__pycache__",
+    ".pytest_cache",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "ARG", # flake8-unused-arguments
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+    "W191",  # indentation contains tabs
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__.py
+"tests/*" = ["ARG", "S101"]  # Allow unused arguments and assert in tests
+
+# Mypy configuration
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+follow_imports = "normal"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "grpc.*",
+    "grpclib.*",
+    "betterproto.*",
+    "transformers.*",
+    "torch.*",
+    "onnx.*",
+    "onnxruntime.*",
+]
+ignore_missing_imports = true
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["pii_grpc_service"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/*_pb2.py",
+    "*/*_pb2_grpc.py",
+    "*/pii_detection.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]

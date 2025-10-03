@@ -1,0 +1,71 @@
+sequenceDiagram
+    autonumber
+    participant Client
+    participant Controller as ScanController
+    participant UseCase as StreamConfluenceScanUseCase
+    participant ConfSvc as ConfluenceClient
+    participant AttSvc as ConfluenceAttachmentClient
+    participant DwnSvc as ConfluenceAttachmentDownloader
+    participant TxtExt as AttachmentTextExtractor
+    participant PII as PiiDetectionClient (gRPC)
+
+    Client->>Controller: GET /api/v1/stream/confluence/spaces/events?scanId={opt} (SSE)
+    note right of Controller: Démarre keepalive (15s) et flux data
+
+    Controller->>UseCase: streamAllSpaces() ou resumeAllSpaces(scanId)
+    UseCase-->>Controller: event "multiStart"
+
+    UseCase->>ConfSvc: getAllSpaces()
+    alt Aucun espace trouvé
+        UseCase-->>Controller: event "error" (Aucun espace trouvé)
+        UseCase-->>Controller: event "multiComplete"
+        Controller-->>Client: Flux SSE (multiStart, error, multiComplete + keepalive)
+    else Espaces trouvés
+        loop Pour chaque espace
+            UseCase->>ConfSvc: getAllPagesInSpace(space.key)
+            UseCase-->>Controller: event "start" (pagesTotal)
+
+            loop Pour chaque page
+                note over UseCase: runScanFlux
+                UseCase-->>Controller: event "pageStart"
+
+                UseCase->>AttSvc: getPageAttachments(page.id)
+                alt Aucun attachement
+                    note right of UseCase: Analyse du contenu de page
+                else Attachements présents
+                    loop Pour chaque attachement extractible
+                        UseCase->>DwnSvc: downloadAttachmentContent(page.id, att.name)
+                        alt Contenu indisponible
+                            note right of UseCase: ignore PJ
+                        else Contenu disponible
+                            UseCase->>TxtExt: extractText(att, bytes)
+                            alt Texte non extractible
+                                note right of UseCase: ignore PJ
+                            else Texte OK
+                                UseCase->>PII: analyzeContent(text)
+                                UseCase-->>Controller: event "attachmentItem"
+                            end
+                        end
+                    end
+                end
+
+                alt Contenu page vide
+                    UseCase-->>Controller: event "item" (vide)
+                else Contenu page présent
+                    UseCase->>PII: analyzeContent(content)
+                    alt gRPC error
+                        UseCase-->>Controller: event "error" (status)
+                    else OK
+                        UseCase-->>Controller: event "item"
+                    end
+                end
+
+                UseCase-->>Controller: event "pageComplete"
+            end
+
+            UseCase-->>Controller: event "complete"
+        end
+
+        UseCase-->>Controller: event "multiComplete"
+        Controller-->>Client: Flux SSE (events + keepalive)
+    end

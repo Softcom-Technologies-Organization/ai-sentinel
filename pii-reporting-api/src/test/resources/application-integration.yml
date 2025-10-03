@@ -1,0 +1,51 @@
+spring:
+  main:
+    web-application-type: servlet
+  autoconfigure:
+    exclude:
+      - com.linecorp.armeria.spring.ArmeriaAutoConfiguration
+  application:
+    name: sentinelle
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:sentinelle}}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    open-in-view: false
+    show-sql: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+# These values are only for test context bootstrapping
+
+# Keep Armeria as default client in tests; use loopback host
+pii-detector:
+  client: armeria
+  host: 127.0.0.1
+  port: 50051
+  default-threshold: 0.5
+  connection-timeout-ms: 2000
+  request-timeout-ms: 5000
+
+# Avoid port conflicts during tests
+server:
+  port: 0
+  servlet:
+    context-path: /sentinelle
+
+# Ensure Armeria internal services bind to a random port to avoid clashes during tests
+armeria:
+  internal-services:
+    port: 0
+
+# Reduce logging noise during tests
+logging:
+  level:
+    root: WARN
+    com.example.sentinelle: INFO
+    com.example.sentinelle.infrastructure.pii: INFO

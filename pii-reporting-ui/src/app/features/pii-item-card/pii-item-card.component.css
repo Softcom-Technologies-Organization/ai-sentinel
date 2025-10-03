@@ -1,0 +1,194 @@
+/* Modernized styles for PII item card */
+
+/* Legacy severity classes kept for backward compatibility (not used with p-tag anymore) */
+.sev-high {
+  background: #FFCDD2;
+  color: #B71C1C;
+  border-color: #EF9A9A;
+}
+
+.sev-medium {
+  background: #FFE0B2;
+  color: #E65100;
+  border-color: #FFB74D;
+}
+
+.sev-low {
+  background: #B3E5FC;
+  color: #01579B;
+  border-color: #4FC3F7;
+}
+
+.p-card {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px #cccccc solid
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1px;
+}
+
+.title-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.2;
+  margin-bottom: 0.25rem;
+}
+
+.meta {
+  color: var(--text-color-secondary, #6c757d);
+  font-size: 0.65rem;
+  margin-top: 2px;
+}
+
+.attachment-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  color: var(--text-color, inherit);
+}
+
+.attachment-label {
+  font-weight: 600;
+}
+
+.attachment-type {
+  color: var(--text-color-secondary, #6c757d);
+}
+
+.masked {
+  border: 1px solid var(--surface-border, #e0e0e0);
+  background: var(--surface-50, #fafafa);
+  padding: 10px;
+  border-radius: 8px;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.chips p-chip {
+  margin: 0 6px 6px 0;
+}
+
+.details-block summary {
+  cursor: pointer;
+  color: var(--primary-color, #3B82F6);
+}
+
+.entity-chip.has-text {
+  font-weight: 600;
+}
+
+/* Header layout tuning */
+.header-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.header-grid .row {
+  display: flex;
+  justify-content: space-between;
+  column-gap: 1px;
+}
+
+.header-grid .top-row {
+  align-items: baseline;
+}
+
+.header-grid .bottom-row {
+  align-items: center;
+}
+
+.meta-right {
+  color: var(--text-color-secondary, #6c757d);
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.detail-link {
+  margin-top: 0;
+}
+
+.separator {
+  border-top: 1px solid var(--surface-border, #e0e0e0);
+  margin: 2px 0 2px;
+}
+
+/* Remove bottom padding inside PrimeNG card body for this component */
+:host ::ng-deep .p-card .p-card-body {
+  padding: 0;
+}
+
+
+/* Reduce left padding for the “Voir détail” link-style button in header */
+:host ::ng-deep .header-grid .bottom-row .p-button.p-button-link {
+  padding-left: 0 !important;
+}
+
+
+/* Align attachment row and detail button; push button to the right edge of the card content */
+.card-content .row.top-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0 !important;
+  column-gap: 0;
+  flex-wrap: nowrap;
+}
+
+.card-content {
+  padding: 0;
+}
+
+:host ::ng-deep .card-content .row.top-row .p-button.p-button-link {
+  margin-left: auto;
+  margin-right: 0 !important;
+}
+
+
+/* Chips row: keep “Voir détail” button at the right edge on the same line as chips */
+.card-content .row.chips-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0 !important;
+  column-gap: 0;
+}
+
+.card-content .row.chips-row > .chips {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+/* Ensure long filenames don’t push the button off the edge */
+.card-content .row.top-row > .attachment-row a {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .card-content .row.chips-row > .p-button.p-button-link,
+:host ::ng-deep .card-content .row.chips-row > button.p-button.p-button-link {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  flex: 0 0 auto;
+}
+
+
+/* Scoped chip padding reduction: 4px vertical, 6px horizontal */
+:host ::ng-deep .p-chip {
+  padding: 4px 6px !important;
+}

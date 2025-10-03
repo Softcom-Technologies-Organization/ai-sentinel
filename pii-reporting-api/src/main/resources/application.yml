@@ -1,0 +1,94 @@
+spring:
+  application:
+    name: sentinelle
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:sentinelle}}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    open-in-view: false
+    show-sql: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  mvc:
+    async:
+      request-timeout: 300000  # 5 minutes for async requests
+  autoconfigure:
+    exclude:
+      - com.linecorp.armeria.spring.ArmeriaAutoConfiguration
+
+# Confluence Configuration
+# Environment variables determine the targeted Confluence instance
+confluence:
+  base-url: ${CONFLUENCE_BASE_URL}
+  username: ${CONFLUENCE_USERNAME}
+  api-token: ${CONFLUENCE_API_TOKEN}
+  space-key: ${CONFLUENCE_SPACE_KEY}
+  connection-settings:
+    connect-timeout: 30000
+    read-timeout: 60000
+    max-retries: 3
+    enable-proxy: ${CONFLUENCE_ENABLE_PROXY:false}
+    proxy-settings:
+      host: ${CONFLUENCE_PROXY_HOST}
+      port: ${CONFLUENCE_PROXY_PORT:8080}
+      username: ${CONFLUENCE_PROXY_USERNAME}
+      password: ${CONFLUENCE_PROXY_PASSWORD}
+  pagination-settings:
+    pages-limit: 50
+    max-pages: 100
+  api-paths:
+    content-path: /content/
+    search-content-path: /content/search
+    space-path: /space
+    attachment-child-suffix: /child/attachment
+    default-page-expands: body.storage,version,metadata,ancestors
+    default-space-expands: permissions,metadata
+
+# Logging Configuration
+logging:
+  level:
+    com.example.sentinelle.infrastructure.confluence: DEBUG
+    com.example.sentinelle.infrastructure.pii: DEBUG
+    org.springframework.web.client: DEBUG
+
+# PII Detector Configuration
+pii-detector:
+  client: ${PII_DETECTOR_CLIENT:armeria}  # armeria|grpc
+  host: localhost
+  port: 50051
+  default-threshold: 0.5
+  connection-timeout-ms: 5000
+  request-timeout-ms: 60000  # Increased to 60 seconds to avoid timeouts
+
+# Armeria internal services (docs, health, metrics, actuator)
+armeria:
+  internal-services:
+    include: docs, health, metrics, actuator
+    port: 8090
+
+# Server Configuration
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /sentinelle
+  tomcat:
+    connection-timeout: 60000  # 1 minute
+    threads:
+      max: 200
+      min-spare: 10
+
+# Swagger/OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+

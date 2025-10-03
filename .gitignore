@@ -301,3 +301,6 @@
 /pii-detector-service/pii_detector/proto/generated/pii_detection_pb2_grpc.py
 /pii-detector-service/tests/unit/.coverage
 /pii-detector-service/tests/.coverage
+/pii-reporting-api/target
+/pii-detector-service/.scannerwork
+/pii-reporting-ui/.scannerwork

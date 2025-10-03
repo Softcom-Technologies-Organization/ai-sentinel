@@ -38,10 +38,10 @@
 
         <!-- SonarQube properties -->
         <sonar.host.url>http://localhost:9000</sonar.host.url>
-        <sonar.projectKey>sentinelle</sonar.projectKey>
-        <sonar.projectName>Sentinelle</sonar.projectName>
+        <sonar.projectKey>ai-sentinel-pii-reporting-api</sonar.projectKey>
+        <sonar.projectName>ai-sentinel-pii-reporting-api</sonar.projectName>
         <sonar.projectVersion>${project.version}</sonar.projectVersion>
-        <sonar.sources>src/main/java,sentinelle-ui-angular/src</sonar.sources>
+        <sonar.sources>src/main/java</sonar.sources>
         <sonar.tests>src/test/java</sonar.tests>
         <sonar.java.binaries>target/classes</sonar.java.binaries>
         <sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>

@@ -1,32 +1,29 @@
-version: '3.8'
-
 services:
-  pgvector-db:
-    image: pgvector/pgvector:pg17
-    container_name: pgvector-confluence
+  ai-sentinel-db:
+    image: postgres:18
+    container_name: ai-sentinel-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: sentinelle
-      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_DB: ai-sentinel
     ports:
       - "5433:5432"  # Port externe 5433 pour éviter conflit avec PostgreSQL local
     volumes:
-      - pgvector-data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d  # Scripts d'initialisation
+      - postgres-data:/var/lib/postgresql/data
+      - ../init-scripts:/docker-entrypoint-initdb.d  # Scripts d'initialisation
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d sentinelle"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ai-sentinel"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - pgvector-network
+      - sentinel-db-network
 
   # Optionnel : pgAdmin pour gérer la base de données visuellement
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: pgadmin-pgvector
+    container_name: pgadmin-sentinel
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@pgadmin.com
@@ -38,16 +35,16 @@ services:
     volumes:
       - pgadmin-data:/var/lib/pgadmin
     depends_on:
-      - pgvector-db
+      - ai-sentinel-db
     networks:
-      - pgvector-network
+      - sentinel-db-network
 
 volumes:
-  pgvector-data:
-    name: pgvector-confluence-data
+  postgres-data:
+    name: sentinel-db-data
   pgadmin-data:
-    name: pgadmin-pgvector-data
+    name: sentinel-pgadmin-data
 
 networks:
-  pgvector-network:
-    name: pgvector-confluence-network
+  sentinel-db-network:
+    name: sentinel-db-network

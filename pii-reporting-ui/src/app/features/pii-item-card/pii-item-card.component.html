@@ -1,0 +1,101 @@
+<p-card>
+  <ng-template pTemplate="header">
+    <div class="header-grid">
+      <div class="row top-row">
+        @if (item?.pageUrl) {
+          <a [href]="item.pageUrl" target="_blank" rel="noopener" class="title">{{
+              item?.pageTitle || item?.pageUrl
+            }}</a>
+        } @else {
+          <div class="title">{{ item?.pageTitle || 'Page' }}</div>
+        }
+        <p-tag [value]="'Sévérité : ' + sevLabel(item?.severity)"
+               [severity]="sevPrime(item?.severity)" class="mt-1"></p-tag>
+      </div>
+    </div>
+  </ng-template>
+
+  <div class="card-content">
+    <div class="row top-row">
+      @if (item?.attachmentName) {
+        <div class="attachment-row">
+          <i class="pi pi-paperclip me-2" aria-hidden="true"></i>
+          <span class="attachment-label">Pièce jointe</span>
+          @switch (attachmentKind(item?.attachmentType)) {
+            @case ('pdf') {
+              <p-tag value="PDF" severity="danger" class="ml-2"></p-tag>
+            }
+            @case ('excel') {
+              <p-tag value="Excel" severity="warning" class="ml-2"></p-tag>
+            }
+            @case ('word') {
+              <p-tag value="Word" severity="info" class="ml-2"></p-tag>
+            }
+            @case ('ppt') {
+              <p-tag value="PowerPoint" severity="success" class="ml-2"></p-tag>
+            }
+            @case ('txt') {
+              <p-tag value="Texte" severity="secondary" class="ml-2"></p-tag>
+            }
+          }
+
+          @if (item?.attachmentUrl) {
+            <a class="ml-2" [href]="item.attachmentUrl" target="_blank"
+               rel="noopener">{{ item?.attachmentName || item?.attachmentUrl }}</a>
+          } @else {
+            <span class="ml-2">{{ item?.attachmentName }}</span>
+          }
+        </div>
+      }
+    </div>
+
+
+    @if (item?.summary; as summary) {
+      <div class="row chips-row">
+        <div class="chips">
+          @for (k of objectKeys(summary); track k) {
+            <p-chip [label]="k + ' × ' + summary[k]"></p-chip>
+          }
+        </div>
+        <p-button (click)="toggleDetails()"
+                  (keydown.enter)="$event.stopPropagation(); toggleDetails()"
+                  (keydown.space)="$event.preventDefault(); $event.stopPropagation(); toggleDetails()"
+                  styleClass="p-button-link"
+                  [ariaLabel]="detailsOpen ? 'Masquer le détail' : 'Voir détail'"
+                  [attr.aria-expanded]="detailsOpen"
+                  icon="pi pi-angle-right"
+                  label="Voir détail"></p-button>
+      </div>
+    }
+
+    @if (detailsOpen) {
+
+      <div>
+        @if (item?.maskedHtml) {
+          <div class="masked" [innerHTML]="maskedHtmlSafe"></div>
+        }
+        <div class="controls mt-2">
+          <button pButton pButtonIcon="revealed ? 'pi pi-eye-slash' : 'pi pi-eye'"
+                  class="p-button-outlined" (click)="toggleReveal()"
+                  [attr.aria-label]="revealed ? 'Masquer les valeurs sensibles' : 'Afficher les valeurs sensibles (action auditée)'">
+            {{ revealed ? 'Masquer' : 'Révéler' }}
+          </button>
+        </div>
+        <div class="chips mt-2">
+          @for (e of item?.entities; track e) {
+            <p-chip [class]="'entity-chip'" [removable]="false"
+                    [ngClass]="{'has-text': revealed && e.text}">
+              {{ e.label }}
+              @if (revealed && e.text) {
+                : "{{ e.text }}"
+              }
+              @if (e.score !== undefined) {
+                (score={{ formatScore(e.score) }})
+              }
+            </p-chip>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</p-card>

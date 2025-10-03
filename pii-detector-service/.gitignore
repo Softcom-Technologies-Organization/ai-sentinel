@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Project specific
+model/piiranha-v1-detect-personal-information/
+pii-grpc-service/proto/pii_detection_pb2.py
+pii-grpc-service/proto/pii_detection_pb2_grpc.py
+
+# Logs
+*.log
+logs/
+
+# Local configuration
+.env
+*.env
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Distribution / packaging
+# Already included in Python section above

@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package pii_detection;
+
+// Service for detecting Personally Identifiable Information (PII) in text content
+service PIIDetectionService {
+  // Analyzes text content for PII and returns detailed results
+  rpc DetectPII (PIIDetectionRequest) returns (PIIDetectionResponse) {}
+  
+  // Streams analysis updates chunk by chunk, with a final message containing summary and masked content
+  rpc StreamDetectPII (PIIDetectionRequest) returns (stream PIIDetectionUpdate) {}
+}
+
+// Request message containing the text content to analyze
+message PIIDetectionRequest {
+  // The text content to analyze for PII
+  string content = 1;
+  
+  // Optional confidence threshold (0.0-1.0)
+  // If not provided, a default value will be used
+  float threshold = 2;
+}
+
+// Response message containing the PII detection results
+message PIIDetectionResponse {
+  // List of detected PII entities
+  repeated PIIEntity entities = 1;
+  
+  // Summary of detected PII types and counts
+  map<string, int32> summary = 2;
+  
+  // Optional masked version of the input text with PII replaced
+  string masked_content = 3;
+}
+
+// Update message emitted during streaming analysis
+message PIIDetectionUpdate {
+  // Index of the current chunk (0-based)
+  int32 chunk_index = 1;
+  
+  // Total number of chunks for this analysis
+  int32 total_chunks = 2;
+  
+  // Progress percentage (0-100)
+  int32 progress_percent = 3;
+  
+  // Entities detected in this chunk (positions adjusted to original text)
+  repeated PIIEntity entities = 4;
+  
+  // Present only in the final message
+  string masked_content = 5;
+  
+  // Present only in the final message
+  map<string, int32> summary = 6;
+  
+  // True if this is the final message of the stream
+  bool final = 7;
+}
+
+// Represents a single detected PII entity
+message PIIEntity {
+  // The detected text
+  string text = 1;
+  
+  // The type of PII (e.g., EMAIL, PHONE, etc.)
+  string type = 2;
+  
+  // Human-readable label for the PII type (localized)
+  string type_label = 3;
+  
+  // Start position in the original text
+  int32 start = 4;
+  
+  // End position in the original text
+  int32 end = 5;
+  
+  // Confidence score (0.0-1.0)
+  float score = 6;
+}

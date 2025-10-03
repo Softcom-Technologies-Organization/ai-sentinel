@@ -1,0 +1,56 @@
+
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.row-click {
+  cursor: pointer;
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: 1rem;
+}
+.panel-actions .left { display: flex; align-items: center; gap: .5rem; }
+.panel-actions .right { display: flex; align-items: center; gap: .5rem; }
+
+.bottom-panel {
+  border-top: 1px solid #e0e0e0;
+  padding: 1rem 0;
+  margin-top: 1rem;
+}
+
+.pii-cards { margin-top: .5rem; }
+
+
+/* Row expansion container for per-space details */
+.row-expansion {
+  padding: .75rem 0;
+}
+.row-expansion__header {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .5rem;
+}
+/* Scroll area: show up to ~10 cards, scroll for more */
+.pii-scroll {
+  max-height: 1200px; /* approx 10 cards depending on content */
+  overflow-y: auto;
+  padding-right: .5rem; /* keep scrollbar away from content */
+}

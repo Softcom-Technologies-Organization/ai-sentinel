@@ -1,0 +1,61 @@
+spring:
+  main:
+    web-application-type: servlet
+  autoconfigure:
+    exclude:
+      - com.linecorp.armeria.spring.ArmeriaAutoConfiguration
+  application:
+    name: sentinelle
+  datasource:
+    url: jdbc:h2:mem:sentinelle;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    open-in-view: false
+    show-sql: false
+    hibernate:
+      ddl-auto: update
+# Provide safe defaults for Confluence to avoid unresolved placeholders
+# These values are only for test context bootstrapping
+confluence:
+  base-url: http://localhost
+  username: test
+  api-token: test
+  space-key: TEST
+  connection-settings:
+    connect-timeout: 1000
+    read-timeout: 2000
+    max-retries: 0
+    enable-proxy: false
+  pagination-settings:
+    pages-limit: 10
+    max-pages: 10
+
+# Keep Armeria as default client in tests; use loopback host
+pii-detector:
+  client: armeria
+  host: 127.0.0.1
+  port: 50051
+  default-threshold: 0.5
+  connection-timeout-ms: 2000
+  request-timeout-ms: 5000
+
+# Avoid port conflicts during tests
+server:
+  port: 0
+  servlet:
+    context-path: /sentinelle
+
+# Ensure Armeria internal services bind to a random port to avoid clashes during tests
+armeria:
+  internal-services:
+    port: 0
+
+# Reduce logging noise during tests
+logging:
+  level:
+    root: WARN
+    com.example.sentinelle: INFO
+    com.example.sentinelle.infrastructure.pii: INFO

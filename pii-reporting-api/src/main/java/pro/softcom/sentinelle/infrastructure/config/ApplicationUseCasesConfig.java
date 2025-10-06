@@ -7,6 +7,7 @@ import pro.softcom.sentinelle.application.confluence.port.out.AttachmentTextExtr
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachmentClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachmentDownloader;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
+import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceSpaceRepository;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.sentinelle.application.confluence.usecase.ConfluenceUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.DetectionReportingUseCase;
@@ -34,8 +35,9 @@ import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointReposi
 public class ApplicationUseCasesConfig {
 
     @Bean
-    public ConfluenceUseCase confluenceUseCase(ConfluenceClient confluenceClient) {
-        return new ConfluenceUseCaseImpl(confluenceClient);
+    public ConfluenceUseCase confluenceUseCase(ConfluenceClient confluenceClient,
+                                                ConfluenceSpaceRepository spaceRepository) {
+        return new ConfluenceUseCaseImpl(confluenceClient, spaceRepository);
     }
 
     @Bean

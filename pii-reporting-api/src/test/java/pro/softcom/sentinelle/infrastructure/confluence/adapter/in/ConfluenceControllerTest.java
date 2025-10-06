@@ -78,9 +78,7 @@ class ConfluenceControllerTest {
             "http://test.com",
             "A test space",
             ConfluenceSpace.SpaceType.GLOBAL,
-            ConfluenceSpace.SpaceStatus.CURRENT,
-            null,
-            null
+            ConfluenceSpace.SpaceStatus.CURRENT
         );
 
         when(confluenceUseCase.getSpace(spaceKey))
@@ -227,9 +225,7 @@ class ConfluenceControllerTest {
             "http://test.com",
             "A test space",
             ConfluenceSpace.SpaceType.GLOBAL,
-            ConfluenceSpace.SpaceStatus.CURRENT,
-            null,
-            null
+            ConfluenceSpace.SpaceStatus.CURRENT
         );
 
         when(confluenceUseCase.getSpace(spaceKey))
@@ -262,8 +258,8 @@ class ConfluenceControllerTest {
     @Test
     void getAllSpaces_ReturnsList() throws Exception {
         List<ConfluenceSpace> spaces = List.of(
-            new ConfluenceSpace("id-1", "KEY1", "Space 1", "http://s1", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, null, null),
-            new ConfluenceSpace("id-2", "KEY2", "Space 2", "http://s2", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, null, null)
+            new ConfluenceSpace("id-1", "KEY1", "Space 1", "http://s1", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT),
+            new ConfluenceSpace("id-2", "KEY2", "Space 2", "http://s2", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT)
         );
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(spaces));
@@ -380,3 +376,5 @@ class ConfluenceControllerTest {
             .andExpect(status().isBadRequest());
     }
 }
+
+

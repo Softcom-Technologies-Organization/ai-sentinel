@@ -119,8 +119,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         String scanId = "SID-1";
         String spaceKey = "RS1";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         ScanCheckpoint cp = ScanCheckpoint.builder()
@@ -157,8 +156,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         String scanId = "SID-2";
         String spaceKey = "RS2";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
         when(scanCheckpointRepository.findByScanAndSpace(scanId, spaceKey)).thenReturn(Optional.empty());
 
@@ -182,8 +180,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         String scanId = "SID-3";
         String spaceKey = "RS3";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         when(scanCheckpointRepository.findByScanAndSpace(anyString(), anyString())).thenThrow(new RuntimeException("prep-fail"));
@@ -219,8 +216,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         String scanId = "SID-5";
         String spaceKey = "RS4";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         ScanCheckpoint cp = ScanCheckpoint.builder()

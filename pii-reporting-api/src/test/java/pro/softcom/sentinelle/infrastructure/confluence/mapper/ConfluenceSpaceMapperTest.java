@@ -25,15 +25,6 @@ class ConfluenceSpaceMapperTest {
         softly.assertThat(domain.description()).isEqualTo("My space description");
         softly.assertThat(domain.type()).isEqualTo(ConfluenceSpace.SpaceType.PROJECT);
         softly.assertThat(domain.status()).isEqualTo(ConfluenceSpace.SpaceStatus.ARCHIVED);
-        softly.assertThat(domain.metadata()).containsEntry("k1", 1).containsEntry("k2", "v2");
-
-        ConfluenceSpace.SpacePermissions p = domain.permissions();
-        softly.assertThat(p.canView()).isTrue();
-        softly.assertThat(p.canEdit()).isTrue();
-        softly.assertThat(p.canDelete()).isTrue();
-        softly.assertThat(p.canAdmin()).isTrue();
-        softly.assertThat(p.canCreatePage()).isTrue();
-        softly.assertThat(p.canComment()).isTrue();
         softly.assertAll();
     }
 
@@ -81,17 +72,7 @@ class ConfluenceSpaceMapperTest {
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(domain.type()).as("unknown type -> GLOBAL").isEqualTo(ConfluenceSpace.SpaceType.GLOBAL);
         softly.assertThat(domain.status()).as("unknown status -> CURRENT").isEqualTo(ConfluenceSpace.SpaceStatus.CURRENT);
-
-        ConfluenceSpace.SpacePermissions p = domain.permissions();
-        softly.assertThat(p.canView()).isFalse();
-        softly.assertThat(p.canEdit()).isFalse();
-        softly.assertThat(p.canDelete()).isFalse();
-        softly.assertThat(p.canAdmin()).isFalse();
-        softly.assertThat(p.canCreatePage()).isFalse();
-        softly.assertThat(p.canComment()).isFalse();
-
         softly.assertThat(domain.description()).as("no plain description -> empty").isEmpty();
-        softly.assertThat(domain.metadata()).as("null metadata -> empty map").isNotNull().isEmpty();
         softly.assertAll();
     }
 

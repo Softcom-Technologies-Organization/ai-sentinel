@@ -141,8 +141,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void streamSpace_blankContent_noAttachments() {
         String spaceKey = "S1";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-                ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-                new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+                ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         ConfluencePage page = ConfluencePage.builder()
@@ -178,8 +177,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void streamSpace_withAttachmentAndContent() {
         String spaceKey = "S2";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-                ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-                new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+                ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         ConfluencePage page = ConfluencePage.builder()
@@ -230,8 +228,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void streamSpace_grpcStatusError() {
         String spaceKey = "S3";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t", "http://test.com","d",
-                ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-                new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+                ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         ConfluencePage page = ConfluencePage.builder()
@@ -284,8 +281,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void Should_BuildPageUrlWithoutDoubleSlash_When_BaseUrlEndsWithSlash() {
         String spaceKey = "S-TRIM";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-                                                    ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-                                                    new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+                                                    ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         ConfluencePage page = ConfluencePage.builder()
@@ -317,8 +313,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void Should_NotEmitAttachmentItem_When_AttachmentExtensionIsNotExtractable() {
         String spaceKey = "S-NO-EXT";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-                                                    ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-                                                    new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+                                                    ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         ConfluencePage page = ConfluencePage.builder()
@@ -355,8 +350,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void Should_NotEmitAttachmentItem_When_DownloadReturnsEmpty() {
         String spaceKey = "S-EMPTY-DL";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-                                                    ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-                                                    new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+                                                    ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         ConfluencePage page = ConfluencePage.builder()
@@ -394,8 +388,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void Should_TruncateMaskedContent_When_LengthGreaterThan5000() {
         String spaceKey = "S-TRUNC";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-                                                    ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-                                                    new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+                                                    ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         ConfluencePage page = ConfluencePage.builder()
@@ -443,8 +436,7 @@ class StreamConfluenceScanUseCaseImplTest {
     @DisplayName("streamAllSpaces - per-space failure emits error event between multi_start and multi_complete")
     void Should_EmitErrorEventPerSpace_When_GetAllPagesFails_InStreamAllSpaces() {
         ConfluenceSpace space = new ConfluenceSpace("id", "MS1", "t", "http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         CompletableFuture<List<ConfluencePage>> failing = new CompletableFuture<>();
@@ -481,8 +473,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void Should_ProcessPage_When_AttachmentsRetrievalFails() {
         String spaceKey = "S-AERR";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         ConfluencePage page = ConfluencePage.builder()
@@ -568,8 +559,7 @@ class StreamConfluenceScanUseCaseImplTest {
 
         String spaceKey = "S-BLANK";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
         ConfluencePage page = ConfluencePage.builder()
             .id("p-blank")
@@ -641,8 +631,7 @@ class StreamConfluenceScanUseCaseImplTest {
 
         String spaceKey = "S-TRIM2";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
         ConfluencePage page = ConfluencePage.builder()
             .id("p-trim2")
@@ -671,8 +660,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void Should_PersistRunningCheckpointWithoutAdvancingPage_When_ItemEventEmitted() {
         String spaceKey = "S-CP-ITEM";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
         ConfluencePage page = ConfluencePage.builder()
             .id("p-cp-item")

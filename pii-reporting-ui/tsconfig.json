@@ -15,6 +15,6 @@
     "module": "ES2022",
     "moduleResolution": "bundler",
     "lib": ["ES2022", "DOM"],
-    "types": []
+    "types": ["node"]
   }
 }

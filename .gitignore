@@ -7,3 +7,5 @@
 /pii-reporting-ui/.scannerwork/
 /.idea/
 /**/.coverage
+/pii-reporting-ui/playwright-report/
+/pii-reporting-ui/test-results/

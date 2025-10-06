@@ -8,14 +8,41 @@
             [disabled]="!canResumeScan()" style="margin-left: .5rem;">
       Reprendre le dernier scan
     </button>
+    <button pButton type="button" class="p-button-outlined p-button-secondary" (click)="refreshSpaces()"
+            [disabled]="isRefreshing()" style="margin-left: .5rem;"
+            pTooltip="Actualiser la liste des espaces" tooltipPosition="bottom">
+      <i class="pi pi-refresh" [class.spinning]="isRefreshing()"></i>
+      <span class="ml-2">Actualiser</span>
+    </button>
     <div class="search-global">
       <span class="p-input-icon-left">
         <i class="pi pi-search"></i>
         <input pInputText type="text" placeholder="Rechercher" [ngModel]="globalFilter()" (ngModelChange)="onGlobalChange($event)" aria-label="Rechercher globalement"/>
       </span>
     </div>
-    <div class="ms-auto text-muted">{{ isStreaming() ? 'En cours...' : 'Prêt' }}</div>
+    <div class="ms-auto text-muted">
+      {{ isStreaming() ? 'En cours...' : 'Prêt' }}
+      @if (lastRefresh()) {
+        <span class="text-xs ml-2">· Actualisé: {{ lastRefresh() | date:'short' }}</span>
+      }
+    </div>
   </div>
+
+  <!-- Phase 2: New spaces notification banner -->
+  @if (hasNewSpaces()) {
+    <div class="new-spaces-banner">
+      <i class="pi pi-info-circle"></i>
+      <span class="banner-message">
+        {{ newSpacesCount() }} nouvel(aux) espace(s) Confluence disponible(s)
+      </span>
+      <button pButton type="button" class="p-button-raised p-button-sm" (click)="refreshSpaces()">
+        Afficher
+      </button>
+      <button pButton type="button" class="p-button-text p-button-sm" icon="pi pi-times" (click)="dismissNotification()"
+              aria-label="Fermer la notification">
+      </button>
+    </div>
+  }
 
   @if (lastScanMeta(); as last) {
     <div class="mt-2 text-sm text-muted">

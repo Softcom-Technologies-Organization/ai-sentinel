@@ -17,6 +17,7 @@ import {
   SpaceStatusDto
 } from '../../core/services/sentinelle-api.service';
 import {Subscription} from 'rxjs';
+import {SpacesPollingService} from '../../core/services/spaces-polling.service';
 import {Space} from '../../core/models/space';
 import {ToggleSwitchModule} from 'primeng/toggleswitch';
 import {BadgeModule} from 'primeng/badge';
@@ -57,7 +58,9 @@ import {TestIds} from '../test-ids.constants';
 export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly sentinelleApiService = inject(SentinelleApiService);
   readonly spacesDashboardUtils = inject(SpacesDashboardUtils);
+  readonly pollingService = inject(SpacesPollingService);
   private sub?: Subscription;
+  private pollingSub?: Subscription;
 
   // Expose test IDs to template for E2E testing
   readonly testIds = TestIds.dashboard;
@@ -88,13 +91,23 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly canStartScan = computed(() => !this.isStreaming() && !this.isSpacesLoading() && this.spaces().length > 0);
   readonly canResumeScan = computed(() => !this.isStreaming() && !this.isSpacesLoading() && !!this.lastScanMeta() && !this.isResuming());
 
+  // Manual refresh state (Phase 1)
+  readonly lastRefresh = signal<Date | null>(null);
+  readonly isRefreshing = signal<boolean>(false);
+
+  // Notification state (Phase 2)
+  readonly hasNewSpaces = signal<boolean>(false);
+  readonly newSpacesCount = signal<number>(0);
+
   ngOnInit(): void {
     this.fetchSpaces();
     this.loadLastScan();
+    this.startBackgroundPolling();
   }
 
   ngOnDestroy(): void {
     this.stopCurrentScan();
+    this.pollingSub?.unsubscribe();
   }
 
   readonly filteredSpaces = computed(() => {
@@ -328,8 +341,13 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Fetches Confluence spaces from backend cache.
+   * Business purpose: loads space list for dashboard display with instant response from DB cache.
+   */
   private fetchSpaces(): void {
     this.isSpacesLoading.set(true);
+    this.isRefreshing.set(true);
     this.sentinelleApiService.getSpaces().subscribe({
       next: (spaces) => {
         this.spaces.set(spaces);
@@ -337,13 +355,55 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
         this.spacesDashboardUtils.setSpaces(spaces);
         // Re-apply cached last scan statuses and PII counts once spaces are available
         this.reapplyLastScanUi();
+        this.lastRefresh.set(new Date());
         this.isSpacesLoading.set(false);
+        this.isRefreshing.set(false);
       },
       error: (e) => {
         this.append(`[ui] Failed to fetch spaces: ${e?.message ?? e}`);
         this.isSpacesLoading.set(false);
+        this.isRefreshing.set(false);
       }
     });
+  }
+
+  /**
+   * Manually refreshes the spaces list.
+   * Business purpose: allows users to explicitly update the dashboard with latest cached data.
+   */
+  refreshSpaces(): void {
+    this.fetchSpaces();
+    this.hasNewSpaces.set(false);
+    this.newSpacesCount.set(0);
+  }
+
+  /**
+   * Starts silent background polling to detect new spaces.
+   * Business purpose: automatic discovery of new spaces without disrupting user workflow.
+   */
+  private startBackgroundPolling(): void {
+    const initialCount = this.spaces().length;
+
+    this.pollingSub = this.pollingService.startPolling(initialCount).subscribe({
+      next: (detection) => {
+        if (detection.hasNewSpaces) {
+          this.hasNewSpaces.set(true);
+          this.newSpacesCount.set(detection.newSpacesCount);
+        }
+      },
+      error: (err) => {
+        console.error('[polling] Error during background polling:', err);
+      }
+    });
+  }
+
+  /**
+   * Dismisses the new spaces notification banner.
+   * Business purpose: allows users to clear notification without refreshing.
+   */
+  dismissNotification(): void {
+    this.hasNewSpaces.set(false);
+    this.newSpacesCount.set(0);
   }
 
   /**

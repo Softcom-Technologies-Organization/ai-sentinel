@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import pro.softcom.sentinelle.application.confluence.exception.ConfluenceSpaceCacheException;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceSpaceRepository;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
@@ -24,10 +25,10 @@ public class ConfluenceSpaceCacheRefreshService {
 
     /**
      * Refreshes all Confluence spaces from API and updates cache.
-     * Runs every 5 minutes (300000 ms) to keep cache reasonably current.
+     * Runs every 5 minutes (60000 ms) to keep cache reasonably current.
      * Errors are logged but don't prevent future refreshes.
      */
-    @Scheduled(fixedDelay = 300000, initialDelay = 60000)
+    @Scheduled(fixedDelay = 60000, initialDelay = 30000)
     public void refreshSpacesCache() {
         log.debug("Starting background refresh of Confluence spaces cache");
         
@@ -41,8 +42,9 @@ public class ConfluenceSpaceCacheRefreshService {
             } else {
                 log.warn("Refresh returned empty space list - cache not updated");
             }
-        } catch (Exception e) {
-            log.error("Failed to refresh Confluence spaces cache - will retry on next schedule", e);
+        } catch (ConfluenceSpaceCacheException e) {
+            log.error("Failed to refresh Confluence spaces cache during operation: {} - will retry on next schedule", 
+                     e.getOperation(), e);
         }
     }
 }

@@ -1,21 +1,23 @@
 import { test, expect } from '@playwright/test';
+import {TestIds} from '../src/app/features/test-ids.constants';
 
 /**
  * E2E tests for the Spaces Dashboard component.
  * Verifies that the datatable displays data correctly using data-testid attributes.
  */
 test.describe('Spaces Dashboard', () => {
+  const testIds = TestIds.dashboard;
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });
 
   test('should display datatable with space data', async ({ page }) => {
     // Wait for the table to be visible
-    const table = page.getByTestId('spaces-table');
+    const table = page.getByTestId(testIds.table);
     await expect(table).toBeVisible({ timeout: 10_000 });
 
     // Wait for data rows to appear (excluding loading skeletons)
-    const dataRows = page.getByTestId('space-row');
+    const dataRows = page.getByTestId(testIds.spaceRow);
     await expect(dataRows.first()).toBeVisible({ timeout: 15_000 });
 
     // Verify at least one data row exists
@@ -25,23 +27,23 @@ test.describe('Spaces Dashboard', () => {
 
   test('should display table headers correctly', async ({ page }) => {
     // Wait for table to be visible
-    const table = page.getByTestId('spaces-table');
+    const table = page.getByTestId(testIds.table);
     await expect(table).toBeVisible();
 
     // Verify essential table headers are present
-    await expect(page.getByTestId('header-space')).toHaveText('Space');
-    await expect(page.getByTestId('header-status')).toHaveText('Statut');
-    await expect(page.getByTestId('header-progress')).toHaveText('Progression');
-    await expect(page.getByTestId('header-pii')).toHaveText('PII');
+    await expect(page.getByTestId(testIds.headers.space)).toHaveText('Space');
+    await expect(page.getByTestId(testIds.headers.status)).toHaveText('Statut');
+    await expect(page.getByTestId(testIds.headers.progress)).toHaveText('Progression');
+    await expect(page.getByTestId(testIds.headers.pii)).toHaveText('PII');
   });
 
   test('should display space name in datatable', async ({ page }) => {
     // Wait for data rows to load
-    const dataRows = page.getByTestId('space-row');
+    const dataRows = page.getByTestId(testIds.spaceRow);
     await expect(dataRows.first()).toBeVisible({ timeout: 15_000 });
 
     // Verify that at least one space name is displayed
-    const spaceNameCell = page.getByTestId('space-name').first();
+    const spaceNameCell = page.getByTestId(testIds.spaceName).first();
     await expect(spaceNameCell).toBeVisible();
 
     // Verify the space name is not empty
@@ -52,11 +54,11 @@ test.describe('Spaces Dashboard', () => {
 
   test('should display PII badges in datatable', async ({ page }) => {
     // Wait for data rows to load
-    const dataRows = page.getByTestId('space-row');
+    const dataRows = page.getByTestId(testIds.spaceRow);
     await expect(dataRows.first()).toBeVisible({ timeout: 15_000 });
 
     // Verify that PII count badges are displayed
-    const totalBadge = page.getByTestId('pii-badge-total').first();
+    const totalBadge = page.getByTestId(testIds.badges.total).first();
     await expect(totalBadge).toBeVisible();
 
     // Verify badge has a numeric value

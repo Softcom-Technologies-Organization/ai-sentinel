@@ -40,6 +40,7 @@ import {TooltipModule} from 'primeng/tooltip';
 import {DataViewModule} from 'primeng/dataview';
 import {ProgressBarModule} from 'primeng/progressbar';
 import {SkeletonModule} from 'primeng/skeleton';
+import {TestIds} from '../test-ids.constants';
 
 /**
  * Dashboard to orchestrate scanning all Confluence spaces sequentially.
@@ -57,6 +58,9 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly sentinelleApiService = inject(SentinelleApiService);
   readonly spacesDashboardUtils = inject(SpacesDashboardUtils);
   private sub?: Subscription;
+
+  // Expose test IDs to template for E2E testing
+  readonly testIds = TestIds.dashboard;
 
   readonly globalFilter = signal<string>('');
   readonly isStreaming = signal(false);
@@ -636,7 +640,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     if (!spaceKey) return 0;
     const p = this.progress()[spaceKey];
     if (!p) return 0;
-    if (typeof p.percent === 'number' && !isNaN(p.percent)) {
+    if (typeof p.percent === 'number' && !Number.isNaN(p.percent)) {
       return this.clampPercent(p.percent);
     }
     const total = p.total;

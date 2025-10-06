@@ -28,16 +28,16 @@
   <p-table #dt [value]="filteredSpaces()" [paginator]="true" [rows]="10" [tableStyle]="{'min-width':'60rem'}"
            [rowsPerPageOptions]="[10,20,50]" dataKey="key" ariaLabel="Liste des spaces"
            [expandedRowKeys]="expandedRowKeys()" (onRowExpand)="onRowExpand($event)" (onRowCollapse)="onRowCollapse($event)"
-           [loading]="isSpacesLoading()" [showLoader]="false" data-testid="spaces-table">
+           [loading]="isSpacesLoading()" [showLoader]="false" [attr.data-testid]="testIds.table">
     <ng-template #header>
       <tr>
         <th id="col-toggle" style="width:3rem"></th>
-        <th id="col-space" data-testid="header-space">Space</th>
-        <th id="col-status" data-testid="header-status">Statut</th>
-        <th id="col-progress" data-testid="header-progress">Progression</th>
-        <th id="col-last-scan" data-testid="header-last-scan">Dernier scan</th>
-        <th id="col-pii" data-testid="header-pii">PII</th>
-        <th id="col-actions" data-testid="header-actions">Actions</th>
+        <th id="col-space" [attr.data-testid]="testIds.headers.space">Space</th>
+        <th id="col-status" [attr.data-testid]="testIds.headers.status">Statut</th>
+        <th id="col-progress" [attr.data-testid]="testIds.headers.progress">Progression</th>
+        <th id="col-last-scan" [attr.data-testid]="testIds.headers.lastScan">Dernier scan</th>
+        <th id="col-pii" [attr.data-testid]="testIds.headers.pii">PII</th>
+        <th id="col-actions" [attr.data-testid]="testIds.headers.actions">Actions</th>
       </tr>
       <tr>
         <th id="col-toggle-value"></th>
@@ -52,7 +52,7 @@
       </tr>
     </ng-template>
     <ng-template #body let-space let-expanded="expanded">
-      <tr class="row-click" tabindex="0" data-testid="space-row">
+      <tr class="row-click" tabindex="0" [attr.data-testid]="testIds.spaceRow">
         <td>
           <p-button type="button"
                     pRipple
@@ -65,7 +65,7 @@
         </td>
         <td>
           <div class="d-flex align-items-center gap-2">
-            <span class="fw-600" data-testid="space-name">{{ space.name }}</span>
+            <span class="fw-600" [attr.data-testid]="testIds.spaceName">{{ space.name }}</span>
           </div>
         </td>
         <td>
@@ -76,11 +76,11 @@
         </td>
         <td>{{ space.lastScanTs | date:'short' }}</td>
         <td>
-          <p-badge [value]="space?.counts?.total ?? 0" size="large" data-testid="pii-badge-total"></p-badge>
+          <p-badge [value]="space?.counts?.total ?? 0" size="large" [attr.data-testid]="testIds.badges.total"></p-badge>
           <span class="ml-2">
-                <p-badge [value]="space?.counts?.high ?? 0" severity="danger" class="ml-1" size="large" data-testid="pii-badge-high"></p-badge>
-                <p-badge [value]="space?.counts?.medium ?? 0" severity="warn" class="ml-1" size="large" data-testid="pii-badge-medium"></p-badge>
-                <p-badge [value]="space?.counts?.low ?? 0" severity="info" class="ml-1" size="large" data-testid="pii-badge-low"></p-badge>
+                <p-badge [value]="space?.counts?.high ?? 0" severity="danger" class="ml-1" size="large" [attr.data-testid]="testIds.badges.high"></p-badge>
+                <p-badge [value]="space?.counts?.medium ?? 0" severity="warn" class="ml-1" size="large" [attr.data-testid]="testIds.badges.medium"></p-badge>
+                <p-badge [value]="space?.counts?.low ?? 0" severity="info" class="ml-1" size="large" [attr.data-testid]="testIds.badges.low"></p-badge>
               </span>
         </td>
         <td>

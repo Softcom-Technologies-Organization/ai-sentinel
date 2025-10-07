@@ -36,7 +36,6 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
-import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorSettings;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
@@ -95,9 +94,6 @@ class ResumeScanInterruptIntegrationTest {
     @Autowired
     private AttachmentTextExtractor attachmentTextExtractor;
 
-    @Autowired
-    private PiiDetectorSettings piiSettings;
-
     @Test
     void Should_ResumeFromNextPage_When_ScanInterrupted() {
         // Arrange: program Mockito stubs for deterministic environment
@@ -128,9 +124,6 @@ class ResumeScanInterruptIntegrationTest {
         when(confluenceAttachmentClient.getPageAttachments(anyString())).thenReturn(
             CompletableFuture.completedFuture(List.of()));
         when(confluenceUrlProvider.baseUrl()).thenReturn("http://example");
-        when(piiSettings.defaultThreshold()).thenReturn(0.5f);
-        when(piiSettings.host()).thenReturn("localhost");
-        when(piiSettings.port()).thenReturn(50051);
 
         // Act 1: Start a multi-space scan, and interrupt right after first page_complete is recorded
         AtomicReference<String> scanIdRef = new AtomicReference<>();
@@ -219,9 +212,6 @@ class ResumeScanInterruptIntegrationTest {
         when(confluenceClient.getAllPagesInSpace("TEST")).thenReturn(CompletableFuture.completedFuture(List.of(p1, p2, p3)));
         when(confluenceAttachmentClient.getPageAttachments(anyString())).thenReturn(CompletableFuture.completedFuture(List.of()));
         when(confluenceUrlProvider.baseUrl()).thenReturn("http://example");
-        when(piiSettings.defaultThreshold()).thenReturn(0.5f);
-        when(piiSettings.host()).thenReturn("localhost");
-        when(piiSettings.port()).thenReturn(50051);
 
         // Phase 1: start and interrupt at first page_complete
         AtomicReference<String> scanIdRef = new AtomicReference<>();
@@ -327,12 +317,6 @@ class ResumeScanInterruptIntegrationTest {
         AttachmentTextExtractor attachmentTextExtractor() {
             return Mockito.mock(
                 AttachmentTextExtractor.class);
-        }
-
-        @Bean
-        @Primary
-        PiiDetectorSettings piiSettings() {
-            return Mockito.mock(PiiDetectorSettings.class);
         }
     }
 }

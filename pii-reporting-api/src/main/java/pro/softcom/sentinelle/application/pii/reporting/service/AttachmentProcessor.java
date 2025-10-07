@@ -7,12 +7,11 @@ import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.application.confluence.port.out.AttachmentTextExtractor;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachmentDownloader;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
-import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorSettings;
 import pro.softcom.sentinelle.domain.confluence.AttachmentInfo;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
-import pro.softcom.sentinelle.domain.pii.scan.ScanProgress;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.domain.pii.scan.ContentPiiDetection;
+import pro.softcom.sentinelle.domain.pii.scan.ScanProgress;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -27,7 +26,6 @@ public class AttachmentProcessor {
     private final ConfluenceAttachmentDownloader confluenceDownloadService;
     private final AttachmentTextExtractor attachmentTextExtractionService;
     private final PiiDetectorClient piiDetectorClient;
-    private final PiiDetectorSettings piiSettings;
     private final ScanEventFactory eventFactory;
     private final ScanProgressCalculator progressCalculator;
 
@@ -103,7 +101,7 @@ public class AttachmentProcessor {
      */
     private ContentPiiDetection detectPii(String content) {
         String safeContent = content != null ? content : "";
-        return piiDetectorClient.analyzeContent(safeContent, piiSettings.defaultThreshold());
+        return piiDetectorClient.analyzeContent(safeContent);
     }
 
     /**

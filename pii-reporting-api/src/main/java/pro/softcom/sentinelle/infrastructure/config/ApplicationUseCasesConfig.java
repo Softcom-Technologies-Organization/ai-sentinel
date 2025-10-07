@@ -9,6 +9,7 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachme
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceSpaceRepository;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
+import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.confluence.usecase.ConfluenceUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.DetectionReportingUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
@@ -18,12 +19,12 @@ import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanResultQuery
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanCheckpointService;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventFactory;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanProgressCalculator;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.ScanResultUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceResumeScanUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceScanUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
-import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorSettings;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 
 /**
@@ -62,63 +63,57 @@ public class ApplicationUseCasesConfig {
     }
 
     @Bean
+    public ConfluenceAccessor confluenceAccessor(ConfluenceClient confluenceClient,
+                                                  ConfluenceAttachmentClient confluenceAttachmentClient) {
+        return new ConfluenceAccessor(confluenceClient, confluenceAttachmentClient);
+    }
+
+    @Bean
+    public ScanOrchestrator scanOrchestrator(ScanEventFactory scanEventFactory,
+                                             ScanProgressCalculator scanProgressCalculator,
+                                             ScanCheckpointService scanCheckpointService,
+                                             ScanEventStore scanEventStore) {
+        return new ScanOrchestrator(scanEventFactory, scanProgressCalculator,
+                                   scanCheckpointService, scanEventStore);
+    }
+
+    @Bean
     public AttachmentProcessor attachmentProcessor(
             ConfluenceAttachmentDownloader confluenceDownloadService,
             AttachmentTextExtractor attachmentTextExtractionService,
             PiiDetectorClient piiDetectorClient,
-            PiiDetectorSettings piiSettings,
             ScanEventFactory scanEventFactory,
             ScanProgressCalculator scanProgressCalculator) {
         return new AttachmentProcessor(confluenceDownloadService, attachmentTextExtractionService,
-                                       piiDetectorClient, piiSettings, scanEventFactory,
+                                       piiDetectorClient, scanEventFactory,
                                        scanProgressCalculator);
     }
 
     @Bean
     public StreamConfluenceScanUseCase streamConfluenceScanUseCase(
-            ConfluenceClient confluenceService,
-            ConfluenceAttachmentClient confluenceAttachmentService,
-            PiiDetectorSettings piiSettings,
+            ConfluenceAccessor confluenceAccessor,
             PiiDetectorClient piiDetectorClient,
-            ScanEventStore scanEventStore,
-            ScanEventFactory scanEventFactory,
-            ScanProgressCalculator scanProgressCalculator,
-            ScanCheckpointService scanCheckpointService,
+            ScanOrchestrator scanOrchestrator,
             AttachmentProcessor attachmentProcessor) {
         return new StreamConfluenceScanUseCaseImpl(
-                confluenceService,
-                confluenceAttachmentService,
-                piiSettings,
+                confluenceAccessor,
                 piiDetectorClient,
-                scanEventStore,
-                scanEventFactory,
-                scanProgressCalculator,
-                scanCheckpointService,
+                scanOrchestrator,
                 attachmentProcessor
         );
     }
 
     @Bean
     public StreamConfluenceResumeScanUseCase streamConfluenceResumeScanUseCase(
-            ConfluenceClient confluenceService,
-            ConfluenceAttachmentClient confluenceAttachmentService,
-            PiiDetectorSettings piiSettings,
+            ConfluenceAccessor confluenceAccessor,
             PiiDetectorClient piiDetectorClient,
-            ScanEventStore scanEventStore,
-            ScanEventFactory scanEventFactory,
-            ScanProgressCalculator scanProgressCalculator,
-            ScanCheckpointService scanCheckpointService,
+            ScanOrchestrator scanOrchestrator,
             AttachmentProcessor attachmentProcessor,
             ScanCheckpointRepository scanCheckpointRepository) {
         return new StreamConfluenceResumeScanUseCaseImpl(
-                confluenceService,
-                confluenceAttachmentService,
-                piiSettings,
+                confluenceAccessor,
                 piiDetectorClient,
-                scanEventStore,
-                scanEventFactory,
-                scanProgressCalculator,
-                scanCheckpointService,
+                scanOrchestrator,
                 attachmentProcessor,
                 scanCheckpointRepository
         );

@@ -5,16 +5,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachmentClient;
-import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
+import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
-import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanEventStore;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
-import pro.softcom.sentinelle.application.pii.reporting.service.ScanCheckpointService;
-import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventFactory;
-import pro.softcom.sentinelle.application.pii.reporting.service.ScanProgressCalculator;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
-import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorSettings;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import reactor.core.publisher.Flux;
@@ -28,19 +23,14 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class StreamConfluenceScanUseCaseImpl extends AbstractStreamConfluenceScanUseCase implements StreamConfluenceScanUseCase {
 
-    public StreamConfluenceScanUseCaseImpl(ConfluenceClient confluenceClient,
-                                           ConfluenceAttachmentClient confluenceAttachmentClient,
-                                           PiiDetectorSettings piiSettings,
-                                           PiiDetectorClient piiDetectorClient,
-                                           ScanEventStore scanEventStore,
-                                           ScanEventFactory eventFactory,
-                                           ScanProgressCalculator progressCalculator,
-                                           ScanCheckpointService checkpointService,
-                                           AttachmentProcessor attachmentProcessor) {
-        super(confluenceClient, confluenceAttachmentClient, piiSettings, piiDetectorClient,
-              scanEventStore, eventFactory, progressCalculator, checkpointService, attachmentProcessor);
-    }
 
+    public StreamConfluenceScanUseCaseImpl(
+        ConfluenceAccessor confluenceAccessor,
+        PiiDetectorClient piiDetectorClient,
+        ScanOrchestrator scanOrchestrator,
+        AttachmentProcessor attachmentProcessor) {
+        super(confluenceAccessor, piiDetectorClient, scanOrchestrator, attachmentProcessor);
+    }
 
     /**
      * Streams scan events for a single Confluence space.
@@ -64,7 +54,7 @@ public class StreamConfluenceScanUseCaseImpl extends AbstractStreamConfluenceSca
         String scanId = UUID.randomUUID().toString();
 
         // Passage du monde Future → réactif. La requête n'est pas exécutée tant qu'il n'y a pas d'abonné.
-        return Mono.fromFuture(confluenceClient.getSpace(spaceKey))
+        return Mono.fromFuture(confluenceAccessor.getSpace(spaceKey))
             // On transforme le Mono<Optional<ConfluenceSpace>> en Flux<ScanResult>
             .flatMapMany(confluenceSpaceOpt -> {
                 // Cas 1 : espace introuvable → on retourne un petit Flux d'un seul évènement d'erreur
@@ -78,7 +68,7 @@ public class StreamConfluenceScanUseCaseImpl extends AbstractStreamConfluenceSca
                                          .build());
                 }
                 // Cas 2 : espace trouvé → on récupère toutes ses pages puis on lance le flux de scan
-                return Mono.fromFuture(confluenceClient.getAllPagesInSpace(spaceKey))
+                return Mono.fromFuture(confluenceAccessor.getAllPagesInSpace(spaceKey))
                     // runScanFlux(...) retourne déjà un Flux<ScanResult> représentant la progression complète
                     .flatMapMany(pages -> runScanFlux(scanId, spaceKey, pages, 0, pages.size()));
             })
@@ -130,7 +120,7 @@ public class StreamConfluenceScanUseCaseImpl extends AbstractStreamConfluenceSca
 
     private Flux<ScanResult> buildAllSpaceScanFluxBody(String scanId) {
         // Récupération asynchrone de tous les espaces (Future -> Mono)
-        return Mono.fromFuture(confluenceClient.getAllSpaces())
+        return Mono.fromFuture(confluenceAccessor.getAllSpaces())
             // On déroule ensuite en Flux<ScanResult>
             .flatMapMany(spaces -> {
                 // Si la liste est vide, on génère un petit Flux d'erreur. Sinon, on crée le flux de scan.
@@ -160,7 +150,7 @@ public class StreamConfluenceScanUseCaseImpl extends AbstractStreamConfluenceSca
             // A la différence de flatMap, concatMap attend la fin du flux précédent avant de passer au suivant.
             .concatMap(
                 space -> Mono.fromFuture(
-                        confluenceClient.getAllPagesInSpace(space.key()))
+                        confluenceAccessor.getAllPagesInSpace(space.key()))
                     // On lance ensuite le flux de scan pour cet espace
                     .flatMapMany(
                         pages -> runScanFlux(scanId,

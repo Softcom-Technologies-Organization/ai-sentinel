@@ -54,7 +54,7 @@ public class ConfluenceResponseParser {
             return ConfluencePageMapper.toDomain(updatedPage);
         } catch (Exception e) {
             log.error("Erreur lors de la désérialisation de la page mise à jour", e);
-            throw new RuntimeException("Désérialisation impossible", e);
+            throw new ConfluenceDeserializationException("Désérialisation impossible", e);
         }
     }
 

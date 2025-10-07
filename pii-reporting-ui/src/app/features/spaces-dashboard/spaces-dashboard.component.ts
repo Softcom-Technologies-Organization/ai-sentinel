@@ -66,6 +66,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly testIds = TestIds.dashboard;
 
   readonly globalFilter = signal<string>('');
+  readonly statusFilter = signal<string | null>(null);
   readonly isStreaming = signal(false);
   readonly spaces = signal<Space[]>([]);
   readonly queue = signal<string[]>([]);
@@ -114,8 +115,9 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     return this.spacesDashboardUtils.filteredSpaces();
   });
 
-  onGlobalChange(v: string) {
+  onGlobalChange(v: string): void {
     this.globalFilter.set(v);
+    this.spacesDashboardUtils.globalFilter.set(v);
   }
 
   // UI actions
@@ -300,7 +302,10 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  onFilter(field: 'name' | 'status', value: string | null): void {
+  onFilter(field: 'name' | 'status', value: string | null | undefined): void {
+    if (field === 'status') {
+      this.statusFilter.set(value ?? null);
+    }
     this.spacesDashboardUtils.onFilter(field, value);
   }
 

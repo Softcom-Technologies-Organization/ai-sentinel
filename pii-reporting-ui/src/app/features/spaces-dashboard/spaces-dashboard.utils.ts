@@ -68,7 +68,7 @@ export class SpacesDashboardUtils {
     this.uiSpaces.set(updated);
   }
 
-  onFilter(field: 'name' | 'status', value: string | null): void {
+  onFilter(field: 'name' | 'status', value: string | null = null): void {
     this.filters.set({ ...this.filters(), [field]: value });
   }
 

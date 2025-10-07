@@ -3,8 +3,17 @@ package pro.softcom.sentinelle.infrastructure.confluence.adapter.out.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.config.ConfluenceConfig.ApiPaths;
+import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.config.ConfluenceConfig.CacheSettings;
+import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.config.ConfluenceConfig.ConnectionSettings;
+import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.config.ConfluenceConfig.PaginationSettings;
+import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.config.ConfluenceConfig.PollingSettings;
 
 @DisplayName("DefaultConfluenceConnectionConfig - Tests de validation et fonctionnalités")
 class ConfluenceConfigTest {
@@ -27,7 +36,9 @@ class ConfluenceConfigTest {
                 "/child/attachment",
                 "body.storage,version,metadata,ancestors",
                 "permissions,metadata"
-            )
+            ),
+            new ConfluenceConfig.CacheSettings(300000, 5000),
+            new ConfluenceConfig.PollingSettings(60000)
         );
 
         // Assert
@@ -39,80 +50,46 @@ class ConfluenceConfigTest {
         assertThat(config.spaceKey()).isEqualTo("TESTSPACE");
     }
 
-    @Test
-    @DisplayName("Should_ThrowException_When_BaseUrlIsNull")
-    void shouldThrowExceptionWhenBaseUrlIsNull() {
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("provideInvalidConfigurationParameters")
+    @DisplayName("Should_ThrowException_When_InvalidParameter")
+    void shouldThrowExceptionWhenInvalidParameter(
+        String testDescription,
+        String baseUrl,
+        String username,
+        String apiToken
+    ) {
+        // Arrange
+        ConnectionSettings connectionSettings = new ConnectionSettings(30000, 60000, 3, false, null);
+        PaginationSettings paginationSettings = new PaginationSettings(50, 100);
+        ApiPaths permissions = new ApiPaths(
+            "/content/", "/content/search", "/space", "/child/attachment",
+            "body.storage,version", "permissions"
+        );
+        CacheSettings cache = new CacheSettings(300000, 5000);
+        PollingSettings polling = new PollingSettings(60000);
+
         // Act & Assert
         assertThatThrownBy(() -> new ConfluenceConfig(
-            null,
-            "testuser",
-            "testtoken",
+            baseUrl,
+            username,
+            apiToken,
             "TESTSPACE",
-            new ConfluenceConfig.ConnectionSettings(30000, 60000, 3, false, null),
-            new ConfluenceConfig.PaginationSettings(50, 100),
-            new ConfluenceConfig.ApiPaths(
-                "/content/", "/content/search", "/space", "/child/attachment",
-                "body.storage,version", "permissions"
-            )
-        )).isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("baseUrl must not be null or blank");
+            connectionSettings,
+            paginationSettings,
+            permissions,
+            cache,
+            polling
+        )).isInstanceOf(IllegalArgumentException.class);
     }
 
-    @Test
-    @DisplayName("Should_ThrowException_When_BaseUrlIsBlank")
-    void shouldThrowExceptionWhenBaseUrlIsBlank() {
-        // Act & Assert
-        assertThatThrownBy(() -> new ConfluenceConfig(
-            "  ",
-            "testuser",
-            "testtoken",
-            "TESTSPACE",
-            new ConfluenceConfig.ConnectionSettings(30000, 60000, 3, false, null),
-            new ConfluenceConfig.PaginationSettings(50, 100),
-            new ConfluenceConfig.ApiPaths(
-                "/content/", "/content/search", "/space", "/child/attachment",
-                "body.storage,version", "permissions"
-            )
-        )).isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("baseUrl must not be null or blank");
-    }
-
-    @Test
-    @DisplayName("Should_ThrowException_When_UsernameIsNull")
-    void shouldThrowExceptionWhenUsernameIsNull() {
-        // Act & Assert
-        assertThatThrownBy(() -> new ConfluenceConfig(
-            "https://confluence.example.com",
-            null,
-            "testtoken",
-            "TESTSPACE",
-            new ConfluenceConfig.ConnectionSettings(30000, 60000, 3, false, null),
-            new ConfluenceConfig.PaginationSettings(50, 100),
-            new ConfluenceConfig.ApiPaths(
-                "/content/", "/content/search", "/space", "/child/attachment",
-                "body.storage,version", "permissions"
-            )
-        )).isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("username must not be null or blank");
-    }
-
-    @Test
-    @DisplayName("Should_ThrowException_When_ApiTokenIsNull")
-    void shouldThrowExceptionWhenApiTokenIsNull() {
-        // Act & Assert
-        assertThatThrownBy(() -> new ConfluenceConfig(
-            "https://confluence.example.com",
-            "testuser",
-            null,
-            "TESTSPACE",
-            new ConfluenceConfig.ConnectionSettings(30000, 60000, 3, false, null),
-            new ConfluenceConfig.PaginationSettings(50, 100),
-            new ConfluenceConfig.ApiPaths(
-                "/content/", "/content/search", "/space", "/child/attachment",
-                "body.storage,version", "permissions"
-            )
-        )).isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("apiToken must not be null or blank");
+    private static Stream<Arguments> provideInvalidConfigurationParameters() {
+        return Stream.of(
+            Arguments.of("BaseUrl is null", null, "testuser", "token-123"),
+            Arguments.of("BaseUrl is blank", "   ", "testuser", "token-123"),
+            Arguments.of("Username is null", "https://confluence.example.com", null, "token-123"),
+            Arguments.of("ApiToken is null", "https://confluence.example.com", "testuser", null)
+        );
     }
 
     @Test
@@ -129,7 +106,9 @@ class ConfluenceConfigTest {
             new ConfluenceConfig.ApiPaths(
                 "/content/", "/content/search", "/space", "/child/attachment",
                 "body.storage,version", "permissions"
-            )
+            ),
+            new ConfluenceConfig.CacheSettings(300000, 5000),
+            new ConfluenceConfig.PollingSettings(60000)
         );
 
         // Act & Assert
@@ -182,7 +161,9 @@ class ConfluenceConfigTest {
             new ConfluenceConfig.ApiPaths(
                 "/content/", "/content/search", "/space", "/child/attachment",
                 "body.storage,version", "permissions"
-            )
+            ),
+            new ConfluenceConfig.CacheSettings(300000, 5000),
+            new ConfluenceConfig.PollingSettings(60000)
         );
 
         // Act & Assert
@@ -203,7 +184,9 @@ class ConfluenceConfigTest {
             new ConfluenceConfig.ApiPaths(
                 "/content/", "/content/search", "/space", "/child/attachment",
                 "body.storage,version", "permissions"
-            )
+            ),
+            new ConfluenceConfig.CacheSettings(300000, 5000),
+            new ConfluenceConfig.PollingSettings(60000)
         );
 
         // Act & Assert
@@ -247,7 +230,9 @@ class ConfluenceConfigTest {
             "TESTSPACE",
             connectionSettings,
             paginationSettings,
-            apiPaths
+            apiPaths,
+            new ConfluenceConfig.CacheSettings(300000, 5000),
+            new ConfluenceConfig.PollingSettings(60000)
         );
 
         // Act & Assert
@@ -291,7 +276,9 @@ class ConfluenceConfigTest {
             new ConfluenceConfig.ApiPaths(
                 "/content/", "/content/search", "/space", "/child/attachment",
                 "body.storage,version", "permissions"
-            )
+            ),
+            new ConfluenceConfig.CacheSettings(300000, 5000),
+            new ConfluenceConfig.PollingSettings(60000)
         );
 
         // Act & Assert

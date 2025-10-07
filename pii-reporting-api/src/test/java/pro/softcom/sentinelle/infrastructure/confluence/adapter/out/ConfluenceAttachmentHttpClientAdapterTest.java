@@ -48,7 +48,9 @@ class ConfluenceAttachmentHttpClientAdapterTest {
                 "/child/attachment",
                 "body.storage,version,metadata,ancestors",
                 "permissions,metadata"
-            )
+            ),
+            new ConfluenceConfig.CacheSettings(300000, 5000),
+            new ConfluenceConfig.PollingSettings(60000)
         );
         // No stubbing needed for record accessors; we built a concrete config above.
 

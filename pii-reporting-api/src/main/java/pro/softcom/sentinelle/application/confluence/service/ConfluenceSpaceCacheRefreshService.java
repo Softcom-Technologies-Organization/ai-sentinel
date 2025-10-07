@@ -9,6 +9,7 @@ import pro.softcom.sentinelle.application.confluence.exception.ConfluenceSpaceCa
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceSpaceRepository;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.config.ConfluenceConfig;
 
 /**
  * Service for asynchronous background refresh of Confluence space cache.
@@ -22,15 +23,18 @@ public class ConfluenceSpaceCacheRefreshService {
 
     private final ConfluenceClient confluenceClient;
     private final ConfluenceSpaceRepository spaceRepository;
+    private final ConfluenceConfig confluenceConfig;
 
     /**
      * Refreshes all Confluence spaces from API and updates cache.
-     * Runs every 5 minutes (60000 ms) to keep cache reasonably current.
+     * Interval configured via confluence.cache.refresh-interval-ms property.
      * Errors are logged but don't prevent future refreshes.
      */
-    @Scheduled(fixedDelay = 60000, initialDelay = 5000)
+    @Scheduled(fixedDelayString = "${confluence.cache.refresh-interval-ms:300000}",
+               initialDelayString = "${confluence.cache.initial-delay-ms:5000}")
     public void refreshSpacesCache() {
-        log.debug("Starting background refresh of Confluence spaces cache");
+        log.debug("Starting background refresh of Confluence spaces cache (interval: {}ms)",
+                  confluenceConfig.cache().refreshIntervalMs());
         
         try {
             List<ConfluenceSpace> spaces = confluenceClient.getAllSpaces()

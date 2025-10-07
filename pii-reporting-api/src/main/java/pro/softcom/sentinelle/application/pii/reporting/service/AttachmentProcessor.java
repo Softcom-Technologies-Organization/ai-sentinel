@@ -10,6 +10,7 @@ import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorSettings;
 import pro.softcom.sentinelle.domain.confluence.AttachmentInfo;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
+import pro.softcom.sentinelle.domain.pii.scan.ScanProgress;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.domain.pii.scan.ContentPiiDetection;
 import reactor.core.publisher.Flux;
@@ -34,23 +35,21 @@ public class AttachmentProcessor {
      * Processes all attachments for a page and returns scan result events.
      */
     public Flux<ScanResult> processAttachments(String scanId, String spaceKey, ConfluencePage page,
-                                              List<AttachmentInfo> attachments, int currentIndex,
-                                              int analyzedOffset, int originalTotal) {
+                                              List<AttachmentInfo> attachments, ScanProgress scanProgress) {
         return Flux.fromIterable(attachments)
             .filter(this::isExtractableExtension)
             .concatMap(attachment -> processAttachment(scanId, spaceKey, page, attachment,
-                                                       currentIndex, analyzedOffset, originalTotal));
+                                                       scanProgress));
     }
 
     /**
      * Processes a single attachment through the complete workflow.
      */
     private Flux<ScanResult> processAttachment(String scanId, String spaceKey, ConfluencePage page,
-                                              AttachmentInfo attachment, int currentIndex,
-                                              int analyzedOffset, int originalTotal) {
+                                              AttachmentInfo attachment, ScanProgress scanProgress) {
         return downloadAttachment(page.id(), attachment.name())
             .flatMapMany(bytes -> extractAndAnalyze(scanId, spaceKey, page, attachment, bytes,
-                                                    currentIndex, analyzedOffset, originalTotal));
+                                                    scanProgress));
     }
 
     /**
@@ -67,12 +66,11 @@ public class AttachmentProcessor {
      */
     private Flux<ScanResult> extractAndAnalyze(String scanId, String spaceKey, ConfluencePage page,
                                               AttachmentInfo attachment, byte[] bytes,
-                                              int currentIndex, int analyzedOffset,
-                                              int originalTotal) {
+                                              ScanProgress scanProgress) {
         return Mono.fromCallable(() -> extractText(attachment, bytes))
             .flatMapMany(textOptional -> textOptional
                 .map(text -> analyzeAndCreateEvent(scanId, spaceKey, page, attachment, text,
-                                                   currentIndex, analyzedOffset, originalTotal))
+                                                   scanProgress))
                 .orElse(Flux.empty()));
     }
 
@@ -88,11 +86,11 @@ public class AttachmentProcessor {
      */
     private Flux<ScanResult> analyzeAndCreateEvent(String scanId, String spaceKey,
                                                    ConfluencePage page, AttachmentInfo attachment,
-                                                   String text, int currentIndex, int analyzedOffset,
-                                                   int originalTotal) {
+                                                   String text, ScanProgress scanProgress) {
         ContentPiiDetection detection = detectPii(text);
         double progress = progressCalculator.calculateProgress(
-            analyzedOffset + (currentIndex - 1), originalTotal);
+            scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
+            scanProgress.originalTotal());
 
         ScanResult event = eventFactory.createAttachmentItemEvent(
             scanId, spaceKey, page, attachment, text, detection, progress);
@@ -123,4 +121,6 @@ public class AttachmentProcessor {
             default -> false;
         };
     }
+
+
 }

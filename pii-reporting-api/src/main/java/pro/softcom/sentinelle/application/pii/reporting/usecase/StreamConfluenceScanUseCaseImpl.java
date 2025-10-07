@@ -28,8 +28,8 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class StreamConfluenceScanUseCaseImpl extends AbstractStreamConfluenceScanUseCase implements StreamConfluenceScanUseCase {
 
-    public StreamConfluenceScanUseCaseImpl(ConfluenceClient confluenceService,
-                                           ConfluenceAttachmentClient confluenceAttachmentService,
+    public StreamConfluenceScanUseCaseImpl(ConfluenceClient confluenceClient,
+                                           ConfluenceAttachmentClient confluenceAttachmentClient,
                                            PiiDetectorSettings piiSettings,
                                            PiiDetectorClient piiDetectorClient,
                                            ScanEventStore scanEventStore,
@@ -37,7 +37,7 @@ public class StreamConfluenceScanUseCaseImpl extends AbstractStreamConfluenceSca
                                            ScanProgressCalculator progressCalculator,
                                            ScanCheckpointService checkpointService,
                                            AttachmentProcessor attachmentProcessor) {
-        super(confluenceService, confluenceAttachmentService, piiSettings, piiDetectorClient,
+        super(confluenceClient, confluenceAttachmentClient, piiSettings, piiDetectorClient,
               scanEventStore, eventFactory, progressCalculator, checkpointService, attachmentProcessor);
     }
 

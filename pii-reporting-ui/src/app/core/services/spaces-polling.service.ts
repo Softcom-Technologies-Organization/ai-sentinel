@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, timer } from 'rxjs';
-import { switchMap, map, shareReplay } from 'rxjs/operators';
+import { switchMap, map, shareReplay, skip } from 'rxjs/operators';
 import { SentinelleApiService } from './sentinelle-api.service';
 import { Space } from '../models/space';
 
@@ -18,7 +18,7 @@ export interface SpaceChangeDetection {
  */
 @Injectable({ providedIn: 'root' })
 export class SpacesPollingService {
-  private readonly POLLING_INTERVAL_MS = 300000; // 5 minutes
+  private readonly POLLING_INTERVAL_MS = 15000; // 5 minutes
   private readonly api = inject(SentinelleApiService);
 
   /**
@@ -30,6 +30,7 @@ export class SpacesPollingService {
     let previousCount = initialCount;
 
     return timer(this.POLLING_INTERVAL_MS, this.POLLING_INTERVAL_MS).pipe(
+      skip(1),
       switchMap(() => this.api.getSpaces()),
       map(spaces => this.detectChanges(spaces, previousCount)),
       map(detection => {

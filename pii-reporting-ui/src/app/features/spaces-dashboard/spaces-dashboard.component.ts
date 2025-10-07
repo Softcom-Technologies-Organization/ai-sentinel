@@ -102,7 +102,6 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.fetchSpaces();
     this.loadLastScan();
-    this.startBackgroundPolling();
   }
 
   ngOnDestroy(): void {
@@ -358,6 +357,11 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
         this.lastRefresh.set(new Date());
         this.isSpacesLoading.set(false);
         this.isRefreshing.set(false);
+
+        // Start polling after spaces are loaded to avoid false "new spaces" detection
+        if (!this.pollingSub) {
+          this.startBackgroundPolling();
+        }
       },
       error: (e) => {
         this.append(`[ui] Failed to fetch spaces: ${e?.message ?? e}`);

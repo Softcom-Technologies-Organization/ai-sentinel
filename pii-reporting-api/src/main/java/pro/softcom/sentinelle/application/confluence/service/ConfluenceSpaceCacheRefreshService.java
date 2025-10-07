@@ -28,7 +28,7 @@ public class ConfluenceSpaceCacheRefreshService {
      * Runs every 5 minutes (60000 ms) to keep cache reasonably current.
      * Errors are logged but don't prevent future refreshes.
      */
-    @Scheduled(fixedDelay = 60000, initialDelay = 30000)
+    @Scheduled(fixedDelay = 60000, initialDelay = 5000)
     public void refreshSpacesCache() {
         log.debug("Starting background refresh of Confluence spaces cache");
         

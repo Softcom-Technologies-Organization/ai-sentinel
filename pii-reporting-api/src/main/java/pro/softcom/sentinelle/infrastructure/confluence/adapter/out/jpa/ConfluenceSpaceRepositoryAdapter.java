@@ -20,7 +20,7 @@ public class ConfluenceSpaceRepositoryAdapter implements ConfluenceSpaceReposito
 
     @Override
     public List<ConfluenceSpace> findAll() {
-        return jpaRepository.findAll()
+        return jpaRepository.findAllByOrderByNameAsc()
             .stream()
             .map(ConfluenceSpaceEntityMapper::toDomain)
             .toList();

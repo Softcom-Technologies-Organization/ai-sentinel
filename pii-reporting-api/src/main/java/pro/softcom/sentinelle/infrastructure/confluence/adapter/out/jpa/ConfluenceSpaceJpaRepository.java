@@ -18,6 +18,12 @@ public interface ConfluenceSpaceJpaRepository extends
     JpaRepository<@NonNull ConfluenceSpaceEntity, @NonNull String> {
 
     /**
+     * Finds all spaces ordered by name ascending.
+     * Business purpose: provides alphabetically sorted space list for UI display.
+     */
+    List<ConfluenceSpaceEntity> findAllByOrderByNameAsc();
+
+    /**
      * Finds spaces that need refresh based on last update timestamp.
      * Used by background refresh service to update stale cache entries.
      */

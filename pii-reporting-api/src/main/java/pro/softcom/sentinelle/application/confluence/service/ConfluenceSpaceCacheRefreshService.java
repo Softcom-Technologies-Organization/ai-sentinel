@@ -25,14 +25,9 @@ public class ConfluenceSpaceCacheRefreshService {
     private final ConfluenceSpaceRepository spaceRepository;
     private final ConfluenceConfig confluenceConfig;
 
-    /**
-     * Refreshes all Confluence spaces from API and updates cache.
-     * Interval configured via confluence.cache.refresh-interval-ms property.
-     * Errors are logged but don't prevent future refreshes.
-     */
     @Scheduled(fixedDelayString = "${confluence.cache.refresh-interval-ms:300000}",
                initialDelayString = "${confluence.cache.initial-delay-ms:5000}")
-    public void refreshSpacesCache() {
+    public void saveNewConfluenceSpaces() {
         log.debug("Starting background refresh of Confluence spaces cache (interval: {}ms)",
                   confluenceConfig.cache().refreshIntervalMs());
         

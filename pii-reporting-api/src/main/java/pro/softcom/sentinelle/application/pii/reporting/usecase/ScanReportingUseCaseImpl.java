@@ -12,14 +12,11 @@ import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointReposi
 import pro.softcom.sentinelle.domain.pii.reporting.LastScanMeta;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
-import pro.softcom.sentinelle.domain.pii.scan.ConfluenceScanSpaceStatus;
+import pro.softcom.sentinelle.domain.pii.scan.ConfluenceSpaceScanState;
 
-/**
- * Application service exposing the latest scan and per-space statuses for presentation layer.
- */
 @RequiredArgsConstructor
 @Slf4j
-public class ScanResultUseCaseImpl implements ScanReportingUseCase {
+public class ScanReportingUseCaseImpl implements ScanReportingUseCase {
 
     private final ScanResultQuery scanResultQuery;
     private final ScanCheckpointRepository checkpointRepo;
@@ -35,7 +32,7 @@ public class ScanResultUseCaseImpl implements ScanReportingUseCase {
     }
 
     @Override
-    public List<ConfluenceScanSpaceStatus> getLatestSpaceScanStateList(String scanId) {
+    public List<ConfluenceSpaceScanState> getLatestSpaceScanStateList(String scanId) {
         if (scanId == null || scanId.isBlank()) return List.of();
 
         // 1) Load checkpoint statuses (may be empty if no checkpoint yet for a space)
@@ -52,7 +49,7 @@ public class ScanResultUseCaseImpl implements ScanReportingUseCase {
         // 2) Load counters from events per space via read port
         try {
             return scanResultQuery.getSpaceCounters(scanId).stream()
-                .map(c -> new ConfluenceScanSpaceStatus(
+                .map(c -> new ConfluenceSpaceScanState(
                     c.spaceKey(),
                     mapPresentationStatus(statuses.get(c.spaceKey()), c.pagesDone(), c.attachmentsDone()),
                     c.pagesDone(),
@@ -67,7 +64,7 @@ public class ScanResultUseCaseImpl implements ScanReportingUseCase {
     }
 
     @Override
-    public List<ScanResult> getLatestScanItems() {
+    public List<ScanResult> getLatestSpaceScanResultList() {
         try {
             Optional<LastScanMeta> meta = scanResultQuery.findLatestScan();
             if (meta.isEmpty()) return List.of();

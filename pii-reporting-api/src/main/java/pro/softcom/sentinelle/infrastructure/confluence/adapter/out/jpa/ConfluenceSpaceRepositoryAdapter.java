@@ -1,6 +1,5 @@
 package pro.softcom.sentinelle.infrastructure.confluence.adapter.out.jpa;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -8,10 +7,6 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceSpaceRep
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.jpa.mapper.ConfluenceSpaceEntityMapper;
 
-/**
- * Adapter JPA implementing the repository port for Confluence space caching.
- * Business purpose: provides database persistence for space metadata cache.
- */
 @Component
 @RequiredArgsConstructor
 public class ConfluenceSpaceRepositoryAdapter implements ConfluenceSpaceRepository {
@@ -35,13 +30,5 @@ public class ConfluenceSpaceRepositoryAdapter implements ConfluenceSpaceReposito
             .map(ConfluenceSpaceEntityMapper::toEntity)
             .toList();
         jpaRepository.saveAll(entities);
-    }
-
-    @Override
-    public List<ConfluenceSpace> findStaleSpaces(LocalDateTime cutoffTime) {
-        return jpaRepository.findStaleSpaces(cutoffTime)
-            .stream()
-            .map(ConfluenceSpaceEntityMapper::toDomain)
-            .toList();
     }
 }

@@ -7,10 +7,6 @@ import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointReposi
 import pro.softcom.sentinelle.domain.pii.ScanStatus;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
 
-/**
- * Implementation of pause scan use case.
- * Business intent: Updates all space checkpoints to PAUSED status when user interrupts a scan.
- */
 @RequiredArgsConstructor
 @Slf4j
 public class PauseScanUseCaseImpl implements PauseScanUseCase {

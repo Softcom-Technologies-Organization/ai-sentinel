@@ -11,8 +11,8 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceSpaceRep
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.confluence.usecase.ConfluenceUseCaseImpl;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanEventStore;
@@ -23,7 +23,7 @@ import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventFactory
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanProgressCalculator;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.PauseScanUseCaseImpl;
-import pro.softcom.sentinelle.application.pii.reporting.usecase.ScanResultUseCaseImpl;
+import pro.softcom.sentinelle.application.pii.reporting.usecase.ScanReportingUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceResumeScanUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceScanUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
@@ -46,7 +46,7 @@ public class ApplicationUseCasesConfig {
     @Bean
     public ScanReportingUseCase scanResultUseCase(ScanResultQuery scanResultQuery,
                                                   ScanCheckpointRepository checkpointRepo) {
-        return new ScanResultUseCaseImpl(scanResultQuery, checkpointRepo);
+        return new ScanReportingUseCaseImpl(scanResultQuery, checkpointRepo);
     }
 
     @Bean

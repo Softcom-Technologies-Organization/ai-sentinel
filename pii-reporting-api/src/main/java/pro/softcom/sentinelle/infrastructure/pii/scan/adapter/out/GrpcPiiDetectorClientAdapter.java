@@ -60,8 +60,6 @@ public class GrpcPiiDetectorClientAdapter implements PiiDetectorClient {
         }
     }
 
-    // --- Mapping helpers (centralized) ---
-
     private ContentPiiDetection toContentAnalysis(String pageId, String pageTitle, String spaceKey, PiiDetection.PIIDetectionResponse response) {
         List<ContentPiiDetection.SensitiveData> sensitiveDataList = response.getEntitiesList().stream()
                 .map(this::toSensitiveData)
@@ -96,7 +94,7 @@ public class GrpcPiiDetectorClientAdapter implements PiiDetectorClient {
                 context,
                 entity.getStart(),
                 entity.getEnd(),
-                Double.valueOf(entity.getScore()),
+                (double) entity.getScore(),
                 String.format("pii-entity-%s", entity.getType().toLowerCase())
         );
     }

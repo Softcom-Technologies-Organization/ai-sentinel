@@ -14,9 +14,6 @@ import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.dto.Confluen
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.mapper.ConfluencePageMapper;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.mapper.ConfluenceSpaceMapper;
 
-/**
- * Parse et transforme les réponses JSON de l'API Confluence.
- */
 @Slf4j
 public class ConfluenceResponseParser {
 

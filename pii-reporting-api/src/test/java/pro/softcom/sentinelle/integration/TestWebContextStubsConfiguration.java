@@ -7,7 +7,7 @@ import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingUse
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
 import pro.softcom.sentinelle.domain.pii.reporting.LastScanMeta;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
-import pro.softcom.sentinelle.domain.pii.scan.ConfluenceScanSpaceStatus;
+import pro.softcom.sentinelle.domain.pii.scan.ConfluenceSpaceScanState;
 import reactor.core.publisher.Flux;
 
 /**
@@ -42,12 +42,13 @@ public class TestWebContextStubsConfiguration {
             }
 
             @Override
-            public java.util.List<ConfluenceScanSpaceStatus> getLatestSpaceScanStateList(String scanId) {
+            public java.util.List<ConfluenceSpaceScanState> getLatestSpaceScanStateList(
+                String scanId) {
                 return java.util.List.of();
             }
 
             @Override
-            public java.util.List<ScanResult> getLatestScanItems() {
+            public java.util.List<ScanResult> getLatestSpaceScanResultList() {
                 return java.util.List.of();
             }
         };

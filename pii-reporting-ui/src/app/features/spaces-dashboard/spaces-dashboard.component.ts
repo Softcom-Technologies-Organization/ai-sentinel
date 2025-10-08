@@ -17,7 +17,9 @@ import {
   SpaceScanStateDto
 } from '../../core/services/sentinelle-api.service';
 import {Subscription} from 'rxjs';
-import {SpacesPollingService} from '../../core/services/spaces-polling.service';
+import {
+  ConfluenceSpacesPollingService
+} from '../../core/services/confluence-spaces-polling.service';
 import {Space} from '../../core/models/space';
 import {ToggleSwitchModule} from 'primeng/toggleswitch';
 import {BadgeModule} from 'primeng/badge';
@@ -58,7 +60,7 @@ import {TestIds} from '../test-ids.constants';
 export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly sentinelleApiService = inject(SentinelleApiService);
   readonly spacesDashboardUtils = inject(SpacesDashboardUtils);
-  readonly pollingService = inject(SpacesPollingService);
+  readonly pollingService = inject(ConfluenceSpacesPollingService);
   private sub?: Subscription;
   private pollingSub?: Subscription;
 
@@ -247,15 +249,14 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   }
 
   private computeUiStatus(
-    s: SpaceScanStateDto,
+    spaceScanState: SpaceScanStateDto,
     isActive: boolean
   ): 'FAILED' | 'RUNNING' | 'OK' | 'PENDING' | 'PAUSED' | undefined {
-    console.log('Class: SpacesDashboardComponent, Function: computeUiStatus, Param: s.status', s.status);
-    if (s.status === 'COMPLETED') return 'OK';
-    if (s.status === 'FAILED') return 'FAILED';
-    if (s.status === 'PENDING') return 'PAUSED';
-    if (s.status === 'RUNNING' && isActive) return 'RUNNING';
-    const workDone = (s.pagesDone ?? 0) + (s.attachmentsDone ?? 0);
+    if (spaceScanState.status === 'COMPLETED') return 'OK';
+    if (spaceScanState.status === 'FAILED') return 'FAILED';
+    if (spaceScanState.status === 'PENDING') return 'PAUSED';
+    if (spaceScanState.status === 'RUNNING' && isActive) return 'RUNNING';
+    const workDone = (spaceScanState.pagesDone ?? 0) + (spaceScanState.attachmentsDone ?? 0);
     if (workDone > 0) return 'PAUSED';
     return 'PENDING';
   }
@@ -303,7 +304,6 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
         // Immediately reconnect to the SSE stream so new WebFlux events are displayed live
         this.append('[ui] Reprise acceptée (HTTP 202). Connexion au flux d\'événements ...');
         // Ensure no leftover subscription then open the stream
-        // this.stopCurrentScan();
         this.isStreaming.set(true);
         this.sub = this.sentinelleApiService.startAllSpacesStream(meta.scanId).subscribe({
           next: (ev) => this.routeStreamEvent(ev.type as StreamEventType, ev.data),
@@ -483,7 +483,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
     // Handle multiStart early to refresh dashboard even if payload is missing
     if (type === 'multiStart') {
-      this.handleMultiStart(payload);
+      this.handleAllSpaceScanStart(payload);
       return;
     }
 
@@ -493,7 +493,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
     switch (type) {
       case 'start': {
-        this.handleStreamStart(payload);
+        this.handleStreamScanStart(payload);
         break;
       }
       case 'pageStart': {
@@ -531,7 +531,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
    * - Captures scanId from payload when available
    * - Marks all spaces as PENDING and rebuilds the queue order
    */
-  private handleMultiStart(payload?: RawStreamPayload): void {
+  private handleAllSpaceScanStart(payload?: RawStreamPayload): void {
     this.isStreaming.set(true);
     if (payload) {
       this.ensureLastScanMetaFromPayload(payload);
@@ -553,7 +553,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   /**
    * Marks the space as running, initializes progress, and updates UI model.
    */
-  private handleStreamStart(payload: RawStreamPayload): void {
+  private handleStreamScanStart(payload: RawStreamPayload): void {
     const spaceKey = payload.spaceKey;
     if (!spaceKey) {
       return;

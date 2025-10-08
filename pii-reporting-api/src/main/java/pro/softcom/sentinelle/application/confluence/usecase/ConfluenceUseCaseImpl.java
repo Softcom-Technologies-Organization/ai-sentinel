@@ -34,41 +34,8 @@ public class ConfluenceUseCaseImpl implements ConfluenceUseCase {
   }
 
   @Override
-  public CompletableFuture<Optional<ConfluencePage>> updatePage(String pageId, String title, String content, List<String> labels) {
-    return doUpdate(pageId, title, content, labels);
-  }
-
-  private CompletableFuture<Optional<ConfluencePage>> doUpdate(String pageId, String title, String content, List<String> labels) {
-    if (pageId == null || pageId.isBlank()) {
-      return CompletableFuture.completedFuture(Optional.empty());
-    }
-    // Récupère l'existant pour préserver les métadonnées/version et champs non modifiés
-    return confluenceClient.getPage(pageId).thenCompose(optExisting -> {
-      if (optExisting.isEmpty()) {
-        return CompletableFuture.completedFuture(Optional.empty());
-      }
-      var existing = optExisting.get();
-      var updated = new ConfluencePage(
-          existing.id(),
-          title != null ? title : existing.title(),
-          existing.spaceKey(),
-          content != null ? new ConfluencePage.HtmlContent(content) : existing.content(),
-          existing.metadata(),
-          labels != null ? labels : existing.labels(),
-          existing.customProperties()
-      );
-      return confluenceClient.updatePage(updated).thenApply(Optional::of);
-    });
-  }
-
-  @Override
   public CompletableFuture<Optional<ConfluenceSpace>> getSpace(String spaceKey) {
     return confluenceClient.getSpace(spaceKey);
-  }
-
-  @Override
-  public CompletableFuture<Optional<ConfluenceSpace>> getSpaceById(String spaceId) {
-    return confluenceClient.getSpaceById(spaceId);
   }
 
   @Override

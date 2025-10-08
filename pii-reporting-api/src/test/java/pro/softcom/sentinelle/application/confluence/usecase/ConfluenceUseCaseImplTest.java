@@ -44,7 +44,7 @@ class ConfluenceUseCaseImplTest {
 
         // Then
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).key()).isEqualTo("SPACE1");
+        assertThat(result.getFirst().key()).isEqualTo("SPACE1");
         verify(spaceRepository).findAll();
         verify(confluenceClient, never()).getAllSpaces();
     }
@@ -62,7 +62,7 @@ class ConfluenceUseCaseImplTest {
 
         // Then
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).key()).isEqualTo("SPACE2");
+        assertThat(result.getFirst().key()).isEqualTo("SPACE2");
         verify(spaceRepository).findAll();
         verify(confluenceClient).getAllSpaces();
         verify(spaceRepository).saveAll(List.of(apiSpace));

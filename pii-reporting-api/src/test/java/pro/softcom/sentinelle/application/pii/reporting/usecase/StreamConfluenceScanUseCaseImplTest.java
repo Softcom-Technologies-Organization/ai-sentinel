@@ -513,7 +513,9 @@ class StreamConfluenceScanUseCaseImplTest {
             @Override public String baseUrl() { return "   "; }
             @Override public String pageUrl(String pageId) {
                 String base = baseUrl();
-                if (base == null || base.isBlank()) return null;
+                if (base.isBlank()) {
+                    return null;
+                }
                 if (pageId == null || pageId.isBlank()) return null;
                 base = base.trim();
                 if (base.endsWith("/")) base = base.substring(0, base.length() - 1);
@@ -580,7 +582,9 @@ class StreamConfluenceScanUseCaseImplTest {
             @Override public String pageUrl(String pageId) {
                 if (pageId == null || pageId.isBlank()) return null;
                 String base = baseUrl();
-                if (base == null || base.isBlank()) return null;
+                if (base.isBlank()) {
+                    return null;
+                }
                 base = base.trim();
                 if (base.endsWith("/")) base = base.substring(0, base.length() - 1);
                 return base + "/pages/viewpage.action?pageId=" + pageId;

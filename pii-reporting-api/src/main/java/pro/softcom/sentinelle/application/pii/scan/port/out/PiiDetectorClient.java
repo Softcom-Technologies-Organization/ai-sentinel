@@ -2,9 +2,6 @@ package pro.softcom.sentinelle.application.pii.scan.port.out;
 
 import pro.softcom.sentinelle.domain.pii.scan.ContentPiiDetection;
 
-/**
- * Port sortant pour la détection de PII.
- */
 public interface PiiDetectorClient {
 
     ContentPiiDetection analyzeContent(String content) throws PiiDetectorException;

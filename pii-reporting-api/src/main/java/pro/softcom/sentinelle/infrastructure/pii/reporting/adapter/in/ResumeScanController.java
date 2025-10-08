@@ -9,21 +9,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanUseCase;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
 
-/**
- * Command endpoints to control scan lifecycle (pause, resume).
- * Business rule: uses checkpoints to skip already processed spaces/pages on resume.
- * Important: Resume endpoint no longer starts the resume job by itself. The UI attaches
- * to the SSE endpoint with the same scanId, which drives the resume execution.
- */
 @RestController
 @RequestMapping("/api/v1/scans")
 @RequiredArgsConstructor
 @Slf4j
 public class ResumeScanController {
 
-    private final StreamConfluenceResumeScanUseCase streamConfluenceScanUseCase;
     private final PauseScanUseCase pauseScanUseCase;
 
     @PostMapping("/{scanId}/resume")

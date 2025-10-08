@@ -11,11 +11,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * JPA entity mapped to confluence_spaces table.
- * Business purpose: caches Confluence space metadata to provide immediate UI responses
- * while background refresh keeps data current.
- */
 @Getter
 @Setter
 @Entity

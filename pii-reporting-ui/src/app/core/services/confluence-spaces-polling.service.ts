@@ -1,9 +1,9 @@
-import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, timer, firstValueFrom } from 'rxjs';
-import { switchMap, map, shareReplay, skip } from 'rxjs/operators';
-import { SentinelleApiService } from './sentinelle-api.service';
-import { Space } from '../models/space';
+import {inject, Injectable} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {firstValueFrom, Observable, timer} from 'rxjs';
+import {map, shareReplay, skip, switchMap} from 'rxjs/operators';
+import {SentinelleApiService} from './sentinelle-api.service';
+import {Space} from '../models/space';
 
 export interface SpaceChangeDetection {
   spaces: Space[];
@@ -23,7 +23,7 @@ export interface PollingConfig {
  * Polling interval dynamically retrieved from backend configuration.
  */
 @Injectable({ providedIn: 'root' })
-export class SpacesPollingService {
+export class ConfluenceSpacesPollingService {
   private readonly api = inject(SentinelleApiService);
   private readonly http = inject(HttpClient);
   private pollingIntervalMs: number = 60000; // Default fallback: 1 minute
@@ -35,7 +35,7 @@ export class SpacesPollingService {
   async loadPollingConfig(): Promise<void> {
     try {
       const config = await firstValueFrom(
-        this.http.get<PollingConfig>('/api/v1/config/polling')
+        this.http.get<PollingConfig>('/sentinelle/api/v1/config/polling')
       );
       this.pollingIntervalMs = config.frontendPollingIntervalMs;
       console.log(`Polling interval configured: ${this.pollingIntervalMs}ms`);

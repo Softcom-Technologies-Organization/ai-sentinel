@@ -2,42 +2,6 @@
   <div class="header">
     <h2 class="m-0">Sentinel AI</h2>
     <div class="spacer"></div>
-    <p-button type="button"
-              icon="pi pi-play"
-              styleClass="p-button-raised p-button-primary"
-              (click)="startAll()"
-              (keydown.enter)="startAll()"
-              (keydown.space)="$event.preventDefault(); startAll()"
-              [disabled]="!canStartScan()"
-              pTooltip="Démarrer le scan global"
-              tooltipPosition="bottom"
-              ariaLabel="Démarrer le scan global"
-              [attr.data-testid]="testIds.buttons.startScan">
-    </p-button>
-    <p-button type="button"
-              icon="pi pi-pause"
-              styleClass="p-button-outlined p-button-danger"
-              (click)="stopCurrentScan()"
-              (keydown.enter)="stopCurrentScan()"
-              (keydown.space)="$event.preventDefault(); stopCurrentScan()"
-              [disabled]="!isStreaming()"
-              pTooltip="Interrompre le scan"
-              tooltipPosition="bottom"
-              ariaLabel="Interrompre le scan"
-              [attr.data-testid]="testIds.buttons.pauseScan">
-    </p-button>
-    <p-button type="button"
-              icon="pi pi-refresh"
-              styleClass="p-button-warning"
-              (click)="resumeLastScan()"
-              (keydown.enter)="resumeLastScan()"
-              (keydown.space)="$event.preventDefault(); resumeLastScan()"
-              [disabled]="!canResumeScan()"
-              pTooltip="Reprendre le dernier scan"
-              tooltipPosition="bottom"
-              ariaLabel="Reprendre le dernier scan"
-              [attr.data-testid]="testIds.buttons.resumeScan">
-    </p-button>
   </div>
 
   <!-- Phase 2: New spaces notification banner -->
@@ -96,7 +60,44 @@
         <th id="col-progress-value"></th>
         <th id="col-last-scan-value"></th>
         <th id="col-pii-value"></th>
-        <th id="col-actions-value"></th>
+        <th id="col-actions-value" class="action-buttons-container">
+          <p-button type="button"
+                    icon="pi pi-play"
+                    styleClass="p-button-raised p-button-primary"
+                    (click)="startAll()"
+                    (keydown.enter)="startAll()"
+                    (keydown.space)="$event.preventDefault(); startAll()"
+                    [disabled]="!canStartScan()"
+                    pTooltip="Démarrer le scan global"
+                    tooltipPosition="bottom"
+                    ariaLabel="Démarrer le scan global"
+                    [attr.data-testid]="testIds.buttons.startScan">
+          </p-button>
+          <p-button type="button"
+                    icon="pi pi-pause"
+                    styleClass="p-button-raised p-button-danger"
+                    (click)="stopCurrentScan()"
+                    (keydown.enter)="stopCurrentScan()"
+                    (keydown.space)="$event.preventDefault(); stopCurrentScan()"
+                    [disabled]="!isStreaming()"
+                    pTooltip="Interrompre le scan"
+                    tooltipPosition="bottom"
+                    ariaLabel="Interrompre le scan"
+                    [attr.data-testid]="testIds.buttons.pauseScan">
+          </p-button>
+          <p-button type="button"
+                    icon="pi pi-refresh"
+                    styleClass="p-button-warning"
+                    (click)="resumeLastScan()"
+                    (keydown.enter)="resumeLastScan()"
+                    (keydown.space)="$event.preventDefault(); resumeLastScan()"
+                    [disabled]="!canResumeScan()"
+                    pTooltip="Reprendre le dernier scan"
+                    tooltipPosition="bottom"
+                    ariaLabel="Reprendre le dernier scan"
+                    [attr.data-testid]="testIds.buttons.resumeScan">
+          </p-button>
+        </th>
       </tr>
     </ng-template>
     <ng-template #body let-space let-expanded="expanded">
@@ -108,7 +109,8 @@
                     [text]="true"
                     [rounded]="true"
                     [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
-                    [ariaLabel]="expanded ? 'Réduire' : 'Développer'">
+                    [ariaLabel]="expanded ? 'Réduire' : 'Développer'"
+                    [attr.data-testid]="testIds.expandButton">
           </p-button>
         </td>
         <td>

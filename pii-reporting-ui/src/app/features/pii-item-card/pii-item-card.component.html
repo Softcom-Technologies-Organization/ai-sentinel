@@ -1,5 +1,6 @@
-<p-card>
-  <ng-template pTemplate="header">
+ <div [attr.data-testid]="testIds.piiItemCard.card">
+  <p-card>
+    <ng-template pTemplate="header">
     <div class="header-grid">
       <div class="row top-row">
         @if (item?.pageUrl) {
@@ -97,5 +98,6 @@
         </div>
       </div>
     }
-  </div>
-</p-card>
+    </div>
+  </p-card>
+</div>

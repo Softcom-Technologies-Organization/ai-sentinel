@@ -9,6 +9,7 @@ export const TestIds = {
     spaceRow: 'space-row',
     spaceName: 'space-name',
     spaceStatus: 'space-status',
+    expandButton: 'expand-button',
     buttons: {
       startScan: 'btn-start-scan',
       pauseScan: 'btn-pause-scan',
@@ -28,6 +29,9 @@ export const TestIds = {
       medium: 'pii-badge-medium',
       low: 'pii-badge-low'
     }
+  },
+  piiItemCard: {
+    card: 'pii-item-card'
   }
 } as const;
 

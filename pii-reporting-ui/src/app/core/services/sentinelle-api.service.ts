@@ -12,7 +12,7 @@ export interface LastScanMeta {
   spacesCount: number;
 }
 
-export interface SpaceStatusDto {
+export interface SpaceScanStateDto {
   spaceKey: string;
   status: string;
   pagesDone: number;
@@ -52,7 +52,7 @@ export class SentinelleApiService {
           observer.next(meta ?? null);
           observer.complete();
         },
-        error: (err) => {
+        error: () => {
           // No content or backend error → expose null to simplify UI
           observer.next(null);
           observer.complete();
@@ -63,9 +63,9 @@ export class SentinelleApiService {
   }
 
   /** Fetch per-space statuses for the last scan. */
-  getLastScanSpaceStatuses(): Observable<SpaceStatusDto[]> {
-    return new Observable<SpaceStatusDto[]>((observer) => {
-      const sub = this.http.get<SpaceStatusDto[]>('/api/v1/scans/last/spaces').subscribe({
+  getLastScanSpaceStatuses(): Observable<SpaceScanStateDto[]> {
+    return new Observable<SpaceScanStateDto[]>((observer) => {
+      const sub = this.http.get<SpaceScanStateDto[]>('/api/v1/scans/last/spaces').subscribe({
         next: (list) => {
           observer.next(Array.isArray(list) ? list : []);
           observer.complete();

@@ -107,3 +107,8 @@
     transform: translateY(0);
   }
 }
+
+/* Action buttons spacing */
+.action-buttons-container p-button:not(:first-child) {
+  margin-left: 0.5rem;
+}

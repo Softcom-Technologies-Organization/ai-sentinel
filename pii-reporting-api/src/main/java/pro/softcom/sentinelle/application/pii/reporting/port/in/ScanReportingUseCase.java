@@ -6,11 +6,11 @@ import pro.softcom.sentinelle.domain.pii.reporting.LastScanMeta;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.domain.pii.scan.ConfluenceScanSpaceStatus;
 
-public interface DetectionReportingUseCase {
+public interface ScanReportingUseCase {
 
     Optional<LastScanMeta> getLatestScan();
 
-    List<ConfluenceScanSpaceStatus> getLatestScanSpaceStatuses(String scanId);
+    List<ConfluenceScanSpaceStatus> getLatestSpaceScanStateList(String scanId);
 
     /**
      * Retourne les événements d'items (page/attachment) du dernier scan pour affichage à froid.

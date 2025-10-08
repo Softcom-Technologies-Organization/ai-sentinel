@@ -14,7 +14,7 @@ import {PiiItemCardComponent} from '../pii-item-card/pii-item-card.component';
 import {
   LastScanMeta,
   SentinelleApiService,
-  SpaceStatusDto
+  SpaceScanStateDto
 } from '../../core/services/sentinelle-api.service';
 import {Subscription} from 'rxjs';
 import {SpacesPollingService} from '../../core/services/spaces-polling.service';
@@ -84,7 +84,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
   // Latest scan info for resume and dashboard display
   readonly lastScanMeta = signal<LastScanMeta | null>(null);
-  readonly lastSpaceStatuses = signal<SpaceStatusDto[]>([]);
+  readonly lastSpaceStatuses = signal<SpaceScanStateDto[]>([]);
   readonly isResuming = signal<boolean>(false);
 
   // Loading state for spaces list to control UI availability
@@ -207,7 +207,6 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   private loadLastScan(): void {
     this.sentinelleApiService.getLastScanMeta().subscribe({
       next: (meta) => {
-        console.log('Class: SpacesDashboardComponent, Function: next, Param: meta, \n' + JSON.stringify(meta, null, 2));
         this.lastScanMeta.set(meta);
         if (meta) {
           this.append(`[ui] Dernier scan détecté: ${meta.scanId} (${meta.spacesCount} espaces)`);
@@ -224,14 +223,14 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
   private loadLastSpaceStatuses(alsoLoadItems: boolean = true): void {
     this.sentinelleApiService.getLastScanSpaceStatuses().subscribe({
-      next: (list) => {
-        this.lastSpaceStatuses.set(list);
+      next: (spaceScanStateList) => {
+        this.lastSpaceStatuses.set(spaceScanStateList);
         const isActive = this.isStreaming();
-        for (const s of list) {
-          const uiStatus = this.computeUiStatus(s, isActive);
-          this.spacesDashboardUtils.updateSpace(s.spaceKey, { status: uiStatus, lastScanTs: s.lastEventTs });
-          if (s.status === 'COMPLETED') {
-            this.updateProgress(s.spaceKey, { percent: 100 });
+        for (const spaceScanState of spaceScanStateList) {
+          const uiStatus = this.computeUiStatus(spaceScanState, isActive);
+          this.spacesDashboardUtils.updateSpace(spaceScanState.spaceKey, { status: uiStatus, lastScanTs: spaceScanState.lastEventTs });
+          if (spaceScanState.status === 'COMPLETED') {
+            this.updateProgress(spaceScanState.spaceKey, { percent: 100 });
           }
         }
         // Apply counts from any items already loaded
@@ -248,7 +247,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   }
 
   private computeUiStatus(
-    s: SpaceStatusDto,
+    s: SpaceScanStateDto,
     isActive: boolean
   ): 'FAILED' | 'RUNNING' | 'OK' | 'PENDING' | 'PAUSED' | undefined {
     console.log('Class: SpacesDashboardComponent, Function: computeUiStatus, Param: s.status', s.status);
@@ -304,7 +303,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
         // Immediately reconnect to the SSE stream so new WebFlux events are displayed live
         this.append('[ui] Reprise acceptée (HTTP 202). Connexion au flux d\'événements ...');
         // Ensure no leftover subscription then open the stream
-        this.stopCurrentScan();
+        // this.stopCurrentScan();
         this.isStreaming.set(true);
         this.sub = this.sentinelleApiService.startAllSpacesStream(meta.scanId).subscribe({
           next: (ev) => this.routeStreamEvent(ev.type as StreamEventType, ev.data),

@@ -3,7 +3,7 @@ package pro.softcom.sentinelle.integration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.DetectionReportingUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
 import pro.softcom.sentinelle.domain.pii.reporting.LastScanMeta;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
@@ -34,15 +34,15 @@ public class TestWebContextStubsConfiguration {
 
     @Bean
     @Primary
-    public DetectionReportingUseCase scanResultUseCaseStub() {
-        return new DetectionReportingUseCase() {
+    public ScanReportingUseCase scanResultUseCaseStub() {
+        return new ScanReportingUseCase() {
             @Override
             public java.util.Optional<LastScanMeta> getLatestScan() {
                 return java.util.Optional.empty();
             }
 
             @Override
-            public java.util.List<ConfluenceScanSpaceStatus> getLatestScanSpaceStatuses(String scanId) {
+            public java.util.List<ConfluenceScanSpaceStatus> getLatestSpaceScanStateList(String scanId) {
                 return java.util.List.of();
             }
 

@@ -11,7 +11,7 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceSpaceRep
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.confluence.usecase.ConfluenceUseCaseImpl;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.DetectionReportingUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
@@ -44,8 +44,8 @@ public class ApplicationUseCasesConfig {
     }
 
     @Bean
-    public DetectionReportingUseCase scanResultUseCase(ScanResultQuery scanResultQuery,
-                                                       ScanCheckpointRepository checkpointRepo) {
+    public ScanReportingUseCase scanResultUseCase(ScanResultQuery scanResultQuery,
+                                                  ScanCheckpointRepository checkpointRepo) {
         return new ScanResultUseCaseImpl(scanResultQuery, checkpointRepo);
     }
 

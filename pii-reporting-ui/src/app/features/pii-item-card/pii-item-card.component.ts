@@ -14,6 +14,7 @@ import {TagModule} from 'primeng/tag';
 import {ChipModule} from 'primeng/chip';
 import {Severity} from '../../core/models/severity';
 import {PiiItemCardUtils} from './pii-item-card.utils';
+import {TestIds} from '../test-ids.constants';
 
 /**
  * Display a single detection item with masked HTML snippet, entities and severity badge.
@@ -39,6 +40,9 @@ export class PiiItemCardComponent implements OnChanges {
 
   // Utils facade for UI helper methods
   readonly piiItemCardUtils = inject(PiiItemCardUtils);
+
+  // Test IDs for E2E testing
+  readonly testIds = TestIds;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['item'] || changes['maskByDefault']) {
@@ -83,7 +87,7 @@ export class PiiItemCardComponent implements OnChanges {
 
   /** Format a numeric score with 2 decimals for chip display */
   formatScore(score: number | undefined | null): string {
-    if (score === undefined || score === null || isNaN(Number(score))) return '';
+    if (score === undefined || score === null || Number.isNaN(Number(score))) return '';
     return Number(score).toFixed(2);
   }
 

@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.DetectionReportingUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanResultQuery;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.pii.reporting.LastScanMeta;
@@ -19,7 +19,7 @@ import pro.softcom.sentinelle.domain.pii.scan.ConfluenceScanSpaceStatus;
  */
 @RequiredArgsConstructor
 @Slf4j
-public class ScanResultUseCaseImpl implements DetectionReportingUseCase {
+public class ScanResultUseCaseImpl implements ScanReportingUseCase {
 
     private final ScanResultQuery scanResultQuery;
     private final ScanCheckpointRepository checkpointRepo;
@@ -35,7 +35,7 @@ public class ScanResultUseCaseImpl implements DetectionReportingUseCase {
     }
 
     @Override
-    public List<ConfluenceScanSpaceStatus> getLatestScanSpaceStatuses(String scanId) {
+    public List<ConfluenceScanSpaceStatus> getLatestSpaceScanStateList(String scanId) {
         if (scanId == null || scanId.isBlank()) return List.of();
 
         // 1) Load checkpoint statuses (may be empty if no checkpoint yet for a space)

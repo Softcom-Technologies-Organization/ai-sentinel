@@ -25,7 +25,7 @@ export class SpacesDashboardUtils {
 
   readonly statusOptions = [
     { label: 'Non démarré', value: 'PENDING' },
-    { label: 'Interrompue', value: 'INTERRUPTED' },
+    { label: 'En pause', value: 'PAUSED' },
     { label: 'En cours', value: 'RUNNING' },
     { label: 'Terminé', value: 'OK' },
     { label: 'En échec', value: 'FAILED' }
@@ -76,7 +76,7 @@ export class SpacesDashboardUtils {
     // Normalize to business-friendly French labels
     if (status === 'FAILED') return 'En échec';
     if (status === 'RUNNING') return 'En cours';
-    if (status === 'INTERRUPTED') return 'Interrompue';
+    if (status === 'PAUSED') return 'En pause';
     if (status === 'PENDING' || !status) return 'Non démarré';
     return 'Terminé';
   }
@@ -85,7 +85,7 @@ export class SpacesDashboardUtils {
     // Use PrimeNG-supported severities for Tag: success | info | warning | danger | secondary
     if (status === 'FAILED') return 'danger';
     if (status === 'RUNNING') return 'warning';
-    if (status === 'INTERRUPTED') return 'info';
+    if (status === 'PAUSED') return 'info';
     if (status === 'PENDING' || !status) return 'secondary';
     return 'success';
   }
@@ -107,7 +107,7 @@ export class SpacesDashboardUtils {
 
   /** True when a Confluence URL is configured/known for this space. */
   hasConfluenceUrl(space: UISpace | null | undefined): boolean {
-    return !!space?.url && typeof space.url === 'string' && space.url.length > 0;
+    return !!space?.url && space.url.length > 0;
   }
 
   severityCounts(arr: PiiItem[]): { total: number; high: number; medium: number; low: number } {

@@ -12,6 +12,7 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvi
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.confluence.usecase.ConfluenceUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.DetectionReportingUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanEventStore;
@@ -21,6 +22,7 @@ import pro.softcom.sentinelle.application.pii.reporting.service.ScanCheckpointSe
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventFactory;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanProgressCalculator;
+import pro.softcom.sentinelle.application.pii.reporting.usecase.PauseScanUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.ScanResultUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceResumeScanUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceScanUseCaseImpl;
@@ -117,5 +119,10 @@ public class ApplicationUseCasesConfig {
                 attachmentProcessor,
                 scanCheckpointRepository
         );
+    }
+
+    @Bean
+    public PauseScanUseCase pauseScanUseCase(ScanCheckpointRepository scanCheckpointRepository) {
+        return new PauseScanUseCaseImpl(scanCheckpointRepository);
     }
 }

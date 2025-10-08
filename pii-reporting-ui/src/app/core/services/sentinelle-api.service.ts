@@ -108,6 +108,18 @@ export class SentinelleApiService {
     });
   }
 
+  /** Command the backend to pause a running scan by updating checkpoints to PAUSED status. */
+  pauseScan(scanId: string): Observable<void> {
+    return new Observable<void>((observer) => {
+      const id = encodeURIComponent(String(scanId ?? ''));
+      const sub = this.http.post<void>(`/api/v1/scans/${id}/pause`, {}).subscribe({
+        next: () => { observer.next(); observer.complete(); },
+        error: (err) => { observer.error(err); }
+      });
+      return () => sub.unsubscribe();
+    });
+  }
+
   /** Purge all previous scan data on the server. */
   purgeAllScans(): Observable<void> {
     return new Observable<void>((observer) => {
@@ -189,7 +201,7 @@ export class SentinelleApiService {
   sanitizeMaskedHtml(raw?: string): string | undefined {
     if (!raw) return undefined;
     try {
-      return raw.replace(/\[([A-Z_]+)\]/g, (_m: string, g1: string) => `<span class="chip">[${g1}]</span>`);
+      return raw.replaceAll(/\[([A-Z_]+)]/g, (_m: string, g1: string) => `<span class="chip">[${g1}]</span>`);
     } catch {
       return raw;
     }

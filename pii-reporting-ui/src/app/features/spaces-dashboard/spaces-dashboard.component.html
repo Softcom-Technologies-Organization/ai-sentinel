@@ -11,7 +11,8 @@
               [disabled]="!canStartScan()"
               pTooltip="Démarrer le scan global"
               tooltipPosition="bottom"
-              ariaLabel="Démarrer le scan global">
+              ariaLabel="Démarrer le scan global"
+              [attr.data-testid]="testIds.buttons.startScan">
     </p-button>
     <p-button type="button"
               icon="pi pi-pause"
@@ -22,7 +23,8 @@
               [disabled]="!isStreaming()"
               pTooltip="Interrompre le scan"
               tooltipPosition="bottom"
-              ariaLabel="Interrompre le scan">
+              ariaLabel="Interrompre le scan"
+              [attr.data-testid]="testIds.buttons.pauseScan">
     </p-button>
     <p-button type="button"
               icon="pi pi-refresh"
@@ -33,7 +35,8 @@
               [disabled]="!canResumeScan()"
               pTooltip="Reprendre le dernier scan"
               tooltipPosition="bottom"
-              ariaLabel="Reprendre le dernier scan">
+              ariaLabel="Reprendre le dernier scan"
+              [attr.data-testid]="testIds.buttons.resumeScan">
     </p-button>
   </div>
 
@@ -59,16 +62,13 @@
     </div>
   }
 
-  <p-table
-           [value]="filteredSpaces()"
-           [paginator]="true"
-           [rows]="10"
+  <p-table #dt [value]="filteredSpaces()" [paginator]="true" [rows]="10"
            [tableStyle]="{'min-width':'60rem'}"
-           [rowsPerPageOptions]="[10, 20, 50]"
+           [rowsPerPageOptions]="[10,20,50]" dataKey="key"
            [expandedRowKeys]="expandedRowKeys()" (onRowExpand)="onRowExpand($event)"
            (onRowCollapse)="onRowCollapse($event)"
-           [attr.data-testid]="testIds.table">
-    <ng-template pTemplate="header">
+           [loading]="isSpacesLoading()" [showLoader]="false" [attr.data-testid]="testIds.table">
+    <ng-template #header>
       <tr>
         <th id="col-toggle" style="width:3rem"></th>
         <th id="col-space" [attr.data-testid]="testIds.headers.space">Space</th>
@@ -99,7 +99,7 @@
         <th id="col-actions-value"></th>
       </tr>
     </ng-template>
-    <ng-template pTemplate="body" let-space let-expanded="expanded">
+    <ng-template #body let-space let-expanded="expanded">
       <tr class="row-click" tabindex="0" [attr.data-testid]="testIds.spaceRow">
         <td>
           <p-button type="button"
@@ -118,7 +118,8 @@
         </td>
         <td>
           <p-tag [value]="statusLabel(space.status)"
-                 [severity]="statusSeverity(space.status)"></p-tag>
+                 [severity]="statusSeverity(space.status)"
+                 [attr.data-testid]="testIds.spaceStatus"></p-tag>
         </td>
         <td>
           <p-progressBar [value]="progressPercent(space.key)" [showValue]="true"
@@ -185,13 +186,13 @@
       }
     </ng-template>
 
-    <ng-template pTemplate="rowexpansion" let-space>
+    <ng-template #expandedrow let-space>
       <tr>
         <td colspan="7">
           <div class="row-expansion">
             <div class="pii-scroll">
               <p-dataview [value]="itemsBySpace()[space.key] || []">
-                <ng-template pTemplate="list" let-items>
+                <ng-template #list let-items>
                   <div class="grid grid-nogutter">
                     @for (it of items; track $index) {
                       <div class="col-12">
@@ -201,7 +202,7 @@
                     }
                   </div>
                 </ng-template>
-                <ng-template pTemplate="empty">
+                <ng-template #empty>
                   <div class="text-muted">Aucun élément à afficher</div>
                 </ng-template>
               </p-dataview>

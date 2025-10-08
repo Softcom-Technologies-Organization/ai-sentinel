@@ -172,14 +172,35 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   }
 
   stopCurrentScan(): void {
+    const scanId = this.lastScanMeta()?.scanId;
+
+    // Unsubscribe from SSE stream
     if (this.sub) {
       this.sub.unsubscribe();
       this.sub = undefined;
     }
     this.isStreaming.set(false);
-    this.loadLastSpaceStatuses(false);
-    // Also refresh last scan metadata so the Resume button becomes available after interruption
-    this.loadLastScan();
+
+    // Call backend to mark scan as PAUSED if we have a scanId
+    if (scanId) {
+      this.sentinelleApiService.pauseScan(scanId).subscribe({
+        next: () => {
+          this.append(`[ui] Scan ${scanId} mis en pause`);
+          this.loadLastSpaceStatuses(false);
+          this.loadLastScan();
+        },
+        error: (err) => {
+          this.append(`[ui] Erreur lors de la mise en pause: ${err?.message ?? err}`);
+          // Still reload statuses even if pause fails
+          this.loadLastSpaceStatuses(false);
+          this.loadLastScan();
+        }
+      });
+    } else {
+      // No scanId, just reload statuses
+      this.loadLastSpaceStatuses(false);
+      this.loadLastScan();
+    }
   }
 
   // --- Latest scan loading and resume ---
@@ -229,12 +250,14 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   private computeUiStatus(
     s: SpaceStatusDto,
     isActive: boolean
-  ): 'FAILED' | 'RUNNING' | 'OK' | 'PENDING' | 'INTERRUPTED' | undefined {
+  ): 'FAILED' | 'RUNNING' | 'OK' | 'PENDING' | 'PAUSED' | undefined {
+    console.log('Class: SpacesDashboardComponent, Function: computeUiStatus, Param: s.status', s.status);
     if (s.status === 'COMPLETED') return 'OK';
     if (s.status === 'FAILED') return 'FAILED';
+    if (s.status === 'PENDING') return 'PAUSED';
     if (s.status === 'RUNNING' && isActive) return 'RUNNING';
     const workDone = (s.pagesDone ?? 0) + (s.attachmentsDone ?? 0);
-    if (workDone > 0) return 'INTERRUPTED';
+    if (workDone > 0) return 'PAUSED';
     return 'PENDING';
   }
 

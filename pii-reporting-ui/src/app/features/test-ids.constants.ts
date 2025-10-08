@@ -8,6 +8,12 @@ export const TestIds = {
     table: 'spaces-table',
     spaceRow: 'space-row',
     spaceName: 'space-name',
+    spaceStatus: 'space-status',
+    buttons: {
+      startScan: 'btn-start-scan',
+      pauseScan: 'btn-pause-scan',
+      resumeScan: 'btn-resume-scan'
+    },
     headers: {
       space: 'header-space',
       status: 'header-status',

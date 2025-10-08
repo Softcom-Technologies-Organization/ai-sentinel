@@ -59,7 +59,7 @@ def set_logging_level(debug=False):
 
 def check_environment(api_key=None):
     """Check if the environment is properly set up."""
-    from pii_detector.config import get_config
+    from config import get_config
     
     # Get API key from centralized config or provided argument
     try:

@@ -310,7 +310,7 @@ async def serve_betterproto(port: int = 50051):
 
     # Try to enable gRPC Server Reflection for grpclib if available
     # This allows tools like grpcurl to discover services without providing .proto files.
-    from pii_detector.config import get_config
+    from config import get_config
     
     services = [service]
     reflection_enabled = False

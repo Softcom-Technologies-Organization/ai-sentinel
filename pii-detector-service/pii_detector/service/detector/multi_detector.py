@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 def _get_provenance_logging() -> bool:
     """Get provenance logging setting from centralized configuration."""
-    from pii_detector.config import get_config
+    from config import get_config
     
     try:
         config = get_config()
@@ -51,7 +51,7 @@ def get_multi_model_ids(primary_model: str) -> List[str]:
     The default includes the primary model and a multilingual PII NER model to
     enable cross-analysis out-of-the-box.
     """
-    from pii_detector.config import get_config
+    from config import get_config
     
     try:
         config = get_config()

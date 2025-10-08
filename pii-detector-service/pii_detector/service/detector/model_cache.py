@@ -30,7 +30,7 @@ def get_env_extra_models() -> List[str]:
     Returns:
         A list of Hugging Face repo IDs to cache locally.
     """
-    from pii_detector.config import get_config
+    from config import get_config
     
     try:
         config = get_config()
@@ -54,7 +54,7 @@ def ensure_models_cached(model_ids: Iterable[str]) -> None:
     Args:
         model_ids: Hugging Face repository IDs (e.g., "org/model").
     """
-    from pii_detector.config import get_config
+    from config import get_config
     
     try:
         config = get_config()

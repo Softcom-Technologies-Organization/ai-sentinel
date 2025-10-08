@@ -93,7 +93,9 @@ Controls logging levels, formats, handlers, and output destinations.
 ### Basic Usage
 
 ```python
-from pii_detector.config import config
+from config import get_config
+
+config = get_config()
 
 # Access configuration by domain
 print(f"Server running on port: {config.server.port}")
@@ -108,7 +110,7 @@ print(f"Log level: {config.logging.log_level}")
 Configuration is automatically validated on load:
 
 ```python
-from pii_detector.config import get_config
+from config import get_config
 
 try:
     config = get_config()
@@ -120,7 +122,9 @@ except ValueError as e:
 ### Configuration Summary
 
 ```python
-from pii_detector.config import config
+from config import get_config
+
+config = get_config()
 
 # Print formatted configuration summary
 print(config.print_summary())
@@ -166,7 +170,7 @@ LOGGING CONFIGURATION:
 For testing or dynamic updates:
 
 ```python
-from pii_detector.config import reload_config
+from config import reload_config
 import os
 
 # Change environment variable
@@ -180,7 +184,7 @@ print(f"New port: {config.server.port}")  # 50052
 ### Domain-Specific Access
 
 ```python
-from pii_detector.config import ServerConfig, ModelConfig
+from config import ServerConfig, ModelConfig
 
 # Load specific domain
 server_config = ServerConfig.from_env()
@@ -208,7 +212,7 @@ Every environment variable is documented with defaults and descriptions directly
 Configuration can be easily mocked or overridden for testing:
 
 ```python
-from pii_detector.config import AppConfig, ServerConfig, ModelConfig
+from config import AppConfig, ServerConfig, ModelConfig
 
 # Create test configuration
 test_config = AppConfig(
@@ -238,7 +242,9 @@ enable_precheck = os.getenv("DETECTOR_FAST_PRECHECK", "1") == "1"
 
 ```python
 # New code - centralized configuration
-from pii_detector.config import config
+from config import get_config
+
+config = get_config()
 
 port = config.server.port
 model_name = config.model.model_name

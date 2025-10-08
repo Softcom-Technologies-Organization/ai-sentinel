@@ -8,7 +8,8 @@ export default defineConfig({
   testDir: './e2e',
   timeout: 30_000,
   retries: process.env.CI ? 2 : 1,
-  workers: process.env.CI ? 1 : '50%',
+  workers: 1, // Force sequential execution to avoid race conditions on shared dev server
+  fullyParallel: false, // Disable parallel execution within same project
 
   reporter: [
     ['list'],

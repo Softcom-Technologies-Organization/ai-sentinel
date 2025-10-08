@@ -2,32 +2,35 @@
   <div class="header">
     <h2 class="m-0">Sentinel AI</h2>
     <div class="spacer"></div>
-    <button pButton type="button" class="p-button-raised p-button-primary" (click)="startAll()" [disabled]="!canStartScan()">Démarrer le scan globale</button>
-    <button pButton type="button" class="p-button-outlined p-button-danger" (click)="stopCurrentScan()" [disabled]="!isStreaming()">Interrompre</button>
-    <button pButton type="button" class="p-button-warning" (click)="resumeLastScan()"
-            [disabled]="!canResumeScan()" style="margin-left: .5rem;">
-      Reprendre le dernier scan
-    </button>
-    <div class="search-global">
-      <span class="p-input-icon-left">
-        <i class="pi pi-search"></i>
-        <input pInputText type="text" placeholder="Rechercher" [ngModel]="globalFilter()" (ngModelChange)="onGlobalChange($event)" aria-label="Rechercher globalement"/>
-      </span>
-    </div>
-    <div class="ms-auto text-muted">{{ isStreaming() ? 'En cours...' : 'Prêt' }}</div>
   </div>
 
-  @if (lastScanMeta(); as last) {
-    <div class="mt-2 text-sm text-muted">
-      Dernier scan: <strong>{{ last.scanId }}</strong>
-      · {{ last.lastUpdated | date:'short' }}
-      · {{ last.spacesCount }} espaces
+  <!-- Phase 2: New spaces notification banner -->
+  @if (hasNewSpaces()) {
+    <div class="new-spaces-banner">
+      <i class="pi pi-info-circle"></i>
+      <span class="banner-message">
+        {{ newSpacesCount() }} nouvel(aux) espace(s) Confluence disponible(s)
+      </span>
+      <button pButton type="button" class="p-button-raised p-button-sm"
+              (click)="refreshSpaces()"
+              (keydown.enter)="refreshSpaces()"
+              (keydown.space)="$event.preventDefault(); refreshSpaces()">
+        Rafraichir
+      </button>
+      <button pButton type="button" class="p-button-text p-button-sm" icon="pi pi-times"
+              (click)="dismissNotification()"
+              (keydown.enter)="dismissNotification()"
+              (keydown.space)="$event.preventDefault(); dismissNotification()"
+              aria-label="Fermer la notification">
+      </button>
     </div>
   }
 
-  <p-table #dt [value]="filteredSpaces()" [paginator]="true" [rows]="10" [tableStyle]="{'min-width':'60rem'}"
-           [rowsPerPageOptions]="[10,20,50]" dataKey="key" ariaLabel="Liste des spaces"
-           [expandedRowKeys]="expandedRowKeys()" (onRowExpand)="onRowExpand($event)" (onRowCollapse)="onRowCollapse($event)"
+  <p-table #dt [value]="filteredSpaces()" [paginator]="true" [rows]="10"
+           [tableStyle]="{'min-width':'60rem'}"
+           [rowsPerPageOptions]="[10,20,50]" dataKey="key"
+           [expandedRowKeys]="expandedRowKeys()" (onRowExpand)="onRowExpand($event)"
+           (onRowCollapse)="onRowCollapse($event)"
            [loading]="isSpacesLoading()" [showLoader]="false" [attr.data-testid]="testIds.table">
     <ng-template #header>
       <tr>
@@ -41,14 +44,60 @@
       </tr>
       <tr>
         <th id="col-toggle-value"></th>
-        <th id="col-space-value"></th>
+        <th id="col-space-value">
+          <input class="search-global" pInputText type="text" placeholder="Rechercher"
+                 [ngModel]="globalFilter()"
+                 (ngModelChange)="onGlobalChange($event)" aria-label="Rechercher globalement"/>
+        </th>
         <th id="col-status-value">
-          <p-select [options]="statusOptions" optionLabel="label" optionValue="value" placeholder="Any" (onChange)="onFilter('status', $event.value)" [showClear]="true"></p-select>
+          <p-select [options]="statusOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    [ngModel]="statusFilter()"
+                    (ngModelChange)="onFilter('status', $event)"
+                    [showClear]="true"></p-select>
         </th>
         <th id="col-progress-value"></th>
         <th id="col-last-scan-value"></th>
         <th id="col-pii-value"></th>
-        <th id="col-actions-value"></th>
+        <th id="col-actions-value" class="action-buttons-container">
+          <p-button type="button"
+                    icon="pi pi-play"
+                    styleClass="p-button-raised p-button-primary"
+                    (click)="startAll()"
+                    (keydown.enter)="startAll()"
+                    (keydown.space)="$event.preventDefault(); startAll()"
+                    [disabled]="!canStartScan()"
+                    pTooltip="Démarrer le scan global"
+                    tooltipPosition="bottom"
+                    ariaLabel="Démarrer le scan global"
+                    [attr.data-testid]="testIds.buttons.startScan">
+          </p-button>
+          <p-button type="button"
+                    icon="pi pi-pause"
+                    styleClass="p-button-raised p-button-danger"
+                    (click)="stopCurrentScan()"
+                    (keydown.enter)="stopCurrentScan()"
+                    (keydown.space)="$event.preventDefault(); stopCurrentScan()"
+                    [disabled]="!isStreaming()"
+                    pTooltip="Interrompre le scan"
+                    tooltipPosition="bottom"
+                    ariaLabel="Interrompre le scan"
+                    [attr.data-testid]="testIds.buttons.pauseScan">
+          </p-button>
+          <p-button type="button"
+                    icon="pi pi-refresh"
+                    styleClass="p-button-warning"
+                    (click)="resumeLastScan()"
+                    (keydown.enter)="resumeLastScan()"
+                    (keydown.space)="$event.preventDefault(); resumeLastScan()"
+                    [disabled]="!canResumeScan()"
+                    pTooltip="Reprendre le dernier scan"
+                    tooltipPosition="bottom"
+                    ariaLabel="Reprendre le dernier scan"
+                    [attr.data-testid]="testIds.buttons.resumeScan">
+          </p-button>
+        </th>
       </tr>
     </ng-template>
     <ng-template #body let-space let-expanded="expanded">
@@ -60,7 +109,8 @@
                     [text]="true"
                     [rounded]="true"
                     [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
-                    [ariaLabel]="expanded ? 'Réduire' : 'Développer'">
+                    [ariaLabel]="expanded ? 'Réduire' : 'Développer'"
+                    [attr.data-testid]="testIds.expandButton">
           </p-button>
         </td>
         <td>
@@ -69,22 +119,31 @@
           </div>
         </td>
         <td>
-          <p-tag [value]="statusLabel(space.status)" [severity]="statusSeverity(space.status)"></p-tag>
+          <p-tag [value]="statusLabel(space.status)"
+                 [severity]="statusSeverity(space.status)"
+                 [attr.data-testid]="testIds.spaceStatus"></p-tag>
         </td>
         <td>
-          <p-progressBar [value]="progressPercent(space.key)" [showValue]="true" [style]="{'height':'0.75rem'}"></p-progressBar>
+          <p-progressBar [value]="progressPercent(space.key)" [showValue]="true"
+                         [style]="{'height':'0.75rem'}"></p-progressBar>
         </td>
         <td>{{ space.lastScanTs | date:'short' }}</td>
         <td>
-          <p-badge [value]="space?.counts?.total ?? 0" size="large" [attr.data-testid]="testIds.badges.total"></p-badge>
+          <p-badge [value]="space?.counts?.total ?? 0" size="large"
+                   [attr.data-testid]="testIds.badges.total"></p-badge>
           <span class="ml-2">
-                <p-badge [value]="space?.counts?.high ?? 0" severity="danger" class="ml-1" size="large" [attr.data-testid]="testIds.badges.high"></p-badge>
-                <p-badge [value]="space?.counts?.medium ?? 0" severity="warn" class="ml-1" size="large" [attr.data-testid]="testIds.badges.medium"></p-badge>
-                <p-badge [value]="space?.counts?.low ?? 0" severity="info" class="ml-1" size="large" [attr.data-testid]="testIds.badges.low"></p-badge>
+                <p-badge [value]="space?.counts?.high ?? 0" severity="danger" class="ml-1"
+                         size="large" [attr.data-testid]="testIds.badges.high"></p-badge>
+                <p-badge [value]="space?.counts?.medium ?? 0" severity="warn" class="ml-1"
+                         size="large" [attr.data-testid]="testIds.badges.medium"></p-badge>
+                <p-badge [value]="space?.counts?.low ?? 0" severity="info" class="ml-1" size="large"
+                         [attr.data-testid]="testIds.badges.low"></p-badge>
               </span>
         </td>
         <td>
-          <span [pTooltip]="spacesDashboardUtils.hasConfluenceUrl(space) ? 'Ouvrir dans Confluence' : 'URL indisponible (non fournie par le backend)'" tooltipPosition="top">
+          <span
+            [pTooltip]="spacesDashboardUtils.hasConfluenceUrl(space) ? 'Ouvrir dans Confluence' : 'URL indisponible (non fournie par le backend)'"
+            tooltipPosition="top">
             <p-button icon="pi pi-external-link"
                       styleClass="p-button-text"
                       [disabled]="!spacesDashboardUtils.hasConfluenceUrl(space)"
@@ -98,21 +157,35 @@
     </ng-template>
 
     <ng-template pTemplate="loadingbody">
-      <tr *ngFor="let _ of skeletonRows">
-        <td><p-skeleton width="1.5rem" height="1.5rem" shape="circle"></p-skeleton></td>
-        <td><p-skeleton width="12rem"></p-skeleton></td>
-        <td><p-skeleton width="6rem" height="1.5rem"></p-skeleton></td>
-        <td><p-skeleton width="8rem" height="0.75rem"></p-skeleton></td>
-        <td><p-skeleton width="9rem"></p-skeleton></td>
-        <td>
-          <div style="display:flex; align-items:center; gap:0.5rem">
-            <p-skeleton width="2rem" height="2rem"></p-skeleton>
-            <p-skeleton width="2rem" height="2rem"></p-skeleton>
-            <p-skeleton width="2rem" height="2rem"></p-skeleton>
-          </div>
-        </td>
-        <td><p-skeleton width="7rem"></p-skeleton></td>
-      </tr>
+      @for (_ of skeletonRows; track $index) {
+        <tr>
+          <td>
+            <p-skeleton width="1.5rem" height="1.5rem" shape="circle"></p-skeleton>
+          </td>
+          <td>
+            <p-skeleton width="12rem"></p-skeleton>
+          </td>
+          <td>
+            <p-skeleton width="6rem" height="1.5rem"></p-skeleton>
+          </td>
+          <td>
+            <p-skeleton width="8rem" height="0.75rem"></p-skeleton>
+          </td>
+          <td>
+            <p-skeleton width="9rem"></p-skeleton>
+          </td>
+          <td>
+            <div style="display:flex; align-items:center; gap:0.5rem">
+              <p-skeleton width="2rem" height="2rem"></p-skeleton>
+              <p-skeleton width="2rem" height="2rem"></p-skeleton>
+              <p-skeleton width="2rem" height="2rem"></p-skeleton>
+            </div>
+          </td>
+          <td>
+            <p-skeleton width="7rem"></p-skeleton>
+          </td>
+        </tr>
+      }
     </ng-template>
 
     <ng-template #expandedrow let-space>
@@ -123,9 +196,12 @@
               <p-dataview [value]="itemsBySpace()[space.key] || []">
                 <ng-template #list let-items>
                   <div class="grid grid-nogutter">
-                    <div class="col-12" *ngFor="let it of items">
-                      <app-pii-item-card [item]="it" [maskByDefault]="maskByDefault()"></app-pii-item-card>
-                    </div>
+                    @for (it of items; track $index) {
+                      <div class="col-12">
+                        <app-pii-item-card [item]="it"
+                                           [maskByDefault]="maskByDefault()"></app-pii-item-card>
+                      </div>
+                    }
                   </div>
                 </ng-template>
                 <ng-template #empty>

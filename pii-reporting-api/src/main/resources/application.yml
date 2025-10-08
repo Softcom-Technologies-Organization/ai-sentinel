@@ -50,6 +50,11 @@ confluence:
     attachment-child-suffix: /child/attachment
     default-page-expands: body.storage,version,metadata,ancestors
     default-space-expands: permissions,metadata
+  cache:
+    refresh-interval-ms: ${CONFLUENCE_CACHE_REFRESH_INTERVAL:300000}  # 5 minutes default
+    initial-delay-ms: ${CONFLUENCE_CACHE_INITIAL_DELAY:5000}  # 5 seconds default
+  polling:
+    interval-ms: ${CONFLUENCE_POLLING_INTERVAL:60000}  # 1 minute default
 
 # Logging Configuration
 logging:

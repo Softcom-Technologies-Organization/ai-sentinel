@@ -1,7 +1,5 @@
 package pro.softcom.sentinelle.infrastructure.confluence.adapter.out.mapper;
 
-import java.util.List;
-import java.util.Map;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.dto.ConfluenceSpaceDto;
 
@@ -29,7 +27,6 @@ public final class ConfluenceSpaceMapper {
         }
         var spaceType = parseSpaceType(dto.type());
         var spaceStatus = parseSpaceStatus(dto.status());
-        var spacePermissions = extractPermissions(dto);
         var descriptionText = extractDescription(dto);
         String url = ConfluenceUrlBuilder.spaceOverviewUrl(dto.key());
 
@@ -40,9 +37,7 @@ public final class ConfluenceSpaceMapper {
             url,
             descriptionText,
             spaceType,
-            spaceStatus,
-            spacePermissions,
-            dto.metadata() != null ? dto.metadata() : Map.of()
+            spaceStatus
         );
     }
 
@@ -69,51 +64,5 @@ public final class ConfluenceSpaceMapper {
             return description.plain().value();
         }
         return "";
-    }
-
-    /**
-     * Extracts permissions flags from API operations.
-     * Note: These are raw capabilities exposed by the API and may need contextualization at application level
-     *       if they are meant for a specific user.
-     */
-    private static ConfluenceSpace.SpacePermissions extractPermissions(ConfluenceSpaceDto dto) {
-
-        var permissions = dto.permissions();
-        if (permissions == null || permissions.isEmpty()) {
-            return new ConfluenceSpace.SpacePermissions(false, false, false, false, false, false);
-        }
-        return mapSpacePermissions(permissions);
-    }
-
-    private static ConfluenceSpace.SpacePermissions mapSpacePermissions(final List<ConfluenceSpaceDto.PermissionDto> permissions) {
-        boolean canView = false;
-        boolean canEdit = false;
-        boolean canDelete = false;
-        boolean canAdmin = false;
-        boolean canCreatePage = false;
-        boolean canComment = false;
-        for (var permission : permissions) {
-            var op = operationName(permission);
-            if (op == null) continue;
-            switch (op) {
-                case "read" -> canView = true;
-                case "update" -> canEdit = true;
-                case "delete" -> canDelete = true;
-                case "administer" -> canAdmin = true;
-                case "create" -> canCreatePage = true;
-                case "comment" -> canComment = true;
-                default -> {
-                    // ignore
-                }
-            }
-        }
-        return new ConfluenceSpace.SpacePermissions(canView, canEdit, canDelete, canAdmin, canCreatePage, canComment);
-    }
-
-    private static String operationName(ConfluenceSpaceDto.PermissionDto permission) {
-        if (permission == null || permission.operation() == null) {
-            return null;
-        }
-        return permission.operation().operation();
     }
 }

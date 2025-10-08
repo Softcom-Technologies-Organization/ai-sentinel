@@ -2,7 +2,6 @@ package pro.softcom.sentinelle.application.pii.reporting.usecase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.when;
 
@@ -22,13 +21,14 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachme
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachmentDownloader;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
+import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanCheckpointService;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventFactory;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanProgressCalculator;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
-import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorSettings;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
@@ -69,17 +69,12 @@ class StreamConfluenceResumeScanUseCaseImplTest {
 
     @BeforeEach
     void setUp() {
-        final PiiDetectorSettings piiSettings = new PiiDetectorSettings() {
-            @Override public String host() { return "localhost"; }
-            @Override public int port() { return 50051; }
-            @Override public float defaultThreshold() { return 0.5f; }
-        };
         final ConfluenceUrlProvider confluenceUrlProvider = new ConfluenceUrlProvider() {
             @Override public String baseUrl() { return "http://confluence.example"; }
             @Override public String pageUrl(String pageId) {
                 if (pageId == null || pageId.isBlank()) return null;
                 String base = baseUrl();
-                if (base == null || base.isBlank()) return null;
+                if (base.isBlank()) return null;
                 base = base.trim();
                 if (base.endsWith("/")) base = base.substring(0, base.length() - 1);
                 return base + "/pages/viewpage.action?pageId=" + pageId;
@@ -90,24 +85,23 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         ScanProgressCalculator progressCalculator = new ScanProgressCalculator();
         ScanEventFactory eventFactory = new ScanEventFactory(confluenceUrlProvider);
         ScanCheckpointService checkpointService = new ScanCheckpointService(scanCheckpointRepository);
+        
+        // Create parameter objects
+        ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService);
+        ScanOrchestrator scanOrchestrator = new ScanOrchestrator(eventFactory, progressCalculator, 
+                                                                 checkpointService, jpaScanEventStoreAdapter);
         AttachmentProcessor attachmentProcessor = new AttachmentProcessor(
                 confluenceDownloadService,
                 attachmentTextExtractionService,
                 piiDetectorClient,
-                piiSettings,
                 eventFactory,
                 progressCalculator
         );
         
         streamConfluenceResumeScanUseCase = new StreamConfluenceResumeScanUseCaseImpl(
-                confluenceService,
-                confluenceAttachmentService,
-                piiSettings,
+                confluenceAccessor,
                 piiDetectorClient,
-                jpaScanEventStoreAdapter,
-                eventFactory,
-                progressCalculator,
-                checkpointService,
+                scanOrchestrator,
                 attachmentProcessor,
                 scanCheckpointRepository
         );
@@ -119,8 +113,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         String scanId = "SID-1";
         String spaceKey = "RS1";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         ScanCheckpoint cp = ScanCheckpoint.builder()
@@ -138,7 +131,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
             .build();
         when(confluenceService.getAllPagesInSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(List.of(p1, p2)));
         when(confluenceAttachmentService.getPageAttachments(anyString())).thenReturn(CompletableFuture.completedFuture(List.of()));
-        when(piiDetectorClient.analyzeContent(any(), anyFloat())).thenReturn(
+        when(piiDetectorClient.analyzeContent(any())).thenReturn(
             ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
         );
 
@@ -157,8 +150,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         String scanId = "SID-2";
         String spaceKey = "RS2";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
         when(scanCheckpointRepository.findByScanAndSpace(scanId, spaceKey)).thenReturn(Optional.empty());
 
@@ -182,8 +174,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         String scanId = "SID-3";
         String spaceKey = "RS3";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         when(scanCheckpointRepository.findByScanAndSpace(anyString(), anyString())).thenThrow(new RuntimeException("prep-fail"));
@@ -219,8 +210,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         String scanId = "SID-5";
         String spaceKey = "RS4";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         ScanCheckpoint cp = ScanCheckpoint.builder()
@@ -237,7 +227,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
             .build();
         when(confluenceService.getAllPagesInSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(List.of(p1, p2)));
         when(confluenceAttachmentService.getPageAttachments(anyString())).thenReturn(CompletableFuture.completedFuture(List.of()));
-        when(piiDetectorClient.analyzeContent(any(), anyFloat())).thenReturn(
+        when(piiDetectorClient.analyzeContent(any())).thenReturn(
             ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
         );
 
@@ -252,3 +242,4 @@ class StreamConfluenceResumeScanUseCaseImplTest {
             .verifyComplete();
     }
 }
+

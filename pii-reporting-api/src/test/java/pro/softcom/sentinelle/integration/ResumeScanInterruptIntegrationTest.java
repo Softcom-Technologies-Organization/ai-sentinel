@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.SoftAssertions;
@@ -35,9 +36,9 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
-import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorSettings;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.DetectionCheckpointRepository;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.DetectionEventRepository;
@@ -93,14 +94,13 @@ class ResumeScanInterruptIntegrationTest {
     @Autowired
     private AttachmentTextExtractor attachmentTextExtractor;
 
-    @Autowired
-    private PiiDetectorSettings piiSettings;
-
     @Test
     void Should_ResumeFromNextPage_When_ScanInterrupted() {
         // Arrange: program Mockito stubs for deterministic environment
-        var space = new ConfluenceSpace("id-TEST", "TEST", "Test Space", null, null, null, null,
-                                        null, null);
+        var space = new ConfluenceSpace("id-TEST", "TEST", "Test Space",
+                                        "http://test.com", "Test description",
+                                        ConfluenceSpace.SpaceType.GLOBAL,
+                                        ConfluenceSpace.SpaceStatus.CURRENT);
         var p1 = ConfluencePage.builder().id("p1").title("Page 1").spaceKey("TEST")
             .content(new ConfluencePage.HtmlContent("hello 1")).metadata(
                 new ConfluencePage.PageMetadata("u", LocalDateTime.now(), "u", LocalDateTime.now(),
@@ -124,9 +124,6 @@ class ResumeScanInterruptIntegrationTest {
         when(confluenceAttachmentClient.getPageAttachments(anyString())).thenReturn(
             CompletableFuture.completedFuture(List.of()));
         when(confluenceUrlProvider.baseUrl()).thenReturn("http://example");
-        when(piiSettings.defaultThreshold()).thenReturn(0.5f);
-        when(piiSettings.host()).thenReturn("localhost");
-        when(piiSettings.port()).thenReturn(50051);
 
         // Act 1: Start a multi-space scan, and interrupt right after first page_complete is recorded
         AtomicReference<String> scanIdRef = new AtomicReference<>();
@@ -194,7 +191,10 @@ class ResumeScanInterruptIntegrationTest {
     @Test
     void Should_ReportCorrectProgressPercentages_When_ResumingScan() {
         // Arrange: deterministic environment (1 space, 3 pages, no attachments)
-        var space = new ConfluenceSpace("id-TEST", "TEST", "Test Space", null, null, null, null, null, null);
+        var space = new ConfluenceSpace("id-TEST", "TEST", "Test Space", 
+                                        "http://test.com", "Test description",
+                                        ConfluenceSpace.SpaceType.GLOBAL, 
+                                        ConfluenceSpace.SpaceStatus.CURRENT);
         var p1 = ConfluencePage.builder().id("p1").title("Page 1").spaceKey("TEST")
             .content(new ConfluencePage.HtmlContent("hello 1")).metadata(
                 new ConfluencePage.PageMetadata("u", LocalDateTime.now(), "u", LocalDateTime.now(), 1, "current"))
@@ -212,9 +212,6 @@ class ResumeScanInterruptIntegrationTest {
         when(confluenceClient.getAllPagesInSpace("TEST")).thenReturn(CompletableFuture.completedFuture(List.of(p1, p2, p3)));
         when(confluenceAttachmentClient.getPageAttachments(anyString())).thenReturn(CompletableFuture.completedFuture(List.of()));
         when(confluenceUrlProvider.baseUrl()).thenReturn("http://example");
-        when(piiSettings.defaultThreshold()).thenReturn(0.5f);
-        when(piiSettings.host()).thenReturn("localhost");
-        when(piiSettings.port()).thenReturn(50051);
 
         // Phase 1: start and interrupt at first page_complete
         AtomicReference<String> scanIdRef = new AtomicReference<>();
@@ -260,8 +257,8 @@ class ResumeScanInterruptIntegrationTest {
 
         // Build a sequence of progress values and assert monotonic non-decreasing ending at 100%
         var progressSeq = resumed.stream()
-            .map(e -> e.analysisProgressPercentage())
-            .filter(v -> v != null)
+            .map(ScanResult::analysisProgressPercentage)
+            .filter(Objects::nonNull)
             .toList();
         softly.assertThat(progressSeq).isNotEmpty();
         softly.assertThat(progressSeq.getLast()).isEqualTo(100.0);
@@ -277,7 +274,7 @@ class ResumeScanInterruptIntegrationTest {
         // Ensure already completed page (p1) is not present in resumed page events
         var resumedPageIds = resumed.stream()
             .filter(e -> ScanEventType.PAGE_START.toJson().equals(e.eventType()) || ScanEventType.PAGE_COMPLETE.toJson().equals(e.eventType()))
-            .map(e -> e.pageId())
+            .map(ScanResult::pageId)
             .toList();
         softly.assertThat(resumedPageIds).doesNotContain("p1");
 
@@ -320,12 +317,6 @@ class ResumeScanInterruptIntegrationTest {
         AttachmentTextExtractor attachmentTextExtractor() {
             return Mockito.mock(
                 AttachmentTextExtractor.class);
-        }
-
-        @Bean
-        @Primary
-        PiiDetectorSettings piiSettings() {
-            return Mockito.mock(PiiDetectorSettings.class);
         }
     }
 }

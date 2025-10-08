@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.stereotype.Service;
 import pii_detection.PiiDetection;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
-import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorError;
+import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorException;
 import pro.softcom.sentinelle.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.sentinelle.domain.pii.scan.PiiType;
 import pro.softcom.sentinelle.infrastructure.pii.scan.adapter.out.config.PiiDetectorConfig;
@@ -56,11 +56,9 @@ public class GrpcPiiDetectorClientAdapter implements PiiDetectorClient {
             return toContentAnalysis(pageId, pageTitle, spaceKey, response);
         } catch (Exception e) {
             final String errorMessage = String.format("Failed to analyze content for PII for pageId=%s : %s", pageId, e.getMessage());
-            throw PiiDetectorError.serviceError(errorMessage, e);
+            throw PiiDetectorException.serviceError(errorMessage, e);
         }
     }
-
-    // --- Mapping helpers (centralized) ---
 
     private ContentPiiDetection toContentAnalysis(String pageId, String pageTitle, String spaceKey, PiiDetection.PIIDetectionResponse response) {
         List<ContentPiiDetection.SensitiveData> sensitiveDataList = response.getEntitiesList().stream()
@@ -96,7 +94,7 @@ public class GrpcPiiDetectorClientAdapter implements PiiDetectorClient {
                 context,
                 entity.getStart(),
                 entity.getEnd(),
-                Double.valueOf(entity.getScore()),
+                (double) entity.getScore(),
                 String.format("pii-entity-%s", entity.getType().toLowerCase())
         );
     }

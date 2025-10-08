@@ -12,7 +12,7 @@ export interface LastScanMeta {
   spacesCount: number;
 }
 
-export interface SpaceStatusDto {
+export interface SpaceScanStateDto {
   spaceKey: string;
   status: string;
   pagesDone: number;
@@ -52,7 +52,7 @@ export class SentinelleApiService {
           observer.next(meta ?? null);
           observer.complete();
         },
-        error: (err) => {
+        error: () => {
           // No content or backend error → expose null to simplify UI
           observer.next(null);
           observer.complete();
@@ -63,9 +63,9 @@ export class SentinelleApiService {
   }
 
   /** Fetch per-space statuses for the last scan. */
-  getLastScanSpaceStatuses(): Observable<SpaceStatusDto[]> {
-    return new Observable<SpaceStatusDto[]>((observer) => {
-      const sub = this.http.get<SpaceStatusDto[]>('/api/v1/scans/last/spaces').subscribe({
+  getLastScanSpaceStatuses(): Observable<SpaceScanStateDto[]> {
+    return new Observable<SpaceScanStateDto[]>((observer) => {
+      const sub = this.http.get<SpaceScanStateDto[]>('/api/v1/scans/last/spaces').subscribe({
         next: (list) => {
           observer.next(Array.isArray(list) ? list : []);
           observer.complete();
@@ -101,6 +101,18 @@ export class SentinelleApiService {
     return new Observable<void>((observer) => {
       const id = encodeURIComponent(String(scanId ?? ''));
       const sub = this.http.post<void>(`/api/v1/scans/${id}/resume`, {}).subscribe({
+        next: () => { observer.next(); observer.complete(); },
+        error: (err) => { observer.error(err); }
+      });
+      return () => sub.unsubscribe();
+    });
+  }
+
+  /** Command the backend to pause a running scan by updating checkpoints to PAUSED status. */
+  pauseScan(scanId: string): Observable<void> {
+    return new Observable<void>((observer) => {
+      const id = encodeURIComponent(String(scanId ?? ''));
+      const sub = this.http.post<void>(`/api/v1/scans/${id}/pause`, {}).subscribe({
         next: () => { observer.next(); observer.complete(); },
         error: (err) => { observer.error(err); }
       });
@@ -189,7 +201,7 @@ export class SentinelleApiService {
   sanitizeMaskedHtml(raw?: string): string | undefined {
     if (!raw) return undefined;
     try {
-      return raw.replace(/\[([A-Z_]+)\]/g, (_m: string, g1: string) => `<span class="chip">[${g1}]</span>`);
+      return raw.replaceAll(/\[([A-Z_]+)]/g, (_m: string, g1: string) => `<span class="chip">[${g1}]</span>`);
     } catch {
       return raw;
     }

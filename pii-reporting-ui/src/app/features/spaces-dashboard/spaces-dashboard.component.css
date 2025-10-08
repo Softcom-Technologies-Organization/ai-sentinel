@@ -54,3 +54,60 @@
   overflow-y: auto;
   padding-right: .5rem; /* keep scrollbar away from content */
 }
+
+/* Refresh button spinning animation (Phase 1) */
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.new-spaces-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background-color: #e3f2fd;
+  border-left: 4px solid #2196f3;
+  border-radius: 4px;
+  animation: slideDown 300ms ease-out;
+}
+
+.new-spaces-banner i {
+  color: #2196f3;
+  font-size: 1.25rem;
+}
+
+.new-spaces-banner .banner-message {
+  flex: 1;
+  font-weight: 500;
+  color: #1565c0;
+}
+
+.new-spaces-banner button {
+  flex-shrink: 0;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Action buttons spacing */
+.action-buttons-container p-button:not(:first-child) {
+  margin-left: 0.5rem;
+}

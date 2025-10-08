@@ -3,6 +3,7 @@ package pro.softcom.sentinelle;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Main Sentinelle application with Confluence integration.
@@ -10,6 +11,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
  */
 @SpringBootApplication
 @EnableConfigurationProperties
+@EnableScheduling
 public class SentinelleApplication {
 
     public static void main(String[] args) {

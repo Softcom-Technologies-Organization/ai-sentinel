@@ -4,15 +4,19 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
+import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceSpaceRepository;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 
 @RequiredArgsConstructor
+@Slf4j
 public class ConfluenceUseCaseImpl implements ConfluenceUseCase {
 
   private final ConfluenceClient confluenceClient;
+  private final ConfluenceSpaceRepository spaceRepository;
 
   @Override
   public CompletableFuture<Boolean> testConnection() {
@@ -30,46 +34,34 @@ public class ConfluenceUseCaseImpl implements ConfluenceUseCase {
   }
 
   @Override
-  public CompletableFuture<Optional<ConfluencePage>> updatePage(String pageId, String title, String content, List<String> labels) {
-    return doUpdate(pageId, title, content, labels);
-  }
-
-  private CompletableFuture<Optional<ConfluencePage>> doUpdate(String pageId, String title, String content, List<String> labels) {
-    if (pageId == null || pageId.isBlank()) {
-      return CompletableFuture.completedFuture(Optional.empty());
-    }
-    // Récupère l'existant pour préserver les métadonnées/version et champs non modifiés
-    return confluenceClient.getPage(pageId).thenCompose(optExisting -> {
-      if (optExisting.isEmpty()) {
-        return CompletableFuture.completedFuture(Optional.empty());
-      }
-      var existing = optExisting.get();
-      var updated = new ConfluencePage(
-          existing.id(),
-          title != null ? title : existing.title(),
-          existing.spaceKey(),
-          content != null ? new ConfluencePage.HtmlContent(content) : existing.content(),
-          existing.metadata(),
-          labels != null ? labels : existing.labels(),
-          existing.customProperties()
-      );
-      return confluenceClient.updatePage(updated).thenApply(Optional::of);
-    });
-  }
-
-  @Override
   public CompletableFuture<Optional<ConfluenceSpace>> getSpace(String spaceKey) {
     return confluenceClient.getSpace(spaceKey);
   }
 
   @Override
-  public CompletableFuture<Optional<ConfluenceSpace>> getSpaceById(String spaceId) {
-    return confluenceClient.getSpaceById(spaceId);
+  public CompletableFuture<List<ConfluenceSpace>> getAllSpaces() {
+    log.debug("Fetching Confluence spaces with cache-first strategy");
+    
+    List<ConfluenceSpace> cachedSpaces = spaceRepository.findAll();
+    
+    if (!cachedSpaces.isEmpty()) {
+      log.debug("Returning {} cached spaces", cachedSpaces.size());
+      return CompletableFuture.completedFuture(cachedSpaces);
+    }
+    
+    log.debug("Cache miss - fetching spaces from Confluence API");
+    return fetchAndCacheSpaces();
   }
 
-  @Override
-  public CompletableFuture<List<ConfluenceSpace>> getAllSpaces() {
-    return confluenceClient.getAllSpaces();
+  private CompletableFuture<List<ConfluenceSpace>> fetchAndCacheSpaces() {
+    return confluenceClient.getAllSpaces()
+      .thenApply(spaces -> {
+        if (spaces != null && !spaces.isEmpty()) {
+          spaceRepository.saveAll(spaces);
+          log.info("Cached {} spaces from Confluence API", spaces.size());
+        }
+        return spaces;
+      });
   }
 
   @Override

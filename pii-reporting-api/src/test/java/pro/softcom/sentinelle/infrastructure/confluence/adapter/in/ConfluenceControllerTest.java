@@ -4,12 +4,10 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -22,7 +20,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
-import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.ConfluenceController.UpdateConfluencePageRequest;
 
 /**
  * Tests for the ConfluenceController class.
@@ -36,9 +33,6 @@ class ConfluenceControllerTest {
 
     @MockitoBean
     private ConfluenceUseCase confluenceUseCase;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     /**
      * Tests that the controller correctly returns all pages in a space.
@@ -78,9 +72,7 @@ class ConfluenceControllerTest {
             "http://test.com",
             "A test space",
             ConfluenceSpace.SpaceType.GLOBAL,
-            ConfluenceSpace.SpaceStatus.CURRENT,
-            null,
-            null
+            ConfluenceSpace.SpaceStatus.CURRENT
         );
 
         when(confluenceUseCase.getSpace(spaceKey))
@@ -227,9 +219,7 @@ class ConfluenceControllerTest {
             "http://test.com",
             "A test space",
             ConfluenceSpace.SpaceType.GLOBAL,
-            ConfluenceSpace.SpaceStatus.CURRENT,
-            null,
-            null
+            ConfluenceSpace.SpaceStatus.CURRENT
         );
 
         when(confluenceUseCase.getSpace(spaceKey))
@@ -262,8 +252,8 @@ class ConfluenceControllerTest {
     @Test
     void getAllSpaces_ReturnsList() throws Exception {
         List<ConfluenceSpace> spaces = List.of(
-            new ConfluenceSpace("id-1", "KEY1", "Space 1", "http://s1", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, null, null),
-            new ConfluenceSpace("id-2", "KEY2", "Space 2", "http://s2", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, null, null)
+            new ConfluenceSpace("id-1", "KEY1", "Space 1", "http://s1", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT),
+            new ConfluenceSpace("id-2", "KEY2", "Space 2", "http://s2", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT)
         );
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(spaces));
@@ -315,68 +305,6 @@ class ConfluenceControllerTest {
             .andExpect(jsonPath("$.results", hasSize(2)))
             .andExpect(jsonPath("$.totalResults").value(2));
     }
-
-    @Test
-    void updatePage_ReturnsUpdatedPage() throws Exception {
-        String pageId = "p1";
-        ConfluencePage updated = ConfluencePage.builder()
-            .id(pageId)
-            .title("New Title")
-            .spaceKey("TEST")
-            .content(new ConfluencePage.HtmlContent("<p>new</p>"))
-            .build();
-
-        when(confluenceUseCase.updatePage(pageId, "New Title", "<p>new</p>", List.of("lbl")))
-            .thenReturn(CompletableFuture.completedFuture(Optional.of(updated)));
-
-        var body = objectMapper.writeValueAsString(new UpdateConfluencePageRequest("New Title", "<p>new</p>", List.of("lbl")));
-
-        var mvcResult = mockMvc.perform(put("/api/v1/confluence/pages/{pageId}", pageId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(body))
-            .andExpect(request().asyncStarted())
-            .andReturn();
-
-        mockMvc.perform(asyncDispatch(mvcResult))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(pageId))
-            .andExpect(jsonPath("$.title").value("New Title"));
-    }
-
-    @Test
-    void updatePage_ReturnsNotFound_WhenPageMissing() throws Exception {
-        String pageId = "missing";
-        when(confluenceUseCase.updatePage(pageId, "Title", "<p>c</p>", List.of()))
-            .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
-
-        var body = objectMapper.writeValueAsString(new UpdateConfluencePageRequest("Title", "<p>c</p>", List.of()));
-
-        var mvcResult = mockMvc.perform(put("/api/v1/confluence/pages/{pageId}", pageId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(body))
-            .andExpect(request().asyncStarted())
-            .andReturn();
-
-        mockMvc.perform(asyncDispatch(mvcResult))
-            .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void updatePage_ReturnsBadRequest_OnServiceError() throws Exception {
-        String pageId = "p1";
-
-        when(confluenceUseCase.updatePage(pageId, "New Title", "<p>new</p>", List.of("lbl")))
-            .thenReturn(CompletableFuture.failedFuture(new RuntimeException("boom")));
-
-        var body = objectMapper.writeValueAsString(new UpdateConfluencePageRequest("New Title", "<p>new</p>", List.of("lbl")));
-
-        var mvcResult = mockMvc.perform(put("/api/v1/confluence/pages/{pageId}", pageId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(body))
-            .andExpect(request().asyncStarted())
-            .andReturn();
-
-        mockMvc.perform(asyncDispatch(mvcResult))
-            .andExpect(status().isBadRequest());
-    }
 }
+
+

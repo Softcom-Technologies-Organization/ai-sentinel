@@ -13,8 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -92,27 +90,6 @@ public class ConfluenceController {
                 });
     }
 
-    @PutMapping("/pages/{pageId}")
-    @Operation(summary = "Update an existing page")
-    @ApiResponse(responseCode = "200", description = "Page updated")
-    @ApiResponse(responseCode = "404", description = "Page not found")
-    public CompletableFuture<ResponseEntity<@NonNull ConfluencePageDto>> updatePage(
-            @Parameter(description = "Page ID") @PathVariable String pageId,
-            @RequestBody UpdateConfluencePageRequest request) {
-
-        log.info("Updating page: {}", pageId);
-
-        return confluenceUseCase.updatePage(pageId, request.title(), request.content(), request.labels())
-                .thenApply(opt -> opt
-                        .map(ConfluenceApiMapper::toDto)
-                        .map(ResponseEntity::ok)
-                        .orElse(ResponseEntity.notFound().build()))
-                .exceptionally(ex -> {
-                    log.error("Error updating page", ex);
-                    return ResponseEntity.badRequest().build();
-                });
-    }
-
     @GetMapping("/spaces/{spaceKey}")
     @Operation(summary = "Retrieve space information")
     @ApiResponse(responseCode = "200", description = "Space found")
@@ -168,11 +145,4 @@ public class ConfluenceController {
     }
 
     public record ConfluenceHealthCheckResponse(String status, String message) { }
-
-    public record UpdateConfluencePageRequest(
-            String title,
-            String content,
-            List<String> labels
-    ) { }
-
 }

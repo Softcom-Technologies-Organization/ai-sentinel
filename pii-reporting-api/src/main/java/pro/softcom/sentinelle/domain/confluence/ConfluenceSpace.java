@@ -1,6 +1,5 @@
 package pro.softcom.sentinelle.domain.confluence;
 
-import java.util.Map;
 import lombok.Getter;
 
 public record ConfluenceSpace(
@@ -10,9 +9,7 @@ public record ConfluenceSpace(
     String url,
     String description,
     SpaceType type,
-    SpaceStatus status,
-    SpacePermissions permissions,
-    Map<String, Object> metadata
+    SpaceStatus status
 ) {
 
     @Getter
@@ -41,27 +38,6 @@ public record ConfluenceSpace(
         }
     }
 
-    public record SpacePermissions(
-        boolean canView,
-        boolean canEdit,
-        boolean canDelete,
-        boolean canAdmin,
-        boolean canCreatePage,
-        boolean canComment
-    ) {
-        public boolean hasReadAccess() {
-            return canView;
-        }
-
-        public boolean hasWriteAccess() {
-            return canEdit || canCreatePage || canComment;
-        }
-
-        public boolean hasAdminAccess() {
-            return canAdmin;
-        }
-    }
-
     public ConfluenceSpace {
         if (key == null || key.isBlank()) {
             throw new IllegalArgumentException("La clé de l'espace ne peut pas être vide");
@@ -74,12 +50,6 @@ public record ConfluenceSpace(
         }
         if (status == null) {
             status = SpaceStatus.CURRENT;
-        }
-        if (permissions == null) {
-            permissions = new SpacePermissions(false, false, false, false, false, false);
-        }
-        if (metadata == null) {
-            metadata = Map.of();
         }
     }
 }

@@ -2,7 +2,6 @@ package pro.softcom.sentinelle.application.pii.reporting.usecase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.atLeastOnce;
@@ -26,12 +25,13 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachme
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachmentDownloader;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
+import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanCheckpointService;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventFactory;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanProgressCalculator;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
-import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorSettings;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.confluence.AttachmentInfo;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
@@ -72,11 +72,6 @@ class StreamConfluenceScanUseCaseImplTest {
 
     @BeforeEach
     void setUp() {
-        final PiiDetectorSettings piiSettings = new PiiDetectorSettings() {
-            @Override public String host() { return "localhost"; }
-            @Override public int port() { return 50051; }
-            @Override public float defaultThreshold() { return 0.5f; }
-        };
         // Keep only baseUrl relevant for URL building
         final ConfluenceUrlProvider confluenceUrlProvider = new ConfluenceUrlProvider() {
             @Override public String baseUrl() { return "http://confluence.example"; }
@@ -96,24 +91,23 @@ class StreamConfluenceScanUseCaseImplTest {
         ScanProgressCalculator progressCalculator = new ScanProgressCalculator();
         ScanEventFactory eventFactory = new ScanEventFactory(confluenceUrlProvider);
         ScanCheckpointService checkpointService = new ScanCheckpointService(scanCheckpointRepository);
+        
+        // Create parameter objects
+        ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService);
+        ScanOrchestrator scanOrchestrator = new ScanOrchestrator(eventFactory, progressCalculator,
+                                                                 checkpointService, jpaScanEventStoreAdapter);
         AttachmentProcessor attachmentProcessor = new AttachmentProcessor(
                 confluenceDownloadService,
                 attachmentTextExtractionService,
                 piiDetectorClient,
-                piiSettings,
                 eventFactory,
                 progressCalculator
         );
 
         streamConfluenceScanUseCase = new StreamConfluenceScanUseCaseImpl(
-                confluenceService,
-                confluenceAttachmentService,
-                piiSettings,
+                confluenceAccessor,
                 piiDetectorClient,
-                jpaScanEventStoreAdapter,
-                eventFactory,
-                progressCalculator,
-                checkpointService,
+                scanOrchestrator,
                 attachmentProcessor
         );
     }
@@ -141,8 +135,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void streamSpace_blankContent_noAttachments() {
         String spaceKey = "S1";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-                ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-                new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+                ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         ConfluencePage page = ConfluencePage.builder()
@@ -178,8 +171,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void streamSpace_withAttachmentAndContent() {
         String spaceKey = "S2";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-                ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-                new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+                ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         ConfluencePage page = ConfluencePage.builder()
@@ -201,7 +193,7 @@ class StreamConfluenceScanUseCaseImplTest {
                         new ContentPiiDetection.SensitiveData(ContentPiiDetection.DataType.EMAIL, "john@doe.com", "", 0, 16, 0.95, "sel")
                 ))
                 .build();
-        when(piiDetectorClient.analyzeContent(any(), anyFloat())).thenReturn(resp);
+        when(piiDetectorClient.analyzeContent(any())).thenReturn(resp);
 
         Flux<ScanResult> flux = streamConfluenceScanUseCase.streamSpace(spaceKey)
                 .filter(ev -> List.of(
@@ -230,8 +222,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void streamSpace_grpcStatusError() {
         String spaceKey = "S3";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t", "http://test.com","d",
-                ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-                new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+                ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         ConfluencePage page = ConfluencePage.builder()
@@ -243,7 +234,7 @@ class StreamConfluenceScanUseCaseImplTest {
         when(confluenceService.getAllPagesInSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(List.of(page)));
         when(confluenceAttachmentService.getPageAttachments("p-3")).thenReturn(CompletableFuture.completedFuture(List.of()));
 
-        when(piiDetectorClient.analyzeContent(any(), anyFloat())).thenThrow(new RuntimeException("UNAVAILABLE"));
+        when(piiDetectorClient.analyzeContent(any())).thenThrow(new RuntimeException("UNAVAILABLE"));
 
         Flux<ScanResult> flux = streamConfluenceScanUseCase.streamSpace(spaceKey)
                 .filter(ev -> List.of(
@@ -284,8 +275,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void Should_BuildPageUrlWithoutDoubleSlash_When_BaseUrlEndsWithSlash() {
         String spaceKey = "S-TRIM";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-                                                    ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-                                                    new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+                                                    ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         ConfluencePage page = ConfluencePage.builder()
@@ -298,7 +288,7 @@ class StreamConfluenceScanUseCaseImplTest {
         when(confluenceAttachmentService.getPageAttachments("p-trim")).thenReturn(CompletableFuture.completedFuture(List.of()));
 
         // Stub detector to avoid network calls and return an empty response
-        when(piiDetectorClient.analyzeContent(any(), anyFloat())).thenReturn(
+        when(piiDetectorClient.analyzeContent(any())).thenReturn(
             ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
         );
 
@@ -317,8 +307,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void Should_NotEmitAttachmentItem_When_AttachmentExtensionIsNotExtractable() {
         String spaceKey = "S-NO-EXT";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-                                                    ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-                                                    new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+                                                    ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         ConfluencePage page = ConfluencePage.builder()
@@ -332,7 +321,7 @@ class StreamConfluenceScanUseCaseImplTest {
         AttachmentInfo att = new AttachmentInfo("file.bin", "bin", "application/octet-stream", "http://file");
         when(confluenceAttachmentService.getPageAttachments("p-no-ext")).thenReturn(CompletableFuture.completedFuture(List.of(att)));
 
-        when(piiDetectorClient.analyzeContent(any(), anyFloat())).thenReturn(
+        when(piiDetectorClient.analyzeContent(any())).thenReturn(
             ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
         );
 
@@ -355,8 +344,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void Should_NotEmitAttachmentItem_When_DownloadReturnsEmpty() {
         String spaceKey = "S-EMPTY-DL";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-                                                    ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-                                                    new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+                                                    ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         ConfluencePage page = ConfluencePage.builder()
@@ -371,7 +359,7 @@ class StreamConfluenceScanUseCaseImplTest {
         when(confluenceAttachmentService.getPageAttachments("p-empty-dl")).thenReturn(CompletableFuture.completedFuture(List.of(att)));
         when(confluenceDownloadService.downloadAttachmentContent("p-empty-dl", "file.pdf")).thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
-        when(piiDetectorClient.analyzeContent(any(), anyFloat())).thenReturn(
+        when(piiDetectorClient.analyzeContent(any())).thenReturn(
             ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
         );
 
@@ -394,8 +382,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void Should_TruncateMaskedContent_When_LengthGreaterThan5000() {
         String spaceKey = "S-TRUNC";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-                                                    ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-                                                    new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+                                                    ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         ConfluencePage page = ConfluencePage.builder()
@@ -407,7 +394,7 @@ class StreamConfluenceScanUseCaseImplTest {
         when(confluenceService.getAllPagesInSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(List.of(page)));
         when(confluenceAttachmentService.getPageAttachments("p-trunc")).thenReturn(CompletableFuture.completedFuture(List.of()));
 
-        when(piiDetectorClient.analyzeContent(any(), anyFloat())).thenReturn(
+        when(piiDetectorClient.analyzeContent(any())).thenReturn(
             ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
         );
 
@@ -443,8 +430,7 @@ class StreamConfluenceScanUseCaseImplTest {
     @DisplayName("streamAllSpaces - per-space failure emits error event between multi_start and multi_complete")
     void Should_EmitErrorEventPerSpace_When_GetAllPagesFails_InStreamAllSpaces() {
         ConfluenceSpace space = new ConfluenceSpace("id", "MS1", "t", "http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         CompletableFuture<List<ConfluencePage>> failing = new CompletableFuture<>();
@@ -481,8 +467,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void Should_ProcessPage_When_AttachmentsRetrievalFails() {
         String spaceKey = "S-AERR";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         ConfluencePage page = ConfluencePage.builder()
@@ -497,7 +482,7 @@ class StreamConfluenceScanUseCaseImplTest {
         failing.completeExceptionally(new RuntimeException("att-fail"));
         when(confluenceAttachmentService.getPageAttachments("p-aerr")).thenReturn(failing);
 
-        when(piiDetectorClient.analyzeContent(any(), anyFloat())).thenReturn(
+        when(piiDetectorClient.analyzeContent(any())).thenReturn(
             ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
         );
 
@@ -524,16 +509,13 @@ class StreamConfluenceScanUseCaseImplTest {
     @DisplayName("buildPageUrl - null when baseUrl is blank")
     void Should_UseNullPageUrl_When_BaseUrlIsBlank() {
         // Build a dedicated service with blank base URL
-        final PiiDetectorSettings piiSettings = new PiiDetectorSettings() {
-            @Override public String host() { return "localhost"; }
-            @Override public int port() { return 50051; }
-            @Override public float defaultThreshold() { return 0.5f; }
-        };
         final ConfluenceUrlProvider blankUrlProvider = new ConfluenceUrlProvider() {
             @Override public String baseUrl() { return "   "; }
             @Override public String pageUrl(String pageId) {
                 String base = baseUrl();
-                if (base == null || base.isBlank()) return null;
+                if (base.isBlank()) {
+                    return null;
+                }
                 if (pageId == null || pageId.isBlank()) return null;
                 base = base.trim();
                 if (base.endsWith("/")) base = base.substring(0, base.length() - 1);
@@ -545,31 +527,29 @@ class StreamConfluenceScanUseCaseImplTest {
         ScanProgressCalculator progressCalculator = new ScanProgressCalculator();
         ScanEventFactory eventFactory = new ScanEventFactory(blankUrlProvider);
         ScanCheckpointService checkpointService = new ScanCheckpointService(scanCheckpointRepository);
+        
+        // Create parameter objects
+        ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService);
+        ScanOrchestrator scanOrchestrator = new ScanOrchestrator(eventFactory, progressCalculator,
+                                                                 checkpointService, jpaScanEventStoreAdapter);
         AttachmentProcessor attachmentProcessor = new AttachmentProcessor(
                 confluenceDownloadService,
                 attachmentTextExtractionService,
                 piiDetectorClient,
-                piiSettings,
                 eventFactory,
                 progressCalculator
         );
 
         StreamConfluenceScanUseCaseImpl svc = new StreamConfluenceScanUseCaseImpl(
-            confluenceService,
-            confluenceAttachmentService,
-            piiSettings,
+            confluenceAccessor,
             piiDetectorClient,
-            jpaScanEventStoreAdapter,
-            eventFactory,
-            progressCalculator,
-            checkpointService,
+            scanOrchestrator,
             attachmentProcessor
         );
 
         String spaceKey = "S-BLANK";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
         ConfluencePage page = ConfluencePage.builder()
             .id("p-blank")
@@ -579,7 +559,7 @@ class StreamConfluenceScanUseCaseImplTest {
             .build();
         when(confluenceService.getAllPagesInSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(List.of(page)));
         when(confluenceAttachmentService.getPageAttachments("p-blank")).thenReturn(CompletableFuture.completedFuture(List.of()));
-        when(piiDetectorClient.analyzeContent(any(), anyFloat())).thenReturn(
+        when(piiDetectorClient.analyzeContent(any())).thenReturn(
             ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
         );
 
@@ -597,17 +577,14 @@ class StreamConfluenceScanUseCaseImplTest {
     @DisplayName("buildPageUrl - trims trailing slash in baseUrl (dedicated provider)")
     void Should_BuildPageUrlWithoutDoubleSlash_When_ProviderEndsWithSlash() {
         // Build a dedicated service with trailing slash
-        final PiiDetectorSettings piiSettings = new PiiDetectorSettings() {
-            @Override public String host() { return "localhost"; }
-            @Override public int port() { return 50051; }
-            @Override public float defaultThreshold() { return 0.5f; }
-        };
         final ConfluenceUrlProvider confluenceUrlProvider = new ConfluenceUrlProvider() {
             @Override public String baseUrl() { return "http://confluence.example/"; }
             @Override public String pageUrl(String pageId) {
                 if (pageId == null || pageId.isBlank()) return null;
                 String base = baseUrl();
-                if (base == null || base.isBlank()) return null;
+                if (base.isBlank()) {
+                    return null;
+                }
                 base = base.trim();
                 if (base.endsWith("/")) base = base.substring(0, base.length() - 1);
                 return base + "/pages/viewpage.action?pageId=" + pageId;
@@ -618,31 +595,29 @@ class StreamConfluenceScanUseCaseImplTest {
         ScanProgressCalculator progressCalculator = new ScanProgressCalculator();
         ScanEventFactory eventFactory = new ScanEventFactory(confluenceUrlProvider);
         ScanCheckpointService checkpointService = new ScanCheckpointService(scanCheckpointRepository);
+        
+        // Create parameter objects
+        ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService);
+        ScanOrchestrator scanOrchestrator = new ScanOrchestrator(eventFactory, progressCalculator,
+                                                                 checkpointService, jpaScanEventStoreAdapter);
         AttachmentProcessor attachmentProcessor = new AttachmentProcessor(
                 confluenceDownloadService,
                 attachmentTextExtractionService,
                 piiDetectorClient,
-                piiSettings,
                 eventFactory,
                 progressCalculator
         );
 
         StreamConfluenceScanUseCaseImpl svc = new StreamConfluenceScanUseCaseImpl(
-            confluenceService,
-            confluenceAttachmentService,
-            piiSettings,
+            confluenceAccessor,
             piiDetectorClient,
-            jpaScanEventStoreAdapter,
-            eventFactory,
-            progressCalculator,
-            checkpointService,
+            scanOrchestrator,
             attachmentProcessor
         );
 
         String spaceKey = "S-TRIM2";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
         ConfluencePage page = ConfluencePage.builder()
             .id("p-trim2")
@@ -652,7 +627,7 @@ class StreamConfluenceScanUseCaseImplTest {
             .build();
         when(confluenceService.getAllPagesInSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(List.of(page)));
         when(confluenceAttachmentService.getPageAttachments("p-trim2")).thenReturn(CompletableFuture.completedFuture(List.of()));
-        when(piiDetectorClient.analyzeContent(any(), anyFloat())).thenReturn(
+        when(piiDetectorClient.analyzeContent(any())).thenReturn(
             ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
         );
 
@@ -671,8 +646,7 @@ class StreamConfluenceScanUseCaseImplTest {
     void Should_PersistRunningCheckpointWithoutAdvancingPage_When_ItemEventEmitted() {
         String spaceKey = "S-CP-ITEM";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT,
-            new ConfluenceSpace.SpacePermissions(true,true,true,true,true,true), Map.of());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
         when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
         ConfluencePage page = ConfluencePage.builder()
             .id("p-cp-item")
@@ -682,7 +656,7 @@ class StreamConfluenceScanUseCaseImplTest {
             .build();
         when(confluenceService.getAllPagesInSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(List.of(page)));
         when(confluenceAttachmentService.getPageAttachments("p-cp-item")).thenReturn(CompletableFuture.completedFuture(List.of()));
-        when(piiDetectorClient.analyzeContent(any(), anyFloat())).thenReturn(
+        when(piiDetectorClient.analyzeContent(any())).thenReturn(
             ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
         );
 
@@ -702,3 +676,4 @@ class StreamConfluenceScanUseCaseImplTest {
         ));
     }
 }
+

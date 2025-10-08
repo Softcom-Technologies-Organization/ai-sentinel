@@ -14,9 +14,12 @@ import {PiiItemCardComponent} from '../pii-item-card/pii-item-card.component';
 import {
   LastScanMeta,
   SentinelleApiService,
-  SpaceStatusDto
+  SpaceScanStateDto
 } from '../../core/services/sentinelle-api.service';
 import {Subscription} from 'rxjs';
+import {
+  ConfluenceSpacesPollingService
+} from '../../core/services/confluence-spaces-polling.service';
 import {Space} from '../../core/models/space';
 import {ToggleSwitchModule} from 'primeng/toggleswitch';
 import {BadgeModule} from 'primeng/badge';
@@ -57,12 +60,15 @@ import {TestIds} from '../test-ids.constants';
 export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly sentinelleApiService = inject(SentinelleApiService);
   readonly spacesDashboardUtils = inject(SpacesDashboardUtils);
+  readonly pollingService = inject(ConfluenceSpacesPollingService);
   private sub?: Subscription;
+  private pollingSub?: Subscription;
 
   // Expose test IDs to template for E2E testing
   readonly testIds = TestIds.dashboard;
 
   readonly globalFilter = signal<string>('');
+  readonly statusFilter = signal<string | null>(null);
   readonly isStreaming = signal(false);
   readonly spaces = signal<Space[]>([]);
   readonly queue = signal<string[]>([]);
@@ -80,13 +86,21 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
   // Latest scan info for resume and dashboard display
   readonly lastScanMeta = signal<LastScanMeta | null>(null);
-  readonly lastSpaceStatuses = signal<SpaceStatusDto[]>([]);
+  readonly lastSpaceStatuses = signal<SpaceScanStateDto[]>([]);
   readonly isResuming = signal<boolean>(false);
 
   // Loading state for spaces list to control UI availability
   readonly isSpacesLoading = signal<boolean>(true);
   readonly canStartScan = computed(() => !this.isStreaming() && !this.isSpacesLoading() && this.spaces().length > 0);
   readonly canResumeScan = computed(() => !this.isStreaming() && !this.isSpacesLoading() && !!this.lastScanMeta() && !this.isResuming());
+
+  // Manual refresh state (Phase 1)
+  readonly lastRefresh = signal<Date | null>(null);
+  readonly isRefreshing = signal<boolean>(false);
+
+  // Notification state (Phase 2)
+  readonly hasNewSpaces = signal<boolean>(false);
+  readonly newSpacesCount = signal<number>(0);
 
   ngOnInit(): void {
     this.fetchSpaces();
@@ -95,6 +109,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopCurrentScan();
+    this.pollingSub?.unsubscribe();
   }
 
   readonly filteredSpaces = computed(() => {
@@ -102,8 +117,9 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     return this.spacesDashboardUtils.filteredSpaces();
   });
 
-  onGlobalChange(v: string) {
+  onGlobalChange(v: string): void {
     this.globalFilter.set(v);
+    this.spacesDashboardUtils.globalFilter.set(v);
   }
 
   // UI actions
@@ -158,21 +174,41 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   }
 
   stopCurrentScan(): void {
+    const scanId = this.lastScanMeta()?.scanId;
+
+    // Unsubscribe from SSE stream
     if (this.sub) {
       this.sub.unsubscribe();
       this.sub = undefined;
     }
     this.isStreaming.set(false);
-    this.loadLastSpaceStatuses(false);
-    // Also refresh last scan metadata so the Resume button becomes available after interruption
-    this.loadLastScan();
+
+    // Call backend to mark scan as PAUSED if we have a scanId
+    if (scanId) {
+      this.sentinelleApiService.pauseScan(scanId).subscribe({
+        next: () => {
+          this.append(`[ui] Scan ${scanId} mis en pause`);
+          this.loadLastSpaceStatuses(false);
+          this.loadLastScan();
+        },
+        error: (err) => {
+          this.append(`[ui] Erreur lors de la mise en pause: ${err?.message ?? err}`);
+          // Still reload statuses even if pause fails
+          this.loadLastSpaceStatuses(false);
+          this.loadLastScan();
+        }
+      });
+    } else {
+      // No scanId, just reload statuses
+      this.loadLastSpaceStatuses(false);
+      this.loadLastScan();
+    }
   }
 
   // --- Latest scan loading and resume ---
   private loadLastScan(): void {
     this.sentinelleApiService.getLastScanMeta().subscribe({
       next: (meta) => {
-        console.log('Class: SpacesDashboardComponent, Function: next, Param: meta, \n' + JSON.stringify(meta, null, 2));
         this.lastScanMeta.set(meta);
         if (meta) {
           this.append(`[ui] Dernier scan détecté: ${meta.scanId} (${meta.spacesCount} espaces)`);
@@ -189,14 +225,14 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
   private loadLastSpaceStatuses(alsoLoadItems: boolean = true): void {
     this.sentinelleApiService.getLastScanSpaceStatuses().subscribe({
-      next: (list) => {
-        this.lastSpaceStatuses.set(list);
+      next: (spaceScanStateList) => {
+        this.lastSpaceStatuses.set(spaceScanStateList);
         const isActive = this.isStreaming();
-        for (const s of list) {
-          const uiStatus = this.computeUiStatus(s, isActive);
-          this.spacesDashboardUtils.updateSpace(s.spaceKey, { status: uiStatus, lastScanTs: s.lastEventTs });
-          if (s.status === 'COMPLETED') {
-            this.updateProgress(s.spaceKey, { percent: 100 });
+        for (const spaceScanState of spaceScanStateList) {
+          const uiStatus = this.computeUiStatus(spaceScanState, isActive);
+          this.spacesDashboardUtils.updateSpace(spaceScanState.spaceKey, { status: uiStatus, lastScanTs: spaceScanState.lastEventTs });
+          if (spaceScanState.status === 'COMPLETED') {
+            this.updateProgress(spaceScanState.spaceKey, { percent: 100 });
           }
         }
         // Apply counts from any items already loaded
@@ -213,14 +249,15 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   }
 
   private computeUiStatus(
-    s: SpaceStatusDto,
+    spaceScanState: SpaceScanStateDto,
     isActive: boolean
-  ): 'FAILED' | 'RUNNING' | 'OK' | 'PENDING' | 'INTERRUPTED' | undefined {
-    if (s.status === 'COMPLETED') return 'OK';
-    if (s.status === 'FAILED') return 'FAILED';
-    if (s.status === 'RUNNING' && isActive) return 'RUNNING';
-    const workDone = (s.pagesDone ?? 0) + (s.attachmentsDone ?? 0);
-    if (workDone > 0) return 'INTERRUPTED';
+  ): 'FAILED' | 'RUNNING' | 'OK' | 'PENDING' | 'PAUSED' | undefined {
+    if (spaceScanState.status === 'COMPLETED') return 'OK';
+    if (spaceScanState.status === 'FAILED') return 'FAILED';
+    if (spaceScanState.status === 'PENDING') return 'PAUSED';
+    if (spaceScanState.status === 'RUNNING' && isActive) return 'RUNNING';
+    const workDone = (spaceScanState.pagesDone ?? 0) + (spaceScanState.attachmentsDone ?? 0);
+    if (workDone > 0) return 'PAUSED';
     return 'PENDING';
   }
 
@@ -267,7 +304,6 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
         // Immediately reconnect to the SSE stream so new WebFlux events are displayed live
         this.append('[ui] Reprise acceptée (HTTP 202). Connexion au flux d\'événements ...');
         // Ensure no leftover subscription then open the stream
-        this.stopCurrentScan();
         this.isStreaming.set(true);
         this.sub = this.sentinelleApiService.startAllSpacesStream(meta.scanId).subscribe({
           next: (ev) => this.routeStreamEvent(ev.type as StreamEventType, ev.data),
@@ -288,7 +324,10 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  onFilter(field: 'name' | 'status', value: string | null): void {
+  onFilter(field: 'name' | 'status', value: string | null | undefined): void {
+    if (field === 'status') {
+      this.statusFilter.set(value ?? null);
+    }
     this.spacesDashboardUtils.onFilter(field, value);
   }
 
@@ -328,8 +367,13 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Fetches Confluence spaces from backend cache.
+   * Business purpose: loads space list for dashboard display with instant response from DB cache.
+   */
   private fetchSpaces(): void {
     this.isSpacesLoading.set(true);
+    this.isRefreshing.set(true);
     this.sentinelleApiService.getSpaces().subscribe({
       next: (spaces) => {
         this.spaces.set(spaces);
@@ -337,13 +381,60 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
         this.spacesDashboardUtils.setSpaces(spaces);
         // Re-apply cached last scan statuses and PII counts once spaces are available
         this.reapplyLastScanUi();
+        this.lastRefresh.set(new Date());
         this.isSpacesLoading.set(false);
+        this.isRefreshing.set(false);
+
+        // Start polling after spaces are loaded to avoid false "new spaces" detection
+        if (!this.pollingSub) {
+          this.startBackgroundPolling();
+        }
       },
       error: (e) => {
         this.append(`[ui] Failed to fetch spaces: ${e?.message ?? e}`);
         this.isSpacesLoading.set(false);
+        this.isRefreshing.set(false);
       }
     });
+  }
+
+  /**
+   * Manually refreshes the spaces list.
+   * Business purpose: allows users to explicitly update the dashboard with latest cached data.
+   */
+  refreshSpaces(): void {
+    this.fetchSpaces();
+    this.hasNewSpaces.set(false);
+    this.newSpacesCount.set(0);
+  }
+
+  /**
+   * Starts silent background polling to detect new spaces.
+   * Business purpose: automatic discovery of new spaces without disrupting user workflow.
+   */
+  private startBackgroundPolling(): void {
+    const initialCount = this.spaces().length;
+
+    this.pollingSub = this.pollingService.startPolling(initialCount).subscribe({
+      next: (detection) => {
+        if (detection.hasNewSpaces) {
+          this.hasNewSpaces.set(true);
+          this.newSpacesCount.set(detection.newSpacesCount);
+        }
+      },
+      error: (err) => {
+        console.error('[polling] Error during background polling:', err);
+      }
+    });
+  }
+
+  /**
+   * Dismisses the new spaces notification banner.
+   * Business purpose: allows users to clear notification without refreshing.
+   */
+  dismissNotification(): void {
+    this.hasNewSpaces.set(false);
+    this.newSpacesCount.set(0);
   }
 
   /**
@@ -392,7 +483,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
     // Handle multiStart early to refresh dashboard even if payload is missing
     if (type === 'multiStart') {
-      this.handleMultiStart(payload);
+      this.handleAllSpaceScanStart(payload);
       return;
     }
 
@@ -402,7 +493,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
     switch (type) {
       case 'start': {
-        this.handleStreamStart(payload);
+        this.handleStreamScanStart(payload);
         break;
       }
       case 'pageStart': {
@@ -440,7 +531,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
    * - Captures scanId from payload when available
    * - Marks all spaces as PENDING and rebuilds the queue order
    */
-  private handleMultiStart(payload?: RawStreamPayload): void {
+  private handleAllSpaceScanStart(payload?: RawStreamPayload): void {
     this.isStreaming.set(true);
     if (payload) {
       this.ensureLastScanMetaFromPayload(payload);
@@ -462,7 +553,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   /**
    * Marks the space as running, initializes progress, and updates UI model.
    */
-  private handleStreamStart(payload: RawStreamPayload): void {
+  private handleStreamScanStart(payload: RawStreamPayload): void {
     const spaceKey = payload.spaceKey;
     if (!spaceKey) {
       return;

@@ -56,7 +56,9 @@ class ConfluenceAttachmentHttpDownloaderAdapterTest {
                 "SPACE",
                 new ConfluenceConfig.ConnectionSettings(5_000, 5_000, 2, false, null),
                 new ConfluenceConfig.PaginationSettings(50, 5),
-                new ConfluenceConfig.ApiPaths("/content/", "/content/search", "/space", "/child/attachment", "body.storage,version", "permissions")
+                new ConfluenceConfig.ApiPaths("/content/", "/content/search", "/space", "/child/attachment", "body.storage,version", "permissions"),
+                new ConfluenceConfig.CacheSettings(300000, 5000),
+                new ConfluenceConfig.PollingSettings(60000)
         );
         service = new ConfluenceAttachmentHttpDownloaderAdapter(config, objectMapper);
 

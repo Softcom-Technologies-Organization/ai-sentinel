@@ -3,11 +3,6 @@ package pro.softcom.sentinelle.infrastructure.confluence.adapter.out.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
-/**
- * Configuration pour la connexion à Confluence.
- * Cette configuration est indépendante de toute instance Confluence spécifique.
- * Les valeurs des variables d'environnement déterminent l'instance Confluence ciblée.
- */
 @ConfigurationProperties(prefix = "confluence")
 public record ConfluenceConfig(
     String baseUrl,
@@ -16,7 +11,9 @@ public record ConfluenceConfig(
     String spaceKey,
     ConnectionSettings connectionSettings,
     PaginationSettings paginationSettings,
-    ApiPaths apiPaths
+    ApiPaths apiPaths,
+    CacheSettings cache,
+    PollingSettings polling
 ) implements ConfluenceConnectionConfig {
 
     @ConstructorBinding
@@ -135,9 +132,6 @@ public record ConfluenceConfig(
             : baseUrl + "/rest/api";
     }
 
-    /**
-     * Paramètres de connexion HTTP.
-     */
     public record ConnectionSettings(
         int connectTimeout,
         int readTimeout,
@@ -158,9 +152,6 @@ public record ConfluenceConfig(
         }
     }
 
-    /**
-     * Paramètres de pagination pour les requêtes API.
-     */
     public record PaginationSettings(
         int pagesLimit,
         int maxPages
@@ -175,9 +166,6 @@ public record ConfluenceConfig(
         }
     }
 
-    /**
-     * Chemins des endpoints de l'API Confluence.
-     */
     public record ApiPaths(
         String contentPath,
         String searchContentPath,
@@ -187,13 +175,34 @@ public record ConfluenceConfig(
         String defaultSpaceExpands
     ) {}
 
-    /**
-     * Paramètres de configuration du proxy HTTP.
-     */
     public record ProxySettings(
         String host,
         int port,
         String username,
         String password
     ) {}
+
+    public record CacheSettings(
+        long refreshIntervalMs,
+        long initialDelayMs
+    ) {
+        public CacheSettings {
+            if (refreshIntervalMs <= 0) {
+                refreshIntervalMs = 300000; // 5 minutes default
+            }
+            if (initialDelayMs < 0) {
+                initialDelayMs = 5000; // 5 seconds default
+            }
+        }
+    }
+
+    public record PollingSettings(
+        long intervalMs
+    ) {
+        public PollingSettings {
+            if (intervalMs <= 0) {
+                intervalMs = 60000; // 1 minute default
+            }
+        }
+    }
 }

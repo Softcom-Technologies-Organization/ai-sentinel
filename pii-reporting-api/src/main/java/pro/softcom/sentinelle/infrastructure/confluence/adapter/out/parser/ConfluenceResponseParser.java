@@ -14,9 +14,6 @@ import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.dto.Confluen
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.mapper.ConfluencePageMapper;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.mapper.ConfluenceSpaceMapper;
 
-/**
- * Parse et transforme les réponses JSON de l'API Confluence.
- */
 @Slf4j
 public class ConfluenceResponseParser {
 
@@ -54,7 +51,7 @@ public class ConfluenceResponseParser {
             return ConfluencePageMapper.toDomain(updatedPage);
         } catch (Exception e) {
             log.error("Erreur lors de la désérialisation de la page mise à jour", e);
-            throw new RuntimeException("Désérialisation impossible", e);
+            throw new ConfluenceDeserializationException("Désérialisation impossible", e);
         }
     }
 

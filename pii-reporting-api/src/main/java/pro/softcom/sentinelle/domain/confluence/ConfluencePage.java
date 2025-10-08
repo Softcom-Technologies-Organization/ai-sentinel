@@ -5,9 +5,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.Builder;
 
-/**
- * Représente une page Confluence.
- */
 @Builder
 public record ConfluencePage(
     String id,
@@ -19,9 +16,6 @@ public record ConfluencePage(
     Map<String, Object> customProperties
 ) {
     
-    /**
-     * Contenu de la page avec support de différents formats
-     */
     public sealed interface PageContent permits HtmlContent, WikiContent, MarkdownContent {
         String format();
         String body();
@@ -48,9 +42,6 @@ public record ConfluencePage(
         }
     }
     
-    /**
-     * Métadonnées de la page
-     */
     public record PageMetadata(
         String createdBy,
         LocalDateTime createdDate,

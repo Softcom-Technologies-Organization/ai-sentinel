@@ -9,7 +9,7 @@ This module provides a unified interface to configuration:
 Only includes actually used environment variables.
 
 Usage:
-    from pii_detector.config import get_config
+    from config import get_config
     
     config = get_config()
     

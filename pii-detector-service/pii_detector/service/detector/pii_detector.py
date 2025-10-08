@@ -198,7 +198,7 @@ class ModelManager:
 
     def _get_api_key(self) -> str:
         """Get Hugging Face API key from centralized configuration."""
-        from pii_detector.config import get_config
+        from config import get_config
         
         try:
             config = get_config()

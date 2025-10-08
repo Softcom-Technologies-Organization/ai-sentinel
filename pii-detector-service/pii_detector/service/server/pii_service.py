@@ -18,14 +18,14 @@ import psutil
 from grpc_reflection.v1alpha import reflection
 
 # Import the generated gRPC code
-from pii_detector.proto import pii_detection_pb2
-from pii_detector.proto import pii_detection_pb2_grpc
+from proto import pii_detection_pb2
+from proto import pii_detection_pb2_grpc
 # Import the PII detector
-from pii_detector.service.detector.pii_detector import PIIDetector
-from pii_detector.service.detector.pii_detector import PIIEntity as DetectedPIIEntity
+from service.detector.pii_detector import PIIDetector
+from service.detector.pii_detector import PIIEntity as DetectedPIIEntity
 # Optional pre-caching of additional HF models (extensible)
 try:
-    from pii_detector.service.detector.model_cache import ensure_models_cached, get_env_extra_models
+    from service.detector.model_cache import ensure_models_cached, get_env_extra_models
 except Exception:  # pragma: no cover - safe import guard
     ensure_models_cached = None
     get_env_extra_models = None
@@ -62,7 +62,7 @@ def get_detector_instance():
                     logger.warning(f"Pre-caching extra models failed (continuing): {e}")
 
                 # Decide between single or multi-model detector based on centralized config
-                from pii_detector.config import get_config
+                from config import get_config
                 try:
                     config = get_config()
                     enabled = config.detection.multi_detector_enabled

@@ -46,6 +46,8 @@ dependencies = [
     # Modern gRPC alternative (betterproto)
     "betterproto[compiler]>=2.0.0b6",
     "grpclib>=0.4.7",
+
+    "psutil == 7.1.0"
 ]
 
 [project.optional-dependencies]

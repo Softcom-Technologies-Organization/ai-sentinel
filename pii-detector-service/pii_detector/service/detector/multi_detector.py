@@ -20,12 +20,11 @@ Environment variables:
 from __future__ import annotations
 
 import logging
-import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Iterable, List, Optional, Tuple, Dict
 
+from ...config import get_config as get_app_config
 from .pii_detector import PIIDetector, DetectionConfig, PIIEntity
-
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +32,8 @@ logger = logging.getLogger(__name__)
 def _get_provenance_logging() -> bool:
     """Get provenance logging setting from centralized configuration."""
     try:
-        from config import get_config
-        config = get_config()
-        return config.detection.multi_detector_log_provenance
+        cfg = get_app_config()
+        return cfg.detection.multi_detector_log_provenance
     except (ValueError, AttributeError, ImportError):
         return False
 
@@ -50,11 +48,9 @@ def get_multi_model_ids(primary_model: str) -> List[str]:
     The default includes the primary model and a multilingual PII NER model to
     enable cross-analysis out-of-the-box.
     """
-    from config import get_config
-    
     try:
-        config = get_config()
-        models = config.detection.multi_detector_models
+        cfg = get_app_config()
+        models = cfg.detection.multi_detector_models
         if not models:
             return [primary_model, "Ar86Bat/multilang-pii-ner"]
         

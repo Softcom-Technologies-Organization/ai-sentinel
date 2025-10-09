@@ -18,8 +18,8 @@ import psutil
 from grpc_reflection.v1alpha import reflection
 
 # Import the generated gRPC code
-from proto import pii_detection_pb2
-from proto import pii_detection_pb2_grpc
+from proto.generated import pii_detection_pb2, pii_detection_pb2_grpc
+
 # Import the PII detector
 from service.detector.pii_detector import PIIDetector
 from service.detector.pii_detector import PIIEntity as DetectedPIIEntity

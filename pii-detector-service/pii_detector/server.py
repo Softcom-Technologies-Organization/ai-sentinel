@@ -83,8 +83,8 @@ def set_logging_level(debug=False):
         logger.debug(f"Proto directory exists: {proto_dir.exists()}")
 
         # Check if generated files exist
-        pb2_file = proto_dir / "pii_detection_pb2.py"
-        pb2_grpc_file = proto_dir / "pii_detection_pb2_grpc.py"
+        pb2_file = proto_dir / "generated" / "pii_detection_pb2.py"
+        pb2_grpc_file = proto_dir / "generated" / "pii_detection_pb2_grpc.py"
         logger.debug(f"pii_detection_pb2.py exists: {pb2_file.exists()}")
         logger.debug(f"pii_detection_pb2_grpc.py exists: {pb2_grpc_file.exists()}")
 
@@ -157,8 +157,8 @@ def check_environment(api_key=None):
         logger.debug(f"Proto directory exists: {proto_dir.exists()}")
 
         # Check if generated files exist
-        pb2_file = proto_dir / "pii_detection_pb2.py"
-        pb2_grpc_file = proto_dir / "pii_detection_pb2_grpc.py"
+        pb2_file = proto_dir / "generated" / "pii_detection_pb2.py"
+        pb2_grpc_file = proto_dir / "generated" / "pii_detection_pb2_grpc.py"
         logger.debug(f"pii_detection_pb2.py exists: {pb2_file.exists()}")
         logger.debug(f"pii_detection_pb2_grpc.py exists: {pb2_grpc_file.exists()}")
 
@@ -169,8 +169,8 @@ def check_environment(api_key=None):
         if not import_success:
             try:
                 logger.debug("Attempting normal import...")
-                from proto import pii_detection_pb2
-                from proto import pii_detection_pb2_grpc
+                from proto.generated import pii_detection_pb2
+                from proto.generated import pii_detection_pb2_grpc
                 logger.debug("Successfully imported gRPC code using normal import")
                 import_success = True
             except ImportError as e:

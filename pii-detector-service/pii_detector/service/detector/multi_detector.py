@@ -32,12 +32,11 @@ logger = logging.getLogger(__name__)
 
 def _get_provenance_logging() -> bool:
     """Get provenance logging setting from centralized configuration."""
-    from config import get_config
-    
     try:
+        from config import get_config
         config = get_config()
         return config.detection.multi_detector_log_provenance
-    except (ValueError, AttributeError):
+    except (ValueError, AttributeError, ImportError):
         return False
 
 

@@ -19,8 +19,8 @@ from typing import List, Dict, Optional
 import random
 import string
 
-from proto import pii_detection_pb2
-from proto import pii_detection_pb2_grpc
+from proto.generated import pii_detection_pb2
+from proto.generated import pii_detection_pb2_grpc
 
 
 class LoadTester:

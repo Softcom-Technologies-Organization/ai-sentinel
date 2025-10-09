@@ -39,8 +39,8 @@ def run_test(host: str, port: int, text: str, threshold: float = 0.5):
         # Import the generated gRPC code
         try:
             import grpc
-            from proto import pii_detection_pb2
-            from proto import pii_detection_pb2_grpc
+            from proto.generated import pii_detection_pb2
+            from proto.generated import pii_detection_pb2_grpc
         except ImportError as e:
             logger.error(f"Error importing gRPC modules: {str(e)}")
             logger.error("Please run: python -m proto.generate_pb")

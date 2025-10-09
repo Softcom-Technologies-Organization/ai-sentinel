@@ -5,275 +5,29 @@ This module provides functionality for detecting Personally Identifiable Informa
 in text content using the Piiranha model with optimizations for memory usage and code quality.
 """
 
-import gc
 import logging
-import os
 import time
-import traceback
 import unicodedata
-import warnings
-from dataclasses import dataclass
-from enum import Enum
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
 import torch
-from huggingface_hub import hf_hub_download
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 
+# Import models from the models package
+from .models import (
+    PIIType,
+    PIIEntity,
+    DetectionConfig,
+    PIIDetectionError,
+    ModelNotLoadedError,
+    ModelLoadError,
+    APIKeyError,
+)
 
-class PIIType(Enum):
-    """Enumeration of supported PII types with French labels."""
-
-    ACCOUNTNUM = "Numéro de compte"
-    BUILDINGNUM = "Numéro de bâtiment"
-    CITY = "Ville"
-    CREDITCARDNUMBER = "Numéro de carte de crédit"
-    DATEOFBIRTH = "Date de naissance"
-    DRIVERLICENSENUM = "Numéro de permis de conduire"
-    EMAIL = "Email"
-    GIVENNAME = "Prénom"
-    IDCARDNUM = "Numéro de carte d'identité"
-    PASSWORD = "Mot de passe"
-    SOCIALNUM = "Numéro de sécurité sociale"
-    STREET = "Rue"
-    SURNAME = "Nom de famille"
-    TAXNUM = "Numéro fiscal"
-    TELEPHONENUM = "Numéro de téléphone"
-    USERNAME = "Nom d'utilisateur"
-    ZIPCODE = "Code postal"
-
-
-@dataclass
-class PIIEntity:
-    """Data class representing a detected PII entity."""
-
-    text: str
-    pii_type: str
-    type_label: str
-    start: int
-    end: int
-    score: float
-
-    def __getitem__(self, key):
-        """Support dictionary-style access for backward compatibility."""
-        if key == 'text':
-            return self.text
-        elif key == 'type':
-            return self.pii_type
-        elif key == 'type_label':
-            return self.type_label
-        elif key == 'type_fr':
-            return self.type_label  # French label is the same as type_label
-        elif key == 'start':
-            return self.start
-        elif key == 'end':
-            return self.end
-        elif key == 'score':
-            return self.score
-        else:
-            raise KeyError(f"'{key}' not found in PIIEntity")
-    
-    def __contains__(self, key):
-        """Support 'in' operator for backward compatibility."""
-        return key in ['text', 'type', 'type_label', 'type_fr', 'start', 'end', 'score']
-
-    def get(self, key, default=None):
-        """Support dictionary-style get method for backward compatibility."""
-        try:
-            return self[key]
-        except KeyError:
-            return default
-
-    def keys(self):
-        """Support dictionary-style keys method."""
-        return ['text', 'type', 'type_label', 'type_fr', 'start', 'end', 'score']
-
-    def values(self):
-        """Support dictionary-style values method."""
-        return [self.text, self.pii_type, self.type_label, self.type_label, self.start, self.end, self.score]
-
-    def items(self):
-        """Support dictionary-style items method."""
-        return [(key, self[key]) for key in self.keys()]
-
-
-@dataclass
-class DetectionConfig:
-    """Configuration for PII detection."""
-
-    model_id: str = "iiiorg/piiranha-v1-detect-personal-information"
-    device: Optional[str] = None
-    max_length: int = 256
-    threshold: float = 0.5
-    batch_size: int = 4
-    # Token-based splitting settings: overlap avoids boundary truncation
-    stride_tokens: int = 64
-    # Note: Character-based chunking options removed in favor of token-based splitting per model context
-    long_text_threshold: int = 10000
-
-
-class PIIDetectionError(Exception):
-    """Base exception for PII detection errors."""
-    pass
-
-
-class ModelNotLoadedError(ValueError):
-    """Raised when attempting to use an unloaded model."""
-    pass
-
-
-class ModelLoadError(PIIDetectionError):
-    """Raised when model loading fails."""
-    pass
-
-
-class APIKeyError(ValueError):
-    """Raised when Hugging Face API key is missing or invalid."""
-    pass
-
-
-class MemoryManager:
-    """Handles memory optimization and cleanup operations."""
-
-    @staticmethod
-    def setup_memory_optimization() -> None:
-        """Configure environment variables for memory optimization."""
-        os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-        os.environ['OMP_NUM_THREADS'] = '1'
-        warnings.filterwarnings("ignore")
-
-    @staticmethod
-    def optimize_for_device(device: str) -> None:
-        """Apply device-specific optimizations."""
-        if device == 'cpu':
-            torch.set_num_threads(1)
-
-    @staticmethod
-    def clear_cache(device: str) -> None:
-        """Clear memory caches."""
-        gc.collect()
-        if device == 'cuda' and torch.cuda.is_available():
-            torch.cuda.empty_cache()
-
-
-class ModelManager:
-    """Handles model downloading and loading operations."""
-
-    def __init__(self, config: DetectionConfig):
-        self.config = config
-        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-
-    def download_model(self) -> None:
-        """Download the model files from Hugging Face."""
-        api_key = self._get_api_key()
-        filenames = ["config.json", "model.safetensors", "tokenizer.json", "tokenizer_config.json"]
-
-        self.logger.info("Downloading model files from Hugging Face...")
-
-        for filename in filenames:
-            try:
-                hf_hub_download(
-                    repo_id=self.config.model_id,
-                    filename=filename,
-                    token=api_key
-                )
-                self.logger.debug(f"Downloaded {filename}")
-            except Exception as e:
-                self.logger.error(f"Error downloading {filename}: {str(e)}")
-                raise e  # Re-raise the original exception to match test expectations
-
-        self.logger.info("Model download completed successfully")
-
-    def load_model_components(self) -> Tuple[AutoTokenizer, AutoModelForTokenClassification]:
-        """Load tokenizer and model with optimizations."""
-        self.logger.info("Loading model components...")
-
-        try:
-            tokenizer = self._load_tokenizer()
-            model = self._load_model()
-            return tokenizer, model
-        except Exception as e:
-            self.logger.error(f"Error loading model components: {str(e)}")
-            raise ModelLoadError("Failed to load model components") from e
-
-    def _get_api_key(self) -> str:
-        """Get Hugging Face API key from centralized configuration."""
-        from config import get_config
-        
-        try:
-            config = get_config()
-            api_key = config.model.huggingface_api_key
-        except ValueError:
-            # Config validation failed
-            api_key = None
-        
-        if not api_key:
-            raise APIKeyError("HUGGING_FACE_API_KEY environment variable must be set")
-        return api_key
-
-    def _load_tokenizer(self) -> AutoTokenizer:
-        """Load tokenizer with optimizations."""
-        return AutoTokenizer.from_pretrained(
-            self.config.model_id,
-            legacy=False,
-            model_max_length=self.config.max_length,
-            padding=True,
-            truncation=True
-        )
-
-    def _load_model(self) -> AutoModelForTokenClassification:
-        """Load model with memory optimizations."""
-        device = self.config.device or ('cuda' if torch.cuda.is_available() else 'cpu')
-
-        model = AutoModelForTokenClassification.from_pretrained(
-            self.config.model_id,
-            torch_dtype=torch.float16 if device == 'cuda' else torch.float32,
-            low_cpu_mem_usage=True
-        )
-
-        model = model.to(device)
-        model.eval()
-
-        # Disable gradient computation for inference
-        for param in model.parameters():
-            param.requires_grad = False
-
-        return model
-
-
-class EntityProcessor:
-    """Handles entity processing and formatting operations."""
-
-    def __init__(self):
-        self.label_mapping = {pii_type.name: pii_type.value for pii_type in PIIType}
-        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-
-    def process_entities(self, raw_entities: List[Dict], threshold: float) -> List[PIIEntity]:
-        """Process and filter raw entities from the model."""
-        processed_entities = []
-
-        for entity in raw_entities:
-            if entity['score'] >= threshold:
-                pii_entity = self._create_pii_entity(entity)
-                processed_entities.append(pii_entity)
-
-        return processed_entities
-
-    def detect_emails_with_regex(self, text: str, existing_entities: List[PIIEntity]) -> List[PIIEntity]:
-        """Regex-based detections are disabled by policy; returns no additional entities."""
-        # Business rule: No regex-based detection is allowed. This is intentionally a no-op.
-        return []
-
-    def _create_pii_entity(self, entity: Dict) -> PIIEntity:
-        """Create a PIIEntity from raw model output."""
-        return PIIEntity(
-            text=entity['word'].strip(),
-            pii_type=entity['entity_group'],
-            type_label=self.label_mapping.get(entity['entity_group'], entity['entity_group']),
-            start=entity['start'],
-            end=entity['end'],
-            score=entity['score']
-        )
+# Import managers
+from .memory_manager import MemoryManager
+from .model_manager import ModelManager
+from .entity_processor import EntityProcessor
 
 
 
@@ -954,7 +708,3 @@ def setup_logging(level: int = logging.INFO) -> None:
 
 # Initialize logging
 setup_logging()
-
-
-
-

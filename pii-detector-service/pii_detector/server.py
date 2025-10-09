@@ -16,7 +16,7 @@ import argparse
 from pathlib import Path
 
 # Add the project root to the Python path
-sys.path.insert(0, str(Path(__file__).parent.absolute()))
+sys.path.insert(0, str(Path(__file__).parent.parent.absolute()))
 
 # Configure logging
 logging.basicConfig(
@@ -94,7 +94,7 @@ def set_logging_level(debug=False):
 
 def check_environment(api_key=None):
     """Check if the environment is properly set up."""
-    from config import get_config
+    from pii_detector.config import get_config
     
     # Get API key from centralized config or provided argument
     try:
@@ -295,7 +295,7 @@ def main():
 
     # Import the server module
     try:
-        from service.server.pii_service import serve
+        from pii_detector.service.server.pii_service import serve
 
         # Start the server
         server = serve(port=args.port, max_workers=args.workers)

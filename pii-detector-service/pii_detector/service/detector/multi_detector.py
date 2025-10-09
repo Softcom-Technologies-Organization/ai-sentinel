@@ -42,36 +42,50 @@ def _get_provenance_logging() -> bool:
 PROVENANCE_LOG_PROVENANCE = _get_provenance_logging()
 
 
-def get_multi_model_ids(primary_model: str) -> List[str]:
-    """Resolve multi-model list from centralized configuration with sensible defaults.
+def get_multi_model_ids_from_config() -> List[str]:
+    """Resolve multi-model list from llm.toml configuration.
 
-    The default includes the primary model and a multilingual PII NER model to
-    enable cross-analysis out-of-the-box.
+    Returns list of model_ids for all enabled models, sorted by priority.
     """
+    from .models.detection_config import _load_llm_config, get_enabled_models
+    
     try:
-        cfg = get_app_config()
-        models = cfg.detection.multi_detector_models
-        if not models:
-            return [primary_model, "Ar86Bat/multilang-pii-ner"]
+        config = _load_llm_config()
+        enabled_models = get_enabled_models(config)
         
-        # Parse models (comma-separated in config)
-        model_list = [m.strip() for m in models if m.strip()]
-    except (ValueError, AttributeError):
-        # Config not available, use defaults
-        return [primary_model, "Ar86Bat/multilang-pii-ner"]
+        # Return list of model_ids sorted by priority
+        return [model["model_id"] for model in enabled_models]
+        
+    except Exception as e:
+        logger.error(f"Failed to load model configuration: {e}")
+        # Fallback to default single model
+        return ["iiiorg/piiranha-v1-detect-personal-information"]
+
+
+def should_use_multi_detector() -> bool:
+    """Determine if multi-detector should be used based on llm.toml configuration.
     
-    # Ensure the primary model is present at least once
-    if primary_model not in model_list:
-        model_list.insert(0, primary_model)
+    Returns True if:
+    - multi_detector_enabled is true in config
+    - AND at least 2 models are enabled
+    """
+    from .models.detection_config import _load_llm_config, get_enabled_models
     
-    # De-duplicate preserving order
-    seen = set()
-    ordered: List[str] = []
-    for m in model_list:
-        if m not in seen:
-            seen.add(m)
-            ordered.append(m)
-    return ordered
+    try:
+        config = _load_llm_config()
+        
+        # Check if multi-detector is enabled
+        multi_enabled = config.get("detection", {}).get("multi_detector_enabled", False)
+        if not multi_enabled:
+            return False
+        
+        # Check if at least 2 models are enabled
+        enabled_models = get_enabled_models(config)
+        return len(enabled_models) >= 2
+        
+    except Exception as e:
+        logger.warning(f"Failed to determine multi-detector status: {e}")
+        return False
 
 
 class MultiModelPIIDetector:

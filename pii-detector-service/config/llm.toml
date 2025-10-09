@@ -1,19 +1,16 @@
 # Configuration for LLM (Language Model) Detection Settings
-# This file contains default values for PII detection behavior
+# This file contains settings for multiple PII detection models
 
-[model]
-# Hugging Face model identifier
-model_id = "iiiorg/piiranha-v1-detect-personal-information"
-
-# Device allocation: null (auto-detect), "cpu", or "cuda"
-device = "cpu"
-
+# Global detection settings
 [detection]
-# Maximum token length for model context window
-max_length = 256
-
 # Confidence threshold for entity detection (0.0 to 1.0)
-threshold = 0.5
+default_threshold = 0.5
+
+# Enable multi-model aggregation (true/false)
+multi_detector_enabled = true
+
+# Log detailed provenance information about which model detected each entity
+log_provenance = false
 
 # Batch size for processing multiple texts
 batch_size = 4
@@ -23,3 +20,127 @@ stride_tokens = 64
 
 # Character threshold to trigger chunked processing
 long_text_threshold = 10000
+
+# Aggregation settings when using multiple models
+[aggregation]
+# Deduplication method: "max_score", "average_score", "consensus"
+deduplication_method = "max_score"
+
+# Overlap resolution strategy: "prefer_longer", "prefer_confident", "prefer_priority"
+overlap_resolution = "prefer_longer"
+
+# Minimum number of models that must detect an entity (comment out = disabled)
+# min_consensus = 2
+
+# Performance settings
+[performance]
+# Enable parallel execution of models
+parallel_execution = true
+
+# Maximum number of worker threads (comment out = auto-detect)
+# max_workers = 4
+
+# Timeout per model in seconds
+model_timeout = 60
+
+# Model 1: Piiranha-v1 (Primary model for PII detection)
+[models.piiranha-v1]
+# Enable or disable this model
+enabled = true
+
+# Hugging Face model identifier
+model_id = "iiiorg/piiranha-v1-detect-personal-information"
+
+# Human-readable description
+description = "Primary model for multilingual PII detection"
+
+# Priority (1 = highest priority, used for conflict resolution)
+priority = 1
+
+# Device allocation: "cpu", "cuda", or "mps"
+device = "cpu"
+
+# Maximum token length for model context window
+max_length = 256
+
+# Model-specific confidence threshold (comment out = use default_threshold)
+# threshold = 0.5
+
+# Download settings for this model
+[models.piiranha-v1.download]
+# Uncomment to specify custom cache directory
+# cache_dir = "/path/to/cache"
+force_download = false
+resume_download = true
+
+# PII type mapping (rename detected types if needed)
+[models.piiranha-v1.pii_type_mapping]
+# Example: EMAILADDRESS = "EMAIL"
+
+# Model 2: Multilingual PII NER (Secondary model for emails and multilingual PII)
+[models.multilang-pii-ner]
+# Enable or disable this model
+enabled = false
+
+# Hugging Face model identifier
+model_id = "Ar86Bat/multilang-pii-ner"
+
+# Human-readable description
+description = "Complementary model for emails and multilingual PII detection"
+
+# Priority (2 = secondary priority)
+priority = 2
+
+# Device allocation: "cpu", "cuda", or "mps"
+device = "cpu"
+
+# Maximum token length for model context window
+max_length = 256
+
+# Model-specific confidence threshold (higher threshold for this model)
+threshold = 0.6
+
+# Download settings for this model
+[models.multilang-pii-ner.download]
+# Uncomment to specify custom cache directory
+# cache_dir = "/path/to/cache"
+force_download = false
+resume_download = true
+
+# PII type mapping (rename detected types if needed)
+[models.multilang-pii-ner.pii_type_mapping]
+# Add any specific type mappings here if needed
+
+# Model 3: GLiNER PII (Example of additional model - disabled by default)
+[models.gliner-pii]
+# Enable or disable this model
+enabled = false
+
+# Hugging Face model identifier
+model_id = "knowledgator/gliner-pii-large-v1.0"
+
+# Human-readable description
+description = "GLiNER model for advanced PII detection (optional)"
+
+# Priority (3 = tertiary priority)
+priority = 3
+
+# Device allocation: "cpu", "cuda", or "mps"
+device = "cpu"
+
+# Maximum token length for model context window
+max_length = 256
+
+# Model-specific confidence threshold
+threshold = 0.3
+
+# Download settings for this model
+[models.gliner-pii.download]
+# Uncomment to specify custom cache directory
+# cache_dir = "/path/to/cache"
+force_download = false
+resume_download = true
+
+# PII type mapping (rename detected types if needed)
+[models.gliner-pii.pii_type_mapping]
+# Add any specific type mappings here if needed

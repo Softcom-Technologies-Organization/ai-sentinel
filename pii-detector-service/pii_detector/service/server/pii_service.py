@@ -30,12 +30,17 @@ except Exception:  # pragma: no cover - safe import guard
     ensure_models_cached = None
     get_env_extra_models = None
 
-# Optional multi-model composite (opt-in via env)
+# Optional multi-model composite (opt-in via config)
 try:
-    from pii_detector.service.detector.multi_detector import MultiModelPIIDetector, get_multi_model_ids
+    from pii_detector.service.detector.multi_detector import (
+        MultiModelPIIDetector,
+        get_multi_model_ids_from_config,
+        should_use_multi_detector
+    )
 except Exception:  # pragma: no cover - safe import guard
     MultiModelPIIDetector = None  # type: ignore
-    get_multi_model_ids = None  # type: ignore
+    get_multi_model_ids_from_config = None  # type: ignore
+    should_use_multi_detector = None  # type: ignore
 
 # Configure logging
 logging.basicConfig(
@@ -61,29 +66,28 @@ def get_detector_instance():
                 except Exception as e:  # pragma: no cover - defensive
                     logger.warning(f"Pre-caching extra models failed (continuing): {e}")
 
-                # Decide between single or multi-model detector based on centralized config
-                from pii_detector.config import get_config
-                try:
-                    config = get_config()
-                    enabled = config.detection.multi_detector_enabled
-                except (ValueError, AttributeError):
-                    enabled = False
-                
-                if enabled and MultiModelPIIDetector and get_multi_model_ids:
+                # Decide between single or multi-model detector based on llm.toml config
+                # Multi-detector is used automatically if:
+                # 1. multi_detector_enabled = true in config
+                # 2. At least 2 models are enabled
+                use_multi = False
+                if MultiModelPIIDetector and get_multi_model_ids_from_config and should_use_multi_detector:
                     try:
-                        # Use default model id from DetectionConfig to avoid instantiating PIIDetector
-                        try:
-                            from pii_detector.service.detector.pii_detector import DetectionConfig  # local import to avoid circulars
-                            primary_model = DetectionConfig().model_id
-                        except Exception:
-                            primary_model = "iiiorg/piiranha-v1-detect-personal-information"
-                        model_ids = get_multi_model_ids(primary_model)
+                        use_multi = should_use_multi_detector()
+                    except Exception as e:
+                        logger.warning(f"Failed to determine multi-detector status: {e}")
+                        use_multi = False
+                
+                if use_multi:
+                    try:
+                        model_ids = get_multi_model_ids_from_config()
                         _detector_instance = MultiModelPIIDetector(model_ids=model_ids)
-                        logger.info(f"Multi-model detection enabled with models: {model_ids}")
+                        logger.info(f"Multi-model detection enabled with {len(model_ids)} models: {model_ids}")
                     except Exception as e:  # pragma: no cover - defensive fallback
                         logger.warning(f"Failed to initialize multi-model detector, falling back to single model: {e}")
                         _detector_instance = PIIDetector()
                 else:
+                    logger.info("Using single-model detector (either multi-detector disabled or only 1 model enabled)")
                     _detector_instance = PIIDetector()
 
                 _detector_instance.download_model()

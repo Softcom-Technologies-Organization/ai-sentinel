@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Tuple, Any
 
 from .models import PIIEntity, DetectionConfig, ModelNotLoadedError, PIIDetectionError
 from .gliner_model_manager import GLiNERModelManager
+from .semantic_chunker import create_chunker, ChunkResult
 
 
 class GLiNERDetector:
@@ -34,6 +35,7 @@ class GLiNERDetector:
         self.model_manager = GLiNERModelManager(self.config)
         self.model: Optional[Any] = None
         self.pii_type_mapping = self._load_pii_type_mapping()
+        self.semantic_chunker: Optional[Any] = None  # Initialized after model load
         
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.logger.info(f"GLiNER Detector initialized with device: {self.device}")
@@ -48,10 +50,48 @@ class GLiNERDetector:
         self.model_manager.download_model()
 
     def load_model(self) -> None:
-        """Load the GLiNER model."""
+        """Load the GLiNER model and initialize semantic chunker."""
         try:
             self.model = self.model_manager.load_model()
             self.logger.info("GLiNER model loaded successfully")
+            
+            # Initialize semantic chunker with GLiNER's tokenizer
+            # GLiNER has internal 768-token sentence limit, so we chunk at 768 tokens
+            # CRITICAL: semantic chunking is REQUIRED to prevent truncation warnings
+            try:
+                # Access GLiNER's tokenizer (usually in data_processor)
+                tokenizer = getattr(self.model.data_processor.config, 'tokenizer', None)
+                if tokenizer is None:
+                    # Fallback: try to get from model name
+                    from transformers import AutoTokenizer
+                    model_name = getattr(self.model.config, 'model_name', 'bert-base-cased')
+                    tokenizer = AutoTokenizer.from_pretrained(model_name)
+                
+                self.semantic_chunker = create_chunker(
+                    tokenizer=tokenizer,
+                    chunk_size=768,  # GLiNER's hard limit per sentence
+                    overlap=100,     # Overlap to catch entities at boundaries
+                    use_semantic=True,
+                    logger=self.logger
+                )
+                
+                # Verify semantic chunking is active (not fallback)
+                chunk_info = self.semantic_chunker.get_chunk_info()
+                if chunk_info.get("library") != "semchunk":
+                    raise RuntimeError(
+                        f"Semantic chunking REQUIRED but fallback chunker was created. "
+                        f"Install semchunk: pip install semchunk"
+                    )
+                
+                self.logger.info("Semantic chunker initialized successfully with semchunk")
+                
+            except Exception as e:
+                self.logger.error(f"CRITICAL: Failed to initialize semantic chunker: {e}")
+                raise RuntimeError(
+                    f"Semantic chunking is REQUIRED for GLiNER to prevent truncation. "
+                    f"Error: {str(e)}"
+                ) from e
+                
         except Exception as e:
             self.logger.error(f"Failed to load GLiNER model: {str(e)}")
             raise
@@ -220,17 +260,14 @@ class GLiNERDetector:
 
     def _detect_pii_with_chunking(self, text: str, threshold: float, detection_id: str) -> List[PIIEntity]:
         """
-        Detect PII in large texts using character-based chunking with overlap.
+        Detect PII using semantic chunking to prevent GLiNER's sentence truncation.
         
-        This method splits text into overlapping chunks to avoid GLiNER's internal
-        truncation warning (768 tokens). Uses character-based chunking since GLiNER
-        works with raw text, not tokenized input.
+        Uses semchunk library for intelligent token-aware chunking that:
+        1. Respects semantic boundaries (sentences, paragraphs)
+        2. Guarantees no chunk exceeds 768 tokens (GLiNER's hard limit)
+        3. Prevents the "Sentence of length X has been truncated to 768" warning
         
-        Business rule: Use overlap (stride_tokens from config) to ensure entities
-        at chunk boundaries appear in at least one complete chunk.
-        
-        Performance optimization: Uses Set with O(1) lookup for duplicate detection
-        instead of O(n) list traversal, improving from O(n²) to O(n) complexity.
+        Falls back to character-based chunking if semantic chunking unavailable.
         
         Args:
             text: Text to analyze
@@ -242,68 +279,62 @@ class GLiNERDetector:
         """
         start_time = time.time()
         
-        # Convert token limits to approximate character limits
-        # Rough estimate: 1 token ≈ 4 characters for European languages
-        chars_per_token = 4
-        chunk_chars = self.config.max_length * chars_per_token  # ~2880 chars for 720 tokens
-        overlap_chars = self.config.stride_tokens * chars_per_token  # ~400 chars for 100 tokens
+        if not self.semantic_chunker:
+            raise RuntimeError("Semantic chunker not initialized. Call load_model() first.")
         
-        # Pre-compute labels once instead of per-chunk (minor optimization)
-        labels = self._get_gliner_labels()
-        
-        # Use Set for O(1) duplicate detection instead of O(n) list traversal
-        seen_entities: set = set()  # Stores (start, end, pii_type) tuples
-        all_entities: List[PIIEntity] = []
-        offset = 0
-        chunk_count = 0
+        # Get semantic chunks using semchunk
+        chunk_results = self.semantic_chunker.chunk_text(text)
         
         self.logger.info(
-            f"[{detection_id}] Chunking text: {len(text)} chars, "
-            f"chunk_size={chunk_chars}, overlap={overlap_chars}"
+            f"[{detection_id}] Semantic chunking: {len(text)} chars → {len(chunk_results)} chunks"
         )
         
-        while offset < len(text):
-            # Extract chunk with overlap
-            chunk_start = max(0, offset - overlap_chars if offset > 0 else 0)
-            chunk_end = min(len(text), offset + chunk_chars)
-            chunk = text[chunk_start:chunk_end]
+        # Pre-compute labels once
+        labels = self._get_gliner_labels()
+        
+        # Use Set for O(1) duplicate detection
+        seen_entities: set = set()
+        all_entities: List[PIIEntity] = []
+        
+        for chunk_idx, chunk_result in enumerate(chunk_results, 1):
+            self.logger.debug(
+                f"[{detection_id}] Processing chunk {chunk_idx}/{len(chunk_results)}: "
+                f"{len(chunk_result.text)} chars at position {chunk_result.start}"
+            )
             
             # Detect PII in chunk
-            chunk_count += 1
-            self.logger.debug(f"[{detection_id}] Processing chunk {chunk_count}: {len(chunk)} chars")
-            
-            raw_entities = self.model.predict_entities(chunk, labels, threshold=threshold)
+            raw_entities = self.model.predict_entities(
+                chunk_result.text, 
+                labels, 
+                threshold=threshold
+            )
             chunk_entities = self._convert_to_pii_entities(raw_entities)
             
-            # Adjust entity positions and avoid duplicates using Set
+            # Adjust entity positions and avoid duplicates
             for entity in chunk_entities:
-                # Only include entities that start in the current chunk (not in overlap)
-                start_in_chunk = entity.start
-                if start_in_chunk >= (overlap_chars if offset > 0 else 0):
-                    adjusted_start = entity.start + chunk_start
-                    adjusted_end = entity.end + chunk_start
-                    
-                    # Create unique key for duplicate detection - O(1) lookup
-                    entity_key = (adjusted_start, adjusted_end, entity.pii_type)
-                    
-                    if entity_key not in seen_entities:
-                        seen_entities.add(entity_key)
-                        adjusted = PIIEntity(
-                            text=entity.text,
-                            pii_type=entity.pii_type,
-                            type_label=entity.type_label,
-                            start=adjusted_start,
-                            end=adjusted_end,
-                            score=entity.score
-                        )
-                        all_entities.append(adjusted)
-            
-            offset += chunk_chars
+                # Adjust positions relative to original text
+                adjusted_start = entity.start + chunk_result.start
+                adjusted_end = entity.end + chunk_result.start
+                
+                # Create unique key for duplicate detection
+                entity_key = (adjusted_start, adjusted_end, entity.pii_type)
+                
+                if entity_key not in seen_entities:
+                    seen_entities.add(entity_key)
+                    adjusted = PIIEntity(
+                        text=entity.text,
+                        pii_type=entity.pii_type,
+                        type_label=entity.type_label,
+                        start=adjusted_start,
+                        end=adjusted_end,
+                        score=entity.score
+                    )
+                    all_entities.append(adjusted)
         
         detection_time = time.time() - start_time
         self.logger.info(
-            f"[{detection_id}] Chunked detection completed in {detection_time:.3f}s, "
-            f"processed {chunk_count} chunks, found {len(all_entities)} entities"
+            f"[{detection_id}] Semantic chunking completed in {detection_time:.3f}s, "
+            f"processed {len(chunk_results)} chunks, found {len(all_entities)} entities"
         )
         
         return all_entities

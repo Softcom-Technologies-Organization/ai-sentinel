@@ -210,7 +210,12 @@ public abstract class AbstractStreamConfluenceScanUseCase {
 
     private ContentPiiDetection detectPii(String content) {
         String safeContent = content != null ? content : "";
-        return piiDetectorClient.analyzeContent(safeContent);
+        long time = System.currentTimeMillis();
+        ContentPiiDetection contentPiiDetection = piiDetectorClient.analyzeContent(safeContent);
+        log.info("Content: {}", safeContent);
+        log.info("Time to send and received content pii scan result: {}", System.currentTimeMillis() - time);
+        log.info("Pii content: {}", contentPiiDetection);
+        return contentPiiDetection;
     }
 
     boolean isBlank(String value) {

@@ -27,7 +27,19 @@ class ModelManager:
     def download_model(self) -> None:
         """Download the model files from Hugging Face."""
         api_key = self._get_api_key()
-        filenames = ["config.json", "model.safetensors", "tokenizer.json", "tokenizer_config.json"]
+        
+        # Default filenames for standard transformers models
+        default_filenames = ["config.json", "model.safetensors", "tokenizer.json", "tokenizer_config.json"]
+        
+        # Use custom filenames if provided in config, otherwise use defaults
+        filenames = default_filenames
+        if self.config.custom_filenames:
+            # Replace default filenames with custom ones
+            filenames = []
+            for default_name in default_filenames:
+                custom_name = self.config.custom_filenames.get(default_name, default_name)
+                filenames.append(custom_name)
+            self.logger.info(f"Using custom filenames: {self.config.custom_filenames}")
 
         self.logger.info("Downloading model files from Hugging Face...")
 

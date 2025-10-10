@@ -71,6 +71,7 @@ def get_enabled_models(config: dict) -> List[Dict[str, Any]]:
                 "max_length": model_config.get("max_length", 256),
                 "threshold": model_config.get("threshold"),
                 "description": model_config.get("description", ""),
+                "custom_filenames": model_config.get("download", {}).get("custom_filenames"),
             }
             enabled_models.append(model_info)
     
@@ -110,6 +111,7 @@ class DetectionConfig:
     batch_size: int = None
     stride_tokens: int = None
     long_text_threshold: int = None
+    custom_filenames: Optional[Dict[str, str]] = None
     
     def __post_init__(self):
         """Load defaults from TOML if values not provided.
@@ -151,6 +153,8 @@ class DetectionConfig:
                 self.stride_tokens = config["detection"].get("stride_tokens", 64)
             if self.long_text_threshold is None:
                 self.long_text_threshold = config["detection"].get("long_text_threshold", 10000)
+            if self.custom_filenames is None:
+                self.custom_filenames = primary_model.get("custom_filenames")
                 
         except FileNotFoundError as e:
             raise FileNotFoundError(

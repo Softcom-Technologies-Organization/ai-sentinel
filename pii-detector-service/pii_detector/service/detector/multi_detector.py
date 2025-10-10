@@ -25,6 +25,7 @@ from typing import Iterable, List, Optional, Tuple, Dict
 
 from ...config import get_config as get_app_config
 from .pii_detector import PIIDetector, DetectionConfig, PIIEntity
+from .gliner_detector import GLiNERDetector
 
 logger = logging.getLogger(__name__)
 
@@ -98,11 +99,32 @@ class MultiModelPIIDetector:
     def __init__(self, model_ids: Iterable[str], device: Optional[str] = None):
         self.model_ids = list(model_ids)
         self.device = device
-        self.detectors: List[PIIDetector] = [
-            PIIDetector(config=DetectionConfig(model_id=m, device=device)) for m in self.model_ids
+        self.detectors = [
+            self._create_detector(m, device) for m in self.model_ids
         ]
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.logger.info(f"Initialized MultiModelPIIDetector with models: {self.model_ids}")
+    
+    def _create_detector(self, model_id: str, device: Optional[str] = None):
+        """
+        Create appropriate detector based on model ID.
+        
+        Args:
+            model_id: Model identifier
+            device: Device allocation
+            
+        Returns:
+            PIIDetector or GLiNERDetector instance
+        """
+        config = DetectionConfig(model_id=model_id, device=device)
+        
+        # Detect GLiNER models by model ID pattern
+        if "gliner" in model_id.lower():
+            self.logger.info(f"Creating GLiNERDetector for {model_id}")
+            return GLiNERDetector(config=config)
+        else:
+            self.logger.info(f"Creating PIIDetector for {model_id}")
+            return PIIDetector(config=config)
 
     # Lifecycle operations -------------------------------------------------
     def download_model(self) -> None:

@@ -10,13 +10,15 @@ default_threshold = 0.5
 multi_detector_enabled = true
 
 # Log detailed provenance information about which model detected each entity
-log_provenance = false
+log_provenance = true
 
 # Batch size for processing multiple texts
 batch_size = 4
 
 # Token overlap for chunk splitting (prevents boundary truncation)
-stride_tokens = 64
+# Recommended 10-20% of max_length for optimal entity detection at boundaries
+# For GLiNER (720 tokens): 100 tokens overlap = 13.9%
+stride_tokens = 100
 
 # Character threshold to trigger chunked processing
 long_text_threshold = 10000
@@ -46,7 +48,7 @@ model_timeout = 60
 # Model 1: Piiranha-v1 (Primary model for PII detection)
 [models.piiranha-v1]
 # Enable or disable this model
-enabled = true
+enabled = false
 
 # Hugging Face model identifier
 model_id = "iiiorg/piiranha-v1-detect-personal-information"
@@ -111,16 +113,19 @@ resume_download = true
 [models.multilang-pii-ner.pii_type_mapping]
 # Add any specific type mappings here if needed
 
-# Model 3: GLiNER PII (Example of additional model - disabled by default)
+# Model 3: GLiNER PII Large v1.0 (Advanced PII detection with 17 types)
+# ✅ Fully integrated with custom GLiNERDetector adapter
+# Uses GLiNER.from_pretrained() and predict_entities() API with natural language labels
+# Automatically detected and loaded by MultiModelPIIDetector when enabled
 [models.gliner-pii]
 # Enable or disable this model
-enabled = false
+enabled = true
 
 # Hugging Face model identifier
 model_id = "knowledgator/gliner-pii-large-v1.0"
 
 # Human-readable description
-description = "GLiNER model for advanced PII detection (optional)"
+description = "GLiNER PII large v1.0 - Advanced multilingual PII detection supporting 17 entity types"
 
 # Priority (3 = tertiary priority)
 priority = 3
@@ -128,10 +133,11 @@ priority = 3
 # Device allocation: "cpu", "cuda", or "mps"
 device = "cpu"
 
-# Maximum token length for model context window
-max_length = 256
+# Maximum token length for model context window (GLiNER actual limit: 768 tokens)
+# Using 720 tokens to leave margin for special tokens, with 100 tokens overlap (13.9%)
+max_length = 720
 
-# Model-specific confidence threshold
+# Model-specific confidence threshold (optimized for GLiNER)
 threshold = 0.3
 
 # Download settings for this model
@@ -141,6 +147,27 @@ threshold = 0.3
 force_download = false
 resume_download = true
 
-# PII type mapping (rename detected types if needed)
+# Custom filenames for GLiNER model (uses gliner_config.json instead of config.json)
+[models.gliner-pii.download.custom_filenames]
+"config.json" = "gliner_config.json"
+
+# PII type mapping - Maps GLiNER labels to piiranha-v1 standard types
+# GLiNER uses natural language labels, mapped here to normalized PII types
 [models.gliner-pii.pii_type_mapping]
-# Add any specific type mappings here if needed
+"account number" = "ACCOUNTNUM"
+"building number" = "BUILDINGNUM"
+"city" = "CITY"
+"credit card number" = "CREDITCARDNUMBER"
+"date of birth" = "DATEOFBIRTH"
+"driver license number" = "DRIVERLICENSENUM"
+"email" = "EMAIL"
+"first name" = "GIVENNAME"
+"ID card number" = "IDCARDNUM"
+"password" = "PASSWORD"
+"social security number" = "SOCIALNUM"
+"street" = "STREET"
+"last name" = "SURNAME"
+"tax number" = "TAXNUM"
+"phone number" = "TELEPHONENUM"
+"username" = "USERNAME"
+"zip code" = "ZIPCODE"

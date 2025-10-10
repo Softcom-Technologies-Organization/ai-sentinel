@@ -23,6 +23,11 @@ from pii_detector.proto.generated import pii_detection_pb2, pii_detection_pb2_gr
 # Import the PII detector
 from pii_detector.service.detector.pii_detector import PIIDetector
 from pii_detector.service.detector.pii_detector import PIIEntity as DetectedPIIEntity
+# Import GLiNER detector for GLiNER models
+try:
+    from pii_detector.service.detector.gliner_detector import GLiNERDetector
+except Exception:  # pragma: no cover - safe import guard
+    GLiNERDetector = None  # type: ignore
 # Optional pre-caching of additional HF models (extensible)
 try:
     from pii_detector.service.detector.model_cache import ensure_models_cached, get_env_extra_models
@@ -88,7 +93,16 @@ def get_detector_instance():
                         _detector_instance = PIIDetector()
                 else:
                     logger.info("Using single-model detector (either multi-detector disabled or only 1 model enabled)")
-                    _detector_instance = PIIDetector()
+                    # Detect if this is a GLiNER model and use the appropriate detector
+                    from pii_detector.service.detector.models.detection_config import DetectionConfig
+                    config = DetectionConfig()
+                    
+                    if GLiNERDetector and "gliner" in config.model_id.lower():
+                        logger.info(f"Detected GLiNER model: {config.model_id}")
+                        _detector_instance = GLiNERDetector(config=config)
+                    else:
+                        logger.info(f"Using standard transformer detector for: {config.model_id}")
+                        _detector_instance = PIIDetector()
 
                 _detector_instance.download_model()
                 _detector_instance.load_model()
@@ -238,17 +252,11 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 return pii_detection_pb2.PIIDetectionResponse()
 
             # Process content
+            # The detector handles chunking internally based on model token limits
             processing_start = time.time()
             logger.info(f"[{request_id}] Starting PII detection processing...")
             
-            if len(content) > 50000:
-                # Use chunked processing for large texts
-                logger.info(f"[{request_id}] Using chunked processing for large text ({len(content)} chars)")
-                entities = self._process_in_chunks(content, threshold)
-            else:
-                # Process normally for smaller texts
-                logger.info(f"[{request_id}] Using standard processing for text ({len(content)} chars)")
-                entities = self.detector.detect_pii(content, threshold)
+            entities = self.detector.detect_pii(content, threshold)
 
             processing_time = time.time() - processing_start
             logger.info(f"[{request_id}] PII detection completed in {processing_time:.3f}s")

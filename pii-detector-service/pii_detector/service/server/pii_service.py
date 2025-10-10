@@ -310,7 +310,8 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             masking_start = time.time()
             if len(content) <= 10000:
                 logger.debug(f"[{request_id}] Generating masked content...")
-                masked_content, _ = self.detector.mask_pii(content, threshold)
+                # Use already detected entities to avoid re-scanning (performance optimization)
+                masked_content = self.detector._apply_masks(content, entities)
                 response.masked_content = masked_content
                 masking_time = time.time() - masking_start
                 logger.debug(f"[{request_id}] Masking completed in {masking_time:.3f}s")

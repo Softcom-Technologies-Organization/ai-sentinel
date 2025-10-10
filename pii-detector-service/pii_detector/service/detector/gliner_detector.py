@@ -229,6 +229,9 @@ class GLiNERDetector:
         Business rule: Use overlap (stride_tokens from config) to ensure entities
         at chunk boundaries appear in at least one complete chunk.
         
+        Performance optimization: Uses Set with O(1) lookup for duplicate detection
+        instead of O(n) list traversal, improving from O(n²) to O(n) complexity.
+        
         Args:
             text: Text to analyze
             threshold: Confidence threshold
@@ -245,7 +248,11 @@ class GLiNERDetector:
         chunk_chars = self.config.max_length * chars_per_token  # ~2880 chars for 720 tokens
         overlap_chars = self.config.stride_tokens * chars_per_token  # ~400 chars for 100 tokens
         
+        # Pre-compute labels once instead of per-chunk (minor optimization)
         labels = self._get_gliner_labels()
+        
+        # Use Set for O(1) duplicate detection instead of O(n) list traversal
+        seen_entities: set = set()  # Stores (start, end, pii_type) tuples
         all_entities: List[PIIEntity] = []
         offset = 0
         chunk_count = 0
@@ -268,21 +275,27 @@ class GLiNERDetector:
             raw_entities = self.model.predict_entities(chunk, labels, threshold=threshold)
             chunk_entities = self._convert_to_pii_entities(raw_entities)
             
-            # Adjust entity positions and avoid duplicates
+            # Adjust entity positions and avoid duplicates using Set
             for entity in chunk_entities:
                 # Only include entities that start in the current chunk (not in overlap)
                 start_in_chunk = entity.start
                 if start_in_chunk >= (overlap_chars if offset > 0 else 0):
-                    adjusted = PIIEntity(
-                        text=entity.text,
-                        pii_type=entity.pii_type,
-                        type_label=entity.type_label,
-                        start=entity.start + chunk_start,
-                        end=entity.end + chunk_start,
-                        score=entity.score
-                    )
+                    adjusted_start = entity.start + chunk_start
+                    adjusted_end = entity.end + chunk_start
                     
-                    if not self._is_duplicate_entity(adjusted, all_entities):
+                    # Create unique key for duplicate detection - O(1) lookup
+                    entity_key = (adjusted_start, adjusted_end, entity.pii_type)
+                    
+                    if entity_key not in seen_entities:
+                        seen_entities.add(entity_key)
+                        adjusted = PIIEntity(
+                            text=entity.text,
+                            pii_type=entity.pii_type,
+                            type_label=entity.type_label,
+                            start=adjusted_start,
+                            end=adjusted_end,
+                            score=entity.score
+                        )
                         all_entities.append(adjusted)
             
             offset += chunk_chars
@@ -294,22 +307,6 @@ class GLiNERDetector:
         )
         
         return all_entities
-
-    def _is_duplicate_entity(self, entity: PIIEntity, existing_entities: List[PIIEntity]) -> bool:
-        """
-        Check if an entity with the same span and type already exists.
-        
-        Args:
-            entity: Entity to check
-            existing_entities: List of existing entities
-            
-        Returns:
-            True if duplicate found, False otherwise
-        """
-        return any(
-            (e.start == entity.start) and (e.end == entity.end) and (e.pii_type == entity.pii_type)
-            for e in existing_entities
-        )
 
     def _generate_detection_id(self) -> str:
         """Generate a unique detection ID for logging."""

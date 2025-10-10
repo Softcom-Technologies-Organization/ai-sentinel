@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
+import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentTextExtracted;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.sentinelle.domain.confluence.AttachmentInfo;
@@ -128,8 +129,25 @@ public abstract class AbstractStreamConfluenceScanUseCase {
     private Flux<ScanResult> attachmentsFlux(String scanId, String spaceKey, ConfluencePage page,
                                              List<AttachmentInfo> attachments,
                                              ScanProgress scanProgress) {
-        return attachmentProcessor.processAttachments(scanId, spaceKey, page, attachments,
-                                                      scanProgress);
+        return attachmentProcessor.extractAttachmentsText(page.id(), attachments)
+            .flatMap(extracted -> analyzeAttachmentText(scanId, spaceKey, page, extracted,
+                                                       scanProgress));
+    }
+
+    private Mono<ScanResult> analyzeAttachmentText(String scanId, String spaceKey,
+                                                   ConfluencePage page,
+                                                   AttachmentTextExtracted extracted,
+                                                   ScanProgress scanProgress) {
+        ContentPiiDetection detection = detectPii(extracted.extractedText());
+        double progress = scanOrchestrator.calculateProgress(
+            scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
+            scanProgress.originalTotal());
+
+        ScanResult event = scanOrchestrator.createAttachmentItemEvent(
+            scanId, spaceKey, page, extracted.attachment(), extracted.extractedText(), detection,
+            progress);
+
+        return Mono.just(event);
     }
 
 
@@ -210,9 +228,9 @@ public abstract class AbstractStreamConfluenceScanUseCase {
 
     private ContentPiiDetection detectPii(String content) {
         String safeContent = content != null ? content : "";
+        log.info("Content: {}", safeContent);
         long time = System.currentTimeMillis();
         ContentPiiDetection contentPiiDetection = piiDetectorClient.analyzeContent(safeContent);
-        log.info("Content: {}", safeContent);
         log.info("Time to send and received content pii scan result: {}", System.currentTimeMillis() - time);
         log.info("Pii content: {}", contentPiiDetection);
         return contentPiiDetection;

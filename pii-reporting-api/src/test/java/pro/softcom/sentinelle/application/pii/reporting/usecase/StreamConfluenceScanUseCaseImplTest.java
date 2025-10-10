@@ -98,10 +98,7 @@ class StreamConfluenceScanUseCaseImplTest {
                                                                  checkpointService, jpaScanEventStoreAdapter);
         AttachmentProcessor attachmentProcessor = new AttachmentProcessor(
                 confluenceDownloadService,
-                attachmentTextExtractionService,
-                piiDetectorClient,
-                eventFactory,
-                progressCalculator
+                attachmentTextExtractionService
         );
 
         streamConfluenceScanUseCase = new StreamConfluenceScanUseCaseImpl(
@@ -534,10 +531,7 @@ class StreamConfluenceScanUseCaseImplTest {
                                                                  checkpointService, jpaScanEventStoreAdapter);
         AttachmentProcessor attachmentProcessor = new AttachmentProcessor(
                 confluenceDownloadService,
-                attachmentTextExtractionService,
-                piiDetectorClient,
-                eventFactory,
-                progressCalculator
+                attachmentTextExtractionService
         );
 
         StreamConfluenceScanUseCaseImpl svc = new StreamConfluenceScanUseCaseImpl(
@@ -602,10 +596,7 @@ class StreamConfluenceScanUseCaseImplTest {
                                                                  checkpointService, jpaScanEventStoreAdapter);
         AttachmentProcessor attachmentProcessor = new AttachmentProcessor(
                 confluenceDownloadService,
-                attachmentTextExtractionService,
-                piiDetectorClient,
-                eventFactory,
-                progressCalculator
+                attachmentTextExtractionService
         );
 
         StreamConfluenceScanUseCaseImpl svc = new StreamConfluenceScanUseCaseImpl(
@@ -676,4 +667,3 @@ class StreamConfluenceScanUseCaseImplTest {
         ));
     }
 }
-

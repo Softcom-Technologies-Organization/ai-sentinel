@@ -82,13 +82,8 @@ public class ApplicationUseCasesConfig {
     @Bean
     public AttachmentProcessor attachmentProcessor(
             ConfluenceAttachmentDownloader confluenceDownloadService,
-            AttachmentTextExtractor attachmentTextExtractionService,
-            PiiDetectorClient piiDetectorClient,
-            ScanEventFactory scanEventFactory,
-            ScanProgressCalculator scanProgressCalculator) {
-        return new AttachmentProcessor(confluenceDownloadService, attachmentTextExtractionService,
-                                       piiDetectorClient, scanEventFactory,
-                                       scanProgressCalculator);
+            AttachmentTextExtractor attachmentTextExtractionService) {
+        return new AttachmentProcessor(confluenceDownloadService, attachmentTextExtractionService);
     }
 
     @Bean

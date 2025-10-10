@@ -5,38 +5,42 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.application.confluence.port.out.AttachmentTextExtractor;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachmentDownloader;
-import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.sentinelle.domain.confluence.AttachmentInfo;
-import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
-import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
-import pro.softcom.sentinelle.domain.pii.scan.ContentPiiDetection;
-import pro.softcom.sentinelle.domain.pii.scan.ScanProgress;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * Service responsable de l'extraction de texte des pièces jointes Confluence.
+ * Business intent: Télécharge les pièces jointes et extrait leur contenu textuel
+ * pour permettre l'analyse PII ultérieure. Ne réalise PAS la détection PII elle-même,
+ * cette responsabilité appartient au use case orchestrateur.
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class AttachmentProcessor {
 
     private final ConfluenceAttachmentDownloader confluenceDownloadService;
     private final AttachmentTextExtractor attachmentTextExtractionService;
-    private final PiiDetectorClient piiDetectorClient;
-    private final ScanEventFactory eventFactory;
-    private final ScanProgressCalculator progressCalculator;
 
-    public Flux<ScanResult> processAttachments(String scanId, String spaceKey, ConfluencePage page,
-                                              List<AttachmentInfo> attachments, ScanProgress scanProgress) {
+    /**
+     * Extrait le texte de toutes les pièces jointes extractables d'une page.
+     * 
+     * @param pageId Identifiant de la page Confluence
+     * @param attachments Liste des pièces jointes à traiter
+     * @return Flux des textes extraits avec leurs métadonnées d'origine
+     */
+    public Flux<AttachmentTextExtracted> extractAttachmentsText(String pageId,
+                                                                List<AttachmentInfo> attachments) {
         return Flux.fromIterable(attachments)
             .filter(this::isExtractableExtension)
-            .concatMap(attachment -> processAttachment(scanId, spaceKey, page, attachment,
-                                                       scanProgress));
+            .concatMap(attachment -> extractAttachmentText(pageId, attachment));
     }
 
-    private Flux<ScanResult> processAttachment(String scanId, String spaceKey, ConfluencePage page,
-                                              AttachmentInfo attachment, ScanProgress scanProgress) {
-        return downloadAttachment(page.id(), attachment.name())
+    private Flux<AttachmentTextExtracted> extractAttachmentText(String pageId,
+                                                                AttachmentInfo attachment) {
+        return downloadAttachment(pageId, attachment.name())
             .flatMapMany(bytes -> extractTextFromBytes(attachment, bytes))
-            .flatMap(text -> analyzeText(scanId, spaceKey, page, attachment, text, scanProgress));
+            .map(text -> new AttachmentTextExtracted(attachment, text));
     }
 
     private Mono<byte[]> downloadAttachment(String pageId, String attachmentName) {
@@ -49,25 +53,6 @@ public class AttachmentProcessor {
         return Mono.fromCallable(
                 () -> attachmentTextExtractionService.extractText(attachment, bytes))
             .flatMap(textOptional -> textOptional.map(Mono::just).orElse(Mono.empty()));
-    }
-
-    private Mono<ScanResult> analyzeText(String scanId, String spaceKey, ConfluencePage page,
-                                         AttachmentInfo attachment, String text,
-                                         ScanProgress scanProgress) {
-        ContentPiiDetection detection = detectPii(text);
-        double progress = progressCalculator.calculateProgress(
-            scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
-            scanProgress.originalTotal());
-
-        ScanResult event = eventFactory.createAttachmentItemEvent(
-            scanId, spaceKey, page, attachment, text, detection, progress);
-
-        return Mono.just(event);
-    }
-
-    private ContentPiiDetection detectPii(String content) {
-        String safeContent = content != null ? content : "";
-        return piiDetectorClient.analyzeContent(safeContent);
     }
 
     private boolean isExtractableExtension(AttachmentInfo attachment) {

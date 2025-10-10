@@ -1,0 +1,34 @@
+# Piiranha-v1 Model Configuration
+# Primary model for multilingual PII detection
+
+# Enable or disable this model
+enabled = false
+
+# Hugging Face model identifier
+model_id = "iiiorg/piiranha-v1-detect-personal-information"
+
+# Human-readable description
+description = "Primary model for multilingual PII detection"
+
+# Priority (1 = highest priority, used for conflict resolution)
+priority = 1
+
+# Device allocation: "cpu", "cuda", or "mps"
+device = "cpu"
+
+# Maximum token length for model context window
+max_length = 256
+
+# Model-specific confidence threshold (comment out = use default_threshold)
+# threshold = 0.5
+
+# Download settings for this model
+[download]
+# Uncomment to specify custom cache directory
+# cache_dir = "/path/to/cache"
+force_download = false
+resume_download = true
+
+# PII type mapping (rename detected types if needed)
+[pii_type_mapping]
+# Example: EMAILADDRESS = "EMAIL"

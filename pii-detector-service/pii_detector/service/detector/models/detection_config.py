@@ -5,8 +5,9 @@ This module defines the DetectionConfig dataclass that controls
 various aspects of PII detection, such as model selection, device
 allocation, thresholds, and text processing parameters.
 
-Configuration values are loaded from config/llm.toml by default,
-but can be overridden via constructor parameters.
+Configuration values are loaded from config/detection-settings.toml 
+and config/models/*.toml by default, but can be overridden via 
+constructor parameters.
 """
 
 import os
@@ -21,26 +22,54 @@ except ImportError:
 
 
 def _load_llm_config() -> dict:
-    """Load LLM configuration from TOML file.
+    """Load LLM configuration from TOML files.
+    
+    Loads configuration from:
+    - config/detection-settings.toml: Global detection settings
+    - config/models/*.toml: Individual model configurations
     
     Returns:
-        Dictionary with configuration values from llm.toml
+        Dictionary with merged configuration values
         
     Raises:
-        FileNotFoundError: If config/llm.toml is not found
+        FileNotFoundError: If config files are not found
         ValueError: If TOML file is malformed
     """
-    # Locate config file relative to project root
-    config_path = Path(__file__).parent.parent.parent.parent.parent / "config" / "llm.toml"
+    # Locate config directory relative to project root
+    config_dir = Path(__file__).parent.parent.parent.parent.parent / "config"
     
-    if not config_path.exists():
+    # Load global detection settings
+    detection_settings_path = config_dir / "detection-settings.toml"
+    if not detection_settings_path.exists():
         raise FileNotFoundError(
-            f"Configuration file not found: {config_path}. "
-            "Please ensure config/llm.toml exists in the project root."
+            f"Configuration file not found: {detection_settings_path}. "
+            "Please ensure config/detection-settings.toml exists in the project root."
         )
     
-    with open(config_path, "rb") as f:
+    with open(detection_settings_path, "rb") as f:
         config = tomllib.load(f)
+    
+    # Load model configurations from config/models/ directory
+    models_dir = config_dir / "models"
+    if not models_dir.exists():
+        raise FileNotFoundError(
+            f"Models directory not found: {models_dir}. "
+            "Please ensure config/models/ directory exists with model configuration files."
+        )
+    
+    # Merge all model configurations
+    config["models"] = {}
+    for model_file in models_dir.glob("*.toml"):
+        model_name = model_file.stem  # filename without .toml extension
+        with open(model_file, "rb") as f:
+            model_config = tomllib.load(f)
+            config["models"][model_name] = model_config
+    
+    if not config["models"]:
+        raise ValueError(
+            f"No model configuration files found in {models_dir}. "
+            "Please add at least one model configuration file (e.g., gliner-pii.toml)."
+        )
     
     return config
 
@@ -49,15 +78,15 @@ def get_enabled_models(config: dict) -> List[Dict[str, Any]]:
     """Get list of enabled models sorted by priority.
     
     Args:
-        config: Configuration dictionary from llm.toml
+        config: Configuration dictionary from TOML files
         
     Returns:
         List of enabled model configurations, sorted by priority (lowest number = highest priority)
     """
     if "models" not in config:
         raise ValueError(
-            "No [models] section found in config/llm.toml. "
-            "Please add model configurations. See config/README.md for details."
+            "No [models] section found in configuration. "
+            "Please add model configurations in config/models/ directory."
         )
     
     enabled_models = []
@@ -77,8 +106,8 @@ def get_enabled_models(config: dict) -> List[Dict[str, Any]]:
     
     if not enabled_models:
         raise ValueError(
-            "No enabled models found in config/llm.toml. "
-            "Please set enabled = true for at least one model."
+            "No enabled models found in configuration. "
+            "Please set enabled = true for at least one model in config/models/."
         )
     
     # Sort by priority (lowest number = highest priority)
@@ -91,8 +120,9 @@ def get_enabled_models(config: dict) -> List[Dict[str, Any]]:
 class DetectionConfig:
     """Configuration for PII detection.
     
-    Loads default values from config/llm.toml. All parameters can be
-    overridden via constructor to support runtime customization.
+    Loads default values from config/detection-settings.toml and 
+    config/models/*.toml. All parameters can be overridden via 
+    constructor to support runtime customization.
     
     Attributes:
         model_id: Hugging Face model identifier
@@ -120,7 +150,7 @@ class DetectionConfig:
         For multi-model setups, the multi_detector.py will handle aggregation.
         
         Raises:
-            FileNotFoundError: If config/llm.toml is not found
+            FileNotFoundError: If config files are not found
             KeyError: If required configuration keys are missing in TOML
             ValueError: If TOML file is malformed or contains invalid values
         """
@@ -158,31 +188,26 @@ class DetectionConfig:
                 
         except FileNotFoundError as e:
             raise FileNotFoundError(
-                f"Configuration file 'config/llm.toml' not found. "
-                f"Please create the file with the following structure:\n\n"
-                f"[detection]\n"
-                f"default_threshold = 0.5\n"
-                f"batch_size = 4\n"
-                f"stride_tokens = 64\n"
-                f"long_text_threshold = 10000\n\n"
-                f"[models.piiranha-v1]\n"
-                f"enabled = true\n"
-                f'model_id = "iiiorg/piiranha-v1-detect-personal-information"\n'
-                f"priority = 1\n"
-                f'device = "cpu"\n'
-                f"max_length = 256\n\n"
-                f"See config/README.md for more details."
+                f"Configuration files not found. "
+                f"Please create the following structure:\n\n"
+                f"config/\n"
+                f"├── detection-settings.toml  # Global settings\n"
+                f"└── models/\n"
+                f"    ├── gliner-pii.toml      # Model configurations\n"
+                f"    ├── piiranha-v1.toml\n"
+                f"    └── ...\n\n"
+                f"See the old config/llm.toml for reference."
             ) from e
             
         except KeyError as e:
             missing_key = str(e).strip("'")
             raise ValueError(
-                f"Missing required configuration key: {missing_key} in config/llm.toml. "
-                f"Please check the file structure. See config/README.md for the expected format."
+                f"Missing required configuration key: {missing_key} in configuration files. "
+                f"Please check config/detection-settings.toml and config/models/*.toml structure."
             ) from e
             
         except Exception as e:
             raise ValueError(
-                f"Failed to load configuration from config/llm.toml: {e}. "
-                f"Please verify the TOML file is valid. See config/README.md for help."
+                f"Failed to load configuration: {e}. "
+                f"Please verify the TOML files are valid."
             ) from e

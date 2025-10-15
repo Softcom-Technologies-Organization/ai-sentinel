@@ -26,9 +26,9 @@ Usage:
 from dataclasses import dataclass
 from typing import Optional
 
-from .server_config import ServerConfig
-from .model_config import ModelConfig
 from .detection_config import DetectionConfig
+from .model_config import ModelConfig
+from .server_config import ServerConfig
 
 
 @dataclass

@@ -5,12 +5,13 @@ This script monitors the memory usage of the PII detection service and provides
 real-time statistics and alerts.
 """
 
-import psutil
-import time
-import sys
 import argparse
 import datetime
+import sys
+import time
 from typing import Optional
+
+import psutil
 
 
 class MemoryMonitor:

@@ -23,9 +23,9 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Iterable, List, Optional, Tuple, Dict
 
-from ...config import get_config as get_app_config
-from .pii_detector import PIIDetector, DetectionConfig, PIIEntity
 from .gliner_detector import GLiNERDetector
+from .pii_detector import PIIDetector, DetectionConfig, PIIEntity
+from ...config import get_config as get_app_config
 
 logger = logging.getLogger(__name__)
 

@@ -18,7 +18,6 @@ from pii_detector.service.detector.models import (
     DetectionConfig,
     PIIDetectionError,
     ModelNotLoadedError,
-    ModelLoadError,
 )
 
 

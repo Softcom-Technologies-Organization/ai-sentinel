@@ -19,11 +19,13 @@ import psutil
 from grpc_reflection.v1alpha import reflection
 
 # Import the generated gRPC code
-from pii_detector.proto.generated import pii_detection_pb2, pii_detection_pb2_grpc
-
+from pii_detector.proto.generated import pii_detection_pb2, \
+  pii_detection_pb2_grpc
 # Import the PII detector
 from pii_detector.service.detector.pii_detector import PIIDetector
-from pii_detector.service.detector.pii_detector import PIIEntity as DetectedPIIEntity
+from pii_detector.service.detector.pii_detector import \
+  PIIEntity as DetectedPIIEntity
+
 # Import GLiNER detector for GLiNER models
 try:
     from pii_detector.service.detector.gliner_detector import GLiNERDetector

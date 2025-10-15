@@ -7,27 +7,24 @@ in text content using the Piiranha model with optimizations for memory usage and
 
 import logging
 import time
-import unicodedata
 from typing import Dict, List, Optional, Tuple
 
 import torch
-from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
+import unicodedata
+from transformers import AutoTokenizer, AutoModelForTokenClassification, \
+  pipeline
 
-# Import models from the models package
-from .models import (
-    PIIType,
-    PIIEntity,
-    DetectionConfig,
-    PIIDetectionError,
-    ModelNotLoadedError,
-    ModelLoadError,
-    APIKeyError,
-)
-
+from .entity_processor import EntityProcessor
 # Import managers
 from .memory_manager import MemoryManager
 from .model_manager import ModelManager
-from .entity_processor import EntityProcessor
+# Import models from the models package
+from .models import (
+  PIIEntity,
+  DetectionConfig,
+  PIIDetectionError,
+  ModelNotLoadedError,
+)
 
 # Constants
 _MODEL_NOT_LOADED_ERROR_MESSAGE = "The model must be loaded before use"

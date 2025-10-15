@@ -12,11 +12,9 @@ service startup (pii_service) and potential CLI/bootstrap scripts.
 from __future__ import annotations
 
 import logging
-import os
 from typing import Iterable, List
 
 from pii_detector.config import get_config
-
 
 logger = logging.getLogger(__name__)
 

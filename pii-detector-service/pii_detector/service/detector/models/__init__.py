@@ -8,15 +8,15 @@ This package contains all data structures used by the PII detector:
 - Exceptions: Custom exceptions for PII detection errors
 """
 
-from .pii_type import PIIType
-from .pii_entity import PIIEntity
 from .detection_config import DetectionConfig
 from .exceptions import (
-    PIIDetectionError,
-    ModelNotLoadedError,
-    ModelLoadError,
-    APIKeyError,
+  PIIDetectionError,
+  ModelNotLoadedError,
+  ModelLoadError,
+  APIKeyError,
 )
+from .pii_entity import PIIEntity
+from .pii_type import PIIType
 
 __all__ = [
     "PIIType",

@@ -5,27 +5,24 @@ This package contains the implementation of the PII detection functionality.
 Exports all public classes for backward compatibility.
 """
 
-# Export models
-from .models import (
-    PIIType,
-    PIIEntity,
-    DetectionConfig,
-    PIIDetectionError,
-    ModelNotLoadedError,
-    ModelLoadError,
-    APIKeyError,
-)
-
+from .entity_processor import EntityProcessor
 # Export managers
 from .memory_manager import MemoryManager
 from .model_manager import ModelManager
-from .entity_processor import EntityProcessor
-
-# Export main detector
-from .pii_detector import PIIDetector
-
+# Export models
+from .models import (
+  PIIType,
+  PIIEntity,
+  DetectionConfig,
+  PIIDetectionError,
+  ModelNotLoadedError,
+  ModelLoadError,
+  APIKeyError,
+)
 # Export multi-detector (already exists)
 from .multi_detector import MultiModelPIIDetector
+# Export main detector
+from .pii_detector import PIIDetector
 
 __all__ = [
     # Models

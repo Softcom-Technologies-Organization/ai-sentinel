@@ -9,9 +9,10 @@ import logging
 import time
 from typing import Dict, List, Optional, Tuple, Any
 
-from .models import PIIEntity, DetectionConfig, ModelNotLoadedError, PIIDetectionError
 from .gliner_model_manager import GLiNERModelManager
-from .semantic_chunker import create_chunker, ChunkResult
+from .models import PIIEntity, DetectionConfig, ModelNotLoadedError, \
+  PIIDetectionError
+from .semantic_chunker import create_chunker
 
 
 class GLiNERDetector:

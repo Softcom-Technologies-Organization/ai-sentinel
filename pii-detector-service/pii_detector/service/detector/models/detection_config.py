@@ -10,7 +10,6 @@ and config/models/*.toml by default, but can be overridden via
 constructor parameters.
 """
 
-import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, List, Dict, Any

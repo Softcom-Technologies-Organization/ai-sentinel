@@ -9,10 +9,10 @@ Note: Before running this script, you need to:
 3. Set the HUGGING_FACE_API_KEY environment variable
 """
 
+import argparse
+import logging
 import os
 import sys
-import logging
-import argparse
 from pathlib import Path
 
 GRPC_PROTO_PII_DETECTION_FILE = "pii_detection_pb2_grpc.py"

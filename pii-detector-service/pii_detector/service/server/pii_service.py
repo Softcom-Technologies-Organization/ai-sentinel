@@ -128,12 +128,30 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         self.request_counter = 0
         self.gc_frequency = 10  # Run garbage collection every N requests
         
+        # Load throughput logging configuration
+        self.log_throughput = self._load_log_throughput_config()
+        
         # Use singleton detector instance
         self.detector = get_detector_instance()
         
         # Start memory monitoring thread if enabled
         if self.enable_memory_monitoring:
             self._start_memory_monitoring()
+    
+    def _load_log_throughput_config(self) -> bool:
+        """
+        Load log_throughput flag from configuration.
+        
+        Returns:
+            True if throughput logging is enabled, False otherwise
+        """
+        try:
+            from pii_detector.service.detector.models.detection_config import _load_llm_config
+            config = _load_llm_config()
+            detection_config = config.get("detection", {})
+            return detection_config.get("log_throughput", True)
+        except Exception:
+            return True  # Default: enabled
     
     def _start_memory_monitoring(self):
         """Start a background thread to monitor memory usage."""
@@ -259,8 +277,18 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             entities = self.detector.detect_pii(content, threshold)
 
             processing_time = time.time() - processing_start
-            logger.info(f"[{request_id}] PII detection completed in {processing_time:.3f}s")
-            logger.info(f"[{request_id}] Found {len(entities)} PII entities")
+            
+            # Log throughput if enabled
+            if self.log_throughput:
+                throughput = len(content) / processing_time if processing_time > 0 else 0
+                logger.info(
+                    f"[{request_id}] PII detection completed in {processing_time:.3f}s, "
+                    f"found {len(entities)} entities, "
+                    f"throughput: {throughput:.0f} chars/s"
+                )
+            else:
+                logger.info(f"[{request_id}] PII detection completed in {processing_time:.3f}s")
+                logger.info(f"[{request_id}] Found {len(entities)} PII entities")
 
             # Log detected entity types for debugging
             if entities:

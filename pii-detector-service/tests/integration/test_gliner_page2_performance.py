@@ -16,8 +16,8 @@ from typing import List
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from pii_detector.service.detector.gliner_detector import GLiNERDetector
-from pii_detector.service.detector.models import PIIEntity, DetectionConfig
+from service.detector.gliner_detector import GLiNERDetector
+from service.detector.models import PIIEntity, DetectionConfig
 
 
 class TestGlinerPage2Performance:

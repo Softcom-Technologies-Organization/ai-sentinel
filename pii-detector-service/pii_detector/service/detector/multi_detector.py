@@ -99,10 +99,10 @@ class MultiModelPIIDetector:
     def __init__(self, model_ids: Iterable[str], device: Optional[str] = None):
         self.model_ids = list(model_ids)
         self.device = device
+        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.detectors = [
             self._create_detector(m, device) for m in self.model_ids
         ]
-        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.logger.info(f"Initialized MultiModelPIIDetector with models: {self.model_ids}")
     
     def _create_detector(self, model_id: str, device: Optional[str] = None):

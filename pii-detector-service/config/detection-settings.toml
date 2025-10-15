@@ -9,13 +9,13 @@
 default_threshold = 0.5
 
 # Enable multi-model aggregation (true/false)
-multi_detector_enabled = true
+multi_detector_enabled = false
 
 # Log detailed provenance information about which model detected each entity
 log_provenance = true
 
-# Batch size for processing multiple texts
-batch_size = 4
+# Log throughput metrics (chars/second) for performance monitoring
+log_throughput = true
 
 # Token overlap for chunk splitting (prevents boundary truncation)
 # Recommended 10-20% of max_length for optimal entity detection at boundaries
@@ -40,13 +40,40 @@ overlap_resolution = "prefer_longer"
 # min_consensus = 2
 
 # ============================================================================
-# PERFORMANCE SETTINGS
+# PARALLEL PROCESSING SETTINGS
+# Settings for parallel text processing within a single model
+# ============================================================================
+[parallel_processing]
+# Enable parallel processing of multiple texts (ThreadPoolExecutor)
+# When true, multiple texts are processed in parallel by the same model
+# Performance impact: ~49% faster with 5 workers (based on benchmark tests)
+# Note: This is NOT batch processing (which GLiNER doesn't support)
+# This uses ThreadPoolExecutor to process multiple texts concurrently
+enabled = true
+
+# Number of worker threads for parallel text processing
+# Recommended values based on CPU cores:
+# - 3 workers: Good balance for 4-core CPUs (~43% gain)
+# - 5 workers: Optimal for 6-8 core CPUs (~49% gain)
+# - Set to 1 to disable parallelization (sequential processing)
+max_workers = 10
+
+# Minimum number of texts to trigger parallel processing
+# If batch has fewer texts than this threshold, process sequentially
+# This avoids overhead for small batches
+min_texts_for_parallel = 3
+
+# ============================================================================
+# PERFORMANCE SETTINGS  
+# Settings for multi-model execution
 # ============================================================================
 [performance]
-# Enable parallel execution of models
+# Enable parallel execution of MULTIPLE models (not the same as parallel_processing above)
+# This allows running multiple different models simultaneously
 parallel_execution = true
 
-# Maximum number of worker threads (comment out = auto-detect)
+# Maximum number of worker threads for multi-model parallel execution
+# (comment out = auto-detect based on CPU cores)
 # max_workers = 4
 
 # Timeout per model in seconds

@@ -5,7 +5,7 @@ import pytest
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from pii_detector.service.detector.pii_detector import PIIEntity
+from service.detector.pii_detector import PIIEntity
 
 
 class TestEmailHeavyFrenchText:
@@ -57,7 +57,7 @@ class TestEmailHeavyFrenchText:
             monkeypatch.delenv('MULTI_DETECTOR_MODELS', raising=False)
 
             # Reload service module to reset singleton and re-evaluate flags
-            from pii_detector.service.server import pii_service as ps
+            from service.server import pii_service as ps
             importlib.reload(ps)
 
             detector = ps.get_detector_instance()  # loads model(s) if needed

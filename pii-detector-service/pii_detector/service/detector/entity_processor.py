@@ -31,7 +31,7 @@ class EntityProcessor:
 
         return processed_entities
 
-    def detect_emails_with_regex(self, text: str, existing_entities: List[PIIEntity]) -> List[PIIEntity]:
+    def detect_emails_with_regex(self) -> List[PIIEntity]:
         """Regex-based detections are disabled by policy; returns no additional entities."""
         # Business rule: No regex-based detection is allowed. This is intentionally a no-op.
         return []

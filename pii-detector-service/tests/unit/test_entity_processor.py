@@ -163,33 +163,11 @@ class TestDetectEmailsWithRegex:
     
     def test_detect_emails_with_regex_returns_empty_list(self, processor):
         """Test that detect_emails_with_regex always returns empty list (business rule)."""
-        text = "Contact us at support@example.com or sales@example.com"
-        existing_entities = []
-        
-        result = processor.detect_emails_with_regex(text, existing_entities)
+        result = processor.detect_emails_with_regex()
         
         # Should always return empty list (no-op by policy)
         assert result == []
         assert isinstance(result, list)
-    
-    def test_detect_emails_with_regex_with_existing_entities(self, processor):
-        """Test detect_emails_with_regex ignores existing entities."""
-        text = "Email: test@example.com"
-        existing_entities = [
-            PIIEntity(
-                text='test@example.com',
-                pii_type='EMAIL',
-                type_label='Email',
-                start=7,
-                end=23,
-                score=0.95
-            )
-        ]
-        
-        result = processor.detect_emails_with_regex(text, existing_entities)
-        
-        # Should still return empty list
-        assert result == []
 
 
 class TestCreatePIIEntity:

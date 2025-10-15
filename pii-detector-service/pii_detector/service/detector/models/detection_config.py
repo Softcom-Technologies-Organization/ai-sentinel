@@ -134,13 +134,13 @@ class DetectionConfig:
         long_text_threshold: Character threshold to trigger chunked processing
     """
 
-    model_id: str = None
+    model_id: Optional[str] = None
     device: Optional[str] = None
-    max_length: int = None
-    threshold: float = None
-    batch_size: int = None
-    stride_tokens: int = None
-    long_text_threshold: int = None
+    max_length: Optional[int] = None
+    threshold: Optional[float] = None
+    batch_size: Optional[int] = None
+    stride_tokens: Optional[int] = None
+    long_text_threshold: Optional[int] = None
     custom_filenames: Optional[Dict[str, str]] = None
     
     def __post_init__(self):
@@ -188,15 +188,15 @@ class DetectionConfig:
                 
         except FileNotFoundError as e:
             raise FileNotFoundError(
-                f"Configuration files not found. "
-                f"Please create the following structure:\n\n"
-                f"config/\n"
-                f"├── detection-settings.toml  # Global settings\n"
-                f"└── models/\n"
-                f"    ├── gliner-pii.toml      # Model configurations\n"
-                f"    ├── piiranha-v1.toml\n"
-                f"    └── ...\n\n"
-                f"See the old config/llm.toml for reference."
+                "Configuration files not found. "
+                "Please create the following structure:\n\n"
+                "config/\n"
+                "├── detection-settings.toml  # Global settings\n"
+                "└── models/\n"
+                "    ├── gliner-pii.toml      # Model configurations\n"
+                "    ├── piiranha-v1.toml\n"
+                "    └── ...\n\n"
+                "See the old config/llm.toml for reference."
             ) from e
             
         except KeyError as e:

@@ -82,8 +82,8 @@ class GLiNERDetector:
                 chunk_info = self.semantic_chunker.get_chunk_info()
                 if chunk_info.get("library") != "semchunk":
                     raise RuntimeError(
-                        f"Semantic chunking REQUIRED but fallback chunker was created. "
-                        f"Install semchunk: pip install semchunk"
+                        "Semantic chunking REQUIRED but fallback chunker was created. "
+                        "Install semchunk: pip install semchunk"
                     )
                 
                 self.logger.info("Semantic chunker initialized successfully with semchunk")
@@ -91,7 +91,7 @@ class GLiNERDetector:
             except Exception as e:
                 self.logger.error(f"CRITICAL: Failed to initialize semantic chunker: {e}")
                 raise RuntimeError(
-                    f"Semantic chunking is REQUIRED for GLiNER to prevent truncation. "
+                    "Semantic chunking is REQUIRED for GLiNER to prevent truncation. "
                     f"Error: {str(e)}"
                 ) from e
                 

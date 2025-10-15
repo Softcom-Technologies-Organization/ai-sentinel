@@ -11,3 +11,5 @@
 /pii-detector-service/pii-detector-service.iml
 /pii-reporting-ui/pii-reporting-ui.iml
 /pii-detector-service/htmlcov/
+/pii-detector-service/tests/coverage.xml
+/pii-detector-service/coverage.xml

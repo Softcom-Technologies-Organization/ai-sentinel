@@ -228,11 +228,23 @@ public abstract class AbstractStreamConfluenceScanUseCase {
 
     private ContentPiiDetection detectPii(String content) {
         String safeContent = content != null ? content : "";
-        log.info("Content: {}", safeContent);
-        long time = System.currentTimeMillis();
+        int charCount = safeContent.length();
+        long startTime = System.currentTimeMillis();
         ContentPiiDetection contentPiiDetection = piiDetectorClient.analyzeContent(safeContent);
-        log.info("Time to send and received content pii scan result: {}", System.currentTimeMillis() - time);
-        log.info("Pii content: {}", contentPiiDetection);
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        
+        Mono.fromRunnable(() -> {
+            log.info("Content: {}", safeContent);
+            log.info("Time to send and received content pii scan result: {}", duration);
+            log.info("Pii content: {}", contentPiiDetection);
+            double charsPerSecond = duration > 0 ? (charCount * 1000.0) / duration : 0;
+            log.info("[PERFORMANCE] Scan throughput: {} chars/sec ({} chars scanned in {} ms)", 
+                    String.format("%.2f", charsPerSecond), charCount, duration);
+        })
+        .subscribeOn(Schedulers.parallel())
+        .subscribe();
+        
         return contentPiiDetection;
     }
 

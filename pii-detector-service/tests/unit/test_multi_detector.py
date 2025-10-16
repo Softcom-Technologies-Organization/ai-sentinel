@@ -124,60 +124,64 @@ class TestHelperFunctions:
 class TestMultiModelPIIDetectorInitialization:
     """Test cases for MultiModelPIIDetector initialization."""
     
-    @patch('pii_detector.service.detector.multi_detector.logging.getLogger')
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_initialize_with_model_ids(self, mock_pii_detector_class, mock_get_logger):
+    def test_should_initialize_with_model_ids(self, mock_logger):
         """Test initialization with model IDs."""
         model_ids = ["model1", "model2"]
+        mock_factory = Mock()
+        mock_factory.create.side_effect = [Mock(), Mock()]
         
-        detector = MultiModelPIIDetector(model_ids=model_ids)
+        detector = MultiModelPIIDetector(model_ids=model_ids, factory=mock_factory)
         
         assert detector.model_ids == model_ids
         assert len(detector.detectors) == 2
         assert detector.device is None
     
-    @patch('pii_detector.service.detector.multi_detector.logging.getLogger')
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_initialize_with_device(self, mock_pii_detector_class, mock_get_logger):
+    def test_should_initialize_with_device(self, mock_logger):
         """Test initialization with specific device."""
         model_ids = ["model1"]
         device = "cuda"
+        mock_factory = Mock()
+        mock_factory.create.return_value = Mock()
         
-        detector = MultiModelPIIDetector(model_ids=model_ids, device=device)
+        detector = MultiModelPIIDetector(model_ids=model_ids, device=device, factory=mock_factory)
         
         assert detector.device == device
     
-    @patch('pii_detector.service.detector.multi_detector.logging.getLogger')
-    @patch('pii_detector.service.detector.multi_detector.GLiNERDetector')
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_create_gliner_detector_for_gliner_model(self, mock_pii_detector, mock_gliner_detector, mock_get_logger):
-        """Test creating GLiNERDetector for GLiNER model."""
+    def test_should_create_gliner_detector_for_gliner_model(self, mock_logger):
+        """Test creating GLiNERDetector for GLiNER model via factory."""
         model_ids = ["gliner-pii"]
-        
-        detector = MultiModelPIIDetector(model_ids=model_ids)
-        
-        mock_gliner_detector.assert_called_once()
-        mock_pii_detector.assert_not_called()
-    
-    @patch('pii_detector.service.detector.multi_detector.logging.getLogger')
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_create_pii_detector_for_non_gliner_model(self, mock_pii_detector, mock_get_logger):
-        """Test creating PIIDetector for non-GLiNER model."""
-        model_ids = ["piiranha"]
-        
-        detector = MultiModelPIIDetector(model_ids=model_ids)
-        
-        mock_pii_detector.assert_called_once()
-    
-    @patch('pii_detector.service.detector.multi_detector.logging.getLogger')
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_have_model_id_property(self, mock_pii_detector_class, mock_get_logger):
-        """Test model_id property returns first model."""
+        mock_factory = Mock()
         mock_detector = Mock()
-        mock_detector.model_id = "model1"
-        mock_pii_detector_class.return_value = mock_detector
+        mock_factory.create.return_value = mock_detector
         
-        detector = MultiModelPIIDetector(model_ids=["model1", "model2"])
+        detector = MultiModelPIIDetector(model_ids=model_ids, factory=mock_factory)
+        
+        mock_factory.create.assert_called_once()
+        assert len(detector.detectors) == 1
+    
+    def test_should_create_pii_detector_for_non_gliner_model(self, mock_logger):
+        """Test creating PIIDetector for non-GLiNER model via factory."""
+        model_ids = ["piiranha"]
+        mock_factory = Mock()
+        mock_detector = Mock()
+        mock_factory.create.return_value = mock_detector
+        
+        detector = MultiModelPIIDetector(model_ids=model_ids, factory=mock_factory)
+        
+        mock_factory.create.assert_called_once()
+        assert len(detector.detectors) == 1
+    
+    def test_should_have_model_id_property(self, mock_logger):
+        """Test model_id property returns first model."""
+        mock_detector1 = Mock()
+        mock_detector1.model_id = "model1"
+        mock_detector2 = Mock()
+        mock_detector2.model_id = "model2"
+        
+        mock_factory = Mock()
+        mock_factory.create.side_effect = [mock_detector1, mock_detector2]
+        
+        detector = MultiModelPIIDetector(model_ids=["model1", "model2"], factory=mock_factory)
         
         assert detector.model_id == "model1"
 
@@ -185,55 +189,55 @@ class TestMultiModelPIIDetectorInitialization:
 class TestLifecycleOperations:
     """Test cases for lifecycle operations."""
     
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_download_all_models(self, mock_pii_detector_class, mock_logger):
+    def test_should_download_all_models(self, mock_logger):
         """Test downloading all models."""
         mock_det1 = Mock()
         mock_det2 = Mock()
-        mock_pii_detector_class.side_effect = [mock_det1, mock_det2]
+        mock_factory = Mock()
+        mock_factory.create.side_effect = [mock_det1, mock_det2]
         
-        detector = MultiModelPIIDetector(model_ids=["model1", "model2"])
+        detector = MultiModelPIIDetector(model_ids=["model1", "model2"], factory=mock_factory)
         detector.download_model()
         
         mock_det1.download_model.assert_called_once()
         mock_det2.download_model.assert_called_once()
     
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_continue_on_download_failure(self, mock_pii_detector_class, mock_logger):
+    def test_should_continue_on_download_failure(self, mock_logger):
         """Test continuing when download fails for one model."""
         mock_det1 = Mock()
         mock_det1.download_model.side_effect = Exception("Download error")
         mock_det2 = Mock()
-        mock_pii_detector_class.side_effect = [mock_det1, mock_det2]
+        mock_factory = Mock()
+        mock_factory.create.side_effect = [mock_det1, mock_det2]
         
-        detector = MultiModelPIIDetector(model_ids=["model1", "model2"])
+        detector = MultiModelPIIDetector(model_ids=["model1", "model2"], factory=mock_factory)
         detector.download_model()
         
         # Should not raise, should continue to model2
         mock_det2.download_model.assert_called_once()
     
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_load_all_models(self, mock_pii_detector_class, mock_logger):
+    def test_should_load_all_models(self, mock_logger):
         """Test loading all models."""
         mock_det1 = Mock()
         mock_det2 = Mock()
-        mock_pii_detector_class.side_effect = [mock_det1, mock_det2]
+        mock_factory = Mock()
+        mock_factory.create.side_effect = [mock_det1, mock_det2]
         
-        detector = MultiModelPIIDetector(model_ids=["model1", "model2"])
+        detector = MultiModelPIIDetector(model_ids=["model1", "model2"], factory=mock_factory)
         detector.load_model()
         
         mock_det1.load_model.assert_called_once()
         mock_det2.load_model.assert_called_once()
     
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_continue_on_load_failure(self, mock_pii_detector_class, mock_logger):
+    def test_should_continue_on_load_failure(self, mock_logger):
         """Test continuing when load fails for one model."""
         mock_det1 = Mock()
         mock_det1.load_model.side_effect = Exception("Load error")
         mock_det2 = Mock()
-        mock_pii_detector_class.side_effect = [mock_det1, mock_det2]
+        mock_factory = Mock()
+        mock_factory.create.side_effect = [mock_det1, mock_det2]
         
-        detector = MultiModelPIIDetector(model_ids=["model1", "model2"])
+        detector = MultiModelPIIDetector(model_ids=["model1", "model2"], factory=mock_factory)
         detector.load_model()
         
         # Should not raise, should continue to model2
@@ -243,8 +247,7 @@ class TestLifecycleOperations:
 class TestPIIDetection:
     """Test cases for PII detection."""
     
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_detect_pii_from_multiple_models(self, mock_pii_detector_class, mock_logger):
+    def test_should_detect_pii_from_multiple_models(self, mock_logger):
         """Test detecting PII from multiple models."""
         entity1 = PIIEntity(text="test1", pii_type="EMAIL", type_label="EMAIL", start=0, end=5, score=0.9)
         entity2 = PIIEntity(text="test2", pii_type="PHONE", type_label="PHONE", start=10, end=15, score=0.8)
@@ -257,17 +260,17 @@ class TestPIIDetection:
         mock_det2.model_id = "model2"
         mock_det2.detect_pii.return_value = [entity2]
         
-        mock_pii_detector_class.side_effect = [mock_det1, mock_det2]
+        mock_factory = Mock()
+        mock_factory.create.side_effect = [mock_det1, mock_det2]
         
-        detector = MultiModelPIIDetector(model_ids=["model1", "model2"])
+        detector = MultiModelPIIDetector(model_ids=["model1", "model2"], factory=mock_factory)
         result = detector.detect_pii("test text")
         
         assert len(result) == 2
         assert entity1 in result
         assert entity2 in result
     
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_deduplicate_identical_entities(self, mock_pii_detector_class, mock_logger):
+    def test_should_deduplicate_identical_entities(self, mock_logger):
         """Test deduplicating identical entities from different models."""
         entity1 = PIIEntity(text="test", pii_type="EMAIL", type_label="EMAIL", start=0, end=4, score=0.9)
         entity2 = PIIEntity(text="test", pii_type="EMAIL", type_label="EMAIL", start=0, end=4, score=0.8)
@@ -280,17 +283,17 @@ class TestPIIDetection:
         mock_det2.model_id = "model2"
         mock_det2.detect_pii.return_value = [entity2]
         
-        mock_pii_detector_class.side_effect = [mock_det1, mock_det2]
+        mock_factory = Mock()
+        mock_factory.create.side_effect = [mock_det1, mock_det2]
         
-        detector = MultiModelPIIDetector(model_ids=["model1", "model2"])
+        detector = MultiModelPIIDetector(model_ids=["model1", "model2"], factory=mock_factory)
         result = detector.detect_pii("test")
         
         # Should keep only one with higher score
         assert len(result) == 1
         assert result[0].score == 0.9
     
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_handle_detection_failure(self, mock_pii_detector_class, mock_logger):
+    def test_should_handle_detection_failure(self, mock_logger):
         """Test handling detection failure gracefully."""
         entity = PIIEntity(text="test", pii_type="EMAIL", type_label="EMAIL", start=0, end=4, score=0.9)
         
@@ -302,9 +305,10 @@ class TestPIIDetection:
         mock_det2.model_id = "model2"
         mock_det2.detect_pii.return_value = [entity]
         
-        mock_pii_detector_class.side_effect = [mock_det1, mock_det2]
+        mock_factory = Mock()
+        mock_factory.create.side_effect = [mock_det1, mock_det2]
         
-        detector = MultiModelPIIDetector(model_ids=["model1", "model2"])
+        detector = MultiModelPIIDetector(model_ids=["model1", "model2"], factory=mock_factory)
         result = detector.detect_pii("test")
         
         # Should return results from successful detector
@@ -312,17 +316,18 @@ class TestPIIDetection:
         assert result[0] == entity
     
     @patch('pii_detector.service.detector.multi_detector.PROVENANCE_LOG_PROVENANCE', True)
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_log_provenance_when_enabled(self, mock_pii_detector_class, mock_logger):
+    def test_should_log_provenance_when_enabled(self, mock_logger):
         """Test provenance logging when enabled."""
         entity = PIIEntity(text="test", pii_type="EMAIL", type_label="EMAIL", start=0, end=4, score=0.9)
         
         mock_det = Mock()
         mock_det.model_id = "model1"
         mock_det.detect_pii.return_value = [entity]
-        mock_pii_detector_class.return_value = mock_det
         
-        detector = MultiModelPIIDetector(model_ids=["model1"])
+        mock_factory = Mock()
+        mock_factory.create.return_value = mock_det
+        
+        detector = MultiModelPIIDetector(model_ids=["model1"], factory=mock_factory)
         with patch.object(detector.logger, 'info') as mock_log:
             result = detector.detect_pii("test")
         
@@ -333,17 +338,18 @@ class TestPIIDetection:
 class TestPIIMasking:
     """Test cases for PII masking."""
     
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_mask_detected_entities(self, mock_pii_detector_class, mock_logger):
+    def test_should_mask_detected_entities(self, mock_logger):
         """Test masking detected PII entities."""
         entity = PIIEntity(text="test@example.com", pii_type="EMAIL", type_label="EMAIL", start=8, end=24, score=0.9)
         
         mock_det = Mock()
         mock_det.model_id = "model1"
         mock_det.detect_pii.return_value = [entity]
-        mock_pii_detector_class.return_value = mock_det
         
-        detector = MultiModelPIIDetector(model_ids=["model1"])
+        mock_factory = Mock()
+        mock_factory.create.return_value = mock_det
+        
+        detector = MultiModelPIIDetector(model_ids=["model1"], factory=mock_factory)
         masked_text, entities = detector.mask_pii("Contact test@example.com")
         
         assert masked_text == "Contact [EMAIL]"
@@ -351,11 +357,15 @@ class TestPIIMasking:
 
 
 class TestOverlapResolution:
-    """Test cases for overlap resolution."""
+    """Test cases for overlap resolution.
     
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_keep_longer_span_when_overlapping(self, mock_pii_detector_class, mock_logger):
-        """Test keeping longer span when entities overlap."""
+    Note: Overlap resolution logic has been extracted to DetectionMerger.
+    These tests verify that MultiModelPIIDetector correctly delegates to DetectionMerger.
+    Detailed overlap resolution tests are now in test_detection_merger.py.
+    """
+    
+    def test_should_delegate_overlap_resolution_to_merger(self, mock_logger):
+        """Test that MultiModelPIIDetector delegates overlap resolution to DetectionMerger."""
         # Short entity
         entity1 = PIIEntity(text="test", pii_type="EMAIL", type_label="EMAIL", start=0, end=4, score=0.9)
         # Longer entity containing the short one
@@ -363,102 +373,14 @@ class TestOverlapResolution:
         
         mock_det = Mock()
         mock_det.model_id = "model1"
-        mock_pii_detector_class.return_value = mock_det
+        mock_det.detect_pii.return_value = [entity1, entity2]
         
-        detector = MultiModelPIIDetector(model_ids=["model1"])
-        result = detector._resolve_overlapping_entities([entity1, entity2])
+        mock_factory = Mock()
+        mock_factory.create.return_value = mock_det
         
-        # Should keep longer entity
+        detector = MultiModelPIIDetector(model_ids=["model1"], factory=mock_factory)
+        result = detector.detect_pii("test")
+        
+        # Should keep longer entity through merger
         assert len(result) == 1
         assert result[0].text == "test@example.com"
-    
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_keep_non_overlapping_entities(self, mock_pii_detector_class, mock_logger):
-        """Test keeping non-overlapping entities."""
-        entity1 = PIIEntity(text="test1", pii_type="EMAIL", type_label="EMAIL", start=0, end=5, score=0.9)
-        entity2 = PIIEntity(text="test2", pii_type="EMAIL", type_label="EMAIL", start=10, end=15, score=0.8)
-        
-        mock_det = Mock()
-        mock_det.model_id = "model1"
-        mock_pii_detector_class.return_value = mock_det
-        
-        detector = MultiModelPIIDetector(model_ids=["model1"])
-        result = detector._resolve_overlapping_entities([entity1, entity2])
-        
-        # Should keep both
-        assert len(result) == 2
-    
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_resolve_partial_overlap(self, mock_pii_detector_class, mock_logger):
-        """Test resolving partial overlaps."""
-        entity1 = PIIEntity(text="test1", pii_type="EMAIL", type_label="EMAIL", start=0, end=8, score=0.9)
-        entity2 = PIIEntity(text="test2", pii_type="EMAIL", type_label="EMAIL", start=5, end=13, score=0.8)
-        
-        mock_det = Mock()
-        mock_det.model_id = "model1"
-        mock_pii_detector_class.return_value = mock_det
-        
-        detector = MultiModelPIIDetector(model_ids=["model1"])
-        result = detector._resolve_overlapping_entities([entity1, entity2])
-        
-        # Should prefer the first one (started earlier)
-        assert len(result) == 1
-        assert result[0].start == 0
-    
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_handle_empty_list(self, mock_pii_detector_class, mock_logger):
-        """Test handling empty entity list."""
-        mock_det = Mock()
-        mock_pii_detector_class.return_value = mock_det
-        
-        detector = MultiModelPIIDetector(model_ids=["model1"])
-        result = detector._resolve_overlapping_entities([])
-        
-        assert result == []
-    
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_resolve_by_type_independently(self, mock_pii_detector_class, mock_logger):
-        """Test resolving overlaps independently per type."""
-        email1 = PIIEntity(text="test", pii_type="EMAIL", type_label="EMAIL", start=0, end=4, score=0.9)
-        email2 = PIIEntity(text="test@example.com", pii_type="EMAIL", type_label="EMAIL", start=0, end=16, score=0.8)
-        phone = PIIEntity(text="555-1234", pii_type="PHONE", type_label="PHONE", start=0, end=8, score=0.7)
-        
-        mock_det = Mock()
-        mock_pii_detector_class.return_value = mock_det
-        
-        detector = MultiModelPIIDetector(model_ids=["model1"])
-        result = detector._resolve_overlapping_entities([email1, email2, phone])
-        
-        # Should have one email (longer) and one phone
-        assert len(result) == 2
-        types = [e.pii_type for e in result]
-        assert "EMAIL" in types
-        assert "PHONE" in types
-    
-    @patch('pii_detector.service.detector.multi_detector.PIIDetector')
-    def test_should_check_overlap_types(self, mock_pii_detector_class, mock_logger):
-        """Test overlap type detection."""
-        mock_det = Mock()
-        mock_pii_detector_class.return_value = mock_det
-        
-        detector = MultiModelPIIDetector(model_ids=["model1"])
-        
-        # Test no overlap
-        e1 = PIIEntity(text="a", pii_type="EMAIL", type_label="EMAIL", start=0, end=5, score=0.9)
-        e2 = PIIEntity(text="b", pii_type="EMAIL", type_label="EMAIL", start=10, end=15, score=0.8)
-        assert detector._check_overlap(e1, e2) == 'none'
-        
-        # Test e1 contains e2
-        e1 = PIIEntity(text="a", pii_type="EMAIL", type_label="EMAIL", start=0, end=20, score=0.9)
-        e2 = PIIEntity(text="b", pii_type="EMAIL", type_label="EMAIL", start=5, end=15, score=0.8)
-        assert detector._check_overlap(e1, e2) == 'kept_contains_current'
-        
-        # Test e2 contains e1
-        e1 = PIIEntity(text="a", pii_type="EMAIL", type_label="EMAIL", start=5, end=15, score=0.9)
-        e2 = PIIEntity(text="b", pii_type="EMAIL", type_label="EMAIL", start=0, end=20, score=0.8)
-        assert detector._check_overlap(e1, e2) == 'current_contains_kept'
-        
-        # Test partial overlap
-        e1 = PIIEntity(text="a", pii_type="EMAIL", type_label="EMAIL", start=0, end=10, score=0.9)
-        e2 = PIIEntity(text="b", pii_type="EMAIL", type_label="EMAIL", start=5, end=15, score=0.8)
-        assert detector._check_overlap(e1, e2) == 'partial'

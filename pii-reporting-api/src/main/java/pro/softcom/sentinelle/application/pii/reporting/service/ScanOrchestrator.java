@@ -47,6 +47,14 @@ public class ScanOrchestrator {
         return scanEventFactory.createEmptyPageItemEvent(scanId, spaceKey, page, progress);
     }
 
+    public ScanResult createAttachmentItemEvent(String scanId, String spaceKey, ConfluencePage page,
+                                               pro.softcom.sentinelle.domain.confluence.AttachmentInfo attachment,
+                                               String content, ContentPiiDetection detection,
+                                               double progress) {
+        return scanEventFactory.createAttachmentItemEvent(scanId, spaceKey, page, attachment, content,
+                                                          detection, progress);
+    }
+
     public ScanResult createErrorEvent(String scanId, String spaceKey, String pageId,
                                       String message, double progress) {
         return scanEventFactory.createErrorEvent(scanId, spaceKey, pageId, message, progress);

@@ -92,10 +92,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
                                                                  checkpointService, jpaScanEventStoreAdapter);
         AttachmentProcessor attachmentProcessor = new AttachmentProcessor(
                 confluenceDownloadService,
-                attachmentTextExtractionService,
-                piiDetectorClient,
-                eventFactory,
-                progressCalculator
+                attachmentTextExtractionService
         );
         
         streamConfluenceResumeScanUseCase = new StreamConfluenceResumeScanUseCaseImpl(
@@ -242,4 +239,3 @@ class StreamConfluenceResumeScanUseCaseImplTest {
             .verifyComplete();
     }
 }
-

@@ -5,275 +5,31 @@ This module provides functionality for detecting Personally Identifiable Informa
 in text content using the Piiranha model with optimizations for memory usage and code quality.
 """
 
-import gc
 import logging
-import os
 import time
-import traceback
-import unicodedata
-import warnings
-from dataclasses import dataclass
-from enum import Enum
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
 import torch
-from huggingface_hub import hf_hub_download
-from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
+import unicodedata
+from transformers import AutoTokenizer, AutoModelForTokenClassification, \
+  pipeline
 
+from .entity_processor import EntityProcessor
+# Import managers
+from .memory_manager import MemoryManager
+from .model_manager import ModelManager
+# Import models from the models package
+from .models import (
+  PIIEntity,
+  DetectionConfig,
+  PIIDetectionError,
+  ModelNotLoadedError,
+)
 
-class PIIType(Enum):
-    """Enumeration of supported PII types with French labels."""
-
-    ACCOUNTNUM = "Numéro de compte"
-    BUILDINGNUM = "Numéro de bâtiment"
-    CITY = "Ville"
-    CREDITCARDNUMBER = "Numéro de carte de crédit"
-    DATEOFBIRTH = "Date de naissance"
-    DRIVERLICENSENUM = "Numéro de permis de conduire"
-    EMAIL = "Email"
-    GIVENNAME = "Prénom"
-    IDCARDNUM = "Numéro de carte d'identité"
-    PASSWORD = "Mot de passe"
-    SOCIALNUM = "Numéro de sécurité sociale"
-    STREET = "Rue"
-    SURNAME = "Nom de famille"
-    TAXNUM = "Numéro fiscal"
-    TELEPHONENUM = "Numéro de téléphone"
-    USERNAME = "Nom d'utilisateur"
-    ZIPCODE = "Code postal"
-
-
-@dataclass
-class PIIEntity:
-    """Data class representing a detected PII entity."""
-
-    text: str
-    pii_type: str
-    type_label: str
-    start: int
-    end: int
-    score: float
-
-    def __getitem__(self, key):
-        """Support dictionary-style access for backward compatibility."""
-        if key == 'text':
-            return self.text
-        elif key == 'type':
-            return self.pii_type
-        elif key == 'type_label':
-            return self.type_label
-        elif key == 'type_fr':
-            return self.type_label  # French label is the same as type_label
-        elif key == 'start':
-            return self.start
-        elif key == 'end':
-            return self.end
-        elif key == 'score':
-            return self.score
-        else:
-            raise KeyError(f"'{key}' not found in PIIEntity")
-    
-    def __contains__(self, key):
-        """Support 'in' operator for backward compatibility."""
-        return key in ['text', 'type', 'type_label', 'type_fr', 'start', 'end', 'score']
-
-    def get(self, key, default=None):
-        """Support dictionary-style get method for backward compatibility."""
-        try:
-            return self[key]
-        except KeyError:
-            return default
-
-    def keys(self):
-        """Support dictionary-style keys method."""
-        return ['text', 'type', 'type_label', 'type_fr', 'start', 'end', 'score']
-
-    def values(self):
-        """Support dictionary-style values method."""
-        return [self.text, self.pii_type, self.type_label, self.type_label, self.start, self.end, self.score]
-
-    def items(self):
-        """Support dictionary-style items method."""
-        return [(key, self[key]) for key in self.keys()]
-
-
-@dataclass
-class DetectionConfig:
-    """Configuration for PII detection."""
-
-    model_id: str = "iiiorg/piiranha-v1-detect-personal-information"
-    device: Optional[str] = None
-    max_length: int = 256
-    threshold: float = 0.5
-    batch_size: int = 4
-    # Token-based splitting settings: overlap avoids boundary truncation
-    stride_tokens: int = 64
-    # Note: Character-based chunking options removed in favor of token-based splitting per model context
-    long_text_threshold: int = 10000
-
-
-class PIIDetectionError(Exception):
-    """Base exception for PII detection errors."""
-    pass
-
-
-class ModelNotLoadedError(ValueError):
-    """Raised when attempting to use an unloaded model."""
-    pass
-
-
-class ModelLoadError(PIIDetectionError):
-    """Raised when model loading fails."""
-    pass
-
-
-class APIKeyError(ValueError):
-    """Raised when Hugging Face API key is missing or invalid."""
-    pass
-
-
-class MemoryManager:
-    """Handles memory optimization and cleanup operations."""
-
-    @staticmethod
-    def setup_memory_optimization() -> None:
-        """Configure environment variables for memory optimization."""
-        os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-        os.environ['OMP_NUM_THREADS'] = '1'
-        warnings.filterwarnings("ignore")
-
-    @staticmethod
-    def optimize_for_device(device: str) -> None:
-        """Apply device-specific optimizations."""
-        if device == 'cpu':
-            torch.set_num_threads(1)
-
-    @staticmethod
-    def clear_cache(device: str) -> None:
-        """Clear memory caches."""
-        gc.collect()
-        if device == 'cuda' and torch.cuda.is_available():
-            torch.cuda.empty_cache()
-
-
-class ModelManager:
-    """Handles model downloading and loading operations."""
-
-    def __init__(self, config: DetectionConfig):
-        self.config = config
-        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-
-    def download_model(self) -> None:
-        """Download the model files from Hugging Face."""
-        api_key = self._get_api_key()
-        filenames = ["config.json", "model.safetensors", "tokenizer.json", "tokenizer_config.json"]
-
-        self.logger.info("Downloading model files from Hugging Face...")
-
-        for filename in filenames:
-            try:
-                hf_hub_download(
-                    repo_id=self.config.model_id,
-                    filename=filename,
-                    token=api_key
-                )
-                self.logger.debug(f"Downloaded {filename}")
-            except Exception as e:
-                self.logger.error(f"Error downloading {filename}: {str(e)}")
-                raise e  # Re-raise the original exception to match test expectations
-
-        self.logger.info("Model download completed successfully")
-
-    def load_model_components(self) -> Tuple[AutoTokenizer, AutoModelForTokenClassification]:
-        """Load tokenizer and model with optimizations."""
-        self.logger.info("Loading model components...")
-
-        try:
-            tokenizer = self._load_tokenizer()
-            model = self._load_model()
-            return tokenizer, model
-        except Exception as e:
-            self.logger.error(f"Error loading model components: {str(e)}")
-            raise ModelLoadError("Failed to load model components") from e
-
-    def _get_api_key(self) -> str:
-        """Get Hugging Face API key from centralized configuration."""
-        from config import get_config
-        
-        try:
-            config = get_config()
-            api_key = config.model.huggingface_api_key
-        except ValueError:
-            # Config validation failed
-            api_key = None
-        
-        if not api_key:
-            raise APIKeyError("HUGGING_FACE_API_KEY environment variable must be set")
-        return api_key
-
-    def _load_tokenizer(self) -> AutoTokenizer:
-        """Load tokenizer with optimizations."""
-        return AutoTokenizer.from_pretrained(
-            self.config.model_id,
-            legacy=False,
-            model_max_length=self.config.max_length,
-            padding=True,
-            truncation=True
-        )
-
-    def _load_model(self) -> AutoModelForTokenClassification:
-        """Load model with memory optimizations."""
-        device = self.config.device or ('cuda' if torch.cuda.is_available() else 'cpu')
-
-        model = AutoModelForTokenClassification.from_pretrained(
-            self.config.model_id,
-            torch_dtype=torch.float16 if device == 'cuda' else torch.float32,
-            low_cpu_mem_usage=True
-        )
-
-        model = model.to(device)
-        model.eval()
-
-        # Disable gradient computation for inference
-        for param in model.parameters():
-            param.requires_grad = False
-
-        return model
-
-
-class EntityProcessor:
-    """Handles entity processing and formatting operations."""
-
-    def __init__(self):
-        self.label_mapping = {pii_type.name: pii_type.value for pii_type in PIIType}
-        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-
-    def process_entities(self, raw_entities: List[Dict], threshold: float) -> List[PIIEntity]:
-        """Process and filter raw entities from the model."""
-        processed_entities = []
-
-        for entity in raw_entities:
-            if entity['score'] >= threshold:
-                pii_entity = self._create_pii_entity(entity)
-                processed_entities.append(pii_entity)
-
-        return processed_entities
-
-    def detect_emails_with_regex(self, text: str, existing_entities: List[PIIEntity]) -> List[PIIEntity]:
-        """Regex-based detections are disabled by policy; returns no additional entities."""
-        # Business rule: No regex-based detection is allowed. This is intentionally a no-op.
-        return []
-
-    def _create_pii_entity(self, entity: Dict) -> PIIEntity:
-        """Create a PIIEntity from raw model output."""
-        return PIIEntity(
-            text=entity['word'].strip(),
-            pii_type=entity['entity_group'],
-            type_label=self.label_mapping.get(entity['entity_group'], entity['entity_group']),
-            start=entity['start'],
-            end=entity['end'],
-            score=entity['score']
-        )
+# Constants
+_MODEL_NOT_LOADED_ERROR_MESSAGE = "The model must be loaded before use"
+_TRAILING_PUNCTUATION = {".", ",", ";", ":"}
+_SEPARATOR_CHARS = {" ", "\t", "\n", ",", ";", ":"}
 
 
 
@@ -348,9 +104,9 @@ class PIIDetector:
         return self.entity_processor.label_mapping
 
     # Backward compatibility methods
-    def _detect_emails_regex(self, text: str, existing_entities: List) -> List:
-        """Detect emails using regex for backward compatibility."""
-        return self.entity_processor.detect_emails_with_regex(text, existing_entities)
+    def _detect_emails_regex(self) -> List:
+      """Detect emails using regex for backward compatibility."""
+      return self.entity_processor.detect_emails_with_regex()
 
     def _detect_pii_chunked(self, text: str, threshold: float = None) -> List[PIIEntity]:
         """Process chunked text for backward compatibility."""
@@ -359,11 +115,6 @@ class PIIDetector:
         detection_id = self._generate_detection_id()
         return self._detect_pii_chunked_internal(text, threshold, detection_id)
 
-    def __detect_pii_chunked(self, text: str, threshold: float, detection_id: str) -> List[PIIEntity]:
-        """Internal method for chunked processing."""
-        # Use the actual chunked processing method
-        return self._detect_pii_chunked_internal(text, threshold, detection_id)
-    
     def _detect_pii_chunked_internal(self, text: str, threshold: float, detection_id: str) -> List[PIIEntity]:
         """Process text using token-based splitting aligned with model context (256 tokens)."""
         self.logger.info(f"[{detection_id}] Using token-based splitting for detection")
@@ -402,7 +153,7 @@ class PIIDetector:
             PIIDetectionError: If detection fails
         """
         if not self.pipeline:
-            raise ModelNotLoadedError("The model must be loaded before use")
+            raise ModelNotLoadedError(_MODEL_NOT_LOADED_ERROR_MESSAGE)
 
         threshold = threshold or self.config.threshold
         detection_id = self._generate_detection_id()
@@ -434,7 +185,7 @@ class PIIDetector:
             List of entity lists for each text
         """
         if not self.pipeline:
-            raise ModelNotLoadedError("The model must be loaded before use")
+            raise ModelNotLoadedError(_MODEL_NOT_LOADED_ERROR_MESSAGE)
 
         threshold = threshold or self.config.threshold
         effective_batch_size = batch_size or self.config.batch_size
@@ -515,7 +266,7 @@ class PIIDetector:
         if not text:
             return []
         if not self.tokenizer:
-            raise ModelNotLoadedError("The model must be loaded before use")
+            raise ModelNotLoadedError(_MODEL_NOT_LOADED_ERROR_MESSAGE)
 
         # Determine stride (overlap) from config while respecting max_tokens
         stride = max(0, min(getattr(self.config, 'stride_tokens', 0), max_tokens - 1))
@@ -672,66 +423,86 @@ class PIIDetector:
         detected entity, addressing tokenization splits in email local parts.
         """
         out: List[PIIEntity] = []
-        max_lookahead = 50  # Maximum characters to search forward for '@'
         
-        # Email local part allowed characters (before @)
-        local_chars = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._+-')
-        # Domain part allowed characters (after @)
-        domain_chars = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-')
-        trailing_to_strip = {'.', ',', ';', ':'}  # Strip trailing punctuation
-
         for e in entities:
-            # Keep non-email or already-complete emails as-is
-            if e.pii_type != 'EMAIL' or ('@' in e.text):
+            if self._should_skip_email_expansion(e):
                 out.append(e)
                 continue
 
-            # Search forward for '@' within lookahead window
-            search_end = min(e.end + max_lookahead, len(text))
-            at_pos = text.find('@', e.end, search_end)
-            
-            if at_pos == -1:
-                # No '@' found nearby - keep original entity
-                out.append(e)
-                continue
-            
-            # Found '@' - capture complete local part (backward from @)
-            local_start = e.start
-            i = at_pos - 1
-            while i >= 0 and text[i] in local_chars:
-                local_start = i
-                i -= 1
-            
-            # Capture domain (forward from @)
-            j = at_pos + 1
-            while j < len(text) and text[j] in domain_chars:
-                j += 1
-            
-            # Remove trailing punctuation from domain
-            while j > at_pos + 1 and text[j - 1] in trailing_to_strip:
-                j -= 1
-            
-            # Validate: must have local part and domain with at least one dot
-            if j > at_pos + 1 and at_pos > local_start:
-                complete_email = text[local_start:j]
-                domain_part = text[at_pos + 1:j]
-                
-                # Basic email validation: must have one '@' and domain must contain '.'
-                if complete_email.count('@') == 1 and '.' in domain_part:
-                    out.append(PIIEntity(
-                        text=complete_email,
-                        pii_type='EMAIL',
-                        type_label=self.label_mapping['EMAIL'],
-                        start=local_start,
-                        end=j,
-                        score=e.score
-                    ))
-                    continue
-            
-            # Fallback: keep original if expansion failed validation
-            out.append(e)
+            expanded = self._try_expand_email(text, e)
+            out.append(expanded)
 
         return out
+
+    def _should_skip_email_expansion(self, entity: PIIEntity) -> bool:
+        """Check if email expansion should be skipped for this entity."""
+        return entity.pii_type != 'EMAIL' or '@' in entity.text
+
+    def _try_expand_email(self, text: str, entity: PIIEntity) -> PIIEntity:
+        """Try to expand a partial email entity to include full email address."""
+        max_lookahead = 50
+        search_end = min(entity.end + max_lookahead, len(text))
+        at_pos = text.find('@', entity.end, search_end)
+        
+        if at_pos == -1:
+            return entity
+        
+        expanded = self._build_expanded_email(text, entity, at_pos)
+        return expanded if expanded else entity
+
+    def _build_expanded_email(self, text: str, entity: PIIEntity, at_pos: int) -> Optional[PIIEntity]:
+        """Build an expanded email entity by capturing local and domain parts."""
+        local_start, _ = self._capture_email_local_part(text, entity, at_pos)
+        domain_end = self._capture_email_domain(text, at_pos)
+        
+        if not self._is_valid_email_structure(text, local_start, at_pos, domain_end):
+            return None
+        
+        complete_email = text[local_start:domain_end]
+        return PIIEntity(
+            text=complete_email,
+            pii_type='EMAIL',
+            type_label=self.label_mapping['EMAIL'],
+            start=local_start,
+            end=domain_end,
+            score=entity.score
+        )
+
+    def _capture_email_local_part(self, text: str, entity: PIIEntity, at_pos: int) -> Tuple[int, int]:
+        """Capture the complete local part of an email (before @)."""
+        local_chars = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._+-')
+        local_start = entity.start
+        i = at_pos - 1
+        
+        while i >= 0 and text[i] in local_chars:
+            local_start = i
+            i -= 1
+        
+        return local_start, at_pos
+
+    def _capture_email_domain(self, text: str, at_pos: int) -> int:
+        """Capture the complete domain part of an email (after @)."""
+        domain_chars = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-')
+        trailing_to_strip = _TRAILING_PUNCTUATION
+        
+        j = at_pos + 1
+        while j < len(text) and text[j] in domain_chars:
+            j += 1
+        
+        while j > at_pos + 1 and text[j - 1] in trailing_to_strip:
+            j -= 1
+        
+        return j
+
+    def _is_valid_email_structure(self, text: str, local_start: int, at_pos: int, domain_end: int) -> bool:
+        """Validate email structure has valid local and domain parts."""
+        if domain_end <= at_pos + 1 or at_pos <= local_start:
+            return False
+        
+        complete_email = text[local_start:domain_end]
+        domain_part = text[at_pos + 1:domain_end]
+        
+        return complete_email.count('@') == 1 and '.' in domain_part
 
     def _split_zipcode_and_city(self, text: str, entities: List[PIIEntity]) -> List[PIIEntity]:
         """Split a ZIPCODE span that also contains a city name into ZIPCODE + CITY.
@@ -742,95 +513,129 @@ class PIIDetector:
         This handles alphanumeric ZIPs with spaces or dashes (UK, CA, NL, CZ, SK, BR, etc.).
         """
         out: List[PIIEntity] = []
-        seps = {" ", "\t", "\n", ",", ";", ":"}
-        trailing = {".", ",", ";", ":"}
-
-        def _count_alnum(s: str) -> int:
-            return sum(1 for ch in s if ch.isalnum())
-
-        def _looks_like_city(s: str) -> bool:
-            s2 = s.strip().strip(".,;:")
-            return len(s2) >= 2 and s2[0].isalpha() and s2[0].isupper()
 
         for e in entities:
             if e.pii_type != 'ZIPCODE':
                 out.append(e)
                 continue
 
-            span_full = text[e.start:e.end]
-            span = span_full.strip()
-            if not span:
-                out.append(e)
-                continue
-
-            # 1) Prefer split on first comma if present
-            comma_idx = span.find(',')
-            if comma_idx != -1:
-                left = span[:comma_idx].strip()
-                right = span[comma_idx + 1:].strip().strip(''.join(trailing))
-                if _count_alnum(left) >= 2 and _looks_like_city(right):
-                    # ZIP entity
-                    zip_start_in_full = span_full.find(left)
-                    out.append(PIIEntity(
-                        text=left,
-                        pii_type='ZIPCODE',
-                        type_label=self.label_mapping['ZIPCODE'],
-                        start=e.start + zip_start_in_full,
-                        end=e.start + zip_start_in_full + len(left),
-                        score=e.score
-                    ))
-                    # CITY entity
-                    city_start_in_full = span_full.find(right)
-                    out.append(PIIEntity(
-                        text=right,
-                        pii_type='CITY',
-                        type_label=self.label_mapping['CITY'],
-                        start=e.start + city_start_in_full,
-                        end=e.start + city_start_in_full + len(right),
-                        score=e.score
-                    ))
-                    continue
-
-            # 2) Otherwise detect separator(s) then Capitalized word
-            n = len(span)
-            i = 0
-            # advance through a generic left block (alnum, space, dash)
-            while i < n and (span[i].isalnum() or span[i] in {' ', '-' }):
-                i += 1
-            # skip separators
-            j = i
-            while j < n and span[j] in seps:
-                j += 1
-            right = span[j:].strip().strip(''.join(trailing))
-            left = span[:i].rstrip(''.join(seps))
-
-            if right and _count_alnum(left) >= 2 and _looks_like_city(right):
-                # ZIP entity
-                zip_start_in_full = span_full.find(left)
-                out.append(PIIEntity(
-                    text=left,
-                    pii_type='ZIPCODE',
-                    type_label=self.label_mapping['ZIPCODE'],
-                    start=e.start + zip_start_in_full,
-                    end=e.start + zip_start_in_full + len(left),
-                    score=e.score
-                ))
-                # CITY entity
-                city_start_in_full = span_full.find(right)
-                out.append(PIIEntity(
-                    text=right,
-                    pii_type='CITY',
-                    type_label=self.label_mapping['CITY'],
-                    start=e.start + city_start_in_full,
-                    end=e.start + city_start_in_full + len(right),
-                    score=e.score
-                ))
-                continue
-
-            # Keep original if no split applied
-            out.append(e)
+            split_entities = self._try_split_zipcode(text, e)
+            out.extend(split_entities)
 
         return out
+
+    def _try_split_zipcode(self, text: str, entity: PIIEntity) -> List[PIIEntity]:
+        """Try to split a ZIPCODE entity into ZIPCODE and CITY components."""
+        span_full = text[entity.start:entity.end]
+        span = span_full.strip()
+        
+        if not span:
+            return [entity]
+
+        # Try comma-based split first
+        split_result = self._try_comma_split(span_full, span, entity)
+        if split_result:
+            return split_result
+
+        # Try separator-based split
+        split_result = self._try_separator_split(span_full, span, entity)
+        if split_result:
+            return split_result
+
+        return [entity]
+
+    def _try_comma_split(self, span_full: str, span: str, entity: PIIEntity) -> Optional[List[PIIEntity]]:
+        """Try to split ZIPCODE and CITY at comma."""
+        comma_idx = span.find(',')
+        if comma_idx == -1:
+            return None
+
+        left, right = self._extract_comma_parts(span, comma_idx)
+        
+        if not self._is_valid_zipcode_city_pair(left, right):
+            return None
+
+        return self._create_zipcode_city_entities(span_full, left, right, entity)
+
+    def _extract_comma_parts(self, span: str, comma_idx: int) -> Tuple[str, str]:
+        """Extract left and right parts around comma."""
+        left = span[:comma_idx].strip()
+        right = span[comma_idx + 1:].strip().strip(''.join(_TRAILING_PUNCTUATION))
+        return left, right
+
+    def _try_separator_split(self, span_full: str, span: str, entity: PIIEntity) -> Optional[List[PIIEntity]]:
+        """Try to split ZIPCODE and CITY at separator transition."""
+        left, right = self._find_separator_split_point(span)
+        
+        if not self._is_valid_zipcode_city_pair(left, right):
+            return None
+
+        return self._create_zipcode_city_entities(span_full, left, right, entity)
+
+    def _find_separator_split_point(self, span: str) -> Tuple[str, str]:
+        """Find the split point between zipcode and city using separators."""
+        n = len(span)
+        i = 0
+        
+        # Advance through zipcode part (alnum, space, dash)
+        while i < n and (span[i].isalnum() or span[i] in {' ', '-'}):
+            i += 1
+        
+        # Skip separators
+        j = i
+        while j < n and span[j] in _SEPARATOR_CHARS:
+            j += 1
+        
+        left = span[:i].rstrip(''.join(_SEPARATOR_CHARS))
+        right = span[j:].strip().strip(''.join(_TRAILING_PUNCTUATION))
+        
+        return left, right
+
+    def _is_valid_zipcode_city_pair(self, zipcode: str, city: str) -> bool:
+        """Check if zipcode and city parts are valid."""
+        if not city:
+            return False
+        
+        return self._count_alnum(zipcode) >= 2 and self._looks_like_city(city)
+
+    def _count_alnum(self, s: str) -> int:
+        """Count alphanumeric characters in string."""
+        return sum(1 for ch in s if ch.isalnum())
+
+    def _looks_like_city(self, s: str) -> bool:
+        """Check if string looks like a city name."""
+        s2 = s.strip().strip(".,;:")
+        return len(s2) >= 2 and s2[0].isalpha() and s2[0].isupper()
+
+    def _create_zipcode_city_entities(
+        self, span_full: str, zipcode: str, city: str, original: PIIEntity
+    ) -> List[PIIEntity]:
+        """Create separate ZIPCODE and CITY entities from split parts."""
+        entities = []
+        
+        # ZIPCODE entity
+        zip_start_in_full = span_full.find(zipcode)
+        entities.append(PIIEntity(
+            text=zipcode,
+            pii_type='ZIPCODE',
+            type_label=self.label_mapping['ZIPCODE'],
+            start=original.start + zip_start_in_full,
+            end=original.start + zip_start_in_full + len(zipcode),
+            score=original.score
+        ))
+        
+        # CITY entity
+        city_start_in_full = span_full.find(city)
+        entities.append(PIIEntity(
+            text=city,
+            pii_type='CITY',
+            type_label=self.label_mapping['CITY'],
+            start=original.start + city_start_in_full,
+            end=original.start + city_start_in_full + len(city),
+            score=original.score
+        ))
+        
+        return entities
 
     def _merge_adjacent_entities(self, text: str, entities: List[PIIEntity]) -> List[PIIEntity]:
         """Merge adjacent entities of the same type into single entities.
@@ -892,7 +697,7 @@ class PIIDetector:
         # Allow single-character separator
         if current.start - prev.end == 1:
             separator = text[prev.end:current.start]
-            return separator in {"'", "'", "-"}
+            return separator in {"'", "-"}
 
         return False
 
@@ -954,7 +759,3 @@ def setup_logging(level: int = logging.INFO) -> None:
 
 # Initialize logging
 setup_logging()
-
-
-
-

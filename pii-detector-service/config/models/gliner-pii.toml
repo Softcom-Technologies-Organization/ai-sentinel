@@ -1,0 +1,57 @@
+# GLiNER PII Large v1.0 Model Configuration
+# ✅ Fully integrated with custom GLiNERDetector adapter
+# Advanced multilingual PII detection supporting 17 entity types
+
+# Enable or disable this model
+enabled = true
+
+# Hugging Face model identifier
+model_id = "knowledgator/gliner-pii-large-v1.0"
+
+# Human-readable description
+description = "GLiNER PII large v1.0 - Advanced multilingual PII detection supporting 17 entity types"
+
+# Priority (3 = tertiary priority)
+priority = 3
+
+# Device allocation: "cpu", "cuda", or "mps"
+device = "cpu"
+
+# Maximum token length for model context window (GLiNER actual limit: 768 tokens)
+# Using 720 tokens to leave margin for special tokens, with 100 tokens overlap (13.9%)
+max_length = 720
+
+# Model-specific confidence threshold (optimized for GLiNER)
+threshold = 0.3
+
+# Download settings for this model
+[download]
+# Uncomment to specify custom cache directory
+# cache_dir = "/path/to/cache"
+force_download = false
+resume_download = true
+
+# Custom filenames for GLiNER model (uses gliner_config.json instead of config.json)
+[download.custom_filenames]
+"config.json" = "gliner_config.json"
+
+# PII type mapping - Maps GLiNER labels to piiranha-v1 standard types
+# GLiNER uses natural language labels, mapped here to normalized PII types
+[pii_type_mapping]
+"account number" = "ACCOUNTNUM"
+"building number" = "BUILDINGNUM"
+"city" = "CITY"
+"credit card number" = "CREDITCARDNUMBER"
+"date of birth" = "DATEOFBIRTH"
+"driver license number" = "DRIVERLICENSENUM"
+"email" = "EMAIL"
+"first name" = "GIVENNAME"
+"ID card number" = "IDCARDNUM"
+"password" = "PASSWORD"
+"social security number" = "SOCIALNUM"
+"street" = "STREET"
+"last name" = "SURNAME"
+"tax number" = "TAXNUM"
+"phone number" = "TELEPHONENUM"
+"username" = "USERNAME"
+"zip code" = "ZIPCODE"

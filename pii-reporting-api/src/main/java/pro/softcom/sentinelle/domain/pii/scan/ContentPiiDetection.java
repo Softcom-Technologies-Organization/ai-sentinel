@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
 /**
  * Représente l'analyse du contenu d'une page Confluence.

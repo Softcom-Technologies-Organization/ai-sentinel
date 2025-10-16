@@ -12,9 +12,9 @@ service startup (pii_service) and potential CLI/bootstrap scripts.
 from __future__ import annotations
 
 import logging
-import os
 from typing import Iterable, List
 
+from pii_detector.config import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +30,6 @@ def get_env_extra_models() -> List[str]:
     Returns:
         A list of Hugging Face repo IDs to cache locally.
     """
-    from config import get_config
-    
     try:
         config = get_config()
         models = config.detection.pii_extra_models
@@ -54,8 +52,6 @@ def ensure_models_cached(model_ids: Iterable[str]) -> None:
     Args:
         model_ids: Hugging Face repository IDs (e.g., "org/model").
     """
-    from config import get_config
-    
     try:
         config = get_config()
         token = config.model.huggingface_api_key

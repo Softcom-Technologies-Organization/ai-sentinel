@@ -1,0 +1,170 @@
+services:
+  # ============================================================================
+  # DATABASE SERVICE
+  # ============================================================================
+  postgres:
+    image: postgres:18
+    container_name: ai-sentinel-db-2
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ai-sentinel
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./pii-reporting-api/init-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ai-sentinel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ai-sentinel-network
+
+  # ============================================================================
+  # PII DETECTOR SERVICE (Python/gRPC)
+  # ============================================================================
+  pii-detector:
+    build:
+      context: ./pii-detector-service
+      dockerfile: Dockerfile
+    container_name: pii-detector-service
+    restart: unless-stopped
+    ports:
+      - "50051:50051"
+    environment:
+      # Hugging Face Configuration
+      HUGGING_FACE_API_KEY: ${HUGGING_FACE_API_KEY}
+      HF_HOME: /app/.cache/huggingface
+      TRANSFORMERS_CACHE: /app/.cache/huggingface
+    volumes:
+      - huggingface-cache:/app/.cache/huggingface
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import grpc; channel = grpc.insecure_channel(\"localhost:50051\"); channel.close()'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - ai-sentinel-network
+
+  # ============================================================================
+  # PII REPORTING API (Spring Boot)
+  # ============================================================================
+  pii-reporting-api:
+    build:
+      context: .
+      dockerfile: pii-reporting-api/Dockerfile
+    container_name: pii-reporting-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "8090:8090"  # Armeria internal services (health, metrics, docs)
+    environment:
+      # Database Configuration
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ai-sentinel
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ai-sentinel
+      
+      # Server Configuration
+      SERVER_PORT: 8080
+      
+      # PII Detector Configuration
+      PII_DETECTOR_CLIENT: armeria
+      PII_DETECTOR_HOST: pii-detector
+      PII_DETECTOR_PORT: 50051
+      
+      # Confluence Configuration
+      # IMPORTANT: Vous devez définir ces variables dans un fichier .env
+      # ou les passer directement lors du lancement de docker-compose
+      CONFLUENCE_BASE_URL: ${CONFLUENCE_BASE_URL}
+      CONFLUENCE_USERNAME: ${CONFLUENCE_USERNAME}
+      CONFLUENCE_API_TOKEN: ${CONFLUENCE_API_TOKEN}
+      CONFLUENCE_SPACE_KEY: ${CONFLUENCE_SPACE_KEY}
+      CONFLUENCE_ENABLE_PROXY: ${CONFLUENCE_ENABLE_PROXY:-false}
+      CONFLUENCE_PROXY_HOST: ${CONFLUENCE_PROXY_HOST:-}
+      CONFLUENCE_PROXY_PORT: ${CONFLUENCE_PROXY_PORT:-8080}
+      CONFLUENCE_PROXY_USERNAME: ${CONFLUENCE_PROXY_USERNAME:-}
+      CONFLUENCE_PROXY_PASSWORD: ${CONFLUENCE_PROXY_PASSWORD:-}
+      CONFLUENCE_CACHE_REFRESH_INTERVAL: ${CONFLUENCE_CACHE_REFRESH_INTERVAL:-300000}
+      CONFLUENCE_CACHE_INITIAL_DELAY: ${CONFLUENCE_CACHE_INITIAL_DELAY:-5000}
+      CONFLUENCE_POLLING_INTERVAL: ${CONFLUENCE_POLLING_INTERVAL:-60000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      pii-detector:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/sentinelle/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - ai-sentinel-network
+
+  # ============================================================================
+  # PII REPORTING UI (Angular + Nginx)
+  # ============================================================================
+  pii-reporting-ui:
+    build:
+      context: ./pii-reporting-ui
+      dockerfile: Dockerfile
+    container_name: pii-reporting-ui
+    restart: unless-stopped
+    ports:
+      - "4200:80"
+    depends_on:
+      pii-reporting-api:
+        condition: service_healthy
+    volumes:
+      - ./pii-reporting-ui/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - ai-sentinel-network
+
+  # ============================================================================
+  # PGADMIN (Optional - Database Management UI)
+  # ============================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin-sentinel
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@pgadmin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - ai-sentinel-network
+    profiles:
+      - admin  # Optional: start only with --profile admin
+
+volumes:
+  postgres-data:
+    name: ai-sentinel-postgres-data
+  pgadmin-data:
+    name: ai-sentinel-pgadmin-data
+  huggingface-cache:
+    name: ai-sentinel-huggingface-cache
+
+networks:
+  ai-sentinel-network:
+    name: ai-sentinel-network
+    driver: bridge

@@ -1,0 +1,219 @@
+# Microsoft Presidio Detector Configuration
+# Production-ready rule-based PII detection powered by Microsoft Presidio
+# https://microsoft.github.io/presidio/
+
+[model]
+model_id = "presidio-detector"
+enabled = true
+priority = 2
+strategy = "complement"  # complement, replace, or hybrid
+
+[detection]
+# Confidence threshold for Presidio recognizers (0.0 to 1.0)
+default_threshold = 0.5
+
+# Language support (Presidio supports multiple languages)
+# Supported: en, es, fr, de, it, pt, nl, he, etc.
+languages = ["en", "fr", "de", "es", "it"]
+
+# spaCy NLP configuration - labels to ignore (not PII)
+labels_to_ignore = [
+    "CARDINAL",     # Numerals that are not identifiers
+    "MONEY",        # Amounts of money or currency
+    "WORK_OF_ART",  # Titles of works
+    "PRODUCT",      # Named products
+    "ORDINAL",      # 1st, 2nd, etc.
+    "QUANTITY",     # Measurements
+    "PERCENT",      # Percentages
+    "LANGUAGE",     # Languages
+    "EVENT",        # Named events
+    "LAW",          # Laws
+    "FAC"           # Facilities
+]
+
+# Enable specific recognizers (set to false to disable)
+[recognizers]
+# Contact Information
+email = true
+phone = false
+url = false
+
+# Financial Data
+credit_card = true
+iban = true
+crypto = true
+
+# Network & Infrastructure
+ip_address = true
+mac_address = false    # Disabled by default (high false positive rate)
+
+# Personal Data
+person_name = false    # Disabled - SpacyRecognizer generates too many false positives
+location = true
+date = false
+age = true
+gender = false         # Disabled (often contextual)
+nrp = false            # Nationality, Religious or Political group
+
+# Medical
+medical_license = true
+
+# USA
+us_ssn = true              # US Social Security Number
+us_bank_number = true      # US Bank Account Number
+us_driver_license = true   # US Driver License
+us_itin = true            # US Individual Taxpayer Identification Number
+us_passport = true        # US Passport
+
+# UK
+uk_nhs = false             # UK NHS Number
+uk_nino = false            # UK National Insurance Number
+
+# Spain
+es_nif = true             # Spanish NIF (Personal tax ID)
+es_nie = true             # Spanish NIE (Foreigners ID card)
+
+# Italy
+it_fiscal_code = true     # Italian Fiscal Code
+it_driver_license = true  # Italian Driver License
+it_vat_code = true        # Italian VAT Code
+it_passport = true        # Italian Passport
+it_identity_card = true   # Italian Identity Card
+
+# Poland
+pl_pesel = true           # Polish PESEL number
+
+# Singapore
+sg_nric_fin = true        # Singapore NRIC/FIN
+sg_uen = true             # Singapore Unique Entity Number
+
+# Australia
+au_abn = true             # Australian Business Number
+au_acn = true             # Australian Company Number
+au_tfn = true             # Australian Tax File Number
+au_medicare = true        # Australian Medicare Number
+
+# India
+in_pan = true             # Indian Permanent Account Number
+in_aadhaar = true         # Indian Aadhaar Number
+in_vehicle_registration = true  # Indian Vehicle Registration
+in_voter = true           # Indian Voter ID
+in_passport = true        # Indian Passport
+
+# Finland
+fi_personal_identity_code = true  # Finnish Personal Identity Code
+
+# Korea
+kr_rrn = true             # Korean Resident Registration Number
+
+# Thailand
+th_tnin = true            # Thai National ID Number
+
+# Technical Tokens
+# Note: API keys detection requires custom recognizers
+
+[scoring]
+# Override default scores for specific entities
+# Format: entity_type = score (0.0 to 1.0)
+
+# Global
+EMAIL_ADDRESS = 0.95
+PHONE_NUMBER = 0.90
+CREDIT_CARD = 0.90
+IBAN_CODE = 0.95
+CRYPTO = 0.90
+IP_ADDRESS = 0.98
+URL = 0.85
+PERSON = 0.75
+LOCATION = 0.80
+DATE_TIME = 0.9
+NRP = 0.70
+MEDICAL_LICENSE = 0.90
+
+# USA
+US_SSN = 0.95
+US_BANK_NUMBER = 0.90
+US_DRIVER_LICENSE = 0.90
+US_ITIN = 0.95
+US_PASSPORT = 0.95
+
+# UK
+UK_NHS = 0.95
+UK_NINO = 0.95
+
+# Spain
+ES_NIF = 0.90
+ES_NIE = 0.90
+
+# Italy
+IT_FISCAL_CODE = 0.95
+IT_DRIVER_LICENSE = 0.90
+IT_VAT_CODE = 0.90
+IT_PASSPORT = 0.95
+IT_IDENTITY_CARD = 0.90
+
+# Poland
+PL_PESEL = 0.95
+
+# Singapore
+SG_NRIC_FIN = 0.95
+SG_UEN = 0.90
+
+# Australia
+AU_ABN = 0.90
+AU_ACN = 0.90
+AU_TFN = 0.95
+AU_MEDICARE = 0.95
+
+# India
+IN_PAN = 0.90
+IN_AADHAAR = 0.95
+IN_VEHICLE_REGISTRATION = 0.85
+IN_VOTER = 0.90
+IN_PASSPORT = 0.95
+
+# Finland
+FI_PERSONAL_IDENTITY_CODE = 0.95
+
+# Korea
+KR_RRN = 0.95
+
+# Thailand
+TH_TNIN = 0.95
+
+[anonymization]
+# Anonymization strategy for detected entities
+# Options: replace, mask, redact, encrypt, hash
+default_strategy = "replace"
+operator = "replace"
+
+# Custom anonymization per entity type
+[anonymization.operators]
+EMAIL_ADDRESS = "mask"
+PHONE_NUMBER = "mask"
+CREDIT_CARD = "mask"
+IBAN_CODE = "mask"
+PERSON = "replace"
+LOCATION = "redact"
+
+[advanced]
+# Enable context support for better accuracy
+use_context = true
+
+# Return decision process details
+return_decision_process = false
+
+# Allow list - entities that should NOT be detected as PII
+allow_list = []
+
+# Deny list - additional patterns to always flag as PII
+deny_list = []
+
+# Custom regex patterns (Presidio PatternRecognizer format)
+# Example for custom IDs, tokens, etc.
+[[custom_recognizers]]
+name = "CUSTOM_ID"
+patterns = []
+context = []
+enabled = false
+score = 0.8

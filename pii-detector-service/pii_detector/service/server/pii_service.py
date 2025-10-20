@@ -50,6 +50,18 @@ except Exception:  # pragma: no cover - safe import guard
     get_multi_model_ids_from_config = None  # type: ignore
     should_use_multi_detector = None  # type: ignore
 
+# Optional composite detector (ML + Regex)
+try:
+    from pii_detector.service.detector.composite_detector import (
+        CompositePIIDetector,
+        create_composite_detector,
+        should_use_composite_detector
+    )
+except Exception:  # pragma: no cover - safe import guard
+    CompositePIIDetector = None  # type: ignore
+    create_composite_detector = None  # type: ignore
+    should_use_composite_detector = None  # type: ignore
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -77,14 +89,21 @@ def _initialize_detector_instance():
     
     _pre_cache_models()
     
-    if _should_use_multi_detector():
+    # Priority order: Composite > Multi > Single
+    if _should_use_composite():
+        _detector_instance = _create_composite_detector()
+    elif _should_use_multi_detector():
         _detector_instance = _create_multi_detector()
     else:
         _detector_instance = _create_single_detector()
     
-    _detector_instance.download_model()
-    _detector_instance.load_model()
-    logger.info("Singleton PII detector initialized successfully")
+    # Download and load models only if detector is not None
+    if _detector_instance is not None:
+        _detector_instance.download_model()
+        _detector_instance.load_model()
+        logger.info("Singleton PII detector initialized successfully")
+    else:
+        logger.info("No ML detector initialized - will use rule-based detection only")
 
 
 def _pre_cache_models() -> None:
@@ -94,6 +113,18 @@ def _pre_cache_models() -> None:
             ensure_models_cached(get_env_extra_models())
     except Exception as e:  # pragma: no cover - defensive
         logger.warning(f"Pre-caching extra models failed (continuing): {e}")
+
+
+def _should_use_composite() -> bool:
+    """Determine if composite detector (ML + Regex) should be used."""
+    if not (CompositePIIDetector and create_composite_detector and should_use_composite_detector):
+        return False
+    
+    try:
+        return should_use_composite_detector()
+    except Exception as e:
+        logger.warning(f"Failed to determine composite detector status: {e}")
+        return False
 
 
 def _should_use_multi_detector() -> bool:
@@ -106,6 +137,27 @@ def _should_use_multi_detector() -> bool:
     except Exception as e:
         logger.warning(f"Failed to determine multi-detector status: {e}")
         return False
+
+
+def _create_composite_detector():
+    """Create and return a composite detector instance (ML + Regex)."""
+    try:
+        # First, create the appropriate ML detector
+        if _should_use_multi_detector():
+            ml_detector = _create_multi_detector()
+        else:
+            ml_detector = _create_single_detector()
+        
+        # Then wrap it in composite detector with regex
+        composite = create_composite_detector(ml_detector=ml_detector)
+        logger.info("Composite detector (ML + Regex) enabled")
+        return composite
+    except Exception as e:  # pragma: no cover - defensive fallback
+        logger.warning(f"Failed to initialize composite detector, falling back to ML only: {e}")
+        if _should_use_multi_detector():
+            return _create_multi_detector()
+        else:
+            return _create_single_detector()
 
 
 def _create_multi_detector():
@@ -121,18 +173,32 @@ def _create_multi_detector():
 
 
 def _create_single_detector():
-    """Create and return a single-model detector instance."""
-    logger.info("Using single-model detector (either multi-detector disabled or only 1 model enabled)")
+    """Create and return a single-model detector instance, or None if no LLM models are enabled."""
+    from pii_detector.service.detector.models.detection_config import DetectionConfig, get_enabled_models, _load_llm_config
     
-    from pii_detector.service.detector.models.detection_config import DetectionConfig
-    config = DetectionConfig()
-    
-    if _is_gliner_model(config.model_id):
-        logger.info(f"Detected GLiNER model: {config.model_id}")
-        return GLiNERDetector(config=config)
-    
-    logger.info(f"Using standard transformer detector for: {config.model_id}")
-    return PIIDetector()
+    # Check if any LLM models are enabled
+    try:
+        config_dict = _load_llm_config()
+        enabled_models = get_enabled_models(config_dict)
+        
+        if not enabled_models:
+            # No LLM models enabled - return None to use only Presidio/Regex
+            logger.info("No LLM models enabled - will use only Presidio/Regex detection")
+            return None
+        
+        logger.info("Using single-model detector (either multi-detector disabled or only 1 model enabled)")
+        config = DetectionConfig()
+        
+        if _is_gliner_model(config.model_id):
+            logger.info(f"Detected GLiNER model: {config.model_id}")
+            return GLiNERDetector(config=config)
+        
+        logger.info(f"Using standard transformer detector for: {config.model_id}")
+        return PIIDetector()
+        
+    except Exception as e:
+        logger.error(f"Failed to create single detector: {e}")
+        raise
 
 
 def _is_gliner_model(model_id: str) -> bool:
@@ -519,6 +585,9 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
     ) -> None:
         """Add detected entities to response, limiting to 1000 to avoid huge responses.
         
+        Business rule: Convert all numeric values to native Python types to ensure
+        Protobuf compatibility (numpy types cause serialization errors)
+        
         Args:
             response: Response object to populate
             entities: Detected entities
@@ -528,13 +597,22 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         logger.debug(f"[{request_id}] Adding {entities_to_add} entities to response")
         
         for entity in entities[:1000]:
-            pii_entity = response.entities.add()
-            pii_entity.text = entity['text']
-            pii_entity.type = entity['type']
-            pii_entity.type_label = entity['type_label']
-            pii_entity.start = entity['start']
-            pii_entity.end = entity['end']
-            pii_entity.score = entity['score']
+            try:
+                pii_entity = response.entities.add()
+                pii_entity.text = str(entity['text'])
+                pii_entity.type = str(entity['type'])
+                pii_entity.type_label = str(entity['type_label'])
+                # Convert to native Python types for Protobuf compatibility
+                # (numpy.int64/float64 from Presidio/other detectors cause errors)
+                pii_entity.start = int(entity['start'])
+                pii_entity.end = int(entity['end'])
+                pii_entity.score = float(entity['score'])
+            except (ValueError, TypeError) as e:
+                logger.error(
+                    f"[{request_id}] Failed to convert entity to protobuf: {e}. "
+                    f"Entity: {entity}"
+                )
+                raise
         
         if len(entities) > 1000:
             logger.warning(f"[{request_id}] Truncated entities list from {len(entities)} to 1000")
@@ -762,7 +840,11 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         return added_in_chunk
     
     def _create_chunk_update(self, added_entities: List, chunk_index: int, total_chunks: int):
-        """Create update message for processed chunk."""
+        """Create update message for processed chunk.
+        
+        Business rule: Convert all numeric values to native Python types to ensure
+        Protobuf compatibility (numpy types cause serialization errors)
+        """
         progress = int(((chunk_index + 1) * 100) / total_chunks)
         update = pii_detection_pb2.PIIDetectionUpdate(
             chunk_index=chunk_index,
@@ -774,12 +856,13 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         for ae in added_entities:
             update.entities.append(
                 pii_detection_pb2.PIIEntity(
-                    text=ae.text,
-                    type=ae.pii_type,
-                    type_label=ae.type_label,
-                    start=ae.start,
-                    end=ae.end,
-                    score=ae.score,
+                    text=str(ae.text),
+                    type=str(ae.pii_type),
+                    type_label=str(ae.type_label),
+                    # Convert to native Python types for Protobuf compatibility
+                    start=int(ae.start),
+                    end=int(ae.end),
+                    score=float(ae.score),
                 )
             )
         

@@ -33,15 +33,18 @@ class GLiNERDetector:
         self.config = config or DetectionConfig()
         self.device = self.config.device or 'cpu'
         
+        # Initialize logger FIRST (needed by other init methods)
+        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        
         self.model_manager = GLiNERModelManager(self.config)
         self.model: Optional[Any] = None
         self.pii_type_mapping = self._load_pii_type_mapping()
+        self.scoring_overrides = self._load_scoring_overrides()
         self.semantic_chunker: Optional[Any] = None  # Initialized after model load
         
         # Load throughput logging flag from config
         self.log_throughput = self._load_log_throughput_config()
         
-        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.logger.info(f"GLiNER Detector initialized with device: {self.device}")
 
     @property
@@ -222,6 +225,32 @@ class GLiNERDetector:
             self.logger.debug(f"Failed to load log_throughput config: {e}, defaulting to True")
             return True
 
+    def _load_scoring_overrides(self) -> Dict[str, float]:
+        """
+        Load per-entity-type scoring thresholds from configuration.
+        
+        Returns:
+            Dictionary mapping PII types to minimum confidence thresholds
+        """
+        from .models.detection_config import _load_llm_config
+        
+        try:
+            config = _load_llm_config()
+            models_config = config.get("models", {})
+            gliner_config = models_config.get("gliner-pii", {})
+            scoring = gliner_config.get("scoring", {})
+            
+            if scoring:
+                self.logger.info(f"Loaded {len(scoring)} scoring overrides for entity types")
+            else:
+                self.logger.info("No scoring overrides found in configuration")
+            
+            return scoring
+            
+        except Exception as e:
+            self.logger.warning(f"Failed to load scoring overrides from config: {e}")
+            return {}
+
     def _get_gliner_labels(self) -> List[str]:
         """
         Get GLiNER labels from PII type mapping.
@@ -258,6 +287,50 @@ class GLiNERDetector:
             entities.append(pii_entity)
         
         return entities
+
+    def _apply_entity_scoring_filter(self, entities: List[PIIEntity]) -> List[PIIEntity]:
+        """
+        Apply per-entity-type threshold filtering (post-filter).
+        
+        Similar to Presidio's _convert_and_filter_results, this method applies
+        entity-specific thresholds from the [scoring] configuration section.
+        Entities below their type-specific threshold are discarded.
+        
+        Args:
+            entities: List of detected entities
+            
+        Returns:
+            Filtered list of entities that pass their type-specific thresholds
+        """
+        if not self.scoring_overrides:
+            return entities
+        
+        filtered_entities = []
+        filtered_count = 0
+        
+        for entity in entities:
+            # Get configured threshold for this entity type
+            entity_threshold = self.scoring_overrides.get(entity.pii_type)
+            
+            # Post-filter: discard if below entity-specific threshold
+            if entity_threshold is not None and entity.score < entity_threshold:
+                filtered_count += 1
+                self.logger.info(
+                    f"Filtered out {entity.pii_type} (score={entity.score:.3f} < "
+                    f"threshold={entity_threshold:.3f}) text='{entity.text}' "
+                    f"at position {entity.start}-{entity.end}"
+                )
+                continue
+            
+            filtered_entities.append(entity)
+        
+        if filtered_count > 0:
+            self.logger.info(
+                f"Post-filtered {filtered_count} entities based on per-type thresholds "
+                f"({len(filtered_entities)}/{len(entities)} remaining)"
+            )
+        
+        return filtered_entities
 
     def _apply_masks(self, text: str, entities: List[PIIEntity]) -> str:
         """
@@ -352,23 +425,26 @@ class GLiNERDetector:
         
         detection_time = time.time() - start_time
         
+        # Apply per-entity-type threshold filtering (post-filter)
+        filtered_entities = self._apply_entity_scoring_filter(all_entities)
+        
         # Calculate and log throughput if enabled
         if self.log_throughput:
             throughput = len(text) / detection_time if detection_time > 0 else 0
             self.logger.info(
                 f"[{detection_id}] Sequential processing completed in {detection_time:.3f}s, "
                 f"processed {len(chunk_results)} chunks, "
-                f"found {len(all_entities)} entities, "
+                f"found {len(filtered_entities)} entities (after post-filter), "
                 f"throughput: {throughput:.0f} chars/s"
             )
         else:
             self.logger.info(
                 f"[{detection_id}] Sequential processing completed in {detection_time:.3f}s, "
                 f"processed {len(chunk_results)} chunks, "
-                f"found {len(all_entities)} entities"
+                f"found {len(filtered_entities)} entities (after post-filter)"
             )
         
-        return all_entities
+        return filtered_entities
 
     def _generate_detection_id(self) -> str:
         """Generate a unique detection ID for logging."""

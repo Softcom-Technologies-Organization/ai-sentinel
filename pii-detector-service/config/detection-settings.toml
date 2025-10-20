@@ -6,10 +6,27 @@
 # ============================================================================
 [detection]
 # Confidence threshold for entity detection (0.0 to 1.0)
-default_threshold = 0.5
+default_threshold = 0.7
 
 # Enable multi-model aggregation (true/false)
 multi_detector_enabled = false
+
+# Enable LLM-based detection (true/false)
+# When true, enables ML models (GLiNER, Piiranha, etc.) for PII detection
+# When false, all LLM models are disabled regardless of their individual config
+# Note: At least one detection method (LLM, Regex, or Presidio) must be enabled
+llm_detection_enabled = true
+
+# Enable regex-based detection (true/false)
+# When true, adds RegexDetector to CompositePIIDetector
+# When false, regex detection is disabled
+regex_detection_enabled = false
+
+# Enable Presidio-based detection (true/false)
+# When true, adds PresidioDetector to CompositePIIDetector
+# Presidio provides production-ready, rule-based PII detection by Microsoft
+# When false, Presidio detection is disabled
+presidio_detection_enabled = true
 
 # Log detailed provenance information about which model detected each entity
 log_provenance = true

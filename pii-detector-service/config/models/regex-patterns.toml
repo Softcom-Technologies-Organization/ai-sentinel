@@ -3,7 +3,7 @@
 
 [model]
 model_id = "regex-detector"
-enabled = false
+# Note: Enable/disable via detection-settings.toml [detection] regex_detection_enabled
 priority = 2  # High priority - executes after ML models
 
 # Detection strategy

@@ -206,7 +206,7 @@ class TestGLiNERScoringFilter:
         
         # Verify key thresholds from gliner-pii.toml
         assert 'TELEPHONENUM' in detector.scoring_overrides
-        assert detector.scoring_overrides['TELEPHONENUM'] == 0.95
+        assert detector.scoring_overrides['TELEPHONENUM'] == 0.80
         
         assert 'EMAIL' in detector.scoring_overrides
         assert detector.scoring_overrides['EMAIL'] == 0.80
@@ -261,4 +261,4 @@ class TestGLiNERScoringFilter:
         
         # Verify key thresholds are loaded
         assert 'TELEPHONENUM' in detector.scoring_overrides
-        assert detector.scoring_overrides['TELEPHONENUM'] == 0.95
+        assert detector.scoring_overrides['TELEPHONENUM'] == 0.80

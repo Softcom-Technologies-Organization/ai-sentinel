@@ -4,7 +4,7 @@
 
 [model]
 model_id = "presidio-detector"
-enabled = true
+# Note: Enable/disable via detection-settings.toml [detection] presidio_detection_enabled
 priority = 2
 strategy = "complement"  # complement, replace, or hybrid
 
@@ -125,7 +125,7 @@ CRYPTO = 0.90
 IP_ADDRESS = 0.98
 URL = 0.85
 PERSON = 0.75
-LOCATION = 0.80
+LOCATION = 0.90
 DATE_TIME = 0.9
 NRP = 0.70
 MEDICAL_LICENSE = 0.90

@@ -319,8 +319,10 @@ def should_use_composite_detector() -> bool:
     
     Returns True if any of these conditions are met:
     - Regex detection is enabled in global configuration (detection-settings.toml)
-      AND regex-detector model is enabled (regex-patterns.toml)
-    - OR Presidio detection is enabled in global configuration
+    - OR Presidio detection is enabled in global configuration (detection-settings.toml)
+    
+    Note: Individual detector 'enabled' flags in model configs are no longer used.
+    Only detection-settings.toml controls which detectors are active.
     
     Returns:
         True if composite detector should be used
@@ -331,23 +333,14 @@ def should_use_composite_detector() -> bool:
         config = _load_llm_config()
         detection_config = config.get("detection", {})
         
-        # Check if regex detection is enabled
+        # Check detection flags from detection-settings.toml only
         regex_detection_enabled = detection_config.get("regex_detection_enabled", False)
-        regex_enabled = False
-        
-        if regex_detection_enabled:
-            # Check if regex-detector model is enabled in regex-patterns.toml
-            regex_config = config.get("models", {}).get("regex-detector", {})
-            regex_model_enabled = regex_config.get("enabled", True)
-            regex_enabled = regex_model_enabled
-        
-        # Check if Presidio detection is enabled
         presidio_detection_enabled = detection_config.get("presidio_detection_enabled", False)
         
         # Use composite if either regex or presidio is enabled
-        if regex_enabled or presidio_detection_enabled:
+        if regex_detection_enabled or presidio_detection_enabled:
             enabled_detectors = []
-            if regex_enabled:
+            if regex_detection_enabled:
                 enabled_detectors.append("Regex")
             if presidio_detection_enabled:
                 enabled_detectors.append("Presidio")
@@ -362,6 +355,76 @@ def should_use_composite_detector() -> bool:
         return False
 
 
+def _load_detection_config() -> Tuple[bool, bool]:
+    """
+    Load detection configuration flags from detection-settings.toml.
+    
+    Returns:
+        Tuple of (regex_enabled, presidio_enabled)
+    """
+    from .models.detection_config import _load_llm_config
+    
+    try:
+        config = _load_llm_config()
+        detection_config = config.get("detection", {})
+        regex_enabled = detection_config.get("regex_detection_enabled", False)
+        presidio_enabled = detection_config.get("presidio_detection_enabled", False)
+        return regex_enabled, presidio_enabled
+    except Exception as e:
+        logger.warning(f"Failed to load detection config: {e}")
+        return False, False
+
+
+def _create_regex_detector_if_enabled(regex_enabled: bool) -> Optional[RegexDetector]:
+    """
+    Create RegexDetector instance if enabled in configuration.
+    
+    Args:
+        regex_enabled: Whether regex detection is enabled
+        
+    Returns:
+        RegexDetector instance or None
+    """
+    if not regex_enabled:
+        logger.info("RegexDetector disabled in configuration")
+        return None
+    
+    try:
+        detector = RegexDetector()
+        logger.info("Created RegexDetector for composite")
+        return detector
+    except Exception as e:
+        logger.warning(f"Failed to create RegexDetector: {e}")
+        return None
+
+
+def _create_presidio_detector_if_enabled(presidio_enabled: bool) -> Optional[PresidioDetector]:
+    """
+    Create PresidioDetector instance if enabled and available.
+    
+    Args:
+        presidio_enabled: Whether Presidio detection is enabled
+        
+    Returns:
+        PresidioDetector instance or None
+    """
+    if not presidio_enabled:
+        logger.info("PresidioDetector disabled in configuration")
+        return None
+    
+    if not PRESIDIO_AVAILABLE:
+        logger.warning("PresidioDetector enabled in config but not available")
+        return None
+    
+    try:
+        detector = PresidioDetector()
+        logger.info("Created PresidioDetector for composite")
+        return detector
+    except Exception as e:
+        logger.warning(f"Failed to create PresidioDetector: {e}")
+        return None
+
+
 def create_composite_detector(
     ml_detector: Optional[PIIDetectorProtocol] = None
 ) -> CompositePIIDetector:
@@ -374,45 +437,12 @@ def create_composite_detector(
     Returns:
         Configured CompositePIIDetector instance
     """
-    # Load configuration to check if regex/presidio detection is enabled
-    from .models.detection_config import _load_llm_config
+    # Load detection configuration
+    regex_enabled, presidio_enabled = _load_detection_config()
     
-    try:
-        config = _load_llm_config()
-        detection_config = config.get("detection", {})
-        regex_detection_enabled = detection_config.get("regex_detection_enabled", False)
-        presidio_detection_enabled = detection_config.get("presidio_detection_enabled", False)
-    except Exception as e:
-        logger.warning(f"Failed to load detection config: {e}")
-        regex_detection_enabled = False
-        presidio_detection_enabled = False
-    
-    # Create regex detector only if enabled in configuration
-    regex_detector = None
-    if regex_detection_enabled:
-        try:
-            regex_detector = RegexDetector()
-            logger.info("Created RegexDetector for composite")
-        except Exception as e:
-            logger.warning(f"Failed to create RegexDetector: {e}")
-            regex_detector = None
-    else:
-        logger.info("RegexDetector disabled in configuration")
-    
-    # Create Presidio detector only if enabled in configuration
-    presidio_detector = None
-    if presidio_detection_enabled and PRESIDIO_AVAILABLE:
-        try:
-            presidio_detector = PresidioDetector()
-            logger.info("Created PresidioDetector for composite")
-        except Exception as e:
-            logger.warning(f"Failed to create PresidioDetector: {e}")
-            presidio_detector = None
-    else:
-        if presidio_detection_enabled and not PRESIDIO_AVAILABLE:
-            logger.warning("PresidioDetector enabled in config but not available")
-        else:
-            logger.info("PresidioDetector disabled in configuration")
+    # Create detectors based on configuration
+    regex_detector = _create_regex_detector_if_enabled(regex_enabled)
+    presidio_detector = _create_presidio_detector_if_enabled(presidio_enabled)
     
     # Create merger with provenance logging
     merger = DetectionMerger(log_provenance=True)
@@ -423,8 +453,8 @@ def create_composite_detector(
         regex_detector=regex_detector,
         presidio_detector=presidio_detector,
         merger=merger,
-        enable_regex=regex_detection_enabled and regex_detector is not None,
-        enable_presidio=presidio_detection_enabled and presidio_detector is not None
+        enable_regex=regex_enabled and regex_detector is not None,
+        enable_presidio=presidio_enabled and presidio_detector is not None
     )
     
     return composite

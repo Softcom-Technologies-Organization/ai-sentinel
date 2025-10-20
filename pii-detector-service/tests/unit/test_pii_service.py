@@ -37,10 +37,12 @@ class TestGetDetectorInstance:
         _detector_instance = None
     
     @patch('pii_detector.service.server.pii_service._detector_instance', None)
+    @patch('pii_detector.service.server.pii_service.should_use_composite_detector', return_value=False)
+    @patch('pii_detector.service.server.pii_service.should_use_multi_detector', return_value=False)
     @patch('pii_detector.service.server.pii_service.PIIDetector')
     @patch('pii_detector.service.server.pii_service.GLiNERDetector', None)
     @patch('pii_detector.service.detector.models.detection_config.DetectionConfig')
-    def test_get_detector_instance_creates_singleton(self, mock_config, mock_pii_detector):
+    def test_get_detector_instance_creates_singleton(self, mock_config, mock_pii_detector, mock_should_multi, mock_should_composite):
         """Test that get_detector_instance creates a singleton instance."""
         # Setup config to use non-GLiNER model
         mock_config_inst = Mock()
@@ -483,12 +485,14 @@ class TestGetDetectorInstanceAdditional:
         service_module._detector_instance = None
     
     @patch('pii_detector.service.server.pii_service._detector_instance', None)
+    @patch('pii_detector.service.server.pii_service.should_use_composite_detector', return_value=False)
+    @patch('pii_detector.service.server.pii_service.should_use_multi_detector', return_value=False)
     @patch('pii_detector.service.server.pii_service.ensure_models_cached')
     @patch('pii_detector.service.server.pii_service.get_env_extra_models')
     @patch('pii_detector.service.server.pii_service.PIIDetector')
     @patch('pii_detector.service.server.pii_service.GLiNERDetector', None)
     @patch('pii_detector.service.detector.models.detection_config.DetectionConfig')
-    def test_get_detector_instance_model_cache_exception(self, mock_config, mock_pii_detector, mock_get_env, mock_ensure_cached):
+    def test_get_detector_instance_model_cache_exception(self, mock_config, mock_pii_detector, mock_get_env, mock_ensure_cached, mock_should_multi, mock_should_composite):
         """Test that model caching exceptions are handled gracefully."""
         mock_config_inst = Mock()
         mock_config_inst.model_id = "standard-model"
@@ -508,11 +512,12 @@ class TestGetDetectorInstanceAdditional:
         assert instance is mock_detector
     
     @patch('pii_detector.service.server.pii_service._detector_instance', None)
+    @patch('pii_detector.service.server.pii_service.should_use_composite_detector', return_value=False)
     @patch('pii_detector.service.server.pii_service.should_use_multi_detector')
     @patch('pii_detector.service.server.pii_service.PIIDetector')
     @patch('pii_detector.service.server.pii_service.GLiNERDetector', None)
     @patch('pii_detector.service.detector.models.detection_config.DetectionConfig')
-    def test_get_detector_instance_should_use_multi_exception(self, mock_config, mock_pii_detector, mock_should_use):
+    def test_get_detector_instance_should_use_multi_exception(self, mock_config, mock_pii_detector, mock_should_use, mock_should_composite):
         """Test exception handling in should_use_multi_detector."""
         mock_config_inst = Mock()
         mock_config_inst.model_id = "standard-model"
@@ -531,11 +536,12 @@ class TestGetDetectorInstanceAdditional:
         assert instance is mock_detector
     
     @patch('pii_detector.service.server.pii_service._detector_instance', None)
+    @patch('pii_detector.service.server.pii_service.should_use_composite_detector', return_value=False)
     @patch('pii_detector.service.server.pii_service.MultiModelPIIDetector')
     @patch('pii_detector.service.server.pii_service.should_use_multi_detector')
     @patch('pii_detector.service.server.pii_service.get_multi_model_ids_from_config')
     @patch('pii_detector.service.server.pii_service.PIIDetector')
-    def test_get_detector_instance_multi_init_exception(self, mock_pii_detector, mock_get_models, mock_should_use, mock_multi):
+    def test_get_detector_instance_multi_init_exception(self, mock_pii_detector, mock_get_models, mock_should_use, mock_multi, mock_should_composite):
         """Test fallback when multi-detector initialization fails."""
         mock_should_use.return_value = True
         mock_get_models.return_value = ["model1", "model2"]
@@ -880,9 +886,11 @@ class TestGetDetectorInstanceGLiNER:
     """Test GLiNER detector selection path."""
     
     @patch('pii_detector.service.server.pii_service._detector_instance', None)
+    @patch('pii_detector.service.server.pii_service.should_use_composite_detector', return_value=False)
+    @patch('pii_detector.service.server.pii_service.should_use_multi_detector', return_value=False)
     @patch('pii_detector.service.server.pii_service.GLiNERDetector')
     @patch('pii_detector.service.detector.models.detection_config.DetectionConfig')
-    def test_get_detector_instance_uses_gliner(self, mock_config, mock_gliner):
+    def test_get_detector_instance_uses_gliner(self, mock_config, mock_gliner, mock_should_multi, mock_should_composite):
         """Test that GLiNER detector is used for gliner models."""
         mock_config_inst = Mock()
         mock_config_inst.model_id = "gliner-pii-model"

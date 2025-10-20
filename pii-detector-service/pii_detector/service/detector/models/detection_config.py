@@ -34,7 +34,9 @@ def _load_llm_config() -> dict:
         FileNotFoundError: If config files are not found
         ValueError: If TOML file is malformed
     """
-    # Locate config directory relative to project root
+    # Locate config directory relative to pii-detector-service root
+    # From pii-detector-service/pii_detector/service/detector/models/detection_config.py
+    # Go up 5 levels to reach pii-detector-service/
     config_dir = Path(__file__).parent.parent.parent.parent.parent / "config"
     
     # Load global detection settings
@@ -74,13 +76,14 @@ def _load_llm_config() -> dict:
 
 
 def get_enabled_models(config: dict) -> List[Dict[str, Any]]:
-    """Get list of enabled models sorted by priority.
+    """Get list of enabled LLM models sorted by priority.
     
     Args:
         config: Configuration dictionary from TOML files
         
     Returns:
         List of enabled model configurations, sorted by priority (lowest number = highest priority)
+        Empty list if LLM detection is disabled or no models are enabled
     """
     if "models" not in config:
         raise ValueError(
@@ -88,8 +91,23 @@ def get_enabled_models(config: dict) -> List[Dict[str, Any]]:
             "Please add model configurations in config/models/ directory."
         )
     
+    # Check if LLM detection is globally disabled
+    detection_config = config.get("detection", {})
+    llm_detection_enabled = detection_config.get("llm_detection_enabled", True)
+    
+    if not llm_detection_enabled:
+        # LLM detection disabled globally - return empty list
+        return []
+    
+    # Filter non-LLM models (regex-detector, presidio-detector, etc.)
+    non_llm_models = ["regex-detector", "presidio-detector"]
+    
     enabled_models = []
     for model_name, model_config in config["models"].items():
+        # Skip non-LLM detectors
+        if model_name in non_llm_models:
+            continue
+            
         if model_config.get("enabled", False):
             model_info = {
                 "name": model_name,
@@ -103,11 +121,18 @@ def get_enabled_models(config: dict) -> List[Dict[str, Any]]:
             }
             enabled_models.append(model_info)
     
+    # Check if at least one detection method is active
     if not enabled_models:
-        raise ValueError(
-            "No enabled models found in configuration. "
-            "Please set enabled = true for at least one model in config/models/."
-        )
+        regex_enabled = detection_config.get("regex_detection_enabled", False)
+        presidio_enabled = detection_config.get("presidio_detection_enabled", False)
+        
+        if not regex_enabled and not presidio_enabled:
+            raise ValueError(
+                "No enabled models found in configuration. "
+                "Please set enabled = true for at least one model in config/models/. "
+                "Alternatively, enable regex_detection_enabled or presidio_detection_enabled "
+                "in config/detection-settings.toml."
+            )
     
     # Sort by priority (lowest number = highest priority)
     enabled_models.sort(key=lambda m: m["priority"])

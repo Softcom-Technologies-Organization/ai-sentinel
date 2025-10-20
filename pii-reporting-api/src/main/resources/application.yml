@@ -70,7 +70,7 @@ pii-detector:
   port: 50051
   default-threshold: 0.5
   connection-timeout-ms: 5000
-  request-timeout-ms: 60000  # Increased to 60 seconds to avoid timeouts
+  request-timeout-ms: 120000
 
 # Armeria internal services (docs, health, metrics, actuator)
 armeria:

@@ -51,11 +51,22 @@ dependencies = [
 
     "psutil == 7.1.0",
     
-    # Configuration management (TOML support for Python < 3.11)
+    # PII Detection libraries
+    "presidio-analyzer>=2.2.0",
+    
+    # Configuration management (TOML support)
+    "toml>=0.10.0",
     "tomli>=2.0.0; python_version < '3.11'"
 ]
 
 [project.optional-dependencies]
+# NLP models for Presidio (optional, only needed for PERSON, LOCATION and NRP detection)
+# Note: Install manually with: python -m spacy download <model_name>
+# Available models: en_core_web_sm, fr_core_news_sm, de_core_news_sm, es_core_news_sm
+nlp = [
+    "spacy>=3.7.0",
+]
+
 dev = [
     # Testing framework
     "pytest>=8.0.0",
@@ -100,6 +111,9 @@ Repository = "https://github.com/sentinelle/sentinelle-pii-detector-ms"
 
 [tool.hatch.build.targets.wheel]
 packages = ["pii_detector"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 # Pytest configuration
 [tool.pytest.ini_options]

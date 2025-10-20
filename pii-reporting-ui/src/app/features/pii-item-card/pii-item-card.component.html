@@ -61,11 +61,11 @@
         <p-button (click)="toggleDetails()"
                   (keydown.enter)="$event.stopPropagation(); toggleDetails()"
                   (keydown.space)="$event.preventDefault(); $event.stopPropagation(); toggleDetails()"
-                  styleClass="p-button-link"
                   [ariaLabel]="detailsOpen ? 'Masquer le détail' : 'Voir détail'"
                   [attr.aria-expanded]="detailsOpen"
                   icon="pi pi-angle-right"
-                  label="Voir détail"></p-button>
+                  label="Voir détail"
+                  styleClass="p-button-link"></p-button>
       </div>
     }
 

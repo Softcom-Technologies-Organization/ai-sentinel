@@ -45,25 +45,33 @@ public class ScanResultToScanEventMapper {
 
     // --- Masking presenter (adapter-side) ---
     private String buildMaskedContent(String source, List<Map<String, Object>> entities) {
-        if (source == null || source.isBlank()) return null;
-        if (entities == null || entities.isEmpty()) return null;
+        if (source == null || source.isBlank()) {
+            return null;
+        }
+        if (entities == null || entities.isEmpty()) {
+            return null;
+        }
         try {
             int len = source.length();
             StringBuilder sb = new StringBuilder(Math.min(len, 6000));
             int idx = 0;
             var sorted = entities.stream()
-                    .sorted(Comparator.comparingInt(e -> toInt(e.get("start"))))
+                    .sorted(Comparator.comparingInt(entity -> toInt(entity.get("start"))))
                     .toList();
-            for (Map<String, Object> e : sorted) {
-                int start = Math.clamp(toInt(e.get("start")), 0, len);
-                int end = Math.clamp(toInt(e.get("end")), start, len);
-                if (start > idx) sb.append(safeSub(source, idx, start));
-                String type = String.valueOf(e.get("type"));
+            for (Map<String, Object> entityDetails : sorted) {
+                int start = Math.clamp(toInt(entityDetails.get("start")), 0, len);
+                int end = Math.clamp(toInt(entityDetails.get("end")), start, len);
+                if (start > idx) {
+                    sb.append(safeSub(source, idx, start));
+                }
+                String type = String.valueOf(entityDetails.get("type"));
                 String token = (type != null && !"null".equalsIgnoreCase(type)) ? type : "UNKNOWN";
                 sb.append('[').append(token).append(']');
                 idx = end;
             }
-            if (idx < len) sb.append(safeSub(source, idx, len));
+            if (idx < len) {
+                sb.append(safeSub(source, idx, len));
+            }
             return truncate(sb.toString());
         } catch (Exception _) {
             return null;
@@ -95,8 +103,12 @@ public class ScanResultToScanEventMapper {
     }
 
     private static String truncate(String s) {
-        if (s == null) return null;
-        if (s.length() <= 5000) return s;
+        if (s == null) {
+            return null;
+        }
+        if (s.length() <= 5000) {
+            return s;
+        }
         return s.substring(0, 5000) + "…";
     }
 }

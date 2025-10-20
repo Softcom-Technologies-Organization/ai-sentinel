@@ -182,6 +182,7 @@ def _create_single_detector():
         enabled_models = get_enabled_models(config_dict)
         
         if not enabled_models:
+            # TODO When no LLM models are enabled, returning None relies on the caller to handle this case correctly. Consider documenting this behavior in the function docstring or adding a check that at least one detection method (Presidio/Regex) is enabled before returning None to prevent a scenario where all detection is disabled.
             # No LLM models enabled - return None to use only Presidio/Regex
             logger.info("No LLM models enabled - will use only Presidio/Regex detection")
             return None

@@ -22,7 +22,7 @@ device = "cpu"
 max_length = 720
 
 # Model-specific confidence threshold (optimized for GLiNER)
-threshold = 0.9
+threshold = 0.7
 
 # Download settings for this model
 [download]
@@ -69,7 +69,7 @@ EMAIL = 0.80               # Variable formats
 PASSWORD = 0.85            # No standardization, high overlap with other text
 
 # Very high false positive risk for phone numbers in documents with many numbers
-TELEPHONENUM = 0.80        # Increased to 0.95 to avoid detecting dates/amounts/codes as phones
+TELEPHONENUM = 0.80        # Increased to 0.80 to avoid detecting dates/amounts/codes as phones
 
 # Medium risk / Structured formats (0.5-0.7)
 ACCOUNTNUM = 0.55          # Structured but variable

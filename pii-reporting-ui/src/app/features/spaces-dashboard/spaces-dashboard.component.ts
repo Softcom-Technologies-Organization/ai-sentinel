@@ -139,9 +139,8 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
         this.sub = this.sentinelleApiService.startAllSpacesStream().subscribe({
           next: (ev) => this.routeStreamEvent(ev.type as StreamEventType, ev.data),
           error: (err) => {
-            this.append(`[ui] Connection error: ${err?.message ?? err}`);
+            this.append(`[ui] Erreur de connexion SSE: ${err?.message ?? err}. Le scan continue sur le serveur.`);
             this.isStreaming.set(false);
-            this.stopCurrentScan();
           }
         });
       },
@@ -308,9 +307,8 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
         this.sub = this.sentinelleApiService.startAllSpacesStream(meta.scanId).subscribe({
           next: (ev) => this.routeStreamEvent(ev.type as StreamEventType, ev.data),
           error: (err) => {
-            this.append(`[ui] Connection error: ${err?.message ?? err}`);
+            this.append(`[ui] Erreur de connexion SSE: ${err?.message ?? err}. Le scan continue sur le serveur.`);
             this.isStreaming.set(false);
-            this.stopCurrentScan();
           }
         });
         // Also refresh statuses and backfill persisted items to cover the gap while SSE was disconnected.

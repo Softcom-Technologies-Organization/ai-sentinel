@@ -76,10 +76,18 @@ log_info "⏳ Attente du démarrage des services (cela peut prendre 2-3 minutes)
 
 # Attendre PostgreSQL
 log_info "   Attente de PostgreSQL..."
-until docker-compose exec -T postgres pg_isready -U postgres -d ai-sentinel &> /dev/null; do
+for i in {1..60}; do
+    if docker-compose exec -T postgres pg_isready -U postgres -d ai-sentinel &> /dev/null; then
+        log_success "   ✓ PostgreSQL est prêt"
+        break
+    fi
     sleep 2
+    if [ $i -eq 60 ]; then
+        log_error "   ✗ PostgreSQL n'a pas démarré dans le délai imparti"
+        log_info "   Vérifiez les logs avec: docker-compose logs postgres"
+        exit 1
+    fi
 done
-log_success "   ✓ PostgreSQL est prêt"
 
 # Attendre le PII Detector (peut prendre du temps pour le téléchargement des modèles)
 log_info "   Attente du PII Detector (téléchargement des modèles ML)..."

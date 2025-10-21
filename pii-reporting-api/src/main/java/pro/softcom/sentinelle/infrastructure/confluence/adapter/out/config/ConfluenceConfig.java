@@ -1,9 +1,11 @@
 package pro.softcom.sentinelle.infrastructure.confluence.adapter.out.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
 @ConfigurationProperties(prefix = "confluence")
+@Slf4j
 public record ConfluenceConfig(
     String baseUrl,
     String username,
@@ -18,14 +20,27 @@ public record ConfluenceConfig(
 
     @ConstructorBinding
     public ConfluenceConfig {
+
         if (baseUrl == null || baseUrl.isBlank()) {
-            throw new IllegalArgumentException("baseUrl must not be null or blank");
+            throw new IllegalArgumentException(
+                "Configuration Confluence invalide : 'confluence.base-url' (CONFLUENCE_BASE_URL) est requis. " +
+                "Valeur actuelle : '" + baseUrl + "'. " +
+                "Vérifiez votre fichier .env ou vos variables d'environnement."
+            );
         }
         if (username == null || username.isBlank()) {
-            throw new IllegalArgumentException("username must not be null or blank");
+            throw new IllegalArgumentException(
+                "Configuration Confluence invalide : 'confluence.username' (CONFLUENCE_USERNAME) est requis. " +
+                "Valeur actuelle : '" + username + "'. " +
+                "Vérifiez votre fichier .env ou vos variables d'environnement."
+            );
         }
         if (apiToken == null || apiToken.isBlank()) {
-            throw new IllegalArgumentException("apiToken must not be null or blank");
+            throw new IllegalArgumentException(
+                "Configuration Confluence invalide : 'confluence.api-token' (CONFLUENCE_API_TOKEN) est requis. " +
+                "Valeur actuelle : [MASQUÉ POUR SÉCURITÉ]. " +
+                "Vérifiez votre fichier .env ou vos variables d'environnement."
+            );
         }
     }
 
@@ -121,8 +136,7 @@ public record ConfluenceConfig(
     public boolean isValid() {
         return baseUrl != null && !baseUrl.isBlank()
             && username != null && !username.isBlank()
-            && apiToken != null && !apiToken.isBlank()
-            && spaceKey != null && !spaceKey.isBlank();
+            && apiToken != null && !apiToken.isBlank();
     }
 
     @Override

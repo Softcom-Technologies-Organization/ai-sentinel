@@ -33,6 +33,7 @@ dependencies = [
     "huggingface-hub>=0.19.0",
     "accelerate>=0.20.0",
     "gliner>=0.2.0",
+    "semchunk>=2.2.0",
     
     # ONNX runtime optimization
     "optimum[onnxruntime]>=1.14.0",

@@ -1,3 +1,7 @@
+# Environment variables (sensitive data)
+.env
+
+# IDE and build artifacts
 /pii-detector-service/pii_detector/proto/generated/
 /pii-detector-service/tests/unit/.coverage/
 /pii-detector-service/tests/.coverage/

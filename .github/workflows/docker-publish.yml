@@ -7,6 +7,27 @@ on:
       - main
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag personnalisé pour les images (optionnel)'
+        required: false
+        default: 'manual'
+      build_detector:
+        description: 'Build PII Detector'
+        required: true
+        type: boolean
+        default: true
+      build_api:
+        description: 'Build Reporting API'
+        required: true
+        type: boolean
+        default: true
+      build_ui:
+        description: 'Build Reporting UI'
+        required: true
+        type: boolean
+        default: true
 
 jobs:
   build-and-publish-detector:

@@ -27,9 +27,8 @@ classifiers = [
 ]
 
 dependencies = [
-    # ML and NLP dependencies
+    # ML and NLP dependencies (torch excluded - install via extras)
     "transformers>=4.35.0",
-    "torch>=2.0.0",
     "huggingface-hub>=0.19.0",
     "accelerate>=0.20.0",
     "gliner>=0.2.0",
@@ -61,6 +60,19 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# CPU-only installation (recommended for Docker/production without GPU)
+# Install with: pip install .[cpu] --extra-index-url https://download.pytorch.org/whl/cpu
+cpu = [
+    "torch>=2.0.0; platform_system != 'Darwin'",  # CPU version for non-Mac
+    "torch>=2.0.0; platform_system == 'Darwin'",  # Mac uses default
+]
+
+# GPU installation with CUDA support (for development/production with GPU)
+# Install with: pip install .[gpu]
+gpu = [
+    "torch>=2.0.0",
+]
+
 # NLP models for Presidio (optional, only needed for PERSON, LOCATION and NRP detection)
 # Note: Install manually with: python -m spacy download <model_name>
 # Available models: en_core_web_sm, fr_core_news_sm, de_core_news_sm, es_core_news_sm

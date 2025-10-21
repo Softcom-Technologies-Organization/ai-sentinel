@@ -20,10 +20,13 @@ COPY pii-detector-service/pyproject.toml ./
 COPY pii-detector-service/README.md ./
 COPY pii-detector-service/pii_detector ./pii_detector
 COPY pii-detector-service/config ./config
-COPY proto ./proto
+
+# Copy proto to root level so script can find it at ../../../proto
+# (script navigates 3 levels up from /app/pii_detector/proto)
+COPY proto /proto
 
 RUN pip install --upgrade pip \
-    && pip install . \
+    && pip install -e . \
     && python -m pii_detector.proto.generate_pb
 
 FROM python:3.11-slim AS runtime
@@ -36,9 +39,8 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 WORKDIR /app
 
 COPY --from=builder "$VIRTUAL_ENV" "$VIRTUAL_ENV"
-COPY --from=builder /app/pii_detector /app/pii_detector
-COPY --from=builder /app/config /app/config
-COPY --from=builder /app/proto /app/proto
+COPY --from=builder /app /app
+COPY --from=builder /proto /proto
 
 EXPOSE 50051
 

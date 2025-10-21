@@ -1,5 +1,6 @@
-# Ignore other modules
-pii-detector-service/
+# Ignore other modules when building specific services
+# Note: pii-detector-service and pii-reporting-api both use root context
+# Only ignore pii-reporting-ui when not building it
 pii-reporting-ui/
 my-files/
 

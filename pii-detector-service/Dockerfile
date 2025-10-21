@@ -16,11 +16,11 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY pyproject.toml ./
-COPY README.md ./
-COPY pii_detector ./pii_detector
-COPY config ./config
-COPY ../proto ./proto
+COPY pii-detector-service/pyproject.toml ./
+COPY pii-detector-service/README.md ./
+COPY pii-detector-service/pii_detector ./pii_detector
+COPY pii-detector-service/config ./config
+COPY proto ./proto
 
 RUN pip install --upgrade pip \
     && pip install . \

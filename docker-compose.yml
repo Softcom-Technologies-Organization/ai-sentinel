@@ -29,8 +29,8 @@ services:
   # ============================================================================
   pii-detector:
     build:
-      context: ./pii-detector-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: pii-detector-service/Dockerfile
     container_name: pii-detector-service
     restart: unless-stopped
     ports:

@@ -33,6 +33,7 @@ jobs:
   build-and-publish-detector:
     name: Build and Publish PII Detector
     runs-on: ubuntu-latest
+    if: github.event.inputs.build_detector != 'false' || github.event_name != 'workflow_dispatch'
     permissions:
       contents: read
       packages: write
@@ -74,6 +75,7 @@ jobs:
   build-and-publish-api:
     name: Build and Publish Reporting API
     runs-on: ubuntu-latest
+    if: github.event.inputs.build_api != 'false' || github.event_name != 'workflow_dispatch'
     permissions:
       contents: read
       packages: write
@@ -115,6 +117,7 @@ jobs:
   build-and-publish-ui:
     name: Build and Publish Reporting UI
     runs-on: ubuntu-latest
+    if: github.event.inputs.build_ui != 'false' || github.event_name != 'workflow_dispatch'
     permissions:
       contents: read
       packages: write

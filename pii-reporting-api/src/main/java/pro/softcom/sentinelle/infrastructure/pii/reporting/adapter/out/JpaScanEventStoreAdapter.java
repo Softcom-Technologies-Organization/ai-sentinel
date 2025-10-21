@@ -8,8 +8,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanEventStore;
+import pro.softcom.sentinelle.application.pii.security.ScanResultEncryptor;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.DetectionEventRepository;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanEventEntity;
@@ -24,6 +26,7 @@ import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.entit
 public class JpaScanEventStoreAdapter implements ScanEventStore {
 
     private final DetectionEventRepository eventRepository;
+    private final ScanResultEncryptor scanResultEncryptor;
     private final ObjectMapper objectMapper;
 
     // In-memory per-scan sequence cache, initialized lazily from DB on first use
@@ -34,11 +37,17 @@ public class JpaScanEventStoreAdapter implements ScanEventStore {
      */
     @Override
     public void append(ScanResult scanResult) {
+        if (scanResult == null || StringUtils.isBlank(scanResult.scanId()) || StringUtils.isBlank(scanResult.eventType())) {
+            log.warn("scanResult, scanId or eventType is null or empty");
+            return;
+        }
+
         try {
-            if (scanResult == null || isBlank(scanResult.scanId()) || isBlank(scanResult.eventType())) return;
+            ScanResult encryptedResult = scanResultEncryptor.encrypt(scanResult);
+            JsonNode payload = objectMapper.valueToTree(encryptedResult);
+
             String scanId = scanResult.scanId();
             long seq = nextSeq(scanId);
-            JsonNode payload = objectMapper.valueToTree(scanResult);
             Instant scanRecordedAt = parseInstant(scanResult.emittedAt());
 
             ScanEventEntity entity = ScanEventEntity.builder()
@@ -83,10 +92,6 @@ public class JpaScanEventStoreAdapter implements ScanEventStore {
         } catch (Exception _) {
             return null;
         }
-    }
-
-    private static boolean isBlank(String s) {
-        return s == null || s.isBlank();
     }
 
     @Override

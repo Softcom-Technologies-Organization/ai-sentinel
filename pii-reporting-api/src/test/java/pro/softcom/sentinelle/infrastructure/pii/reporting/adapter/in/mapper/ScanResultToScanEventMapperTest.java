@@ -1,18 +1,19 @@
 package pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.mapper;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventDto;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 class ScanResultToScanEventMapperTest {
@@ -28,7 +29,7 @@ class ScanResultToScanEventMapperTest {
     void Should_MapAllFields_When_ScanResultProvided() {
         // Arrange
         Map<String, Integer> summary = Map.of("EMAIL", 2, "PHONE", 1);
-        List<Map<String, Object>> entities = List.of(entity(0, 1, "EMAIL"));
+        List<PiiEntity> entities = List.of(entity(0, 1, "EMAIL"));
         ScanResult sr = ScanResult.builder()
                 .scanId("sid")
                 .spaceKey("space")
@@ -80,7 +81,7 @@ class ScanResultToScanEventMapperTest {
     @Test
     void Should_UseProvidedMaskedContent_When_MaskedContentNotNull() {
         // Arrange
-        List<Map<String, Object>> entities = List.of(entity(1, 3, "EMAIL"));
+        List<PiiEntity> entities = List.of(entity(1, 3, "EMAIL"));
         ScanResult sr = ScanResult.builder()
                 .sourceContent("abcde")
                 .entities(entities)
@@ -97,7 +98,7 @@ class ScanResultToScanEventMapperTest {
     @Test
     void Should_BuildMaskedContent_When_SourceAndEntitiesProvided() {
         // Arrange
-        List<Map<String, Object>> entities = new ArrayList<>();
+        List<PiiEntity> entities = new ArrayList<>();
         // Intentionally unsorted to verify sorting by start
         entities.add(entity(3, 4, null)); // will become UNKNOWN
         entities.add(entity(1, 3, "EMAIL"));
@@ -116,7 +117,7 @@ class ScanResultToScanEventMapperTest {
     @Test
     void Should_ClampAndInsertTokens_When_EntityBoundsAreOutsideSource() {
         // Arrange
-        List<Map<String, Object>> entities = List.of(
+        List<PiiEntity> entities = List.of(
                 entity(-5, 2, "SSN"),
                 entity(10, 12, "PHONE")
         );
@@ -155,7 +156,7 @@ class ScanResultToScanEventMapperTest {
     void Should_TruncateMaskedContent_When_ResultExceedsLimit() {
         // Arrange: create long source (6000 chars)
         String source = "x".repeat(6000);
-        List<Map<String, Object>> entities = List.of(entity(0, 1, "EMAIL"));
+        List<PiiEntity> entities = List.of(entity(0, 1, "EMAIL"));
         ScanResult sr = ScanResult.builder()
                 .sourceContent(source)
                 .entities(entities)
@@ -171,11 +172,7 @@ class ScanResultToScanEventMapperTest {
             .endsWith("…");
     }
 
-    private static Map<String, Object> entity(int start, int end, Object type) {
-        Map<String, Object> e = new HashMap<>();
-        e.put("start", start);
-        e.put("end", end);
-        e.put("type", type);
-        return e;
+    private static PiiEntity entity(int start, int end, Object type) {
+        return new PiiEntity(start, end, type == null ? null : type.toString(), type == null ? null : type.toString(), 0, null);
     }
 }

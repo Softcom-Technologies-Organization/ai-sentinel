@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Builder;
 
-@Builder
+@Builder(toBuilder = true)
 public record ScanResult(
         String scanId,
         String spaceKey,
@@ -15,7 +15,7 @@ public record ScanResult(
         Integer pageIndex,
         String pageId,
         String pageTitle,
-        List<Map<String, Object>> entities,
+        List<PiiEntity> entities,
         Map<String, Integer> summary,
         @JsonIgnore String sourceContent,
         String maskedContent,

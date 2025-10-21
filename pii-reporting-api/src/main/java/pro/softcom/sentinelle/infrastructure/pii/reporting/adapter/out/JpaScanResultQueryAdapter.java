@@ -6,9 +6,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanResultQuery;
+import pro.softcom.sentinelle.application.pii.security.ScanResultEncryptor;
 import pro.softcom.sentinelle.domain.pii.reporting.LastScanMeta;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.DetectionEventRepository;
@@ -20,9 +22,11 @@ import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.entit
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JpaScanResultQueryAdapter implements ScanResultQuery {
 
     private final DetectionEventRepository eventRepository;
+    private final ScanResultEncryptor scanResultEncryptor;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -57,11 +61,17 @@ public class JpaScanResultQueryAdapter implements ScanResultQuery {
             .toList();
     }
 
-    private ScanResult toDomain(ScanEventEntity e) {
+    private ScanResult toDomain(ScanEventEntity scanEventEntity) {
+        if (scanEventEntity == null || scanEventEntity.getPayload() == null) {
+            log.warn("scanEventEntity or payload is null");
+            return null;
+        }
+
         try {
-            if (e == null || e.getPayload() == null) return null;
-            return objectMapper.treeToValue(e.getPayload(), ScanResult.class);
-        } catch (Exception _) {
+            ScanResult encryptedResult = objectMapper.treeToValue(scanEventEntity.getPayload(), ScanResult.class);
+            return scanResultEncryptor.decrypt(encryptedResult);
+        } catch (Exception e) {
+            log.error("Failed to deserialize scan event", e);
             return null;
         }
     }

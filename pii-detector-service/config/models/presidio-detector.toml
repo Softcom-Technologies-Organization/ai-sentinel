@@ -32,6 +32,14 @@ labels_to_ignore = [
 ]
 
 # Enable specific recognizers (set to false to disable)
+# Entities requiring spaCy (via SpacyRecognizer):
+#   - PERSON (disabled: person_name=false to avoid false positives)
+#   - LOCATION (✓ ENABLED: location=true in presidio-detector.toml)
+#   - ORGANIZATION (not configured)
+#   - GPE/Geo-Political Entity (not configured)
+#
+# All other Presidio entities (EMAIL, PHONE, CREDIT_CARD, IP_ADDRESS, national IDs, etc.)
+# use regex-based recognizers and do NOT require spaCy.
 [recognizers]
 # Contact Information
 email = true

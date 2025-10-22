@@ -79,8 +79,6 @@ public class AesGcmEncryptionAdapter implements EncryptionService {
             byte[] aad = buildAad(metadata);
             byte[] ciphertext = encryptWithGcm(dek, iv, aad, plaintext);
 
-            Arrays.fill(dek, (byte) 0);
-
             return formatToken(salt, iv, ciphertext);
         } catch (Exception e) {
             log.error("Encryption failed: {}", e.getClass().getSimpleName());
@@ -109,8 +107,6 @@ public class AesGcmEncryptionAdapter implements EncryptionService {
             dek = hkdf(kekBytes, data.salt, HKDF_INFO_DEK, DEK_LENGTH);
             byte[] aad = buildAad(metadata);
             byte[] plaintext = decryptWithGcm(dek, data.iv, aad, data.ciphertext);
-
-            Arrays.fill(dek, (byte) 0);
 
             return new String(plaintext, StandardCharsets.UTF_8);
         } catch (EncryptionException e) {

@@ -45,14 +45,14 @@ jobs:
       - name: Extract version from pyproject.toml
         id: version
         run: |
-          VERSION=$(grep 'version = ' pii-detector-service/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          VERSION=$(grep -A 10 '^\[project\]' pii-detector-service/pyproject.toml | grep '^version = ' | sed 's/version = "\(.*\)"/\1/' | head -1)
           OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
             echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$VERSION,ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:latest" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$VERSION-develop,ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:develop" >> $GITHUB_OUTPUT
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$VERSION" >> $GITHUB_OUTPUT
           else
             BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///')
             echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$VERSION-$BRANCH_NAME" >> $GITHUB_OUTPUT
@@ -100,7 +100,7 @@ jobs:
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
             echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$VERSION,ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:latest" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$VERSION-develop,ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:develop" >> $GITHUB_OUTPUT
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$VERSION" >> $GITHUB_OUTPUT
           else
             BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///')
             echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$VERSION-$BRANCH_NAME" >> $GITHUB_OUTPUT
@@ -148,7 +148,7 @@ jobs:
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
             echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$VERSION,ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:latest" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$VERSION-develop,ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:develop" >> $GITHUB_OUTPUT
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$VERSION" >> $GITHUB_OUTPUT
           else
             BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///')
             echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$VERSION-$BRANCH_NAME" >> $GITHUB_OUTPUT

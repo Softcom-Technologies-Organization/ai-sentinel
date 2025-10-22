@@ -40,7 +40,6 @@ Create a `.env` file with your Confluence credentials:
 CONFLUENCE_BASE_URL=https://your-instance.atlassian.net
 CONFLUENCE_USERNAME=your-email@company.com
 CONFLUENCE_API_TOKEN=your-token
-CONFLUENCE_SPACE_KEY=your-space
 ```
 
 gRPC client parameters (application.yml):

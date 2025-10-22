@@ -38,7 +38,6 @@ class ConfluenceAttachmentHttpClientAdapterTest {
             "https://confluence.test.com/",
             "testuser",
             "testtoken",
-            "TEST",
             new ConfluenceConfig.ConnectionSettings(10_000, 10_000, 0, false, null),
             new ConfluenceConfig.PaginationSettings(50, 5),
             new ConfluenceConfig.ApiPaths(

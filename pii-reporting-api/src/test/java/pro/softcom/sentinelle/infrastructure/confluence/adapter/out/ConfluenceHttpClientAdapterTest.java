@@ -52,7 +52,6 @@ class ConfluenceHttpClientAdapterTest {
         lenient().when(config.baseUrl()).thenReturn("https://confluence.test.com");
         lenient().when(config.username()).thenReturn("testuser");
         lenient().when(config.apiToken()).thenReturn("testtoken");
-        lenient().when(config.spaceKey()).thenReturn("TEST");
         lenient().when(config.getRestApiUrl()).thenReturn("https://confluence.test.com/rest/api");
 
         // Connection settings configuration

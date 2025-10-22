@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sentinelle-pii-detector-ms"
-version = "1.0.0"
+version = "0.0.1"
 description = "PII Detection gRPC Microservice using Piiranha model with advanced memory management"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -27,6 +27,10 @@ classifiers = [
 ]
 
 dependencies = [
+    # PyTorch - MUST be installed with CPU-only flag
+    # Install command: pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
+    "torch>=2.0.0",
+
     # ML and NLP dependencies (torch excluded - install via extras)
     "transformers>=4.35.0",
     "huggingface-hub>=0.19.0",
@@ -59,24 +63,11 @@ dependencies = [
     "tomli>=2.0.0; python_version < '3.11'"
 ]
 
-[project.optional-dependencies]
-# CPU-only installation (recommended for Docker/production without GPU)
-# Install with: pip install .[cpu] --extra-index-url https://download.pytorch.org/whl/cpu
-cpu = [
-    "torch>=2.0.0; platform_system != 'Darwin'",  # CPU version for non-Mac
-    "torch>=2.0.0; platform_system == 'Darwin'",  # Mac uses default
-]
-
-# GPU installation with CUDA support (for development/production with GPU)
-# Install with: pip install .[gpu]
-gpu = [
-    "torch>=2.0.0",
-]
-
-# NLP models for Presidio (optional, only needed for PERSON, LOCATION and NRP detection)
-# Note: Install manually with: python -m spacy download <model_name>
-# Available models: en_core_web_sm, fr_core_news_sm, de_core_news_sm, es_core_news_sm
 nlp = [
+    # Required for Presidio SpacyRecognizer (LOCATION detection is currently enabled)
+    # To disable: set location=false in presidio-detector.toml [recognizers] section
+    # Models must be installed manually: python -m spacy download <model_name>
+    # Available: en_core_web_sm, fr_core_news_sm, de_core_news_sm, es_core_news_sm
     "spacy>=3.7.0",
 ]
 
@@ -117,10 +108,10 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/sentinelle/sentinelle-pii-detector-ms"
-Documentation = "https://github.com/sentinelle/sentinelle-pii-detector-ms/blob/main/README.md"
-Repository = "https://github.com/sentinelle/sentinelle-pii-detector-ms"
-"Bug Tracker" = "https://github.com/sentinelle/sentinelle-pii-detector-ms/issues"
+Homepage = "https://github.com/Softcom-Technologies-Organization/ai-sentinel/tree/main/pii-detector-service"
+Documentation = "https://github.com/Softcom-Technologies-Organization/ai-sentinel/blob/main/pii-detector-service/README.md"
+Repository = "https://github.com/Softcom-Technologies-Organization/ai-sentinel"
+"Bug Tracker" = "https://github.com/Softcom-Technologies-Organization/ai-sentinel/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["pii_detector"]

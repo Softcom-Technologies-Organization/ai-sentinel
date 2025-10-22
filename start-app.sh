@@ -59,7 +59,6 @@ if [ ! -f .env ]; then
     log_info "  - CONFLUENCE_BASE_URL"
     log_info "  - CONFLUENCE_USERNAME"
     log_info "  - CONFLUENCE_API_TOKEN"
-    log_info "  - CONFLUENCE_SPACE_KEY"
     echo ""
     read -p "Appuyez sur Entrée une fois que vous avez configuré le fichier .env..."
 fi

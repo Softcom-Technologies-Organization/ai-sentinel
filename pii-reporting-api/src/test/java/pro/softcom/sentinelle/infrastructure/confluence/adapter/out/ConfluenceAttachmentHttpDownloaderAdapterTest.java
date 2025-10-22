@@ -53,7 +53,6 @@ class ConfluenceAttachmentHttpDownloaderAdapterTest {
                 "https://example.atlassian.net", // baseUrl
                 "user@example.com",
                 "token-123",
-                "SPACE",
                 new ConfluenceConfig.ConnectionSettings(5_000, 5_000, 2, false, null),
                 new ConfluenceConfig.PaginationSettings(50, 5),
                 new ConfluenceConfig.ApiPaths("/content/", "/content/search", "/space", "/child/attachment", "body.storage,version", "permissions"),

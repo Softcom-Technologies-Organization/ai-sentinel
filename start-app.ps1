@@ -56,7 +56,6 @@ if (-not (Test-Path .env)) {
     Write-Info "  - CONFLUENCE_BASE_URL"
     Write-Info "  - CONFLUENCE_USERNAME"
     Write-Info "  - CONFLUENCE_API_TOKEN"
-    Write-Info "  - CONFLUENCE_SPACE_KEY"
     Write-Host ""
     Read-Host "Appuyez sur Entrée une fois que vous avez configuré le fichier .env"
 }

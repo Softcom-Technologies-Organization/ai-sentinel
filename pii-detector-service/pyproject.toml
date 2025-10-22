@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sentinelle-pii-detector-ms"
-version = "1.0.0"
+version = "0.0.1"
 description = "PII Detection gRPC Microservice using Piiranha model with advanced memory management"
 readme = "README.md"
 requires-python = ">=3.9"

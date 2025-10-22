@@ -26,7 +26,6 @@ class ConfluenceConfigTest {
             "https://confluence.example.com",
             "testuser",
             "testtoken",
-            "TESTSPACE",
             new ConfluenceConfig.ConnectionSettings(30000, 60000, 3, false, null),
             new ConfluenceConfig.PaginationSettings(50, 100),
             new ConfluenceConfig.ApiPaths(
@@ -47,7 +46,6 @@ class ConfluenceConfigTest {
         assertThat(config.baseUrl()).isEqualTo("https://confluence.example.com");
         assertThat(config.username()).isEqualTo("testuser");
         assertThat(config.apiToken()).isEqualTo("testtoken");
-        assertThat(config.spaceKey()).isEqualTo("TESTSPACE");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -74,7 +72,6 @@ class ConfluenceConfigTest {
             baseUrl,
             username,
             apiToken,
-            "TESTSPACE",
             connectionSettings,
             paginationSettings,
             permissions,
@@ -100,7 +97,6 @@ class ConfluenceConfigTest {
             "https://confluence.example.com",
             "testuser",
             "testtoken",
-            null,
             new ConfluenceConfig.ConnectionSettings(30000, 60000, 3, false, null),
             new ConfluenceConfig.PaginationSettings(50, 100),
             new ConfluenceConfig.ApiPaths(
@@ -155,7 +151,6 @@ class ConfluenceConfigTest {
             "https://confluence.example.com/",
             "testuser",
             "testtoken",
-            "TESTSPACE",
             new ConfluenceConfig.ConnectionSettings(30000, 60000, 3, false, null),
             new ConfluenceConfig.PaginationSettings(50, 100),
             new ConfluenceConfig.ApiPaths(
@@ -178,7 +173,6 @@ class ConfluenceConfigTest {
             "https://confluence.example.com",
             "testuser",
             "testtoken",
-            "TESTSPACE",
             new ConfluenceConfig.ConnectionSettings(30000, 60000, 3, false, null),
             new ConfluenceConfig.PaginationSettings(50, 100),
             new ConfluenceConfig.ApiPaths(
@@ -227,7 +221,6 @@ class ConfluenceConfigTest {
             "https://confluence.example.com",
             "testuser",
             "testtoken",
-            "TESTSPACE",
             connectionSettings,
             paginationSettings,
             apiPaths,
@@ -270,7 +263,6 @@ class ConfluenceConfigTest {
             "https://confluence.example.com",
             "testuser",
             "testtoken",
-            "TESTSPACE",
             connectionSettings,
             new ConfluenceConfig.PaginationSettings(50, 100),
             new ConfluenceConfig.ApiPaths(

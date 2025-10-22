@@ -11,7 +11,7 @@
 
     <groupId>pro.softcom</groupId>
     <artifactId>ai-sentinel</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
     <name>ai-sentinel</name>
     <description>ai-sentinel - Application to scan Confluence spaces and reporting PIIs</description>
 

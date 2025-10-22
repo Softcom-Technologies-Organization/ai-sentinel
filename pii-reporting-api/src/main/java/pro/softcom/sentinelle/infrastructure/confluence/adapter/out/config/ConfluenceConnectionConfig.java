@@ -9,7 +9,6 @@ public interface ConfluenceConnectionConfig {
     String baseUrl();
     String username();
     String apiToken();
-    String spaceKey();
 
     // Timeouts, retries and proxy
     int connectTimeout();
@@ -35,7 +34,7 @@ public interface ConfluenceConnectionConfig {
 
     // Convenience
     default boolean isValid() {
-        return notBlank(baseUrl()) && notBlank(username()) && notBlank(apiToken()) && notBlank(spaceKey());
+        return notBlank(baseUrl()) && notBlank(username()) && notBlank(apiToken());
     }
 
     default String getRestApiUrl() {

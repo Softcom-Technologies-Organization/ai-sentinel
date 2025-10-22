@@ -1,6 +1,6 @@
 {
   "name": "sentinelle-ui-angular",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "engines": {
     "node": ">=20.19 <21 || >=22.12"
   },

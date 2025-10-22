@@ -29,7 +29,6 @@ confluence:
   base-url: ${CONFLUENCE_BASE_URL}
   username: ${CONFLUENCE_USERNAME}
   api-token: ${CONFLUENCE_API_TOKEN}
-  space-key: ${CONFLUENCE_SPACE_KEY}
   connection-settings:
     connect-timeout: 30000
     read-timeout: 60000

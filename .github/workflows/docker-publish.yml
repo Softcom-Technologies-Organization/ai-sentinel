@@ -42,6 +42,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Extract version from pyproject.toml
+        id: version
+        run: |
+          VERSION=$(grep '^version = ' pii-detector-service/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/ai-sentinel-pii-detector:$VERSION,ghcr.io/${{ github.repository_owner }}/ai-sentinel-pii-detector:latest" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/ai-sentinel-pii-detector:$VERSION-develop,ghcr.io/${{ github.repository_owner }}/ai-sentinel-pii-detector:develop" >> $GITHUB_OUTPUT
+          else
+            BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///')
+            echo "tags=ghcr.io/${{ github.repository_owner }}/ai-sentinel-pii-detector:$VERSION-$BRANCH_NAME" >> $GITHUB_OUTPUT
+          fi
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -49,28 +64,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/ai-sentinel-pii-detector
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix=sha-
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./pii-detector-service/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.version.outputs.tags }}
           labels: |
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
             org.opencontainers.image.description="PII Detector Service - Python/gRPC service for detecting Personal Identifiable Information"
             org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
 
   build-and-publish-api:
     name: Build and Publish Reporting API
@@ -84,6 +89,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Extract version from pom.xml
+        id: version
+        run: |
+          VERSION=$(grep -m 1 '<version>' pii-reporting-api/pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/ai-sentinel-reporting-api:$VERSION,ghcr.io/${{ github.repository_owner }}/ai-sentinel-reporting-api:latest" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/ai-sentinel-reporting-api:$VERSION-develop,ghcr.io/${{ github.repository_owner }}/ai-sentinel-reporting-api:develop" >> $GITHUB_OUTPUT
+          else
+            BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///')
+            echo "tags=ghcr.io/${{ github.repository_owner }}/ai-sentinel-reporting-api:$VERSION-$BRANCH_NAME" >> $GITHUB_OUTPUT
+          fi
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -91,28 +111,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/ai-sentinel-reporting-api
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix=sha-
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./pii-reporting-api/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.version.outputs.tags }}
           labels: |
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
             org.opencontainers.image.description="PII Reporting API - Spring Boot backend for managing PII scan reports"
             org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
 
   build-and-publish-ui:
     name: Build and Publish Reporting UI
@@ -126,6 +136,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Extract version from package.json
+        id: version
+        run: |
+          VERSION=$(grep '"version":' pii-reporting-ui/package.json | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/ai-sentinel-reporting-ui:$VERSION,ghcr.io/${{ github.repository_owner }}/ai-sentinel-reporting-ui:latest" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/ai-sentinel-reporting-ui:$VERSION-develop,ghcr.io/${{ github.repository_owner }}/ai-sentinel-reporting-ui:develop" >> $GITHUB_OUTPUT
+          else
+            BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///')
+            echo "tags=ghcr.io/${{ github.repository_owner }}/ai-sentinel-reporting-ui:$VERSION-$BRANCH_NAME" >> $GITHUB_OUTPUT
+          fi
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -133,25 +158,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/ai-sentinel-reporting-ui
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix=sha-
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: ./pii-reporting-ui
           file: ./pii-reporting-ui/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.version.outputs.tags }}
           labels: |
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
             org.opencontainers.image.description="PII Reporting UI - Angular frontend for visualizing PII scan results"
             org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}

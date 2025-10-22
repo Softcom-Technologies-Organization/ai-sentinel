@@ -7,7 +7,7 @@ services:
   # ============================================================================
   postgres:
     image: postgres:18
-    container_name: ai-sentinel-db
+    container_name: ai-sentinel-db-prod
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -27,7 +27,7 @@ services:
   # PII DETECTOR SERVICE (Python/gRPC) - IMAGE PRÉ-BUILDÉE
   # ============================================================================
   pii-detector:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-pii-detector:latest
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-pii-detector:develop
     container_name: pii-detector-service
     restart: unless-stopped
     ports:
@@ -52,7 +52,7 @@ services:
   # PII REPORTING API (Spring Boot) - IMAGE PRÉ-BUILDÉE
   # ============================================================================
   pii-reporting-api:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-api:latest
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-api:develop
     container_name: pii-reporting-api
     restart: unless-stopped
     ports:
@@ -106,7 +106,7 @@ services:
   # PII REPORTING UI (Angular + Nginx) - IMAGE PRÉ-BUILDÉE
   # ============================================================================
   pii-reporting-ui:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-ui:latest
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-ui:develop
     container_name: pii-reporting-ui
     restart: unless-stopped
     ports:

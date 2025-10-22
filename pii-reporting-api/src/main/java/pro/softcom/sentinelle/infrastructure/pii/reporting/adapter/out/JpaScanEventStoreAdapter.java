@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanEventStore;
+import pro.softcom.sentinelle.application.pii.reporting.service.PiiContextExtractor;
 import pro.softcom.sentinelle.application.pii.security.ScanResultEncryptor;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.DetectionEventRepository;
@@ -27,6 +28,7 @@ public class JpaScanEventStoreAdapter implements ScanEventStore {
 
     private final DetectionEventRepository eventRepository;
     private final ScanResultEncryptor scanResultEncryptor;
+    private final PiiContextExtractor piiContextExtractor;
     private final ObjectMapper objectMapper;
 
     // In-memory per-scan sequence cache, initialized lazily from DB on first use
@@ -43,6 +45,8 @@ public class JpaScanEventStoreAdapter implements ScanEventStore {
         }
 
         try {
+//            ScanResult contextResult = piiContextExtractor.enrichContexts(scanResult);
+//            ScanResult encryptedResult = scanResultEncryptor.encrypt(contextResult);
             ScanResult encryptedResult = scanResultEncryptor.encrypt(scanResult);
             JsonNode payload = objectMapper.valueToTree(encryptedResult);
 

@@ -23,11 +23,7 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
-import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
-import pro.softcom.sentinelle.application.pii.reporting.service.ScanCheckpointService;
-import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventFactory;
-import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
-import pro.softcom.sentinelle.application.pii.reporting.service.ScanProgressCalculator;
+import pro.softcom.sentinelle.application.pii.reporting.service.*;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
@@ -82,8 +78,9 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         };
         
         // Create service instances
+        var piiContextExtractor = new PiiContextExtractor();
         ScanProgressCalculator progressCalculator = new ScanProgressCalculator();
-        ScanEventFactory eventFactory = new ScanEventFactory(confluenceUrlProvider);
+        ScanEventFactory eventFactory = new ScanEventFactory(confluenceUrlProvider, piiContextExtractor);
         ScanCheckpointService checkpointService = new ScanCheckpointService(scanCheckpointRepository);
         
         // Create parameter objects

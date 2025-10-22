@@ -1,8 +1,12 @@
 package pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.mapper;
 
 import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
@@ -12,6 +16,7 @@ import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEv
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -95,42 +100,30 @@ class ScanResultToScanEventMapperTest {
         assertThat(dto.maskedContent()).isEqualTo("GIVEN");
     }
 
-    @Test
-    void Should_BuildMaskedContent_When_SourceAndEntitiesProvided() {
-        // Arrange
-        List<PiiEntity> entities = new ArrayList<>();
-        // Intentionally unsorted to verify sorting by start
-        entities.add(entity(3, 4, null)); // will become UNKNOWN
-        entities.add(entity(1, 3, "EMAIL"));
+    @ParameterizedTest(name = "{index} -> {0}")
+    @MethodSource("maskingCases")
+    @DisplayName("Should_BuildMaskedContent_VariousCases")
+    void Should_BuildMaskedContent_VariousCases(String ignoredTitle, String source, List<PiiEntity> entities, String expected) {
         ScanResult sr = ScanResult.builder()
-                .sourceContent("abcde")
+                .sourceContent(source)
                 .entities(entities)
                 .build();
-
-        // Act
         ScanEventDto dto = mapper.toDto(sr);
-
-        // Assert
-        assertThat(dto.maskedContent()).isEqualTo("a[EMAIL][UNKNOWN]e");
+        assertThat(dto.maskedContent()).isEqualTo(expected);
     }
 
-    @Test
-    void Should_ClampAndInsertTokens_When_EntityBoundsAreOutsideSource() {
-        // Arrange
-        List<PiiEntity> entities = List.of(
+    static Stream<Arguments> maskingCases() {
+        List<PiiEntity> case1 = new ArrayList<>();
+        case1.add(entity(3, 4, null)); // will become UNKNOWN
+        case1.add(entity(1, 3, "EMAIL"));
+        List<PiiEntity> case2 = List.of(
                 entity(-5, 2, "SSN"),
                 entity(10, 12, "PHONE")
         );
-        ScanResult sr = ScanResult.builder()
-                .sourceContent("abcde")
-                .entities(entities)
-                .build();
-
-        // Act
-        ScanEventDto dto = mapper.toDto(sr);
-
-        // Assert
-        assertThat(dto.maskedContent()).isEqualTo("[SSN]cde[PHONE]");
+        return Stream.of(
+                Arguments.of("unsorted entities -> sorted + tokens", "abcde", case1, "a[EMAIL][UNKNOWN]e"),
+                Arguments.of("out-of-bounds clamped", "abcde", case2, "[SSN]cde[PHONE]")
+        );
     }
 
     @Test
@@ -167,12 +160,12 @@ class ScanResultToScanEventMapperTest {
 
         // Assert
         assertThat(masked)
-            .isNotNull()
-            .hasSize(5001)
-            .endsWith("…");
+                .isNotNull()
+                .hasSize(5001)
+                .endsWith("…");
     }
 
     private static PiiEntity entity(int start, int end, Object type) {
-        return new PiiEntity(start, end, type == null ? null : type.toString(), type == null ? null : type.toString(), 0, null);
+        return new PiiEntity(start, end, type == null ? null : type.toString(), type == null ? null : type.toString(), 0, null, null);
     }
 }

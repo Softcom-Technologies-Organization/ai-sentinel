@@ -21,6 +21,8 @@ import java.util.Map;
 public class ScanEventFactory {
 
     private final ConfluenceUrlProvider confluenceUrlProvider;
+    private final PiiContextExtractor piiContextExtractor;
+
 
     /**
      * Creates a scan start event.
@@ -88,8 +90,7 @@ public class ScanEventFactory {
     /**
      * Creates an empty page item event when no content is available.
      */
-    public ScanResult createEmptyPageItemEvent(String scanId, String spaceKey, ConfluencePage page,
-                                              double progress) {
+    public ScanResult createEmptyPageItemEvent(String scanId, String spaceKey, ConfluencePage page, double progress) {
         return ScanResult.builder()
             .scanId(scanId)
             .spaceKey(spaceKey)
@@ -111,7 +112,7 @@ public class ScanEventFactory {
     public ScanResult createPageItemEvent(String scanId, String spaceKey, ConfluencePage page,
                                          String content, ContentPiiDetection detection,
                                          double progress) {
-        List<PiiEntity> entities = mapToEntityList(detection);
+        List<PiiEntity> entities = mapToEntityList(detection, content);
         Map<String, Integer> summary = extractSummary(detection);
 
         return ScanResult.builder()
@@ -136,7 +137,7 @@ public class ScanEventFactory {
     public ScanResult createAttachmentItemEvent(String scanId, String spaceKey, ConfluencePage page,
                                                AttachmentInfo attachment, String content,
                                                ContentPiiDetection detection, double progress) {
-        List<PiiEntity> entities = mapToEntityList(detection);
+        List<PiiEntity> entities = mapToEntityList(detection, content);
         Map<String, Integer> summary = extractSummary(detection);
 
         return ScanResult.builder()
@@ -178,20 +179,33 @@ public class ScanEventFactory {
     /**
      * Maps PII detection results to entity list for event payload.
      */
-    private List<PiiEntity> mapToEntityList(ContentPiiDetection detection) {
+    private List<PiiEntity> mapToEntityList(ContentPiiDetection detection, String content) {
         if (detection == null || detection.sensitiveDataFound() == null) {
             return List.of();
         }
         return detection.sensitiveDataFound().stream()
-            .map(this::mapSensitiveDataToEntity)
+            .map(sensitiveData -> this.mapSensitiveDataToEntity(sensitiveData, content, detection))
             .toList();
     }
 
-    private PiiEntity mapSensitiveDataToEntity(ContentPiiDetection.SensitiveData data) {
+    private PiiEntity mapSensitiveDataToEntity(ContentPiiDetection.SensitiveData data, String sourceContent, ContentPiiDetection detection) {
+        String type = (data.type() != null ? data.type().name() : null);
+        String typeLabel = (data.type() != null ? data.type().getLabel() : null);
+        // Build a lightweight list of entities to ensure other PIIs in the same line are also masked in context
+        List<PiiEntity> all = detection == null || detection.sensitiveDataFound() == null ? List.of() :
+                detection.sensitiveDataFound().stream()
+                        .map(sd -> PiiEntity.builder()
+                                .start(sd.position())
+                                .end(sd.end())
+                                .type(sd.type() != null ? sd.type().name() : null)
+                                .build())
+                        .toList();
+        String piiContext = piiContextExtractor.extract(sourceContent, data.position(), data.end(), type, all);
         return PiiEntity.builder()
+                .context(piiContext)
                 .text(data.value())
-                .type(data.type() != null ? data.type().name() : null)
-                .typeLabel(data.type() != null ? data.type().getLabel() : null)
+                .type(type)
+                .typeLabel(typeLabel)
                 .start(data.position())
                 .end(data.end())
                 .score(data.score())

@@ -17,11 +17,7 @@ import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluence
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanEventStore;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanResultQuery;
-import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
-import pro.softcom.sentinelle.application.pii.reporting.service.ScanCheckpointService;
-import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventFactory;
-import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
-import pro.softcom.sentinelle.application.pii.reporting.service.ScanProgressCalculator;
+import pro.softcom.sentinelle.application.pii.reporting.service.*;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.PauseScanUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.ScanReportingUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceResumeScanUseCaseImpl;
@@ -55,8 +51,9 @@ public class ApplicationUseCasesConfig {
     }
 
     @Bean
-    public ScanEventFactory scanEventFactory(ConfluenceUrlProvider confluenceUrlProvider) {
-        return new ScanEventFactory(confluenceUrlProvider);
+    public ScanEventFactory scanEventFactory(ConfluenceUrlProvider confluenceUrlProvider,
+                                             PiiContextExtractor piiContextExtractor) {
+        return new ScanEventFactory(confluenceUrlProvider, piiContextExtractor);
     }
 
     @Bean

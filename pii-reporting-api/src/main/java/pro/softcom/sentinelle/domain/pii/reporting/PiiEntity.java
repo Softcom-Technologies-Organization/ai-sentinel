@@ -11,5 +11,7 @@ public record PiiEntity(
         @JsonProperty("typeLabel")
         String typeLabel,
         double score,
-        String text
+        String text,
+        @JsonProperty("context")
+        String context
 ) {}

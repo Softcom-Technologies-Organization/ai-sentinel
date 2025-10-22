@@ -48,17 +48,33 @@ public class ScanResultEncryptor {
 
     private PiiEntity encryptEntity(PiiEntity entity) {
         EncryptionMetadata metadata = buildMetadata(entity);
+
         var encryptedText = encryptionService.encrypt(entity.text(), metadata);
-        return entity.toBuilder().text(encryptedText).build();
+        var encryptedContext = encryptionService.encrypt(entity.context(), metadata);
+
+        return entity.toBuilder()
+                .text(encryptedText)
+                .context(encryptedContext)
+                .build();
     }
 
     private PiiEntity decryptEntity(PiiEntity entity) {
+        EncryptionMetadata metadata = buildMetadata(entity);
+
         var decryptedText = entity.text();
         if (encryptionService.isEncrypted(entity.text())) {
-            EncryptionMetadata metadata = buildMetadata(entity);
             decryptedText = encryptionService.decrypt(entity.text(), metadata);
         }
-        return entity.toBuilder().text(decryptedText).build();
+
+        var decryptedContext = entity.context();
+        if (encryptionService.isEncrypted(entity.context())) {
+            decryptedContext = encryptionService.decrypt(entity.context(), metadata);
+        }
+
+        return entity.toBuilder()
+                .text(decryptedText)
+                .context(decryptedContext)
+                .build();
     }
 
     private EncryptionMetadata buildMetadata(PiiEntity entity) {

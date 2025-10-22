@@ -45,7 +45,7 @@ jobs:
       - name: Extract version from pyproject.toml
         id: version
         run: |
-          VERSION=$(grep '^version = ' pii-detector-service/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          VERSION=$(grep 'version = ' pii-detector-service/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
@@ -92,7 +92,7 @@ jobs:
       - name: Extract version from pom.xml
         id: version
         run: |
-          VERSION=$(grep -m 1 '<version>' pii-reporting-api/pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+          VERSION=$(grep -A 2 '<artifactId>ai-sentinel</artifactId>' pii-reporting-api/pom.xml | grep '<version>' | sed 's/.*<version>\(.*\)<\/version>.*/\1/' | sed 's/-SNAPSHOT$//' | sed 's/-RELEASE$//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then

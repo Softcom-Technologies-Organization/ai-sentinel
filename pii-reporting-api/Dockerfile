@@ -10,7 +10,7 @@ RUN mvn -B dependency:go-offline
 
 COPY pii-reporting-api/src ./src
 
-RUN mvn -B clean package -DskipTests
+RUN mvn -B clean package -DskipTests -Pdocker-build
 
 FROM amazoncorretto:24 AS runtime
 

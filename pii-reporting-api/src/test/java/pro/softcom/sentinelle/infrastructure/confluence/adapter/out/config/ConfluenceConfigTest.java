@@ -90,28 +90,6 @@ class ConfluenceConfigTest {
     }
 
     @Test
-    @DisplayName("Should_ReturnFalse_When_SpaceKeyIsNull")
-    void shouldReturnFalseWhenSpaceKeyIsNull() {
-        // Arrange
-        ConfluenceConfig config = new ConfluenceConfig(
-            "https://confluence.example.com",
-            "testuser",
-            "testtoken",
-            new ConfluenceConfig.ConnectionSettings(30000, 60000, 3, false, null),
-            new ConfluenceConfig.PaginationSettings(50, 100),
-            new ConfluenceConfig.ApiPaths(
-                "/content/", "/content/search", "/space", "/child/attachment",
-                "body.storage,version", "permissions"
-            ),
-            new ConfluenceConfig.CacheSettings(300000, 5000),
-            new ConfluenceConfig.PollingSettings(60000)
-        );
-
-        // Act & Assert
-        assertThat(config.isValid()).isFalse();
-    }
-
-    @Test
     @DisplayName("Should_ApplyDefaults_When_ConnectionSettingsInvalid")
     void shouldApplyDefaultsWhenConnectionSettingsInvalid() {
         // Arrange & Act

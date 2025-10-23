@@ -14,7 +14,7 @@ services:
       # Restricted to localhost only for development tools (DBeaver, PgAdmin, etc.)
       - "127.0.0.1:5432:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
       - ./pii-reporting-api/init-scripts:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ai-sentinel"]

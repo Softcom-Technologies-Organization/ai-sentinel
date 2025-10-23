@@ -15,7 +15,7 @@ public record ScanResult(
         Integer pageIndex,
         String pageId,
         String pageTitle,
-        List<PiiEntity> entities,
+        List<PiiEntity> detectedEntities,
         Map<String, Integer> summary,
         @JsonIgnore String sourceContent,
         String maskedContent,

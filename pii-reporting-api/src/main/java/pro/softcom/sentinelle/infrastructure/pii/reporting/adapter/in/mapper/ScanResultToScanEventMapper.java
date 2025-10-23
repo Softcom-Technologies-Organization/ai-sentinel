@@ -19,7 +19,7 @@ public class ScanResultToScanEventMapper {
         if (masked == null) {
             // Build a full masked source by replacing entities with their [TYPE] token.
             // Note: differs from PiiContextExtractor which returns a local line context per entity.
-            masked = PiiMaskingUtils.buildMaskedContent(scanResult.sourceContent(), scanResult.entities());
+            masked = PiiMaskingUtils.buildMaskedContent(scanResult.sourceContent(), scanResult.detectedEntities());
         }
         return ScanEventDto.builder()
                 .scanId(scanResult.scanId())
@@ -30,7 +30,7 @@ public class ScanResultToScanEventMapper {
                 .pageIndex(scanResult.pageIndex())
                 .pageId(scanResult.pageId())
                 .pageTitle(scanResult.pageTitle())
-                .entities(scanResult.entities())
+                .detectedEntities(scanResult.detectedEntities())
                 .summary(scanResult.summary())
                 .maskedContent(masked)
                 .message(scanResult.message())

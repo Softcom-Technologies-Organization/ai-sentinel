@@ -154,7 +154,7 @@ class StreamConfluenceScanUseCaseImplTest {
         StepVerifier.create(flux)
                 .expectNextMatches(ev -> ScanEventType.START.toJson().equals(ev.eventType()))
                 .expectNextMatches(ev -> ScanEventType.PAGE_START.toJson().equals(ev.eventType()) && "p-1".equals(ev.pageId()))
-                .expectNextMatches(ev -> ScanEventType.ITEM.toJson().equals(ev.eventType()) && ev.entities() != null && ev.entities().isEmpty())
+                .expectNextMatches(ev -> ScanEventType.ITEM.toJson().equals(ev.eventType()) && ev.detectedEntities() != null && ev.detectedEntities().isEmpty())
                 .expectNextMatches(ev -> ScanEventType.PAGE_COMPLETE.toJson().equals(ev.eventType()) && "p-1".equals(ev.pageId()))
                 .expectNextMatches(ev -> ScanEventType.COMPLETE.toJson().equals(ev.eventType()))
                 .verifyComplete();

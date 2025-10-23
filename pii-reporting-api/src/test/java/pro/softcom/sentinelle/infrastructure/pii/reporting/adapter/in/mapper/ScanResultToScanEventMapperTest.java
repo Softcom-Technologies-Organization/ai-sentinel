@@ -44,7 +44,7 @@ class ScanResultToScanEventMapperTest {
                 .pageIndex(3)
                 .pageId("pid")
                 .pageTitle("Title")
-                .entities(entities)
+                .detectedEntities(entities)
                 .summary(summary)
                 .sourceContent("abc")
                 .maskedContent("[EMAIL]bc")
@@ -70,7 +70,7 @@ class ScanResultToScanEventMapperTest {
         softly.assertThat(dto.pageIndex()).isEqualTo(3);
         softly.assertThat(dto.pageId()).isEqualTo("pid");
         softly.assertThat(dto.pageTitle()).isEqualTo("Title");
-        softly.assertThat(dto.entities()).isEqualTo(entities);
+        softly.assertThat(dto.detectedEntities()).isEqualTo(entities);
         softly.assertThat(dto.summary()).isEqualTo(summary);
         softly.assertThat(dto.maskedContent()).isEqualTo("[EMAIL]bc");
         softly.assertThat(dto.message()).isEqualTo("msg");
@@ -89,7 +89,7 @@ class ScanResultToScanEventMapperTest {
         List<PiiEntity> entities = List.of(entity(1, 3, "EMAIL"));
         ScanResult sr = ScanResult.builder()
                 .sourceContent("abcde")
-                .entities(entities)
+                .detectedEntities(entities)
                 .maskedContent("GIVEN")
                 .build();
 
@@ -106,7 +106,7 @@ class ScanResultToScanEventMapperTest {
     void Should_BuildMaskedContent_VariousCases(String ignoredTitle, String source, List<PiiEntity> entities, String expected) {
         ScanResult sr = ScanResult.builder()
                 .sourceContent(source)
-                .entities(entities)
+                .detectedEntities(entities)
                 .build();
         ScanEventDto dto = mapper.toDto(sr);
         assertThat(dto.maskedContent()).isEqualTo(expected);
@@ -127,16 +127,54 @@ class ScanResultToScanEventMapperTest {
     }
 
     @Test
+    void Should_BuildMaskedContent_When_SourceAndEntitiesProvided() {
+        // Arrange
+        List<PiiEntity> entities = new ArrayList<>();
+        // Intentionally unsorted to verify sorting by startPosition
+        entities.add(entity(3, 4, null)); // will become UNKNOWN
+        entities.add(entity(1, 3, "EMAIL"));
+        ScanResult sr = ScanResult.builder()
+                .sourceContent("abcde")
+                .detectedEntities(entities)
+                .build();
+
+        // Act
+        ScanEventDto dto = mapper.toDto(sr);
+
+        // Assert
+        assertThat(dto.maskedContent()).isEqualTo("a[EMAIL][UNKNOWN]e");
+    }
+
+    @Test
+    void Should_ClampAndInsertTokens_When_EntityBoundsAreOutsideSource() {
+        // Arrange
+        List<PiiEntity> entities = List.of(
+                entity(-5, 2, "SSN"),
+                entity(10, 12, "PHONE")
+        );
+        ScanResult sr = ScanResult.builder()
+                .sourceContent("abcde")
+                .detectedEntities(entities)
+                .build();
+
+        // Act
+        ScanEventDto dto = mapper.toDto(sr);
+
+        // Assert
+        assertThat(dto.maskedContent()).isEqualTo("[SSN]cde[PHONE]");
+    }
+
+    @Test
     void Should_SetMaskedContentNull_When_SourceBlankOrEntitiesEmpty() {
         // blank source
         ScanResult sr1 = ScanResult.builder()
                 .sourceContent("   ")
-                .entities(List.of(entity(0, 1, "EMAIL")))
+                .detectedEntities(List.of(entity(0, 1, "EMAIL")))
                 .build();
-        // empty entities
+        // empty detectedEntities
         ScanResult sr2 = ScanResult.builder()
                 .sourceContent("abc")
-                .entities(List.of())
+                .detectedEntities(List.of())
                 .build();
 
         SoftAssertions softly = new SoftAssertions();
@@ -152,7 +190,7 @@ class ScanResultToScanEventMapperTest {
         List<PiiEntity> entities = List.of(entity(0, 1, "EMAIL"));
         ScanResult sr = ScanResult.builder()
                 .sourceContent(source)
-                .entities(entities)
+                .detectedEntities(entities)
                 .build();
 
         // Act

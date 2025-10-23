@@ -90,6 +90,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up JDK 24
+        uses: actions/setup-java@v4
+        with:
+          java-version: '24'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run tests
+        run: |
+          cd pii-reporting-api
+          mvn clean test
+        env:
+          MAVEN_OPTS: '-Xmx1024m'
+
       - name: Extract version from pom.xml
         id: version
         run: |

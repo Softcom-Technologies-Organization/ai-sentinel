@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "sentinelle-pii-detector-ms"
+name = "pii-detector"
 version = "0.0.1"
 description = "PII Detection gRPC Microservice using Piiranha model with advanced memory management"
 readme = "README.md"
@@ -63,6 +63,7 @@ dependencies = [
     "tomli>=2.0.0; python_version < '3.11'"
 ]
 
+[project.optional-dependencies]
 nlp = [
     # Required for Presidio SpacyRecognizer (LOCATION detection is currently enabled)
     # To disable: set location=false in presidio-detector.toml [recognizers] section

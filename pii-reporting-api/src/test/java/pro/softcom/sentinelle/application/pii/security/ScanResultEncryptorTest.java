@@ -57,10 +57,10 @@ class ScanResultEncryptorTest {
 
         // Then
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(encrypted.entities()).hasSize(2);
-        softly.assertThat(encrypted.entities().get(0).text())
+        softly.assertThat(encrypted.detectedEntities()).hasSize(2);
+        softly.assertThat(encrypted.detectedEntities().get(0).detectedValue())
             .isEqualTo("ENC:v1:encrypted_email");
-        softly.assertThat(encrypted.entities().get(1).text())
+        softly.assertThat(encrypted.detectedEntities().get(1).detectedValue())
             .isEqualTo("ENC:v1:encrypted_phone");
         softly.assertAll();
 
@@ -88,7 +88,7 @@ class ScanResultEncryptorTest {
         if (entities == null) {
             assertThat(result).isEqualTo(scanResult);
         } else {
-            assertThat(result.entities()).isEmpty();
+            assertThat(result.detectedEntities()).isEmpty();
         }
         verifyNoInteractions(encryptionService);
     }
@@ -114,9 +114,9 @@ class ScanResultEncryptorTest {
 
         EncryptionMetadata captured = metadataCaptor.getValue();
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(captured.type()).isEqualTo("SSN");
-        softly.assertThat(captured.positionBegin()).isEqualTo(10);
-        softly.assertThat(captured.positionEnd()).isEqualTo(20);
+        softly.assertThat(captured.piiType()).isEqualTo("SSN");
+        softly.assertThat(captured.startPosition()).isEqualTo(10);
+        softly.assertThat(captured.endPosition()).isEqualTo(20);
         softly.assertAll();
     }
 
@@ -140,9 +140,9 @@ class ScanResultEncryptorTest {
 
         // Then
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(decrypted.entities().get(0).text())
+        softly.assertThat(decrypted.detectedEntities().get(0).detectedValue())
             .isEqualTo("decrypted@email.com");
-        softly.assertThat(decrypted.entities().get(1).text())
+        softly.assertThat(decrypted.detectedEntities().get(1).detectedValue())
             .isEqualTo("plaintext");
         softly.assertAll();
 
@@ -172,7 +172,7 @@ class ScanResultEncryptorTest {
             .scanId("scan-123")
             .spaceKey("SPACE")
             .pageId("page-456")
-            .entities(List.of(entity))
+            .detectedEntities(List.of(entity))
             .build();
 
         when(encryptionService.encrypt(anyString(), any()))
@@ -210,10 +210,10 @@ class ScanResultEncryptorTest {
 
         // Then
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(decrypted.entities()).hasSize(2);
-        softly.assertThat(decrypted.entities().get(0).text())
+        softly.assertThat(decrypted.detectedEntities()).hasSize(2);
+        softly.assertThat(decrypted.detectedEntities().get(0).detectedValue())
             .isEqualTo("email@test.com");
-        softly.assertThat(decrypted.entities().get(1).text())
+        softly.assertThat(decrypted.detectedEntities().get(1).detectedValue())
             .isEqualTo("555-1234");
         softly.assertAll();
 
@@ -222,18 +222,18 @@ class ScanResultEncryptorTest {
 
     private PiiEntity createEntity(String type, int start, int end, String text) {
         return PiiEntity.builder()
-            .type(type)
-            .start(start)
-            .end(end)
-            .text(text)
-            .score(0.9)
+            .piiType(type)
+            .startPosition(start)
+            .endPosition(end)
+            .detectedValue(text)
+            .confidence(0.9)
             .build();
     }
 
     private ScanResult createScanResult(List<PiiEntity> entities) {
         return ScanResult.builder()
             .scanId("test-scan")
-            .entities(entities)
+            .detectedEntities(entities)
             .build();
     }
 }

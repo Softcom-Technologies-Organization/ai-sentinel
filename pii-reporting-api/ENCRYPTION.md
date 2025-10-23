@@ -152,7 +152,7 @@ ScanResult result = ScanResult.builder()
 
 // Encrypt
 ScanResult encrypted = encryptor.encrypt(result);
-// result.entities[0].text now contains "ENC:v1:..."
+// result.detectedEntities[0].detectedValue now contains "ENC:v1:..."
 
 // Persist to DB
 repository.save(encrypted);
@@ -166,7 +166,7 @@ ScanResult encrypted = repository.findById("scan-123");
 
 // Decrypt
 ScanResult decrypted = encryptor.decrypt(encrypted);
-// decrypted.entities[0].text contains "john.doe@example.com"
+// decrypted.detectedEntities[0].detectedValue contains "john.doe@example.com"
 
 // Use decrypted data
 return decrypted;
@@ -177,8 +177,8 @@ return decrypted;
 The system supports partial decryption:
 
 ```java
-// If some entities are encrypted and others are not
-ScanResult mixed = ...; // Some .text with "ENC:v1:", others plaintext
+// If some detectedEntities are encrypted and others are not
+ScanResult mixed = ...; // Some .detectedValue with "ENC:v1:", others plaintext
 
 ScanResult decrypted = encryptor.decrypt(mixed);
 // Only encrypted values are decrypted

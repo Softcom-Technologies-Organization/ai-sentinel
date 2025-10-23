@@ -8,7 +8,7 @@ import pro.softcom.sentinelle.domain.pii.security.EncryptionMetadata;
 import pro.softcom.sentinelle.domain.pii.security.EncryptionService;
 
 /**
- * Processor for encrypting/decrypting entities in ScanResult.
+ * Processor for encrypting/decrypting detectedEntities in ScanResult.
  * Business intent: orchestrate PII encryption in the business flow.
  */
 @Component
@@ -17,7 +17,7 @@ public class ScanResultEncryptor {
     private final EncryptionService encryptionService;
 
     public ScanResult encrypt(ScanResult scanResult) {
-        var entities = scanResult.entities();
+        var entities = scanResult.detectedEntities();
         if (entities == null) {
             return scanResult;
         }
@@ -27,12 +27,12 @@ public class ScanResultEncryptor {
                 .toList();
 
         return scanResult.toBuilder()
-                .entities(encryptedEntities)
+                .detectedEntities(encryptedEntities)
                 .build();
     }
 
     public ScanResult decrypt(ScanResult scanResult) {
-        var entities = scanResult.entities();
+        var entities = scanResult.detectedEntities();
         if (entities == null) {
             return scanResult;
         }
@@ -42,26 +42,26 @@ public class ScanResultEncryptor {
                 .toList();
 
         return scanResult.toBuilder()
-                .entities(decryptedEntities)
+                .detectedEntities(decryptedEntities)
                 .build();
     }
 
     private PiiEntity encryptEntity(PiiEntity entity) {
         EncryptionMetadata metadata = buildMetadata(entity);
-        var encryptedText = encryptionService.encrypt(entity.text(), metadata);
-        return entity.toBuilder().text(encryptedText).build();
+        var encryptedText = encryptionService.encrypt(entity.detectedValue(), metadata);
+        return entity.toBuilder().detectedValue(encryptedText).build();
     }
 
     private PiiEntity decryptEntity(PiiEntity entity) {
-        var decryptedText = entity.text();
-        if (encryptionService.isEncrypted(entity.text())) {
+        var decryptedText = entity.detectedValue();
+        if (encryptionService.isEncrypted(entity.detectedValue())) {
             EncryptionMetadata metadata = buildMetadata(entity);
-            decryptedText = encryptionService.decrypt(entity.text(), metadata);
+            decryptedText = encryptionService.decrypt(entity.detectedValue(), metadata);
         }
-        return entity.toBuilder().text(decryptedText).build();
+        return entity.toBuilder().detectedValue(decryptedText).build();
     }
 
     private EncryptionMetadata buildMetadata(PiiEntity entity) {
-        return new EncryptionMetadata(entity.type(), entity.start(), entity.end());
+        return new EncryptionMetadata(entity.piiType(), entity.startPosition(), entity.endPosition());
     }
 }

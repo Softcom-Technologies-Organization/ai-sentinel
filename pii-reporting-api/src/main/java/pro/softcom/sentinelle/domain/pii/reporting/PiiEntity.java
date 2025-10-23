@@ -5,11 +5,11 @@ import lombok.Builder;
 
 @Builder(toBuilder = true)
 public record PiiEntity(
-        int start,
-        int end,
-        String type,
-        @JsonProperty("typeLabel")
-        String typeLabel,
-        double score,
-        String text
+        int startPosition,
+        int endPosition,
+        String piiType,
+        @JsonProperty("piiTypeLabel")
+        String piiTypeLabel,
+        double confidence,
+        String detectedValue
 ) {}

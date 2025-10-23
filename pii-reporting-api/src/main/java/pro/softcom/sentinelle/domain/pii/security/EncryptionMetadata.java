@@ -7,13 +7,13 @@ import java.nio.charset.StandardCharsets;
  * This metadata is cryptographically bound to the ciphertext via HMAC.
  */
 public record EncryptionMetadata(
-        String type,      // PII type (EMAIL, PHONE, etc.)
-        Integer positionBegin, // Start position in the text
-        Integer positionEnd // End position in the text
+        String piiType,      // PII type (EMAIL, PHONE, etc.)
+        Integer startPosition, // Start position in the text
+        Integer endPosition // End position in the text
 ) {
     /**
      * Serializes the metadata for AAD.
-     * Format: type|positionBegin|positionEnd
+     * Format: piiType|startPosition|endPosition
      * <p>
      * Note: Using pipe delimiter instead of structured format (JSON) because:
      * - AAD is not meant to be parsed, only verified
@@ -22,9 +22,9 @@ public record EncryptionMetadata(
      */
     public byte[] toAadBytes() {
         String aad = String.format("%s|%d|%d",
-                type != null ? type : "",
-                positionBegin != null ? positionBegin : 0,
-                positionEnd != null ? positionEnd : 0);
+                piiType != null ? piiType : "",
+                startPosition != null ? startPosition : 0,
+                endPosition != null ? endPosition : 0);
         return aad.getBytes(StandardCharsets.UTF_8);
     }
 }

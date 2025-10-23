@@ -20,7 +20,7 @@ public class ScanResultToScanEventMapper {
         if (scanResult == null) return null;
         String masked = scanResult.maskedContent();
         if (masked == null) {
-            masked = buildMaskedContent(scanResult.sourceContent(), scanResult.entities());
+            masked = buildMaskedContent(scanResult.sourceContent(), scanResult.detectedEntities());
         }
         return ScanEventDto.builder()
                 .scanId(scanResult.scanId())
@@ -31,7 +31,7 @@ public class ScanResultToScanEventMapper {
                 .pageIndex(scanResult.pageIndex())
                 .pageId(scanResult.pageId())
                 .pageTitle(scanResult.pageTitle())
-                .entities(scanResult.entities())
+                .detectedEntities(scanResult.detectedEntities())
                 .summary(scanResult.summary())
                 .maskedContent(masked)
                 .message(scanResult.message())
@@ -53,18 +53,22 @@ public class ScanResultToScanEventMapper {
             StringBuilder sb = new StringBuilder(Math.min(len, 6000));
             int idx = 0;
             var sorted = entities.stream()
-                    .sorted(Comparator.comparingInt(PiiEntity::start))
+                    .sorted(Comparator.comparingInt(PiiEntity::startPosition))
                     .toList();
             for (PiiEntity e : sorted) {
-                int start = Math.clamp(toInt(e.start()), 0, len);
-                int end = Math.clamp(toInt(e.end()), start, len);
-                if (start > idx) sb.append(safeSub(source, idx, start));
-                String type = String.valueOf(e.type());
+                int start = Math.clamp(toInt(e.startPosition()), 0, len);
+                int end = Math.clamp(toInt(e.endPosition()), start, len);
+                if (start > idx) {
+                    sb.append(safeSub(source, idx, start));
+                }
+                String type = String.valueOf(e.piiType());
                 String token = (type != null && !"null".equalsIgnoreCase(type)) ? type : "UNKNOWN";
                 sb.append('[').append(token).append(']');
                 idx = end;
             }
-            if (idx < len) sb.append(safeSub(source, idx, len));
+            if (idx < len) {
+                sb.append(safeSub(source, idx, len));
+            }
             return truncate(sb.toString());
         } catch (Exception _) {
             return null;

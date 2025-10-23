@@ -22,7 +22,7 @@ public record ScanEventDto(
         Integer pageIndex,
         String pageId,
         String pageTitle,
-        List<PiiEntity> entities,
+        List<PiiEntity> detectedEntities,
         Map<String, Integer> summary,
         String maskedContent,
         String message,

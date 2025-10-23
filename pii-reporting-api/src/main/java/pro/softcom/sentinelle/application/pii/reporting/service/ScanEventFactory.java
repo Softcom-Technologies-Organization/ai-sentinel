@@ -97,7 +97,7 @@ public class ScanEventFactory {
             .isFinal(true)
             .pageId(page.id())
             .pageTitle(page.title())
-            .entities(List.of())
+            .detectedEntities(List.of())
             .summary(Map.of())
             .pageUrl(buildPageUrl(page.id()))
             .emittedAt(Instant.now().toString())
@@ -121,7 +121,7 @@ public class ScanEventFactory {
             .isFinal(true)
             .pageId(page.id())
             .pageTitle(page.title())
-            .entities(entities)
+            .detectedEntities(entities)
             .summary(summary)
             .sourceContent(content)
             .pageUrl(buildPageUrl(page.id()))
@@ -146,7 +146,7 @@ public class ScanEventFactory {
             .isFinal(true)
             .pageId(page.id())
             .pageTitle(page.title())
-            .entities(entities)
+            .detectedEntities(entities)
             .summary(summary)
             .sourceContent(content)
             .pageUrl(buildPageUrl(page.id()))
@@ -189,12 +189,12 @@ public class ScanEventFactory {
 
     private PiiEntity mapSensitiveDataToEntity(ContentPiiDetection.SensitiveData data) {
         return PiiEntity.builder()
-                .text(data.value())
-                .type(data.type() != null ? data.type().name() : null)
-                .typeLabel(data.type() != null ? data.type().getLabel() : null)
-                .start(data.position())
-                .end(data.end())
-                .score(data.score())
+                .detectedValue(data.value())
+                .piiType(data.type() != null ? data.type().name() : null)
+                .piiTypeLabel(data.type() != null ? data.type().getLabel() : null)
+                .startPosition(data.position())
+                .endPosition(data.end())
+                .confidence(data.score())
                 .build();
     }
 

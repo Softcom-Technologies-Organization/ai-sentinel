@@ -14,6 +14,11 @@ public record EncryptionMetadata(
     /**
      * Serializes the metadata for AAD.
      * Format: type|positionBegin|positionEnd
+     * <p>
+     * Note: Using pipe delimiter instead of structured format (JSON) because:
+     * - AAD is not meant to be parsed, only verified
+     * - Simple format reduces attack surface
+     * - Deterministic serialization ensures consistency
      */
     public byte[] toAadBytes() {
         String aad = String.format("%s|%d|%d",

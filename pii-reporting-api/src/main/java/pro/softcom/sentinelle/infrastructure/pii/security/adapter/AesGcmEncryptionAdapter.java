@@ -130,6 +130,7 @@ public class AesGcmEncryptionAdapter implements EncryptionService {
 
         try {
             // Expand (single block): OKM = HMAC(PRK, info || 0x01)
+            // Single block is sufficient for AES-256 (32 bytes)
             mac.init(new SecretKeySpec(prk, HKDF_MAC_ALGORITHM));
             mac.update(info);
             mac.update((byte) 0x01);

@@ -53,6 +53,7 @@ jobs:
           cd pii-detector-service
           pip install --upgrade pip
           pip install -e ".[test]"
+          python pii_detector/proto/generate_pb.py
           python -m pytest tests/unit/ -v --tb=short
         env:
           PYTHONPATH: ${{ github.workspace }}/pii-detector-service

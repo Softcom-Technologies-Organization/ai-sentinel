@@ -97,10 +97,10 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Run tests
+      - name: Build and test with Maven
         run: |
           cd pii-reporting-api
-          mvn clean test
+          mvn verify -Pci-build
         env:
           MAVEN_OPTS: '-Xmx1024m'
 

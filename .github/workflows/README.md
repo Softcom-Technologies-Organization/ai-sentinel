@@ -2,80 +2,76 @@
 
 ## Overview
 
-This project uses a two-phase CI/CD strategy to ensure code quality before publishing any Docker images.
+This project uses a **single unified workflow** that runs tests in parallel and publishes Docker images only after all tests pass.
 
 ## Workflow Architecture
 
-### 1. CI Workflow - Tests (`ci.yml`)
+### Unified CI/CD Workflow (`ci-cd.yml`)
 
 **Triggers:**
 - Pull Requests to `main` or `develop`
 - Push to `main` or `develop` branches
+- GitHub releases
+- Manual trigger via `workflow_dispatch`
 
-**Jobs executed:**
-- `test-detector`: Unit tests for PII Detector service (Python/pytest)
-- `test-api`: Tests for Reporting API (Java/Maven)
-- `test-ui`: Tests for UI frontend (Angular/Karma) - *Currently commented out*
-- `tests-status`: Summary job that fails if at least one test fails
-
-**Result:** This workflow MUST succeed before the publication workflow can execute.
-
-### 2. Publication Workflow (`docker-publish.yml`)
-
-**Triggers:**
-- Automatically after successful CI workflow (via `workflow_run`)
-- Manually via `workflow_dispatch`
-- On GitHub releases
-
-**Protection:**
-The `check-tests` job verifies that the CI workflow succeeded before allowing publication. If tests fail, **no Docker images will be published**.
-
-**Jobs executed (if tests pass):**
-- `build-and-publish-detector`: Build and publish PII Detector Docker image
-- `build-and-publish-api`: Build and publish API Docker image
-- `build-and-publish-ui`: Build and publish frontend Docker image
-
-## Workflow
+**Job Flow:**
 
 ```
-┌─────────────────┐
-│  Push/PR to     │
-│  main/develop   │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────────────────────────┐
-│      CI Workflow - Tests            │
-│  ┌──────────────────────────────┐   │
-│  │  test-detector (Python)      │   │
-│  │  test-api (Java)             │   │
-│  │  test-ui (Angular)           │   │
-│  │  tests-status (Summary)      │   │
-│  └──────────────────────────────┘   │
-└────────┬────────────────────────────┘
-         │
-    Tests OK? ─────► NO ──► ❌ Stop (No publication)
-         │
-        YES
-         │
-         ▼
-┌─────────────────────────────────────┐
-│  Publication Workflow - Docker      │
-│  ┌──────────────────────────────┐   │
-│  │  check-tests (Verification)  │   │
-│  │  build-and-publish-detector  │   │
-│  │  build-and-publish-api       │   │
-│  │  build-and-publish-ui        │   │
-│  └──────────────────────────────┘   │
-└─────────────────────────────────────┘
-         │
-         ▼
-    ✅ Docker images published to GHCR
+┌─────────────────────────────────────────────────────────┐
+│                    CI/CD Workflow                       │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │  Phase 1: Tests (Parallel)                      │  │
+│  │  ┌────────────────┐  ┌────────────────┐         │  │
+│  │  │ test-detector  │  │  test-api      │         │  │
+│  │  │   (Python)     │  │  (Java/Maven)  │         │  │
+│  │  └────────┬───────┘  └────────┬───────┘         │  │
+│  │           └──────────┬─────────┘                 │  │
+│  │                      ▼                           │  │
+│  │            ┌──────────────────┐                  │  │
+│  │            │  tests-status    │                  │  │
+│  │            │  (Gate)          │                  │  │
+│  │            └────────┬─────────┘                  │  │
+│  └─────────────────────┼──────────────────────────┘  │
+│                        │                             │
+│           Tests OK? ───┴──► NO ──► ❌ Stop           │
+│                        │                             │
+│                       YES                            │
+│                        │                             │
+│  ┌─────────────────────┼──────────────────────────┐  │
+│  │  Phase 2: Publish (Parallel, only on push)    │  │
+│  │                     ▼                           │  │
+│  │  ┌──────────────────────────────────────────┐  │  │
+│  │  │  build-and-publish-detector              │  │  │
+│  │  │  build-and-publish-api                   │  │  │
+│  │  │  build-and-publish-ui                    │  │  │
+│  │  └──────────────────────────────────────────┘  │  │
+│  └──────────────────────────────────────────────┘  │
+│                        │                             │
+│                        ▼                             │
+│            ✅ Docker images published                │
+└─────────────────────────────────────────────────────┘
 ```
+
+## Key Features
+
+### 1. Parallel Test Execution
+Tests for detector and API run **simultaneously** to reduce total execution time.
+
+### 2. Smart Publication
+- **Pull Requests**: Tests run, but Docker images are NOT published
+- **Push to develop/main**: Tests run, then Docker images are published
+- **Releases**: Full workflow with publication
+- **Manual trigger**: You can choose which images to build
+
+### 3. Test Gate
+The `tests-status` job acts as a gate:
+- ✅ If all tests pass → Publication jobs start
+- ❌ If any test fails → Workflow stops, no publication
 
 ## Branch Protection Rules Configuration
 
-To ensure code quality on main branches, configure Branch Protection Rules in GitHub:
+Configure Branch Protection Rules in GitHub to enforce testing:
 
 1. **Access settings:**
    - Repository → Settings → Branches
@@ -88,16 +84,14 @@ To ensure code quality on main branches, configure Branch Protection Rules in Gi
      - `Test PII Detector Service`
      - `Test Reporting API`
      - `Tests Status Check`
-     
-   **Note:** `Test Reporting UI` is currently commented out and will be added when frontend tests are implemented.
 
-## Benefits of this Architecture
+## Benefits
 
-1. **Security**: Impossible to publish Docker images if tests fail
-2. **Fast feedback**: Developers see immediately if their tests pass
-3. **Separation of concerns**: CI (tests) and CD (publication) are distinct
-4. **Traceability**: Clear history of test executions and publications
-5. **Flexibility**: Ability to manually trigger publication via `workflow_dispatch`
+1. **Simplicity**: One workflow to maintain instead of two
+2. **Fast feedback**: Parallel test execution
+3. **Security**: Impossible to publish Docker images if tests fail
+4. **Clarity**: Easy to understand flow from tests to publication
+5. **Efficiency**: No need for complex `workflow_run` triggers
 
 ## Local Commands
 
@@ -122,17 +116,29 @@ npm ci
 npm run test:ci
 ```
 
-**Note:** Frontend tests are currently not implemented. The `test-ui` job is commented out in the CI workflow.
+**Note:** Frontend tests are currently not implemented. Add them to the workflow when ready.
+
+## Manual Publication
+
+To manually trigger the workflow and choose what to build:
+
+1. Go to **Actions** → **CI/CD - Tests and Publish**
+2. Click **Run workflow**
+3. Select branch
+4. Choose which modules to build (detector, API, UI)
+5. Optionally specify a custom tag
+6. Click **Run workflow**
 
 ## Troubleshooting
 
-### Publication workflow doesn't trigger
-- Verify that the CI workflow succeeded
-- Check the GitHub "Actions" tab for logs
+### Tests fail but I can't see why
+- Check the specific test job logs in the GitHub Actions UI
+- Run tests locally with the commands above
 
-### Tests fail locally but not in CI
-- Verify you're using the same dependency versions
-- Clean caches (`pip cache purge`, `mvn clean`, `npm ci`)
+### Publication doesn't happen on push
+- Verify you're pushing to `develop` or `main`
+- Check that all tests passed
+- Ensure you have write permissions to GitHub Container Registry
 
-### Force manual publication
-Use `workflow_dispatch` in the Actions tab to manually trigger publication (bypasses CI check).
+### Want to skip publication temporarily
+Create a PR instead of pushing directly - this runs tests but skips publication.

@@ -1,14 +1,14 @@
-name: Build and Publish Docker Images
+name: CI/CD - Tests and Publish
 
 on:
-  # Triggers ONLY after successful CI workflow completion
-  workflow_run:
-    workflows: ["CI - Tests"]
+  pull_request:
     branches:
       - develop
       - main
-    types:
-      - completed
+  push:
+    branches:
+      - develop
+      - main
   release:
     types: [published]
   workflow_dispatch:
@@ -34,28 +34,105 @@ on:
         default: true
 
 jobs:
-  # Verify that tests passed before publishing
-  check-tests:
-    name: Check CI Tests Status
+  # Tests run in parallel
+  test-detector:
+    name: Test PII Detector Service
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_run'
+
     steps:
-      - name: Check workflow conclusion
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
         run: |
-          if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
-            echo "❌ CI workflow failed. Stopping publication."
-            echo "Conclusion: ${{ github.event.workflow_run.conclusion }}"
+          cd pii-detector-service
+          pip install --upgrade pip
+          pip install -e ".[test]"
+        env:
+          PYTHONPATH: ${{ github.workspace }}/pii-detector-service
+
+      - name: Generate protobuf files
+        run: |
+          cd pii-detector-service
+          python pii_detector/proto/generate_pb.py
+
+      - name: Run unit tests
+        run: |
+          cd pii-detector-service
+          python -m pytest tests/unit/ -v --tb=short --cov=pii_detector --cov-report=xml --cov-report=term-missing
+        env:
+          PYTHONPATH: ${{ github.workspace }}/pii-detector-service
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./pii-detector-service/coverage.xml
+          flags: detector
+          name: detector-coverage
+          fail_ci_if_error: false
+
+  test-api:
+    name: Test Reporting API
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 24
+        uses: actions/setup-java@v4
+        with:
+          java-version: '24'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run tests with Maven
+        run: |
+          cd pii-reporting-api
+          mvn clean test -Pci-build
+        env:
+          MAVEN_OPTS: '-Xmx1024m'
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-test-results
+          path: pii-reporting-api/target/surefire-reports/
+
+  # Summary job - gate for publication
+  tests-status:
+    name: Tests Status Check
+    runs-on: ubuntu-latest
+    needs: [test-detector, test-api]
+    if: always()
+    
+    steps:
+      - name: Check tests results
+        run: |
+          if [ "${{ needs.test-detector.result }}" != "success" ] || \
+             [ "${{ needs.test-api.result }}" != "success" ]; then
+            echo "❌ At least one test job failed"
+            echo "Detector: ${{ needs.test-detector.result }}"
+            echo "API: ${{ needs.test-api.result }}"
             exit 1
           fi
-          echo "✅ CI workflow succeeded. Continuing with publication."
+          echo "✅ All tests passed successfully"
 
+  # Publication jobs - run in parallel after tests succeed
   build-and-publish-detector:
     name: Build and Publish PII Detector
     runs-on: ubuntu-latest
-    needs: [check-tests]
+    needs: [tests-status]
     if: |
-      always() &&
-      (needs.check-tests.result == 'success' || needs.check-tests.result == 'skipped') &&
+      github.event_name != 'pull_request' &&
       (github.event.inputs.build_detector != 'false' || github.event_name != 'workflow_dispatch')
     permissions:
       contents: read
@@ -104,10 +181,9 @@ jobs:
   build-and-publish-api:
     name: Build and Publish Reporting API
     runs-on: ubuntu-latest
-    needs: [check-tests]
+    needs: [tests-status]
     if: |
-      always() &&
-      (needs.check-tests.result == 'success' || needs.check-tests.result == 'skipped') &&
+      github.event_name != 'pull_request' &&
       (github.event.inputs.build_api != 'false' || github.event_name != 'workflow_dispatch')
     permissions:
       contents: read
@@ -156,10 +232,9 @@ jobs:
   build-and-publish-ui:
     name: Build and Publish Reporting UI
     runs-on: ubuntu-latest
-    needs: [check-tests]
+    needs: [tests-status]
     if: |
-      always() &&
-      (needs.check-tests.result == 'success' || needs.check-tests.result == 'skipped') &&
+      github.event_name != 'pull_request' &&
       (github.event.inputs.build_ui != 'false' || github.event_name != 'workflow_dispatch')
     permissions:
       contents: read

@@ -6,7 +6,7 @@ This project uses a **single unified workflow** that runs tests in parallel and 
 
 ## Workflow Architecture
 
-### Unified CI/CD Workflow (`ci-cd.yml`)
+### Unified CI/CD Workflow (`build-test-publish-docker-images.yml.yml`)
 
 **Triggers:**
 - Pull Requests to `main` or `develop`

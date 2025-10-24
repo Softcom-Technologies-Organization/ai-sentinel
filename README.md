@@ -99,7 +99,7 @@ ai-sentinel/
 │   ├── src/app/                # Angular source code
 │   └── Dockerfile
 ├── proto/                      # Protocol Buffers definitions
-├── docker-compose.yml          # Compose for development
+├── docker-compose.dev.yml      # Compose for development
 ├── docker-compose.prod.yml     # Compose for production
 └── README.md
 ```
@@ -265,16 +265,16 @@ chmod +x start-app.sh
 
 ```bash
 # Build Docker images
-docker compose build
+docker compose -f docker-compose.dev.yml build
 
 # Start all services
-docker compose up -d
+docker compose -f docker-compose.dev.yml up -d
 
 # Check status
-docker compose ps
+docker compose -f docker-compose.dev.yml ps
 
 # View logs
-docker compose logs -f
+docker compose -f docker-compose.dev.yml logs -f
 ```
 
 ### Installation Troubleshooting
@@ -450,25 +450,25 @@ Once the scan is complete:
 docker compose -f docker-compose.prod.yml up -d
 
 # Start application (development mode)
-docker compose up -d
+docker compose -f docker-compose.dev.yml up -d
 
 # Stop application
-docker compose down
+docker compose -f docker-compose.dev.yml down
 
 # Restart specific service
-docker compose restart pii-reporting-api
+docker compose -f docker-compose.dev.yml restart pii-reporting-api
 
 # View logs in real-time
-docker compose logs -f
+docker compose -f docker-compose.dev.yml logs -f
 
 # View logs for specific service
-docker compose logs -f pii-detector
+docker compose -f docker-compose.dev.yml logs -f pii-detector
 
 # View service status
-docker compose ps
+docker compose -f docker-compose.dev.yml ps
 
 # Rebuild and restart (after code changes)
-docker compose up -d --build
+docker compose -f docker-compose.dev.yml up -d --build
 ```
 
 **Data management:**

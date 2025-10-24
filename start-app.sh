@@ -65,10 +65,10 @@ fi
 
 # Construire et démarrer les services
 log_info "📦 Construction des images Docker..."
-docker-compose build
+docker-compose -f docker-compose.dev.yml build
 
 log_info "🔄 Démarrage des services..."
-docker-compose up -d
+docker-compose -f docker-compose.dev.yml up -d
 
 # Attendre que les services soient prêts
 log_info "⏳ Attente du démarrage des services (cela peut prendre 2-3 minutes)..."
@@ -76,14 +76,14 @@ log_info "⏳ Attente du démarrage des services (cela peut prendre 2-3 minutes)
 # Attendre PostgreSQL
 log_info "   Attente de PostgreSQL..."
 for i in {1..60}; do
-    if docker-compose exec -T postgres pg_isready -U postgres -d ai-sentinel &> /dev/null; then
+    if docker-compose -f docker-compose.dev.yml exec -T postgres pg_isready -U postgres -d ai-sentinel &> /dev/null; then
         log_success "   ✓ PostgreSQL est prêt"
         break
     fi
     sleep 2
     if [ $i -eq 60 ]; then
         log_error "   ✗ PostgreSQL n'a pas démarré dans le délai imparti"
-        log_info "   Vérifiez les logs avec: docker-compose logs postgres"
+        log_info "   Vérifiez les logs avec: docker-compose -f docker-compose.dev.yml logs postgres"
         exit 1
     fi
 done
@@ -103,7 +103,7 @@ for i in {1..60}; do
     sleep 2
     if [ $i -eq 60 ]; then
         log_error "   ✗ Le Backend API n'a pas démarré dans le délai imparti"
-        log_info "   Vérifiez les logs avec: docker-compose logs pii-reporting-api"
+        log_info "   Vérifiez les logs avec: docker-compose -f docker-compose.dev.yml logs pii-reporting-api"
         exit 1
     fi
 done
@@ -118,7 +118,7 @@ for i in {1..30}; do
     sleep 2
     if [ $i -eq 30 ]; then
         log_error "   ✗ Le Frontend n'a pas démarré dans le délai imparti"
-        log_info "   Vérifiez les logs avec: docker-compose logs pii-reporting-ui"
+        log_info "   Vérifiez les logs avec: docker-compose -f docker-compose.dev.yml logs pii-reporting-ui"
         exit 1
     fi
 done
@@ -134,8 +134,8 @@ echo "   • Health Check        : http://localhost:8090/internal/health"
 echo "   • PgAdmin (optionnel) : http://localhost:5050 (admin@pgadmin.com / admin)"
 echo ""
 echo "📋 Commandes utiles :"
-echo "   • Voir les logs       : docker-compose logs -f"
-echo "   • Arrêter l'app       : docker-compose down"
-echo "   • Redémarrer un svc   : docker-compose restart <service-name>"
+echo "   • Voir les logs       : docker-compose -f docker-compose.dev.yml logs -f"
+echo "   • Arrêter l'app       : docker-compose -f docker-compose.dev.yml down"
+echo "   • Redémarrer un svc   : docker-compose -f docker-compose.dev.yml restart <service-name>"
 echo ""
 log_info "Pour plus d'informations, consultez DOCKER_DEPLOYMENT.md"

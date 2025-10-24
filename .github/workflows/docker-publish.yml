@@ -1,16 +1,20 @@
 name: Build and Publish Docker Images
 
 on:
-  push:
+  # Triggers ONLY after successful CI workflow completion
+  workflow_run:
+    workflows: ["CI - Tests"]
     branches:
       - develop
       - main
+    types:
+      - completed
   release:
     types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag personnalisé pour les images (optionnel)'
+        description: 'Custom tag for images (optional)'
         required: false
         default: 'manual'
       build_detector:
@@ -30,10 +34,29 @@ on:
         default: true
 
 jobs:
+  # Verify that tests passed before publishing
+  check-tests:
+    name: Check CI Tests Status
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_run'
+    steps:
+      - name: Check workflow conclusion
+        run: |
+          if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
+            echo "❌ CI workflow failed. Stopping publication."
+            echo "Conclusion: ${{ github.event.workflow_run.conclusion }}"
+            exit 1
+          fi
+          echo "✅ CI workflow succeeded. Continuing with publication."
+
   build-and-publish-detector:
     name: Build and Publish PII Detector
     runs-on: ubuntu-latest
-    if: github.event.inputs.build_detector != 'false' || github.event_name != 'workflow_dispatch'
+    needs: [check-tests]
+    if: |
+      always() &&
+      (needs.check-tests.result == 'success' || needs.check-tests.result == 'skipped') &&
+      (github.event.inputs.build_detector != 'false' || github.event_name != 'workflow_dispatch')
     permissions:
       contents: read
       packages: write
@@ -41,22 +64,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-
-      - name: Install dependencies and run unit tests
-        run: |
-          cd pii-detector-service
-          pip install --upgrade pip
-          pip install -e ".[test]"
-          python pii_detector/proto/generate_pb.py
-          python -m pytest tests/unit/ -v --tb=short
-        env:
-          PYTHONPATH: ${{ github.workspace }}/pii-detector-service
 
       - name: Extract version from pyproject.toml
         id: version
@@ -97,7 +104,11 @@ jobs:
   build-and-publish-api:
     name: Build and Publish Reporting API
     runs-on: ubuntu-latest
-    if: github.event.inputs.build_api != 'false' || github.event_name != 'workflow_dispatch'
+    needs: [check-tests]
+    if: |
+      always() &&
+      (needs.check-tests.result == 'success' || needs.check-tests.result == 'skipped') &&
+      (github.event.inputs.build_api != 'false' || github.event_name != 'workflow_dispatch')
     permissions:
       contents: read
       packages: write
@@ -105,20 +116,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up JDK 24
-        uses: actions/setup-java@v4
-        with:
-          java-version: '24'
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Build and test with Maven
-        run: |
-          cd pii-reporting-api
-          mvn verify -Pci-build
-        env:
-          MAVEN_OPTS: '-Xmx1024m'
 
       - name: Extract version from pom.xml
         id: version
@@ -159,7 +156,11 @@ jobs:
   build-and-publish-ui:
     name: Build and Publish Reporting UI
     runs-on: ubuntu-latest
-    if: github.event.inputs.build_ui != 'false' || github.event_name != 'workflow_dispatch'
+    needs: [check-tests]
+    if: |
+      always() &&
+      (needs.check-tests.result == 'success' || needs.check-tests.result == 'skipped') &&
+      (github.event.inputs.build_ui != 'false' || github.event_name != 'workflow_dispatch')
     permissions:
       contents: read
       packages: write

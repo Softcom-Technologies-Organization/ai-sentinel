@@ -3,6 +3,7 @@ package pro.softcom.sentinelle.application.pii.reporting.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import pro.softcom.sentinelle.application.pii.reporting.config.PiiContextProperties;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParser;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParserFactory;
 import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
@@ -29,18 +30,7 @@ import java.util.Comparator;
 public class PiiContextExtractor {
     
     private final ContentParserFactory parserFactory;
-
-    /**
-     * Maximum length of context to present to the user.
-     * Beyond this length, the context is truncated to avoid overloading the interface.
-     */
-    private static final int MAX_CONTEXT_LENGTH = 200;
-
-    /**
-     * Length on each side of the PII during truncation.
-     * Allows keeping enough context before and after the masked PII.
-     */
-    private static final int CONTEXT_SIDE_LENGTH = 80;
+    private final PiiContextProperties contextProperties;
 
     public String extract(String source, int start, int end, String type) {
         return extractMaskedLineContext(source, start, end, type);
@@ -229,21 +219,24 @@ public class PiiContextExtractor {
     }
 
     private String truncateAroundPositionNoWordCut(String text, int centerPosition) {
-        if (text.length() <= MAX_CONTEXT_LENGTH) {
+        int maxLength = contextProperties.getMaxLength();
+        int sideLength = contextProperties.getSideLength();
+        
+        if (text.length() <= maxLength) {
             return text;
         }
         int safeCenter = Math.min(Math.max(centerPosition, 0), text.length());
-        int half = CONTEXT_SIDE_LENGTH;
+        int half = sideLength;
         int from = Math.max(0, safeCenter - half);
         int to = Math.min(text.length(), safeCenter + half);
 
-        // Try to extend to word boundaries without exceeding MAX_CONTEXT_LENGTH
+        // Try to extend to word boundaries without exceeding maxLength
         // Extend left to include the beginning of the current word
-        while (from > 0 && !Character.isWhitespace(text.charAt(from - 1)) && (to - (from - 1)) <= MAX_CONTEXT_LENGTH) {
+        while (from > 0 && !Character.isWhitespace(text.charAt(from - 1)) && (to - (from - 1)) <= maxLength) {
             from--;
         }
         // Extend right to include the end of the current word
-        while (to < text.length() && !Character.isWhitespace(text.charAt(to)) && ((to + 1) - from) <= MAX_CONTEXT_LENGTH) {
+        while (to < text.length() && !Character.isWhitespace(text.charAt(to)) && ((to + 1) - from) <= maxLength) {
             to++;
         }
 

@@ -26,7 +26,7 @@ COPY pii-detector-service/config ./config
 COPY proto /proto
 
 RUN pip install --upgrade pip \
-    && pip install -e . \
+    && pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu \
     && python -m pii_detector.proto.generate_pb
 
 FROM python:3.11-slim AS runtime

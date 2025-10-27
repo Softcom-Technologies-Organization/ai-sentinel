@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-      <version>4.0.0-M2</version>
+        <version>4.0.0-M2</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -35,6 +35,9 @@
         <mockito-core.version>5.19.0</mockito-core.version>
         <awaitility.version>4.2.0</awaitility.version>
         <testcontainers.version>1.21.2</testcontainers.version>
+
+        <!-- Proto source root - default for local build -->
+        <proto.source.root>${project.basedir}/../proto</proto.source.root>
 
         <!-- SonarQube properties -->
         <sonar.host.url>http://localhost:9000</sonar.host.url>
@@ -258,6 +261,23 @@
 
     <profiles>
         <profile>
+            <id>local-build</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <proto.source.root>${project.basedir}/../proto</proto.source.root>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>docker-build</id>
+            <properties>
+                <proto.source.root>${project.basedir}/proto</proto.source.root>
+            </properties>
+        </profile>
+
+        <profile>
             <id>unit-and-integration-tests</id>
             <properties>
                 <profile.description>Run unit + integration tests</profile.description>
@@ -300,6 +320,50 @@
                                 <exclude>**/integration/*.java</exclude>
                             </excludes>
                         </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>ci-build</id>
+            <properties>
+                <profile.description>CI/CD build profile - runs unit tests with code coverage</profile.description>
+            </properties>
+            <build>
+                <plugins>
+                    <!-- Run unit tests only (exclude integration tests) -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/integration/*.java</exclude>
+                            </excludes>
+                            <!-- Fail build if no tests are found -->
+                            <failIfNoTests>true</failIfNoTests>
+                        </configuration>
+                    </plugin>
+                    <!-- JaCoCo for code coverage -->
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>0.8.13</version>
+                        <executions>
+                            <execution>
+                                <id>prepare-agent</id>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>report</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
@@ -353,7 +417,7 @@
                 <artifactId>protobuf-maven-plugin</artifactId>
                 <version>${protobuf-maven-plugin.version}</version>
                 <configuration>
-                    <protoSourceRoot>${project.basedir}/proto</protoSourceRoot>
+                    <protoSourceRoot>${proto.source.root}</protoSourceRoot>
                     <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
                     <pluginId>grpc-java</pluginId>
                     <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>

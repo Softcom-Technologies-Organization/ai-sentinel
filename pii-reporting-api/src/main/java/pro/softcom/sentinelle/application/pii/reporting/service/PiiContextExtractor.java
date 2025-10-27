@@ -59,12 +59,12 @@ public class PiiContextExtractor {
         }
 
         try {
-            List<PiiEntity> allEntities = scanResult.entities();
+            List<PiiEntity> allEntities = scanResult.detectedEntities();
             List<PiiEntity> enriched = allEntities.stream()
                     .map(entity -> enrichEntity(scanResult.sourceContent(), entity, allEntities))
                     .toList();
 
-            return scanResult.toBuilder().entities(enriched).build();
+            return scanResult.toBuilder().detectedEntities(enriched).build();
         } catch (IllegalArgumentException | NullPointerException e) {
             log.warn("Invalid input for PII context enrichment, scanId={}",
                     scanResult.scanId(), e);
@@ -82,8 +82,8 @@ public class PiiContextExtractor {
 
     private boolean needsEnrichment(ScanResult scanResult) {
         return scanResult != null
-                && scanResult.entities() != null
-                && !scanResult.entities().isEmpty()
+                && scanResult.detectedEntities() != null
+                && !scanResult.detectedEntities().isEmpty()
                 && scanResult.sourceContent() != null
                 && !scanResult.sourceContent().isBlank();
     }
@@ -93,8 +93,8 @@ public class PiiContextExtractor {
             return entity;
         }
 
-        String context = extractMaskedLineContext(source, entity.start(), entity.end(), 
-                                                 entity.type(), allEntities);
+        String context = extractMaskedLineContext(source, entity.startPosition(), entity.endPosition(),
+                                                 entity.piiType(), allEntities);
         return entity.toBuilder().context(context).build();
     }
 
@@ -207,15 +207,15 @@ public class PiiContextExtractor {
         if (allEntities != null && !allEntities.isEmpty()) {
             for (PiiEntity e : allEntities) {
                 if (e == null) continue;
-                int absS = e.start();
-                int absE = e.end();
+                int absS = e.startPosition();
+                int absE = e.endPosition();
                 // filter entities that intersect the line
                 if (absE <= lineStartInSource || absS >= lineStartInSource + lineLen) continue;
                 // skip if same as main (already included)
                 if (absS == mainStart && absE == mainEnd) continue;
                 int rs = PiiMaskingUtils.clamp(absS - lineStartInSource, 0, lineLen);
                 int re = PiiMaskingUtils.clamp(absE - lineStartInSource, rs, lineLen);
-                relEntities.add(new TempEntity(rs, re, e.type(), false));
+                relEntities.add(new TempEntity(rs, re, e.piiType(), false));
             }
         }
 

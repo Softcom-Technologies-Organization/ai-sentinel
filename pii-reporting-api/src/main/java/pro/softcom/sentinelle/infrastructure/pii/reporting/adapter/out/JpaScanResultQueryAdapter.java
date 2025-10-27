@@ -59,34 +59,34 @@ public class JpaScanResultQueryAdapter implements ScanResultQuery {
         if (scanId == null || scanId.isBlank()) {
             return List.of();
         }
-        
+
         var types = Set.of("item", "attachmentItem");
         return eventRepository.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId, types).stream()
             .map(this::toEncryptedDomain)
             .filter(Objects::nonNull)
             .toList();
     }
-    
+
     @Override
     public List<ScanResult> listItemEventsDecrypted(String scanId, AccessPurpose purpose) {
         if (scanId == null || scanId.isBlank()) {
             return List.of();
         }
-        
+
         var types = Set.of("item", "attachmentItem");
         List<ScanResult> results = eventRepository
             .findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId, types).stream()
             .map(this::toDecryptedDomain)
             .filter(Objects::nonNull)
             .toList();
-        
+
         // Audit access for GDPR/nLPD compliance
         int totalPiiCount = results.stream()
-            .mapToInt(r -> r.entities() != null ? r.entities().size() : 0)
+            .mapToInt(r -> r.detectedEntities() != null ? r.detectedEntities().size() : 0)
             .sum();
-            
+
         auditService.auditPiiAccess(scanId, purpose, totalPiiCount);
-        
+
         return results;
     }
 
@@ -95,7 +95,7 @@ public class JpaScanResultQueryAdapter implements ScanResultQuery {
             log.warn("scanEventEntity or payload is null");
             return null;
         }
-        
+
         try {
             // Return as-is (already encrypted in DB)
             return objectMapper.treeToValue(entity.getPayload(), ScanResult.class);
@@ -104,13 +104,13 @@ public class JpaScanResultQueryAdapter implements ScanResultQuery {
             return null;
         }
     }
-    
+
     private ScanResult toDecryptedDomain(ScanEventEntity entity) {
         if (entity == null || entity.getPayload() == null) {
             log.warn("scanEventEntity or payload is null");
             return null;
         }
-        
+
         try {
             ScanResult encrypted = objectMapper.treeToValue(entity.getPayload(), ScanResult.class);
             return scanResultEncryptor.decrypt(encrypted);

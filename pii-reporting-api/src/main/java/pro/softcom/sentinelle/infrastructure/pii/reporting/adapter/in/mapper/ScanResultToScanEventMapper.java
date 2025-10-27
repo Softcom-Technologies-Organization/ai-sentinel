@@ -6,6 +6,9 @@ import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventDto;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 
+import java.util.Comparator;
+import java.util.List;
+
 /**
  * Maps domain ScanResult (clean architecture) to presentation ScanEvent (DTO for SSE/JSON).
  * This keeps the domain independent from the web layer while preserving API contract.

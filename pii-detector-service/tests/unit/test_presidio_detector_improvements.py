@@ -102,29 +102,25 @@ class TestPresidioDetectorImprovements:
         # Then
         assert "Unknown recognizer key 'unknown_entity'" in caplog.text
     
-    def test_filter_recognizers_should_remove_spacy_recognizer_when_person_name_disabled(
+    def test_allowed_entities_excludes_person_when_person_name_disabled(
         self, detector_with_mock_config
     ):
         """
-        Should_RemoveSpacyRecognizer_When_PersonNameIsDisabled.
+        Should_ExcludePersonFromWhitelist_When_PersonNameIsDisabled.
         
-        Validates that SpacyRecognizer is explicitly removed when person_name=false
-        to reduce false positives.
+        Validates that PERSON entity is excluded from allowed_entities whitelist
+        when person_name=false to reduce false positives.
         """
-        # Given: Mock analyzer with SpacyRecognizer and iterable recognizers list
-        mock_analyzer = Mock()
-        mock_registry = Mock()
-        mock_recognizer = Mock()
-        mock_recognizer.supported_entities = ["EMAIL_ADDRESS"]
-        mock_registry.recognizers = [mock_recognizer]  # Make it iterable
-        mock_analyzer.registry = mock_registry
-        detector_with_mock_config._analyzer = mock_analyzer
-        
         # When
-        detector_with_mock_config._filter_recognizers()
+        allowed_entities = detector_with_mock_config._build_allowed_entities()
         
         # Then
-        mock_registry.remove_recognizer.assert_called_once_with("SpacyRecognizer")
+        assert "PERSON" not in allowed_entities
+        
+        # Verify other entities are still present
+        assert "EMAIL_ADDRESS" in allowed_entities
+        assert "PHONE_NUMBER" in allowed_entities
+        assert "IP_ADDRESS" in allowed_entities
     
     def test_detect_pii_should_pass_entities_whitelist_to_analyzer(
         self, detector_with_mock_config

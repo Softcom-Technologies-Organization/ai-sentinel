@@ -79,8 +79,6 @@ public class AesGcmEncryptionAdapter implements EncryptionService {
             byte[] aad = buildAad(metadata);
             byte[] ciphertext = encryptWithGcm(dek, iv, aad, plaintext);
 
-            Arrays.fill(dek, (byte) 0);
-
             return formatToken(salt, iv, ciphertext);
         } catch (Exception e) {
             log.error("Encryption failed: {}", e.getClass().getSimpleName());
@@ -110,8 +108,6 @@ public class AesGcmEncryptionAdapter implements EncryptionService {
             byte[] aad = buildAad(metadata);
             byte[] plaintext = decryptWithGcm(dek, data.iv, aad, data.ciphertext);
 
-            Arrays.fill(dek, (byte) 0);
-
             return new String(plaintext, StandardCharsets.UTF_8);
         } catch (EncryptionException e) {
             throw e;
@@ -134,6 +130,7 @@ public class AesGcmEncryptionAdapter implements EncryptionService {
 
         try {
             // Expand (single block): OKM = HMAC(PRK, info || 0x01)
+            // Single block is sufficient for AES-256 (32 bytes)
             mac.init(new SecretKeySpec(prk, HKDF_MAC_ALGORITHM));
             mac.update(info);
             mac.update((byte) 0x01);

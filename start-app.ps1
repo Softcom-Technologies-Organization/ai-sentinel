@@ -56,17 +56,16 @@ if (-not (Test-Path .env)) {
     Write-Info "  - CONFLUENCE_BASE_URL"
     Write-Info "  - CONFLUENCE_USERNAME"
     Write-Info "  - CONFLUENCE_API_TOKEN"
-    Write-Info "  - CONFLUENCE_SPACE_KEY"
     Write-Host ""
     Read-Host "Appuyez sur Entrée une fois que vous avez configuré le fichier .env"
 }
 
 # Construire et démarrer les services
 Write-Info "📦 Construction des images Docker..."
-docker-compose build
+docker-compose -f docker-compose.dev.yml build
 
 Write-Info "🔄 Démarrage des services..."
-docker-compose up -d
+docker-compose -f docker-compose.dev.yml up -d
 
 # Attendre que les services soient prêts
 Write-Info "⏳ Attente du démarrage des services (cela peut prendre 2-3 minutes)..."
@@ -76,7 +75,7 @@ Write-Info "   Attente de PostgreSQL..."
 $pgReady = $false
 for ($i = 0; $i -lt 60; $i++) {
     try {
-        $result = docker-compose exec -T postgres pg_isready -U postgres -d ai-sentinel 2>&1
+        $result = docker-compose -f docker-compose.dev.yml exec -T postgres pg_isready -U postgres -d ai-sentinel 2>&1
         if ($LASTEXITCODE -eq 0) {
             Write-Success "   ✓ PostgreSQL est prêt"
             $pgReady = $true
@@ -90,7 +89,7 @@ for ($i = 0; $i -lt 60; $i++) {
 
 if (-not $pgReady) {
     Write-Error-Custom "   ✗ PostgreSQL n'a pas démarré dans le délai imparti"
-    Write-Info "   Vérifiez les logs avec: docker-compose logs postgres"
+    Write-Info "   Vérifiez les logs avec: docker-compose -f docker-compose.dev.yml logs postgres"
     exit 1
 }
 
@@ -118,7 +117,7 @@ for ($i = 0; $i -lt 60; $i++) {
 
 if (-not $apiReady) {
     Write-Error-Custom "   ✗ Le Backend API n'a pas démarré dans le délai imparti"
-    Write-Info "   Vérifiez les logs avec: docker-compose logs pii-reporting-api"
+    Write-Info "   Vérifiez les logs avec: docker-compose -f docker-compose.dev.yml logs pii-reporting-api"
     exit 1
 }
 
@@ -141,7 +140,7 @@ for ($i = 0; $i -lt 30; $i++) {
 
 if (-not $uiReady) {
     Write-Error-Custom "   ✗ Le Frontend n'a pas démarré dans le délai imparti"
-    Write-Info "   Vérifiez les logs avec: docker-compose logs pii-reporting-ui"
+    Write-Info "   Vérifiez les logs avec: docker-compose -f docker-compose.dev.yml logs pii-reporting-ui"
     exit 1
 }
 
@@ -156,8 +155,8 @@ Write-Host "   • Health Check        : http://localhost:8090/internal/health" 
 Write-Host "   • PgAdmin (optionnel) : http://localhost:5050 (admin@pgadmin.com / admin)" -ForegroundColor White
 Write-Host ""
 Write-Host "📋 Commandes utiles :" -ForegroundColor White
-Write-Host "   • Voir les logs       : docker-compose logs -f" -ForegroundColor White
-Write-Host "   • Arrêter l'app       : docker-compose down" -ForegroundColor White
-Write-Host "   • Redémarrer un svc   : docker-compose restart <service-name>" -ForegroundColor White
+Write-Host "   • Voir les logs       : docker-compose -f docker-compose.dev.yml logs -f" -ForegroundColor White
+Write-Host "   • Arrêter l'app       : docker-compose -f docker-compose.dev.yml down" -ForegroundColor White
+Write-Host "   • Redémarrer un svc   : docker-compose -f docker-compose.dev.yml restart <service-name>" -ForegroundColor White
 Write-Host ""
 Write-Info "Pour plus d'informations, consultez DOCKER_DEPLOYMENT.md"

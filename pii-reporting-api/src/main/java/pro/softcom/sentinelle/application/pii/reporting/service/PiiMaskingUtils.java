@@ -91,7 +91,7 @@ public final class PiiMaskingUtils {
      */
     private static List<PiiEntity> sortEntitiesByPosition(List<PiiEntity> entities) {
         return entities.stream()
-                .sorted(Comparator.comparingInt(PiiEntity::start))
+                .sorted(Comparator.comparingInt(PiiEntity::startPosition))
                 .toList();
     }
 
@@ -109,13 +109,13 @@ public final class PiiMaskingUtils {
         int currentIndex = 0;
 
         for (PiiEntity entity : sortedEntities) {
-            int start = clamp(entity.start(), 0, sourceLength);
-            int end = clamp(entity.end(), start, sourceLength);
+            int start = clamp(entity.startPosition(), 0, sourceLength);
+            int end = clamp(entity.endPosition(), start, sourceLength);
 
             if (start > currentIndex) {
                 result.append(safeSub(source, currentIndex, start));
             }
-            result.append(token(entity.type()));
+            result.append(token(entity.piiType()));
             currentIndex = end;
         }
 

@@ -24,8 +24,8 @@ public class ConfluenceSpaceEntity {
     @Column(name = "id", nullable = false)
     private String id;
 
-    @Column(name = "key", nullable = false, unique = true)
-    private String key;
+    @Column(name = "space_key", nullable = false, unique = true)
+    private String spaceKey;
 
     @Column(name = "name", nullable = false)
     private String name;

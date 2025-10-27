@@ -39,14 +39,15 @@ public class JpaScanEventStoreAdapter implements ScanEventStore {
      */
     @Override
     public void append(ScanResult scanResult) {
-        if (scanResult == null || StringUtils.isBlank(scanResult.scanId()) || StringUtils.isBlank(scanResult.eventType())) {
-            log.warn("scanResult, scanId or eventType is null or empty");
-            return;
-        }
-
         try {
-//            ScanResult contextResult = piiContextExtractor.enrichContexts(scanResult);
-//            ScanResult encryptedResult = scanResultEncryptor.encrypt(contextResult);
+            Objects.requireNonNull(scanResult, "scanResult cannot be null");
+            if (StringUtils.isBlank(scanResult.scanId())) {
+                throw new IllegalArgumentException("scanId cannot be blank");
+            }
+            if (StringUtils.isBlank(scanResult.eventType())) {
+                throw new IllegalArgumentException("eventType cannot be blank");
+            }
+
             ScanResult encryptedResult = scanResultEncryptor.encrypt(scanResult);
             JsonNode payload = objectMapper.valueToTree(encryptedResult);
 
@@ -68,8 +69,10 @@ public class JpaScanEventStoreAdapter implements ScanEventStore {
                     .build();
 
             eventRepository.save(entity);
-        } catch (Exception ex) {
-            log.warn("[EVENT_STORE] Unable to append event: {}", ex.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.warn("[EVENT_STORE] Invalid scan result: {}", e.getMessage());
+        } catch (Exception e) {
+            log.warn("[EVENT_STORE] Unable to append event: {}", e.getMessage());
         }
     }
 

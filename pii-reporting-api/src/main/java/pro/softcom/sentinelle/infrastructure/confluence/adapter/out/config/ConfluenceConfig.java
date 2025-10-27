@@ -10,7 +10,6 @@ public record ConfluenceConfig(
     String baseUrl,
     String username,
     String apiToken,
-    String spaceKey,
     ConnectionSettings connectionSettings,
     PaginationSettings paginationSettings,
     ApiPaths apiPaths,

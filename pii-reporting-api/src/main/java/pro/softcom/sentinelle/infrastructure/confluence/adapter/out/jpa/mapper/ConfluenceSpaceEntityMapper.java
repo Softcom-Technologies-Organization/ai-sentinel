@@ -16,7 +16,7 @@ public final class ConfluenceSpaceEntityMapper {
 
         return new ConfluenceSpace(
             entity.getId(),
-            entity.getKey(),
+            entity.getSpaceKey(),
             entity.getName(),
             entity.getUrl(),
             entity.getDescription(),
@@ -34,7 +34,7 @@ public final class ConfluenceSpaceEntityMapper {
 
         return ConfluenceSpaceEntity.builder()
             .id(domain.id())
-            .key(domain.key())
+            .spaceKey(domain.key())
             .name(domain.name())
             .url(domain.url())
             .description(domain.description())

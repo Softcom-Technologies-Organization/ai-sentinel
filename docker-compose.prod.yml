@@ -7,14 +7,14 @@ services:
   # ============================================================================
   postgres:
     image: postgres:18
-    container_name: ai-sentinel-db
+    container_name: ai-sentinel-db-prod
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ai-sentinel
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ai-sentinel"]
       interval: 10s
@@ -27,7 +27,7 @@ services:
   # PII DETECTOR SERVICE (Python/gRPC) - IMAGE PRÉ-BUILDÉE
   # ============================================================================
   pii-detector:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-pii-detector:latest
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-pii-detector:0.0.1
     container_name: pii-detector-service
     restart: unless-stopped
     ports:
@@ -52,7 +52,7 @@ services:
   # PII REPORTING API (Spring Boot) - IMAGE PRÉ-BUILDÉE
   # ============================================================================
   pii-reporting-api:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-api:latest
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-api:0.0.1
     container_name: pii-reporting-api
     restart: unless-stopped
     ports:
@@ -79,7 +79,6 @@ services:
       CONFLUENCE_BASE_URL: ${CONFLUENCE_BASE_URL}
       CONFLUENCE_USERNAME: ${CONFLUENCE_USERNAME}
       CONFLUENCE_API_TOKEN: ${CONFLUENCE_API_TOKEN}
-      CONFLUENCE_SPACE_KEY: ${CONFLUENCE_SPACE_KEY}
       CONFLUENCE_ENABLE_PROXY: ${CONFLUENCE_ENABLE_PROXY:-false}
       CONFLUENCE_PROXY_HOST: ${CONFLUENCE_PROXY_HOST:-}
       CONFLUENCE_PROXY_PORT: ${CONFLUENCE_PROXY_PORT:-8080}
@@ -106,7 +105,7 @@ services:
   # PII REPORTING UI (Angular + Nginx) - IMAGE PRÉ-BUILDÉE
   # ============================================================================
   pii-reporting-ui:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-ui:latest
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-ui:0.0.1
     container_name: pii-reporting-ui
     restart: unless-stopped
     ports:

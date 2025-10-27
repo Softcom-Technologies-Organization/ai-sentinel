@@ -1,7 +1,10 @@
 package pro.softcom.sentinelle.application.pii.reporting.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParser;
+import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParserFactory;
 import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 
@@ -22,7 +25,10 @@ import java.util.Comparator;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class PiiContextExtractor {
+    
+    private final ContentParserFactory parserFactory;
 
     /**
      * Maximum length of context to present to the user.
@@ -121,9 +127,15 @@ public class PiiContextExtractor {
             return null;
         }
 
-        int lineStartInSource = findLineStart(source, PiiMaskingUtils.clamp(start, 0, source.length()));
-        int lineEndInSource = findLineEnd(source, PiiMaskingUtils.clamp(end, 0, source.length()));
+        // Detect content type and get appropriate parser
+        ContentParser parser = parserFactory.getParser(source);
+
+        int lineStartInSource = parser.findLineStart(source, PiiMaskingUtils.clamp(start, 0, source.length()));
+        int lineEndInSource = parser.findLineEnd(source, PiiMaskingUtils.clamp(end, 0, source.length()));
         String lineContext = source.substring(lineStartInSource, lineEndInSource);
+
+        // Clean HTML tags if present
+        lineContext = parser.cleanText(lineContext);
 
         MaskResult masked = maskLineWithEntities(lineContext, lineStartInSource, start, end, type, allEntities);
 
@@ -131,47 +143,6 @@ public class PiiContextExtractor {
         String truncated = truncateAroundPositionNoWordCut(masked.text(), masked.mainTokenIndex());
         // Finally compact whitespace for cleaner display
         return compactWhitespace(truncated);
-    }
-
-    /**
-     * Extracts the complete line containing the PII occurrence.
-     *
-     * @param source the complete source content
-     * @param start  PII start position in source
-     * @param end    PII end position in source
-     * @return the line content containing the PII
-     */
-    private String extractLineContainingPii(String source, int start, int end) {
-        int safeStart = PiiMaskingUtils.clamp(start, 0, source.length());
-        int safeEnd = PiiMaskingUtils.clamp(end, safeStart, source.length());
-
-        int lineStart = findLineStart(source, safeStart);
-        int lineEnd = findLineEnd(source, safeEnd);
-
-        return source.substring(lineStart, lineEnd);
-    }
-
-    /**
-     * Masks the PII value in the extracted line context by replacing it with a [TYPE] token.
-     *
-     * @param lineContext    the extracted line containing the PII
-     * @param piiStart       PII start position in the original source
-     * @param piiEnd         PII end position in the original source
-     * @param type           the PII type for the masking token
-     * @param originalSource the original source content (used for position calculation)
-     * @return the line context with the PII value replaced by its type token
-     */
-    private String maskPiiInContext(String lineContext, int piiStart, int piiEnd,
-                                    String type, String originalSource) {
-        int lineStartInSource = findLineStart(originalSource, piiStart);
-        int relativeStart = piiStart - lineStartInSource;
-        int relativeEnd = piiEnd - lineStartInSource;
-
-        String beforePii = PiiMaskingUtils.safeSub(lineContext, 0, relativeStart);
-        String afterPii = PiiMaskingUtils.safeSub(lineContext, relativeEnd, lineContext.length());
-        String maskedToken = PiiMaskingUtils.token(type);
-
-        return beforePii + maskedToken + afterPii;
     }
 
     /**
@@ -283,15 +254,4 @@ public class PiiContextExtractor {
         return slice;
     }
 
-    private int findLineStart(String source, int position) {
-        int safePosition = PiiMaskingUtils.clamp(position, 0, source.length());
-        int lineBreakIndex = source.lastIndexOf('\n', safePosition);
-        return lineBreakIndex >= 0 ? lineBreakIndex + 1 : 0;
-    }
-
-    private int findLineEnd(String source, int position) {
-        int safePosition = PiiMaskingUtils.clamp(position, 0, source.length());
-        int lineBreakIndex = source.indexOf('\n', safePosition);
-        return lineBreakIndex >= 0 ? lineBreakIndex : source.length();
-    }
 }

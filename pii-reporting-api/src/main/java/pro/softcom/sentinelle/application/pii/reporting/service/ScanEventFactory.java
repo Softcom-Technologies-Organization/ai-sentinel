@@ -1,16 +1,17 @@
 package pro.softcom.sentinelle.application.pii.reporting.service;
 
-import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.DetectionReportingEventType;
 import pro.softcom.sentinelle.domain.confluence.AttachmentInfo;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
+import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.domain.pii.scan.ContentPiiDetection;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Factory for creating scan event results.
@@ -96,7 +97,7 @@ public class ScanEventFactory {
             .isFinal(true)
             .pageId(page.id())
             .pageTitle(page.title())
-            .entities(List.of())
+            .detectedEntities(List.of())
             .summary(Map.of())
             .pageUrl(buildPageUrl(page.id()))
             .emittedAt(Instant.now().toString())
@@ -110,7 +111,7 @@ public class ScanEventFactory {
     public ScanResult createPageItemEvent(String scanId, String spaceKey, ConfluencePage page,
                                          String content, ContentPiiDetection detection,
                                          double progress) {
-        List<Map<String, Object>> entities = mapToEntityList(detection);
+        List<PiiEntity> entities = mapToEntityList(detection);
         Map<String, Integer> summary = extractSummary(detection);
 
         return ScanResult.builder()
@@ -120,7 +121,7 @@ public class ScanEventFactory {
             .isFinal(true)
             .pageId(page.id())
             .pageTitle(page.title())
-            .entities(entities)
+            .detectedEntities(entities)
             .summary(summary)
             .sourceContent(content)
             .pageUrl(buildPageUrl(page.id()))
@@ -135,7 +136,7 @@ public class ScanEventFactory {
     public ScanResult createAttachmentItemEvent(String scanId, String spaceKey, ConfluencePage page,
                                                AttachmentInfo attachment, String content,
                                                ContentPiiDetection detection, double progress) {
-        List<Map<String, Object>> entities = mapToEntityList(detection);
+        List<PiiEntity> entities = mapToEntityList(detection);
         Map<String, Integer> summary = extractSummary(detection);
 
         return ScanResult.builder()
@@ -145,7 +146,7 @@ public class ScanEventFactory {
             .isFinal(true)
             .pageId(page.id())
             .pageTitle(page.title())
-            .entities(entities)
+            .detectedEntities(entities)
             .summary(summary)
             .sourceContent(content)
             .pageUrl(buildPageUrl(page.id()))
@@ -177,7 +178,7 @@ public class ScanEventFactory {
     /**
      * Maps PII detection results to entity list for event payload.
      */
-    private List<Map<String, Object>> mapToEntityList(ContentPiiDetection detection) {
+    private List<PiiEntity> mapToEntityList(ContentPiiDetection detection) {
         if (detection == null || detection.sensitiveDataFound() == null) {
             return List.of();
         }
@@ -186,15 +187,15 @@ public class ScanEventFactory {
             .toList();
     }
 
-    private Map<String, Object> mapSensitiveDataToEntity(ContentPiiDetection.SensitiveData data) {
-        Map<String, Object> entity = new LinkedHashMap<>();
-        entity.put("text", data.value());
-        entity.put("type", data.type().name());
-        entity.put("typeLabel", data.type().getLabel());
-        entity.put("start", data.position());
-        entity.put("end", data.end());
-        entity.put("score", data.score());
-        return entity;
+    private PiiEntity mapSensitiveDataToEntity(ContentPiiDetection.SensitiveData data) {
+        return PiiEntity.builder()
+                .detectedValue(data.value())
+                .piiType(data.type() != null ? data.type().name() : null)
+                .piiTypeLabel(data.type() != null ? data.type().getLabel() : null)
+                .startPosition(data.position())
+                .endPosition(data.end())
+                .confidence(data.score())
+                .build();
     }
 
     private Map<String, Integer> extractSummary(ContentPiiDetection detection) {

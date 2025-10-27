@@ -71,6 +71,9 @@ pii-detector:
   connection-timeout-ms: 5000
   request-timeout-ms: 120000
 
+pii-encryption:
+  kek-env-variable: SENTINELLE_ENCRYPTION_KEY
+
 # Armeria internal services (docs, health, metrics, actuator)
 armeria:
   internal-services:

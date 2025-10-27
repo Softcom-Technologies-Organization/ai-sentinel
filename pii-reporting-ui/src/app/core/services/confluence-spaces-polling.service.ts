@@ -35,7 +35,7 @@ export class ConfluenceSpacesPollingService {
   async loadPollingConfig(): Promise<void> {
     try {
       const config = await firstValueFrom(
-        this.http.get<PollingConfig>('/sentinelle/api/v1/config/polling')
+        this.http.get<PollingConfig>('/api/v1/config/polling')
       );
       this.pollingIntervalMs = config.frontendPollingIntervalMs;
       console.log(`Polling interval configured: ${this.pollingIntervalMs}ms`);

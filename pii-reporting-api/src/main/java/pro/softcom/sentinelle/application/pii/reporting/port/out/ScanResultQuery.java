@@ -3,6 +3,7 @@ package pro.softcom.sentinelle.application.pii.reporting.port.out;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import pro.softcom.sentinelle.domain.pii.reporting.AccessPurpose;
 import pro.softcom.sentinelle.domain.pii.reporting.LastScanMeta;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 
@@ -25,10 +26,23 @@ public interface ScanResultQuery {
     List<SpaceCounter> getSpaceCounters(String scanId);
 
     /**
-     * Liste les événements d'items (page/attachment) persistés pour un scan donné, dans l'ordre d'émission.
-     * Ces événements permettent d'afficher les résultats à froid (sans stream SSE).
+     * Lists item events with ENCRYPTED PII data.
+     * Use when PII values don't need to be viewed (statistics, dashboards without detail).
+     * 
+     * @param scanId scan identifier
+     * @return list of scan results with encrypted PII
      */
-    List<ScanResult> listItemEvents(String scanId);
+    List<ScanResult> listItemEventsEncrypted(String scanId);
+    
+    /**
+     * Lists item events with DECRYPTED PII data.
+     * Automatically logs access for GDPR/nLPD compliance.
+     * 
+     * @param scanId scan identifier
+     * @param purpose access purpose (for audit trail)
+     * @return list of scan results with decrypted PII
+     */
+    List<ScanResult> listItemEventsDecrypted(String scanId, AccessPurpose purpose);
 
     /**
      * Projection de lecture (côté application) pour les compteurs par espace.

@@ -2,8 +2,6 @@ name: CI - Tests (feature branches)
 
 on:
   push:
-    branches:
-      - '**'
     branches-ignore:
       - main
       - develop

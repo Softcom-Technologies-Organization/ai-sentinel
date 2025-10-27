@@ -100,7 +100,8 @@ class ResumeScanInterruptIntegrationTest {
         var space = new ConfluenceSpace("id-TEST", "TEST", "Test Space",
                                         "http://test.com", "Test description",
                                         ConfluenceSpace.SpaceType.GLOBAL,
-                                        ConfluenceSpace.SpaceStatus.CURRENT);
+                                        ConfluenceSpace.SpaceStatus.CURRENT,
+                                        null);
         var p1 = ConfluencePage.builder().id("p1").title("Page 1").spaceKey("TEST")
             .content(new ConfluencePage.HtmlContent("hello 1")).metadata(
                 new ConfluencePage.PageMetadata("u", LocalDateTime.now(), "u", LocalDateTime.now(),
@@ -194,7 +195,8 @@ class ResumeScanInterruptIntegrationTest {
         var space = new ConfluenceSpace("id-TEST", "TEST", "Test Space", 
                                         "http://test.com", "Test description",
                                         ConfluenceSpace.SpaceType.GLOBAL, 
-                                        ConfluenceSpace.SpaceStatus.CURRENT);
+                                        ConfluenceSpace.SpaceStatus.CURRENT,
+                                        null);
         var p1 = ConfluencePage.builder().id("p1").title("Page 1").spaceKey("TEST")
             .content(new ConfluencePage.HtmlContent("hello 1")).metadata(
                 new ConfluencePage.PageMetadata("u", LocalDateTime.now(), "u", LocalDateTime.now(), 1, "current"))

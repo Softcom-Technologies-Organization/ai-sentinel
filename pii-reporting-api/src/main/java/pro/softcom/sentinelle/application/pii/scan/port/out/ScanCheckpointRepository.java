@@ -15,5 +15,7 @@ public interface ScanCheckpointRepository {
 
     List<ScanCheckpoint> findByScan(String scanId);
 
+    List<ScanCheckpoint> findBySpace(String spaceKey);
+
     void deleteByScan(String scanId);
 }

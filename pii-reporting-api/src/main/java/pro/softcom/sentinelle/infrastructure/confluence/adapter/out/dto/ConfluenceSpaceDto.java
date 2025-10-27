@@ -6,81 +6,118 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * DTO pour la sérialisation/désérialisation des espaces Confluence.
- * Compatible avec l'API REST de Confluence.
+ * DTO pour la sérialisation/désérialisation des espaces Confluence. Compatible avec l'API REST de
+ * Confluence.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ConfluenceSpaceDto(
-    @JsonProperty("id") String id,
-    @JsonProperty("key") String key,
-    @JsonProperty("name") String name,
-    @JsonProperty("type") String type,
-    @JsonProperty("status") String status,
-    @JsonProperty("description") DescriptionDto description,
-    @JsonProperty("permissions") List<PermissionDto> permissions,
-    @JsonProperty("metadata") Map<String, Object> metadata,
-    @JsonProperty("_links") Map<String, String> links
+    String id,
+    String key,
+    String name,
+    String type,
+    String status,
+    DescriptionDto description,
+    List<PermissionDto> permissions,
+    Map<String, Object> metadata,
+    @JsonProperty("_links") Map<String, String> links,
+    HistoryDto history
 ) {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record DescriptionDto(
-        @JsonProperty("plain") PlainTextDto plain,
-        @JsonProperty("view") ViewDto view
-    ) {}
+        PlainTextDto plain,
+        ViewDto view
+    ) {
+
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record PlainTextDto(
-        @JsonProperty("value") String value,
-        @JsonProperty("representation") String representation
-    ) {}
+        String value,
+        String representation
+    ) {
+
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ViewDto(
-        @JsonProperty("value") String value,
-        @JsonProperty("representation") String representation
-    ) {}
+        String value,
+        String representation
+    ) {
+
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record PermissionDto(
-        @JsonProperty("subjects") SubjectsDto subjects,
-        @JsonProperty("operation") OperationDto operation
-    ) {}
+        SubjectsDto subjects,
+        OperationDto operation
+    ) {
+
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record SubjectsDto(
-        @JsonProperty("user") UserResultsDto user,
-        @JsonProperty("group") GroupResultsDto group
-    ) {}
+        UserResultsDto user,
+        GroupResultsDto group
+    ) {
+
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record UserResultsDto(
-        @JsonProperty("results") List<UserDto> results,
-        @JsonProperty("size") int size
-    ) {}
+        List<UserDto> results,
+        int size
+    ) {
+
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record GroupResultsDto(
-        @JsonProperty("results") List<GroupDto> results,
-        @JsonProperty("size") int size
-    ) {}
+        List<GroupDto> results,
+        int size
+    ) {
+
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record UserDto(
-        @JsonProperty("type") String type,
-        @JsonProperty("username") String username,
-        @JsonProperty("userKey") String userKey,
-        @JsonProperty("displayName") String displayName
-    ) {}
+        String type,
+        String username,
+        String userKey,
+        String displayName
+    ) {
+
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record GroupDto(
-        @JsonProperty("type") String type,
-        @JsonProperty("name") String name
-    ) {}
+        String type,
+        String name
+    ) {
+
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record OperationDto(
-        @JsonProperty("operation") String operation,
-        @JsonProperty("targetType") String targetType
-    ) {}
+        String operation,
+        String targetType
+    ) {
+
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record HistoryDto(
+        String createdDate,
+        LastUpdatedDto lastUpdated
+    ) {
+
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record LastUpdatedDto(
+        String when,
+        UserDto by
+    ) {
+
+    }
 }

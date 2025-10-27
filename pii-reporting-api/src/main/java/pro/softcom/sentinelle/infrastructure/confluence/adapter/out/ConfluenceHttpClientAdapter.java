@@ -1,6 +1,7 @@
 package pro.softcom.sentinelle.infrastructure.confluence.adapter.out;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import java.io.IOException;
@@ -9,6 +10,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -21,6 +24,7 @@ import org.springframework.stereotype.Service;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.ModifiedPageInfo;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.config.ConfluenceConnectionConfig;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.dto.ConfluencePageDto;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.dto.ConfluenceSpaceDto;
@@ -416,6 +420,135 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
         merged.addAll(accumulated);
         merged.addAll(currentBatch);
         return merged;
+    }
+
+    private String formatInstantForCql(Instant instant) {
+        return instant.atZone(java.time.ZoneOffset.UTC)
+            .format(DateTimeFormatter.ISO_LOCAL_DATE);
+    }
+
+    private HttpRequest buildContentSearchModifiedSinceRequest(String spaceKey, String sinceDate) {
+        var uri = urlBuilder.buildContentSearchModifiedSinceUri(spaceKey, sinceDate);
+        return buildGetRequest(uri);
+    }
+
+    private Instant extractPageModificationDate(com.fasterxml.jackson.databind.JsonNode page) {
+        // Try version.when first (most reliable)
+        if (page.has("version")) {
+            var version = page.get("version");
+            if (version.has("when")) {
+                return parseInstant(version.get("when").asText());
+            }
+        }
+
+        // Fallback to history.lastUpdated.when
+        if (page.has("history")) {
+            var history = page.get("history");
+            if (history.has("lastUpdated")) {
+                var lastUpdated = history.get("lastUpdated");
+                if (lastUpdated.has("when")) {
+                    return parseInstant(lastUpdated.get("when").asText());
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private Instant parseInstant(String dateString) {
+        try {
+            return Instant.parse(dateString);
+        } catch (Exception _) {
+            log.warn("Failed to parse date: {}", dateString);
+            return null;
+        }
+    }
+
+    @Override
+    public CompletableFuture<List<ModifiedPageInfo>> getModifiedPagesSince(
+        String spaceKey, Instant sinceDate) {
+        
+        log.debug("Getting modified pages for space {} since {}", spaceKey, sinceDate);
+        
+        var sinceDateFormatted = formatInstantForCql(sinceDate);
+        var request = buildContentSearchModifiedSinceRequest(spaceKey, sinceDateFormatted);
+        
+        return retryExecutor.executeRequest(request)
+            .thenApply(this::extractModifiedPagesInfo)
+            .exceptionally(ex -> handleModifiedPagesError(ex, spaceKey));
+    }
+
+    private List<ModifiedPageInfo> extractModifiedPagesInfo(
+        HttpResponse<String> response) {
+        
+        if (response.statusCode() != 200) {
+            log.warn("CQL Search returned non-200 status: {}", response.statusCode());
+            return List.of();
+        }
+
+        try {
+            var jsonNode = objectMapper.readTree(response.body());
+            
+            if (!jsonNode.has(RESULTS_FIELD)) {
+                return List.of();
+            }
+
+            var results = jsonNode.get(RESULTS_FIELD);
+            if (!results.isArray() || results.isEmpty()) {
+                return List.of();
+            }
+
+            return extractPageInfoList(results);
+            
+        } catch (IOException e) {
+            log.error("Error parsing CQL search response", e);
+            return List.of();
+        }
+    }
+
+    private List<ModifiedPageInfo> extractPageInfoList(
+        JsonNode results) {
+        
+        var pageInfoList = new ArrayList<ModifiedPageInfo>();
+
+        for (var page : results) {
+            var pageInfo = extractSinglePageInfo(page);
+            if (pageInfo != null) {
+                pageInfoList.add(pageInfo);
+            }
+        }
+
+        return pageInfoList;
+    }
+
+    private ModifiedPageInfo extractSinglePageInfo(
+        JsonNode page) {
+        
+        try {
+            String pageId = page.has("id") ? page.get("id").asText() : null;
+            String title = page.has("title") ? page.get("title").asText() : "Untitled";
+            Instant lastModified = extractPageModificationDate(page);
+            
+            if (pageId == null || lastModified == null) {
+                return null;
+            }
+            
+            return new ModifiedPageInfo(
+                pageId,
+                title,
+                lastModified
+            );
+        } catch (Exception e) {
+            log.warn("Failed to extract page info from JSON node", e);
+            return null;
+        }
+    }
+
+    private List<ModifiedPageInfo> handleModifiedPagesError(
+        Throwable ex, String spaceKey) {
+        
+        log.error("Error retrieving modified pages for space {}", spaceKey, ex);
+        return List.of();
     }
 
 }

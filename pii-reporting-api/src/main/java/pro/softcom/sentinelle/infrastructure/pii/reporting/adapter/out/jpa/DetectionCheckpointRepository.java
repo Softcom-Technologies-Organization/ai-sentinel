@@ -16,5 +16,7 @@ public interface DetectionCheckpointRepository extends
 
     List<ScanCheckpointEntity> findByScanIdOrderBySpaceKey(String scanId);
 
+    List<ScanCheckpointEntity> findBySpaceKeyOrderByUpdatedAt(String spaceKey);
+
     void deleteByScanId(String scanId);
 }

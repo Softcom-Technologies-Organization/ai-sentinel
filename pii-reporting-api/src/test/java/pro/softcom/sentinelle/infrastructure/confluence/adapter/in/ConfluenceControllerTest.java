@@ -18,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
+import pro.softcom.sentinelle.application.confluence.port.in.GetSpaceUpdateInfoUseCase;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 
@@ -33,6 +34,9 @@ class ConfluenceControllerTest {
 
     @MockitoBean
     private ConfluenceUseCase confluenceUseCase;
+
+    @MockitoBean
+    private GetSpaceUpdateInfoUseCase getSpaceUpdateInfoUseCase;
 
     /**
      * Tests that the controller correctly returns all pages in a space.
@@ -72,7 +76,8 @@ class ConfluenceControllerTest {
             "http://test.com",
             "A test space",
             ConfluenceSpace.SpaceType.GLOBAL,
-            ConfluenceSpace.SpaceStatus.CURRENT
+            ConfluenceSpace.SpaceStatus.CURRENT,
+            null
         );
 
         when(confluenceUseCase.getSpace(spaceKey))
@@ -219,7 +224,8 @@ class ConfluenceControllerTest {
             "http://test.com",
             "A test space",
             ConfluenceSpace.SpaceType.GLOBAL,
-            ConfluenceSpace.SpaceStatus.CURRENT
+            ConfluenceSpace.SpaceStatus.CURRENT,
+            null
         );
 
         when(confluenceUseCase.getSpace(spaceKey))
@@ -252,8 +258,8 @@ class ConfluenceControllerTest {
     @Test
     void getAllSpaces_ReturnsList() throws Exception {
         List<ConfluenceSpace> spaces = List.of(
-            new ConfluenceSpace("id-1", "KEY1", "Space 1", "http://s1", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT),
-            new ConfluenceSpace("id-2", "KEY2", "Space 2", "http://s2", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT)
+            new ConfluenceSpace("id-1", "KEY1", "Space 1", "http://s1", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, null),
+            new ConfluenceSpace("id-2", "KEY2", "Space 2", "http://s2", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, null)
         );
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(spaces));
@@ -306,5 +312,3 @@ class ConfluenceControllerTest {
             .andExpect(jsonPath("$.totalResults").value(2));
     }
 }
-
-

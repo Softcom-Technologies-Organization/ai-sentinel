@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS confluence_spaces (
   url TEXT,
   description TEXT,
   cache_timestamp TIMESTAMP NOT NULL,
-  last_updated TIMESTAMP NOT NULL
+  last_updated TIMESTAMP NOT NULL,
+  last_modified_date TIMESTAMP
 );
 
 -- Index for efficient staleness queries in background refresh

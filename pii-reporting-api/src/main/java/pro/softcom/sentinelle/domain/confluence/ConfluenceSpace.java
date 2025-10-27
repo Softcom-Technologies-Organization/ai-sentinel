@@ -1,5 +1,6 @@
 package pro.softcom.sentinelle.domain.confluence;
 
+import java.time.Instant;
 import lombok.Getter;
 
 public record ConfluenceSpace(
@@ -9,7 +10,8 @@ public record ConfluenceSpace(
     String url,
     String description,
     SpaceType type,
-    SpaceStatus status
+    SpaceStatus status,
+    Instant lastModified
 ) {
 
     @Getter

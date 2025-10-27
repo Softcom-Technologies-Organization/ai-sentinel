@@ -93,7 +93,8 @@ class ConfluenceUseCaseImplTest {
             "https://confluence.example.com/spaces/" + key,
             "Test description",
             ConfluenceSpace.SpaceType.GLOBAL,
-            ConfluenceSpace.SpaceStatus.CURRENT
+            ConfluenceSpace.SpaceStatus.CURRENT,
+            null
         );
     }
 }

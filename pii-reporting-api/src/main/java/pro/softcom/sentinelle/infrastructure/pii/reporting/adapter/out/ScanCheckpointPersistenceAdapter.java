@@ -75,6 +75,15 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
     }
 
     @Override
+    public List<ScanCheckpoint> findBySpace(String spaceKey) {
+        if (isBlank(spaceKey)) {
+            return List.of();
+        }
+        return jpaRepository.findBySpaceKeyOrderByUpdatedAt(spaceKey).stream()
+            .map(ScanCheckpointPersistenceAdapter::toDomain).toList();
+    }
+
+    @Override
     public void deleteByScan(String scanId) {
         if (isBlank(scanId)) {
             return;
@@ -82,7 +91,7 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
         jpaRepository.deleteByScanId(scanId);
     }
 
-    private static ScanCheckpoint toDomain(ScanCheckpointEntity e) {
+    public static ScanCheckpoint toDomain(ScanCheckpointEntity e) {
         return ScanCheckpoint.builder()
             .scanId(e.getScanId())
             .spaceKey(e.getSpaceKey())

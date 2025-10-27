@@ -49,7 +49,8 @@ class ConfluenceSpaceMapperTest {
             description,
             permissions,
             Map.of("k1", 1, "k2", "v2"),
-            Map.of("self", "/rest/api/space/123")
+            Map.of("self", "/rest/api/space/123"),
+            null
         );
     }
 
@@ -64,7 +65,7 @@ class ConfluenceSpaceMapperTest {
 
         var dtoUnknownTypeStatus = new ConfluenceSpaceDto(
             "id2", "KEY2", "Space2", "not-known", "mystatus",
-            description, permissions, null, null
+            description, permissions, null, null, null
         );
 
         ConfluenceSpace domain = ConfluenceSpaceMapper.toDomain(dtoUnknownTypeStatus);
@@ -84,7 +85,8 @@ class ConfluenceSpaceMapperTest {
                 new ConfluenceSpaceDto.DescriptionDto(new ConfluenceSpaceDto.PlainTextDto("desc", "plain"), null),
                 List.of(),
                 Map.of(),
-                Map.of()
+                Map.of(),
+                null
         );
 
         ConfluenceSpace domain = ConfluenceSpaceMapper.toDomain(dto);

@@ -17,10 +17,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
+import pro.softcom.sentinelle.application.confluence.port.in.GetSpaceUpdateInfoUseCase;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.dto.ConfluencePageDto;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.dto.ConfluenceSearchResponseDto;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.dto.ConfluenceSpaceDto;
+import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.dto.SpaceUpdateInfoDto;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.mapper.ConfluenceApiMapper;
 
 /**
@@ -35,6 +37,7 @@ import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.mapper.Conflu
 public class ConfluenceController {
 
     private final ConfluenceUseCase confluenceUseCase;
+    private final GetSpaceUpdateInfoUseCase getSpaceUpdateInfoUseCase;
 
     @GetMapping("/health")
     @Operation(summary = "Check Confluence connection")
@@ -140,6 +143,42 @@ public class ConfluenceController {
             .thenApply(spaces -> ResponseEntity.ok(ConfluenceApiMapper.toDtoSpaces(spaces)))
             .exceptionally(ex -> {
                 log.error("Error retrieving spaces", ex);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            });
+    }
+
+    @GetMapping("/spaces/update-info")
+    @Operation(summary = "Retrieve update information for all Confluence spaces")
+    @ApiResponse(responseCode = "200", description = "List of space update information")
+    public CompletableFuture<ResponseEntity<@NonNull List<SpaceUpdateInfoDto>>> getAllSpacesUpdateInfo() {
+        log.info("GET request /spaces/update-info");
+
+        return getSpaceUpdateInfoUseCase.getAllSpacesUpdateInfo()
+            .thenApply(updateInfos -> ResponseEntity.ok(ConfluenceApiMapper.toDtoSpaceUpdateInfos(updateInfos)))
+            .exceptionally(ex -> {
+                log.error("Error retrieving spaces update info", ex);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            });
+    }
+
+    @GetMapping("/spaces/{spaceKey}/update-info")
+    @Operation(summary = "Retrieve update information for a specific Confluence space")
+    @ApiResponse(responseCode = "200", description = "Space update information")
+    @ApiResponse(responseCode = "404", description = "Space not found")
+    public CompletableFuture<ResponseEntity<@NonNull SpaceUpdateInfoDto>> getSpaceUpdateInfo(
+            @Parameter(description = "Space key") @PathVariable String spaceKey) {
+
+        log.info("GET request /spaces/{}/update-info", spaceKey);
+
+        return getSpaceUpdateInfoUseCase.getSpaceUpdateInfo(spaceKey)
+            .thenApply(optionalUpdateInfo ->
+                optionalUpdateInfo
+                    .map(ConfluenceApiMapper::toDto)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build())
+            )
+            .exceptionally(ex -> {
+                log.error("Error retrieving update info for space {}", spaceKey, ex);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
             });
     }

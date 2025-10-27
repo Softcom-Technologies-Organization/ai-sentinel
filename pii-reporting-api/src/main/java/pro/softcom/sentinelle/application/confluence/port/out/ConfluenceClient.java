@@ -66,4 +66,20 @@ public interface ConfluenceClient {
      * @return list of pages in the space
      */
     CompletableFuture<List<ConfluencePage>> getAllPagesInSpace(String spaceKey);
+
+    /**
+     * Retrieves all pages modified in a space since a specific date.
+     * Uses CQL Content Search API to find pages modified after the given date.
+     * 
+     * Business purpose: Provides detailed information about which pages were modified
+     * to populate the dashboard with specific update counts and page titles.
+     * 
+     * @param spaceKey the space key
+     * @param sinceDate the date from which to search for modifications (typically last scan date)
+     * @return list of modified pages with their information, or empty list if no modifications found
+     */
+    CompletableFuture<List<pro.softcom.sentinelle.domain.confluence.ModifiedPageInfo>> getModifiedPagesSince(
+        String spaceKey, 
+        java.time.Instant sinceDate
+    );
 }

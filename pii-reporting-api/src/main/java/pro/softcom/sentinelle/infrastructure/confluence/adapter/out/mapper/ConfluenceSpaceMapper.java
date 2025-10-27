@@ -1,5 +1,8 @@
 package pro.softcom.sentinelle.infrastructure.confluence.adapter.out.mapper;
 
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.dto.ConfluenceSpaceDto;
 
@@ -8,6 +11,7 @@ import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.dto.Confluen
  * URL is presentation-facing; by default, we keep it null here to avoid leaking UI concerns.
  * An overloaded method allows providing a ConfluenceUrlBuilder to populate the URL when required.
  */
+@Slf4j
 public final class ConfluenceSpaceMapper {
 
     private ConfluenceSpaceMapper() {
@@ -29,6 +33,7 @@ public final class ConfluenceSpaceMapper {
         var spaceStatus = parseSpaceStatus(dto.status());
         var descriptionText = extractDescription(dto);
         String url = ConfluenceUrlBuilder.spaceOverviewUrl(dto.key());
+        Instant lastModified = extractLastModified(dto);
 
         return new ConfluenceSpace(
             dto.id(),
@@ -37,7 +42,8 @@ public final class ConfluenceSpaceMapper {
             url,
             descriptionText,
             spaceType,
-            spaceStatus
+            spaceStatus,
+            lastModified
         );
     }
 
@@ -64,5 +70,32 @@ public final class ConfluenceSpaceMapper {
             return description.plain().value();
         }
         return "";
+    }
+
+    //TODO refactor to reduce cyclomatic complexity to 5
+    private static Instant extractLastModified(ConfluenceSpaceDto dto) {
+        if (dto.history() == null) {
+            return null;
+        }
+
+        var history = dto.history();
+        
+        if (history.lastUpdated() != null && history.lastUpdated().when() != null) {
+            try {
+                return Instant.parse(history.lastUpdated().when());
+            } catch (DateTimeParseException e) {
+                log.warn("Impossible de parser lastUpdated.when: {}", history.lastUpdated().when(), e);
+            }
+        }
+
+        if (history.createdDate() != null) {
+            try {
+                return Instant.parse(history.createdDate());
+            } catch (DateTimeParseException e) {
+                log.warn("Impossible de parser createdDate: {}", history.createdDate(), e);
+            }
+        }
+
+        return null;
     }
 }

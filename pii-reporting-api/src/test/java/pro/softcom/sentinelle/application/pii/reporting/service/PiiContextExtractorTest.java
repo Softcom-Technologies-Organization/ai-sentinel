@@ -1,13 +1,18 @@
 package pro.softcom.sentinelle.application.pii.reporting.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pro.softcom.sentinelle.application.pii.reporting.config.PiiContextProperties;
+import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParser;
+import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParserFactory;
+import pro.softcom.sentinelle.application.pii.reporting.service.parser.PlainTextParser;
 import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 
@@ -16,6 +21,8 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 
 /**
  * Unit tests for {@link PiiContextExtractor}.
@@ -26,8 +33,29 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 @DisplayName("PiiContextExtractor - PII context extraction")
 class PiiContextExtractorTest {
 
-    @InjectMocks
+    @Mock
+    private ContentParserFactory parserFactory;
+
+    @Mock
+    private PiiContextProperties contextProperties;
+
     private PiiContextExtractor piiContextExtractor;
+    
+    private ContentParser plainTextParser;
+
+    @BeforeEach
+    void setUp() {
+        // Use real PlainTextParser for testing
+        plainTextParser = new PlainTextParser();
+        
+        // Configure mocks with lenient() to allow unused stubbings in some tests
+        lenient().when(contextProperties.getMaxLength()).thenReturn(200);
+        lenient().when(contextProperties.getSideLength()).thenReturn(80);
+        lenient().when(parserFactory.getParser(anyString())).thenReturn(plainTextParser);
+        
+        // Create instance with mocked dependencies
+        piiContextExtractor = new PiiContextExtractor(parserFactory, contextProperties);
+    }
 
     @ParameterizedTest(name = "{index} -> should mask occurrence and keep line snippet for type={2}")
     @MethodSource("basicContextCases")
@@ -75,23 +103,23 @@ class PiiContextExtractorTest {
         // Given
         String existingContext = "Existing context [EMAIL] value";
         PiiEntity entity = PiiEntity.builder()
-                .start(14)
-                .end(34)
-                .type("EMAIL")
+                .startPosition(14)
+                .endPosition(34)
+                .piiType("EMAIL")
                 .context(existingContext)
                 .build();
 
         ScanResult scanResult = ScanResult.builder()
                 .scanId("scan-1")
                 .sourceContent("My email is john.doe@example.com and my phone")
-                .entities(List.of(entity))
+                .detectedEntities(List.of(entity))
                 .build();
 
         // When
         ScanResult result = piiContextExtractor.enrichContexts(scanResult);
 
         // Then
-        assertThat(result.entities().getFirst().context())
+        assertThat(result.detectedEntities().getFirst().context())
                 .isEqualTo(existingContext);
     }
 
@@ -325,8 +353,8 @@ class PiiContextExtractorTest {
         int phoneStart = source.indexOf("06 11 22 33 44");
         int phoneEnd = phoneStart + "06 11 22 33 44".length();
         var entities = List.of(
-            PiiEntity.builder().start(emailStart).end(emailEnd).type("EMAIL").build(),
-            PiiEntity.builder().start(phoneStart).end(phoneEnd).type("PHONE").build()
+            PiiEntity.builder().startPosition(emailStart).endPosition(emailEnd).piiType("EMAIL").build(),
+            PiiEntity.builder().startPosition(phoneStart).endPosition(phoneEnd).piiType("PHONE").build()
         );
 
         // When: extract context for EMAIL but provide all entities to ensure PHONE is masked too
@@ -351,21 +379,21 @@ class PiiContextExtractorTest {
         int phoneEnd = phoneStart + "06 11 22 33 44".length();
         
         PiiEntity emailEntity = PiiEntity.builder()
-                .start(emailStart)
-                .end(emailEnd)
-                .type("EMAIL")
+                .startPosition(emailStart)
+                .endPosition(emailEnd)
+                .piiType("EMAIL")
                 .build();
         
         PiiEntity phoneEntity = PiiEntity.builder()
-                .start(phoneStart)
-                .end(phoneEnd)
-                .type("PHONE")
+                .startPosition(phoneStart)
+                .endPosition(phoneEnd)
+                .piiType("PHONE")
                 .build();
 
         ScanResult scanResult = ScanResult.builder()
                 .scanId("scan-1")
                 .sourceContent(source)
-                .entities(List.of(emailEntity, phoneEntity))
+                .detectedEntities(List.of(emailEntity, phoneEntity))
                 .build();
 
         // When: Enriching contexts via enrichContexts (not direct extract call)
@@ -373,10 +401,10 @@ class PiiContextExtractorTest {
 
         // Then: BOTH entities should have contexts with BOTH PIIs masked
         assertSoftly(softly -> {
-            softly.assertThat(result.entities()).hasSize(2);
+            softly.assertThat(result.detectedEntities()).hasSize(2);
             
-            PiiEntity enrichedEmail = result.entities().get(0);
-            PiiEntity enrichedPhone = result.entities().get(1);
+            PiiEntity enrichedEmail = result.detectedEntities().get(0);
+            PiiEntity enrichedPhone = result.detectedEntities().get(1);
             
             // Email context should mask both EMAIL and PHONE
             softly.assertThat(enrichedEmail.context()).isNotNull();

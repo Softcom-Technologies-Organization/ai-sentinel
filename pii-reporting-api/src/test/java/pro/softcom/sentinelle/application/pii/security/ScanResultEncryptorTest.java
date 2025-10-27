@@ -52,8 +52,12 @@ class ScanResultEncryptorTest {
 
         when(encryptionService.encrypt(eq("john@example.com"), any()))
             .thenReturn("ENC:v1:encrypted_email");
+        when(encryptionService.encrypt(eq("john@example.com context"), any()))
+            .thenReturn("ENC:v1:encrypted_email context");
         when(encryptionService.encrypt(eq("1234567890"), any()))
             .thenReturn("ENC:v1:encrypted_phone");
+        when(encryptionService.encrypt(eq("1234567890 context"), any()))
+            .thenReturn("ENC:v1:encrypted_phone context");
 
         // When
         ScanResult encrypted = encryptor.encrypt(scanResult);
@@ -67,7 +71,7 @@ class ScanResultEncryptorTest {
             .isEqualTo("ENC:v1:encrypted_phone");
         softly.assertAll();
 
-        verify(encryptionService, times(2)).encrypt(anyString(), any(EncryptionMetadata.class));
+        verify(encryptionService, times(2 * 2)).encrypt(anyString(), any(EncryptionMetadata.class));
     }
 
     private static Stream<Arguments> noEntitiesTestData() {
@@ -134,9 +138,13 @@ class ScanResultEncryptorTest {
         ScanResult scanResult = createScanResult(entities);
 
         when(encryptionService.isEncrypted("ENC:v1:encrypted")).thenReturn(true);
+        when(encryptionService.isEncrypted("ENC:v1:encrypted context")).thenReturn(true);
         when(encryptionService.isEncrypted("plaintext")).thenReturn(false);
+        when(encryptionService.isEncrypted("plaintext context")).thenReturn(false);
         when(encryptionService.decrypt(eq("ENC:v1:encrypted"), any()))
             .thenReturn("decrypted@email.com");
+        when(encryptionService.decrypt(eq("ENC:v1:encrypted context"), any()))
+            .thenReturn("decrypted context");
 
         // When
         ScanResult decrypted = encryptor.decrypt(scanResult);
@@ -149,7 +157,7 @@ class ScanResultEncryptorTest {
             .isEqualTo("plaintext");
         softly.assertAll();
 
-        verify(encryptionService, times(1)).decrypt(anyString(), any());
+        verify(encryptionService, times(1 * 2)).decrypt(anyString(), any());
     }
 
     @Test
@@ -207,6 +215,10 @@ class ScanResultEncryptorTest {
             .thenReturn("email@test.com");
         when(encryptionService.decrypt(eq("ENC:v1:enc2"), any()))
             .thenReturn("555-1234");
+        when(encryptionService.decrypt(eq("ENC:v1:enc1 context"), any()))
+            .thenReturn("email@test.com context");
+        when(encryptionService.decrypt(eq("ENC:v1:enc2 context"), any()))
+            .thenReturn("555-1234 context");
 
         // When
         ScanResult decrypted = encryptor.decrypt(scanResult);
@@ -220,7 +232,7 @@ class ScanResultEncryptorTest {
             .isEqualTo("555-1234");
         softly.assertAll();
 
-        verify(encryptionService, times(2)).decrypt(anyString(), any());
+        verify(encryptionService, times(2 * 2)).decrypt(anyString(), any());
     }
 
     @Test
@@ -279,7 +291,7 @@ class ScanResultEncryptorTest {
             .isEqualTo("ENC:v1:encrypted");
         softly.assertAll();
 
-        verify(encryptionService, times(501)).encrypt(anyString(), any());
+        verify(encryptionService, times(501 * 2)).encrypt(anyString(), any());
     }
 
     @Test
@@ -315,6 +327,7 @@ class ScanResultEncryptorTest {
             .startPosition(start)
             .endPosition(end)
             .detectedValue(text)
+            .context(text + " context")
             .confidence(0.9)
             .build();
     }

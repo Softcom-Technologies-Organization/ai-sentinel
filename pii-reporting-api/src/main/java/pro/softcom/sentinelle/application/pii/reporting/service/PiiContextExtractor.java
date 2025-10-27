@@ -145,7 +145,6 @@ public class PiiContextExtractor {
         return text.replaceAll("\\s+", " ").trim();
     }
 
-    // --- New helpers for multi-PII masking and word-boundary truncation ---
     private record MaskResult(String text, int mainTokenIndex) {}
 
     private MaskResult maskLineWithEntities(String lineContext,

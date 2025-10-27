@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM maven:4.0.0-rc-4-amazoncorretto-24 AS build
+FROM maven:4.0.0-rc-4-amazoncorretto-25 AS build
 
 WORKDIR /workspace
 
@@ -12,7 +12,7 @@ COPY pii-reporting-api/src ./src
 
 RUN mvn -B clean package -DskipTests -Pdocker-build
 
-FROM amazoncorretto:24 AS runtime
+FROM amazoncorretto:25 AS runtime
 
 WORKDIR /app
 

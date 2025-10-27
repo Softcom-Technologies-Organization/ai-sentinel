@@ -1,6 +1,10 @@
-name: CI/CD - Tests and Publish
+name: CI/CD - Main & Develop
 
 on:
+  push:
+    branches:
+      - main
+      - develop
   workflow_dispatch:
     inputs:
       tag:
@@ -23,112 +27,23 @@ on:
         type: boolean
         default: true
 
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  # Tests run in parallel
-  test-detector:
-    name: Test PII Detector Service
-    runs-on: ubuntu-latest
+  tests:
+    uses: ./.github/workflows/run-tests.yml
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          cd pii-detector-service
-          pip install --upgrade pip
-          pip install -e ".[test]"
-        env:
-          PYTHONPATH: ${{ github.workspace }}/pii-detector-service
-
-      - name: Generate protobuf files
-        run: |
-          cd pii-detector-service
-          python pii_detector/proto/generate_pb.py
-
-      - name: Run unit tests
-        run: |
-          cd pii-detector-service
-          python -m pytest tests/unit/ -v --tb=short --cov=pii_detector --cov-report=xml --cov-report=term-missing
-        env:
-          PYTHONPATH: ${{ github.workspace }}/pii-detector-service
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        if: always()
-        with:
-          files: ./pii-detector-service/coverage.xml
-          flags: detector
-          name: detector-coverage
-          fail_ci_if_error: false
-
-  test-api:
-    name: Test Reporting API
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 25
-        uses: actions/setup-java@v4
-        with:
-          java-version: '25'
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Run tests with Maven
-        run: |
-          cd pii-reporting-api
-          mvn clean test -Pci-build
-        env:
-          MAVEN_OPTS: '-Xmx1024m'
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-test-results
-          path: pii-reporting-api/target/surefire-reports/
-
-  # Summary job - gate for publication
-  tests-status:
-    name: Tests Status Check
-    runs-on: ubuntu-latest
-    needs: [test-detector, test-api]
-    if: always()
-    
-    steps:
-      - name: Check tests results
-        run: |
-          if [ "${{ needs.test-detector.result }}" != "success" ] || \
-             [ "${{ needs.test-api.result }}" != "success" ]; then
-            echo "❌ At least one test job failed"
-            echo "Detector: ${{ needs.test-detector.result }}"
-            echo "API: ${{ needs.test-api.result }}"
-            exit 1
-          fi
-          echo "✅ All tests passed successfully"
-
-  # Publication jobs - run in parallel after tests succeed
   build-and-publish-detector:
     name: Build and Publish PII Detector
     runs-on: ubuntu-latest
-    needs: [tests-status]
-    if: |
-      github.event_name != 'pull_request' &&
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') &&
-      (github.event.inputs.build_detector != 'false' || github.event_name != 'workflow_dispatch')
-    permissions:
-      contents: read
-      packages: write
-
+    needs: [tests]
+    if: github.event.inputs.build_detector != 'false' || github.event_name != 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -139,14 +54,10 @@ jobs:
           VERSION=$(grep -A 10 '^\[project\]' pii-detector-service/pyproject.toml | grep '^version = ' | sed 's/version = "\(.*\)"/\1/' | head -1)
           OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
             echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$VERSION,ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:latest" >> $GITHUB_OUTPUT
-          elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$VERSION" >> $GITHUB_OUTPUT
           else
-            BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///')
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$VERSION-$BRANCH_NAME" >> $GITHUB_OUTPUT
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$VERSION" >> $GITHUB_OUTPUT
           fi
 
       - name: Log in to GitHub Container Registry
@@ -172,15 +83,8 @@ jobs:
   build-and-publish-api:
     name: Build and Publish Reporting API
     runs-on: ubuntu-latest
-    needs: [tests-status]
-    if: |
-      github.event_name != 'pull_request' &&
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') &&
-      (github.event.inputs.build_api != 'false' || github.event_name != 'workflow_dispatch')
-    permissions:
-      contents: read
-      packages: write
-
+    needs: [tests]
+    if: github.event.inputs.build_api != 'false' || github.event_name != 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -191,14 +95,10 @@ jobs:
           VERSION=$(grep -A 2 '<artifactId>ai-sentinel</artifactId>' pii-reporting-api/pom.xml | grep '<version>' | sed 's/.*<version>\(.*\)<\/version>.*/\1/' | sed 's/-SNAPSHOT$//' | sed 's/-RELEASE$//')
           OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
             echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$VERSION,ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:latest" >> $GITHUB_OUTPUT
-          elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$VERSION" >> $GITHUB_OUTPUT
           else
-            BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///')
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$VERSION-$BRANCH_NAME" >> $GITHUB_OUTPUT
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$VERSION" >> $GITHUB_OUTPUT
           fi
 
       - name: Log in to GitHub Container Registry
@@ -224,15 +124,8 @@ jobs:
   build-and-publish-ui:
     name: Build and Publish Reporting UI
     runs-on: ubuntu-latest
-    needs: [tests-status]
-    if: |
-      github.event_name != 'pull_request' &&
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || github.event_name == 'release') &&
-      (github.event.inputs.build_ui != 'false' || github.event_name != 'workflow_dispatch')
-    permissions:
-      contents: read
-      packages: write
-
+    needs: [tests]
+    if: github.event.inputs.build_ui != 'false' || github.event_name != 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -243,14 +136,10 @@ jobs:
           VERSION=$(grep '"version":' pii-reporting-ui/package.json | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
           OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
             echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$VERSION,ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:latest" >> $GITHUB_OUTPUT
-          elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$VERSION" >> $GITHUB_OUTPUT
           else
-            BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///')
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$VERSION-$BRANCH_NAME" >> $GITHUB_OUTPUT
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$VERSION" >> $GITHUB_OUTPUT
           fi
 
       - name: Log in to GitHub Container Registry

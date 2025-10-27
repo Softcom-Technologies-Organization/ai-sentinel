@@ -13,13 +13,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
+import pro.softcom.sentinelle.domain.pii.security.EncryptionException;
 import pro.softcom.sentinelle.domain.pii.security.EncryptionMetadata;
 import pro.softcom.sentinelle.domain.pii.security.EncryptionService;
 
 import java.util.List;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -218,6 +221,92 @@ class ScanResultEncryptorTest {
         softly.assertAll();
 
         verify(encryptionService, times(2)).decrypt(anyString(), any());
+    }
+
+    @Test
+    @DisplayName("Should_PropagateEncryptionException_When_EncryptionFails")
+    void should_PropagateEncryptionException_When_EncryptionFails() {
+        // Given
+        PiiEntity entity = createEntity("EMAIL", 0, 20, "test@example.com");
+        ScanResult scanResult = createScanResult(List.of(entity));
+
+        when(encryptionService.encrypt(anyString(), any()))
+            .thenThrow(new EncryptionException("Key not found"));
+
+        // When & Then
+        assertThatThrownBy(() -> encryptor.encrypt(scanResult))
+            .isInstanceOf(EncryptionException.class)
+            .hasMessageContaining("Key not found");
+    }
+
+    @Test
+    @DisplayName("Should_PropagateEncryptionException_When_DecryptionFails")
+    void should_PropagateEncryptionException_When_DecryptionFails() {
+        // Given
+        PiiEntity entity = createEntity("EMAIL", 0, 20, "ENC:v1:corrupted");
+        ScanResult scanResult = createScanResult(List.of(entity));
+
+        when(encryptionService.isEncrypted("ENC:v1:corrupted")).thenReturn(true);
+        when(encryptionService.decrypt(anyString(), any()))
+            .thenThrow(new EncryptionException("Integrity check failed"));
+
+        // When & Then
+        assertThatThrownBy(() -> encryptor.decrypt(scanResult))
+            .isInstanceOf(EncryptionException.class)
+            .hasMessageContaining("Integrity check failed");
+    }
+
+    @Test
+    @DisplayName("Should_EncryptSuccessfully_When_EncryptingMoreThan500Entities")
+    void should_EncryptSuccessfully_When_EncryptingMoreThan500Entities() {
+        // Given
+        List<PiiEntity> largeEntityList = IntStream.range(0, 501)
+            .mapToObj(i -> createEntity("EMAIL", i * 10, i * 10 + 5, "email" + i + "@test.com"))
+            .toList();
+
+        ScanResult scanResult = createScanResult(largeEntityList);
+
+        when(encryptionService.encrypt(anyString(), any()))
+            .thenReturn("ENC:v1:encrypted");
+
+        // When
+        ScanResult encrypted = encryptor.encrypt(scanResult);
+
+        // Then
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(encrypted.detectedEntities()).hasSize(501);
+        softly.assertThat(encrypted.detectedEntities().getFirst().detectedValue())
+            .isEqualTo("ENC:v1:encrypted");
+        softly.assertAll();
+
+        verify(encryptionService, times(501)).encrypt(anyString(), any());
+    }
+
+    @Test
+    @DisplayName("Should_PreserveScanResultIntegrity_When_EncryptionExceptionOccurs")
+    void should_PreserveScanResultIntegrity_When_EncryptionExceptionOccurs() {
+        // Given
+        PiiEntity entity = createEntity("EMAIL", 0, 20, "test@example.com");
+        ScanResult original = ScanResult.builder()
+            .scanId("scan-123")
+            .spaceKey("SPACE")
+            .pageId("page-456")
+            .detectedEntities(List.of(entity))
+            .build();
+
+        when(encryptionService.encrypt(anyString(), any()))
+            .thenThrow(new EncryptionException("Test failure"));
+
+        // When & Then
+        assertThatThrownBy(() -> encryptor.encrypt(original))
+            .isInstanceOf(EncryptionException.class);
+
+        // Verify original scanResult is not modified (immutability)
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(original.scanId()).isEqualTo("scan-123");
+        softly.assertThat(original.detectedEntities().getFirst().detectedValue())
+            .isEqualTo("test@example.com");
+        softly.assertAll();
     }
 
     private PiiEntity createEntity(String type, int start, int end, String text) {

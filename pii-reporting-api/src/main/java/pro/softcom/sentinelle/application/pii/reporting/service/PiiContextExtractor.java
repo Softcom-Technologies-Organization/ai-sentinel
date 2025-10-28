@@ -9,9 +9,10 @@ import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentPa
 import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Extracts a readable context around detected PII occurrences.
@@ -28,7 +29,7 @@ import java.util.Comparator;
 @Component
 @RequiredArgsConstructor
 public class PiiContextExtractor {
-    
+
     private final ContentParserFactory parserFactory;
     private final PiiContextProperties contextProperties;
 
@@ -67,11 +68,11 @@ public class PiiContextExtractor {
             return scanResult;
         } catch (IndexOutOfBoundsException e) {
             log.error("Position error during context extraction, scanId={}",
-                      scanResult.scanId(), e);
+                    scanResult.scanId(), e);
             return scanResult;
         } catch (Exception e) {
             log.error("Unexpected error during PII context enrichment, scanId={}",
-                      scanResult.scanId(), e);
+                    scanResult.scanId(), e);
             return scanResult;
         }
     }
@@ -90,7 +91,7 @@ public class PiiContextExtractor {
         }
 
         String context = extractMaskedLineContext(source, entity.startPosition(), entity.endPosition(),
-                                                 entity.piiType(), allEntities);
+                entity.piiType(), allEntities);
         return entity.toBuilder().context(context).build();
     }
 
@@ -120,8 +121,8 @@ public class PiiContextExtractor {
         // Detect content type and get appropriate parser
         ContentParser parser = parserFactory.getParser(source);
 
-        int lineStartInSource = parser.findLineStart(source, PiiMaskingUtils.clamp(start, 0, source.length()));
-        int lineEndInSource = parser.findLineEnd(source, PiiMaskingUtils.clamp(end, 0, source.length()));
+        int lineStartInSource = parser.findLineStart(source, Math.clamp(start, 0, source.length()));
+        int lineEndInSource = parser.findLineEnd(source, Math.clamp(end, 0, source.length()));
         String lineContext = source.substring(lineStartInSource, lineEndInSource);
 
         // Clean HTML tags if present
@@ -145,7 +146,8 @@ public class PiiContextExtractor {
         return text.replaceAll("\\s+", " ").trim();
     }
 
-    private record MaskResult(String text, int mainTokenIndex) {}
+    private record MaskResult(String text, int mainTokenIndex) {
+    }
 
     private MaskResult maskLineWithEntities(String lineContext,
                                             int lineStartInSource,
@@ -154,37 +156,86 @@ public class PiiContextExtractor {
                                             String mainType,
                                             List<PiiEntity> allEntities) {
         int lineLen = lineContext.length();
+        List<TempEntity> relEntities = collectRelevantEntities(
+                lineLen, lineStartInSource, mainStart, mainEnd, mainType, allEntities
+        );
+
+        relEntities.sort(Comparator.comparingInt(te -> te.start));
+        return buildMaskedText(lineContext, relEntities, mainStart, lineStartInSource);
+    }
+
+    /**
+     * Collects all relevant entities for masking: the main entity and secondary entities
+     * that intersect with the current line.
+     */
+    private List<TempEntity> collectRelevantEntities(int lineLen,
+                                                     int lineStartInSource,
+                                                     int mainStart,
+                                                     int mainEnd,
+                                                     String mainType,
+                                                     List<PiiEntity> allEntities) {
         List<TempEntity> relEntities = new ArrayList<>();
 
         // Always include the main entity
         relEntities.add(new TempEntity(
-                PiiMaskingUtils.clamp(mainStart - lineStartInSource, 0, lineLen),
-                PiiMaskingUtils.clamp(mainEnd - lineStartInSource, 0, lineLen),
+                Math.clamp(mainStart - lineStartInSource, 0, lineLen),
+                Math.clamp(mainEnd - lineStartInSource, 0, lineLen),
                 mainType,
                 true
         ));
 
+        // Add secondary entities using stream with filters (eliminates continue statements)
         if (allEntities != null && !allEntities.isEmpty()) {
-            for (PiiEntity e : allEntities) {
-                if (e == null) continue;
-                int absS = e.startPosition();
-                int absE = e.endPosition();
-                // filter entities that intersect the line
-                if (absE <= lineStartInSource || absS >= lineStartInSource + lineLen) continue;
-                // skip if same as main (already included)
-                if (absS == mainStart && absE == mainEnd) continue;
-                int rs = PiiMaskingUtils.clamp(absS - lineStartInSource, 0, lineLen);
-                int re = PiiMaskingUtils.clamp(absE - lineStartInSource, rs, lineLen);
-                relEntities.add(new TempEntity(rs, re, e.piiType(), false));
-            }
+            allEntities.stream()
+                    .filter(Objects::nonNull)
+                    .filter(e -> isEntityInLine(e, lineStartInSource, lineLen))
+                    .filter(e -> !isMainEntity(e, mainStart, mainEnd))
+                    .forEach(e -> relEntities.add(createTempEntity(e, lineStartInSource, lineLen)));
         }
 
-        // Sort by start and build masked line
-        relEntities.sort(Comparator.comparingInt(te -> te.start));
+        return relEntities;
+    }
+
+    /**
+     * Checks if an entity intersects with the current line.
+     */
+    private boolean isEntityInLine(PiiEntity entity, int lineStart, int lineLen) {
+        int absE = entity.endPosition();
+        int absS = entity.startPosition();
+        return !(absE <= lineStart || absS >= lineStart + lineLen);
+    }
+
+    /**
+     * Checks if an entity is the main entity being processed.
+     */
+    private boolean isMainEntity(PiiEntity entity, int mainStart, int mainEnd) {
+        return entity.startPosition() == mainStart && entity.endPosition() == mainEnd;
+    }
+
+    /**
+     * Creates a TempEntity from a PiiEntity, adjusting positions relative to the line start.
+     */
+    private TempEntity createTempEntity(PiiEntity entity, int lineStartInSource, int lineLen) {
+        long absS = entity.startPosition();
+        long absE = entity.endPosition();
+        int rs = (int) Math.clamp(absS - lineStartInSource, 0L, lineLen);
+        int re = (int) Math.clamp(absE - lineStartInSource, rs, (long) lineLen);
+        return new TempEntity(rs, re, entity.piiType(), false);
+    }
+
+    /**
+     * Builds the masked text by replacing entity ranges with tokens.
+     */
+    private MaskResult buildMaskedText(String lineContext,
+                                       List<TempEntity> sortedEntities,
+                                       int mainStart,
+                                       int lineStartInSource) {
+        int lineLen = lineContext.length();
         StringBuilder out = new StringBuilder(lineLen + 16);
         int idx = 0;
         int mainTokenIndex = -1;
-        for (TempEntity te : relEntities) {
+
+        for (TempEntity te : sortedEntities) {
             int s = te.start;
             int e = te.end;
             if (s > idx) {
@@ -197,14 +248,23 @@ public class PiiContextExtractor {
             }
             idx = Math.max(idx, e);
         }
+
         if (idx < lineLen) {
             out.append(lineContext, idx, lineLen);
         }
+
         if (mainTokenIndex < 0) {
-            // Fallback: place center near mainStart relative position
-            mainTokenIndex = Math.min(Math.max(0, mainStart - lineStartInSource), out.length());
+            mainTokenIndex = calculateFallbackPosition(mainStart, lineStartInSource, out.length());
         }
+
         return new MaskResult(out.toString(), mainTokenIndex);
+    }
+
+    /**
+     * Calculates fallback position for main token index when not found in the masked text.
+     */
+    private int calculateFallbackPosition(int mainStart, int lineStartInSource, int textLength) {
+        return Math.clamp(mainStart - lineStartInSource, 0, textLength);
     }
 
     private static final class TempEntity {
@@ -212,19 +272,23 @@ public class PiiContextExtractor {
         final int end;
         final String type;
         final boolean isMain;
+
         TempEntity(int start, int end, String type, boolean isMain) {
-            this.start = start; this.end = end; this.type = type; this.isMain = isMain;
+            this.start = start;
+            this.end = end;
+            this.type = type;
+            this.isMain = isMain;
         }
     }
 
     private String truncateAroundPositionNoWordCut(String text, int centerPosition) {
         int maxLength = contextProperties.getMaxLength();
         int sideLength = contextProperties.getSideLength();
-        
+
         if (text.length() <= maxLength) {
             return text;
         }
-        int safeCenter = Math.min(Math.max(centerPosition, 0), text.length());
+        int safeCenter = Math.clamp(0, centerPosition, text.length());
         int half = sideLength;
         int from = Math.max(0, safeCenter - half);
         int to = Math.min(text.length(), safeCenter + half);

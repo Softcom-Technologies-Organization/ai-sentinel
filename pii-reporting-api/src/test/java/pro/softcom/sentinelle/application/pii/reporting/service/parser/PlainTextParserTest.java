@@ -2,6 +2,11 @@ package pro.softcom.sentinelle.application.pii.reporting.service.parser;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
@@ -172,12 +177,10 @@ class PlainTextParserTest {
 
     // ========== cleanText Tests ==========
 
-    @Test
-    @DisplayName("Should_ReturnTextUnchanged_When_CleaningPlainText")
-    void Should_ReturnTextUnchanged_When_CleaningPlainText() {
-        // Given
-        String text = "Hello world";
-        
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("provideTextPreservationCases")
+    @DisplayName("Should_PreserveTextUnchanged_When_CleaningPlainText")
+    void Should_PreserveTextUnchanged_When_CleaningPlainText(String description, String text) {
         // When
         String cleaned = parser.cleanText(text);
         
@@ -185,30 +188,12 @@ class PlainTextParserTest {
         assertThat(cleaned).isEqualTo(text);
     }
 
-    @Test
-    @DisplayName("Should_PreserveWhitespace_When_CleaningText")
-    void Should_PreserveWhitespace_When_CleaningText() {
-        // Given
-        String text = "  spaces  \n\ttabs  ";
-        
-        // When
-        String cleaned = parser.cleanText(text);
-        
-        // Then
-        assertThat(cleaned).isEqualTo(text);
-    }
-
-    @Test
-    @DisplayName("Should_PreserveHtmlTags_When_CleaningText")
-    void Should_PreserveHtmlTags_When_CleaningText() {
-        // Given
-        String text = "<html>content</html>";
-        
-        // When
-        String cleaned = parser.cleanText(text);
-        
-        // Then
-        assertThat(cleaned).isEqualTo(text);
+    static Stream<Arguments> provideTextPreservationCases() {
+        return Stream.of(
+            Arguments.of("plain text", "Hello world"),
+            Arguments.of("whitespace and tabs", "  spaces  \n\ttabs  "),
+            Arguments.of("HTML tags", "<html>content</html>")
+        );
     }
 
     @Test

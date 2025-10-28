@@ -23,14 +23,10 @@ public final class PiiMaskingUtils {
         return "[" + t + "]";
     }
 
-    public static int clamp(int v, int lo, int hi) {
-        return Math.max(lo, Math.min(v, hi));
-    }
-
     public static String safeSub(String s, int start, int end) {
         int len = s.length();
-        int st = clamp(start, 0, len);
-        int en = clamp(end, st, len);
+        int st = Math.clamp(start, 0, len);
+        int en = Math.clamp(end, st, len);
         return s.substring(st, en);
     }
 
@@ -109,8 +105,8 @@ public final class PiiMaskingUtils {
         int currentIndex = 0;
 
         for (PiiEntity entity : sortedEntities) {
-            int start = clamp(entity.startPosition(), 0, sourceLength);
-            int end = clamp(entity.endPosition(), start, sourceLength);
+            int start = Math.clamp(entity.startPosition(), 0, sourceLength);
+            int end = Math.clamp(entity.endPosition(), start, sourceLength);
 
             if (start > currentIndex) {
                 result.append(safeSub(source, currentIndex, start));

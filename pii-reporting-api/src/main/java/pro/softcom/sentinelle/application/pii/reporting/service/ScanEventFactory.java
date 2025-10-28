@@ -194,18 +194,24 @@ public class ScanEventFactory {
         // Build a lightweight list of entities to ensure other PIIs in the same line are also masked in context
         List<PiiEntity> all = detection == null || detection.sensitiveDataFound() == null ? List.of() :
                 detection.sensitiveDataFound().stream()
-                        .map(sd -> PiiEntity.builder()
-                                .startPosition(sd.position())
-                                .endPosition(sd.end())
-                                .piiType(sd.type() != null ? sd.type().name() : null)
-                                .build())
+                        .map(sd -> {
+                            String sdType = null;
+                            if (sd.type() != null) {
+                                sdType = sd.type().name();
+                            }
+                            return PiiEntity.builder()
+                                    .startPosition(sd.position())
+                                    .endPosition(sd.end())
+                                    .piiType(sdType)
+                                    .build();
+                        })
                         .toList();
         String piiContext = piiContextExtractor.extract(sourceContent, data.position(), data.end(), type, all);
         return PiiEntity.builder()
                 .context(piiContext)
                 .detectedValue(data.value())
-                .piiType(data.type() != null ? data.type().name() : null)
-                .piiTypeLabel(data.type() != null ? data.type().getLabel() : null)
+                .piiType(type)
+                .piiTypeLabel(typeLabel)
                 .startPosition(data.position())
                 .endPosition(data.end())
                 .confidence(data.score())

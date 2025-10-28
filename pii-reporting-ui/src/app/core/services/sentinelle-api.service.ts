@@ -259,4 +259,5 @@ export interface RevealedSecret {
   endPosition: number;
   sensitiveValue: string;
   sensitiveContext: string;
+  maskedContext: string;
 }

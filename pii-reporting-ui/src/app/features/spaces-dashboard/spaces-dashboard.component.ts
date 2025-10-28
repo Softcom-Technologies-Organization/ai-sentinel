@@ -689,7 +689,6 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
         };
       }),
       // maskedHtml: this.sentinelleApiService.sanitizeMaskedHtml(payload.maskedContent),
-      maskedHtml: this.sentinelleApiService.sanitizeMaskedHtml("<div><b>Bonjour</b></div>"),
       attachmentName: payload.attachmentName,
       attachmentType: payload.attachmentType,
       attachmentUrl: payload.attachmentUrl

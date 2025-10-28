@@ -19,6 +19,8 @@ import {Severity} from '../../core/models/severity';
 import {PiiItemCardUtils} from './pii-item-card.utils';
 import {TestIds} from '../test-ids.constants';
 import {SentinelleApiService} from '../../core/services/sentinelle-api.service';
+import {DataView} from 'primeng/dataview';
+import {Divider} from 'primeng/divider';
 
 /**
  * Display a single detection item with masked HTML snippet, entities and severity badge.
@@ -27,7 +29,7 @@ import {SentinelleApiService} from '../../core/services/sentinelle-api.service';
 @Component({
   selector: 'app-pii-item-card',
   standalone: true,
-  imports: [CommonModule, ButtonModule, CardModule, TagModule, ChipModule],
+  imports: [CommonModule, ButtonModule, CardModule, TagModule, ChipModule, DataView, Divider],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pii-item-card.component.html',
   styleUrl: './pii-item-card.component.css',
@@ -85,7 +87,6 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
     const hasSecrets = this.item?.detectedEntities?.some(e => e.sensitiveValue != null);
     if (hasSecrets) {
       // Secrets already loaded, just reveal
-      console.log(this.item?.detectedEntities)
       this.revealed = true;
       return;
     }
@@ -103,11 +104,12 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
         response.secrets.forEach(secret => {
           const entity = this.item.detectedEntities.find(
             e => e.startPosition === secret.startPosition &&
-                 e.endPosition === secret.endPosition
+                 e.endPosition === secret.endPosition &&
+              e.maskedContext === secret.maskedContext
           );
           if (entity) {
             entity.sensitiveValue = secret.sensitiveValue;
-            console.log(entity)
+            entity.sensitiveContext = secret.sensitiveContext;
           }
         });
         this.revealed = true;

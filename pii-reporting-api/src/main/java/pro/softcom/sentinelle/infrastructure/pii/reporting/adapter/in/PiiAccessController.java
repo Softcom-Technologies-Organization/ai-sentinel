@@ -74,7 +74,8 @@ public class PiiAccessController {
                         e.startPosition(),
                         e.endPosition(),
                         e.sensitiveValue(),
-                        e.sensitiveContext()
+                        e.sensitiveContext(),
+                        e.maskedContext()
                 ))
                 .toList();
 
@@ -111,6 +112,7 @@ public class PiiAccessController {
             int startPosition,
             int endPosition,
             String sensitiveValue,
-            String sensitiveContext
+            String sensitiveContext,
+            String maskedContext
     ) {}
 }

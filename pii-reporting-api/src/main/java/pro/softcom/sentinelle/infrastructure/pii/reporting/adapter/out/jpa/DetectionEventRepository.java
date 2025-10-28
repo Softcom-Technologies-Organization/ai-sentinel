@@ -42,6 +42,9 @@ public interface DetectionEventRepository extends
     java.util.List<LatestScanProjection> findLatestScanGrouped(
         org.springframework.data.domain.Pageable pageable);
 
-    List<ScanEventEntity> findByScanIdAndEventTypeInOrderByEventSeqAsc(String scanId,
-                                                                       Collection<String> eventTypes);
+    List<ScanEventEntity> findByScanIdAndEventTypeInOrderByEventSeqAsc(String scanId, Collection<String> eventTypes);
+
+    List<ScanEventEntity> findByScanIdAndPageIdAndEventTypeInOrderByEventSeqAsc(
+            String scanId, String pageId, Collection<String> eventTypes
+    );
 }

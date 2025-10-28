@@ -1,9 +1,12 @@
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   inject,
   Input,
   OnChanges,
+  OnInit,
+  signal,
   SimpleChanges
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
@@ -15,10 +18,11 @@ import {ChipModule} from 'primeng/chip';
 import {Severity} from '../../core/models/severity';
 import {PiiItemCardUtils} from './pii-item-card.utils';
 import {TestIds} from '../test-ids.constants';
+import {SentinelleApiService} from '../../core/services/sentinelle-api.service';
 
 /**
  * Display a single detection item with masked HTML snippet, entities and severity badge.
- * Values are masked by default; user can reveal per-card.
+ * Values are masked by default; user can reveal per-card by calling the reveal endpoint.
  */
 @Component({
   selector: 'app-pii-item-card',
@@ -28,7 +32,7 @@ import {TestIds} from '../test-ids.constants';
   templateUrl: './pii-item-card.component.html',
   styleUrl: './pii-item-card.component.css',
 })
-export class PiiItemCardComponent implements OnChanges {
+export class PiiItemCardComponent implements OnInit, OnChanges {
   /** Item to render. */
   @Input() item!: PiiItem;
   /** If true, values are masked until user reveals. */
@@ -37,12 +41,26 @@ export class PiiItemCardComponent implements OnChanges {
   revealed = false;
   /** Controls opening of the detail section to match UX spec */
   detailsOpen = false;
+  /** Whether revealing secrets is allowed by backend configuration */
+  readonly canRevealSecrets = signal<boolean>(true);
+  /** Whether a reveal request is in progress */
+  readonly isRevealing = signal<boolean>(false);
 
   // Utils facade for UI helper methods
   readonly piiItemCardUtils = inject(PiiItemCardUtils);
+  private readonly sentinelleApi = inject(SentinelleApiService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   // Test IDs for E2E testing
   readonly testIds = TestIds;
+
+  ngOnInit(): void {
+    // Load reveal configuration from backend
+    this.sentinelleApi.getRevealConfig().subscribe({
+      next: (allowed) => this.canRevealSecrets.set(allowed),
+      error: () => this.canRevealSecrets.set(false)
+    });
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['item'] || changes['maskByDefault']) {
@@ -56,7 +74,53 @@ export class PiiItemCardComponent implements OnChanges {
     return this.item.maskedHtml;
   }
 
-  toggleReveal(): void { this.revealed = !this.revealed; }
+  toggleReveal(): void {
+    if (this.revealed) {
+      // Already revealed, just toggle back
+      this.revealed = false;
+      return;
+    }
+
+    // Check if secrets are already loaded (detectedValue is present)
+    const hasSecrets = this.item?.detectedEntities?.some(e => e.detectedValue != null);
+    if (hasSecrets) {
+      // Secrets already loaded, just reveal
+      console.log(this.item?.detectedEntities)
+      this.revealed = true;
+      return;
+    }
+
+    // Need to fetch secrets from backend
+    if (!this.canRevealSecrets() || !this.item?.pageId) {
+      // Cannot reveal or missing pageId
+      return;
+    }
+
+    this.isRevealing.set(true);
+    this.sentinelleApi.revealPageSecrets(this.item.scanId, this.item.pageId).subscribe({
+      next: (response) => {
+        // Map secrets to entities by position
+        response.secrets.forEach(secret => {
+          const entity = this.item.detectedEntities.find(
+            e => e.startPosition === secret.startPosition &&
+                 e.endPosition === secret.endPosition
+          );
+          if (entity) {
+            entity.detectedValue = secret.detectedValue;
+            console.log(entity)
+          }
+        });
+        this.revealed = true;
+        this.isRevealing.set(false);
+        // Force change detection since we mutated the entities
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Failed to reveal secrets:', err);
+        this.isRevealing.set(false);
+      }
+    });
+  }
   toggleDetails(): void { this.detailsOpen = !this.detailsOpen; }
 
   sevClass(sev?: Severity | null): string {

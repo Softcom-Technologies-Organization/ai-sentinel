@@ -51,12 +51,35 @@ public class PiiAccessAuditService {
      * @param piiCount total number of PII entities in the scan
      */
     public void auditPiiAccess(String scanId, AccessPurpose purpose, int piiCount) {
+        auditPiiAccess(scanId, null, null, null, purpose, piiCount);
+    }
+    
+    /**
+     * Audits PII access for compliance purposes at PAGE level.
+     *
+     * <p><b>Granularity: PAGE level</b></p>
+     *
+     * <p>This method creates <b>one audit record per page access</b>, tracking which
+     * specific Confluence page had its PII revealed.</p>
+     *
+     * @param scanId    scan identifier
+     * @param pageId    Confluence page identifier
+     * @param pageTitle Confluence page title (for human readability)
+     * @param spaceKey  Confluence space key
+     * @param purpose   access purpose (for audit trail)
+     * @param piiCount  number of PII entities revealed on this page
+     */
+    public void auditPiiAccess(String scanId, String spaceKey, String pageId, String pageTitle,
+                               AccessPurpose purpose, int piiCount) {
         try {
             Instant now = Instant.now();
             Instant retention = now.plus(retentionDays, ChronoUnit.DAYS);
 
             PiiAccessAuditEntity audit = PiiAccessAuditEntity.builder()
                     .scanId(scanId)
+                    .pageId(pageId)
+                    .pageTitle(pageTitle)
+                    .spaceKey(spaceKey)
                     .accessedAt(now)
                     .retentionUntil(retention)
                     .purpose(purpose.name())
@@ -65,8 +88,8 @@ public class PiiAccessAuditService {
 
             auditRepository.save(audit);
 
-            log.info("[PII_ACCESS_AUDIT] scanId={} purpose={} count={} retentionUntil={}",
-                    scanId, purpose, piiCount, retention);
+            log.info("[PII_ACCESS_AUDIT] scanId={} pageId={} spaceKey={} purpose={} count={} retentionUntil={}",
+                    scanId, pageId, spaceKey, purpose, piiCount, retention);
         } catch (Exception e) {
             // Never fail the main flow due to audit failure
             log.error("[PII_ACCESS_AUDIT] Failed to log audit: {}", e.getMessage(), e);

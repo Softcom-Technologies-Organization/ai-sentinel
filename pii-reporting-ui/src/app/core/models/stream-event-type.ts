@@ -13,6 +13,7 @@ export type StreamEventType =
   | 'keepalive';
 
 export interface RawStreamPayload {
+  scanId?: string;
   spaceKey?: string;
   pageId?: string | number;
   pageTitle?: string;

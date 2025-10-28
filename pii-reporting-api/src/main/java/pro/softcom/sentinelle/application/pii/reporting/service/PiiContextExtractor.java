@@ -34,7 +34,7 @@ public class PiiContextExtractor {
     private final PiiContextProperties contextProperties;
 
     public String extract(String source, int start, int end, String type) {
-        return extractMaskedLineContext(source, start, end, type);
+        return extractLineContext(source, start, end, type, null, true);
     }
 
     /**
@@ -42,7 +42,16 @@ public class PiiContextExtractor {
      * Useful when the source contains multiple PIIs to avoid leaking others in the context.
      */
     public String extract(String source, int start, int end, String type, List<PiiEntity> allEntities) {
-        return extractMaskedLineContext(source, start, end, type, allEntities);
+        return extractLineContext(source, start, end, type, allEntities, true);
+    }
+
+    /**
+     * Extracts real context without masking PII values.
+     * Used for encrypted storage and reveal functionality.
+     * The real context contains actual sensitive data and should always be encrypted.
+     */
+    public String extractReal(String source, int start, int end) {
+        return extractLineContext(source, start, end, null, null, false);
     }
 
     /**
@@ -90,30 +99,53 @@ public class PiiContextExtractor {
             return entity;
         }
 
-        String context = extractMaskedLineContext(source, entity.startPosition(), entity.endPosition(),
+        // Extract masked context for immediate display
+        String maskedContext = extract(source, entity.startPosition(), entity.endPosition(),
                 entity.piiType(), allEntities);
-        return entity.toBuilder().context(context).build();
+        
+        // Extract real context for encrypted storage
+        String realContext = extractReal(source, entity.startPosition(), entity.endPosition());
+        
+        return entity.toBuilder()
+                .context(realContext)
+                .maskedContext(maskedContext)
+                .build();
     }
 
     private boolean hasContext(PiiEntity entity) {
-        return entity.context() != null && !entity.context().isBlank();
+        return (entity.context() != null && !entity.context().isBlank()) 
+                || (entity.maskedContext() != null && !entity.maskedContext().isBlank());
     }
 
     /**
-     * Extracts the line context containing the PII, masks the sensitive value,
-     * and truncates if necessary.
-     *
-     * @param source complete source content
-     * @param start  PII start position
-     * @param end    PII end position
-     * @param type   detected PII type
-     * @return masked and truncated context, or null if extraction is not possible
+     * Package-private method for testing purposes.
+     * Extracts masked line context with type information.
      */
     String extractMaskedLineContext(String source, int start, int end, String type) {
-        return extractMaskedLineContext(source, start, end, type, null);
+        return extractLineContext(source, start, end, type, null, true);
     }
 
+    /**
+     * Package-private method for testing purposes.
+     * Extracts masked line context with type information and entity list.
+     */
     String extractMaskedLineContext(String source, int start, int end, String type, List<PiiEntity> allEntities) {
+        return extractLineContext(source, start, end, type, allEntities, true);
+    }
+
+    /**
+     * Unified method to extract line context, with optional masking.
+     * 
+     * @param source complete source content
+     * @param start PII start position
+     * @param end PII end position
+     * @param type detected PII type (can be null if maskPii is false)
+     * @param allEntities all entities to mask in the same line (can be null)
+     * @param maskPii whether to mask PII values with tokens
+     * @return extracted and truncated context, or null if extraction is not possible
+     */
+    private String extractLineContext(String source, int start, int end, String type, 
+                                     List<PiiEntity> allEntities, boolean maskPii) {
         if (source == null || source.isBlank()) {
             return null;
         }
@@ -128,11 +160,20 @@ public class PiiContextExtractor {
         // Clean HTML tags if present
         lineContext = parser.cleanText(lineContext);
 
-        MaskResult masked = maskLineWithEntities(lineContext, lineStartInSource, start, end, type, allEntities);
+        // Calculate position for truncation centering
+        int centerPosition = Math.clamp(start - lineStartInSource, 0, lineContext.length());
 
-        // Truncate around the main token index on the un-compacted string, snapping to word boundaries
-        String truncated = truncateAroundPositionNoWordCut(masked.text(), masked.mainTokenIndex());
-        // Finally compact whitespace for cleaner display
+        // Apply masking if requested
+        if (maskPii) {
+            MaskResult masked = maskLineWithEntities(lineContext, lineStartInSource, start, end, type, allEntities);
+            lineContext = masked.text();
+            centerPosition = masked.mainTokenIndex();
+        }
+
+        // Truncate around the center position without cutting words
+        String truncated = truncateAroundPositionNoWordCut(lineContext, centerPosition);
+
+        // Compact whitespace for cleaner display
         return compactWhitespace(truncated);
     }
 

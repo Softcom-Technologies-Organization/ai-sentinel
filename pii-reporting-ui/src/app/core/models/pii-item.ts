@@ -2,6 +2,8 @@ import {PiiEntity} from './pii';
 import {Severity} from './severity';
 
 export interface PiiItem {
+  scanId: string;
+  spaceKey: string;
   pageId: string;
   pageTitle?: string;
   pageUrl?: string;

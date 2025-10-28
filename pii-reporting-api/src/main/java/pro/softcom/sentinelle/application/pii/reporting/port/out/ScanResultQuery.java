@@ -39,10 +39,11 @@ public interface ScanResultQuery {
      * Automatically logs access for GDPR/nLPD compliance.
      * 
      * @param scanId scan identifier
+     * @param pageId page ID
      * @param purpose access purpose (for audit trail)
      * @return list of scan results with decrypted PII
      */
-    List<ScanResult> listItemEventsDecrypted(String scanId, AccessPurpose purpose);
+    List<ScanResult> listItemEventsDecrypted(String scanId, String pageId, AccessPurpose purpose);
 
     /**
      * Projection de lecture (côté application) pour les compteurs par espace.

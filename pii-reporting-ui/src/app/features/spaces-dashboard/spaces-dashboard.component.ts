@@ -667,6 +667,8 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     }
     const severity = this.sentinelleApiService.severityForEntities(entities);
     const piiItem: PiiItem = {
+      scanId: payload.scanId ?? '',
+      spaceKey: spaceKey,
       pageId: String(payload.pageId ?? ''),
       pageTitle: payload.pageTitle,
       pageUrl: payload.pageUrl,
@@ -676,6 +678,8 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
       summary: (payload.summary && typeof payload.summary === 'object') ? payload.summary : undefined,
       detectedEntities: entities.map((e: any) => {
         return {
+          startPosition: e?.startPosition,
+          endPosition: e?.endPosition,
           piiTypeLabel: e?.piiTypeLabel,
           piiType: e?.piiType,
           detectedValue: e?.detectedValue,
@@ -683,7 +687,8 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
           confidence: typeof e?.confidence === 'number' ? e.confidence : undefined
         };
       }),
-      maskedHtml: this.sentinelleApiService.sanitizeMaskedHtml(payload.maskedContent),
+      // maskedHtml: this.sentinelleApiService.sanitizeMaskedHtml(payload.maskedContent),
+      maskedHtml: this.sentinelleApiService.sanitizeMaskedHtml("<div><b>Bonjour</b></div>"),
       attachmentName: payload.attachmentName,
       attachmentType: payload.attachmentType,
       attachmentUrl: payload.attachmentUrl

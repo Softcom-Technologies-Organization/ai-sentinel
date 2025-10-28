@@ -204,6 +204,6 @@ class ScanResultToScanEventMapperTest {
     }
 
     private static PiiEntity entity(int start, int end, Object type) {
-        return new PiiEntity(start, end, type == null ? null : type.toString(), type == null ? null : type.toString(), 0, null, null);
+        return new PiiEntity(start, end, type == null ? null : type.toString(), type == null ? null : type.toString(), 0, null, null, null);
     }
 }

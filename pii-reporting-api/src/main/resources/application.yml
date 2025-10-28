@@ -83,6 +83,13 @@ pii:
     # Length on each side of the PII during truncation (default: 80)
     side-length: 80
   
+  # PII Reporting Configuration
+  reporting:
+    # Allow revealing decrypted PII values to users (default: true)
+    # When false, detectedValue is never sent to frontend via SSE
+    # and the reveal endpoint returns 403 Forbidden
+    allow-secret-reveal: true
+  
   # PII Access Audit Configuration (GDPR/nLPD compliance)
   audit:
     # Retention period in days (730 days = 2 years, nLPD compliant)

@@ -68,24 +68,30 @@ public class JpaScanResultQueryAdapter implements ScanResultQuery {
     }
 
     @Override
-    public List<ScanResult> listItemEventsDecrypted(String scanId, AccessPurpose purpose) {
+    public List<ScanResult> listItemEventsDecrypted(String scanId, String pageId, AccessPurpose purpose) {
         if (scanId == null || scanId.isBlank()) {
             return List.of();
         }
 
         var types = Set.of("item", "attachmentItem");
         List<ScanResult> results = eventRepository
-            .findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId, types).stream()
+            .findByScanIdAndPageIdAndEventTypeInOrderByEventSeqAsc(scanId, pageId, types).stream()
             .map(this::toDecryptedDomain)
             .filter(Objects::nonNull)
             .toList();
+
+        if (results.isEmpty()) {
+            return results;
+        }
 
         // Audit access for GDPR/nLPD compliance
         int totalPiiCount = results.stream()
             .mapToInt(r -> r.detectedEntities() != null ? r.detectedEntities().size() : 0)
             .sum();
 
-        auditService.auditPiiAccess(scanId, purpose, totalPiiCount);
+        var spaceKey = results.getFirst().spaceKey();
+        var pageTitle = results.getFirst().pageTitle();
+        auditService.auditPiiAccess(scanId, spaceKey, pageId, pageTitle, purpose, totalPiiCount);
 
         return results;
     }

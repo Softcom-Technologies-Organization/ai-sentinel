@@ -13,5 +13,7 @@ public record PiiEntity(
         double confidence,
         String detectedValue,
         @JsonProperty("context")
-        String context
+        String context,
+        @JsonProperty("maskedContext")
+        String maskedContext
 ) {}

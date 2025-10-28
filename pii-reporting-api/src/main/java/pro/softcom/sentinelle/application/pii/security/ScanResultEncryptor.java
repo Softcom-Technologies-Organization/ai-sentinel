@@ -96,6 +96,7 @@ public class ScanResultEncryptor {
     /**
      * Encrypts a single PII entity while preserving its metadata.
      * The metadata is used as Additional Authenticated Data (AAD) to ensure integrity.
+     * Note: maskedContext is not encrypted as it contains only masked tokens, not real PII values.
      */
     private PiiEntity encryptEntity(PiiEntity entity) {
         EncryptionMetadata metadata = buildMetadata(entity);
@@ -106,12 +107,14 @@ public class ScanResultEncryptor {
         return entity.toBuilder()
                 .detectedValue(encryptedText)
                 .context(encryptedContext)
+                .maskedContext(entity.maskedContext()) // Keep masked context in clear text
                 .build();
     }
 
     /**
      * Decrypts a single PII entity if it's encrypted, otherwise returns it unchanged.
      * The metadata is verified during decryption to ensure integrity.
+     * Note: maskedContext is never encrypted, so it's preserved as-is.
      */
     private PiiEntity decryptEntity(PiiEntity entity) {
         EncryptionMetadata metadata = buildMetadata(entity);
@@ -129,6 +132,7 @@ public class ScanResultEncryptor {
         return entity.toBuilder()
                 .detectedValue(decryptedText)
                 .context(decryptedContext)
+                .maskedContext(entity.maskedContext()) // Preserve masked context unchanged
                 .build();
     }
 

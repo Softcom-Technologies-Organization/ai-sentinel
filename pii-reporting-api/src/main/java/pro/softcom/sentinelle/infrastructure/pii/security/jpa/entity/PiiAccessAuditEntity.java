@@ -28,6 +28,15 @@ public class PiiAccessAuditEntity {
     @Column(name = "scan_id", nullable = false, length = 100)
     private String scanId;
     
+    @Column(name = "page_id", length = 100)
+    private String pageId;
+    
+    @Column(name = "page_title", length = 500)
+    private String pageTitle;
+    
+    @Column(name = "space_key", length = 50)
+    private String spaceKey;
+    
     @Column(name = "accessed_at", nullable = false)
     private Instant accessedAt;
     

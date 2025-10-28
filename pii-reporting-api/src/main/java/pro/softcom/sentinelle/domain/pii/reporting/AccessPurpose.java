@@ -13,5 +13,7 @@ public enum AccessPurpose {
      */
     ADMIN_REVIEW,
 
+    USER_DISPLAY,
+
     // Future purposes can be added here as needed
 }

@@ -206,4 +206,56 @@ export class SentinelleApiService {
       return raw;
     }
   }
+
+  /**
+   * Check if revealing PII secrets is allowed by backend configuration.
+   */
+  getRevealConfig(): Observable<boolean> {
+    return new Observable<boolean>((observer) => {
+      const sub = this.http.get<boolean>('/api/v1/pii/config/reveal-allowed').subscribe({
+        next: (allowed) => {
+          observer.next(allowed);
+          observer.complete();
+        },
+        error: (err) => {
+          observer.error(err);
+        }
+      });
+      return () => sub.unsubscribe();
+    });
+  }
+
+  /**
+   * Reveal decrypted PII secrets for a specific Confluence page.
+   * Triggers audit log on backend.
+   */
+  revealPageSecrets(scanId: string, pageId: string): Observable<PageSecretsResponse> {
+    return new Observable<PageSecretsResponse>((observer) => {
+      const sub = this.http.post<PageSecretsResponse>(
+        '/api/v1/pii/reveal-page',
+        { scanId, pageId }
+      ).subscribe({
+        next: (response) => {
+          observer.next(response);
+          observer.complete();
+        },
+        error: (err) => {
+          observer.error(err);
+        }
+      });
+      return () => sub.unsubscribe();
+    });
+  }
+}
+
+export interface PageSecretsResponse {
+  pageId: string;
+  pageTitle: string;
+  secrets: RevealedSecret[];
+}
+
+export interface RevealedSecret {
+  startPosition: number;
+  endPosition: number;
+  detectedValue: string;
 }

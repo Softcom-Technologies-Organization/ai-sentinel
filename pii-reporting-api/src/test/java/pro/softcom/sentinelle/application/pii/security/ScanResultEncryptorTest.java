@@ -65,9 +65,9 @@ class ScanResultEncryptorTest {
         // Then
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(encrypted.detectedEntities()).hasSize(2);
-        softly.assertThat(encrypted.detectedEntities().get(0).detectedValue())
+        softly.assertThat(encrypted.detectedEntities().get(0).sensitiveValue())
             .isEqualTo("ENC:v1:encrypted_email");
-        softly.assertThat(encrypted.detectedEntities().get(1).detectedValue())
+        softly.assertThat(encrypted.detectedEntities().get(1).sensitiveValue())
             .isEqualTo("ENC:v1:encrypted_phone");
         softly.assertAll();
 
@@ -151,9 +151,9 @@ class ScanResultEncryptorTest {
 
         // Then
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(decrypted.detectedEntities().get(0).detectedValue())
+        softly.assertThat(decrypted.detectedEntities().get(0).sensitiveValue())
             .isEqualTo("decrypted@email.com");
-        softly.assertThat(decrypted.detectedEntities().get(1).detectedValue())
+        softly.assertThat(decrypted.detectedEntities().get(1).sensitiveValue())
             .isEqualTo("plaintext");
         softly.assertAll();
 
@@ -226,9 +226,9 @@ class ScanResultEncryptorTest {
         // Then
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(decrypted.detectedEntities()).hasSize(2);
-        softly.assertThat(decrypted.detectedEntities().get(0).detectedValue())
+        softly.assertThat(decrypted.detectedEntities().get(0).sensitiveValue())
             .isEqualTo("email@test.com");
-        softly.assertThat(decrypted.detectedEntities().get(1).detectedValue())
+        softly.assertThat(decrypted.detectedEntities().get(1).sensitiveValue())
             .isEqualTo("555-1234");
         softly.assertAll();
 
@@ -287,7 +287,7 @@ class ScanResultEncryptorTest {
         // Then
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(encrypted.detectedEntities()).hasSize(501);
-        softly.assertThat(encrypted.detectedEntities().getFirst().detectedValue())
+        softly.assertThat(encrypted.detectedEntities().getFirst().sensitiveValue())
             .isEqualTo("ENC:v1:encrypted");
         softly.assertAll();
 
@@ -316,7 +316,7 @@ class ScanResultEncryptorTest {
         // Verify original scanResult is not modified (immutability)
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(original.scanId()).isEqualTo("scan-123");
-        softly.assertThat(original.detectedEntities().getFirst().detectedValue())
+        softly.assertThat(original.detectedEntities().getFirst().sensitiveValue())
             .isEqualTo("test@example.com");
         softly.assertAll();
     }
@@ -326,8 +326,8 @@ class ScanResultEncryptorTest {
             .piiType(type)
             .startPosition(start)
             .endPosition(end)
-            .detectedValue(text)
-            .context(text + " context")
+            .sensitiveValue(text)
+            .sensitiveContext(text + " context")
             .confidence(0.9)
             .build();
     }

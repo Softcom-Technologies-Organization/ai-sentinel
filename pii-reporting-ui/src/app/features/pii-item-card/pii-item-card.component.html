@@ -85,10 +85,10 @@
         <div class="chips mt-2">
           @for (e of item?.detectedEntities; track e) {
             <p-chip [class]="'entity-chip'" [removable]="false"
-                    [ngClass]="{'has-text': revealed && e.detectedValue}">
+                    [ngClass]="{'has-text': revealed && e.sensitiveValue}">
               {{ e.piiTypeLabel }}
-              @if (revealed && e.detectedValue) {
-                : "{{ e.detectedValue }}"
+              @if (revealed && e.sensitiveValue) {
+                : "{{ e.sensitiveValue }}"
               }
               @if (e.confidence !== undefined) {
                 (score={{ formatScore(e.confidence) }})

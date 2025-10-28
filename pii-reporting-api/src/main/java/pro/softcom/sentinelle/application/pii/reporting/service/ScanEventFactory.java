@@ -208,15 +208,15 @@ public class ScanEventFactory {
                         .toList();
         
         // Extract masked context (for immediate display, stored in clear)
-        String maskedContext = piiContextExtractor.extract(sourceContent, data.position(), data.end(), type, all);
+        String maskedContext = piiContextExtractor.extractMaskedContext(sourceContent, data.position(), data.end(), type, all);
         
         // Extract real context (contains actual PII values, will be encrypted)
-        String realContext = piiContextExtractor.extractReal(sourceContent, data.position(), data.end());
+        String sensitiveContext = piiContextExtractor.extractSensitiveContext(sourceContent, data.position(), data.end());
         
         return PiiEntity.builder()
-                .context(realContext)
+                .sensitiveContext(sensitiveContext)
                 .maskedContext(maskedContext)
-                .detectedValue(data.value())
+                .sensitiveValue(data.value())
                 .piiType(type)
                 .piiTypeLabel(typeLabel)
                 .startPosition(data.position())

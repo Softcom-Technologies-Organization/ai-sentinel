@@ -40,13 +40,11 @@ class PiiContextExtractorTest {
     private PiiContextProperties contextProperties;
 
     private PiiContextExtractor piiContextExtractor;
-    
-    private ContentParser plainTextParser;
 
     @BeforeEach
     void setUp() {
         // Use real PlainTextParser for testing
-        plainTextParser = new PlainTextParser();
+        ContentParser plainTextParser = new PlainTextParser();
         
         // Configure mocks with lenient() to allow unused stubbings in some tests
         lenient().when(contextProperties.getMaxLength()).thenReturn(200);
@@ -63,7 +61,7 @@ class PiiContextExtractorTest {
     void Should_ExtractAndMaskContext_BasicCases(String source, String occurrence, String type) {
         int start = source.indexOf(occurrence);
         int end = start + occurrence.length();
-        String ctx = piiContextExtractor.extract(source, start, end, type);
+        String ctx = piiContextExtractor.extractMaskedContext(source, start, end, type);
         assertThat(ctx).contains("[" + type + "]");
         assertThat(ctx).doesNotContain(occurrence);
     }
@@ -86,7 +84,7 @@ class PiiContextExtractorTest {
         int end = 34;
 
         // When
-        String ctx = piiContextExtractor.extract(source, start, end, "EMAIL");
+        String ctx = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL");
 
         // Then
         assertSoftly(softly -> {
@@ -106,7 +104,7 @@ class PiiContextExtractorTest {
                 .startPosition(14)
                 .endPosition(34)
                 .piiType("EMAIL")
-                .context(existingContext)
+                .sensitiveContext(existingContext)
                 .build();
 
         ScanResult scanResult = ScanResult.builder()
@@ -119,7 +117,7 @@ class PiiContextExtractorTest {
         ScanResult result = piiContextExtractor.enrichContexts(scanResult);
 
         // Then
-        assertThat(result.detectedEntities().getFirst().context())
+        assertThat(result.detectedEntities().getFirst().sensitiveContext())
                 .isEqualTo(existingContext);
     }
 
@@ -127,7 +125,7 @@ class PiiContextExtractorTest {
     @DisplayName("Should_ReturnNull_When_SourceContentIsNull")
     void Should_ReturnNull_When_SourceContentIsNull() {
         // When
-        String ctx = piiContextExtractor.extract(null, 0, 10, "EMAIL");
+        String ctx = piiContextExtractor.extractMaskedContext(null, 0, 10, "EMAIL");
         // Then
         assertThat(ctx).isNull();
     }
@@ -146,7 +144,7 @@ class PiiContextExtractorTest {
         int end = start + piiValue.length();
 
         // When
-        String context = piiContextExtractor.extract(source, start, end, "EMAIL");
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL");
 
         // Then
         assertSoftly(softly -> {
@@ -166,7 +164,7 @@ class PiiContextExtractorTest {
         int end = 41;
 
         // When
-        String context = piiContextExtractor.extract(source, start, end, "EMAIL");
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL");
 
         // Then
         assertSoftly(softly -> {
@@ -186,7 +184,7 @@ class PiiContextExtractorTest {
         int end = start + occurrence.length();
 
         // When
-        String context = piiContextExtractor.extract(source, start, end, "EMAIL");
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL");
 
         // Then
         assertSoftly(softly -> {
@@ -206,7 +204,7 @@ class PiiContextExtractorTest {
         int end = start + "john.doe@example.com".length();
 
         // When
-        String ctx = piiContextExtractor.extract(source, start, end, null);
+        String ctx = piiContextExtractor.extractMaskedContext(source, start, end, null);
 
         // Then
         assertThat(ctx).contains("[UNKNOWN]");
@@ -221,7 +219,7 @@ class PiiContextExtractorTest {
         int end = start + "john.doe@example.com".length();
 
         // When
-        String ctx = piiContextExtractor.extract(source, start, end, "   ");
+        String ctx = piiContextExtractor.extractMaskedContext(source, start, end, "   ");
 
         // Then
         assertThat(ctx).contains("[UNKNOWN]");
@@ -238,8 +236,8 @@ class PiiContextExtractorTest {
         int phoneEnd = 42;
 
         // When
-        String emailCtx = piiContextExtractor.extract(source, emailStart, emailEnd, "EMAIL");
-        String phoneCtx = piiContextExtractor.extract(source, phoneStart, phoneEnd, "PHONE");
+        String emailCtx = piiContextExtractor.extractMaskedContext(source, emailStart, emailEnd, "EMAIL");
+        String phoneCtx = piiContextExtractor.extractMaskedContext(source, phoneStart, phoneEnd, "PHONE");
 
         // Then
         assertSoftly(softly -> {
@@ -259,7 +257,7 @@ class PiiContextExtractorTest {
         int end = "john.doe@example.com".length();
 
         // When
-        String context = piiContextExtractor.extract(source, start, end, "EMAIL");
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL");
 
         // Then
         assertSoftly(softly -> {
@@ -277,7 +275,7 @@ class PiiContextExtractorTest {
         int end = start + "john.doe@example.com".length();
 
         // When
-        String context = piiContextExtractor.extract(source, start, end, "EMAIL");
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL");
 
         // Then
         assertSoftly(softly -> {
@@ -315,7 +313,7 @@ class PiiContextExtractorTest {
         int end = 1000; // out of bounds
 
         // When
-        String ctx = piiContextExtractor.extract(source, start, end, "EMAIL");
+        String ctx = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL");
 
         // Then
         assertThat(ctx).isNotNull();
@@ -334,7 +332,7 @@ class PiiContextExtractorTest {
         int end = start + pii.length();
 
         // When
-        String ctx = piiContextExtractor.extract(source, start, end, "EMAIL");
+        String ctx = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL");
 
         // Then: the beginning after the ellipsis should start at a word boundary (e.g., include 'important' fully)
         assertSoftly(softly -> {
@@ -358,7 +356,7 @@ class PiiContextExtractorTest {
         );
 
         // When: extract context for EMAIL but provide all entities to ensure PHONE is masked too
-        String ctx = piiContextExtractor.extract(source, emailStart, emailEnd, "EMAIL", entities);
+        String ctx = piiContextExtractor.extractMaskedContext(source, emailStart, emailEnd, "EMAIL", entities);
 
         // Then
         assertSoftly(softly -> {
@@ -407,18 +405,268 @@ class PiiContextExtractorTest {
             PiiEntity enrichedPhone = result.detectedEntities().get(1);
             
             // Email context should mask both EMAIL and PHONE
-            softly.assertThat(enrichedEmail.context()).isNotNull();
-            softly.assertThat(enrichedEmail.context()).contains("[EMAIL]");
-            softly.assertThat(enrichedEmail.context()).contains("[PHONE]");
-            softly.assertThat(enrichedEmail.context()).doesNotContain("john@example.com");
-            softly.assertThat(enrichedEmail.context()).doesNotContain("06 11 22 33 44");
+            softly.assertThat(enrichedEmail.maskedContext()).isNotNull();
+            softly.assertThat(enrichedEmail.maskedContext()).contains("[EMAIL]");
+            softly.assertThat(enrichedEmail.maskedContext()).contains("[PHONE]");
+            softly.assertThat(enrichedEmail.maskedContext()).doesNotContain("john@example.com");
+            softly.assertThat(enrichedEmail.maskedContext()).doesNotContain("06 11 22 33 44");
             
             // Phone context should mask both EMAIL and PHONE
-            softly.assertThat(enrichedPhone.context()).isNotNull();
-            softly.assertThat(enrichedPhone.context()).contains("[EMAIL]");
-            softly.assertThat(enrichedPhone.context()).contains("[PHONE]");
-            softly.assertThat(enrichedPhone.context()).doesNotContain("john@example.com");
-            softly.assertThat(enrichedPhone.context()).doesNotContain("06 11 22 33 44");
+            softly.assertThat(enrichedPhone.maskedContext()).isNotNull();
+            softly.assertThat(enrichedPhone.maskedContext()).contains("[EMAIL]");
+            softly.assertThat(enrichedPhone.maskedContext()).contains("[PHONE]");
+            softly.assertThat(enrichedPhone.maskedContext()).doesNotContain("john@example.com");
+            softly.assertThat(enrichedPhone.maskedContext()).doesNotContain("06 11 22 33 44");
+        });
+    }
+
+    // Tests for extractSensitiveContext
+
+    @ParameterizedTest(name = "{index} -> should extract unmasked context for: {3}")
+    @MethodSource("sensitiveContextExtractionCases")
+    @DisplayName("Should_ExtractUnmaskedContext_When_UsingSensitiveContextExtraction")
+    void Should_ExtractUnmaskedContext_When_UsingSensitiveContextExtraction(
+            String source, String piiValue, String expectedContext, String testCase) {
+        // Given
+        int start = source.indexOf(piiValue);
+        int end = start + piiValue.length();
+
+        // When
+        String ctx = piiContextExtractor.extractSensitiveContext(source, start, end);
+
+        // Then
+        assertSoftly(softly -> {
+            softly.assertThat(ctx).isNotNull();
+            softly.assertThat(ctx).contains(piiValue);
+            softly.assertThat(ctx).contains(expectedContext);
+            softly.assertThat(ctx).doesNotContain("[EMAIL]");
+            softly.assertThat(ctx).doesNotContain("[UNKNOWN]");
+        });
+    }
+
+    static Stream<Arguments> sensitiveContextExtractionCases() {
+        return Stream.of(
+                Arguments.of("My email is john.doe@example.com and my phone", 
+                            "john.doe@example.com", "My email is", "PII in middle of line"),
+                Arguments.of("john.doe@example.com is my email address", 
+                            "john.doe@example.com", "is my email", "PII at start of line"),
+                Arguments.of("My email address is john.doe@example.com", 
+                            "john.doe@example.com", "My email address is", "PII at end of line"),
+                Arguments.of("Contact john.doe@example.com for info", 
+                            "john.doe@example.com", "Contact", "PII with surrounding text")
+        );
+    }
+
+    @ParameterizedTest(name = "{index} -> should return null for: {1}")
+    @MethodSource("invalidSourceCases")
+    @DisplayName("Should_ReturnNull_When_ExtractingSensitiveContextFromInvalidSource")
+    void Should_ReturnNull_When_ExtractingSensitiveContextFromInvalidSource(String source, String testCase) {
+        // When
+        String result = piiContextExtractor.extractSensitiveContext(source, 0, 10);
+
+        // Then
+        assertThat(result).isNull();
+    }
+
+    static Stream<Arguments> invalidSourceCases() {
+        return Stream.of(
+                Arguments.of(null, "null source"),
+                Arguments.of("", "empty source"),
+                Arguments.of("   ", "blank source"),
+                Arguments.of("\t\n", "whitespace only source")
+        );
+    }
+
+    @ParameterizedTest(name = "{index} -> {2}")
+    @MethodSource("multilineSourceCases")
+    @DisplayName("Should_ExtractOnlyCurrentLine_When_SensitiveContextFromMultilineSource")
+    void Should_ExtractOnlyCurrentLine_When_SensitiveContextFromMultilineSource(
+            String source, String piiValue, String testCase) {
+        // Given
+        int start = source.indexOf(piiValue);
+        int end = start + piiValue.length();
+
+        // When
+        String context = piiContextExtractor.extractSensitiveContext(source, start, end);
+
+        // Then
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains(piiValue);
+            softly.assertThat(context).doesNotContain("Line 1");
+            softly.assertThat(context).doesNotContain("Line 3");
+        });
+    }
+
+    static Stream<Arguments> multilineSourceCases() {
+        return Stream.of(
+                Arguments.of("Line 1 with content\nMy email is john.doe@example.com here\nLine 3 with more", 
+                            "john.doe@example.com", "email in middle line"),
+                Arguments.of("Line 1 data\nPhone: 06 11 22 33 44 end\nLine 3 more", 
+                            "06 11 22 33 44", "phone in middle line"),
+                Arguments.of("Line 1\nStart of line john@test.com text\nLine 3", 
+                            "john@test.com", "PII after line start")
+        );
+    }
+
+    @ParameterizedTest(name = "{index} -> {3}")
+    @MethodSource("longContextCases")
+    @DisplayName("Should_TruncateSensitiveContext_When_ExceedsMaxLength")
+    void Should_TruncateSensitiveContext_When_ExceedsMaxLength(
+            String prefix, String piiValue, String suffix, String testCase) {
+        // Given: create a long text with PII
+        String source = prefix + piiValue + suffix;
+        int start = prefix.length();
+        int end = start + piiValue.length();
+
+        // When
+        String context = piiContextExtractor.extractSensitiveContext(source, start, end);
+
+        // Then
+        assertSoftly(softly -> {
+            softly.assertThat(context).isNotNull();
+            softly.assertThat(context.length()).isLessThanOrEqualTo(200 + 2); // +2 for ellipses
+            softly.assertThat(context).contains(piiValue);
+            softly.assertThat(context).matches(".*….*"); // Contains at least one ellipsis
+            softly.assertThat(context).doesNotContain("[EMAIL]");
+            softly.assertThat(context).doesNotContain("[PHONE]");
+        });
+    }
+
+    static Stream<Arguments> longContextCases() {
+        return Stream.of(
+                Arguments.of("A".repeat(150), "john.doe@example.com", "B".repeat(150), 
+                            "email in middle of long text"),
+                Arguments.of("X".repeat(180), "06 11 22 33 44", "Y".repeat(180), 
+                            "phone in middle of long text"),
+                Arguments.of("".repeat(0), "test@example.com", "Z".repeat(300), 
+                            "PII at start with long suffix")
+        );
+    }
+
+    @ParameterizedTest(name = "{index} -> {2}")
+    @MethodSource("whitespaceCompactCases")
+    @DisplayName("Should_CompactWhitespace_When_ExtractingSensitiveContext")
+    void Should_CompactWhitespace_When_ExtractingSensitiveContext(
+            String source, String piiValue, String testCase) {
+        // Given
+        int start = source.indexOf(piiValue);
+        int end = start + piiValue.length();
+
+        // When
+        String context = piiContextExtractor.extractSensitiveContext(source, start, end);
+
+        // Then
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains(piiValue);
+            softly.assertThat(context).doesNotContain("  "); // No double spaces
+            softly.assertThat(context).doesNotContain("\n");
+            softly.assertThat(context).doesNotContain("\t");
+        });
+    }
+
+    static Stream<Arguments> whitespaceCompactCases() {
+        return Stream.of(
+                Arguments.of("My   email    is\n\tjohn.doe@example.com   and   data", 
+                            "john.doe@example.com", "multiple spaces and newlines"),
+                Arguments.of("Contact:\t\t06 11 22 33 44\n\nfor info", 
+                            "06 11 22 33 44", "tabs and multiple newlines"),
+                Arguments.of("Text  \n  with  \t  test@test.com  \n  data", 
+                            "test@test.com", "mixed whitespace characters")
+        );
+    }
+
+    @Test
+    @DisplayName("Should_HandleOutOfBoundsPositions_When_ExtractingSensitiveContext")
+    void Should_HandleOutOfBoundsPositions_When_ExtractingSensitiveContext() {
+        // Given
+        String source = "Short text with data@test.com";
+        int start = 0;
+        int end = 1000; // out of bounds
+
+        // When
+        String ctx = piiContextExtractor.extractSensitiveContext(source, start, end);
+
+        // Then
+        assertThat(ctx).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Should_PreserveAllPiiValues_When_MultiplePiiInSameLine")
+    void Should_PreserveAllPiiValues_When_MultiplePiiInSameLine() {
+        // Given
+        String source = "Contact: john@example.com and phone 06 11 22 33 44 provided";
+        int emailStart = source.indexOf("john@example.com");
+        int emailEnd = emailStart + "john@example.com".length();
+
+        // When
+        String ctx = piiContextExtractor.extractSensitiveContext(source, emailStart, emailEnd);
+
+        // Then: ALL PII values should be present (not masked) since this is sensitive context
+        assertSoftly(softly -> {
+            softly.assertThat(ctx).contains("john@example.com");
+            softly.assertThat(ctx).contains("06 11 22 33 44");
+            softly.assertThat(ctx).doesNotContain("[EMAIL]");
+            softly.assertThat(ctx).doesNotContain("[PHONE]");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_ExtractBothContexts_When_EnrichingEntities")
+    void Should_ExtractBothContexts_When_EnrichingEntities() {
+        // Given
+        String source = "My email is john.doe@example.com and my data";
+        int start = source.indexOf("john.doe@example.com");
+        int end = start + "john.doe@example.com".length();
+        
+        PiiEntity entity = PiiEntity.builder()
+                .startPosition(start)
+                .endPosition(end)
+                .piiType("EMAIL")
+                .build();
+
+        ScanResult scanResult = ScanResult.builder()
+                .scanId("scan-1")
+                .sourceContent(source)
+                .detectedEntities(List.of(entity))
+                .build();
+
+        // When
+        ScanResult result = piiContextExtractor.enrichContexts(scanResult);
+
+        // Then: Both sensitiveContext and maskedContext should be populated
+        PiiEntity enriched = result.detectedEntities().getFirst();
+        assertSoftly(softly -> {
+            // Sensitive context contains real PII value
+            softly.assertThat(enriched.sensitiveContext()).isNotNull();
+            softly.assertThat(enriched.sensitiveContext()).contains("john.doe@example.com");
+            softly.assertThat(enriched.sensitiveContext()).doesNotContain("[EMAIL]");
+            
+            // Masked context contains token instead of PII value
+            softly.assertThat(enriched.maskedContext()).isNotNull();
+            softly.assertThat(enriched.maskedContext()).contains("[EMAIL]");
+            softly.assertThat(enriched.maskedContext()).doesNotContain("john.doe@example.com");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_NotCutWords_When_TruncatingSensitiveContext")
+    void Should_NotCutWords_When_TruncatingSensitiveContext() {
+        // Given: build a long sentence where a word would be cut without word-boundary snapping
+        String prefix = "Important data that nobody should see ";
+        String fillerLeft = "x".repeat(140);
+        String pii = "john.doe@example.com";
+        String fillerRight = " y".repeat(140);
+        String source = fillerLeft + prefix + pii + fillerRight;
+        int start = (fillerLeft + prefix).length();
+        int end = start + pii.length();
+
+        // When
+        String ctx = piiContextExtractor.extractSensitiveContext(source, start, end);
+
+        // Then: should not cut words and preserve the PII value
+        assertSoftly(softly -> {
+            softly.assertThat(ctx).contains("john.doe@example.com");
+            softly.assertThat(ctx).doesNotContain("…ortant"); // avoid cutting 'Important'
         });
     }
 }

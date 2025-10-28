@@ -15,7 +15,7 @@ public class PiiReportingProperties {
     
     /**
      * Allow revealing decrypted PII values to users.
-     * When false, detectedValue is never sent to frontend via SSE
+     * When false, sensitiveValue is never sent to frontend via SSE
      * and the reveal endpoint returns 403 Forbidden.
      * Default: true
      */

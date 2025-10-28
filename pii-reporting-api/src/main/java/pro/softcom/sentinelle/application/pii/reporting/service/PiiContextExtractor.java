@@ -33,7 +33,7 @@ public class PiiContextExtractor {
     private final ContentParserFactory parserFactory;
     private final PiiContextProperties contextProperties;
 
-    public String extract(String source, int start, int end, String type) {
+    public String extractMaskedContext(String source, int start, int end, String type) {
         return extractLineContext(source, start, end, type, null, true);
     }
 
@@ -41,7 +41,7 @@ public class PiiContextExtractor {
      * Extracts context while masking all PII occurrences present in the same line as the principal one.
      * Useful when the source contains multiple PIIs to avoid leaking others in the context.
      */
-    public String extract(String source, int start, int end, String type, List<PiiEntity> allEntities) {
+    public String extractMaskedContext(String source, int start, int end, String type, List<PiiEntity> allEntities) {
         return extractLineContext(source, start, end, type, allEntities, true);
     }
 
@@ -50,7 +50,7 @@ public class PiiContextExtractor {
      * Used for encrypted storage and reveal functionality.
      * The real context contains actual sensitive data and should always be encrypted.
      */
-    public String extractReal(String source, int start, int end) {
+    public String extractSensitiveContext(String source, int start, int end) {
         return extractLineContext(source, start, end, null, null, false);
     }
 
@@ -100,20 +100,20 @@ public class PiiContextExtractor {
         }
 
         // Extract masked context for immediate display
-        String maskedContext = extract(source, entity.startPosition(), entity.endPosition(),
+        String maskedContext = extractMaskedContext(source, entity.startPosition(), entity.endPosition(),
                 entity.piiType(), allEntities);
         
-        // Extract real context for encrypted storage
-        String realContext = extractReal(source, entity.startPosition(), entity.endPosition());
+        // Extract sensitive context for encrypted storage
+        String sensitiveContext = extractSensitiveContext(source, entity.startPosition(), entity.endPosition());
         
         return entity.toBuilder()
-                .context(realContext)
+                .sensitiveContext(sensitiveContext)
                 .maskedContext(maskedContext)
                 .build();
     }
 
     private boolean hasContext(PiiEntity entity) {
-        return (entity.context() != null && !entity.context().isBlank()) 
+        return (entity.sensitiveContext() != null && !entity.sensitiveContext().isBlank())
                 || (entity.maskedContext() != null && !entity.maskedContext().isBlank());
     }
 

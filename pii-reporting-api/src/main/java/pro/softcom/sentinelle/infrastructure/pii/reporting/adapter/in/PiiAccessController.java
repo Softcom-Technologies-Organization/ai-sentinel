@@ -11,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pro.softcom.sentinelle.application.pii.reporting.config.PiiReportingProperties;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanResultQuery;
-import pro.softcom.sentinelle.application.pii.security.PiiAccessAuditService;
 import pro.softcom.sentinelle.domain.pii.reporting.AccessPurpose;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 
@@ -74,7 +73,8 @@ public class PiiAccessController {
                 .map(e -> new RevealedSecret(
                         e.startPosition(),
                         e.endPosition(),
-                        e.detectedValue()
+                        e.sensitiveValue(),
+                        e.sensitiveContext()
                 ))
                 .toList();
 
@@ -110,6 +110,7 @@ public class PiiAccessController {
     public record RevealedSecret(
             int startPosition,
             int endPosition,
-            String detectedValue
+            String sensitiveValue,
+            String sensitiveContext
     ) {}
 }

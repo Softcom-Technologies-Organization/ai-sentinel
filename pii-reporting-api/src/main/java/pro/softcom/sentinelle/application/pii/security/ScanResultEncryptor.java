@@ -101,13 +101,13 @@ public class ScanResultEncryptor {
     private PiiEntity encryptEntity(PiiEntity entity) {
         EncryptionMetadata metadata = buildMetadata(entity);
 
-        var encryptedText = encryptionService.encrypt(entity.detectedValue(), metadata);
-        var encryptedContext = encryptionService.encrypt(entity.context(), metadata);
+        var encryptedText = encryptionService.encrypt(entity.sensitiveValue(), metadata);
+        var encryptedContext = encryptionService.encrypt(entity.sensitiveContext(), metadata);
 
         return entity.toBuilder()
-                .detectedValue(encryptedText)
-                .context(encryptedContext)
-                .maskedContext(entity.maskedContext()) // Keep masked context in clear text
+                .sensitiveValue(encryptedText)
+                .sensitiveContext(encryptedContext)
+                .maskedContext(entity.maskedContext()) // Keep masked sensitiveContext in clear text
                 .build();
     }
 
@@ -119,20 +119,20 @@ public class ScanResultEncryptor {
     private PiiEntity decryptEntity(PiiEntity entity) {
         EncryptionMetadata metadata = buildMetadata(entity);
 
-        var decryptedText = entity.detectedValue();
-        if (encryptionService.isEncrypted(entity.detectedValue())) {
-            decryptedText = encryptionService.decrypt(entity.detectedValue(), metadata);
+        var decryptedText = entity.sensitiveValue();
+        if (encryptionService.isEncrypted(entity.sensitiveValue())) {
+            decryptedText = encryptionService.decrypt(entity.sensitiveValue(), metadata);
         }
 
-        var decryptedContext = entity.context();
-        if (encryptionService.isEncrypted(entity.context())) {
-            decryptedContext = encryptionService.decrypt(entity.context(), metadata);
+        var decryptedContext = entity.sensitiveContext();
+        if (encryptionService.isEncrypted(entity.sensitiveContext())) {
+            decryptedContext = encryptionService.decrypt(entity.sensitiveContext(), metadata);
         }
 
         return entity.toBuilder()
-                .detectedValue(decryptedText)
-                .context(decryptedContext)
-                .maskedContext(entity.maskedContext()) // Preserve masked context unchanged
+                .sensitiveValue(decryptedText)
+                .sensitiveContext(decryptedContext)
+                .maskedContext(entity.maskedContext()) // Preserve masked sensitiveContext unchanged
                 .build();
     }
 

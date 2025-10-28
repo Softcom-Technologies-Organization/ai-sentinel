@@ -16,7 +16,7 @@ import java.util.List;
  * Maps domain ScanResult (clean architecture) to presentation ScanEvent (DTO for SSE/JSON).
  * This keeps the domain independent from the web layer while preserving API contract.
  * 
- * <p>Security: if pii.reporting.allow-secret-reveal is false, detectedValue is masked
+ * <p>Security: if pii.reporting.allow-secret-reveal is false, sensitiveValue is masked
  * before sending to frontend via SSE.</p>
  */
 @Component
@@ -32,13 +32,14 @@ public class ScanResultToScanEventMapper {
             // Note: differs from PiiContextExtractor which returns a local line context per entity.
 //            var masked = PiiMaskingUtils.buildMaskedContent(scanResult.sourceContent(), scanResult.detectedEntities());
 //        }
-        // Mask detectedValue if reveal is not allowed
+        // Mask sensitiveValue if reveal is not allowed
         List<PiiEntity> entities = scanResult.detectedEntities();
 //        if (!reportingProperties.isAllowSecretReveal() && entities != null) {
         if (entities != null) {
             entities = entities.stream()
                     .map(e -> e.toBuilder()
-                            .detectedValue(null)
+                            .sensitiveValue(null)
+                            .sensitiveContext(null)
                             .build())
                     .toList();
         }
@@ -54,7 +55,7 @@ public class ScanResultToScanEventMapper {
                 .pageTitle(scanResult.pageTitle())
                 .detectedEntities(entities)
                 .summary(scanResult.summary())
-                .maskedContent(null)
+//                .maskedContent(null)
                 .message(scanResult.message())
                 .pageUrl(scanResult.pageUrl())
                 .emittedAt(scanResult.emittedAt())

@@ -82,7 +82,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
     }
 
     // Check if secrets are already loaded (detectedValue is present)
-    const hasSecrets = this.item?.detectedEntities?.some(e => e.detectedValue != null);
+    const hasSecrets = this.item?.detectedEntities?.some(e => e.sensitiveValue != null);
     if (hasSecrets) {
       // Secrets already loaded, just reveal
       console.log(this.item?.detectedEntities)
@@ -106,7 +106,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
                  e.endPosition === secret.endPosition
           );
           if (entity) {
-            entity.detectedValue = secret.detectedValue;
+            entity.sensitiveValue = secret.sensitiveValue;
             console.log(entity)
           }
         });

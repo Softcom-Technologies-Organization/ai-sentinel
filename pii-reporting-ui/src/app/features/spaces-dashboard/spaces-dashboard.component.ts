@@ -682,8 +682,9 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
           endPosition: e?.endPosition,
           piiTypeLabel: e?.piiTypeLabel,
           piiType: e?.piiType,
-          detectedValue: e?.detectedValue,
-          context: e?.context,
+          sensitiveValue: e?.sensitiveValue,
+          sensitiveContext: e?.sensitiveContext,
+          maskedContext: e?.maskedContext,
           confidence: typeof e?.confidence === 'number' ? e.confidence : undefined
         };
       }),

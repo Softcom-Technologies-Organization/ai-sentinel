@@ -257,5 +257,6 @@ export interface PageSecretsResponse {
 export interface RevealedSecret {
   startPosition: number;
   endPosition: number;
-  detectedValue: string;
+  sensitiveValue: string;
+  sensitiveContext: string;
 }

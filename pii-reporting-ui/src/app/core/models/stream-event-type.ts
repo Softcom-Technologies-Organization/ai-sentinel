@@ -21,7 +21,7 @@ export interface RawStreamPayload {
   isFinal?: boolean;
   pagesTotal?: number;
   pageIndex?: number;
-  entities?: Array<{ typeLabel?: string; type?: string; text?: string; score?: number }>;
+  detectedEntities?: Array<{ piiTypeLabel?: string; piiType?: string; detectedValue?: string; context?: string; confidence?: number }>;
   summary?: Record<string, number>;
   maskedContent?: string;
   // Attachment context for 'attachment_item' events

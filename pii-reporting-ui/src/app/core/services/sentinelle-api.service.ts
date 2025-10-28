@@ -181,12 +181,12 @@ export class SentinelleApiService {
     }
   }
 
-  /** Compute severity level based on max entity score. */
-  severityForEntities(entities: Array<{ score?: number }> | undefined): Severity {
+  /** Compute severity level based on max entity confidence. */
+  severityForEntities(entities: Array<{ confidence?: number }> | undefined): Severity {
     if (!Array.isArray(entities) || entities.length === 0) return 'low';
     let max = 0;
     for (const e of entities) {
-      const s = typeof e?.score === 'number' ? e.score : 0;
+      const s = typeof e?.confidence === 'number' ? e.confidence : 0;
       if (s > max) max = s;
     }
     if (max >= 0.95) return 'high';

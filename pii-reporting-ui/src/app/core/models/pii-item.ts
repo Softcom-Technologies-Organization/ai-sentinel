@@ -9,7 +9,7 @@ export interface PiiItem {
   isFinal: boolean;
   severity: Severity;
   summary?: Record<string, number>;
-  entities: PiiEntity[];
+  detectedEntities: PiiEntity[];
   maskedHtml?: string;
   // Attachment context when the item comes from an attachment scan
   attachmentName?: string;

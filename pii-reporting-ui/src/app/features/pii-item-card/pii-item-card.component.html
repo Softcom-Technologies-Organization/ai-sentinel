@@ -83,15 +83,15 @@
           </button>
         </div>
         <div class="chips mt-2">
-          @for (e of item?.entities; track e) {
+          @for (e of item?.detectedEntities; track e) {
             <p-chip [class]="'entity-chip'" [removable]="false"
-                    [ngClass]="{'has-text': revealed && e.text}">
-              {{ e.label }}
-              @if (revealed && e.text) {
-                : "{{ e.text }}"
+                    [ngClass]="{'has-text': revealed && e.detectedValue}">
+              {{ e.piiTypeLabel }}
+              @if (revealed && e.detectedValue) {
+                : "{{ e.detectedValue }}"
               }
-              @if (e.score !== undefined) {
-                (score={{ formatScore(e.score) }})
+              @if (e.confidence !== undefined) {
+                (score={{ formatScore(e.confidence) }})
               }
             </p-chip>
           }

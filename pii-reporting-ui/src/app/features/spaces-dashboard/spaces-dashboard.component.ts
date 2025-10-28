@@ -660,7 +660,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
    * Skips empty items (no entities).
    */
   private addPiiItemToSpace(spaceKey: string, payload: RawStreamPayload): void {
-    const entities = Array.isArray(payload.entities) ? payload.entities : [];
+    const entities = Array.isArray(payload.detectedEntities) ? payload.detectedEntities : [];
     // Skip creating a card when no PII entities were detected
     if (!entities.length) {
       return;
@@ -674,12 +674,13 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
       isFinal: !!payload.isFinal,
       severity,
       summary: (payload.summary && typeof payload.summary === 'object') ? payload.summary : undefined,
-      entities: entities.map((e: any) => {
+      detectedEntities: entities.map((e: any) => {
         return {
-          label: e?.typeLabel,
-          type: e?.type,
-          text: e?.text,
-          score: typeof e?.score === 'number' ? e.score : undefined
+          piiTypeLabel: e?.piiTypeLabel,
+          piiType: e?.piiType,
+          detectedValue: e?.detectedValue,
+          context: e?.context,
+          confidence: typeof e?.confidence === 'number' ? e.confidence : undefined
         };
       }),
       maskedHtml: this.sentinelleApiService.sanitizeMaskedHtml(payload.maskedContent),

@@ -14,56 +14,69 @@ import java.time.temporal.ChronoUnit;
 /**
  * Audit service for PII access tracking (GDPR/nLPD compliance).
  * Logs all access to decrypted PII data with purpose and retention management.
+ *
+ * <p><b>Current Granularity: SCAN level</b></p>
+ *
+ * <p>The current implementation audits access at the <b>SCAN</b> level, meaning one audit
+ * record is created per scan access, regardless of the number of PII entities accessed.</p>
+ *
+ * @see PiiAccessAuditEntity
+ * @see AccessPurpose
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class PiiAccessAuditService {
-    
+
     private final PiiAccessAuditRepository auditRepository;
-    
+
     /**
      * Configurable retention period in days (default: 730 days = 2 years for nLPD compliance).
      */
     @Value("${pii.audit.retention-days:730}")
     private int retentionDays;
-    
+
     /**
      * Audits PII access for compliance purposes.
-     * 
-     * @param scanId scan identifier
-     * @param purpose access purpose (for audit trail)
-     * @param piiCount number of PII entities accessed
+     *
+     * <p><b>Current Granularity: SCAN level</b></p>
+     *
+     * <p>This method creates <b>one audit record per scan access</b>. All PII entities
+     * in the scan are counted as a single access event.</p>
+     *
+     * <p><b>Limitation:</b> Cannot track which specific PII entities or pages were accessed.</p>
+     *
+     * @param scanId   scan identifier (current granularity level)
+     * @param purpose  access purpose (for audit trail)
+     * @param piiCount total number of PII entities in the scan
      */
-    public void auditPiiAccess(String scanId, 
-                               AccessPurpose purpose, 
-                               int piiCount) {
+    public void auditPiiAccess(String scanId, AccessPurpose purpose, int piiCount) {
         try {
             Instant now = Instant.now();
             Instant retention = now.plus(retentionDays, ChronoUnit.DAYS);
-            
+
             PiiAccessAuditEntity audit = PiiAccessAuditEntity.builder()
-                .scanId(scanId)
-                .accessedAt(now)
-                .retentionUntil(retention)
-                .purpose(purpose.name())
-                .piiEntitiesCount(piiCount)
-                .build();
-                
+                    .scanId(scanId)
+                    .accessedAt(now)
+                    .retentionUntil(retention)
+                    .purpose(purpose.name())
+                    .piiEntitiesCount(piiCount)
+                    .build();
+
             auditRepository.save(audit);
-            
-            log.info("[PII_ACCESS_AUDIT] scanId={} purpose={} count={} retentionUntil={}", 
-                     scanId, purpose, piiCount, retention);
+
+            log.info("[PII_ACCESS_AUDIT] scanId={} purpose={} count={} retentionUntil={}",
+                    scanId, purpose, piiCount, retention);
         } catch (Exception e) {
             // Never fail the main flow due to audit failure
             log.error("[PII_ACCESS_AUDIT] Failed to log audit: {}", e.getMessage(), e);
         }
     }
-    
+
     /**
      * Purges expired audit logs (called by scheduled job).
      * Enforces nLPD Art. 6 data minimization principle.
-     * 
+     *
      * @return number of deleted records
      */
     public int purgeExpiredLogs() {

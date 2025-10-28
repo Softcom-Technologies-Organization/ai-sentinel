@@ -74,7 +74,7 @@ class PiiAccessAuditServiceTest {
         Instant before = Instant.now().plus(729, ChronoUnit.DAYS);
 
         // When
-        auditService.auditPiiAccess(scanId, AccessPurpose.DATA_EXPORT, 3);
+        auditService.auditPiiAccess(scanId, AccessPurpose.ADMIN_REVIEW, 3);
 
         // Then
         verify(auditRepository).save(auditEntityCaptor.capture());
@@ -106,7 +106,7 @@ class PiiAccessAuditServiceTest {
         String scanId = "scan-123";
 
         // When
-        auditService.auditPiiAccess(scanId, AccessPurpose.COMPLIANCE_REPORTING, 0);
+        auditService.auditPiiAccess(scanId, AccessPurpose.ADMIN_REVIEW, 0);
 
         // Then
         verify(auditRepository).save(auditEntityCaptor.capture());
@@ -120,7 +120,7 @@ class PiiAccessAuditServiceTest {
         when(auditRepository.save(any())).thenThrow(new RuntimeException("Database error"));
 
         // When/Then - Should not throw
-        auditService.auditPiiAccess("scan-123", AccessPurpose.TECHNICAL_SUPPORT, 2);
+        auditService.auditPiiAccess("scan-123", AccessPurpose.ADMIN_REVIEW, 2);
 
         verify(auditRepository).save(any());
     }
@@ -232,8 +232,8 @@ class PiiAccessAuditServiceTest {
 
         // When
         auditService.auditPiiAccess(scanId, AccessPurpose.ADMIN_REVIEW, 1);
-        auditService.auditPiiAccess(scanId, AccessPurpose.DATA_EXPORT, 2);
-        auditService.auditPiiAccess(scanId, AccessPurpose.TECHNICAL_SUPPORT, 3);
+        auditService.auditPiiAccess(scanId, AccessPurpose.ADMIN_REVIEW, 2);
+        auditService.auditPiiAccess(scanId, AccessPurpose.ADMIN_REVIEW, 3);
 
         // Then
         verify(auditRepository, times(3)).save(any());
@@ -246,7 +246,7 @@ class PiiAccessAuditServiceTest {
         int largePiiCount = Integer.MAX_VALUE;
 
         // When
-        auditService.auditPiiAccess("scan-123", AccessPurpose.COMPLIANCE_REPORTING, largePiiCount);
+        auditService.auditPiiAccess("scan-123", AccessPurpose.ADMIN_REVIEW, largePiiCount);
 
         // Then
         verify(auditRepository).save(auditEntityCaptor.capture());

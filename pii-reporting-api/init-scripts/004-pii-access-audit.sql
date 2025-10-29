@@ -1,4 +1,4 @@
-﻿-- PII Access Audit Table
+-- PII Access Audit Table
 -- Tracks all access to decrypted PII data for GDPR/nLPD compliance
 -- Purpose: GDPR Art. 30, 32 + nLPD Art. 6, 8, 12, 24
 
@@ -31,7 +31,7 @@ COMMENT ON TABLE pii_access_audit IS
     'Audit log for PII access (GDPR/nLPD compliance). Tracks who accessed decrypted PII data, when, and for what purpose.';
 
 COMMENT ON COLUMN pii_access_audit.purpose IS 
-    'Access purpose: ADMIN_REVIEW, COMPLIANCE_REPORTING, TECHNICAL_SUPPORT, DATA_EXPORT';
+    'Access purpose: USER_DISPLAY';
 
 COMMENT ON COLUMN pii_access_audit.retention_until IS 
     'Retention deadline (default: 2 years from access for nLPD compliance)';

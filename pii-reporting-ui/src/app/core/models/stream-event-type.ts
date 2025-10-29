@@ -28,7 +28,7 @@ export interface RawStreamPayload {
     sensitiveValue?: string;
     sensitiveContext?: string;
     maskedContext?: string;
-    confidence?: number
+    confidence?: number;
   }>;
   summary?: Record<string, number>;
   maskedContent?: string;

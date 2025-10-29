@@ -20,6 +20,7 @@ import java.time.temporal.ChronoUnit;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PiiAccessAuditEntity {
+    private static final long DEFAULT_RETENTION_DAYS = 730;
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -56,7 +57,7 @@ public class PiiAccessAuditEntity {
     @PrePersist
     void calculateRetention() {
         if (retentionUntil == null && accessedAt != null) {
-            retentionUntil = accessedAt.plus(730, ChronoUnit.DAYS); // 2 years
+            retentionUntil = accessedAt.plus(DEFAULT_RETENTION_DAYS, ChronoUnit.DAYS); // 2 years
         }
     }
 }

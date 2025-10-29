@@ -29,7 +29,7 @@ import {Divider} from 'primeng/divider';
 @Component({
   selector: 'app-pii-item-card',
   standalone: true,
-  imports: [CommonModule, ButtonModule, CardModule, TagModule, ChipModule, DataView, Divider],
+  imports: [CommonModule, ButtonModule, CardModule, TagModule, ChipModule, Divider],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pii-item-card.component.html',
   styleUrl: './pii-item-card.component.css',
@@ -84,7 +84,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
     }
 
     // Check if secrets are already loaded (detectedValue is present)
-    const hasSecrets = this.item?.detectedEntities?.some(e => e.sensitiveValue != null);
+    const hasSecrets = this.item?.detectedEntities?.some(e => e.sensitiveValue !== null);
     if (hasSecrets) {
       // Secrets already loaded, just reveal
       this.revealed = true;
@@ -101,17 +101,17 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
     this.sentinelleApi.revealPageSecrets(this.item.scanId, this.item.pageId).subscribe({
       next: (response) => {
         // Map secrets to entities by position
-        response.secrets.forEach(secret => {
-          const entity = this.item.detectedEntities.find(
-            e => e.startPosition === secret.startPosition &&
-                 e.endPosition === secret.endPosition &&
-              e.maskedContext === secret.maskedContext
+        const enrichedEntities = this.item.detectedEntities.map(entity => {
+          const secret = response.secrets.find(
+            s => s.startPosition === entity.startPosition &&
+              s.endPosition === entity.endPosition &&
+              s.maskedContext === entity.maskedContext
           );
-          if (entity) {
-            entity.sensitiveValue = secret.sensitiveValue;
-            entity.sensitiveContext = secret.sensitiveContext;
-          }
+          return secret
+            ? {...entity, sensitiveValue: secret.sensitiveValue, sensitiveContext: secret.sensitiveContext}
+            : entity;
         });
+        this.item = { ...this.item, detectedEntities: enrichedEntities };
         this.revealed = true;
         this.isRevealing.set(false);
         // Force change detection since we mutated the entities

@@ -15,6 +15,9 @@ import pro.softcom.sentinelle.domain.pii.reporting.AccessPurpose;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * REST controller for PII data access control.
@@ -65,11 +68,13 @@ public class PiiAccessController {
             return ResponseEntity.notFound().build();
         }
 
-        // Take the first result (should be unique per pageId)
-        ScanResult result = results.getFirst();
-
         // Extract decrypted secrets
-        List<RevealedSecret> secrets = result.detectedEntities().stream()
+        var secrets = results.stream()
+                .filter(Objects::nonNull)
+                .flatMap(sr -> Optional.ofNullable(sr.detectedEntities())
+                        .orElseGet(List::of)
+                        .stream())
+                .filter(Objects::nonNull)
                 .map(e -> new RevealedSecret(
                         e.startPosition(),
                         e.endPosition(),
@@ -77,8 +82,10 @@ public class PiiAccessController {
                         e.sensitiveContext(),
                         e.maskedContext()
                 ))
-                .toList();
+                .collect(Collectors.toList());
 
+        // Take the first result (should be unique per pageId)
+        ScanResult result = results.getFirst();
         log.info("[PII_ACCESS] Revealed {} secrets for pageId={} (scanId={})",
                 secrets.size(), result.pageId(), result.scanId());
 
@@ -99,7 +106,7 @@ public class PiiAccessController {
      * Response DTO containing revealed secrets for a page.
      */
     public record PageSecretsResponse(
-            String spaceKey,
+            String scanId,
             String pageId,
             String pageTitle,
             List<RevealedSecret> secrets

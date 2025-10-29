@@ -177,8 +177,8 @@ class PiiAccessControllerTest {
                 softly.assertThat(response.getBody()).isNotNull();
 
                 PageSecretsResponse body = response.getBody();
-                softly.assertThat(body.spaceKey()).isNotNull();
-                softly.assertThat(body.spaceKey()).isEqualTo(SCAN_ID);
+                softly.assertThat(body.scanId()).isNotNull();
+                softly.assertThat(body.scanId()).isEqualTo(SCAN_ID);
                 softly.assertThat(body.pageId()).isEqualTo(PAGE_ID);
                 softly.assertThat(body.pageTitle()).isEqualTo(PAGE_TITLE);
                 softly.assertThat(body.secrets()).hasSize(2);

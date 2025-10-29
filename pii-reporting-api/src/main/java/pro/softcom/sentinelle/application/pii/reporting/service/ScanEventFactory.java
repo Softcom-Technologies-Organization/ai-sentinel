@@ -90,20 +90,22 @@ public class ScanEventFactory {
     /**
      * Creates an empty page item event when no content is available.
      */
-    public ScanResult createEmptyPageItemEvent(String scanId, String spaceKey, ConfluencePage page, double progress) {
+    public ScanResult createEmptyPageItemEvent(
+            String scanId, String spaceKey, ConfluencePage page, double progress
+    ) {
         return ScanResult.builder()
-            .scanId(scanId)
-            .spaceKey(spaceKey)
-            .eventType(DetectionReportingEventType.ITEM.getLabel())
-            .isFinal(true)
-            .pageId(page.id())
-            .pageTitle(page.title())
-            .detectedEntities(List.of())
-            .summary(Map.of())
-            .pageUrl(buildPageUrl(page.id()))
-            .emittedAt(Instant.now().toString())
-            .analysisProgressPercentage(progress)
-            .build();
+                .scanId(scanId)
+                .spaceKey(spaceKey)
+                .eventType(DetectionReportingEventType.ITEM.getLabel())
+                .isFinal(true)
+                .pageId(page.id())
+                .pageTitle(page.title())
+                .detectedEntities(List.of())
+                .summary(Map.of())
+                .pageUrl(buildPageUrl(page.id()))
+                .emittedAt(Instant.now().toString())
+                .analysisProgressPercentage(progress)
+                .build();
     }
 
     /**

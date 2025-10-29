@@ -249,6 +249,7 @@ export class SentinelleApiService {
 }
 
 export interface PageSecretsResponse {
+  scanId: string;
   pageId: string;
   pageTitle: string;
   secrets: RevealedSecret[];

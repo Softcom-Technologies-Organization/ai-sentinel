@@ -44,8 +44,9 @@ class PiiContextExtractorTest {
         int start = source.indexOf(occurrence);
         int end = start + occurrence.length();
         String ctx = piiContextExtractor.extractMaskedContext(source, start, end, type);
-        assertThat(ctx).contains("[" + type + "]");
-        assertThat(ctx).doesNotContain(occurrence);
+        assertThat(ctx)
+                .contains("[" + type + "]")
+                .doesNotContain(occurrence);
     }
 
     static Stream<Arguments> basicContextCases() {

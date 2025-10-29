@@ -22,7 +22,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/pii")
-@Tag(name = "PII Access Control", description = "Contrôle d'accès aux données PII sensibles")
+@Tag(name = "PII Access Control", description = "Control of access to sensitive PII data")
 @RequiredArgsConstructor
 @Slf4j
 public class PiiAccessController {
@@ -31,21 +31,21 @@ public class PiiAccessController {
     private final ScanResultQuery scanResultQuery;
 
     @GetMapping("/config/reveal-allowed")
-    @Operation(summary = "Vérifie si la révélation des secrets est autorisée")
-    @ApiResponse(responseCode = "200", description = "Configuration retournée")
+    @Operation(summary = "Checks if secret revelation is allowed")
+    @ApiResponse(responseCode = "200", description = "Configuration returned")
     public ResponseEntity<@NonNull Boolean> isRevealAllowed() {
         return ResponseEntity.ok(reportingProperties.isAllowSecretReveal());
     }
 
     @PostMapping("/reveal-page")
-    @Operation(summary = "Révèle les secrets PII d'une page Confluence")
-    @ApiResponse(responseCode = "200", description = "Secrets révélés avec succès")
-    @ApiResponse(responseCode = "403", description = "Révélation non autorisée par configuration")
-    @ApiResponse(responseCode = "404", description = "Page non trouvée")
+    @Operation(summary = "Reveals PII secrets from a Confluence page")
+    @ApiResponse(responseCode = "200", description = "Secrets successfully revealed")
+    @ApiResponse(responseCode = "403", description = "Revelation not authorized by configuration")
+    @ApiResponse(responseCode = "404", description = "Page not found")
     public ResponseEntity<@NonNull PageSecretsResponse> revealPageSecrets(
             @RequestBody PageRevealRequest request
     ) {
-        // Vérifier configuration
+        // Check configuration
         if (!reportingProperties.isAllowSecretReveal()) {
             log.warn("[PII_ACCESS] Reveal attempt denied by configuration for pageId={}", request.pageId());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -53,7 +53,7 @@ public class PiiAccessController {
 
         log.info("[PII_ACCESS] Reveal request for pageId={}", request.pageId());
 
-        // Query avec déchiffrement automatique (AccessPurpose.USER_DISPLAY)
+        // Query with automatic decryption (AccessPurpose.USER_DISPLAY)
         List<ScanResult> results = scanResultQuery.listItemEventsDecrypted(
                 request.scanId(),
                 request.pageId(),
@@ -65,10 +65,10 @@ public class PiiAccessController {
             return ResponseEntity.notFound().build();
         }
 
-        // Prendre le premier résultat (devrait être unique par pageId)
+        // Take the first result (should be unique per pageId)
         ScanResult result = results.getFirst();
 
-        // Extraire secrets déchiffrés
+        // Extract decrypted secrets
         List<RevealedSecret> secrets = result.detectedEntities().stream()
                 .map(e -> new RevealedSecret(
                         e.startPosition(),

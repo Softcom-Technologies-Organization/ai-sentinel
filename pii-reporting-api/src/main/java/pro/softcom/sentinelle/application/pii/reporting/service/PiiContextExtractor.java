@@ -187,8 +187,8 @@ public class PiiContextExtractor {
 
         // Always include the main entity
         relEntities.add(new TempEntity(
-                Math.clamp(mainStart - lineStartInSource, 0, lineLen),
-                Math.clamp(mainEnd - lineStartInSource, 0, lineLen),
+                Math.clamp((long) mainStart - lineStartInSource, 0, lineLen),
+                Math.clamp((long) mainEnd - lineStartInSource, 0, lineLen),
                 mainType,
                 true
         ));

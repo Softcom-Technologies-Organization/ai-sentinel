@@ -3,7 +3,6 @@ package pro.softcom.sentinelle.application.pii.reporting.service.parser;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Component;
-import pro.softcom.sentinelle.application.pii.reporting.service.PiiMaskingUtils;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -129,7 +128,7 @@ public class HtmlContentParser implements ContentParser {
 
             // Convert escaped newlines back to actual newlines
             return cleaned.replace("\\n", "\n");
-        } catch (Exception unnamed) {
+        } catch (Exception _) {
             // Fallback: return original text if Jsoup parsing fails
             return text;
         }

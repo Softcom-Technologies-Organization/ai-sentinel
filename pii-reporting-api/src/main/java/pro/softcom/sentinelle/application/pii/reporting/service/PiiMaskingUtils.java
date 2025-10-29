@@ -51,20 +51,9 @@ public final class PiiMaskingUtils {
             List<PiiEntity> sorted = sortEntitiesByPosition(entities);
             String masked = maskEntitiesInSource(source, sorted);
             return truncateToLength(masked, maxLen);
-        } catch (Exception e) {
+        } catch (Exception _) {
             return null;
         }
-    }
-
-    /**
-     * Convenience overload with a default presentation limit of 5000 characters.
-     *
-     * @param source   the original source content
-     * @param entities the list of detected PII entities
-     * @return the masked content or null if parameters are invalid
-     */
-    public static String buildMaskedContent(String source, List<PiiEntity> entities) {
-        return buildMaskedContent(source, entities, 5000);
     }
 
     /**

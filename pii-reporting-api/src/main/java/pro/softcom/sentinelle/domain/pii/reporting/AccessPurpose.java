@@ -8,11 +8,10 @@ package pro.softcom.sentinelle.domain.pii.reporting;
  */
 public enum AccessPurpose {
     /**
-     * General administrative review of scan results.
-     * Covers dashboard viewing, report generation without export.
+     * Display of PII data to authorized users through the UI.
+     * Used when users request to reveal sensitive information via the API.
+     * Triggers decryption for presentation purposes with full audit logging.
      */
-    ADMIN_REVIEW,
-
     USER_DISPLAY,
 
     // Future purposes can be added here as needed

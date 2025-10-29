@@ -4,6 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -25,11 +27,12 @@ class PiiAuditRetentionJobTest {
 
     // ========== purgeExpiredAuditLogs Tests ==========
 
-    @Test
-    @DisplayName("Should_CallPurgeExpiredLogs_When_JobExecutes")
-    void Should_CallPurgeExpiredLogs_When_JobExecutes() {
+    @ParameterizedTest
+    @ValueSource(ints = {0, 10, 1000})
+    @DisplayName("Should_CallPurgeExpiredLogs_When_JobExecutesWithVariousDeletedRecords")
+    void Should_CallPurgeExpiredLogs_When_JobExecutesWithVariousDeletedRecords(int deletedRecords) {
         // Given
-        when(auditService.purgeExpiredLogs()).thenReturn(10);
+        when(auditService.purgeExpiredLogs()).thenReturn(deletedRecords);
 
         // When
         retentionJob.purgeExpiredAuditLogs();
@@ -43,37 +46,11 @@ class PiiAuditRetentionJobTest {
     void Should_NotThrowException_When_ServiceThrowsException() {
         // Given
         when(auditService.purgeExpiredLogs())
-            .thenThrow(new RuntimeException("Service error"));
+                .thenThrow(new RuntimeException("Service error"));
 
         // When/Then - Should not throw
         retentionJob.purgeExpiredAuditLogs();
 
-        verify(auditService).purgeExpiredLogs();
-    }
-
-    @Test
-    @DisplayName("Should_HandleZeroDeletedRecords_When_NothingToDelete")
-    void Should_HandleZeroDeletedRecords_When_NothingToDelete() {
-        // Given
-        when(auditService.purgeExpiredLogs()).thenReturn(0);
-
-        // When
-        retentionJob.purgeExpiredAuditLogs();
-
-        // Then
-        verify(auditService).purgeExpiredLogs();
-    }
-
-    @Test
-    @DisplayName("Should_HandleLargeNumberOfDeletedRecords_When_ManyExpired")
-    void Should_HandleLargeNumberOfDeletedRecords_When_ManyExpired() {
-        // Given
-        when(auditService.purgeExpiredLogs()).thenReturn(1000);
-
-        // When
-        retentionJob.purgeExpiredAuditLogs();
-
-        // Then
         verify(auditService).purgeExpiredLogs();
     }
 
@@ -96,9 +73,9 @@ class PiiAuditRetentionJobTest {
     void Should_ExecuteMultipleTimes_When_JobIsScheduled() {
         // Given
         when(auditService.purgeExpiredLogs())
-            .thenReturn(5)
-            .thenReturn(3)
-            .thenReturn(0);
+                .thenReturn(5)
+                .thenReturn(3)
+                .thenReturn(0);
 
         // When: Simulate multiple scheduled executions
         retentionJob.purgeExpiredAuditLogs();
@@ -114,8 +91,8 @@ class PiiAuditRetentionJobTest {
     void Should_ContinueExecution_When_PreviousExecutionFailed() {
         // Given: First call fails, second succeeds
         when(auditService.purgeExpiredLogs())
-            .thenThrow(new RuntimeException("First execution failed"))
-            .thenReturn(10);
+                .thenThrow(new RuntimeException("First execution failed"))
+                .thenReturn(10);
 
         // When
         retentionJob.purgeExpiredAuditLogs(); // First execution (fails)

@@ -11,5 +11,10 @@ public record PiiEntity(
         @JsonProperty("piiTypeLabel")
         String piiTypeLabel,
         double confidence,
-        String detectedValue
+        @JsonProperty("sensitiveValue")
+        String sensitiveValue,
+        @JsonProperty("sensitiveContext")
+        String sensitiveContext,
+        @JsonProperty("maskedContext")
+        String maskedContext
 ) {}

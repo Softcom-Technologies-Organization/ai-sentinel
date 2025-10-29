@@ -660,13 +660,15 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
    * Skips empty items (no entities).
    */
   private addPiiItemToSpace(spaceKey: string, payload: RawStreamPayload): void {
-    const entities = Array.isArray(payload.entities) ? payload.entities : [];
+    const entities = Array.isArray(payload.detectedEntities) ? payload.detectedEntities : [];
     // Skip creating a card when no PII entities were detected
     if (!entities.length) {
       return;
     }
     const severity = this.sentinelleApiService.severityForEntities(entities);
     const piiItem: PiiItem = {
+      scanId: payload.scanId ?? '',
+      spaceKey: spaceKey,
       pageId: String(payload.pageId ?? ''),
       pageTitle: payload.pageTitle,
       pageUrl: payload.pageUrl,
@@ -674,15 +676,19 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
       isFinal: !!payload.isFinal,
       severity,
       summary: (payload.summary && typeof payload.summary === 'object') ? payload.summary : undefined,
-      entities: entities.map((e: any) => {
+      detectedEntities: entities.map((e: any) => {
         return {
-          label: e?.typeLabel,
-          type: e?.type,
-          text: e?.text,
-          score: typeof e?.score === 'number' ? e.score : undefined
+          startPosition: e?.startPosition,
+          endPosition: e?.endPosition,
+          piiTypeLabel: e?.piiTypeLabel,
+          piiType: e?.piiType,
+          sensitiveValue: e?.sensitiveValue,
+          sensitiveContext: e?.sensitiveContext,
+          maskedContext: e?.maskedContext,
+          confidence: typeof e?.confidence === 'number' ? e.confidence : undefined
         };
       }),
-      maskedHtml: this.sentinelleApiService.sanitizeMaskedHtml(payload.maskedContent),
+      // maskedHtml: this.sentinelleApiService.sanitizeMaskedHtml(payload.maskedContent),
       attachmentName: payload.attachmentName,
       attachmentType: payload.attachmentType,
       attachmentUrl: payload.attachmentUrl

@@ -2,6 +2,8 @@ import {PiiEntity} from './pii';
 import {Severity} from './severity';
 
 export interface PiiItem {
+  scanId: string;
+  spaceKey: string;
   pageId: string;
   pageTitle?: string;
   pageUrl?: string;
@@ -9,7 +11,7 @@ export interface PiiItem {
   isFinal: boolean;
   severity: Severity;
   summary?: Record<string, number>;
-  entities: PiiEntity[];
+  detectedEntities: PiiEntity[];
   maskedHtml?: string;
   // Attachment context when the item comes from an attachment scan
   attachmentName?: string;

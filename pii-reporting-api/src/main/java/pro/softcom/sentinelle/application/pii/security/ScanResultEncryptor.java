@@ -96,24 +96,44 @@ public class ScanResultEncryptor {
     /**
      * Encrypts a single PII entity while preserving its metadata.
      * The metadata is used as Additional Authenticated Data (AAD) to ensure integrity.
+     * Note: maskedContext is not encrypted as it contains only masked tokens, not real PII values.
      */
     private PiiEntity encryptEntity(PiiEntity entity) {
         EncryptionMetadata metadata = buildMetadata(entity);
-        var encryptedText = encryptionService.encrypt(entity.detectedValue(), metadata);
-        return entity.toBuilder().detectedValue(encryptedText).build();
+
+        var encryptedText = encryptionService.encrypt(entity.sensitiveValue(), metadata);
+        var encryptedContext = encryptionService.encrypt(entity.sensitiveContext(), metadata);
+
+        return entity.toBuilder()
+                .sensitiveValue(encryptedText)
+                .sensitiveContext(encryptedContext)
+                .maskedContext(entity.maskedContext()) // Keep masked sensitiveContext in clear text
+                .build();
     }
 
     /**
      * Decrypts a single PII entity if it's encrypted, otherwise returns it unchanged.
      * The metadata is verified during decryption to ensure integrity.
+     * Note: maskedContext is never encrypted, so it's preserved as-is.
      */
     private PiiEntity decryptEntity(PiiEntity entity) {
-        var decryptedText = entity.detectedValue();
-        if (encryptionService.isEncrypted(entity.detectedValue())) {
-            EncryptionMetadata metadata = buildMetadata(entity);
-            decryptedText = encryptionService.decrypt(entity.detectedValue(), metadata);
+        EncryptionMetadata metadata = buildMetadata(entity);
+
+        var decryptedText = entity.sensitiveValue();
+        if (encryptionService.isEncrypted(entity.sensitiveValue())) {
+            decryptedText = encryptionService.decrypt(entity.sensitiveValue(), metadata);
         }
-        return entity.toBuilder().detectedValue(decryptedText).build();
+
+        var decryptedContext = entity.sensitiveContext();
+        if (encryptionService.isEncrypted(entity.sensitiveContext())) {
+            decryptedContext = encryptionService.decrypt(entity.sensitiveContext(), metadata);
+        }
+
+        return entity.toBuilder()
+                .sensitiveValue(decryptedText)
+                .sensitiveContext(decryptedContext)
+                .maskedContext(entity.maskedContext()) // Preserve masked sensitiveContext unchanged
+                .build();
     }
 
     /**

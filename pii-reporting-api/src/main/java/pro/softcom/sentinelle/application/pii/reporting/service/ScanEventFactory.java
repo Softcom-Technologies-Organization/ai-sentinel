@@ -21,6 +21,8 @@ import java.util.Map;
 public class ScanEventFactory {
 
     private final ConfluenceUrlProvider confluenceUrlProvider;
+    private final PiiContextExtractor piiContextExtractor;
+
 
     /**
      * Creates a scan start event.
@@ -88,21 +90,22 @@ public class ScanEventFactory {
     /**
      * Creates an empty page item event when no content is available.
      */
-    public ScanResult createEmptyPageItemEvent(String scanId, String spaceKey, ConfluencePage page,
-                                              double progress) {
+    public ScanResult createEmptyPageItemEvent(
+            String scanId, String spaceKey, ConfluencePage page, double progress
+    ) {
         return ScanResult.builder()
-            .scanId(scanId)
-            .spaceKey(spaceKey)
-            .eventType(DetectionReportingEventType.ITEM.getLabel())
-            .isFinal(true)
-            .pageId(page.id())
-            .pageTitle(page.title())
-            .detectedEntities(List.of())
-            .summary(Map.of())
-            .pageUrl(buildPageUrl(page.id()))
-            .emittedAt(Instant.now().toString())
-            .analysisProgressPercentage(progress)
-            .build();
+                .scanId(scanId)
+                .spaceKey(spaceKey)
+                .eventType(DetectionReportingEventType.ITEM.getLabel())
+                .isFinal(true)
+                .pageId(page.id())
+                .pageTitle(page.title())
+                .detectedEntities(List.of())
+                .summary(Map.of())
+                .pageUrl(buildPageUrl(page.id()))
+                .emittedAt(Instant.now().toString())
+                .analysisProgressPercentage(progress)
+                .build();
     }
 
     /**
@@ -111,7 +114,7 @@ public class ScanEventFactory {
     public ScanResult createPageItemEvent(String scanId, String spaceKey, ConfluencePage page,
                                          String content, ContentPiiDetection detection,
                                          double progress) {
-        List<PiiEntity> entities = mapToEntityList(detection);
+        List<PiiEntity> entities = mapToEntityList(detection, content);
         Map<String, Integer> summary = extractSummary(detection);
 
         return ScanResult.builder()
@@ -136,7 +139,7 @@ public class ScanEventFactory {
     public ScanResult createAttachmentItemEvent(String scanId, String spaceKey, ConfluencePage page,
                                                AttachmentInfo attachment, String content,
                                                ContentPiiDetection detection, double progress) {
-        List<PiiEntity> entities = mapToEntityList(detection);
+        List<PiiEntity> entities = mapToEntityList(detection, content);
         Map<String, Integer> summary = extractSummary(detection);
 
         return ScanResult.builder()
@@ -178,20 +181,46 @@ public class ScanEventFactory {
     /**
      * Maps PII detection results to entity list for event payload.
      */
-    private List<PiiEntity> mapToEntityList(ContentPiiDetection detection) {
+    private List<PiiEntity> mapToEntityList(ContentPiiDetection detection, String content) {
         if (detection == null || detection.sensitiveDataFound() == null) {
             return List.of();
         }
         return detection.sensitiveDataFound().stream()
-            .map(this::mapSensitiveDataToEntity)
+            .map(sensitiveData -> this.mapSensitiveDataToEntity(sensitiveData, content, detection))
             .toList();
     }
 
-    private PiiEntity mapSensitiveDataToEntity(ContentPiiDetection.SensitiveData data) {
+    private PiiEntity mapSensitiveDataToEntity(ContentPiiDetection.SensitiveData data, String sourceContent, ContentPiiDetection detection) {
+        String type = (data.type() != null ? data.type().name() : null);
+        String typeLabel = (data.type() != null ? data.type().getLabel() : null);
+        // Build a lightweight list of entities to ensure other PIIs in the same line are also masked in context
+        List<PiiEntity> all = detection == null || detection.sensitiveDataFound() == null ? List.of() :
+                detection.sensitiveDataFound().stream()
+                        .map(sd -> {
+                            String sdType = null;
+                            if (sd.type() != null) {
+                                sdType = sd.type().name();
+                            }
+                            return PiiEntity.builder()
+                                    .startPosition(sd.position())
+                                    .endPosition(sd.end())
+                                    .piiType(sdType)
+                                    .build();
+                        })
+                        .toList();
+        
+        // Extract masked context (for immediate display, stored in clear)
+        String maskedContext = piiContextExtractor.extractMaskedContext(sourceContent, data.position(), data.end(), type, all);
+        
+        // Extract real context (contains actual PII values, will be encrypted)
+        String sensitiveContext = piiContextExtractor.extractSensitiveContext(sourceContent, data.position(), data.end());
+        
         return PiiEntity.builder()
-                .detectedValue(data.value())
-                .piiType(data.type() != null ? data.type().name() : null)
-                .piiTypeLabel(data.type() != null ? data.type().getLabel() : null)
+                .sensitiveContext(sensitiveContext)
+                .maskedContext(maskedContext)
+                .sensitiveValue(data.value())
+                .piiType(type)
+                .piiTypeLabel(typeLabel)
                 .startPosition(data.position())
                 .endPosition(data.end())
                 .confidence(data.score())

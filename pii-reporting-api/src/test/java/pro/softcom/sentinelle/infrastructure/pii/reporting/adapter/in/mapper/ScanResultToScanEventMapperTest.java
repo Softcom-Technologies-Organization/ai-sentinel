@@ -9,7 +9,6 @@ import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventDto;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -42,7 +41,6 @@ class ScanResultToScanEventMapperTest {
                 .detectedEntities(entities)
                 .summary(summary)
                 .sourceContent("abc")
-                .maskedContent("[EMAIL]bc")
                 .message("msg")
                 .pageUrl("url")
                 .emittedAt("emittedAt")
@@ -67,7 +65,6 @@ class ScanResultToScanEventMapperTest {
         softly.assertThat(dto.pageTitle()).isEqualTo("Title");
         softly.assertThat(dto.detectedEntities()).isEqualTo(entities);
         softly.assertThat(dto.summary()).isEqualTo(summary);
-        softly.assertThat(dto.maskedContent()).isEqualTo("[EMAIL]bc");
         softly.assertThat(dto.message()).isEqualTo("msg");
         softly.assertThat(dto.pageUrl()).isEqualTo("url");
         softly.assertThat(dto.emittedAt()).isEqualTo("emittedAt");
@@ -78,101 +75,16 @@ class ScanResultToScanEventMapperTest {
         softly.assertAll();
     }
 
-    @Test
-    void Should_UseProvidedMaskedContent_When_MaskedContentNotNull() {
-        // Arrange
-        List<PiiEntity> entities = List.of(entity(1, 3, "EMAIL"));
-        ScanResult sr = ScanResult.builder()
-                .sourceContent("abcde")
-                .detectedEntities(entities)
-                .maskedContent("GIVEN")
-                .build();
-
-        // Act
-        ScanEventDto dto = mapper.toDto(sr);
-
-        // Assert
-        assertThat(dto.maskedContent()).isEqualTo("GIVEN");
-    }
-
-    @Test
-    void Should_BuildMaskedContent_When_SourceAndEntitiesProvided() {
-        // Arrange
-        List<PiiEntity> entities = new ArrayList<>();
-        // Intentionally unsorted to verify sorting by startPosition
-        entities.add(entity(3, 4, null)); // will become UNKNOWN
-        entities.add(entity(1, 3, "EMAIL"));
-        ScanResult sr = ScanResult.builder()
-                .sourceContent("abcde")
-                .detectedEntities(entities)
-                .build();
-
-        // Act
-        ScanEventDto dto = mapper.toDto(sr);
-
-        // Assert
-        assertThat(dto.maskedContent()).isEqualTo("a[EMAIL][UNKNOWN]e");
-    }
-
-    @Test
-    void Should_ClampAndInsertTokens_When_EntityBoundsAreOutsideSource() {
-        // Arrange
-        List<PiiEntity> entities = List.of(
-                entity(-5, 2, "SSN"),
-                entity(10, 12, "PHONE")
-        );
-        ScanResult sr = ScanResult.builder()
-                .sourceContent("abcde")
-                .detectedEntities(entities)
-                .build();
-
-        // Act
-        ScanEventDto dto = mapper.toDto(sr);
-
-        // Assert
-        assertThat(dto.maskedContent()).isEqualTo("[SSN]cde[PHONE]");
-    }
-
-    @Test
-    void Should_SetMaskedContentNull_When_SourceBlankOrEntitiesEmpty() {
-        // blank source
-        ScanResult sr1 = ScanResult.builder()
-                .sourceContent("   ")
-                .detectedEntities(List.of(entity(0, 1, "EMAIL")))
-                .build();
-        // empty detectedEntities
-        ScanResult sr2 = ScanResult.builder()
-                .sourceContent("abc")
-                .detectedEntities(List.of())
-                .build();
-
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(mapper.toDto(sr1).maskedContent()).isNull();
-        softly.assertThat(mapper.toDto(sr2).maskedContent()).isNull();
-        softly.assertAll();
-    }
-
-    @Test
-    void Should_TruncateMaskedContent_When_ResultExceedsLimit() {
-        // Arrange: create long source (6000 chars)
-        String source = "x".repeat(6000);
-        List<PiiEntity> entities = List.of(entity(0, 1, "EMAIL"));
-        ScanResult sr = ScanResult.builder()
-                .sourceContent(source)
-                .detectedEntities(entities)
-                .build();
-
-        // Act
-        String masked = mapper.toDto(sr).maskedContent();
-
-        // Assert
-        assertThat(masked)
-            .isNotNull()
-            .hasSize(5001)
-            .endsWith("…");
-    }
-
     private static PiiEntity entity(int start, int end, Object type) {
-        return new PiiEntity(start, end, type == null ? null : type.toString(), type == null ? null : type.toString(), 0, null);
+        return new PiiEntity(
+                start, 
+                end, 
+                type == null ? null : type.toString(), 
+                type == null ? null : type.toString(), 
+                0, 
+                null,  // detectedValue
+                null,  // context
+                null   // maskedContext
+        );
     }
 }

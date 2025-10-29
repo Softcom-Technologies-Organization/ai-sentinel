@@ -10,7 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanResultQuery;
+import pro.softcom.sentinelle.application.pii.security.PiiAccessAuditService;
 import pro.softcom.sentinelle.application.pii.security.ScanResultEncryptor;
+import pro.softcom.sentinelle.domain.pii.reporting.AccessPurpose;
 import pro.softcom.sentinelle.domain.pii.reporting.LastScanMeta;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.DetectionEventRepository;
@@ -27,6 +29,7 @@ public class JpaScanResultQueryAdapter implements ScanResultQuery {
 
     private final DetectionEventRepository eventRepository;
     private final ScanResultEncryptor scanResultEncryptor;
+    private final PiiAccessAuditService auditService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -52,26 +55,73 @@ public class JpaScanResultQueryAdapter implements ScanResultQuery {
     }
 
     @Override
-    public List<ScanResult> listItemEvents(String scanId) {
-        if (scanId == null || scanId.isBlank()) return List.of();
+    public List<ScanResult> listItemEventsEncrypted(String scanId) {
+        if (scanId == null || scanId.isBlank()) {
+            return List.of();
+        }
+
         var types = Set.of("item", "attachmentItem");
         return eventRepository.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId, types).stream()
-            .map(this::toDomain)
+            .map(this::toEncryptedDomain)
             .filter(Objects::nonNull)
             .toList();
     }
 
-    private ScanResult toDomain(ScanEventEntity scanEventEntity) {
-        if (scanEventEntity == null || scanEventEntity.getPayload() == null) {
+    @Override
+    public List<ScanResult> listItemEventsDecrypted(String scanId, String pageId, AccessPurpose purpose) {
+        if (scanId == null || scanId.isBlank()) {
+            return List.of();
+        }
+
+        var types = Set.of("item", "attachmentItem");
+        List<ScanResult> results = eventRepository
+            .findByScanIdAndPageIdAndEventTypeInOrderByEventSeqAsc(scanId, pageId, types).stream()
+            .map(this::toDecryptedDomain)
+            .filter(Objects::nonNull)
+            .toList();
+
+        if (results.isEmpty()) {
+            return results;
+        }
+
+        // Audit access for GDPR/nLPD compliance
+        int totalPiiCount = results.stream()
+            .mapToInt(r -> r.detectedEntities() != null ? r.detectedEntities().size() : 0)
+            .sum();
+
+        var spaceKey = results.getFirst().spaceKey();
+        var pageTitle = results.getFirst().pageTitle();
+        auditService.auditPiiAccess(scanId, spaceKey, pageId, pageTitle, purpose, totalPiiCount);
+
+        return results;
+    }
+
+    private ScanResult toEncryptedDomain(ScanEventEntity entity) {
+        if (entity == null || entity.getPayload() == null) {
             log.warn("scanEventEntity or payload is null");
             return null;
         }
 
         try {
-            ScanResult encryptedResult = objectMapper.treeToValue(scanEventEntity.getPayload(), ScanResult.class);
-            return scanResultEncryptor.decrypt(encryptedResult);
+            // Return as-is (already encrypted in DB)
+            return objectMapper.treeToValue(entity.getPayload(), ScanResult.class);
         } catch (Exception e) {
             log.error("Failed to deserialize scan event", e);
+            return null;
+        }
+    }
+
+    private ScanResult toDecryptedDomain(ScanEventEntity entity) {
+        if (entity == null || entity.getPayload() == null) {
+            log.warn("scanEventEntity or payload is null");
+            return null;
+        }
+
+        try {
+            ScanResult encrypted = objectMapper.treeToValue(entity.getPayload(), ScanResult.class);
+            return scanResultEncryptor.decrypt(encrypted);
+        } catch (Exception e) {
+            log.error("Failed to decrypt scan event", e);
             return null;
         }
     }

@@ -52,8 +52,12 @@ class ScanResultEncryptorTest {
 
         when(encryptionService.encrypt(eq("john@example.com"), any()))
             .thenReturn("ENC:v1:encrypted_email");
+        when(encryptionService.encrypt(eq("john@example.com context"), any()))
+            .thenReturn("ENC:v1:encrypted_email context");
         when(encryptionService.encrypt(eq("1234567890"), any()))
             .thenReturn("ENC:v1:encrypted_phone");
+        when(encryptionService.encrypt(eq("1234567890 context"), any()))
+            .thenReturn("ENC:v1:encrypted_phone context");
 
         // When
         ScanResult encrypted = encryptor.encrypt(scanResult);
@@ -61,13 +65,13 @@ class ScanResultEncryptorTest {
         // Then
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(encrypted.detectedEntities()).hasSize(2);
-        softly.assertThat(encrypted.detectedEntities().get(0).detectedValue())
+        softly.assertThat(encrypted.detectedEntities().get(0).sensitiveValue())
             .isEqualTo("ENC:v1:encrypted_email");
-        softly.assertThat(encrypted.detectedEntities().get(1).detectedValue())
+        softly.assertThat(encrypted.detectedEntities().get(1).sensitiveValue())
             .isEqualTo("ENC:v1:encrypted_phone");
         softly.assertAll();
 
-        verify(encryptionService, times(2)).encrypt(anyString(), any(EncryptionMetadata.class));
+        verify(encryptionService, times(2 * 2)).encrypt(anyString(), any(EncryptionMetadata.class));
     }
 
     private static Stream<Arguments> noEntitiesTestData() {
@@ -134,22 +138,26 @@ class ScanResultEncryptorTest {
         ScanResult scanResult = createScanResult(entities);
 
         when(encryptionService.isEncrypted("ENC:v1:encrypted")).thenReturn(true);
+        when(encryptionService.isEncrypted("ENC:v1:encrypted context")).thenReturn(true);
         when(encryptionService.isEncrypted("plaintext")).thenReturn(false);
+        when(encryptionService.isEncrypted("plaintext context")).thenReturn(false);
         when(encryptionService.decrypt(eq("ENC:v1:encrypted"), any()))
             .thenReturn("decrypted@email.com");
+        when(encryptionService.decrypt(eq("ENC:v1:encrypted context"), any()))
+            .thenReturn("decrypted context");
 
         // When
         ScanResult decrypted = encryptor.decrypt(scanResult);
 
         // Then
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(decrypted.detectedEntities().get(0).detectedValue())
+        softly.assertThat(decrypted.detectedEntities().get(0).sensitiveValue())
             .isEqualTo("decrypted@email.com");
-        softly.assertThat(decrypted.detectedEntities().get(1).detectedValue())
+        softly.assertThat(decrypted.detectedEntities().get(1).sensitiveValue())
             .isEqualTo("plaintext");
         softly.assertAll();
 
-        verify(encryptionService, times(1)).decrypt(anyString(), any());
+        verify(encryptionService, times(1 * 2)).decrypt(anyString(), any());
     }
 
     @Test
@@ -207,6 +215,10 @@ class ScanResultEncryptorTest {
             .thenReturn("email@test.com");
         when(encryptionService.decrypt(eq("ENC:v1:enc2"), any()))
             .thenReturn("555-1234");
+        when(encryptionService.decrypt(eq("ENC:v1:enc1 context"), any()))
+            .thenReturn("email@test.com context");
+        when(encryptionService.decrypt(eq("ENC:v1:enc2 context"), any()))
+            .thenReturn("555-1234 context");
 
         // When
         ScanResult decrypted = encryptor.decrypt(scanResult);
@@ -214,13 +226,13 @@ class ScanResultEncryptorTest {
         // Then
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(decrypted.detectedEntities()).hasSize(2);
-        softly.assertThat(decrypted.detectedEntities().get(0).detectedValue())
+        softly.assertThat(decrypted.detectedEntities().get(0).sensitiveValue())
             .isEqualTo("email@test.com");
-        softly.assertThat(decrypted.detectedEntities().get(1).detectedValue())
+        softly.assertThat(decrypted.detectedEntities().get(1).sensitiveValue())
             .isEqualTo("555-1234");
         softly.assertAll();
 
-        verify(encryptionService, times(2)).decrypt(anyString(), any());
+        verify(encryptionService, times(2 * 2)).decrypt(anyString(), any());
     }
 
     @Test
@@ -275,11 +287,11 @@ class ScanResultEncryptorTest {
         // Then
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(encrypted.detectedEntities()).hasSize(501);
-        softly.assertThat(encrypted.detectedEntities().getFirst().detectedValue())
+        softly.assertThat(encrypted.detectedEntities().getFirst().sensitiveValue())
             .isEqualTo("ENC:v1:encrypted");
         softly.assertAll();
 
-        verify(encryptionService, times(501)).encrypt(anyString(), any());
+        verify(encryptionService, times(501 * 2)).encrypt(anyString(), any());
     }
 
     @Test
@@ -304,7 +316,7 @@ class ScanResultEncryptorTest {
         // Verify original scanResult is not modified (immutability)
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(original.scanId()).isEqualTo("scan-123");
-        softly.assertThat(original.detectedEntities().getFirst().detectedValue())
+        softly.assertThat(original.detectedEntities().getFirst().sensitiveValue())
             .isEqualTo("test@example.com");
         softly.assertAll();
     }
@@ -314,7 +326,8 @@ class ScanResultEncryptorTest {
             .piiType(type)
             .startPosition(start)
             .endPosition(end)
-            .detectedValue(text)
+            .sensitiveValue(text)
+            .sensitiveContext(text + " context")
             .confidence(0.9)
             .build();
     }

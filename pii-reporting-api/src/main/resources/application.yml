@@ -74,6 +74,26 @@ pii-detector:
 pii-encryption:
   kek-env-variable: SENTINELLE_ENCRYPTION_KEY
 
+# PII Configuration
+pii:
+  # PII Reporting Configuration
+  reporting:
+    # Allow revealing decrypted PII values to users (default: true)
+    # When false, sensitiveValue is never sent to frontend via SSE
+    # and the reveal endpoint returns 403 Forbidden
+    allow-secret-reveal: true
+  
+  # PII Access Audit Configuration (GDPR/nLPD compliance)
+  audit:
+    # Retention period in days (730 days = 2 years, nLPD compliant)
+    retention-days: 730
+    # Enable/disable automatic purge job
+    retention:
+      enabled: true
+    # Purge schedule (cron expression: second minute hour day month weekday)
+    # Default: 3 AM every day
+    purge-cron: "0 0 3 * * ?"
+
 # Armeria internal services (docs, health, metrics, actuator)
 armeria:
   internal-services:
@@ -98,4 +118,3 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     operations-sorter: method
-

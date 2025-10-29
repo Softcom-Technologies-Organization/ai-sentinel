@@ -76,13 +76,6 @@ pii-encryption:
 
 # PII Configuration
 pii:
-  # PII Context extraction configuration
-  context:
-    # Maximum length of context to present to the user (default: 200)
-    max-length: 200
-    # Length on each side of the PII during truncation (default: 80)
-    side-length: 80
-  
   # PII Reporting Configuration
   reporting:
     # Allow revealing decrypted PII values to users (default: true)

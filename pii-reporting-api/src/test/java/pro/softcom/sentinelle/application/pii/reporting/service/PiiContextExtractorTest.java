@@ -7,11 +7,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pro.softcom.sentinelle.application.pii.reporting.config.PiiContextProperties;
-import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParser;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParserFactory;
+import pro.softcom.sentinelle.application.pii.reporting.service.parser.HtmlContentParser;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.PlainTextParser;
 import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
@@ -21,8 +19,6 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.lenient;
 
 /**
  * Unit tests for {@link PiiContextExtractor}.
@@ -33,26 +29,12 @@ import static org.mockito.Mockito.lenient;
 @DisplayName("PiiContextExtractor - PII context extraction")
 class PiiContextExtractorTest {
 
-    @Mock
-    private ContentParserFactory parserFactory;
-
-    @Mock
-    private PiiContextProperties contextProperties;
-
     private PiiContextExtractor piiContextExtractor;
 
     @BeforeEach
     void setUp() {
-        // Use real PlainTextParser for testing
-        ContentParser plainTextParser = new PlainTextParser();
-        
-        // Configure mocks with lenient() to allow unused stubbings in some tests
-        lenient().when(contextProperties.getMaxLength()).thenReturn(200);
-        lenient().when(contextProperties.getSideLength()).thenReturn(80);
-        lenient().when(parserFactory.getParser(anyString())).thenReturn(plainTextParser);
-        
-        // Create instance with mocked dependencies
-        piiContextExtractor = new PiiContextExtractor(parserFactory, contextProperties);
+        var realParserFactory = new ContentParserFactory(new PlainTextParser(), new HtmlContentParser());
+        piiContextExtractor = new PiiContextExtractor(realParserFactory);
     }
 
     @ParameterizedTest(name = "{index} -> should mask occurrence and keep line snippet for type={2}")
@@ -128,50 +110,6 @@ class PiiContextExtractorTest {
         String ctx = piiContextExtractor.extractMaskedContext(null, 0, 10, "EMAIL");
         // Then
         assertThat(ctx).isNull();
-    }
-
-
-
-    @Test
-    @DisplayName("Should_TruncateContext_When_ExceedsMaxLength")
-    void Should_TruncateContext_When_ExceedsMaxLength() {
-        // Given: create a long text with PII in the middle
-        String longPrefix = "A".repeat(150);
-        String piiValue = "john.doe@example.com";
-        String longSuffix = "B".repeat(150);
-        String source = longPrefix + piiValue + longSuffix;
-        int start = longPrefix.length();
-        int end = start + piiValue.length();
-
-        // When
-        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL");
-
-        // Then
-        assertSoftly(softly -> {
-            softly.assertThat(context).isNotNull();
-            softly.assertThat(context.length()).isLessThanOrEqualTo(200 + 2); // +2 for ellipses
-            softly.assertThat(context).contains("[EMAIL]");
-            softly.assertThat(context).matches(".*….*"); // Contains at least one ellipsis
-        });
-    }
-
-    @Test
-    @DisplayName("Should_CompactWhitespace_When_ExtractingContext")
-    void Should_CompactWhitespace_When_ExtractingContext() {
-        // Given
-        String source = "My   email    is\n\tjohn.doe@example.com   and   my   phone";
-        int start = 21;
-        int end = 41;
-
-        // When
-        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL");
-
-        // Then
-        assertSoftly(softly -> {
-            softly.assertThat(context).doesNotContain("  "); // No double spaces
-            softly.assertThat(context).doesNotContain("\n");
-            softly.assertThat(context).doesNotContain("\t");
-        });
     }
 
     @Test
@@ -508,73 +446,6 @@ class PiiContextExtractorTest {
         );
     }
 
-    @ParameterizedTest(name = "{index} -> {3}")
-    @MethodSource("longContextCases")
-    @DisplayName("Should_TruncateSensitiveContext_When_ExceedsMaxLength")
-    void Should_TruncateSensitiveContext_When_ExceedsMaxLength(
-            String prefix, String piiValue, String suffix, String testCase) {
-        // Given: create a long text with PII
-        String source = prefix + piiValue + suffix;
-        int start = prefix.length();
-        int end = start + piiValue.length();
-
-        // When
-        String context = piiContextExtractor.extractSensitiveContext(source, start, end);
-
-        // Then
-        assertSoftly(softly -> {
-            softly.assertThat(context).isNotNull();
-            softly.assertThat(context.length()).isLessThanOrEqualTo(200 + 2); // +2 for ellipses
-            softly.assertThat(context).contains(piiValue);
-            softly.assertThat(context).matches(".*….*"); // Contains at least one ellipsis
-            softly.assertThat(context).doesNotContain("[EMAIL]");
-            softly.assertThat(context).doesNotContain("[PHONE]");
-        });
-    }
-
-    static Stream<Arguments> longContextCases() {
-        return Stream.of(
-                Arguments.of("A".repeat(150), "john.doe@example.com", "B".repeat(150), 
-                            "email in middle of long text"),
-                Arguments.of("X".repeat(180), "06 11 22 33 44", "Y".repeat(180), 
-                            "phone in middle of long text"),
-                Arguments.of("".repeat(0), "test@example.com", "Z".repeat(300), 
-                            "PII at start with long suffix")
-        );
-    }
-
-    @ParameterizedTest(name = "{index} -> {2}")
-    @MethodSource("whitespaceCompactCases")
-    @DisplayName("Should_CompactWhitespace_When_ExtractingSensitiveContext")
-    void Should_CompactWhitespace_When_ExtractingSensitiveContext(
-            String source, String piiValue, String testCase) {
-        // Given
-        int start = source.indexOf(piiValue);
-        int end = start + piiValue.length();
-
-        // When
-        String context = piiContextExtractor.extractSensitiveContext(source, start, end);
-
-        // Then
-        assertSoftly(softly -> {
-            softly.assertThat(context).contains(piiValue);
-            softly.assertThat(context).doesNotContain("  "); // No double spaces
-            softly.assertThat(context).doesNotContain("\n");
-            softly.assertThat(context).doesNotContain("\t");
-        });
-    }
-
-    static Stream<Arguments> whitespaceCompactCases() {
-        return Stream.of(
-                Arguments.of("My   email    is\n\tjohn.doe@example.com   and   data", 
-                            "john.doe@example.com", "multiple spaces and newlines"),
-                Arguments.of("Contact:\t\t06 11 22 33 44\n\nfor info", 
-                            "06 11 22 33 44", "tabs and multiple newlines"),
-                Arguments.of("Text  \n  with  \t  test@test.com  \n  data", 
-                            "test@test.com", "mixed whitespace characters")
-        );
-    }
-
     @Test
     @DisplayName("Should_HandleOutOfBoundsPositions_When_ExtractingSensitiveContext")
     void Should_HandleOutOfBoundsPositions_When_ExtractingSensitiveContext() {
@@ -669,4 +540,49 @@ class PiiContextExtractorTest {
             softly.assertThat(ctx).doesNotContain("…ortant"); // avoid cutting 'Important'
         });
     }
+
+    @Test
+    @DisplayName("Should_MaskEntirePiiValue_When_PositionsAreCorrect")
+    void Should_MaskEntirePiiValue_When_PositionsAreCorrect() {
+        // Given: a credit card number at specific positions
+        String creditCard = "4916632082457636";
+        String source = "Pay with card " + creditCard + " for order";
+        int start = source.indexOf(creditCard);
+        int end = start + creditCard.length();
+
+        // When
+        String ctx = piiContextExtractor.extractMaskedContext(source, start, end, "CREDIT_CARD");
+
+        // Then: the entire credit card should be masked, not just part of it
+        assertSoftly(softly -> {
+            softly.assertThat(ctx).contains("[CREDIT_CARD]");
+            softly.assertThat(ctx).doesNotContain(creditCard);
+            softly.assertThat(ctx).doesNotContain("4916632"); // No partial credit card number
+            softly.assertThat(ctx).contains("Pay with card");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_MaskEntirePiiValue_When_PositionsPointToExactValue")
+    void Should_MaskEntirePiiValue_When_PositionsPointToExactValue() {
+        // Given: exact scenario from bug report - positions 347 to 363
+        String prefix = "X".repeat(347);
+        String creditCard = "4916632082457636";
+        String suffix = " end of text";
+        String source = prefix + creditCard + suffix;
+        int start = 347;
+        int end = 363;
+
+        // When
+        String ctx = piiContextExtractor.extractMaskedContext(source, start, end, "CREDIT_CARD");
+
+        // Then: the entire credit card must be masked
+        assertSoftly(softly -> {
+            softly.assertThat(ctx).contains("[CREDIT_CARD]");
+            softly.assertThat(ctx).doesNotContain(creditCard);
+            softly.assertThat(ctx).doesNotContain("4916632"); // Should not have partial number
+            softly.assertThat(ctx).doesNotContain("082457636"); // Should not have partial number
+        });
+    }
+
 }

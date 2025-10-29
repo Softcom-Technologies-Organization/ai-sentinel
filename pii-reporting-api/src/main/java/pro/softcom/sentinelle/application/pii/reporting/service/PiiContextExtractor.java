@@ -3,7 +3,6 @@ package pro.softcom.sentinelle.application.pii.reporting.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import pro.softcom.sentinelle.application.pii.reporting.config.PiiContextProperties;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParser;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParserFactory;
 import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
@@ -31,7 +30,6 @@ import java.util.Objects;
 public class PiiContextExtractor {
 
     private final ContentParserFactory parserFactory;
-    private final PiiContextProperties contextProperties;
 
     public String extractMaskedContext(String source, int start, int end, String type) {
         return extractLineContext(source, start, end, type, null, true);
@@ -100,12 +98,13 @@ public class PiiContextExtractor {
         }
 
         // Extract masked context for immediate display
-        String maskedContext = extractMaskedContext(source, entity.startPosition(), entity.endPosition(),
-                entity.piiType(), allEntities);
-        
+        String maskedContext = extractMaskedContext(
+                source, entity.startPosition(), entity.endPosition(), entity.piiType(), allEntities
+        );
+
         // Extract sensitive context for encrypted storage
         String sensitiveContext = extractSensitiveContext(source, entity.startPosition(), entity.endPosition());
-        
+
         return entity.toBuilder()
                 .sensitiveContext(sensitiveContext)
                 .maskedContext(maskedContext)
@@ -126,26 +125,18 @@ public class PiiContextExtractor {
     }
 
     /**
-     * Package-private method for testing purposes.
-     * Extracts masked line context with type information and entity list.
-     */
-    String extractMaskedLineContext(String source, int start, int end, String type, List<PiiEntity> allEntities) {
-        return extractLineContext(source, start, end, type, allEntities, true);
-    }
-
-    /**
      * Unified method to extract line context, with optional masking.
-     * 
-     * @param source complete source content
-     * @param start PII start position
-     * @param end PII end position
-     * @param type detected PII type (can be null if maskPii is false)
+     *
+     * @param source      complete source content
+     * @param start       PII start position
+     * @param end         PII end position
+     * @param type        detected PII type (can be null if maskPii is false)
      * @param allEntities all entities to mask in the same line (can be null)
-     * @param maskPii whether to mask PII values with tokens
+     * @param maskPii     whether to mask PII values with tokens
      * @return extracted and truncated context, or null if extraction is not possible
      */
-    private String extractLineContext(String source, int start, int end, String type, 
-                                     List<PiiEntity> allEntities, boolean maskPii) {
+    private String extractLineContext(String source, int start, int end, String type,
+                                      List<PiiEntity> allEntities, boolean maskPii) {
         if (source == null || source.isBlank()) {
             return null;
         }
@@ -157,52 +148,29 @@ public class PiiContextExtractor {
         int lineEndInSource = parser.findLineEnd(source, Math.clamp(end, 0, source.length()));
         String lineContext = source.substring(lineStartInSource, lineEndInSource);
 
-        // Clean HTML tags if present
-        lineContext = parser.cleanText(lineContext);
-
-        // Calculate position for truncation centering
-        int centerPosition = Math.clamp(start - lineStartInSource, 0, lineContext.length());
-
         // Apply masking if requested
         if (maskPii) {
-            MaskResult masked = maskLineWithEntities(lineContext, lineStartInSource, start, end, type, allEntities);
-            lineContext = masked.text();
-            centerPosition = masked.mainTokenIndex();
+            lineContext = maskLineWithEntities(lineContext, lineStartInSource, start, end, type, allEntities);
         }
 
-        // Truncate around the center position without cutting words
-        String truncated = truncateAroundPositionNoWordCut(lineContext, centerPosition);
-
-        // Compact whitespace for cleaner display
-        return compactWhitespace(truncated);
+        // Clean HTML tags if present
+        lineContext = parser.cleanText(lineContext);
+        return lineContext;
     }
 
-    /**
-     * Compacts all consecutive whitespace characters into single spaces and trims the result.
-     *
-     * @param text the text to compact
-     * @return the compacted text with single spaces
-     */
-    private String compactWhitespace(String text) {
-        return text.replaceAll("\\s+", " ").trim();
-    }
-
-    private record MaskResult(String text, int mainTokenIndex) {
-    }
-
-    private MaskResult maskLineWithEntities(String lineContext,
-                                            int lineStartInSource,
-                                            int mainStart,
-                                            int mainEnd,
-                                            String mainType,
-                                            List<PiiEntity> allEntities) {
+    private String maskLineWithEntities(String lineContext,
+                                        int lineStartInSource,
+                                        int mainStart,
+                                        int mainEnd,
+                                        String mainType,
+                                        List<PiiEntity> allEntities) {
         int lineLen = lineContext.length();
         List<TempEntity> relEntities = collectRelevantEntities(
                 lineLen, lineStartInSource, mainStart, mainEnd, mainType, allEntities
         );
 
         relEntities.sort(Comparator.comparingInt(te -> te.start));
-        return buildMaskedText(lineContext, relEntities, mainStart, lineStartInSource);
+        return buildMaskedText(lineContext, relEntities);
     }
 
     /**
@@ -267,26 +235,17 @@ public class PiiContextExtractor {
     /**
      * Builds the masked text by replacing entity ranges with tokens.
      */
-    private MaskResult buildMaskedText(String lineContext,
-                                       List<TempEntity> sortedEntities,
-                                       int mainStart,
-                                       int lineStartInSource) {
+    private String buildMaskedText(String lineContext, List<TempEntity> sortedEntities) {
         int lineLen = lineContext.length();
         StringBuilder out = new StringBuilder(lineLen + 16);
         int idx = 0;
-        int mainTokenIndex = -1;
-
         for (TempEntity te : sortedEntities) {
             int s = te.start;
             int e = te.end;
             if (s > idx) {
                 out.append(lineContext, idx, s);
             }
-            int tokenPos = out.length();
             out.append(PiiMaskingUtils.token(te.type));
-            if (te.isMain && mainTokenIndex < 0) {
-                mainTokenIndex = tokenPos;
-            }
             idx = Math.max(idx, e);
         }
 
@@ -294,18 +253,7 @@ public class PiiContextExtractor {
             out.append(lineContext, idx, lineLen);
         }
 
-        if (mainTokenIndex < 0) {
-            mainTokenIndex = calculateFallbackPosition(mainStart, lineStartInSource, out.length());
-        }
-
-        return new MaskResult(out.toString(), mainTokenIndex);
-    }
-
-    /**
-     * Calculates fallback position for main token index when not found in the masked text.
-     */
-    private int calculateFallbackPosition(int mainStart, int lineStartInSource, int textLength) {
-        return Math.clamp(mainStart - lineStartInSource, 0, textLength);
+        return out.toString();
     }
 
     private static final class TempEntity {
@@ -321,34 +269,4 @@ public class PiiContextExtractor {
             this.isMain = isMain;
         }
     }
-
-    private String truncateAroundPositionNoWordCut(String text, int centerPosition) {
-        int maxLength = contextProperties.getMaxLength();
-        int sideLength = contextProperties.getSideLength();
-
-        if (text.length() <= maxLength) {
-            return text;
-        }
-        int safeCenter = Math.clamp(0, centerPosition, text.length());
-        int half = sideLength;
-        int from = Math.max(0, safeCenter - half);
-        int to = Math.min(text.length(), safeCenter + half);
-
-        // Try to extend to word boundaries without exceeding maxLength
-        // Extend left to include the beginning of the current word
-        while (from > 0 && !Character.isWhitespace(text.charAt(from - 1)) && (to - (from - 1)) <= maxLength) {
-            from--;
-        }
-        // Extend right to include the end of the current word
-        while (to < text.length() && !Character.isWhitespace(text.charAt(to)) && ((to + 1) - from) <= maxLength) {
-            to++;
-        }
-
-        String slice = text.substring(from, to);
-        // Add ellipsis if we cut from either side
-        if (from > 0) slice = "…" + slice;
-        if (to < text.length()) slice = slice + "…";
-        return slice;
-    }
-
 }

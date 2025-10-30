@@ -94,6 +94,9 @@ pii:
     # Default: 3 AM every day
     purge-cron: "0 0 3 * * ?"
 
+pii-reporting-api:
+  findings-export-directory: ${PII_REPORTING_API_EXPORT_DIR:/tmp/exports}
+
 # Armeria internal services (docs, health, metrics, actuator)
 armeria:
   internal-services:

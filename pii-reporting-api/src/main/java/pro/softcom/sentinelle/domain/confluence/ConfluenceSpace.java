@@ -9,7 +9,8 @@ public record ConfluenceSpace(
     String url,
     String description,
     SpaceType type,
-    SpaceStatus status
+    SpaceStatus status,
+    DataOwners dataOwners
 ) {
 
     @Getter
@@ -40,10 +41,10 @@ public record ConfluenceSpace(
 
     public ConfluenceSpace {
         if (key == null || key.isBlank()) {
-            throw new IllegalArgumentException("La clé de l'espace ne peut pas être vide");
+            throw new IllegalArgumentException("Space key cannot be empty");
         }
         if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Le nom de l'espace ne peut pas être vide");
+            throw new IllegalArgumentException("Space name cannot be empty");
         }
         if (type == null) {
             type = SpaceType.GLOBAL;

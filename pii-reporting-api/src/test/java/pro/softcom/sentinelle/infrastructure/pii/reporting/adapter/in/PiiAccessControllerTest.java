@@ -1,7 +1,10 @@
 package pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in;
 
 import org.jspecify.annotations.NonNull;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -22,7 +25,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -129,9 +131,9 @@ class PiiAccessControllerTest {
             // Given
             when(reportingProperties.isAllowSecretReveal()).thenReturn(true);
             when(scanResultQuery.listItemEventsDecrypted(
-                    eq(SCAN_ID),
-                    eq(PAGE_ID),
-                    eq(AccessPurpose.USER_DISPLAY)
+                    SCAN_ID,
+                    PAGE_ID,
+                    AccessPurpose.USER_DISPLAY
             )).thenReturn(Collections.emptyList());
             PageRevealRequest request = new PageRevealRequest(SCAN_ID, PAGE_ID);
 
@@ -161,9 +163,9 @@ class PiiAccessControllerTest {
                     .build();
 
             when(scanResultQuery.listItemEventsDecrypted(
-                    eq(SCAN_ID),
-                    eq(PAGE_ID),
-                    eq(AccessPurpose.USER_DISPLAY)
+                    SCAN_ID,
+                    PAGE_ID,
+                    AccessPurpose.USER_DISPLAY
             )).thenReturn(List.of(scanResult));
 
             PageRevealRequest request = new PageRevealRequest(SCAN_ID, PAGE_ID);
@@ -214,9 +216,9 @@ class PiiAccessControllerTest {
                     .build();
 
             when(scanResultQuery.listItemEventsDecrypted(
-                    eq(SCAN_ID),
-                    eq(PAGE_ID),
-                    eq(AccessPurpose.USER_DISPLAY)
+                    SCAN_ID,
+                    PAGE_ID,
+                    AccessPurpose.USER_DISPLAY
             )).thenReturn(List.of(scanResult));
 
             PageRevealRequest request = new PageRevealRequest(SCAN_ID, PAGE_ID);
@@ -253,9 +255,9 @@ class PiiAccessControllerTest {
                     .build();
 
             when(scanResultQuery.listItemEventsDecrypted(
-                    eq(SCAN_ID),
-                    eq(PAGE_ID),
-                    eq(AccessPurpose.USER_DISPLAY)
+                    SCAN_ID,
+                    PAGE_ID,
+                    AccessPurpose.USER_DISPLAY
             )).thenReturn(List.of(firstResult, secondResult));
 
             PageRevealRequest request = new PageRevealRequest(SCAN_ID, PAGE_ID);
@@ -287,9 +289,9 @@ class PiiAccessControllerTest {
 
             // Then
             verify(scanResultQuery).listItemEventsDecrypted(
-                    eq(SCAN_ID),
-                    eq(PAGE_ID),
-                    eq(AccessPurpose.USER_DISPLAY)
+                    SCAN_ID,
+                    PAGE_ID,
+                    AccessPurpose.USER_DISPLAY
             );
         }
 

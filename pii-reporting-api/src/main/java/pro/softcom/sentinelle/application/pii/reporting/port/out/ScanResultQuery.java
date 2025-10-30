@@ -45,6 +45,8 @@ public interface ScanResultQuery {
      */
     List<ScanResult> listItemEventsDecrypted(String scanId, String pageId, AccessPurpose purpose);
 
+    List<ScanResult> listItemEventsByScanIdAndSpaceKey(String scanId, String spaceKey);
+
     /**
      * Projection de lecture (côté application) pour les compteurs par espace.
      */

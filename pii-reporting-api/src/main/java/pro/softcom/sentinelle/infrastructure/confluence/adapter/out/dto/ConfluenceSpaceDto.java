@@ -67,9 +67,11 @@ public record ConfluenceSpaceDto(
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record UserDto(
         @JsonProperty("type") String type,
-        @JsonProperty("username") String username,
-        @JsonProperty("userKey") String userKey,
-        @JsonProperty("displayName") String displayName
+        @JsonProperty("accountId") String accountId,
+        @JsonProperty("accountType") String accountType,
+        @JsonProperty("accountStatus") String accountStatus,
+        @JsonProperty("email") String email,
+        @JsonProperty("publicName") String publicName
     ) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)

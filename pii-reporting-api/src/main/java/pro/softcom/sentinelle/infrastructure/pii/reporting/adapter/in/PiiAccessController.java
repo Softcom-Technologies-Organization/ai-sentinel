@@ -17,7 +17,6 @@ import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * REST controller for PII data access control.
@@ -82,7 +81,7 @@ public class PiiAccessController {
                         e.sensitiveContext(),
                         e.maskedContext()
                 ))
-                .collect(Collectors.toList());
+                .toList();
 
         // Take the first result (should be unique per pageId)
         ScanResult result = results.getFirst();

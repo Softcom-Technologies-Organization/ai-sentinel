@@ -32,6 +32,8 @@ public class JpaScanResultQueryAdapter implements ScanResultQuery {
     private final PiiAccessAuditService auditService;
     private final ObjectMapper objectMapper;
 
+    private static final Set<String> ITEM_EVENT_TYPES = Set.of("item", "attachmentItem");
+
     @Override
     public Optional<LastScanMeta> findLatestScan() {
         var rows = eventRepository.findLatestScanGrouped(PageRequest.of(0, 1));
@@ -60,11 +62,19 @@ public class JpaScanResultQueryAdapter implements ScanResultQuery {
             return List.of();
         }
 
-        var types = Set.of("item", "attachmentItem");
-        return eventRepository.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId, types).stream()
+        return eventRepository.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId, ITEM_EVENT_TYPES).stream()
             .map(this::toEncryptedDomain)
             .filter(Objects::nonNull)
             .toList();
+    }
+
+    @Override
+    public List<ScanResult> listItemEventsByScanIdAndSpaceKey(String scanId, String spaceKey) {
+        if (scanId == null || scanId.isBlank()) return List.of();
+        return eventRepository.findByScanIdAndSpaceKeyAndEventTypeInOrderByEventSeqAsc(scanId, spaceKey, ITEM_EVENT_TYPES).stream()
+                .map(this::toEncryptedDomain)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     @Override
@@ -73,9 +83,8 @@ public class JpaScanResultQueryAdapter implements ScanResultQuery {
             return List.of();
         }
 
-        var types = Set.of("item", "attachmentItem");
         List<ScanResult> results = eventRepository
-            .findByScanIdAndPageIdAndEventTypeInOrderByEventSeqAsc(scanId, pageId, types).stream()
+            .findByScanIdAndPageIdAndEventTypeInOrderByEventSeqAsc(scanId, pageId, ITEM_EVENT_TYPES).stream()
             .map(this::toDecryptedDomain)
             .filter(Objects::nonNull)
             .toList();

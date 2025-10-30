@@ -37,6 +37,7 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvi
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
+import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
@@ -100,7 +101,8 @@ class ResumeScanInterruptIntegrationTest {
         var space = new ConfluenceSpace("id-TEST", "TEST", "Test Space",
                                         "http://test.com", "Test description",
                                         ConfluenceSpace.SpaceType.GLOBAL,
-                                        ConfluenceSpace.SpaceStatus.CURRENT);
+                                        ConfluenceSpace.SpaceStatus.CURRENT,
+                                        new DataOwners.NotLoaded());
         var p1 = ConfluencePage.builder().id("p1").title("Page 1").spaceKey("TEST")
             .content(new ConfluencePage.HtmlContent("hello 1")).metadata(
                 new ConfluencePage.PageMetadata("u", LocalDateTime.now(), "u", LocalDateTime.now(),
@@ -194,7 +196,8 @@ class ResumeScanInterruptIntegrationTest {
         var space = new ConfluenceSpace("id-TEST", "TEST", "Test Space", 
                                         "http://test.com", "Test description",
                                         ConfluenceSpace.SpaceType.GLOBAL, 
-                                        ConfluenceSpace.SpaceStatus.CURRENT);
+                                        ConfluenceSpace.SpaceStatus.CURRENT,
+                                        new DataOwners.NotLoaded());
         var p1 = ConfluencePage.builder().id("p1").title("Page 1").spaceKey("TEST")
             .content(new ConfluencePage.HtmlContent("hello 1")).metadata(
                 new ConfluencePage.PageMetadata("u", LocalDateTime.now(), "u", LocalDateTime.now(), 1, "current"))

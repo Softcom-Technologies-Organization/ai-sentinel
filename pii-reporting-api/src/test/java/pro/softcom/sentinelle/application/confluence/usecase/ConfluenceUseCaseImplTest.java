@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceSpaceRepository;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.DataOwners;
 
 @ExtendWith(MockitoExtension.class)
 class ConfluenceUseCaseImplTest {
@@ -93,7 +94,8 @@ class ConfluenceUseCaseImplTest {
             "https://confluence.example.com/spaces/" + key,
             "Test description",
             ConfluenceSpace.SpaceType.GLOBAL,
-            ConfluenceSpace.SpaceStatus.CURRENT
+            ConfluenceSpace.SpaceStatus.CURRENT,
+            new DataOwners.NotLoaded()
         );
     }
 }

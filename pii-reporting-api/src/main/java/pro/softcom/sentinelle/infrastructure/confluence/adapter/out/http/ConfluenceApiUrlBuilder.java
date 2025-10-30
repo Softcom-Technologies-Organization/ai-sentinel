@@ -3,6 +3,8 @@ package pro.softcom.sentinelle.infrastructure.confluence.adapter.out.http;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+
+import org.apache.commons.lang3.StringUtils;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.config.ConfluenceConnectionConfig;
 
 /**
@@ -77,5 +79,19 @@ public class ConfluenceApiUrlBuilder {
      */
     public URI buildConnectionTestUri() {
         return URI.create(config.getRestApiUrl() + config.spacePath());
+    }
+
+    /**
+     * Construit l'URI pour récupérer un espace avec ses permissions/data owners.
+     */
+    public URI buildSpaceUriWithPermissions(String spaceKey) {
+        var defaultSpaceExpands = config.defaultSpaceExpands();
+        var expandParam = StringUtils.isBlank(defaultSpaceExpands)
+                ? "permissions"
+                : defaultSpaceExpands + ",permissions";
+
+        return URI.create(
+                config.getRestApiUrl() + config.spacePath() + "/" + spaceKey + EXPAND_PARAM + expandParam
+        );
     }
 }

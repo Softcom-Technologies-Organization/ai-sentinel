@@ -5,6 +5,7 @@ import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanEventStore;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.domain.pii.scan.ContentPiiDetection;
+import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 
 /**
  * Orchestrates scan event lifecycle: creation, progress tracking, and persistence.
@@ -18,6 +19,7 @@ public class ScanOrchestrator {
     private final ScanProgressCalculator scanProgressCalculator;
     private final ScanCheckpointService scanCheckpointService;
     private final ScanEventStore scanEventStore;
+    private final ScanEventDispatcher scanEventDispatcher;
 
     public ScanResult createStartEvent(String scanId, String spaceKey, int total, double progress) {
         return scanEventFactory.createStartEvent(scanId, spaceKey, total, progress);
@@ -68,6 +70,16 @@ public class ScanOrchestrator {
         scanCheckpointService.persistCheckpoint(event);
         if (scanEventStore != null) {
             scanEventStore.append(event);
+
+            // Has findings?
+            if (shouldPublishEvent(event)) {
+                // Publish the event only if transaction successfully committed
+                scanEventDispatcher.publishAfterCommit(event.scanId(), event.spaceKey());
+            }
         }
+    }
+
+    private static boolean shouldPublishEvent(ScanResult event) {
+        return ScanEventType.COMPLETE.toJson().equals(event.eventType());
     }
 }

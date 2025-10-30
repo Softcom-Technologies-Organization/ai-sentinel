@@ -71,9 +71,11 @@ public class ApplicationUseCasesConfig {
     public ScanOrchestrator scanOrchestrator(ScanEventFactory scanEventFactory,
                                              ScanProgressCalculator scanProgressCalculator,
                                              ScanCheckpointService scanCheckpointService,
-                                             ScanEventStore scanEventStore) {
-        return new ScanOrchestrator(scanEventFactory, scanProgressCalculator,
-                                   scanCheckpointService, scanEventStore);
+                                             ScanEventStore scanEventStore,
+                                             ScanEventDispatcher scanEventDispatcher) {
+        return new ScanOrchestrator(
+                scanEventFactory, scanProgressCalculator, scanCheckpointService, scanEventStore, scanEventDispatcher
+        );
     }
 
     @Bean

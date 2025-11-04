@@ -17,6 +17,6 @@ public class ScanEventJpaAdapter implements ReadScanEventsPort {
 
     @Override
     public Stream<ScanResult> streamByScanIdAndSpaceKey(String scanId, String spaceKey) {
-        return scanResultQuery.listItemEventsByScanIdAndSpaceKey(scanId, spaceKey).stream();
+        return scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey(scanId, spaceKey).stream();
     }
 }

@@ -69,7 +69,7 @@ public class JpaScanResultQueryAdapter implements ScanResultQuery {
     }
 
     @Override
-    public List<ScanResult> listItemEventsByScanIdAndSpaceKey(String scanId, String spaceKey) {
+    public List<ScanResult> listItemEventsEncryptedByScanIdAndSpaceKey(String scanId, String spaceKey) {
         if (scanId == null || scanId.isBlank()) return List.of();
         return eventRepository.findByScanIdAndSpaceKeyAndEventTypeInOrderByEventSeqAsc(scanId, spaceKey, ITEM_EVENT_TYPES).stream()
                 .map(this::toEncryptedDomain)

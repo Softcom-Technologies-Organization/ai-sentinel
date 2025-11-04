@@ -3,6 +3,19 @@ set -e
 
 echo "🔐 Infisical: Authenticating..."
 
+# Read secrets from Docker secrets files if _FILE variables are set
+if [ -n "${INFISICAL_CLIENT_ID_FILE}" ] && [ -f "${INFISICAL_CLIENT_ID_FILE}" ]; then
+    export INFISICAL_CLIENT_ID=$(cat "${INFISICAL_CLIENT_ID_FILE}")
+fi
+
+if [ -n "${INFISICAL_CLIENT_SECRET_FILE}" ] && [ -f "${INFISICAL_CLIENT_SECRET_FILE}" ]; then
+    export INFISICAL_CLIENT_SECRET=$(cat "${INFISICAL_CLIENT_SECRET_FILE}")
+fi
+
+if [ -n "${INFISICAL_PROJECT_ID_FILE}" ] && [ -f "${INFISICAL_PROJECT_ID_FILE}" ]; then
+    export INFISICAL_PROJECT_ID=$(cat "${INFISICAL_PROJECT_ID_FILE}")
+fi
+
 # Login to Infisical and get token
 export INFISICAL_TOKEN=$(infisical login \
   --method=universal-auth \

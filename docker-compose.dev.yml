@@ -37,16 +37,20 @@ services:
     ports:
       - "50051:50051"
     environment:
-      # Infisical Configuration
-      INFISICAL_CLIENT_ID: ${INFISICAL_DEV_CLIENT_ID}
-      INFISICAL_CLIENT_SECRET: ${INFISICAL_DEV_CLIENT_SECRET}
+      # Infisical Configuration - secrets will be read from /run/secrets/
+      INFISICAL_CLIENT_ID_FILE: /run/secrets/infisical_dev_client_id
+      INFISICAL_CLIENT_SECRET_FILE: /run/secrets/infisical_dev_client_secret
+      INFISICAL_PROJECT_ID_FILE: /run/secrets/infisical_project_id
       INFISICAL_API_URL: http://infisical:8080
-      INFISICAL_PROJECT_ID: 20a62646-0e46-4a5d-9f46-661148863906
       INFISICAL_ENV: dev
       
       # Static non-sensitive configuration
       HF_HOME: /app/.cache/huggingface
       TRANSFORMERS_CACHE: /app/.cache/huggingface
+    secrets:
+      - infisical_dev_client_id
+      - infisical_dev_client_secret
+      - infisical_project_id
     volumes:
       - huggingface-cache:/app/.cache/huggingface
     depends_on:
@@ -74,11 +78,11 @@ services:
       - "8080:8080"
       - "8090:8090"  # Armeria internal services (health, metrics, docs)
     environment:
-      # Infisical Configuration
-      INFISICAL_CLIENT_ID: ${INFISICAL_DEV_CLIENT_ID}
-      INFISICAL_CLIENT_SECRET: ${INFISICAL_DEV_CLIENT_SECRET}
+      # Infisical Configuration - secrets will be read from /run/secrets/
+      INFISICAL_CLIENT_ID_FILE: /run/secrets/infisical_dev_client_id
+      INFISICAL_CLIENT_SECRET_FILE: /run/secrets/infisical_dev_client_secret
+      INFISICAL_PROJECT_ID_FILE: /run/secrets/infisical_project_id
       INFISICAL_API_URL: http://infisical:8080
-      INFISICAL_PROJECT_ID: 20a62646-0e46-4a5d-9f46-661148863906
       INFISICAL_ENV: dev
       
       # Static non-sensitive configuration
@@ -99,8 +103,11 @@ services:
       CONFLUENCE_CACHE_REFRESH_INTERVAL: ${CONFLUENCE_CACHE_REFRESH_INTERVAL:-300000}
       CONFLUENCE_CACHE_INITIAL_DELAY: ${CONFLUENCE_CACHE_INITIAL_DELAY:-5000}
       CONFLUENCE_POLLING_INTERVAL: ${CONFLUENCE_POLLING_INTERVAL:-60000}
-
       SENTINELLE_ENCRYPTION_KEY: ${SENTINELLE_ENCRYPTION_KEY}
+    secrets:
+      - infisical_dev_client_id
+      - infisical_dev_client_secret
+      - infisical_project_id
     depends_on:
       postgres:
         condition: service_healthy
@@ -174,9 +181,10 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: infisical
-      # ⚠️ SECURITY: Change default password in production!
-      POSTGRES_PASSWORD: ${INFISICAL_DB_PASSWORD:-infisicalpassword}
+      POSTGRES_PASSWORD_FILE: /run/secrets/infisical_db_password
       POSTGRES_DB: infisical
+    secrets:
+      - infisical_db_password
     volumes:
       - infisical-db-data:/var/lib/postgresql/data
     networks:
@@ -210,11 +218,6 @@ services:
       - "8082:8080"  # Expose Infisical UI on localhost:8082
     environment:
       NODE_ENV: development
-      # In dev, you can override these via a local .env file
-      ENCRYPTION_KEY: ${INFISICAL_ENCRYPTION_KEY}
-      AUTH_SECRET: ${INFISICAL_AUTH_SECRET}
-      # ⚠️ SECURITY: DB connection URI includes password - use INFISICAL_DB_URI env var in production
-      DB_CONNECTION_URI: ${INFISICAL_DB_URI:-postgres://infisical:${INFISICAL_DB_PASSWORD}@infisical-db:5432/infisical}
       REDIS_URL: ${INFISICAL_REDIS_URL:-redis://infisical-redis:6379}
       SITE_URL: ${INFISICAL_SITE_URL:-http://localhost:8082}
       # SMTP Configuration (MailHog for local development)
@@ -223,6 +226,16 @@ services:
       SMTP_SECURE: "false"
       SMTP_FROM_ADDRESS: noreply@ai-sentinel.local
       SMTP_FROM_NAME: "AI Sentinel Infisical"
+      SMTP_TLS_ENABLED: "false"
+      SMTP_STARTTLS_ENABLED: "false"
+      SMTP_IGNORE_TLS: "true"
+    secrets:
+      - infisical_encryption_key
+      - infisical_auth_secret
+      - infisical_db_password
+    volumes:
+      - ./infisical-entrypoint.sh:/usr/local/bin/custom-entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/custom-entrypoint.sh"]
     depends_on:
       - infisical-db
       - infisical-redis
@@ -252,3 +265,17 @@ networks:
   ai-sentinel-network:
     name: ai-sentinel-network
     driver: bridge
+
+secrets:
+  infisical_dev_client_id:
+    file: ./secrets/infisical_dev_client_id.txt
+  infisical_dev_client_secret:
+    file: ./secrets/infisical_dev_client_secret.txt
+  infisical_project_id:
+    file: ./secrets/infisical_project_id.txt
+  infisical_encryption_key:
+    file: ./secrets/infisical_encryption_key.txt
+  infisical_auth_secret:
+    file: ./secrets/infisical_auth_secret.txt
+  infisical_db_password:
+    file: ./secrets/infisical_db_password.txt

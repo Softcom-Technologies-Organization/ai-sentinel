@@ -26,20 +26,33 @@
     </div>
   }
 
-  <p-table #dt [value]="filteredSpaces()" [paginator]="true" [rows]="10"
+  <p-table #dt [value]="sortedSpaces()"
+           dataKey="key"
+           sortField="name" [sortOrder]="1"
+           [paginator]="true"
            [tableStyle]="{'min-width':'60rem'}"
-           [rowsPerPageOptions]="[10,20,50]" dataKey="key"
-           [expandedRowKeys]="expandedRowKeys()" (onRowExpand)="onRowExpand($event)"
+           [loading]="isSpacesLoading()" [showLoader]="false"
+           [rows]="10"
+           [rowsPerPageOptions]="[10,20,50]"
+           [expandedRowKeys]="expandedRowKeys()"
+           (onRowExpand)="onRowExpand($event)"
            (onRowCollapse)="onRowCollapse($event)"
-           [loading]="isSpacesLoading()" [showLoader]="false" [attr.data-testid]="testIds.table">
-    <ng-template #header>
+           (onSort)="onCustomSort($event)" [customSort]="true"
+           [attr.data-testid]="testIds.table">
+  <ng-template #header>
       <tr>
         <th id="col-toggle" style="width:3rem"></th>
-        <th id="col-space" [attr.data-testid]="testIds.headers.space">Space</th>
+        <th id="col-space" [attr.data-testid]="testIds.headers.space" pSortableColumn="name">
+          Space
+          <p-sortIcon field="name"/>
+        </th>
         <th id="col-status" [attr.data-testid]="testIds.headers.status">Statut</th>
         <th id="col-progress" [attr.data-testid]="testIds.headers.progress">Progression</th>
         <th id="col-last-scan" [attr.data-testid]="testIds.headers.lastScan">Dernier scan</th>
-        <th id="col-pii" [attr.data-testid]="testIds.headers.pii">PII</th>
+        <th id="col-pii" [attr.data-testid]="testIds.headers.pii" pSortableColumn="piiCount">
+          PII
+          <p-sortIcon field="piiCount"/>
+        </th>
         <th id="col-actions" [attr.data-testid]="testIds.headers.actions">Actions</th>
       </tr>
       <tr>

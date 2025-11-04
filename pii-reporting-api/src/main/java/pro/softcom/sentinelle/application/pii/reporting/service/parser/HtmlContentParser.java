@@ -27,9 +27,18 @@ public class HtmlContentParser implements ContentParser {
      * Pattern to match HTML block-level tags that create visual line breaks.
      * Jsoup handles all standard HTML tags, but we use regex for position finding.
      */
-    private static final Pattern BLOCK_TAGS = Pattern.compile(
-            "</?(?:p|div|section|article|header|footer|nav|aside|blockquote|pre|table|ul|li|ol|dl|dt|dd|tr|td|th|h\\d)[^>]*>|<br/?>",
-            Pattern.CASE_INSENSITIVE
+    private static final Pattern BLOCK_TAGS = Pattern.compile("""
+        (?ix)                     # i = case-insensitive, x = ignore whitespace/comments
+        </?(?:
+          p|div|section|article|header|footer|nav|aside|
+          blockquote|pre|table|
+          ul|li|ol|dl|dt|dd|
+          tr|td|th|
+          h\\d
+        )[^>]*>                   # up to >
+        | <br/?>                  # or br tag
+        """,
+        Pattern.CASE_INSENSITIVE
     );
 
     @Override
@@ -86,7 +95,6 @@ public class HtmlContentParser implements ContentParser {
             // Configure output settings to avoid extra formatting
             doc.outputSettings(new Document.OutputSettings().prettyPrint(false));
 
-            // Convert block-level tags to line breaks
             // Line breaks
             doc.select("br").append("\\n");
 

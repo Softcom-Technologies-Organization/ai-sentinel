@@ -218,7 +218,7 @@ services:
       - "8082:8080"  # Expose Infisical UI on localhost:8082
     environment:
       NODE_ENV: development
-      REDIS_URL: ${INFISICAL_REDIS_URL:-redis://infisical-redis:6379}
+      REDIS_URL: redis://infisical-redis:6379
       SITE_URL: ${INFISICAL_SITE_URL:-http://localhost:8082}
       # SMTP Configuration (MailHog for local development)
       SMTP_HOST: mailhog

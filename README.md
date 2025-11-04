@@ -317,6 +317,8 @@ docker compose logs -f pii-detector
 
 ## Configuration
 
+- Infisical UI setup (project, machine identity, required secrets): see docs/INFISICAL_UI_SETUP.md
+
 ### Required Environment Variables
 
 Create a `.env` file at the project root with the following variables:

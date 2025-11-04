@@ -21,7 +21,7 @@ This directory contains secret files used by Docker Compose for secure configura
 
 **PowerShell (Windows):** Copy and paste this command in PowerShell:
 ```powershell
--join ((0..15) | ForEach-Object { '{0:x2}' -f (Get-Random -Maximum 256) }) | Set-Content -Path 'secrets/infisical_encryption_key.txt' -NoNewline -Encoding ASCII; Write-Host "Generated:" (Get-Content 'secrets/infisical_encryption_key.txt')
+-join ((0..15) | ForEach-Object { '{0:x2}' -f (Get-Random -Maximum 256) }) | Set-Content -Path 'secrets/infisical_encryption_key.txt' -NoNewline -Encoding ASCII; Write-Host "Encryption key generated and set in secrets/infisical_encryption_key.txt"
 ```
 
 **Bash (Linux/Mac):** Copy and paste this command in terminal:
@@ -35,7 +35,7 @@ openssl rand -hex 16 | tr -d '\n' | tee secrets/infisical_encryption_key.txt
 
 **PowerShell (Windows):** Copy and paste this command in PowerShell:
 ```powershell
-[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 })) | Set-Content -Path 'secrets/infisical_auth_secret.txt' -NoNewline -Encoding ASCII; Write-Host "Generated:" (Get-Content 'secrets/infisical_auth_secret.txt')
+[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 })) | Set-Content -Path 'secrets/infisical_auth_secret.txt' -NoNewline -Encoding ASCII; Write-Host "Auth secret generated and set in secrets/infisical_auth_secret.txt"
 ```
 
 **Bash (Linux/Mac):** Copy and paste this command in terminal:
@@ -49,7 +49,7 @@ openssl rand -base64 32 | tr -d '\n' | tee secrets/infisical_auth_secret.txt
 
 **PowerShell (Windows):** Copy and paste this command in PowerShell:
 ```powershell
--join ((65..90) + (97..122) + (48..57) | Get-Random -Count 24 | ForEach-Object {[char]$_}) | Set-Content -Path 'secrets/infisical_db_password.txt' -NoNewline -Encoding ASCII; Write-Host "Generated:" (Get-Content 'secrets/infisical_db_password.txt')
+-join ((65..90) + (97..122) + (48..57) | Get-Random -Count 24 | ForEach-Object {[char]$_}) | Set-Content -Path 'secrets/infisical_db_password.txt' -NoNewline -Encoding ASCII; Write-Host "Infisical database password generated and set in secrets/infisical_db_password.txt"
 ```
 
 **Bash (Linux/Mac):** Copy and paste this command in terminal:
@@ -80,17 +80,7 @@ docker logs infisical -f
 
 #### Save Project ID
 
-**PowerShell (Windows):**
-```powershell
-"YOUR_PROJECT_ID" | Set-Content -Path 'secrets/infisical_project_id.txt' -NoNewline -Encoding ASCII; Write-Host "✅ Project ID saved"
-```
-
-**Bash (Linux/Mac):**
-```bash
-echo -n "YOUR_PROJECT_ID" > secrets/infisical_project_id.txt && echo "✅ Project ID saved"
-```
-
-*(Replace `YOUR_PROJECT_ID` with your actual Project ID from Infisical)*
+Create a text file named `infisical_project_id.txt` in the `secrets` folder and paste your Project ID on a single line (no extra spaces or trailing newline).
 
 ### Step 4: Create Machine Identity and Get Credentials
 
@@ -102,17 +92,13 @@ echo -n "YOUR_PROJECT_ID" > secrets/infisical_project_id.txt && echo "✅ Projec
 
 #### Save Client Credentials
 
-**PowerShell (Windows):**
-```powershell
-"YOUR_CLIENT_ID" | Set-Content -Path 'secrets/infisical_dev_client_id.txt' -NoNewline -Encoding ASCII; "YOUR_CLIENT_SECRET" | Set-Content -Path 'secrets/infisical_dev_client_secret.txt' -NoNewline -Encoding ASCII; Write-Host "✅ Credentials saved"
-```
+Create two text files in the `secrets` folder and paste each value on a single line (no extra spaces or trailing newline):
+- `infisical_dev_client_id.txt` — Machine Identity Client ID (dev)
+- `infisical_dev_client_secret.txt` — Machine Identity Client Secret (dev)
 
-**Bash (Linux/Mac):**
-```bash
-echo -n "YOUR_CLIENT_ID" > secrets/infisical_dev_client_id.txt && echo -n "YOUR_CLIENT_SECRET" > secrets/infisical_dev_client_secret.txt && echo "✅ Credentials saved"
-```
-
-*(Replace `YOUR_CLIENT_ID` and `YOUR_CLIENT_SECRET` with your actual values)*
+If you also configure production:
+- `infisical_prod_client_id.txt` — Machine Identity Client ID (prod)
+- `infisical_prod_client_secret.txt` — Machine Identity Client Secret (prod)
 
 ### Step 5: Start All Services
 
@@ -120,89 +106,6 @@ echo -n "YOUR_CLIENT_ID" > secrets/infisical_dev_client_id.txt && echo -n "YOUR_
 docker-compose -f docker-compose.dev.yml up -d
 ```
 
-## 🚀 Quick Setup Script
-
-**PowerShell (Windows):**
-
-Save as `generate-infisical-secrets.ps1`:
-```powershell
-# Generate Infisical secrets with correct formats
-
-# ENCRYPTION_KEY: 16 bytes hex = 32 characters
-$encKey = -join ((0..15) | ForEach-Object { '{0:x2}' -f (Get-Random -Maximum 256) })
-
-# AUTH_SECRET: 32 bytes base64 = 44 characters
-$authBytes = 1..32 | ForEach-Object { Get-Random -Maximum 256 }
-$authKey = [Convert]::ToBase64String($authBytes)
-
-# DB_PASSWORD: 24 random characters
-$dbPassword = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 24 | ForEach-Object {[char]$_})
-
-# Write to files without newlines
-[System.IO.File]::WriteAllText('secrets/infisical_encryption_key.txt', $encKey, [System.Text.Encoding]::ASCII)
-[System.IO.File]::WriteAllText('secrets/infisical_auth_secret.txt', $authKey, [System.Text.Encoding]::ASCII)
-[System.IO.File]::WriteAllText('secrets/infisical_db_password.txt', $dbPassword, [System.Text.Encoding]::ASCII)
-
-Write-Host "✅ ENCRYPTION_KEY: $encKey (length: $($encKey.Length))"
-Write-Host "✅ AUTH_SECRET: $authKey (length: $($authKey.Length))"
-Write-Host "✅ DB_PASSWORD: $dbPassword (length: $($dbPassword.Length))"
-Write-Host ""
-Write-Host "🔐 Secrets generated successfully!"
-Write-Host "⚠️  DO NOT commit these files to version control!"
-Write-Host ""
-Write-Host "Next steps:"
-Write-Host "1. Start Infisical: docker-compose -f docker-compose.dev.yml up -d infisical"
-Write-Host "2. Go to http://localhost:8082 and setup your account"
-Write-Host "3. Get Client ID and Secret from Machine Identities"
-Write-Host "4. Update infisical_dev_client_id.txt and infisical_dev_client_secret.txt"
-Write-Host "5. Start all services: docker-compose -f docker-compose.dev.yml up -d"
-```
-
-Run it:
-```powershell
-powershell -ExecutionPolicy Bypass -File generate-infisical-secrets.ps1
-```
-
-**Bash (Linux/Mac):**
-
-Save as `generate-infisical-secrets.sh`:
-```bash
-#!/bin/bash
-
-# Generate Infisical secrets with correct formats
-
-# ENCRYPTION_KEY: 16 bytes hex = 32 characters
-ENC_KEY=$(openssl rand -hex 16)
-echo -n "$ENC_KEY" > secrets/infisical_encryption_key.txt
-
-# AUTH_SECRET: 32 bytes base64 = 44 characters
-AUTH_SECRET=$(openssl rand -base64 32)
-echo -n "$AUTH_SECRET" > secrets/infisical_auth_secret.txt
-
-# DB_PASSWORD: 24 random characters
-DB_PASSWORD=$(openssl rand -base64 24)
-echo -n "$DB_PASSWORD" > secrets/infisical_db_password.txt
-
-echo "✅ ENCRYPTION_KEY: $ENC_KEY (length: ${#ENC_KEY})"
-echo "✅ AUTH_SECRET: $AUTH_SECRET (length: ${#AUTH_SECRET})"
-echo "✅ DB_PASSWORD: $DB_PASSWORD (length: ${#DB_PASSWORD})"
-echo ""
-echo "🔐 Secrets generated successfully!"
-echo "⚠️  DO NOT commit these files to version control!"
-echo ""
-echo "Next steps:"
-echo "1. Start Infisical: docker-compose -f docker-compose.dev.yml up -d infisical"
-echo "2. Go to http://localhost:8082 and setup your account"
-echo "3. Get Client ID and Secret from Machine Identities"
-echo "4. Update infisical_dev_client_id.txt and infisical_dev_client_secret.txt"
-echo "5. Start all services: docker-compose -f docker-compose.dev.yml up -d"
-```
-
-Run it:
-```bash
-chmod +x generate-infisical-secrets.sh
-./generate-infisical-secrets.sh
-```
 
 ## ⚠️ Security
 
@@ -251,7 +154,7 @@ wc -c < secrets/infisical_auth_secret.txt      # Must be 44
 ```
 
 **Fix if needed:**
-Regenerate the secrets using the commands in Step 1.
+Recreate the secrets following the formatting rules described above (single line, exact length/format).
 
 ### Secrets contain newlines
 

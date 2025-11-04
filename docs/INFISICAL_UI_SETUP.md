@@ -40,19 +40,10 @@ After creation, open the Project Settings. You will need the Project ID in the n
 ## 3) Save the Project ID for Docker (MANDATORY)
 
 - In the project Settings page, copy the Project ID (a UUID-like value)
-- Save it to the repository so Docker can mount it as a secret:
 
-PowerShell (Windows):
+![Copy project id](./screenshots/infisical-project-setting-project-id.png)
 
-```powershell
-"YOUR_PROJECT_ID" | Set-Content -Path 'secrets/infisical_project_id.txt' -NoNewline -Encoding ASCII
-```
-
-Bash (Linux/Mac):
-
-```bash
-echo -n "YOUR_PROJECT_ID" > secrets/infisical_project_id.txt
-```
+- Save it to the repository so Docker can mount it as a secret in a file named infisical_project_id.txt under the secrets folder (which must be in the current directory of the docker-compose file)
 
 This is required by docker-compose (both dev and prod) to authenticate the services with Infisical.
 
@@ -90,39 +81,19 @@ Finally, ensure the identity is added to the project:
 
 ### Save the Machine Identity credentials as Docker secrets
 
-Save credentials to files under the repository's secrets folder so docker-compose can mount them:
+Save credentials to files under the repository's secrets folder so docker-compose can mount them.
 
-For the DEV environment identity (recommended during development):
+For the DEV environment identity (recommended during development), create these text files in the secrets folder:
+- secrets/infisical_dev_client_id.txt — paste the Machine Identity Client ID on a single line (no extra spaces)
+- secrets/infisical_dev_client_secret.txt — paste the Machine Identity Client Secret on a single line (no extra spaces)
 
-PowerShell (Windows):
+For the PROD environment identity (if you plan production), create the corresponding files:
+- secrets/infisical_prod_client_id.txt — Machine Identity Client ID (prod)
+- secrets/infisical_prod_client_secret.txt — Machine Identity Client Secret (prod)
 
-```powershell
-"YOUR_CLIENT_ID" | Set-Content -Path 'secrets/infisical_dev_client_id.txt' -NoNewline -Encoding ASCII
-"YOUR_CLIENT_SECRET" | Set-Content -Path 'secrets/infisical_dev_client_secret.txt' -NoNewline -Encoding ASCII
-```
-
-Bash (Linux/Mac):
-
-```bash
-echo -n "YOUR_CLIENT_ID" > secrets/infisical_dev_client_id.txt
-echo -n "YOUR_CLIENT_SECRET" > secrets/infisical_dev_client_secret.txt
-```
-
-For the PROD environment identity (if you plan production):
-
-PowerShell (Windows):
-
-```powershell
-"YOUR_CLIENT_ID" | Set-Content -Path 'secrets/infisical_prod_client_id.txt' -NoNewline -Encoding ASCII
-"YOUR_CLIENT_SECRET" | Set-Content -Path 'secrets/infisical_prod_client_secret.txt' -NoNewline -Encoding ASCII
-```
-
-Bash (Linux/Mac):
-
-```bash
-echo -n "YOUR_CLIENT_ID" > secrets/infisical_prod_client_id.txt
-echo -n "YOUR_CLIENT_SECRET" > secrets/infisical_prod_client_secret.txt
-```
+Notes:
+- Do not commit these files to version control.
+- Ensure the files are plain text and stored in the secrets folder next to your docker-compose file.
 
 ---
 

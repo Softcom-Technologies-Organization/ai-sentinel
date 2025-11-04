@@ -1,10 +1,23 @@
-Project: ai-sentinel
-Copyright (c) 2025 Softcom Technologies
+ai-sentinel
+Copyright (c) 2025 Softcom Technologies and contributors
 
 This product is licensed under the Apache License, Version 2.0.
-You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+You may obtain a copy of the License at: https://www.apache.org/licenses/LICENSE-2.0
 
-This NOTICE file lists attributions required under section 4(d) of the Apache License, Version 2.0 for components included in this distribution.
-Development-only tools and non-redistributed dependencies are not listed.
+Third-party notices required by Apache License 2.0, Section 4(d)
+----------------------------------------------------------------
+This distribution includes Apache-licensed components whose upstream NOTICE files require the
+following attribution:
 
-At this time, no third-party notices are required for the contents of this distribution.
+"This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/)."
+
+This attribution covers Apache projects included in production distributions (for example,
+Apache Tika and Apache PDFBox). If additional third-party components introduce legally
+required attributions, they will be added here.
+
+Scope of this NOTICE
+--------------------
+The NOTICE file is limited to legally required attributions only. Credits, acknowledgements,
+or dependency inventories are documented elsewhere (e.g., LICENSE.md, docs, or build
+metadata) and are intentionally not duplicated here.

@@ -5,12 +5,12 @@ package pro.softcom.sentinelle.application.pii.export.exception;
  */
 public class ExportContextNotFoundException extends RuntimeException {
     public ExportContextNotFoundException(String sourceType, String sourceIdentifier) {
-        super(String.format("Contexte d'export introuvable pour le type '%s' et l'identifiant '%s'", 
+        super(String.format("Export context not found for type '%s' and identifier '%s'", 
                 sourceType, sourceIdentifier));
     }
 
     public ExportContextNotFoundException(String sourceType, String sourceIdentifier, Throwable cause) {
-        super(String.format("Contexte d'export introuvable pour le type '%s' et l'identifiant '%s'", 
+        super(String.format("Export context not found for type '%s' and identifier '%s'", 
                 sourceType, sourceIdentifier), cause);
     }
 }

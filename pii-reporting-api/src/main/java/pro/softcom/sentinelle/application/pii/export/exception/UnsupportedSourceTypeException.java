@@ -5,10 +5,10 @@ package pro.softcom.sentinelle.application.pii.export.exception;
  */
 public class UnsupportedSourceTypeException extends RuntimeException {
     public UnsupportedSourceTypeException(String sourceType) {
-        super(String.format("Type de source non supporté : '%s'", sourceType));
+        super(String.format("Unsupported source type: '%s'", sourceType));
     }
 
     public UnsupportedSourceTypeException(String sourceType, Throwable cause) {
-        super(String.format("Type de source non supporté : '%s'", sourceType), cause);
+        super(String.format("Unsupported source type: '%s'", sourceType), cause);
     }
 }

@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -21,6 +22,7 @@ import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
 import pro.softcom.sentinelle.application.confluence.port.in.GetSpaceUpdateInfoUseCase;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.SpaceUpdateInfo;
 
 /**
  * Tests for the ConfluenceController class.
@@ -310,5 +312,105 @@ class ConfluenceControllerTest {
             .andExpect(jsonPath("$.query").value("term"))
             .andExpect(jsonPath("$.results", hasSize(2)))
             .andExpect(jsonPath("$.totalResults").value(2));
+    }
+
+    @Test
+    void Should_ReturnListOfSpaceUpdateInfo_When_GetAllSpacesUpdateInfo() throws Exception {
+        Instant now = Instant.parse("2023-01-01T00:00:00Z");
+        List<SpaceUpdateInfo> infos = List.of(
+            SpaceUpdateInfo.noScanYet("KEY1", "Space 1", now),
+            SpaceUpdateInfo.noUpdates("KEY2", "Space 2", now, now)
+        );
+
+        when(getSpaceUpdateInfoUseCase.getAllSpacesUpdateInfo())
+            .thenReturn(CompletableFuture.completedFuture(infos));
+
+        var mvcResult = mockMvc.perform(get("/api/v1/confluence/spaces/update-info"))
+            .andExpect(request().asyncStarted())
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(2)))
+            .andExpect(jsonPath("$[0].spaceKey").value("KEY1"))
+            .andExpect(jsonPath("$[0].spaceName").value("Space 1"))
+            .andExpect(jsonPath("$[0].hasBeenUpdated").value(false))
+            .andExpect(jsonPath("$[1].spaceKey").value("KEY2"))
+            .andExpect(jsonPath("$[1].spaceName").value("Space 2"))
+            .andExpect(jsonPath("$[1].hasBeenUpdated").value(false))
+            .andExpect(jsonPath("$[1].lastModified").value(now.toString()))
+            .andExpect(jsonPath("$[1].lastScanDate").value(now.toString()));
+    }
+
+    @Test
+    void Should_Return500_When_GetAllSpacesUpdateInfoFails() throws Exception {
+        when(getSpaceUpdateInfoUseCase.getAllSpacesUpdateInfo())
+            .thenReturn(CompletableFuture.failedFuture(new RuntimeException("boom")));
+
+        var mvcResult = mockMvc.perform(get("/api/v1/confluence/spaces/update-info"))
+            .andExpect(request().asyncStarted())
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+            .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void Should_ReturnSpaceUpdateInfo_When_GetSpaceUpdateInfoFound() throws Exception {
+        String spaceKey = "KEY1";
+        Instant now = Instant.parse("2023-01-01T00:00:00Z");
+        SpaceUpdateInfo info = SpaceUpdateInfo.withUpdates(
+            spaceKey,
+            "Space 1",
+            now,
+            now,
+            List.of("P1", "P2"),
+            List.of("A1")
+        );
+
+        when(getSpaceUpdateInfoUseCase.getSpaceUpdateInfo(spaceKey))
+            .thenReturn(CompletableFuture.completedFuture(Optional.of(info)));
+
+        var mvcResult = mockMvc.perform(get("/api/v1/confluence/spaces/{spaceKey}/update-info", spaceKey))
+            .andExpect(request().asyncStarted())
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.spaceKey").value(spaceKey))
+            .andExpect(jsonPath("$.spaceName").value("Space 1"))
+            .andExpect(jsonPath("$.hasBeenUpdated").value(true))
+            .andExpect(jsonPath("$.lastModified").value(now.toString()))
+            .andExpect(jsonPath("$.lastScanDate").value(now.toString()))
+            .andExpect(jsonPath("$.updatedPages", hasSize(2)))
+            .andExpect(jsonPath("$.updatedAttachments", hasSize(1)));
+    }
+
+    @Test
+    void Should_Return404_When_GetSpaceUpdateInfoNotFound() throws Exception {
+        String spaceKey = "UNKNOWN";
+        when(getSpaceUpdateInfoUseCase.getSpaceUpdateInfo(spaceKey))
+            .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
+
+        var mvcResult = mockMvc.perform(get("/api/v1/confluence/spaces/{spaceKey}/update-info", spaceKey))
+            .andExpect(request().asyncStarted())
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void Should_Return500_When_GetSpaceUpdateInfoFails() throws Exception {
+        String spaceKey = "KEY1";
+        when(getSpaceUpdateInfoUseCase.getSpaceUpdateInfo(spaceKey))
+            .thenReturn(CompletableFuture.failedFuture(new RuntimeException("boom")));
+
+        var mvcResult = mockMvc.perform(get("/api/v1/confluence/spaces/{spaceKey}/update-info", spaceKey))
+            .andExpect(request().asyncStarted())
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+            .andExpect(status().isInternalServerError());
     }
 }

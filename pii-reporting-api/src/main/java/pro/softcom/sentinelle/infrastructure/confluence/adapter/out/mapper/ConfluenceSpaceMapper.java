@@ -27,7 +27,7 @@ public final class ConfluenceSpaceMapper {
      */
     public static ConfluenceSpace toDomain(ConfluenceSpaceDto dto) {
         if (dto == null) {
-            throw new IllegalArgumentException("ConfluenceSpaceDto ne peut pas être null");
+            throw new IllegalArgumentException("ConfluenceSpaceDto cannot be null");
         }
         var spaceType = parseSpaceType(dto.type());
         var spaceStatus = parseSpaceStatus(dto.status());

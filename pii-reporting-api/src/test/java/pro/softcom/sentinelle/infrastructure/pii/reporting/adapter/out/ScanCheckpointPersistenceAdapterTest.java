@@ -136,4 +136,36 @@ class ScanCheckpointPersistenceAdapterTest {
         verify(jpaRepository).deleteByScanId("scan-x");
         verifyNoMoreInteractions(jpaRepository);
     }
+
+    @Test
+    void findBySpace_should_return_empty_list_on_blank_space() {
+        assertThat(repository.findBySpace(null)).isEmpty();
+        assertThat(repository.findBySpace(" ")).isEmpty();
+        verifyNoInteractions(jpaRepository);
+    }
+
+    @Test
+    void findBySpace_should_map_entities_to_domain() {
+        var now = LocalDateTime.now();
+        var e1 = ScanCheckpointEntity.builder()
+                .scanId("s1")
+                .spaceKey("SPACE")
+                .status("COMPLETED")
+                .updatedAt(now.minusMinutes(5))
+                .build();
+        var e2 = ScanCheckpointEntity.builder()
+                .scanId("s2")
+                .spaceKey("SPACE")
+                .status("FAILED")
+                .updatedAt(now)
+                .build();
+        when(jpaRepository.findBySpaceKeyOrderByUpdatedAt("SPACE")).thenReturn(List.of(e1, e2));
+
+        var list = repository.findBySpace("SPACE");
+        assertThat(list).hasSize(2);
+        assertThat(list.get(0).scanId()).isEqualTo("s1");
+        assertThat(list.get(0).scanStatus()).isEqualTo(ScanStatus.COMPLETED);
+        assertThat(list.get(1).scanId()).isEqualTo("s2");
+        assertThat(list.get(1).scanStatus()).isEqualTo(ScanStatus.FAILED);
+    }
 }

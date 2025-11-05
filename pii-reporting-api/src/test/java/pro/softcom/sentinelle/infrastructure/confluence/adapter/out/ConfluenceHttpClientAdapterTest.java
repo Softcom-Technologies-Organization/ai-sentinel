@@ -26,6 +26,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.ModifiedAttachmentInfo;
+import pro.softcom.sentinelle.domain.confluence.ModifiedPageInfo;
+import java.time.Instant;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.config.ConfluenceConfig;
 
 /**
@@ -857,6 +860,227 @@ class ConfluenceHttpClientAdapterTest {
         boolean ok = confluenceService.testConnection().join();
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(ok).isFalse();
+        softly.assertAll();
+    }
+
+    // ---- Helpers for modified content (pages and attachments) ----
+    private String createCqlModifiedPagesJson(ObjectNode... items) {
+        ObjectNode root = JsonNodeFactory.instance.objectNode();
+        ArrayNode results = JsonNodeFactory.instance.arrayNode();
+        for (ObjectNode n : items) { results.add(n); }
+        root.set("results", results);
+        root.put("size", results.size());
+        return root.toString();
+    }
+
+    private String createCqlModifiedAttachmentsJson(ObjectNode... items) {
+        return createCqlModifiedPagesJson(items);
+    }
+
+    private ObjectNode pageResultNode(String id, String title, String type, String versionWhen, String historyWhen) {
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        if (id != null) node.put("id", id);
+        if (title != null) node.put("title", title);
+        if (type != null) node.put("type", type);
+        if (versionWhen != null) {
+            ObjectNode version = JsonNodeFactory.instance.objectNode();
+            version.put("when", versionWhen);
+            node.set("version", version);
+        }
+        if (historyWhen != null) {
+            ObjectNode history = JsonNodeFactory.instance.objectNode();
+            ObjectNode lastUpdated = JsonNodeFactory.instance.objectNode();
+            lastUpdated.put("when", historyWhen);
+            history.set("lastUpdated", lastUpdated);
+            node.set("history", history);
+        }
+        return node;
+    }
+
+    // ---- Tests for modified pages ----
+    @Test
+    void Should_ReturnModifiedPages_When_CqlReturnsVersionWhenDates() throws Exception {
+        var r = mock(HttpResponse.class);
+        when(r.statusCode()).thenReturn(200);
+        String json = createCqlModifiedPagesJson(
+            pageResultNode("p1", "Title 1", "page", "2025-01-02T03:04:05Z", null),
+            pageResultNode("p2", "Title 2", "page", "2025-01-03T04:05:06Z", null)
+        );
+        when(r.body()).thenReturn(json);
+        when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+            .thenReturn(CompletableFuture.completedFuture(r));
+
+        List<ModifiedPageInfo> pages = confluenceService
+            .getModifiedPagesSince("TEST", Instant.parse("2025-01-01T00:00:00Z")).get();
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(pages).hasSize(2);
+        softly.assertThat(pages.get(0).pageId()).isEqualTo("p1");
+        softly.assertThat(pages.get(0).title()).isEqualTo("Title 1");
+        softly.assertThat(pages.get(0).lastModified()).isEqualTo(Instant.parse("2025-01-02T03:04:05Z"));
+        softly.assertThat(pages.get(1).pageId()).isEqualTo("p2");
+        softly.assertThat(pages.get(1).title()).isEqualTo("Title 2");
+        softly.assertThat(pages.get(1).lastModified()).isEqualTo(Instant.parse("2025-01-03T04:05:06Z"));
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_UseHistoryFallback_When_VersionWhenMissing() throws Exception {
+        var r = mock(HttpResponse.class);
+        when(r.statusCode()).thenReturn(200);
+        String json = createCqlModifiedPagesJson(
+            pageResultNode("p3", "T3", "page", null, "2025-02-01T10:00:00Z")
+        );
+        when(r.body()).thenReturn(json);
+        when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+            .thenReturn(CompletableFuture.completedFuture(r));
+
+        List<ModifiedPageInfo> pages = confluenceService
+            .getModifiedPagesSince("TEST", Instant.parse("2025-01-01T00:00:00Z")).get();
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(pages).hasSize(1);
+        softly.assertThat(pages.get(0).pageId()).isEqualTo("p3");
+        softly.assertThat(pages.get(0).lastModified()).isEqualTo(Instant.parse("2025-02-01T10:00:00Z"));
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_FilterOutInvalidEntries_When_WrongTypeMissingIdOrUnparsableDate() throws Exception {
+        var r = mock(HttpResponse.class);
+        when(r.statusCode()).thenReturn(200);
+        String json = createCqlModifiedPagesJson(
+            pageResultNode("p4", null, "page", "2025-03-01T00:00:00Z", null),
+            pageResultNode(null, "NoId", "page", "2025-03-02T00:00:00Z", null),
+            pageResultNode("pX", "BadDate", "page", "not-a-date", null),
+            pageResultNode("a1", "Attachment", "attachment", "2025-03-03T00:00:00Z", null)
+        );
+        when(r.body()).thenReturn(json);
+        when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+            .thenReturn(CompletableFuture.completedFuture(r));
+
+        List<ModifiedPageInfo> pages = confluenceService
+            .getModifiedPagesSince("TEST", Instant.parse("2025-01-01T00:00:00Z")).get();
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(pages).hasSize(1);
+        softly.assertThat(pages.get(0).pageId()).isEqualTo("p4");
+        softly.assertThat(pages.get(0).title()).isEqualTo("Untitled");
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_ReturnEmpty_When_ModifiedPagesNon200() throws Exception {
+        var r = mock(HttpResponse.class);
+        when(r.statusCode()).thenReturn(500);
+        when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+            .thenReturn(CompletableFuture.completedFuture(r));
+
+        List<ModifiedPageInfo> pages = confluenceService
+            .getModifiedPagesSince("TEST", Instant.parse("2025-01-01T00:00:00Z")).get();
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(pages).isEmpty();
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_ReturnEmpty_When_ModifiedPagesParseError() throws Exception {
+        var r = mock(HttpResponse.class);
+        when(r.statusCode()).thenReturn(200);
+        when(r.body()).thenReturn("{invalid");
+        when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+            .thenReturn(CompletableFuture.completedFuture(r));
+
+        List<ModifiedPageInfo> pages = confluenceService
+            .getModifiedPagesSince("TEST", Instant.parse("2025-01-01T00:00:00Z")).get();
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(pages).isEmpty();
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_ReturnEmpty_When_ModifiedPagesRequestFailsExceptionally() {
+        when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+            .thenReturn(CompletableFuture.failedFuture(new RuntimeException("boom")));
+
+        List<ModifiedPageInfo> pages = confluenceService
+            .getModifiedPagesSince("TEST", Instant.parse("2025-01-01T00:00:00Z")).join();
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(pages).isEmpty();
+        softly.assertAll();
+    }
+
+    // ---- Tests for modified attachments ----
+    @Test
+    void Should_ReturnModifiedAttachments_When_CqlReturnsResults() throws Exception {
+        var r = mock(HttpResponse.class);
+        when(r.statusCode()).thenReturn(200);
+        String json = createCqlModifiedAttachmentsJson(
+            pageResultNode("att1", "Invoice.pdf", "attachment", "2025-04-01T00:00:00Z", null),
+            pageResultNode("att2", null, "attachment", null, "2025-04-02T01:02:03Z")
+        );
+        when(r.body()).thenReturn(json);
+        when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+            .thenReturn(CompletableFuture.completedFuture(r));
+
+        List<ModifiedAttachmentInfo> attachments = confluenceService
+            .getModifiedAttachmentsSince("TEST", Instant.parse("2025-03-01T00:00:00Z")).get();
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(attachments).hasSize(2);
+        softly.assertThat(attachments.get(0).attachmentId()).isEqualTo("att1");
+        softly.assertThat(attachments.get(0).title()).isEqualTo("Invoice.pdf");
+        softly.assertThat(attachments.get(0).lastModified()).isEqualTo(Instant.parse("2025-04-01T00:00:00Z"));
+        softly.assertThat(attachments.get(1).attachmentId()).isEqualTo("att2");
+        softly.assertThat(attachments.get(1).title()).isEqualTo("Unnamed");
+        softly.assertThat(attachments.get(1).lastModified()).isEqualTo(Instant.parse("2025-04-02T01:02:03Z"));
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_ReturnEmpty_When_ModifiedAttachmentsNon200() throws Exception {
+        var r = mock(HttpResponse.class);
+        when(r.statusCode()).thenReturn(500);
+        when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+            .thenReturn(CompletableFuture.completedFuture(r));
+
+        List<ModifiedAttachmentInfo> attachments = confluenceService
+            .getModifiedAttachmentsSince("TEST", Instant.parse("2025-03-01T00:00:00Z")).get();
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(attachments).isEmpty();
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_ReturnEmpty_When_ModifiedAttachmentsParseError() throws Exception {
+        var r = mock(HttpResponse.class);
+        when(r.statusCode()).thenReturn(200);
+        when(r.body()).thenReturn("{invalid");
+        when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+            .thenReturn(CompletableFuture.completedFuture(r));
+
+        List<ModifiedAttachmentInfo> attachments = confluenceService
+            .getModifiedAttachmentsSince("TEST", Instant.parse("2025-03-01T00:00:00Z")).get();
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(attachments).isEmpty();
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_ReturnEmpty_When_ModifiedAttachmentsRequestFailsExceptionally() {
+        when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+            .thenReturn(CompletableFuture.failedFuture(new RuntimeException("boom")));
+
+        List<ModifiedAttachmentInfo> attachments = confluenceService
+            .getModifiedAttachmentsSince("TEST", Instant.parse("2025-03-01T00:00:00Z")).join();
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(attachments).isEmpty();
         softly.assertAll();
     }
 }

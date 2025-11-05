@@ -8,7 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.sentinelle.application.pii.export.usecase.ExportDetectionReportUseCase;
 import pro.softcom.sentinelle.domain.pii.export.SourceType;
-import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.event.SpaceScanCompleted;
+import pro.softcom.sentinelle.domain.pii.scan.SpaceScanCompleted;
 
 import static org.mockito.Mockito.*;
 

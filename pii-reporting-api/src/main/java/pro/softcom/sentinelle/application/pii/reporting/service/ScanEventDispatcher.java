@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.PublishEventPort;
-import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.event.SpaceScanCompleted;
+import pro.softcom.sentinelle.domain.pii.scan.SpaceScanCompleted;
 
 @Service
 @RequiredArgsConstructor

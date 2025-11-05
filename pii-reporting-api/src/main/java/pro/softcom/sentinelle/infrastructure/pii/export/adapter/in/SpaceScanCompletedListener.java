@@ -6,7 +6,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import pro.softcom.sentinelle.application.pii.export.usecase.ExportDetectionReportUseCase;
 import pro.softcom.sentinelle.domain.pii.export.SourceType;
-import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.event.SpaceScanCompleted;
+import pro.softcom.sentinelle.domain.pii.scan.SpaceScanCompleted;
 
 /**
  * Listens for space scan completion events and triggers the export of detection reports.
@@ -26,13 +26,13 @@ public class SpaceScanCompletedListener {
             return;
         }
 
-        log.info("Received SpaceScanCompleted: scanId={}, spaceKey={}", 
+        log.info("Received SpaceScanCompleted: scanId={}, spaceKey={}",
                 spaceScanCompleted.scanId(), spaceScanCompleted.spaceKey());
 
         try {
             exportDetectionReportUseCase.export(
-                    spaceScanCompleted.scanId(), 
-                    SourceType.CONFLUENCE, 
+                    spaceScanCompleted.scanId(),
+                    SourceType.CONFLUENCE,
                     spaceScanCompleted.spaceKey()
             );
         } catch (Exception ex) {

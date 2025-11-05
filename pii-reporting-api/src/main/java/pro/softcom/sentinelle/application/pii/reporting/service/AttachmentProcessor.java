@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.application.confluence.port.out.AttachmentTextExtractor;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachmentDownloader;
 import pro.softcom.sentinelle.domain.confluence.AttachmentInfo;
+import pro.softcom.sentinelle.domain.confluence.AttachmentTypeFilter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -32,7 +33,7 @@ public class AttachmentProcessor {
     public Flux<AttachmentTextExtracted> extractAttachmentsText(String pageId,
                                                                 List<AttachmentInfo> attachments) {
         return Flux.fromIterable(attachments)
-            .filter(this::isExtractableExtension)
+            .filter(AttachmentTypeFilter::isExtractable)
             .concatMap(attachment -> extractAttachmentText(pageId, attachment));
     }
 
@@ -53,18 +54,5 @@ public class AttachmentProcessor {
         return Mono.fromCallable(
                 () -> attachmentTextExtractionService.extractText(attachment, bytes))
             .flatMap(textOptional -> textOptional.map(Mono::just).orElse(Mono.empty()));
-    }
-
-    private boolean isExtractableExtension(AttachmentInfo attachment) {
-        String extension = attachment.extension();
-        if (extension == null || extension.isBlank()) {
-            return false;
-        }
-        String lowercaseExtension = extension.toLowerCase();
-        return switch (lowercaseExtension) {
-            case "pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "rtf", "odt", "ods", "odp",
-                 "txt", "csv", "html", "htm" -> true;
-            default -> false;
-        };
     }
 }

@@ -44,6 +44,8 @@ import {DataViewModule} from 'primeng/dataview';
 import {ProgressBarModule} from 'primeng/progressbar';
 import {SkeletonModule} from 'primeng/skeleton';
 import {TestIds} from '../test-ids.constants';
+import {ConfirmationService} from 'primeng/api';
+import {ConfirmDialogModule} from 'primeng/confirmdialog';
 
 /**
  * Dashboard to orchestrate scanning all Confluence spaces sequentially.
@@ -52,7 +54,8 @@ import {TestIds} from '../test-ids.constants';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, ToggleSwitchModule, PiiItemCardComponent, BadgeModule, InputTextModule, SelectModule, TableModule, TagModule, Ripple, TooltipModule, DataViewModule, ProgressBarModule, SkeletonModule],
+  imports: [CommonModule, FormsModule, ButtonModule, ToggleSwitchModule, PiiItemCardComponent, BadgeModule, InputTextModule, SelectModule, TableModule, TagModule, Ripple, TooltipModule, DataViewModule, ProgressBarModule, SkeletonModule, ConfirmDialogModule],
+  providers: [ConfirmationService],
   templateUrl: './spaces-dashboard.component.html',
   styleUrl: './spaces-dashboard.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -61,6 +64,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly sentinelleApiService = inject(SentinelleApiService);
   readonly spacesDashboardUtils = inject(SpacesDashboardUtils);
   readonly pollingService = inject(ConfluenceSpacesPollingService);
+  readonly confirmationService = inject(ConfirmationService);
   private sub?: Subscription;
   private pollingSub?: Subscription;
 
@@ -127,6 +131,29 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     if (this.isStreaming()) {
       return;
     }
+
+    // Afficher la confirmation avant de démarrer le scan
+    this.confirmationService.confirm({
+      header: 'Confirmation de scan global',
+      message: '' +
+        '<p>Êtes-vous sûr de vouloir démarrer le scan de tous les espaces Confluence ?</p>\n' +
+        '<p><b>Les données existantes seront écrasées.</b></p>\n' +
+        '<p>Cette opération peut prendre du temps.</p>',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Oui, démarrer',
+      rejectLabel: 'Annuler',
+      acceptButtonStyleClass: 'p-button-primary',
+      rejectButtonStyleClass: 'p-button-secondary',
+      accept: () => {
+        this.executeStartAll();
+      },
+      reject: () => {
+        this.append('[ui] Scan global annulé par l\'utilisateur');
+      }
+    });
+  }
+
+  private executeStartAll(): void {
     this.stopCurrentScan();
     // Clear previous dashboard results before starting a brand-new scan
     this.resetDashboardForNewScan();

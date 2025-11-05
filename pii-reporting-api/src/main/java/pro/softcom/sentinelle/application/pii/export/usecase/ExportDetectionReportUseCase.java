@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import pro.softcom.sentinelle.application.pii.export.DetectionReportMapper;
+import pro.softcom.sentinelle.application.pii.export.dto.DetectionReportEntry;
 import pro.softcom.sentinelle.application.pii.export.exception.ExportException;
 import pro.softcom.sentinelle.application.pii.export.port.out.ReadExportContextPort;
 import pro.softcom.sentinelle.application.pii.export.port.out.ReadScanEventsPort;
@@ -14,7 +15,6 @@ import pro.softcom.sentinelle.domain.pii.export.SourceType;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 
 /**
  * Use case for exporting detection reports.
@@ -34,14 +34,14 @@ public class ExportDetectionReportUseCase {
     /**
      * Exports detection report for a given scan and source.
      *
-     * @param scanId the unique identifier of the scan
-     * @param sourceType the type of source
+     * @param scanId           the unique identifier of the scan
+     * @param sourceType       the type of source
      * @param sourceIdentifier the unique identifier of the source (e.g., space key)
      */
     public void export(String scanId, SourceType sourceType, String sourceIdentifier) {
-        log.info("Starting export for scanId={} sourceType={} sourceIdentifier={}", 
+        log.info("Starting export for scanId={} sourceType={} sourceIdentifier={}",
                 scanId, sourceType, sourceIdentifier);
-        
+
         validateExportParameters(scanId, sourceType, sourceIdentifier);
 
         ExportContext exportContext = readExportContextPort.findContext(sourceType, sourceIdentifier);
@@ -72,16 +72,29 @@ public class ExportDetectionReportUseCase {
     }
 
     private void writeReportEntries(
-            WriteDetectionReportPort.ReportSession reportSession, String scanId, String sourceIdentifier
+            WriteDetectionReportPort.ReportSession reportSession,
+            String scanId,
+            String sourceIdentifier
     ) {
-        var events = readScanEventsPort.streamByScanIdAndSpaceKey(scanId, sourceIdentifier);
-        events.flatMap((ScanResult result) -> detectionReportMapper.toDetectionReportEntries(result).stream())
-                .forEach(detectionReportEntry -> {
-                    try {
-                        reportSession.writeReportEntry(detectionReportEntry);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                });
+        try {
+            var scanResults = readScanEventsPort.streamByScanIdAndSpaceKey(scanId, sourceIdentifier);
+
+            for (ScanResult scanResult : scanResults.toList()) {
+                writeEntriesForScanResult(reportSession, scanResult);
+            }
+        } catch (IOException e) {
+            throw new ExportException("Failed to write report entries", e);
+        }
+    }
+
+    private void writeEntriesForScanResult(
+            WriteDetectionReportPort.ReportSession reportSession,
+            ScanResult scanResult
+    ) throws IOException {
+        var entries = detectionReportMapper.toDetectionReportEntries(scanResult);
+
+        for (DetectionReportEntry entry : entries) {
+            reportSession.writeReportEntry(entry);
+        }
     }
 }

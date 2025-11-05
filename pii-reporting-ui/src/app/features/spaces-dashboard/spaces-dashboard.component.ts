@@ -132,7 +132,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Afficher la confirmation avant de démarrer le scan
+    // Display confirmation before starting the scan
     this.confirmationService.confirm({
       header: 'Confirmation de scan global',
       message: '' +

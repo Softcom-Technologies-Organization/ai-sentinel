@@ -1,6 +1,7 @@
 package pro.softcom.sentinelle.application.pii.reporting.usecase;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -240,7 +241,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
             log.info("Pii content: {}", contentPiiDetection);
             double charsPerSecond = duration > 0 ? (charCount * 1000.0) / duration : 0;
             log.info("[PERFORMANCE] Scan throughput: {} chars/sec ({} chars scanned in {} ms)", 
-                    String.format("%.2f", charsPerSecond), charCount, duration);
+                    String.format(Locale.US, "%.2f", charsPerSecond), charCount, duration);
         })
         .subscribeOn(Schedulers.parallel())
         .subscribe();

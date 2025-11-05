@@ -14,9 +14,9 @@ import pro.softcom.sentinelle.application.confluence.port.in.GetSpaceUpdateInfoU
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.ModifiedAttachmentInfo;
 import pro.softcom.sentinelle.domain.confluence.ModifiedPageInfo;
 import pro.softcom.sentinelle.domain.confluence.SpaceUpdateInfo;
-import pro.softcom.sentinelle.domain.pii.ScanStatus;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
 
 /**
@@ -73,69 +73,61 @@ public class SpaceUpdateInfoService implements GetSpaceUpdateInfoUseCase {
     private CompletableFuture<SpaceUpdateInfo> buildSpaceUpdateInfo(ConfluenceSpace space) {
         String spaceKey = space.key();
         String spaceName = space.name();
-        
-        // Find most recent completed scan for this space
+
         Optional<Instant> lastScanDate = findLastCompletedScanDate(spaceKey);
-        
+
         if (lastScanDate.isEmpty()) {
-            // No scan has been completed yet
             log.debug("No completed scan found for space {}", spaceKey);
             return CompletableFuture.completedFuture(
                 SpaceUpdateInfo.noScanYet(spaceKey, spaceName, null)
             );
         }
-        
-        // Query Confluence for modified pages via CQL
-        return confluenceClient.getModifiedPagesSince(spaceKey, lastScanDate.get())
-            .thenApply(modifiedPages -> 
-                buildSpaceUpdateInfoFromModifiedPages(
-                    spaceKey, 
-                    spaceName, 
-                    modifiedPages, 
-                    lastScanDate.get()
-                )
-            );
+
+        Instant since = lastScanDate.get();
+
+        return confluenceClient.getModifiedPagesSince(spaceKey, since)
+            .thenCompose(modifiedPages -> {
+                if (modifiedPages == null || modifiedPages.isEmpty()) {
+                    log.debug("No modifications found for space {} since last scan at {}", spaceKey, since);
+                    return CompletableFuture.completedFuture(
+                        SpaceUpdateInfo.noUpdates(spaceKey, spaceName, null, since)
+                    );
+                }
+
+                List<String> updatedPageTitles = modifiedPages.stream()
+                    .map(ModifiedPageInfo::title)
+                    .toList();
+
+                Instant mostRecentModification = modifiedPages.stream()
+                    .map(ModifiedPageInfo::lastModified)
+                    .filter(java.util.Objects::nonNull)
+                    .max(Instant::compareTo)
+                    .orElse(since);
+
+                return confluenceClient.getModifiedAttachmentsSince(spaceKey, since)
+                    .exceptionally(ex -> {
+                        log.warn("Failed to retrieve modified attachments for space {}: {}", spaceKey, ex.getMessage());
+                        return List.of();
+                    })
+                    .thenApply(modifiedAttachments -> {
+                        List<String> updatedAttachmentNames = (modifiedAttachments == null)
+                            ? List.of()
+                            : modifiedAttachments.stream()
+                                .map(ModifiedAttachmentInfo::title)
+                                .toList();
+
+                        return SpaceUpdateInfo.withUpdates(
+                            spaceKey,
+                            spaceName,
+                            mostRecentModification,
+                            since,
+                            updatedPageTitles,
+                            updatedAttachmentNames
+                        );
+                    });
+            });
     }
 
-    /**
-     * Builds the final SpaceUpdateInfo based on modified pages retrieved from CQL.
-     */
-    private SpaceUpdateInfo buildSpaceUpdateInfoFromModifiedPages(
-        String spaceKey,
-        String spaceName,
-        List<ModifiedPageInfo> modifiedPages,
-        Instant lastScanDate) {
-        
-        if (modifiedPages.isEmpty()) {
-            // No modifications found since last scan
-            log.debug("No modifications found for space {} since last scan at {}", 
-                spaceKey, lastScanDate);
-            return SpaceUpdateInfo.noUpdates(spaceKey, spaceName, null, lastScanDate);
-        }
-        
-        // Extract page titles
-        List<String> updatedPageTitles = modifiedPages.stream()
-            .map(ModifiedPageInfo::title)
-            .toList();
-        
-        // Find most recent modification date
-        Instant mostRecentModification = modifiedPages.stream()
-            .map(ModifiedPageInfo::lastModified)
-            .max(Instant::compareTo)
-            .orElse(lastScanDate);
-        
-        log.debug("Space {} has {} modified page(s): lastModified={}, lastScan={}", 
-            spaceKey, modifiedPages.size(), mostRecentModification, lastScanDate);
-        
-        return SpaceUpdateInfo.withUpdates(
-            spaceKey,
-            spaceName,
-            mostRecentModification,
-            lastScanDate,
-            updatedPageTitles,
-            null  // Updated attachments not yet implemented
-        );
-    }
 
     /**
      * Finds the date of the most recent completed scan for a space.
@@ -155,7 +147,8 @@ public class SpaceUpdateInfoService implements GetSpaceUpdateInfoUseCase {
 
             //FIXME need to decide what scan status needs to be filtered out
             return checkpoints.stream()
-                .filter(checkpoint -> checkpoint.spaceKey().equals(spaceKey))
+                .filter(Objects::nonNull)
+                .filter(checkpoint -> checkpoint.spaceKey() != null && checkpoint.spaceKey().equals(spaceKey))
                 .map(ScanCheckpoint::updatedAt)
                 .filter(Objects::nonNull)
                 .map(localDateTime -> localDateTime.atZone(ZoneId.systemDefault()).toInstant())

@@ -1,10 +1,13 @@
 package pro.softcom.sentinelle.application.confluence.port.out;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.ModifiedAttachmentInfo;
+import pro.softcom.sentinelle.domain.confluence.ModifiedPageInfo;
 
 /**
  * Confluence client (outbound domain port).
@@ -78,8 +81,13 @@ public interface ConfluenceClient {
      * @param sinceDate the date from which to search for modifications (typically last scan date)
      * @return list of modified pages with their information, or empty list if no modifications found
      */
-    CompletableFuture<List<pro.softcom.sentinelle.domain.confluence.ModifiedPageInfo>> getModifiedPagesSince(
+    CompletableFuture<List<ModifiedPageInfo>> getModifiedPagesSince(
         String spaceKey, 
-        java.time.Instant sinceDate
+        Instant sinceDate
+    );
+
+    CompletableFuture<List<ModifiedAttachmentInfo>> getModifiedAttachmentsSince(
+        String spaceKey,
+        Instant sinceDate
     );
 }

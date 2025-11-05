@@ -11,6 +11,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.ModifiedAttachmentInfo;
 import pro.softcom.sentinelle.domain.confluence.ModifiedPageInfo;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.config.ConfluenceConnectionConfig;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.dto.ConfluencePageDto;
@@ -48,6 +50,12 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
     private static final String CONTENT_TYPE_HEADER_VALUE = "application/json";
     private static final String AUTHORIZATION_HEADER_NAME = "Authorization";
     private static final String RESULTS_FIELD = "results";
+    private static final DateTimeFormatter CQL_DATE_TIME_FORMATTER =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.of("UTC"));
+    public static final String TYPE_FIELD_NAME = "type";
+    public static final String TITLE_FIELD_NAME = "title";
+    public static final String ID_FIELD_NAME = "id";
+    public static final String PAGE_FIELD_NAME = "page";
 
     private final ConfluenceConnectionConfig config;
     private final ObjectMapper objectMapper;
@@ -258,7 +266,7 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
 
     private List<ConfluencePage> extractPagesFromResponse(String responseBody, String spaceKey) throws IOException {
         var jsonNode = objectMapper.readTree(responseBody);
-        var pageNode = jsonNode.get("page");
+        var pageNode = jsonNode.get(PAGE_FIELD_NAME);
 
         if (pageNode == null || !pageNode.has(RESULTS_FIELD)) {
             return List.of();
@@ -423,8 +431,7 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
     }
 
     private String formatInstantForCql(Instant instant) {
-        return instant.atZone(java.time.ZoneOffset.UTC)
-            .format(DateTimeFormatter.ISO_LOCAL_DATE);
+        return CQL_DATE_TIME_FORMATTER.format(instant);
     }
 
     private HttpRequest buildContentSearchModifiedSinceRequest(String spaceKey, String sinceDate) {
@@ -432,7 +439,7 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
         return buildGetRequest(uri);
     }
 
-    private Instant extractPageModificationDate(com.fasterxml.jackson.databind.JsonNode page) {
+    private Instant extractPageModificationDate(JsonNode page) {
         // Try version.when first (most reliable)
         if (page.has("version")) {
             var version = page.get("version");
@@ -525,8 +532,13 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
         JsonNode page) {
         
         try {
-            String pageId = page.has("id") ? page.get("id").asText() : null;
-            String title = page.has("title") ? page.get("title").asText() : "Untitled";
+            String type = page.has(TYPE_FIELD_NAME) ? page.get(TYPE_FIELD_NAME).asText() : null;
+            if (!PAGE_FIELD_NAME.equalsIgnoreCase(type)) {
+                return null;
+            }
+
+            String pageId = page.has(ID_FIELD_NAME) ? page.get(ID_FIELD_NAME).asText() : null;
+            String title = page.has(TITLE_FIELD_NAME) ? page.get(TITLE_FIELD_NAME).asText() : "Untitled";
             Instant lastModified = extractPageModificationDate(page);
             
             if (pageId == null || lastModified == null) {
@@ -551,4 +563,65 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
         return List.of();
     }
 
+    @Override
+    public CompletableFuture<List<ModifiedAttachmentInfo>> getModifiedAttachmentsSince(
+        String spaceKey, Instant sinceDate) {
+
+        log.debug("Getting modified attachments for space {} since {}", spaceKey, sinceDate);
+
+        var sinceDateFormatted = formatInstantForCql(sinceDate);
+        var cql = String.format("space='%s' AND type=attachment AND lastmodified >= '%s'",
+                                spaceKey, sinceDateFormatted);
+        var request = buildGetRequest(urlBuilder.buildSearchUri(cql));
+
+        return retryExecutor.executeRequest(request)
+            .thenApply(this::extractModifiedAttachmentsInfo)
+            .exceptionally(ex -> {
+                log.error("Error retrieving modified attachments for space {}", spaceKey, ex);
+                return List.of();
+            });
+    }
+
+    private List<ModifiedAttachmentInfo> extractModifiedAttachmentsInfo(HttpResponse<String> response) {
+        if (response.statusCode() != 200) {
+            log.warn("CQL Search (attachments) returned non-200 status: {}", response.statusCode());
+            return List.of();
+        }
+        try {
+            var jsonNode = objectMapper.readTree(response.body());
+            if (!jsonNode.has(RESULTS_FIELD)) {
+                return List.of();
+            }
+            var results = jsonNode.get(RESULTS_FIELD);
+            if (!results.isArray() || results.isEmpty()) {
+                return List.of();
+            }
+            var modifiedAttachmentInfos = new ArrayList<ModifiedAttachmentInfo>(results.size());
+            for (var node : results) {
+                var info = extractSingleAttachmentInfo(node);
+                if (info != null) {
+                    modifiedAttachmentInfos.add(info);
+                }
+            }
+            return modifiedAttachmentInfos;
+        } catch (IOException e) {
+            log.error("Error parsing attachment CQL search response", e);
+            return List.of();
+        }
+    }
+
+    private ModifiedAttachmentInfo extractSingleAttachmentInfo(JsonNode node) {
+        try {
+            String id = node.has(ID_FIELD_NAME) ? node.get(ID_FIELD_NAME).asText() : null;
+            String title = node.has(TITLE_FIELD_NAME) ? node.get(TITLE_FIELD_NAME).asText() : "Unnamed";
+            Instant lastModified = extractPageModificationDate(node);
+            if (id == null || lastModified == null) {
+                return null;
+            }
+            return new ModifiedAttachmentInfo(id, title, lastModified);
+        } catch (Exception e) {
+            log.warn("Failed to extract attachment info from JSON node", e);
+            return null;
+        }
+    }
 }

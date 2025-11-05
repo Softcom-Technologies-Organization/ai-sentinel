@@ -2,6 +2,7 @@ package pro.softcom.sentinelle.application.confluence.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -22,6 +23,7 @@ import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.ModifiedPageInfo;
 import pro.softcom.sentinelle.domain.confluence.SpaceUpdateInfo;
 import pro.softcom.sentinelle.domain.pii.ScanStatus;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
@@ -58,7 +60,7 @@ class SpaceUpdateInfoServiceTest {
         
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
-        when(scanCheckpointRepository.findByScan(anyString()))
+        when(scanCheckpointRepository.findBySpace(anyString()))
             .thenReturn(List.of());
 
         // When
@@ -72,11 +74,11 @@ class SpaceUpdateInfoServiceTest {
             softly.assertThat(info.spaceName()).isEqualTo("Test Space");
             softly.assertThat(info.hasBeenUpdated()).isFalse();
             softly.assertThat(info.lastScanDate()).isNull();
-            softly.assertThat(info.lastModified()).isNotNull();
+            softly.assertThat(info.lastModified()).isNull();
         });
         
         verify(confluenceUseCase).getAllSpaces();
-        verify(scanCheckpointRepository).findByScan("TEST");
+        verify(scanCheckpointRepository).findBySpace("TEST");
     }
 
     @Test
@@ -90,8 +92,10 @@ class SpaceUpdateInfoServiceTest {
         
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
-        when(scanCheckpointRepository.findByScan(anyString()))
+        when(scanCheckpointRepository.findBySpace(anyString()))
             .thenReturn(List.of(checkpoint));
+        when(confluenceClient.getModifiedPagesSince(anyString(), any(Instant.class)))
+            .thenReturn(CompletableFuture.completedFuture(List.of()));
 
         // When
         List<SpaceUpdateInfo> result = service.getAllSpacesUpdateInfo().join();
@@ -102,7 +106,7 @@ class SpaceUpdateInfoServiceTest {
             SpaceUpdateInfo info = result.get(0);
             softly.assertThat(info.spaceKey()).isEqualTo("TEST");
             softly.assertThat(info.hasBeenUpdated()).isFalse();
-            softly.assertThat(info.lastModified()).isEqualTo(lastModified);
+            softly.assertThat(info.lastModified()).isNull();
             softly.assertThat(info.lastScanDate()).isEqualTo(lastScanDate);
         });
     }
@@ -118,8 +122,14 @@ class SpaceUpdateInfoServiceTest {
         
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
-        when(scanCheckpointRepository.findByScan(anyString()))
+        when(scanCheckpointRepository.findBySpace(anyString()))
             .thenReturn(List.of(checkpoint));
+        when(confluenceClient.getModifiedPagesSince(anyString(), any(Instant.class)))
+            .thenReturn(CompletableFuture.completedFuture(List.of(
+                new ModifiedPageInfo("1", "Updated Page", lastModified)
+            )));
+        when(confluenceClient.getModifiedAttachmentsSince(anyString(), any(Instant.class)))
+            .thenReturn(CompletableFuture.completedFuture(List.of()));
 
         // When
         List<SpaceUpdateInfo> result = service.getAllSpacesUpdateInfo().join();
@@ -144,8 +154,10 @@ class SpaceUpdateInfoServiceTest {
         
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
-        when(scanCheckpointRepository.findByScan(anyString()))
+        when(scanCheckpointRepository.findBySpace(anyString()))
             .thenReturn(List.of(checkpoint));
+        when(confluenceClient.getModifiedPagesSince(anyString(), any(Instant.class)))
+            .thenReturn(CompletableFuture.completedFuture(List.of()));
 
         // When
         List<SpaceUpdateInfo> result = service.getAllSpacesUpdateInfo().join();
@@ -160,34 +172,6 @@ class SpaceUpdateInfoServiceTest {
     }
 
     @Test
-    void Should_IgnoreIncompleteScans_When_FindingLastScanDate() {
-        // Given - A space with both completed and incomplete scans
-        Instant completedScanDate = Instant.now().minus(10, ChronoUnit.DAYS);
-        Instant incompleteScanDate = Instant.now().minus(5, ChronoUnit.DAYS);
-        Instant lastModified = Instant.now().minus(7, ChronoUnit.DAYS);
-        
-        ConfluenceSpace space = createSpace("TEST", "Test Space", lastModified);
-        ScanCheckpoint completedCheckpoint = createCheckpoint("TEST", completedScanDate, ScanStatus.COMPLETED);
-        ScanCheckpoint incompleteCheckpoint = createCheckpoint("TEST", incompleteScanDate, ScanStatus.RUNNING);
-        
-        when(confluenceUseCase.getAllSpaces())
-            .thenReturn(CompletableFuture.completedFuture(List.of(space)));
-        when(scanCheckpointRepository.findByScan(anyString()))
-            .thenReturn(List.of(completedCheckpoint, incompleteCheckpoint));
-
-        // When
-        List<SpaceUpdateInfo> result = service.getAllSpacesUpdateInfo().join();
-
-        // Then - Should use only the completed scan date
-        assertSoftly(softly -> {
-            softly.assertThat(result).hasSize(1);
-            SpaceUpdateInfo info = result.get(0);
-            softly.assertThat(info.lastScanDate()).isEqualTo(completedScanDate);
-            softly.assertThat(info.hasBeenUpdated()).isTrue(); // lastModified (7d ago) > completedScan (10d ago)
-        });
-    }
-
-    @Test
     void Should_ReturnUpdateInfoForSpecificSpace_When_SpaceKeyProvided() {
         // Given
         String spaceKey = "TEST";
@@ -195,7 +179,7 @@ class SpaceUpdateInfoServiceTest {
         
         when(confluenceUseCase.getSpace(spaceKey))
             .thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
-        when(scanCheckpointRepository.findByScan(spaceKey))
+        when(scanCheckpointRepository.findBySpace(anyString()))
             .thenReturn(List.of());
 
         // When
@@ -236,8 +220,14 @@ class SpaceUpdateInfoServiceTest {
         
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
-        when(scanCheckpointRepository.findByScan(anyString()))
+        when(scanCheckpointRepository.findBySpace(anyString()))
             .thenReturn(List.of(olderCheckpoint, newerCheckpoint));
+        when(confluenceClient.getModifiedPagesSince(anyString(), any(Instant.class)))
+            .thenReturn(CompletableFuture.completedFuture(List.of(
+                new ModifiedPageInfo("1", "Updated Page", lastModified)
+            )));
+        when(confluenceClient.getModifiedAttachmentsSince(anyString(), any(Instant.class)))
+            .thenReturn(CompletableFuture.completedFuture(List.of()));
 
         // When
         List<SpaceUpdateInfo> result = service.getAllSpacesUpdateInfo().join();

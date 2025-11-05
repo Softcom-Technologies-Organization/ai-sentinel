@@ -13,15 +13,11 @@ import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.dto.Confluenc
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.dto.ConfluenceSpaceDto;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.dto.SpaceUpdateInfoDto;
 
-/**
- * Tests unitaires pour ConfluenceApiMapper.
- * Vérifie la transformation des objets du domaine vers les DTOs d'API.
- */
-@DisplayName("ConfluenceApiMapper")
+@DisplayName("Verifies Confluence API mapping behaviors")
 class ConfluenceApiMapperTest {
 
     @Test
-    @DisplayName("Should_MapAllFields_When_PageHasHtmlContent")
+    @DisplayName("Maps a Confluence HTML page to a complete DTO")
     void Should_MapAllFields_When_PageHasHtmlContent() {
         // Given
         ConfluencePage page = ConfluencePage.builder()
@@ -46,7 +42,7 @@ class ConfluenceApiMapperTest {
     }
 
     @Test
-    @DisplayName("Should_HandleNullContent_When_PageHasNoContent")
+    @DisplayName("Represents a page without content with null content fields")
     void Should_HandleNullContent_When_PageHasNoContent() {
         // Given
         ConfluencePage page = ConfluencePage.builder()
@@ -67,7 +63,7 @@ class ConfluenceApiMapperTest {
     }
 
     @Test
-    @DisplayName("Should_ReturnEmptyList_When_PagesIsNull")
+    @DisplayName("Returns an empty list when no pages are provided")
     void Should_ReturnEmptyList_When_PagesIsNull() {
         // When
         List<ConfluencePageDto> result = ConfluenceApiMapper.toDtoPages(null);
@@ -77,7 +73,7 @@ class ConfluenceApiMapperTest {
     }
 
     @Test
-    @DisplayName("Should_ReturnEmptyList_When_PagesIsEmpty")
+    @DisplayName("Returns an empty list when the pages list is empty")
     void Should_ReturnEmptyList_When_PagesIsEmpty() {
         // When
         List<ConfluencePageDto> result = ConfluenceApiMapper.toDtoPages(List.of());
@@ -87,7 +83,7 @@ class ConfluenceApiMapperTest {
     }
 
     @Test
-    @DisplayName("Should_MapAllPages_When_PagesListIsProvided")
+    @DisplayName("Maps each page to DTO when a list of pages is provided")
     void Should_MapAllPages_When_PagesListIsProvided() {
         // Given
         List<ConfluencePage> pages = List.of(
@@ -112,7 +108,7 @@ class ConfluenceApiMapperTest {
 
         // Then
         assertThat(result).hasSize(2);
-        assertThat(result.get(0).id()).isEqualTo("1");
+        assertThat(result.getFirst().id()).isEqualTo("1");
         assertThat(result.get(0).title()).isEqualTo("Page 1");
         assertThat(result.get(0).contentFormat()).isEqualTo("storage");
         assertThat(result.get(1).id()).isEqualTo("2");
@@ -121,7 +117,7 @@ class ConfluenceApiMapperTest {
     }
 
     @Test
-    @DisplayName("Should_MapAllFields_When_SpaceIsProvided")
+    @DisplayName("Maps a Confluence space to a complete DTO")
     void Should_MapAllFields_When_SpaceIsProvided() {
         // Given
         Instant now = Instant.now();
@@ -151,7 +147,7 @@ class ConfluenceApiMapperTest {
     }
 
     @Test
-    @DisplayName("Should_HandleNullTypeAndStatus_When_SpaceHasNullValues")
+    @DisplayName("Defaults space type and status when values are null")
     void Should_HandleNullTypeAndStatus_When_SpaceHasNullValues() {
         // Given - Le constructeur compact de ConfluenceSpace définit des valeurs par défaut
         // donc on teste avec les valeurs par défaut qui sont non-nulles
@@ -176,7 +172,7 @@ class ConfluenceApiMapperTest {
     }
 
     @Test
-    @DisplayName("Should_ReturnEmptyList_When_SpacesIsNull")
+    @DisplayName("Returns an empty list when no spaces are provided")
     void Should_ReturnEmptyList_When_SpacesIsNull() {
         // When
         List<ConfluenceSpaceDto> result = ConfluenceApiMapper.toDtoSpaces(null);
@@ -186,7 +182,7 @@ class ConfluenceApiMapperTest {
     }
 
     @Test
-    @DisplayName("Should_ReturnEmptyList_When_SpacesIsEmpty")
+    @DisplayName("Returns an empty list when the spaces list is empty")
     void Should_ReturnEmptyList_When_SpacesIsEmpty() {
         // When
         List<ConfluenceSpaceDto> result = ConfluenceApiMapper.toDtoSpaces(List.of());
@@ -196,7 +192,7 @@ class ConfluenceApiMapperTest {
     }
 
     @Test
-    @DisplayName("Should_MapAllSpaces_When_SpacesListIsProvided")
+    @DisplayName("Maps each space to DTO when a list of spaces is provided")
     void Should_MapAllSpaces_When_SpacesListIsProvided() {
         // Given
         List<ConfluenceSpace> spaces = List.of(
@@ -227,7 +223,7 @@ class ConfluenceApiMapperTest {
 
         // Then
         assertThat(result).hasSize(2);
-        assertThat(result.get(0).key()).isEqualTo("SPACE1");
+        assertThat(result.getFirst().key()).isEqualTo("SPACE1");
         assertThat(result.get(0).type()).isEqualTo("global");
         assertThat(result.get(0).status()).isEqualTo("current");
         assertThat(result.get(1).key()).isEqualTo("SPACE2");
@@ -236,7 +232,7 @@ class ConfluenceApiMapperTest {
     }
 
     @Test
-    @DisplayName("Should_MapAllFields_When_UpdateInfoIsProvided")
+    @DisplayName("Maps space update information to a complete DTO")
     void Should_MapAllFields_When_UpdateInfoIsProvided() {
         // Given
         Instant lastModified = Instant.parse("2024-01-15T10:00:00Z");
@@ -266,7 +262,7 @@ class ConfluenceApiMapperTest {
     }
 
     @Test
-    @DisplayName("Should_MapWithNullOptionalFields_When_UpdateInfoHasNoDetails")
+    @DisplayName("Maps update info without optional details to a DTO with null optional fields")
     void Should_MapWithNullOptionalFields_When_UpdateInfoHasNoDetails() {
         // Given
         SpaceUpdateInfo updateInfo = new SpaceUpdateInfo(
@@ -293,7 +289,7 @@ class ConfluenceApiMapperTest {
     }
 
     @Test
-    @DisplayName("Should_ReturnEmptyList_When_UpdateInfosIsNull")
+    @DisplayName("Returns an empty list when no update infos are provided")
     void Should_ReturnEmptyList_When_UpdateInfosIsNull() {
         // When
         List<SpaceUpdateInfoDto> result = ConfluenceApiMapper.toDtoSpaceUpdateInfos(null);

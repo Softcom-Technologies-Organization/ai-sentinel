@@ -34,11 +34,11 @@ public record ScanEventDto(
 ) {
 
     /**
-     * Extension du builder Lombok pour conserver les aides de construction.
-     * Le nom DOIT correspondre au builder généré: <RecordName>Builder
+     * Override Lombok's generated builder to provide a type-safe setter for eventType.
+     * Accepts ScanEventType and converts it to the wire-level String expected by clients
+     * (keeps backward compatibility with previous Map-based/string payloads and avoids exposing the enum in JSON).
      */
     public static class ScanEventDtoBuilder {
-        /** Surcharge pratique: accepte l'enum et alimente le champ JSON String. */
         public ScanEventDtoBuilder eventType(ScanEventType type) {
             this.eventType = type != null ? type.toJson() : null;
             return this;

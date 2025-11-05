@@ -27,11 +27,9 @@ public class ConfluenceAttachmentHttpClientAdapter implements ConfluenceAttachme
 
     private static final Logger logger = LoggerFactory.getLogger(
         ConfluenceAttachmentHttpClientAdapter.class);
-    // Paths moved to configuration to avoid hard-coded URIs (Sonar)
     public static final String ACCEPT_HEADER_NAME = "Accept";
     public static final String CONTENT_TYPE_HEADER_VALUE = "application/json";
     public static final String AUTHORIZATION_HEADER_NAME = "Authorization";
-    // Sonar S1192: avoid duplicate literals
     private static final String RESULTS_FIELD = "results";
     private static final String TITLE_FIELD = "title";
 
@@ -44,7 +42,6 @@ public class ConfluenceAttachmentHttpClientAdapter implements ConfluenceAttachme
         this.config = config;
         this.objectMapper = objectMapper;
 
-        // Utilisation des Virtual Threads pour une meilleure scalabilité
         var executor = Executors.newVirtualThreadPerTaskExecutor();
 
         this.httpClient = HttpClient.newBuilder().executor(executor)
@@ -53,7 +50,6 @@ public class ConfluenceAttachmentHttpClientAdapter implements ConfluenceAttachme
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
 
-        // Préparation de l'authentification Basic
         this.authHeader = createAuthHeader(config.username(), config.apiToken());
     }
 
@@ -105,7 +101,6 @@ public class ConfluenceAttachmentHttpClientAdapter implements ConfluenceAttachme
                 var delay = calculateBackoffDelay(config.maxRetries() - retriesLeft);
                 logger.warn("Retry de la requête après {} ms, tentatives restantes: {}", delay, retriesLeft);
 
-                // Créer un délai avant de réessayer avec CompletableFuture.delayedExecutor
                 var delayedExecutor = CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS);
 
                 return CompletableFuture.runAsync(() -> {
@@ -116,7 +111,7 @@ public class ConfluenceAttachmentHttpClientAdapter implements ConfluenceAttachme
     }
 
     private boolean shouldRetry(int statusCode) {
-        return statusCode >= 500 || statusCode == 429; // Erreurs serveur ou rate limiting
+        return statusCode >= 500 || statusCode == 429;
     }
 
     private long calculateBackoffDelay(int attempt) {

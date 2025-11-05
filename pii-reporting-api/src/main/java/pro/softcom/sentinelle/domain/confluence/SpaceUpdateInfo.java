@@ -6,7 +6,6 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Value object representing update information for a Confluence space.
- * 
  * Business purpose: Provide information about whether a space has been updated
  * since the last scan, and if so, which pages or attachments have changed.
  * 

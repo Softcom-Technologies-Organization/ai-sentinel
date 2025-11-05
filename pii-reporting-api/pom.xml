@@ -24,7 +24,7 @@
         <armeria-bom.version>1.33.4</armeria-bom.version>
         <jsoup.version>1.17.2</jsoup.version>
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
-        <archunit-junit5.version>1.4.0</archunit-junit5.version>
+        <archunit-junit5.version>1.4.1</archunit-junit5.version>
         <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <build-helper-maven-plugin.version>3.4.0</build-helper-maven-plugin.version>

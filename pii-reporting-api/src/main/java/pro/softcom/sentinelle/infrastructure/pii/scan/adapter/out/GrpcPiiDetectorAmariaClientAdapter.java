@@ -16,7 +16,6 @@ import pro.softcom.sentinelle.infrastructure.pii.scan.adapter.out.config.PiiDete
 
 /**
  * Armeria-based implementation of the PII detection client.
- *
  * What: Uses an Armeria-provided gRPC blocking stub to call the Python gRPC service.
  * Why: Improves HTTP/2/gRPC client stability and observability while preserving domain API.
  */
@@ -108,7 +107,7 @@ public class GrpcPiiDetectorAmariaClientAdapter implements PiiDetectorClient {
                 context,
                 entity.getStart(),
                 entity.getEnd(),
-                Double.valueOf(entity.getScore()),
+                (double) entity.getScore(),
                 String.format("pii-entity-%s", entity.getType().toLowerCase())
         );
     }

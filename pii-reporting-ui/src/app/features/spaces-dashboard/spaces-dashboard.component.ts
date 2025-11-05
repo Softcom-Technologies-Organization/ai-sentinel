@@ -148,7 +148,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
         this.executeStartAll();
       },
       reject: () => {
-        this.append('[ui] Scan global annulé par l\'utilisateur');
+        this.append('[ui] Global scan cancelled by user');
       }
     });
   }

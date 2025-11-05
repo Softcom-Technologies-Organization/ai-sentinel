@@ -68,8 +68,8 @@ pii-detector:
   host: localhost
   port: 50051
   default-threshold: 0.5
-  connection-timeout-ms: 5000
-  request-timeout-ms: 120000
+  connection-timeout-ms: 180000  # 3 minutes to handle complex pages
+  request-timeout-ms: 180000      # 3 minutes to handle complex pages
 
 # Armeria internal services (docs, health, metrics, actuator)
 armeria:
@@ -95,4 +95,3 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     operations-sorter: method
-

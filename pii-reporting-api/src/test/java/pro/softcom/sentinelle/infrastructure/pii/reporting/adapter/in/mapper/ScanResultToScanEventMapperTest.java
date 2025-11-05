@@ -58,7 +58,7 @@ class ScanResultToScanEventMapperTest {
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(dto.scanId()).isEqualTo("sid");
         softly.assertThat(dto.spaceKey()).isEqualTo("space");
-        softly.assertThat(dto.eventType()).isEqualTo("start");
+        softly.assertThat(dto.eventType()).isEqualTo(ScanEventType.START);
         softly.assertThat(dto.isFinal()).isFalse();
         softly.assertThat(dto.pagesTotal()).isEqualTo(10);
         softly.assertThat(dto.pageIndex()).isEqualTo(3);

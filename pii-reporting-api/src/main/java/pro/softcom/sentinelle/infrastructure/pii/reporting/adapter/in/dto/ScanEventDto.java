@@ -15,7 +15,7 @@ import lombok.Builder;
 public record ScanEventDto(
         String scanId,
         String spaceKey,
-        String eventType,
+        ScanEventType eventType,
         Boolean isFinal,
         Integer pagesTotal,
         Integer pageIndex,
@@ -31,17 +31,4 @@ public record ScanEventDto(
         String attachmentType,
         String attachmentUrl,
         Double analysisProgressPercentage
-) {
-
-    /**
-     * Override Lombok's generated builder to provide a type-safe setter for eventType.
-     * Accepts ScanEventType and converts it to the wire-level String expected by clients
-     * (keeps backward compatibility with previous Map-based/string payloads and avoids exposing the enum in JSON).
-     */
-    public static class ScanEventDtoBuilder {
-        public ScanEventDtoBuilder eventType(ScanEventType type) {
-            this.eventType = type != null ? type.toJson() : null;
-            return this;
-        }
-    }
-}
+) { }

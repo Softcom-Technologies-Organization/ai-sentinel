@@ -1,5 +1,6 @@
 package pro.softcom.sentinelle.application.pii.reporting.usecase;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
@@ -138,16 +139,28 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                                                    ConfluencePage page,
                                                    AttachmentTextExtracted extracted,
                                                    ScanProgress scanProgress) {
-        ContentPiiDetection detection = detectPii(extracted.extractedText());
-        double progress = scanOrchestrator.calculateProgress(
-            scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
-            scanProgress.originalTotal());
+        return Mono.fromCallable(() -> {
+            ContentPiiDetection detection = detectPii(extracted.extractedText());
+            double progress = scanOrchestrator.calculateProgress(
+                scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
+                scanProgress.originalTotal());
 
-        ScanResult event = scanOrchestrator.createAttachmentItemEvent(
-            scanId, spaceKey, page, extracted.attachment(), extracted.extractedText(), detection,
-            progress);
-
-        return Mono.just(event);
+            return scanOrchestrator.createAttachmentItemEvent(
+                scanId, spaceKey, page, extracted.attachment(), extracted.extractedText(), detection,
+                progress);
+        })
+        .timeout(Duration.ofSeconds(185))  // 185s > 180s gRPC timeout to let gRPC exception trigger first
+        .onErrorResume(exception -> {
+            log.error("Error analyzing attachment {} for page {}: {}", 
+                      extracted.attachment().name(), page.id(), exception.getMessage());
+            double progress = scanOrchestrator.calculateProgress(
+                scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
+                scanProgress.originalTotal());
+            return Mono.just(scanOrchestrator.createErrorEvent(
+                scanId, spaceKey, page.id(), 
+                "Error analyzing attachment: " + exception.getMessage(), 
+                progress));
+        });
     }
 
 
@@ -183,6 +196,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         }
 
         return Mono.fromCallable(() -> detectPii(content))
+            .timeout(Duration.ofSeconds(185))  // 185s > 180s gRPC timeout to let gRPC exception trigger first
             .map(detection -> buildPageItemEvent(scanId, page, content, detection, scanProgress))
             .onErrorResume(
                 exception -> handleDetectionError(scanId, spaceKey, page, scanProgress, exception))

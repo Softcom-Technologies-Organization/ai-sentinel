@@ -181,8 +181,6 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
     this.sortField.set(event.field);
     this.sortOrder.set(event.order ?? 1);
-
-    event.data = this.sortedSpaces();
   }
 
   // UI actions

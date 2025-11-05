@@ -101,7 +101,7 @@ public class GrpcPiiDetectorAmariaClientAdapter implements PiiDetectorClient {
             dataType = ContentPiiDetection.DataType.UNKNOWN;
             log.warn("[Armeria] Unknown PII type: {}, mapping to UNKNOWN", entity.getType());
         }
-        final String context = String.format(Locale.US, "Detected at position %d-%d (confidence: %.2f)",
+        final String context = String.format(Locale.ROOT, "Detected at position %d-%d (confidence: %.2f)",
                 entity.getStart(), entity.getEnd(), entity.getScore());
         return new ContentPiiDetection.SensitiveData(
                 dataType,

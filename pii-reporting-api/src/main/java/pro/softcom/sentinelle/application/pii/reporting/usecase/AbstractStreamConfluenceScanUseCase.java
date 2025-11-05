@@ -241,7 +241,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
             log.info("Pii content: {}", contentPiiDetection);
             double charsPerSecond = duration > 0 ? (charCount * 1000.0) / duration : 0;
             log.info("[PERFORMANCE] Scan throughput: {} chars/sec ({} chars scanned in {} ms)", 
-                    String.format(Locale.US, "%.2f", charsPerSecond), charCount, duration);
+                    String.format(Locale.ROOT, "%.2f", charsPerSecond), charCount, duration);
         })
         .subscribeOn(Schedulers.parallel())
         .subscribe();

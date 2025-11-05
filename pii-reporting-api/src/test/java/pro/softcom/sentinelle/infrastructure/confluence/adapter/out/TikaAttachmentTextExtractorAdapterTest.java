@@ -1,112 +1,169 @@
 package pro.softcom.sentinelle.infrastructure.confluence.adapter.out;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.lang.reflect.Method;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import pro.softcom.sentinelle.domain.confluence.AttachmentInfo;
+import pro.softcom.sentinelle.infrastructure.document.config.TextQualityThresholds;
+import pro.softcom.sentinelle.infrastructure.document.validator.TextQualityValidator;
 
-@DisplayName("TikaAttachmentTextExtractorAdapter - Image-Only Detection")
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Integration tests for TikaAttachmentTextExtractorAdapter.
+ * <p>
+ * Tests the complete flow: Tika extraction + TextQualityValidator validation.
+ */
+@DisplayName("TikaAttachmentTextExtractorAdapter - Integration")
 class TikaAttachmentTextExtractorAdapterTest {
 
-    private final TikaAttachmentTextExtractorAdapter adapter = new TikaAttachmentTextExtractorAdapter();
+    private TikaAttachmentTextExtractorAdapter adapter;
 
-    @Test
-    @DisplayName("Should detect null or blank text as image-only")
-    void Should_ReturnTrue_When_TextIsNullOrBlank() throws Exception {
-        assertThat(invokeLooksImageOnly(null)).isTrue();
-        assertThat(invokeLooksImageOnly("")).isTrue();
-        assertThat(invokeLooksImageOnly("   ")).isTrue();
-        assertThat(invokeLooksImageOnly("\t\n")).isTrue();
+    @BeforeEach
+    void setUp() {
+        // Given
+        TextQualityThresholds thresholds = new TextQualityThresholds();
+        TextQualityValidator validator = new TextQualityValidator(thresholds);
+        adapter = new TikaAttachmentTextExtractorAdapter(validator);
     }
 
     @Test
-    @DisplayName("Should detect very short text as image-only")
-    void Should_ReturnTrue_When_TextTooShort() throws Exception {
-        assertThat(invokeLooksImageOnly("abc")).isTrue();
-        assertThat(invokeLooksImageOnly("Short text")).isTrue();
-        assertThat(invokeLooksImageOnly("12345678901234567890")).isTrue(); // < 50 chars
+    @DisplayName("Should_SupportExtractableAttachments_When_PdfFile")
+    void Should_SupportExtractableAttachments_When_PdfFile() {
+        // Given
+        AttachmentInfo pdfAttachment = createAttachment("document.pdf", "pdf");
+
+        // When
+        boolean supports = adapter.supports(pdfAttachment);
+
+        // Then
+        assertThat(supports).isTrue();
     }
 
     @Test
-    @DisplayName("Should detect text with low alphanumeric ratio as image-only")
-    void Should_ReturnTrue_When_LowAlphanumericRatio() throws Exception {
-        // Text with lots of special chars, very few letters/digits
+    @DisplayName("Should_NotSupportNonExtractableAttachments_When_ImageFile")
+    void Should_NotSupportNonExtractableAttachments_When_ImageFile() {
+        // Given
+        AttachmentInfo imageAttachment = createAttachment("photo.jpg", "jpg");
+
+        // When
+        boolean supports = adapter.supports(imageAttachment);
+
+        // Then
+        assertThat(supports).isFalse();
+    }
+
+    @Test
+    @DisplayName("Should_ReturnEmpty_When_BytesNull")
+    void Should_ReturnEmpty_When_BytesNull() {
+        // Given
+        AttachmentInfo attachment = createAttachment("doc.pdf", "pdf");
+
+        // When
+        Optional<String> result = adapter.extract(attachment, null);
+
+        // Then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Should_ReturnEmpty_When_BytesEmpty")
+    void Should_ReturnEmpty_When_BytesEmpty() {
+        // Given
+        AttachmentInfo attachment = createAttachment("doc.pdf", "pdf");
+        byte[] emptyBytes = new byte[0];
+
+        // When
+        Optional<String> result = adapter.extract(attachment, emptyBytes);
+
+        // Then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Should_ExtractText_When_PlainTextContent")
+    void Should_ExtractText_When_PlainTextContent() {
+        // Given
+        AttachmentInfo attachment = createAttachment("document.txt", "txt");
+        String validText = "This is a valid text document with enough content to pass validation. " +
+                "It contains proper spacing and sufficient alphanumeric characters.";
+        byte[] bytes = validText.getBytes(StandardCharsets.UTF_8);
+
+        // When
+        Optional<String> result = adapter.extract(attachment, bytes);
+
+        // Then
+        assertThat(result)
+                .isPresent()
+                .get()
+                .asString()
+                .contains("valid text document");
+    }
+
+    @Test
+    @DisplayName("Should_ReturnEmpty_When_TextTooShort")
+    void Should_ReturnEmpty_When_TextTooShort() {
+        // Given
+        AttachmentInfo attachment = createAttachment("short.txt", "txt");
+        String shortText = "Too short";
+        byte[] bytes = shortText.getBytes(StandardCharsets.UTF_8);
+
+        // When
+        Optional<String> result = adapter.extract(attachment, bytes);
+
+        // Then - Validation should reject it
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Should_ReturnEmpty_When_TextHasLowAlphanumericRatio")
+    void Should_ReturnEmpty_When_TextHasLowAlphanumericRatio() {
+        // Given
+        AttachmentInfo attachment = createAttachment("corrupted.txt", "txt");
         String corruptedText = "!!!@@@###$$$%%%^^^&&&***((()))____----====++++||||\\\\\\///...";
-        assertThat(invokeLooksImageOnly(corruptedText)).isTrue();
+        byte[] bytes = corruptedText.getBytes(StandardCharsets.UTF_8);
+
+        // When
+        Optional<String> result = adapter.extract(attachment, bytes);
+
+        // Then - Validation should reject it
+        assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("Should detect text without spaces as image-only")
-    void Should_ReturnTrue_When_NoProperSpacing() throws Exception {
-        // Long text without spaces (OCR failure pattern) - needs to be longer to trigger rule
-        String noSpaceText = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890" +
-                            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890" +
-                            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        assertThat(invokeLooksImageOnly(noSpaceText)).isTrue();
+    @DisplayName("Should_ReturnEmpty_When_ExtractionFails")
+    void Should_ReturnEmpty_When_ExtractionFails() {
+        // Given
+        AttachmentInfo attachment = createAttachment("invalid.pdf", "pdf");
+        byte[] invalidBytes = "This is not a valid PDF".getBytes(StandardCharsets.UTF_8);
+
+        // When
+        Optional<String> result = adapter.extract(attachment, invalidBytes);
+
+        // Then - Tika should fail to parse and return empty
+        assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("Should detect text with excessive special characters as image-only")
-    void Should_ReturnTrue_When_ExcessiveSpecialChars() throws Exception {
-        // More than 40% special chars suggests OCR artifacts
-        // Need to ensure special chars are > 40% of total
-        String artifactText = "txt!!@@##$$%%^^&&**(())__--==++||\\///...txt!!@@##$$%%^^&&**(())__--==++||\\///";
-        assertThat(invokeLooksImageOnly(artifactText)).isTrue();
+    @DisplayName("Should_BeAnnotatedAsComponent_When_ClassDefined")
+    void Should_BeAnnotatedAsComponent_When_ClassDefined() {
+        // Given & When & Then
+        assertThat(TikaAttachmentTextExtractorAdapter.class)
+                .hasAnnotation(org.springframework.stereotype.Component.class);
     }
 
     @Test
-    @DisplayName("Should detect text with many control characters as image-only")
-    void Should_ReturnTrue_When_ManyControlCharacters() throws Exception {
-        // Text with non-printable characters (< 80% printable)
-        String controlCharsText = "Some text\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u000B\u000C\u000E\u000F";
-        assertThat(invokeLooksImageOnly(controlCharsText)).isTrue();
+    @DisplayName("Should_ImplementStrategy_When_ClassDefined")
+    void Should_ImplementStrategy_When_ClassDefined() {
+        // Given & When & Then
+        assertThat(AttachmentTextExtractionStrategy.class)
+                .isAssignableFrom(TikaAttachmentTextExtractorAdapter.class);
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "This is a normal text document with proper sentences and spacing. It contains enough text to be considered valid.",
-        "Ceci est un document en français avec des accents éèêë et des caractères spéciaux. Il contient suffisamment de texte.",
-        "Dies ist ein deutscher Text mit Umlauten äöü und ß. Er enthält genügend Text um als gültig zu gelten.",
-        "This document contains numbers 123456 and punctuation! But it's still valid, readable text with good structure."
-    })
-    @DisplayName("Should not detect valid text as image-only")
-    void Should_ReturnFalse_When_ValidText(String validText) throws Exception {
-        assertThat(invokeLooksImageOnly(validText)).isFalse();
-    }
-
-    @Test
-    @DisplayName("Should not detect technical text with some special chars as image-only")
-    void Should_ReturnFalse_When_TechnicalTextWithSpecialChars() throws Exception {
-        String technicalText = "The configuration file uses JSON format: {\"key\": \"value\", \"number\": 42}. " +
-                              "This is normal for technical documentation and should not be skipped.";
-        assertThat(invokeLooksImageOnly(technicalText)).isFalse();
-    }
-
-    @Test
-    @DisplayName("Should not detect text with URLs and emails as image-only")
-    void Should_ReturnFalse_When_TextWithUrlsAndEmails() throws Exception {
-        String textWithLinks = "Contact us at support@example.com or visit our website https://example.com " +
-                              "for more information about our products and services.";
-        assertThat(invokeLooksImageOnly(textWithLinks)).isFalse();
-    }
-
-    @Test
-    @DisplayName("Should not detect list with bullets as image-only")
-    void Should_ReturnFalse_When_ListWithBullets() throws Exception {
-        String listText = "Important points:\n• First item in the list\n• Second item with details\n" +
-                         "• Third item with more information\nAll items are important.";
-        assertThat(invokeLooksImageOnly(listText)).isFalse();
-    }
-
-    /**
-     * Helper method to invoke private looksImageOnly method via reflection for testing.
-     */
-    private boolean invokeLooksImageOnly(String text) throws Exception {
-        Method method = TikaAttachmentTextExtractorAdapter.class.getDeclaredMethod("looksImageOnly", String.class);
-        method.setAccessible(true);
-        return (boolean) method.invoke(null, text);
+    private AttachmentInfo createAttachment(String name, String extension) {
+        return new AttachmentInfo(name, extension, "application/octet-stream", "http://test");
     }
 }

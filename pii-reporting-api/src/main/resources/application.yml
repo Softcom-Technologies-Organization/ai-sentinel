@@ -118,3 +118,33 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     operations-sorter: method
+
+# Document Text Validation Configuration
+# Configurable thresholds for detecting valid human-readable text
+# versus corrupted, scanned, or image-only content
+# Independent of extraction tool (Tika, PDFBox, etc.) - focuses on text quality
+document:
+  text-quality:
+    # Minimum text length (in characters) to consider as valid text
+    # Documents with less text are considered image-only or OCR garbage
+    min-text-length: 50
+    
+    # Minimum ratio of alphanumeric characters (0.0 to 1.0)
+    # Text with less than this ratio is considered corrupted
+    min-alphanumeric-ratio: 0.05  # 5%
+    
+    # Minimum ratio of spaces for text longer than min-length-for-space-check
+    # Natural text contains roughly 12-20% spaces
+    min-space-ratio: 0.02  # 2%
+    
+    # Minimum ratio of printable characters (0.0 to 1.0)
+    # Text with many control characters is likely corrupted
+    min-printable-ratio: 0.80  # 80%
+    
+    # Maximum ratio of special characters (0.0 to 1.0)
+    # Excessive special characters suggest OCR artifacts
+    max-special-char-ratio: 0.40  # 40%
+    
+    # Minimum text length to apply space ratio check
+    # Space ratio check is only meaningful for longer texts
+    min-length-for-space-check: 100

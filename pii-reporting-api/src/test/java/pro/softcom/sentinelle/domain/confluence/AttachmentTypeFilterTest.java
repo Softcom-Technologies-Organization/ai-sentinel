@@ -16,21 +16,12 @@ class AttachmentTypeFilterTest {
     @ParameterizedTest
     @ValueSource(strings = {
             "pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "rtf", "txt",
-            "csv", "odt", "ods", "odp", "html", "htm"
+            "csv", "odt", "ods", "odp", "html", "htm",
+            // should be case-insensitive
+            "PDF", "Docx", "TXT"
     })
     @DisplayName("Should return true when extension is supported")
     void Should_ReturnTrue_When_ExtensionIsSupported(String extension) {
-        // Given
-        AttachmentInfo attachment = createAttachment(extension);
-
-        // When & Then
-        assertThat(AttachmentTypeFilter.isExtractable(attachment)).isTrue();
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"PDF", "Docx", "TXT"})
-    @DisplayName("Should be case insensitive")
-    void Should_ReturnTrue_When_ExtensionDifferentCase(String extension) {
         // Given
         AttachmentInfo attachment = createAttachment(extension);
 

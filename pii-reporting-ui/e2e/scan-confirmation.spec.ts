@@ -1,5 +1,6 @@
 import {expect, test} from '@playwright/test';
 import {TestIds} from '../src/app/features/test-ids.constants';
+import {DIALOG_SELECTORS} from './helpers/dialog-selectors';
 
 /**
  * E2E tests for scan start confirmation dialog.
@@ -7,6 +8,7 @@ import {TestIds} from '../src/app/features/test-ids.constants';
  */
 test.describe('Scan Confirmation Dialog', () => {
   const testIds = TestIds.dashboard;
+  const dialogSelectors = DIALOG_SELECTORS.confirmDialog;
 
   test.beforeEach(async ({page}) => {
     await page.goto('/');
@@ -25,19 +27,19 @@ test.describe('Scan Confirmation Dialog', () => {
     await startButton.click();
 
     // Verify confirmation dialog appears
-    const confirmDialog = page.locator('.p-confirmdialog');
+    const confirmDialog = page.locator(dialogSelectors.container);
     await expect(confirmDialog).toBeVisible({timeout: 5000});
 
     // Verify dialog content is present
-    const dialogHeader = confirmDialog.locator('.p-dialog-title');
+    const dialogHeader = confirmDialog.locator(dialogSelectors.header);
     await expect(dialogHeader).toBeVisible();
 
-    const dialogMessage = confirmDialog.locator('.p-confirmdialog-message');
+    const dialogMessage = confirmDialog.locator(dialogSelectors.message);
     await expect(dialogMessage).toBeVisible();
 
     // Verify both action buttons are present
-    const acceptButton = confirmDialog.locator('button').filter({hasText: /démarrer/i});
-    const rejectButton = confirmDialog.locator('button').filter({hasText: /annuler/i});
+    const acceptButton = confirmDialog.locator(dialogSelectors.acceptButton);
+    const rejectButton = confirmDialog.locator(dialogSelectors.rejectButton);
     await expect(acceptButton).toBeVisible();
     await expect(rejectButton).toBeVisible();
 
@@ -61,11 +63,11 @@ test.describe('Scan Confirmation Dialog', () => {
     await startButton.click();
 
     // Wait for confirmation dialog
-    const confirmDialog = page.locator('.p-confirmdialog');
+    const confirmDialog = page.locator(dialogSelectors.container);
     await expect(confirmDialog).toBeVisible({timeout: 5000});
 
     // Reject the confirmation
-    const rejectButton = confirmDialog.locator('button').filter({hasText: /annuler/i});
+    const rejectButton = confirmDialog.locator(dialogSelectors.rejectButton);
     await rejectButton.click();
 
     // Verify dialog closes
@@ -94,11 +96,11 @@ test.describe('Scan Confirmation Dialog', () => {
     await startButton.click();
 
     // Wait for confirmation dialog
-    const confirmDialog = page.locator('.p-confirmdialog');
+    const confirmDialog = page.locator(dialogSelectors.container);
     await expect(confirmDialog).toBeVisible({timeout: 5000});
 
     // Accept the confirmation
-    const acceptButton = confirmDialog.locator('button').filter({hasText: /démarrer/i});
+    const acceptButton = confirmDialog.locator(dialogSelectors.acceptButton);
     await acceptButton.click();
 
     // Verify dialog closes

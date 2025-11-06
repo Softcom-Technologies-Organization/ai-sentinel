@@ -3,7 +3,6 @@ package pro.softcom.sentinelle.application.confluence.service;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
@@ -63,7 +62,6 @@ public class SpaceUpdateInfoService implements GetSpaceUpdateInfoUseCase {
     /**
      * Builds SpaceUpdateInfo by comparing space's last modification with its last scan date.
      * Uses CQL Content Search API to find the most recent page modification in the space.
-     * 
      * Business logic:
      * - If no scan exists: hasBeenUpdated = false (nothing to compare against)
      * - If no modifications found via CQL: hasBeenUpdated = false (unable to determine)
@@ -74,7 +72,7 @@ public class SpaceUpdateInfoService implements GetSpaceUpdateInfoUseCase {
         String spaceKey = space.key();
         String spaceName = space.name();
 
-        Optional<Instant> lastScanDate = findLastCompletedScanDate(spaceKey);
+        Optional<Instant> lastScanDate = findLastScanDate(spaceKey);
 
         if (lastScanDate.isEmpty()) {
             log.debug("No completed scan found for space {}", spaceKey);
@@ -131,29 +129,15 @@ public class SpaceUpdateInfoService implements GetSpaceUpdateInfoUseCase {
 
     /**
      * Finds the date of the most recent completed scan for a space.
-     * 
-     * Business rule: Only COMPLETED scans are considered, as interrupted scans
-     * may not represent a full analysis of the space.
-     * 
+     *
      * @param spaceKey The space key to search for
      * @return The date of the last completed scan, or empty if no completed scan exists
      */
-    private Optional<Instant> findLastCompletedScanDate(String spaceKey) {
+    private Optional<Instant> findLastScanDate(String spaceKey) {
         try {
-            // Note: This retrieves ALL scan checkpoints for the space across all scans
-            // In a real implementation, we might want to add a query to get only the latest
-            // completed checkpoint per space, for better performance
-            List<ScanCheckpoint> checkpoints = scanCheckpointRepository.findBySpace(spaceKey);
-
-            //FIXME need to decide what scan status needs to be filtered out
-            return checkpoints.stream()
-                .filter(Objects::nonNull)
-                .filter(checkpoint -> checkpoint.spaceKey() != null && checkpoint.spaceKey().equals(spaceKey))
+            return scanCheckpointRepository.findLatestBySpace(spaceKey)
                 .map(ScanCheckpoint::updatedAt)
-                .filter(Objects::nonNull)
-                .map(localDateTime -> localDateTime.atZone(ZoneId.systemDefault()).toInstant())
-                .max(Instant::compareTo);
-                
+                .map(localDateTime -> localDateTime.atZone(ZoneId.systemDefault()).toInstant());
         } catch (Exception e) {
             log.warn("Error retrieving scan checkpoint for space {}: {}", spaceKey, e.getMessage());
             return Optional.empty();

@@ -12,6 +12,7 @@ import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
+import pro.softcom.sentinelle.infrastructure.config.ScanTimeoutConfig;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -28,8 +29,9 @@ public class StreamConfluenceScanUseCaseImpl extends AbstractStreamConfluenceSca
         ConfluenceAccessor confluenceAccessor,
         PiiDetectorClient piiDetectorClient,
         ScanOrchestrator scanOrchestrator,
-        AttachmentProcessor attachmentProcessor) {
-        super(confluenceAccessor, piiDetectorClient, scanOrchestrator, attachmentProcessor);
+        AttachmentProcessor attachmentProcessor,
+        ScanTimeoutConfig scanTimeoutConfig) {
+        super(confluenceAccessor, piiDetectorClient, scanOrchestrator, attachmentProcessor, scanTimeoutConfig);
     }
 
     /**

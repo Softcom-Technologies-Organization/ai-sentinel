@@ -15,6 +15,7 @@ import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanRemainingPages;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResumeRemainingPagesCalculator;
+import pro.softcom.sentinelle.infrastructure.config.ScanTimeoutConfig;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -34,8 +35,9 @@ public class StreamConfluenceResumeScanUseCaseImpl extends
         PiiDetectorClient piiDetectorClient,
         ScanOrchestrator scanOrchestrator,
         AttachmentProcessor attachmentProcessor,
-        ScanCheckpointRepository scanCheckpointRepository) {
-        super(confluenceAccessor, piiDetectorClient, scanOrchestrator, attachmentProcessor);
+        ScanCheckpointRepository scanCheckpointRepository,
+        ScanTimeoutConfig scanTimeoutConfig) {
+        super(confluenceAccessor, piiDetectorClient, scanOrchestrator, attachmentProcessor, scanTimeoutConfig);
         this.scanCheckpointRepository = scanCheckpointRepository;
     }
 

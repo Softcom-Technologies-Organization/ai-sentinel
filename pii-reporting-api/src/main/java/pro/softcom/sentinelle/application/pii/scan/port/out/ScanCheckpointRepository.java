@@ -44,6 +44,15 @@ public interface ScanCheckpointRepository {
     List<ScanCheckpoint> findBySpace(String spaceKey);
 
     /**
+     * Finds the most recent checkpoint for a given space across all scans.
+     * Business purpose: Determine the last scan date for a space to check if it needs re-scanning.
+     *
+     * @param spaceKey the business key of the space
+     * @return the most recent checkpoint if present, otherwise empty
+     */
+    Optional<ScanCheckpoint> findLatestBySpace(String spaceKey);
+
+    /**
      * Deletes all checkpoints for the given scan.
      *
      * @param scanId the business identifier of the scan

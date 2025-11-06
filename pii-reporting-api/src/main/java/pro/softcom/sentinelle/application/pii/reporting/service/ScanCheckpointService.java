@@ -19,6 +19,8 @@ public class ScanCheckpointService {
 
     /**
      * Persists checkpoint based on scan event.
+     * Protected against thread interruptions to ensure checkpoint persistence
+     * even when SSE client disconnects.
      *
      * @param scanResult the scan event to persist
      */
@@ -27,7 +29,14 @@ public class ScanCheckpointService {
             return;
         }
 
+        boolean wasInterrupted = false;
         try {
+            // Clear interruption flag to allow DB operation to proceed
+            if (Thread.interrupted()) {
+                wasInterrupted = true;
+                log.debug("[CHECKPOINT] Thread interrupted, clearing flag to persist checkpoint");
+            }
+            
             ScanCheckpoint checkpoint = buildCheckpoint(scanResult);
             if (checkpoint != null) {
                 scanCheckpointRepository.save(checkpoint);
@@ -35,6 +44,12 @@ public class ScanCheckpointService {
             }
         } catch (Exception exception) {
             log.warn("[CHECKPOINT] Unable to persist checkpoint: {}", exception.getMessage());
+        } finally {
+            // Restore interruption flag if it was set
+            if (wasInterrupted) {
+                Thread.currentThread().interrupt();
+                log.debug("[CHECKPOINT] Restored thread interrupt flag after checkpoint persistence");
+            }
         }
     }
 

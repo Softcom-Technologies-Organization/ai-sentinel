@@ -30,7 +30,6 @@ import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
 
 /**
  * Unit tests for SpaceUpdateInfoService.
- * 
  * Business validation: Ensures the service correctly determines if spaces have been updated
  * since their last scan by comparing modification dates.
  */
@@ -60,8 +59,6 @@ class SpaceUpdateInfoServiceTest {
         
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
-        when(scanCheckpointRepository.findBySpace(anyString()))
-            .thenReturn(List.of());
 
         // When
         List<SpaceUpdateInfo> result = service.getAllSpacesUpdateInfo().join();
@@ -78,7 +75,7 @@ class SpaceUpdateInfoServiceTest {
         });
         
         verify(confluenceUseCase).getAllSpaces();
-        verify(scanCheckpointRepository).findBySpace("TEST");
+        verify(scanCheckpointRepository).findLatestBySpace("TEST");
     }
 
     @Test
@@ -92,8 +89,8 @@ class SpaceUpdateInfoServiceTest {
         
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
-        when(scanCheckpointRepository.findBySpace(anyString()))
-            .thenReturn(List.of(checkpoint));
+        when(scanCheckpointRepository.findLatestBySpace(anyString()))
+            .thenReturn(Optional.of(checkpoint));
         when(confluenceClient.getModifiedPagesSince(anyString(), any(Instant.class)))
             .thenReturn(CompletableFuture.completedFuture(List.of()));
 
@@ -122,8 +119,8 @@ class SpaceUpdateInfoServiceTest {
         
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
-        when(scanCheckpointRepository.findBySpace(anyString()))
-            .thenReturn(List.of(checkpoint));
+        when(scanCheckpointRepository.findLatestBySpace(anyString()))
+            .thenReturn(Optional.of(checkpoint));
         when(confluenceClient.getModifiedPagesSince(anyString(), any(Instant.class)))
             .thenReturn(CompletableFuture.completedFuture(List.of(
                 new ModifiedPageInfo("1", "Updated Page", lastModified)
@@ -150,14 +147,10 @@ class SpaceUpdateInfoServiceTest {
     void Should_ReturnNoUpdates_When_LastModifiedIsNull() {
         // Given - A space with no lastModified date
         ConfluenceSpace space = createSpace("TEST", "Test Space", null);
-        ScanCheckpoint checkpoint = createCheckpoint("TEST", Instant.now(), ScanStatus.COMPLETED);
+        createCheckpoint("TEST", Instant.now(), ScanStatus.COMPLETED);
         
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
-        when(scanCheckpointRepository.findBySpace(anyString()))
-            .thenReturn(List.of(checkpoint));
-        when(confluenceClient.getModifiedPagesSince(anyString(), any(Instant.class)))
-            .thenReturn(CompletableFuture.completedFuture(List.of()));
 
         // When
         List<SpaceUpdateInfo> result = service.getAllSpacesUpdateInfo().join();
@@ -179,8 +172,6 @@ class SpaceUpdateInfoServiceTest {
         
         when(confluenceUseCase.getSpace(spaceKey))
             .thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
-        when(scanCheckpointRepository.findBySpace(anyString()))
-            .thenReturn(List.of());
 
         // When
         Optional<SpaceUpdateInfo> result = service.getSpaceUpdateInfo(spaceKey).join();
@@ -210,18 +201,16 @@ class SpaceUpdateInfoServiceTest {
     @Test
     void Should_UseLatestCompletedScan_When_MultipleCompletedScansExist() {
         // Given - Multiple completed scans, should use the most recent
-        Instant olderScanDate = Instant.now().minus(20, ChronoUnit.DAYS);
         Instant newerScanDate = Instant.now().minus(10, ChronoUnit.DAYS);
         Instant lastModified = Instant.now().minus(5, ChronoUnit.DAYS);
         
         ConfluenceSpace space = createSpace("TEST", "Test Space", lastModified);
-        ScanCheckpoint olderCheckpoint = createCheckpoint("TEST", olderScanDate, ScanStatus.COMPLETED);
         ScanCheckpoint newerCheckpoint = createCheckpoint("TEST", newerScanDate, ScanStatus.COMPLETED);
         
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
-        when(scanCheckpointRepository.findBySpace(anyString()))
-            .thenReturn(List.of(olderCheckpoint, newerCheckpoint));
+        when(scanCheckpointRepository.findLatestBySpace(anyString()))
+            .thenReturn(Optional.of(newerCheckpoint));
         when(confluenceClient.getModifiedPagesSince(anyString(), any(Instant.class)))
             .thenReturn(CompletableFuture.completedFuture(List.of(
                 new ModifiedPageInfo("1", "Updated Page", lastModified)

@@ -26,6 +26,14 @@ public class ReactorErrorHandlerConfig {
                 return;
             }
             
+            // Handle CompletionException wrapping CancellationException (HTTP client cancellations)
+            if (throwable instanceof java.util.concurrent.CompletionException ce && 
+                ce.getCause() instanceof CancellationException) {
+                log.debug("HTTP request cancelled (CompletionException wrapping CancellationException): {}", 
+                          throwable.getMessage());
+                return;
+            }
+            
             // gRPC CANCELLED errors are normal when threads are interrupted during shutdown
             if (throwable instanceof StatusRuntimeException sre && 
                 sre.getStatus().getCode() == Status.Code.CANCELLED) {

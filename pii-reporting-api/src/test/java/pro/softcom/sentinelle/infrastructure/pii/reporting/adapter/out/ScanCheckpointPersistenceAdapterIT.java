@@ -51,7 +51,7 @@ class ScanCheckpointPersistenceAdapterIT {
     private EntityManager em;
 
     @Autowired
-    private ScanCheckpointPersistenceAdapter adapter;
+    private ScanCheckpointPersistenceAdapter scanCheckpointPersistenceAdapter;
 
     @BeforeEach
     void cleanDb() {
@@ -72,7 +72,7 @@ class ScanCheckpointPersistenceAdapterIT {
             .updatedAt(ts)
             .build();
 
-        adapter.save(cp);
+        scanCheckpointPersistenceAdapter.save(cp);
 
         var saved = jpaRepository.findByScanIdAndSpaceKey("scan-10", "SPACE-A");
         assertThat(saved).isPresent();
@@ -111,7 +111,7 @@ class ScanCheckpointPersistenceAdapterIT {
             .updatedAt(LocalDateTime.of(2024, 1, 1, 11, 0))
             .build();
 
-        adapter.save(incoming);
+        scanCheckpointPersistenceAdapter.save(incoming);
 
         var after = jpaRepository.findByScanIdAndSpaceKey("scan-11", "SPACE-A").orElseThrow();
         SoftAssertions softly = new SoftAssertions();
@@ -136,7 +136,7 @@ class ScanCheckpointPersistenceAdapterIT {
         em.persist(entity);
         em.flush();
 
-        var opt = adapter.findByScanAndSpace("scan-12", "SPACE-B");
+        var opt = scanCheckpointPersistenceAdapter.findByScanAndSpace("scan-12", "SPACE-B");
         assertThat(opt).isPresent();
         var cp = opt.orElseThrow();
         SoftAssertions softly = new SoftAssertions();
@@ -166,7 +166,7 @@ class ScanCheckpointPersistenceAdapterIT {
         em.persist(e1);
         em.flush();
 
-        var list = adapter.findByScan("scan-13");
+        var list = scanCheckpointPersistenceAdapter.findByScan("scan-13");
         assertThat(list).hasSize(2);
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(list.get(0).spaceKey()).isEqualTo("A");
@@ -195,7 +195,7 @@ class ScanCheckpointPersistenceAdapterIT {
         em.persist(newer);
         em.flush();
 
-        var list = adapter.findBySpace("SPACE-C");
+        var list = scanCheckpointPersistenceAdapter.findBySpace("SPACE-C");
         assertThat(list).extracting(ScanCheckpoint::scanId).isEqualTo(List.of("scan-14-1", "scan-14-2"));
         assertThat(list).extracting(ScanCheckpoint::scanStatus).containsExactly(ScanStatus.RUNNING, ScanStatus.FAILED);
     }
@@ -210,7 +210,7 @@ class ScanCheckpointPersistenceAdapterIT {
         em.persist(eOther);
         em.flush();
 
-        adapter.deleteByScan("scan-15");
+        scanCheckpointPersistenceAdapter.deleteByScan("scan-15");
 
         var remainingForScan = jpaRepository.findByScanIdOrderBySpaceKey("scan-15");
         var remainingOthers = jpaRepository.findByScanIdOrderBySpaceKey("other");

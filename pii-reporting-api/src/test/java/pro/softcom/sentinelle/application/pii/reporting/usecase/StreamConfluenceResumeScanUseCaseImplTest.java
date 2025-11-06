@@ -36,6 +36,7 @@ import pro.softcom.sentinelle.domain.pii.ScanStatus;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.domain.pii.scan.ContentPiiDetection;
+import pro.softcom.sentinelle.infrastructure.config.ScanTimeoutConfig;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.JpaScanEventStoreAdapter;
 import reactor.core.publisher.Flux;
@@ -64,6 +65,9 @@ class StreamConfluenceResumeScanUseCaseImplTest {
 
     @Mock
     private JpaScanEventStoreAdapter jpaScanEventStoreAdapter;
+
+    @Mock
+    private ScanTimeoutConfig scanTimeoutConfig;
 
     private StreamConfluenceResumeScanUseCase streamConfluenceResumeScanUseCase;
 
@@ -100,7 +104,8 @@ class StreamConfluenceResumeScanUseCaseImplTest {
                 piiDetectorClient,
                 scanOrchestrator,
                 attachmentProcessor,
-                scanCheckpointRepository
+                scanCheckpointRepository,
+                scanTimeoutConfig
         );
     }
 

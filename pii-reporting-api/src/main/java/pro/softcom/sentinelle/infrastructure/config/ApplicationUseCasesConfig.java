@@ -91,12 +91,14 @@ public class ApplicationUseCasesConfig {
             ConfluenceAccessor confluenceAccessor,
             PiiDetectorClient piiDetectorClient,
             ScanOrchestrator scanOrchestrator,
-            AttachmentProcessor attachmentProcessor) {
+            AttachmentProcessor attachmentProcessor,
+            ScanTimeoutConfig scanTimeoutConfig) {
         return new StreamConfluenceScanUseCaseImpl(
                 confluenceAccessor,
                 piiDetectorClient,
                 scanOrchestrator,
-                attachmentProcessor
+                attachmentProcessor,
+                scanTimeoutConfig
         );
     }
 
@@ -106,13 +108,15 @@ public class ApplicationUseCasesConfig {
             PiiDetectorClient piiDetectorClient,
             ScanOrchestrator scanOrchestrator,
             AttachmentProcessor attachmentProcessor,
-            ScanCheckpointRepository scanCheckpointRepository) {
+            ScanCheckpointRepository scanCheckpointRepository,
+            ScanTimeoutConfig scanTimeoutConfig) {
         return new StreamConfluenceResumeScanUseCaseImpl(
                 confluenceAccessor,
                 piiDetectorClient,
                 scanOrchestrator,
                 attachmentProcessor,
-                scanCheckpointRepository
+                scanCheckpointRepository,
+                scanTimeoutConfig
         );
     }
 

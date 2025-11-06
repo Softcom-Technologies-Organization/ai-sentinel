@@ -14,6 +14,7 @@ import java.lang.reflect.Field;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -28,7 +29,6 @@ import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.domain.confluence.ModifiedAttachmentInfo;
 import pro.softcom.sentinelle.domain.confluence.ModifiedPageInfo;
-import java.time.Instant;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.config.ConfluenceConfig;
 
 /**
@@ -1081,6 +1081,90 @@ class ConfluenceHttpClientAdapterTest {
 
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(attachments).isEmpty();
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_LogErrorAndSkipEntry_When_DateParsingFails() throws Exception {
+        var r = mock(HttpResponse.class);
+        when(r.statusCode()).thenReturn(200);
+        
+        // Create JSON with invalid date format
+        String json = createCqlModifiedPagesJson(
+            pageResultNode("p1", "Valid Page", "page", "2025-01-02T03:04:05Z", null),
+            pageResultNode("p2", "Invalid Date Page", "page", "not-a-valid-date", null),
+            pageResultNode("p3", "Another Valid Page", "page", "2025-01-03T04:05:06Z", null)
+        );
+        when(r.body()).thenReturn(json);
+        when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+            .thenReturn(CompletableFuture.completedFuture(r));
+
+        List<ModifiedPageInfo> pages = confluenceService
+            .getModifiedPagesSince("TEST", Instant.parse("2025-01-01T00:00:00Z")).get();
+
+        // Should return only pages with valid dates, skipping the one with invalid date
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(pages).hasSize(2);
+        softly.assertThat(pages.get(0).pageId()).isEqualTo("p1");
+        softly.assertThat(pages.get(0).title()).isEqualTo("Valid Page");
+        softly.assertThat(pages.get(0).lastModified()).isEqualTo(Instant.parse("2025-01-02T03:04:05Z"));
+        softly.assertThat(pages.get(1).pageId()).isEqualTo("p3");
+        softly.assertThat(pages.get(1).title()).isEqualTo("Another Valid Page");
+        softly.assertThat(pages.get(1).lastModified()).isEqualTo(Instant.parse("2025-01-03T04:05:06Z"));
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_LogErrorAndSkipAttachment_When_AttachmentDateParsingFails() throws Exception {
+        var r = mock(HttpResponse.class);
+        when(r.statusCode()).thenReturn(200);
+        
+        // Create JSON with invalid date format for attachments
+        String json = createCqlModifiedAttachmentsJson(
+            pageResultNode("att1", "Valid.pdf", "attachment", "2025-04-01T00:00:00Z", null),
+            pageResultNode("att2", "Invalid.pdf", "attachment", "invalid-date-format", null),
+            pageResultNode("att3", "Another Valid.pdf", "attachment", "2025-04-02T01:02:03Z", null)
+        );
+        when(r.body()).thenReturn(json);
+        when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+            .thenReturn(CompletableFuture.completedFuture(r));
+
+        List<ModifiedAttachmentInfo> attachments = confluenceService
+            .getModifiedAttachmentsSince("TEST", Instant.parse("2025-03-01T00:00:00Z")).get();
+
+        // Should return only attachments with valid dates, skipping the one with invalid date
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(attachments).hasSize(2);
+        softly.assertThat(attachments.get(0).attachmentId()).isEqualTo("att1");
+        softly.assertThat(attachments.get(0).title()).isEqualTo("Valid.pdf");
+        softly.assertThat(attachments.get(0).lastModified()).isEqualTo(Instant.parse("2025-04-01T00:00:00Z"));
+        softly.assertThat(attachments.get(1).attachmentId()).isEqualTo("att3");
+        softly.assertThat(attachments.get(1).title()).isEqualTo("Another Valid.pdf");
+        softly.assertThat(attachments.get(1).lastModified()).isEqualTo(Instant.parse("2025-04-02T01:02:03Z"));
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_UseHistoryFallback_When_VersionDateInvalid() throws Exception {
+        var r = mock(HttpResponse.class);
+        when(r.statusCode()).thenReturn(200);
+        
+        // Page with invalid version.when but valid history.lastUpdated.when
+        String json = createCqlModifiedPagesJson(
+            pageResultNode("p1", "Fallback Page", "page", "bad-format", "2025-02-01T10:00:00Z")
+        );
+        when(r.body()).thenReturn(json);
+        when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+            .thenReturn(CompletableFuture.completedFuture(r));
+
+        List<ModifiedPageInfo> pages = confluenceService
+            .getModifiedPagesSince("TEST", Instant.parse("2025-01-01T00:00:00Z")).get();
+
+        // Should fallback to history date when version date is invalid
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(pages).hasSize(1);
+        softly.assertThat(pages.get(0).pageId()).isEqualTo("p1");
+        softly.assertThat(pages.get(0).lastModified()).isEqualTo(Instant.parse("2025-02-01T10:00:00Z"));
         softly.assertAll();
     }
 }

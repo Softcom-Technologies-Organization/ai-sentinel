@@ -439,12 +439,18 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
         return buildGetRequest(uri);
     }
 
+    //TODO: refactor this method to reduce cyclomatic complexity between 5 and 7
     private Instant extractPageModificationDate(JsonNode page) {
         // Try version.when first (most reliable)
         if (page.has("version")) {
             var version = page.get("version");
             if (version.has("when")) {
-                return parseInstant(version.get("when").asText());
+                try {
+                    return parseInstant(version.get("when").asText());
+                } catch (ConfluenceDateParseException e) {
+                    log.error("Failed to parse modification date from version.when field in Confluence response. " +
+                                  "Will attempt fallback to history.lastUpdated.when", e);
+                }
             }
         }
 
@@ -454,7 +460,13 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
             if (history.has("lastUpdated")) {
                 var lastUpdated = history.get("lastUpdated");
                 if (lastUpdated.has("when")) {
-                    return parseInstant(lastUpdated.get("when").asText());
+                    try {
+                        return parseInstant(lastUpdated.get("when").asText());
+                    } catch (ConfluenceDateParseException e) {
+                        log.error("Failed to parse modification date from history.lastUpdated.when field in Confluence response. " +
+                                      "Entry will be ignored. This may indicate a change in the API format.", e);
+                        return null;
+                    }
                 }
             }
         }
@@ -465,9 +477,8 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
     private Instant parseInstant(String dateString) {
         try {
             return Instant.parse(dateString);
-        } catch (Exception _) {
-            log.warn("Failed to parse date: {}", dateString);
-            return null;
+        } catch (Exception e) {
+            throw new ConfluenceDateParseException(dateString, e);
         }
     }
 

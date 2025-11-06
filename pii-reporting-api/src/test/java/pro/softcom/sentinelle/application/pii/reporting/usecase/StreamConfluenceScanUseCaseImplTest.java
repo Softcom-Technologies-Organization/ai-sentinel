@@ -39,6 +39,7 @@ import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.domain.pii.ScanStatus;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.domain.pii.scan.ContentPiiDetection;
+import pro.softcom.sentinelle.infrastructure.config.ScanTimeoutConfig;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.JpaScanEventStoreAdapter;
 import reactor.core.publisher.Flux;
@@ -67,6 +68,9 @@ class StreamConfluenceScanUseCaseImplTest {
 
     @Mock
     private JpaScanEventStoreAdapter jpaScanEventStoreAdapter;
+
+    @Mock
+    private ScanTimeoutConfig scanTimeoutConfig;
 
     private StreamConfluenceScanUseCaseImpl streamConfluenceScanUseCase;
 
@@ -105,7 +109,8 @@ class StreamConfluenceScanUseCaseImplTest {
                 confluenceAccessor,
                 piiDetectorClient,
                 scanOrchestrator,
-                attachmentProcessor
+                attachmentProcessor,
+                scanTimeoutConfig
         );
     }
 
@@ -538,7 +543,8 @@ class StreamConfluenceScanUseCaseImplTest {
             confluenceAccessor,
             piiDetectorClient,
             scanOrchestrator,
-            attachmentProcessor
+            attachmentProcessor,
+            scanTimeoutConfig
         );
 
         String spaceKey = "S-BLANK";
@@ -603,7 +609,8 @@ class StreamConfluenceScanUseCaseImplTest {
             confluenceAccessor,
             piiDetectorClient,
             scanOrchestrator,
-            attachmentProcessor
+            attachmentProcessor,
+            scanTimeoutConfig
         );
 
         String spaceKey = "S-TRIM2";

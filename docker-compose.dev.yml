@@ -205,8 +205,9 @@ services:
     container_name: mailhog
     restart: unless-stopped
     ports:
-      - "1025:1025"  # SMTP server
-      - "8025:8025"  # Web UI
+      # SMTP server is only needed inside Docker network; not exposed to host for security
+      # - "127.0.0.1:1025:1025"  # Uncomment if you need to test SMTP from the host
+      - "127.0.0.1:8025:8025"  # Web UI (localhost only)
     networks:
       - ai-sentinel-network
 

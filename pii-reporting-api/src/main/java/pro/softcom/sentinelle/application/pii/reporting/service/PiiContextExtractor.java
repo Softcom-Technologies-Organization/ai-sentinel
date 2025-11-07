@@ -1,17 +1,15 @@
 package pro.softcom.sentinelle.application.pii.reporting.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParser;
-import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParserFactory;
-import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
-import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParser;
+import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParserFactory;
+import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
+import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 
 /**
  * Extracts a readable context around detected PII occurrences.
@@ -25,7 +23,6 @@ import java.util.Objects;
  * MAX_CONTEXT_LENGTH and CONTEXT_SIDE_LENGTH control readability and size.
  */
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class PiiContextExtractor {
 

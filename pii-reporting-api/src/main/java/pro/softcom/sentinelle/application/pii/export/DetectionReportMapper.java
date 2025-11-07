@@ -1,14 +1,11 @@
 package pro.softcom.sentinelle.application.pii.export;
 
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 import pro.softcom.sentinelle.application.pii.export.dto.DetectionReportEntry;
 import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 
-import java.util.List;
-
-@Component
 @Slf4j
 public class DetectionReportMapper {
     public List<DetectionReportEntry> toDetectionReportEntries(ScanResult scanResult) {

@@ -1,11 +1,9 @@
 package pro.softcom.sentinelle.application.pii.reporting.service.parser;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.springframework.stereotype.Component;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 /**
  * Parser for HTML content where logical lines are delimited by block-level tags.
@@ -20,7 +18,6 @@ import java.util.regex.Pattern;
  * <p>
  * Uses Jsoup to clean HTML tags and convert to readable text.
  */
-@Component
 public class HtmlContentParser implements ContentParser {
 
     /**

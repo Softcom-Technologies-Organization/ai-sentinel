@@ -1,15 +1,14 @@
 package pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa;
 
+import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanEventEntity;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanEventId;
-
-import java.time.Instant;
-import java.util.Collection;
-import java.util.List;
 
 public interface DetectionEventRepository extends
     JpaRepository<@NonNull ScanEventEntity, @NonNull ScanEventId> {
@@ -19,6 +18,8 @@ public interface DetectionEventRepository extends
 
     @Query("select count(distinct e.spaceKey) from ScanEventEntity e where e.scanId = :scanId")
     int countDistinctSpaceKeyByScanId(@Param("scanId") String scanId);
+
+    Object findByScanIdOrderByEventSeqAsc(String scanId);
 
     interface SpaceCountersProjection {
         String getSpaceKey();

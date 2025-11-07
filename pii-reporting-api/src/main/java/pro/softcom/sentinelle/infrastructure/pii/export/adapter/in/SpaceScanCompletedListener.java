@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import pro.softcom.sentinelle.application.pii.export.usecase.ExportDetectionReportUseCase;
+import pro.softcom.sentinelle.application.pii.export.port.in.ExportDetectionReportPort;
 import pro.softcom.sentinelle.domain.pii.export.SourceType;
 import pro.softcom.sentinelle.domain.pii.scan.SpaceScanCompleted;
 
@@ -17,7 +17,7 @@ import pro.softcom.sentinelle.domain.pii.scan.SpaceScanCompleted;
 @Slf4j
 public class SpaceScanCompletedListener {
 
-    private final ExportDetectionReportUseCase exportDetectionReportUseCase;
+    private final ExportDetectionReportPort exportDetectionReportPort;
 
     @EventListener
     public void onSpaceScanCompleted(SpaceScanCompleted spaceScanCompleted) {
@@ -30,7 +30,7 @@ public class SpaceScanCompletedListener {
                 spaceScanCompleted.scanId(), spaceScanCompleted.spaceKey());
 
         try {
-            exportDetectionReportUseCase.export(
+            exportDetectionReportPort.export(
                     spaceScanCompleted.scanId(),
                     SourceType.CONFLUENCE,
                     spaceScanCompleted.spaceKey()

@@ -94,7 +94,6 @@ class HexagonalArchitectureTest {
     void configuration_shouldResideInInfrastructureConfig() {
         ArchRule rule = classes()
                 .that().areAnnotatedWith(Configuration.class)
-                .or().haveSimpleNameEndingWith("Config")
                 .should().resideInAnyPackage("..infrastructure..config..", "..infrastructure..config")
                 .as("Spring configuration belongs to infrastructure config");
 

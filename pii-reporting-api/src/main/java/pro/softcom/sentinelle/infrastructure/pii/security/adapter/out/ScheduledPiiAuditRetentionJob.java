@@ -1,12 +1,14 @@
-package pro.softcom.sentinelle.application.pii.security;
+package pro.softcom.sentinelle.infrastructure.pii.security.adapter.out;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import pro.softcom.sentinelle.application.pii.security.PiiAccessAuditService;
 
 /**
+ * Infrastructure adapter for scheduled PII audit log purging.
  * Scheduled job to purge expired PII access audit logs.
  * Ensures compliance with nLPD data minimization (Art. 6).
  * <p>
@@ -16,7 +18,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "pii.audit.retention.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
-public class PiiAuditRetentionJob {
+public class ScheduledPiiAuditRetentionJob {
 
     private final PiiAccessAuditService auditService;
 

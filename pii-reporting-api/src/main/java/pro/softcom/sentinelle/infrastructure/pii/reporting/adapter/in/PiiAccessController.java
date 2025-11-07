@@ -3,20 +3,18 @@ package pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import pro.softcom.sentinelle.application.pii.reporting.config.PiiReportingProperties;
-import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanResultQuery;
-import pro.softcom.sentinelle.domain.pii.reporting.AccessPurpose;
-import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.RevealPiiSecretsPort;
 
 /**
  * REST controller for PII data access control.
@@ -29,14 +27,14 @@ import java.util.Optional;
 @Slf4j
 public class PiiAccessController {
 
-    private final PiiReportingProperties reportingProperties;
-    private final ScanResultQuery scanResultQuery;
+    private final RevealPiiSecretsPort revealPiiSecretsPort;
+    private final PageSecretsResponseMapper mapper;
 
     @GetMapping("/config/reveal-allowed")
     @Operation(summary = "Checks if secret revelation is allowed")
     @ApiResponse(responseCode = "200", description = "Configuration returned")
     public ResponseEntity<@NonNull Boolean> isRevealAllowed() {
-        return ResponseEntity.ok(reportingProperties.isAllowSecretReveal());
+        return ResponseEntity.ok(revealPiiSecretsPort.isRevealAllowed());
     }
 
     @PostMapping("/reveal-page")
@@ -44,56 +42,20 @@ public class PiiAccessController {
     @ApiResponse(responseCode = "200", description = "Secrets successfully revealed")
     @ApiResponse(responseCode = "403", description = "Revelation not authorized by configuration")
     @ApiResponse(responseCode = "404", description = "Page not found")
-    public ResponseEntity<@NonNull PageSecretsResponse> revealPageSecrets(
+    public ResponseEntity<@NonNull PageSecretsResponseDto> revealPageSecrets(
             @RequestBody PageRevealRequest request
     ) {
-        // Check configuration
-        if (!reportingProperties.isAllowSecretReveal()) {
-            log.warn("[PII_ACCESS] Reveal attempt denied by configuration for pageId={}", request.pageId());
+        try {
+            return revealPiiSecretsPort.revealPageSecrets(request.scanId(), request.pageId())
+                    .map(response -> ResponseEntity.ok(mapper.toDto(response)))
+                    .orElseGet(() -> {
+                        log.warn("[PII_ACCESS] No results found for pageId={}", request.pageId());
+                        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+                    });
+        } catch (SecurityException e) {
+            log.warn("[PII_ACCESS] Reveal attempt denied: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-
-        log.info("[PII_ACCESS] Reveal request for pageId={}", request.pageId());
-
-        // Query with automatic decryption (AccessPurpose.USER_DISPLAY)
-        List<ScanResult> results = scanResultQuery.listItemEventsDecrypted(
-                request.scanId(),
-                request.pageId(),
-                AccessPurpose.USER_DISPLAY
-        );
-
-        if (results.isEmpty()) {
-            log.warn("[PII_ACCESS] No results found for pageId={}", request.pageId());
-            return ResponseEntity.notFound().build();
-        }
-
-        // Extract decrypted secrets
-        var secrets = results.stream()
-                .filter(Objects::nonNull)
-                .flatMap(sr -> Optional.ofNullable(sr.detectedEntities())
-                        .orElseGet(List::of)
-                        .stream())
-                .filter(Objects::nonNull)
-                .map(e -> new RevealedSecret(
-                        e.startPosition(),
-                        e.endPosition(),
-                        e.sensitiveValue(),
-                        e.sensitiveContext(),
-                        e.maskedContext()
-                ))
-                .toList();
-
-        // Take the first result (should be unique per pageId)
-        ScanResult result = results.getFirst();
-        log.info("[PII_ACCESS] Revealed {} secrets for pageId={} (scanId={})",
-                secrets.size(), result.pageId(), result.scanId());
-
-        return ResponseEntity.ok(new PageSecretsResponse(
-                result.scanId(),
-                result.pageId(),
-                result.pageTitle(),
-                secrets
-        ));
     }
 
     /**
@@ -104,17 +66,17 @@ public class PiiAccessController {
     /**
      * Response DTO containing revealed secrets for a page.
      */
-    public record PageSecretsResponse(
+    public record PageSecretsResponseDto(
             String scanId,
             String pageId,
             String pageTitle,
-            List<RevealedSecret> secrets
+            List<RevealedSecretDto> secrets
     ) {}
 
     /**
      * DTO for a single revealed secret with position information.
      */
-    public record RevealedSecret(
+    public record RevealedSecretDto(
             int startPosition,
             int endPosition,
             String sensitiveValue,

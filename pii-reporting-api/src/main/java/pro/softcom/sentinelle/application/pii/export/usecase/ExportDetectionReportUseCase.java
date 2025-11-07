@@ -1,12 +1,13 @@
 package pro.softcom.sentinelle.application.pii.export.usecase;
 
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Service;
 import pro.softcom.sentinelle.application.pii.export.DetectionReportMapper;
 import pro.softcom.sentinelle.application.pii.export.dto.DetectionReportEntry;
 import pro.softcom.sentinelle.application.pii.export.exception.ExportException;
+import pro.softcom.sentinelle.application.pii.export.port.in.ExportDetectionReportPort;
 import pro.softcom.sentinelle.application.pii.export.port.out.ReadExportContextPort;
 import pro.softcom.sentinelle.application.pii.export.port.out.ReadScanEventsPort;
 import pro.softcom.sentinelle.application.pii.export.port.out.WriteDetectionReportPort;
@@ -14,17 +15,14 @@ import pro.softcom.sentinelle.domain.pii.export.ExportContext;
 import pro.softcom.sentinelle.domain.pii.export.SourceType;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 
-import java.io.IOException;
-
 /**
  * Use case for exporting detection reports.
  * This use case orchestrates the export process by retrieving the export context,
  * reading scan events, and writing them to the report in the desired format.
  */
-@Service
 @RequiredArgsConstructor
 @Slf4j
-public class ExportDetectionReportUseCase {
+public class ExportDetectionReportUseCase implements ExportDetectionReportPort {
 
     private final ReadScanEventsPort readScanEventsPort;
     private final WriteDetectionReportPort writeDetectionReportPort;

@@ -1,13 +1,10 @@
 package pro.softcom.sentinelle.application.pii.reporting.service.parser;
 
-import org.springframework.stereotype.Component;
-
 /**
  * Parser for plain text content where lines are delimited by newline characters (\n).
  * <p>
  * This is the default parser for standard text content without markup.
  */
-@Component
 public class PlainTextParser implements ContentParser {
 
     @Override

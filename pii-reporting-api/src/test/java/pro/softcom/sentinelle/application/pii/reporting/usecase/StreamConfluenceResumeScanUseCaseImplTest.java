@@ -26,15 +26,21 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvi
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.PublishEventPort;
-import pro.softcom.sentinelle.application.pii.reporting.service.*;
+import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
+import pro.softcom.sentinelle.application.pii.reporting.service.PiiContextExtractor;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanCheckpointService;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventDispatcher;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventFactory;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanProgressCalculator;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParserFactory;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.HtmlContentParser;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.PlainTextParser;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
-import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.domain.pii.ScanStatus;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
@@ -93,7 +99,8 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         ScanEventFactory eventFactory = new ScanEventFactory(confluenceUrlProvider, piiContextExtractor);
         ScanCheckpointService checkpointService = new ScanCheckpointService(scanCheckpointRepository);
         PublishEventPort publishEventPort = new ScanEventPublisherAdapter(applicationEventPublisher);
-        ScanEventDispatcher scanEventDispatcher = new ScanEventDispatcher(publishEventPort);
+        ScanEventDispatcher scanEventDispatcher = new ScanEventDispatcher(publishEventPort,
+                                                                          Runnable::run);
 
         // Create parameter objects
         ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService);

@@ -30,7 +30,7 @@ class HexagonalArchitectureTest {
     static void setup() {
         importedClasses = new ClassFileImporter()
                 .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                .importPackages("com.example.sentinelle");
+                .importPackages("pro.softcom.sentinelle");
         System.out.println("[DEBUG_LOG] Imported classes: " + importedClasses.size());
     }
 
@@ -74,6 +74,18 @@ class HexagonalArchitectureTest {
                 .should().dependOnClassesThat().resideInAnyPackage("org.springframework..")
                 .as("Domain & Application must not depend on Spring");
 
+        rule.allowEmptyShould(true).check(importedClasses);
+    }
+
+    @Test
+    @DisplayName("Application must not depend on Spring (should fail until Spring deps moved to infra)")
+    void application_shouldNotDependOnSpring() {
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("..application..")
+                .should().dependOnClassesThat().resideInAnyPackage("org.springframework..")
+                .as("Application layer must be framework-agnostic (no org.springframework)");
+
+        // This rule is expected to FAIL currently because some application classes use Spring annotations/APIs
         rule.allowEmptyShould(true).check(importedClasses);
     }
 

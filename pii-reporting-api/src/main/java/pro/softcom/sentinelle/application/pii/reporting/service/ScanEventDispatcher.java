@@ -2,36 +2,30 @@ package pro.softcom.sentinelle.application.pii.reporting.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
+import pro.softcom.sentinelle.application.pii.reporting.port.out.AfterCommitExecutionPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.PublishEventPort;
 import pro.softcom.sentinelle.domain.pii.scan.SpaceScanCompleted;
 
-@Service
+/**
+ * Orchestrates publication of domain events related to scan lifecycle.
+ * Business rule: publish completion event only after transaction commit.
+ *
+ * This class is framework-agnostic; transaction timing is delegated to a port.
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class ScanEventDispatcher {
     private final PublishEventPort publishEventPort;
+    private final AfterCommitExecutionPort afterCommitExecutionPort;
 
     public void scheduleAfterCommit(Runnable action) {
-        if (TransactionSynchronizationManager.isActualTransactionActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    try {
-                        action.run();
-                    } catch (Exception e) {
-                        log.error("Action failed after commit: {}", e.getMessage(), e);
-                    }
-                }
-            });
-        } else {
-            log.warn("No actual transaction active, execute the action immediately");
-
-            // Not in a transaction: execute immediately
-            action.run();
-        }
+        afterCommitExecutionPort.runAfterCommit(() -> {
+            try {
+                action.run();
+            } catch (Exception e) {
+                log.error("Action failed after commit: {}", e.getMessage(), e);
+            }
+        });
     }
 
     public void publishAfterCommit(String scanId, String spaceKey) {

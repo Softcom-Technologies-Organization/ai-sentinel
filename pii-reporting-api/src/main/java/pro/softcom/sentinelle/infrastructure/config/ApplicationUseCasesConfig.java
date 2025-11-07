@@ -15,9 +15,17 @@ import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanUseCase
 import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.out.AfterCommitExecutionPort;
+import pro.softcom.sentinelle.application.pii.reporting.port.out.PublishEventPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanEventStore;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanResultQuery;
-import pro.softcom.sentinelle.application.pii.reporting.service.*;
+import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
+import pro.softcom.sentinelle.application.pii.reporting.service.PiiContextExtractor;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanCheckpointService;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventDispatcher;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventFactory;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanProgressCalculator;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.PauseScanUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.ScanReportingUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceResumeScanUseCaseImpl;
@@ -65,6 +73,12 @@ public class ApplicationUseCasesConfig {
     public ConfluenceAccessor confluenceAccessor(ConfluenceClient confluenceClient,
                                                   ConfluenceAttachmentClient confluenceAttachmentClient) {
         return new ConfluenceAccessor(confluenceClient, confluenceAttachmentClient);
+    }
+
+    @Bean
+    public ScanEventDispatcher scanEventDispatcher(PublishEventPort publishEventPort,
+                                                   AfterCommitExecutionPort afterCommitExecutionPort) {
+        return new ScanEventDispatcher(publishEventPort, afterCommitExecutionPort);
     }
 
     @Bean

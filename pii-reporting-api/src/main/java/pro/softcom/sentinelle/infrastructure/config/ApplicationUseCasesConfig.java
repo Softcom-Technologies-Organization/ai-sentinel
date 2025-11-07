@@ -10,6 +10,7 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceSpaceRepository;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
+import pro.softcom.sentinelle.application.confluence.service.ConfluenceSpaceCacheRefreshService;
 import pro.softcom.sentinelle.application.confluence.usecase.ConfluenceUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingUseCase;
@@ -132,5 +133,13 @@ public class ApplicationUseCasesConfig {
     @Bean
     public PauseScanUseCase pauseScanUseCase(ScanCheckpointRepository scanCheckpointRepository) {
         return new PauseScanUseCaseImpl(scanCheckpointRepository);
+    }
+
+    @Bean
+    public ConfluenceSpaceCacheRefreshService confluenceSpaceCacheRefreshService(
+            ConfluenceClient confluenceClient,
+            ConfluenceSpaceRepository spaceRepository
+    ) {
+        return new ConfluenceSpaceCacheRefreshService(confluenceClient, spaceRepository);
     }
 }

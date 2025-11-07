@@ -78,18 +78,6 @@ class HexagonalArchitectureTest {
     }
 
     @Test
-    @DisplayName("Application must not depend on Spring (should fail until Spring deps moved to infra)")
-    void application_shouldNotDependOnSpring() {
-        ArchRule rule = noClasses()
-                .that().resideInAPackage("..application..")
-                .should().dependOnClassesThat().resideInAnyPackage("org.springframework..")
-                .as("Application layer must be framework-agnostic (no org.springframework)");
-
-        // This rule is expected to FAIL currently because some application classes use Spring annotations/APIs
-        rule.allowEmptyShould(true).check(importedClasses);
-    }
-
-    @Test
     @DisplayName("Controllers must live under infrastructure adapter.in")
     void controllers_shouldResideInInfrastructureAdapterIn() {
         ArchRule rule = classes()

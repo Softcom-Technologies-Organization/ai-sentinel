@@ -3,6 +3,7 @@ package pro.softcom.sentinelle.application.pii.reporting.port.out;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import pro.softcom.sentinelle.domain.pii.reporting.AccessPurpose;
 import pro.softcom.sentinelle.domain.pii.reporting.LastScanMeta;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 
@@ -36,6 +37,36 @@ public interface ScanResultQuery {
      * @return the ordered list of item events recorded for the scan (may be empty)
      */
     List<ScanResult> listItemEvents(String scanId);
+
+    /**
+     * Lists item events with ENCRYPTED PII data.
+     * Use when PII values don't need to be viewed (statistics, dashboards without detail).
+     *
+     * @param scanId scan identifier
+     * @return list of scan results with encrypted PII
+     */
+    List<ScanResult> listItemEventsEncrypted(String scanId);
+
+    /**
+     * Lists item events with DECRYPTED PII data.
+     * Automatically logs access for GDPR/nLPD compliance.
+     *
+     * @param scanId scan identifier
+     * @param pageId page ID
+     * @param purpose access purpose (for audit trail)
+     * @return list of scan results with decrypted PII
+     */
+    List<ScanResult> listItemEventsDecrypted(String scanId, String pageId, AccessPurpose purpose);
+
+    /**
+     * Lists item events with ENCRYPTED PII data filtered by space.
+     * Use when PII values don't need to be viewed.
+     *
+     * @param scanId scan identifier
+     * @param spaceKey Confluence space key to filter results
+     * @return list of scan results with encrypted PII for the specified space
+     */
+    List<ScanResult> listItemEventsEncryptedByScanIdAndSpaceKey(String scanId, String spaceKey);
 
     /**
      * Read-side projection representing per-space progress within a scan.

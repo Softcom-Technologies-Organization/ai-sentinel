@@ -36,12 +36,25 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     VIRTUAL_ENV=/opt/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
+# Install Infisical CLI
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y bash ca-certificates curl \
+    && curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | bash \
+    && apt-get update \
+    && apt-get install -y infisical \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY --from=builder "$VIRTUAL_ENV" "$VIRTUAL_ENV"
 COPY --from=builder /app /app
 COPY --from=builder /proto /proto
 
+# Copy entrypoint script
+COPY pii-detector-service/docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 EXPOSE 50051
 
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["python", "-m", "pii_detector.server", "--port", "50051"]

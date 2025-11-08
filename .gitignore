@@ -1,5 +1,6 @@
-# Environment variables (sensitive data)
+# Environment variables and secrets (sensitive data)
 .env
+secrets/*.txt
 
 # IDE and build artifacts
 /pii-detector-service/pii_detector/proto/generated/

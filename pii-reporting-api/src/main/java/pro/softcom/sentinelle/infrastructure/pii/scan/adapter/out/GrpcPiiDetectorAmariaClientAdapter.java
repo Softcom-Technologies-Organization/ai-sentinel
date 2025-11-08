@@ -2,6 +2,7 @@ package pro.softcom.sentinelle.infrastructure.pii.scan.adapter.out;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -99,7 +100,7 @@ public class GrpcPiiDetectorAmariaClientAdapter implements PiiDetectorClient {
             dataType = ContentPiiDetection.DataType.UNKNOWN;
             log.warn("[Armeria] Unknown PII type: {}, mapping to UNKNOWN", entity.getType());
         }
-        final String context = String.format("Detected at position %d-%d (confidence: %.2f)",
+        final String context = String.format(Locale.ROOT, "Detected at position %d-%d (confidence: %.2f)",
                 entity.getStart(), entity.getEnd(), entity.getScore());
         return new ContentPiiDetection.SensitiveData(
                 dataType,

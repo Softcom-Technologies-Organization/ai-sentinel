@@ -19,6 +19,8 @@ public interface DetectionEventRepository extends
     @Query("select count(distinct e.spaceKey) from ScanEventEntity e where e.scanId = :scanId")
     int countDistinctSpaceKeyByScanId(@Param("scanId") String scanId);
 
+    Object findByScanIdOrderByEventSeqAsc(String scanId);
+
     interface SpaceCountersProjection {
         String getSpaceKey();
         long getPagesDone();
@@ -42,6 +44,13 @@ public interface DetectionEventRepository extends
     java.util.List<LatestScanProjection> findLatestScanGrouped(
         org.springframework.data.domain.Pageable pageable);
 
-    List<ScanEventEntity> findByScanIdAndEventTypeInOrderByEventSeqAsc(String scanId,
-                                                                       Collection<String> eventTypes);
+    List<ScanEventEntity> findByScanIdAndEventTypeInOrderByEventSeqAsc(String scanId, Collection<String> eventTypes);
+
+    List<ScanEventEntity> findByScanIdAndPageIdAndEventTypeInOrderByEventSeqAsc(
+            String scanId, String pageId, Collection<String> eventTypes
+    );
+
+    List<ScanEventEntity> findByScanIdAndSpaceKeyAndEventTypeInOrderByEventSeqAsc(
+            String scanId, String spaceKey, Collection<String> eventTypes
+    );
 }

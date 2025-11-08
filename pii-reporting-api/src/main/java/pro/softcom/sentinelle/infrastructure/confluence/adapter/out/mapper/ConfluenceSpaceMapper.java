@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.dto.ConfluenceSpaceDto;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.dto.ConfluenceSpaceDto.HistoryDto;
 
@@ -33,7 +34,9 @@ public final class ConfluenceSpaceMapper {
         var spaceType = parseSpaceType(dto.type());
         var spaceStatus = parseSpaceStatus(dto.status());
         var descriptionText = extractDescription(dto);
-        String url = ConfluenceUrlBuilder.spaceOverviewUrl(dto.key());
+        var url = ConfluenceUrlBuilder.spaceOverviewUrl(dto.key());
+        var confluenceSpaceDataOwners = ConfluenceDataOwnerMapper.extractDataOwners(dto);
+        var dataOwners = new DataOwners.Loaded(confluenceSpaceDataOwners);
         Instant lastModified = extractLastModified(dto);
 
         return new ConfluenceSpace(
@@ -44,6 +47,7 @@ public final class ConfluenceSpaceMapper {
             descriptionText,
             spaceType,
             spaceStatus,
+            dataOwners,
             lastModified
         );
     }

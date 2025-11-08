@@ -64,13 +64,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-nlp = [
-    # Required for Presidio SpacyRecognizer (LOCATION detection is currently enabled)
-    # To disable: set location=false in presidio-detector.toml [recognizers] section
-    # Models must be installed manually: python -m spacy download <model_name>
-    # Available: en_core_web_sm, fr_core_news_sm, de_core_news_sm, es_core_news_sm
-    "spacy>=3.7.0",
-]
+# Compliance note: we do NOT ship spaCy to preserve Apache-2.0 compatibility.
+# Do not enable spaCy-dependent entities (PERSON/LOCATION/ORG) in Presidio config.
+# If absolutely needed for EN/DE only, install locally outside project deps:
+#   pip install spacy && python -m spacy download en_core_web_sm de_core_news_sm
+nlp = []
 
 dev = [
     # Testing framework

@@ -45,6 +45,15 @@ public interface ConfluenceClient {
     CompletableFuture<Optional<ConfluenceSpace>> getSpace(String spaceKey);
 
     /**
+     * Retrieves space information with permissions/data owners.
+     * This method expands the permissions field to load data owners.
+     *
+     * @param spaceKey the space key
+     * @return the space information with loaded data owners
+     */
+    CompletableFuture<Optional<ConfluenceSpace>> getSpaceWithPermissions(String spaceKey);
+
+    /**
      * Retrieves space information par son ID
      * @param spaceId the space identifier
      * @return the space information

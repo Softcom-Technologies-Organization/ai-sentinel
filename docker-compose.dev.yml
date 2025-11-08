@@ -8,7 +8,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      # ⚠️ SECURITY: Change default password in production!
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ai-sentinel
     ports:
       # Restricted to localhost only for development tools (DBeaver, PgAdmin, etc.)
@@ -36,12 +37,25 @@ services:
     ports:
       - "50051:50051"
     environment:
-      # Hugging Face Configuration
-      HUGGING_FACE_API_KEY: ${HUGGING_FACE_API_KEY}
+      # Infisical Configuration - secrets will be read from /run/secrets/
+      INFISICAL_CLIENT_ID_FILE: /run/secrets/infisical_dev_client_id
+      INFISICAL_CLIENT_SECRET_FILE: /run/secrets/infisical_dev_client_secret
+      INFISICAL_PROJECT_ID_FILE: /run/secrets/infisical_project_id
+      INFISICAL_API_URL: http://infisical:8080
+      INFISICAL_ENV: dev
+      
+      # Static non-sensitive configuration
       HF_HOME: /app/.cache/huggingface
       TRANSFORMERS_CACHE: /app/.cache/huggingface
+    secrets:
+      - infisical_dev_client_id
+      - infisical_dev_client_secret
+      - infisical_project_id
     volumes:
       - huggingface-cache:/app/.cache/huggingface
+    depends_on:
+      infisical:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "python -c 'import grpc; channel = grpc.insecure_channel(\"localhost:50051\"); channel.close()'"]
       interval: 30s
@@ -64,41 +78,43 @@ services:
       - "8080:8080"
       - "8090:8090"  # Armeria internal services (health, metrics, docs)
     environment:
-      # Database Configuration
+      # Infisical Configuration - secrets will be read from /run/secrets/
+      INFISICAL_CLIENT_ID_FILE: /run/secrets/infisical_dev_client_id
+      INFISICAL_CLIENT_SECRET_FILE: /run/secrets/infisical_dev_client_secret
+      INFISICAL_PROJECT_ID_FILE: /run/secrets/infisical_project_id
+      INFISICAL_API_URL: http://infisical:8080
+      INFISICAL_ENV: dev
+      
+      # Static non-sensitive configuration
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ai-sentinel
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ai-sentinel
-      
-      # Server Configuration
       SERVER_PORT: 8080
-      
-      # PII Detector Configuration
       PII_DETECTOR_CLIENT: armeria
       PII_DETECTOR_HOST: pii-detector
       PII_DETECTOR_PORT: 50051
       
-      # Confluence Configuration
-      # IMPORTANT: Vous devez définir ces variables dans un fichier .env
-      # ou les passer directement lors du lancement de docker-compose
-      CONFLUENCE_BASE_URL: ${CONFLUENCE_BASE_URL}
-      CONFLUENCE_USERNAME: ${CONFLUENCE_USERNAME}
-      CONFLUENCE_API_TOKEN: ${CONFLUENCE_API_TOKEN}
+      # Non-sensitive Confluence configuration (optional with defaults)
       CONFLUENCE_ENABLE_PROXY: ${CONFLUENCE_ENABLE_PROXY:-false}
       CONFLUENCE_PROXY_HOST: ${CONFLUENCE_PROXY_HOST:-}
       CONFLUENCE_PROXY_PORT: ${CONFLUENCE_PROXY_PORT:-8080}
       CONFLUENCE_PROXY_USERNAME: ${CONFLUENCE_PROXY_USERNAME:-}
-      CONFLUENCE_PROXY_PASSWORD: ${CONFLUENCE_PROXY_PASSWORD:-}
       CONFLUENCE_CACHE_REFRESH_INTERVAL: ${CONFLUENCE_CACHE_REFRESH_INTERVAL:-300000}
       CONFLUENCE_CACHE_INITIAL_DELAY: ${CONFLUENCE_CACHE_INITIAL_DELAY:-5000}
       CONFLUENCE_POLLING_INTERVAL: ${CONFLUENCE_POLLING_INTERVAL:-60000}
+      SENTINELLE_ENCRYPTION_KEY: ${SENTINELLE_ENCRYPTION_KEY}
+    secrets:
+      - infisical_dev_client_id
+      - infisical_dev_client_secret
+      - infisical_project_id
     depends_on:
       postgres:
         condition: service_healthy
       pii-detector:
         condition: service_started
+      infisical:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/sentinelle/actuator/health"]
       interval: 30s
@@ -156,6 +172,84 @@ services:
     profiles:
       - admin  # Optional: start only with --profile admin
 
+  # ============================================================================
+  # INFISICAL (Secrets Manager - UI only for development)
+  # ============================================================================
+  infisical-db:
+    image: postgres:18-alpine
+    container_name: infisical-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: infisical
+      POSTGRES_PASSWORD_FILE: /run/secrets/infisical_db_password
+      POSTGRES_DB: infisical
+    secrets:
+      - infisical_db_password
+    volumes:
+      - infisical-db-data:/var/lib/postgresql/data
+    networks:
+      - ai-sentinel-network
+
+  infisical-redis:
+    image: redis:7-alpine
+    container_name: infisical-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - infisical-redis-data:/data
+    networks:
+      - ai-sentinel-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    restart: unless-stopped
+    ports:
+      # SMTP server is only needed inside Docker network; not exposed to host for security
+      # - "127.0.0.1:1025:1025"  # Uncomment if you need to test SMTP from the host
+      - "127.0.0.1:8025:8025"  # Web UI (localhost only)
+    networks:
+      - ai-sentinel-network
+
+  infisical:
+    image: infisical/infisical:latest-postgres
+    container_name: infisical
+    restart: unless-stopped
+    ports:
+      - "8082:8080"  # Expose Infisical UI on localhost:8082
+    environment:
+      NODE_ENV: development
+      REDIS_URL: redis://infisical-redis:6379
+      SITE_URL: ${INFISICAL_SITE_URL:-http://localhost:8082}
+      # SMTP Configuration (MailHog for local development)
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_SECURE: "false"
+      SMTP_FROM_ADDRESS: noreply@ai-sentinel.local
+      SMTP_FROM_NAME: "AI Sentinel Infisical"
+      SMTP_TLS_ENABLED: "false"
+      SMTP_STARTTLS_ENABLED: "false"
+      SMTP_IGNORE_TLS: "true"
+    secrets:
+      - infisical_encryption_key
+      - infisical_auth_secret
+      - infisical_db_password
+    volumes:
+      - ./infisical-entrypoint.sh:/usr/local/bin/custom-entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/custom-entrypoint.sh"]
+    depends_on:
+      - infisical-db
+      - infisical-redis
+      - mailhog
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - ai-sentinel-network
+
 volumes:
   postgres-data:
     name: ai-sentinel-postgres-data
@@ -163,8 +257,26 @@ volumes:
     name: ai-sentinel-pgadmin-data
   huggingface-cache:
     name: ai-sentinel-huggingface-cache
+  infisical-db-data:
+    name: ai-sentinel-infisical-db-data
+  infisical-redis-data:
+    name: ai-sentinel-infisical-redis-data
 
 networks:
   ai-sentinel-network:
     name: ai-sentinel-network
     driver: bridge
+
+secrets:
+  infisical_dev_client_id:
+    file: ./secrets/infisical_dev_client_id.txt
+  infisical_dev_client_secret:
+    file: ./secrets/infisical_dev_client_secret.txt
+  infisical_project_id:
+    file: ./secrets/infisical_project_id.txt
+  infisical_encryption_key:
+    file: ./secrets/infisical_encryption_key.txt
+  infisical_auth_secret:
+    file: ./secrets/infisical_auth_secret.txt
+  infisical_db_password:
+    file: ./secrets/infisical_db_password.txt

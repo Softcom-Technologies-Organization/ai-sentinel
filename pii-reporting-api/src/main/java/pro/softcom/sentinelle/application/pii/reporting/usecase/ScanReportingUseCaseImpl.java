@@ -68,7 +68,7 @@ public class ScanReportingUseCaseImpl implements ScanReportingUseCase {
         try {
             Optional<LastScanMeta> meta = scanResultQuery.findLatestScan();
             if (meta.isEmpty()) return List.of();
-            return scanResultQuery.listItemEvents(meta.get().scanId());
+            return scanResultQuery.listItemEventsEncrypted(meta.get().scanId());
         } catch (Exception ex) {
             log.warn("[LAST_SCAN] Failed to get latest scan items: {}", ex.getMessage());
             return List.of();

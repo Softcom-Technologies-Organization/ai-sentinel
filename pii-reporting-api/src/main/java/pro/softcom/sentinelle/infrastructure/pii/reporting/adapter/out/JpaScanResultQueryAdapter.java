@@ -6,9 +6,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanResultQuery;
+import pro.softcom.sentinelle.application.pii.security.PiiAccessAuditService;
+import pro.softcom.sentinelle.application.pii.security.ScanResultEncryptor;
+import pro.softcom.sentinelle.domain.pii.reporting.AccessPurpose;
 import pro.softcom.sentinelle.domain.pii.reporting.LastScanMeta;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.DetectionEventRepository;
@@ -20,10 +24,15 @@ import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.entit
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JpaScanResultQueryAdapter implements ScanResultQuery {
 
     private final DetectionEventRepository eventRepository;
+    private final ScanResultEncryptor scanResultEncryptor;
+    private final PiiAccessAuditService auditService;
     private final ObjectMapper objectMapper;
+
+    private static final Set<String> ITEM_EVENT_TYPES = Set.of("item", "attachmentItem");
 
     @Override
     public Optional<LastScanMeta> findLatestScan() {
@@ -48,20 +57,80 @@ public class JpaScanResultQueryAdapter implements ScanResultQuery {
     }
 
     @Override
-    public List<ScanResult> listItemEvents(String scanId) {
-        if (scanId == null || scanId.isBlank()) return List.of();
-        var types = Set.of("item", "attachmentItem");
-        return eventRepository.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId, types).stream()
-            .map(this::toDomain)
+    public List<ScanResult> listItemEventsEncrypted(String scanId) {
+        if (scanId == null || scanId.isBlank()) {
+            return List.of();
+        }
+
+        return eventRepository.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId, ITEM_EVENT_TYPES).stream()
+            .map(this::toEncryptedDomain)
             .filter(Objects::nonNull)
             .toList();
     }
 
-    private ScanResult toDomain(ScanEventEntity e) {
+    @Override
+    public List<ScanResult> listItemEventsEncryptedByScanIdAndSpaceKey(String scanId, String spaceKey) {
+        if (scanId == null || scanId.isBlank()) return List.of();
+        return eventRepository.findByScanIdAndSpaceKeyAndEventTypeInOrderByEventSeqAsc(scanId, spaceKey, ITEM_EVENT_TYPES).stream()
+                .map(this::toEncryptedDomain)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    @Override
+    public List<ScanResult> listItemEventsDecrypted(String scanId, String pageId, AccessPurpose purpose) {
+        if (scanId == null || scanId.isBlank()) {
+            return List.of();
+        }
+
+        List<ScanResult> results = eventRepository
+            .findByScanIdAndPageIdAndEventTypeInOrderByEventSeqAsc(scanId, pageId, ITEM_EVENT_TYPES).stream()
+            .map(this::toDecryptedDomain)
+            .filter(Objects::nonNull)
+            .toList();
+
+        if (results.isEmpty()) {
+            return results;
+        }
+
+        // Audit access for GDPR/nLPD compliance
+        int totalPiiCount = results.stream()
+            .mapToInt(r -> r.detectedEntities() != null ? r.detectedEntities().size() : 0)
+            .sum();
+
+        var spaceKey = results.getFirst().spaceKey();
+        var pageTitle = results.getFirst().pageTitle();
+        auditService.auditPiiAccess(scanId, spaceKey, pageId, pageTitle, purpose, totalPiiCount);
+
+        return results;
+    }
+
+    private ScanResult toEncryptedDomain(ScanEventEntity entity) {
+        if (entity == null || entity.getPayload() == null) {
+            log.warn("scanEventEntity or payload is null");
+            return null;
+        }
+
         try {
-            if (e == null || e.getPayload() == null) return null;
-            return objectMapper.treeToValue(e.getPayload(), ScanResult.class);
-        } catch (Exception _) {
+            // Return as-is (already encrypted in DB)
+            return objectMapper.treeToValue(entity.getPayload(), ScanResult.class);
+        } catch (Exception e) {
+            log.error("Failed to deserialize scan event", e);
+            return null;
+        }
+    }
+
+    private ScanResult toDecryptedDomain(ScanEventEntity entity) {
+        if (entity == null || entity.getPayload() == null) {
+            log.warn("scanEventEntity or payload is null");
+            return null;
+        }
+
+        try {
+            ScanResult encrypted = objectMapper.treeToValue(entity.getPayload(), ScanResult.class);
+            return scanResultEncryptor.decrypt(encrypted);
+        } catch (Exception e) {
+            log.error("Failed to decrypt scan event", e);
             return null;
         }
     }

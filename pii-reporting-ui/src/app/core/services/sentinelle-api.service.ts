@@ -198,12 +198,12 @@ export class SentinelleApiService {
     }
   }
 
-  /** Compute severity level based on max entity score. */
-  severityForEntities(entities: Array<{ score?: number }> | undefined): Severity {
+  /** Compute severity level based on max entity confidence. */
+  severityForEntities(entities: Array<{ confidence?: number }> | undefined): Severity {
     if (!Array.isArray(entities) || entities.length === 0) return 'low';
     let max = 0;
     for (const e of entities) {
-      const s = typeof e?.score === 'number' ? e.score : 0;
+      const s = typeof e?.confidence === 'number' ? e.confidence : 0;
       if (s > max) max = s;
     }
     if (max >= 0.95) return 'high';
@@ -223,4 +223,59 @@ export class SentinelleApiService {
       return raw;
     }
   }
+
+  /**
+   * Check if revealing PII secrets is allowed by backend configuration.
+   */
+  getRevealConfig(): Observable<boolean> {
+    return new Observable<boolean>((observer) => {
+      const sub = this.http.get<boolean>('/api/v1/pii/config/reveal-allowed').subscribe({
+        next: (allowed) => {
+          observer.next(allowed);
+          observer.complete();
+        },
+        error: (err) => {
+          observer.error(err);
+        }
+      });
+      return () => sub.unsubscribe();
+    });
+  }
+
+  /**
+   * Reveal decrypted PII secrets for a specific Confluence page.
+   * Triggers audit log on backend.
+   */
+  revealPageSecrets(scanId: string, pageId: string): Observable<PageSecretsResponse> {
+    return new Observable<PageSecretsResponse>((observer) => {
+      const sub = this.http.post<PageSecretsResponse>(
+        '/api/v1/pii/reveal-page',
+        { scanId, pageId }
+      ).subscribe({
+        next: (response) => {
+          observer.next(response);
+          observer.complete();
+        },
+        error: (err) => {
+          observer.error(err);
+        }
+      });
+      return () => sub.unsubscribe();
+    });
+  }
+}
+
+export interface PageSecretsResponse {
+  scanId: string;
+  pageId: string;
+  pageTitle: string;
+  secrets: RevealedSecret[];
+}
+
+export interface RevealedSecret {
+  startPosition: number;
+  endPosition: number;
+  sensitiveValue: string;
+  sensitiveContext: string;
+  maskedContext: string;
 }

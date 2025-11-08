@@ -2,6 +2,7 @@ package pro.softcom.sentinelle.application.pii.reporting.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.pii.ScanStatus;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
@@ -59,7 +60,7 @@ public class ScanCheckpointService {
         }
         String scanId = scanResult.scanId();
         String spaceKey = scanResult.spaceKey();
-        return !isBlank(scanId) && !isBlank(spaceKey);
+        return !StringUtils.isBlank(scanId) && !StringUtils.isBlank(spaceKey);
     }
 
     private ScanCheckpoint buildCheckpoint(ScanResult scanResult) {
@@ -84,7 +85,7 @@ public class ScanCheckpointService {
 
     private CheckpointData extractCheckpointData(String eventType, ScanResult scanResult) {
         return switch (eventType) {
-            case "item" -> 
+            case "item" ->
                 // Do NOT advance lastProcessedPageId on interim page item
                 // Keep status as RUNNING and preserve existing lastProcessedPageId
                 new CheckpointData(null, null, ScanStatus.RUNNING);
@@ -99,10 +100,6 @@ public class ScanCheckpointService {
                 new CheckpointData(null, null, ScanStatus.COMPLETED);
             default -> null; // Ignore other events
         };
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
     }
 
     /**

@@ -135,14 +135,19 @@ Before starting, make sure you have:
   docker compose version
   ```
 
-- **Hugging Face API Key**: Required to download AI models
-  - Create an account on [Hugging Face](https://huggingface.co/join)
-  - Generate an API key in [Settings > Access Tokens](https://huggingface.co/settings/tokens)
+- **Infisical Account**: Required for secrets management
+  - Option 1: Use [Infisical Cloud](https://app.infisical.com) (recommended for production)
+  - Option 2: Self-hosted Infisical (included in docker-compose for development)
+  - Follow [Infisical UI Setup Guide](docs/INFISICAL_UI_SETUP.md) for configuration
 
-- **Confluence Credentials**: To scan your Confluence spaces
+- **Confluence Credentials**: To scan your Confluence spaces (stored in Infisical)
   - Base URL of your Confluence instance
   - Username or email
   - Confluence API token ([How to create a token](https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/))
+
+- **Hugging Face API Key**: Optional, only if using private AI models (stored in Infisical)
+  - Create an account on [Hugging Face](https://huggingface.co/join)
+  - Generate an API key in [Settings > Access Tokens](https://huggingface.co/settings/tokens)
 
 **Optional but recommended:**
 - Git (to clone the repository in development mode)
@@ -155,9 +160,24 @@ AI Sentinel can be deployed in two ways depending on your needs:
 
 ### Production Mode (recommended)
 
-**Production mode** uses pre-built Docker images hosted on GitHub Container Registry. No compilation required.
+**Production mode** uses pre-built Docker images hosted on GitHub Container Registry and Infisical for secure secrets management.
 
-#### Option 1: Automatic startup script (recommended)
+#### Step 1: Configure Infisical Secrets
+
+Before starting the application, you **must** configure secrets in Infisical:
+
+📖 **Follow the complete guide**: [Infisical UI Setup](docs/INFISICAL_UI_SETUP.md)
+
+**Quick summary:**
+1. Create an Infisical project (Cloud or self-hosted)
+2. Create a Machine Identity with credentials
+3. Save required Docker secret files in the `secrets/` folder:
+   - `secrets/infisical_project_id.txt`
+   - `secrets/infisical_prod_client_id.txt`
+   - `secrets/infisical_prod_client_secret.txt`
+4. Configure application secrets in Infisical (Confluence credentials, etc.)
+
+#### Step 2: Automatic startup script (recommended)
 
 **Linux/macOS:**
 ```bash
@@ -176,34 +196,33 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Softcom-Technologies-O
 The script will automatically:
 1. ✅ Check that Docker is installed
 2. ✅ Download the `docker-compose.prod.yml` file
-3. ✅ Create a `.env` file with environment variables
+3. ✅ Guide you through Infisical configuration
 4. ✅ Download Docker images from GitHub
 5. ✅ Start all services
 
-#### Option 2: Manual installation
+⚠️ **Note**: You must configure Infisical secrets before running the script (see Step 1 above).
 
-**1. Download configuration files**
+#### Step 3: Manual installation (alternative)
+
+**1. Configure Infisical**
+
+Follow the [Infisical UI Setup Guide](docs/INFISICAL_UI_SETUP.md) to:
+- Create a project and Machine Identity
+- Save Docker secret files in `secrets/` folder
+- Configure application secrets (Confluence, database, etc.)
+
+**2. Download configuration files**
 
 ```bash
 # Create a directory for AI Sentinel
 mkdir -p ~/.ai-sentinel
 cd ~/.ai-sentinel
 
+# Create secrets directory
+mkdir -p secrets
+
 # Download docker-compose.prod.yml
 curl -fsSL https://raw.githubusercontent.com/Softcom-Technologies-Organization/ai-sentinel/main/docker-compose.prod.yml -o docker-compose.prod.yml
-
-# Download example configuration file
-curl -fsSL https://raw.githubusercontent.com/Softcom-Technologies-Organization/ai-sentinel/main/.env.example -o .env.example
-```
-
-**2. Configure environment variables**
-
-```bash
-# Copy example file
-cp .env.example .env
-
-# Edit .env file with your credentials
-nano .env  # or vim, code, notepad, etc.
 ```
 
 **3. Start the application**
@@ -229,7 +248,7 @@ Once all services are started (approximately 2-3 minutes):
 
 ### Development Mode
 
-**Development mode** clones the repository and compiles images locally. Recommended for contributing to the project.
+**Development mode** clones the repository, compiles images locally, and uses Infisical for secrets management. Recommended for contributing to the project.
 
 **1. Clone the repository**
 
@@ -238,15 +257,19 @@ git clone https://github.com/Softcom-Technologies-Organization/ai-sentinel.git
 cd ai-sentinel
 ```
 
-**2. Configure environment variables**
+**2. Configure Infisical Secrets**
 
-```bash
-# Copy example file
-cp .env.example .env
+📖 **Follow the complete guide**: [Infisical UI Setup](docs/INFISICAL_UI_SETUP.md)
 
-# Edit with your credentials
-code .env  # or your preferred editor
-```
+**Quick setup for development:**
+1. Start Infisical locally: `docker-compose -f docker-compose.dev.yml up -d infisical`
+2. Access Infisical UI at http://localhost:8082
+3. Create a project and Machine Identity (dev environment)
+4. Save Docker secret files in `secrets/` folder:
+   - `secrets/infisical_project_id.txt`
+   - `secrets/infisical_dev_client_id.txt`
+   - `secrets/infisical_dev_client_secret.txt`
+5. Configure application secrets in Infisical (Confluence credentials)
 
 **3. Start with automatic script**
 
@@ -264,11 +287,14 @@ chmod +x start-app.sh
 **4. Or start manually**
 
 ```bash
-# Build Docker images
-docker compose -f docker-compose.dev.yml build
+# Start Infisical first (if not already running)
+docker compose -f docker-compose.dev.yml up -d infisical
 
-# Start all services
-docker compose -f docker-compose.dev.yml up -d
+# Wait for Infisical to be healthy (~30 seconds)
+docker compose -f docker-compose.dev.yml ps infisical
+
+# Build and start all services
+docker compose -f docker-compose.dev.yml up -d --build
 
 # Check status
 docker compose -f docker-compose.dev.yml ps
@@ -307,6 +333,32 @@ lsof -ti:4200 | xargs kill -9
 docker login ghcr.io
 ```
 
+**Issue: Failed to authenticate with Infisical**
+```bash
+# Solution 1: Verify Infisical secrets exist
+ls -la secrets/
+cat secrets/infisical_project_id.txt
+cat secrets/infisical_dev_client_id.txt
+
+# Solution 2: Check Infisical service is running
+docker compose ps infisical
+docker compose logs infisical
+
+# Solution 3: Verify Machine Identity in Infisical UI
+# Access http://localhost:8082 (dev) or https://app.infisical.com (cloud)
+```
+
+**Issue: Missing secrets at runtime**
+```bash
+# Verify secrets are mounted in containers
+docker exec pii-reporting-api ls -la /run/secrets/
+
+# Check Infisical authentication logs
+docker logs pii-reporting-api | grep Infisical
+
+# Ensure secrets exist in Infisical for the correct environment (dev/prod)
+```
+
 **Issue: PII Detector service is slow to start**
 ```
 # Normal: First startup can take 5-10 minutes
@@ -317,92 +369,68 @@ docker compose logs -f pii-detector
 
 ## Configuration
 
-- Infisical UI setup (project, machine identity, required secrets): see docs/INFISICAL_UI_SETUP.md
+AI Sentinel uses **Infisical** for secure secrets management. No `.env` files are used.
 
-### Required Environment Variables
+### Complete Setup Guide
 
-Create a `.env` file at the project root with the following variables:
+📖 **[Infisical UI Setup Guide](docs/INFISICAL_UI_SETUP.md)** - Complete step-by-step configuration
 
-| Variable | Description | Default Value | Required |
-|----------|-------------|---------------|----------|
-| `HUGGING_FACE_API_KEY` | Hugging Face API key to download models | - | ✅ Yes |
-| `CONFLUENCE_BASE_URL` | Base URL of your Confluence (e.g., https://company.atlassian.net/wiki) | - | ✅ Yes |
-| `CONFLUENCE_USERNAME` | Email or Confluence username | - | ✅ Yes |
-| `CONFLUENCE_API_TOKEN` | Confluence API token | - | ✅ Yes |
+📖 **[Production Setup Guide](docs/PRODUCTION_SETUP.md)** - Production deployment with Infisical Cloud
 
-### Optional Environment Variables
+### Quick Configuration Overview
 
-#### Confluence Proxy Configuration
+**1. Infisical Project Setup**
+- Create a project in Infisical (Cloud: https://app.infisical.com or self-hosted: http://localhost:8082)
+- Create a Machine Identity with credentials (separate for dev and prod environments)
+- Save Docker secret files in the `secrets/` folder:
+  - `infisical_project_id.txt` - Your Infisical project ID
+  - `infisical_dev_client_id.txt` / `infisical_prod_client_id.txt` - Machine Identity Client ID
+  - `infisical_dev_client_secret.txt` / `infisical_prod_client_secret.txt` - Machine Identity Client Secret
 
-| Variable | Description | Default Value | Required |
-|----------|-------------|---------------|----------|
-| `CONFLUENCE_ENABLE_PROXY` | Enable proxy for Confluence | `false` | No |
-| `CONFLUENCE_PROXY_HOST` | Proxy host | - | No |
+**2. Required Secrets in Infisical**
+
+Configure these secrets in your Infisical project (environment: dev or prod):
+
+| Secret Name | Description | Example | Environment |
+|-------------|-------------|---------|-------------|
+| `CONFLUENCE_BASE_URL` | Confluence instance URL | `https://company.atlassian.net/wiki` | dev, prod |
+| `CONFLUENCE_USERNAME` | Confluence email or username | `user@company.com` | dev, prod |
+| `CONFLUENCE_API_TOKEN` | Confluence API token | `ATATT3xFfGF0...` | dev, prod |
+| `DB_USERNAME` | PostgreSQL username | `postgres` | prod |
+| `DB_PASSWORD` | PostgreSQL password | `<random-password>` | prod |
+
+**3. Optional Secrets (Confluence Proxy)**
+
+| Secret Name | Description | Default | Required |
+|-------------|-------------|---------|----------|
+| `CONFLUENCE_ENABLE_PROXY` | Enable proxy | `false` | No |
+| `CONFLUENCE_PROXY_HOST` | Proxy hostname | - | If proxy enabled |
 | `CONFLUENCE_PROXY_PORT` | Proxy port | `8080` | No |
-| `CONFLUENCE_PROXY_USERNAME` | Proxy username | - | No |
-| `CONFLUENCE_PROXY_PASSWORD` | Proxy password | - | No |
+| `CONFLUENCE_PROXY_USERNAME` | Proxy username | - | If proxy auth |
+| `CONFLUENCE_PROXY_PASSWORD` | Proxy password | - | If proxy auth |
 
-#### Cache and Polling Configuration
+**4. Optional Secrets (Advanced Configuration)**
 
-| Variable | Description | Default Value | Required |
-|----------|-------------|---------------|----------|
-| `CONFLUENCE_CACHE_REFRESH_INTERVAL` | Cache refresh interval (ms) | `300000` (5 min) | No |
-| `CONFLUENCE_CACHE_INITIAL_DELAY` | Initial delay before first cache (ms) | `5000` | No |
-| `CONFLUENCE_POLLING_INTERVAL` | Scan polling interval (ms) | `60000` (1 min) | No |
+| Secret Name | Description | Default | Required |
+|-------------|-------------|---------|----------|
+| `CONFLUENCE_CACHE_REFRESH_INTERVAL` | Cache refresh interval (ms) | `300000` | No |
+| `CONFLUENCE_CACHE_INITIAL_DELAY` | Initial delay (ms) | `5000` | No |
+| `CONFLUENCE_POLLING_INTERVAL` | Polling interval (ms) | `60000` | No |
+| `HUGGING_FACE_API_KEY` | Hugging Face API key | - | Only for private models |
 
-#### Database Configuration
+### Security Notes
 
-| Variable | Description | Default Value | Required |
-|----------|-------------|---------------|----------|
-| `DB_HOST` | PostgreSQL host | `postgres` | No |
-| `DB_PORT` | PostgreSQL port | `5432` | No |
-| `DB_NAME` | Database name | `ai-sentinel` | No |
-| `DB_USERNAME` | PostgreSQL username | `postgres` | No |
-| `DB_PASSWORD` | PostgreSQL password | `postgres` | No |
+✅ **Best Practices:**
+- All secrets are stored securely in Infisical (encrypted at rest)
+- Secrets are injected at runtime via Docker secrets
+- Never commit secret files to version control (included in `.gitignore`)
+- Use Infisical Cloud for production (high availability, backups, audit logs)
+- Rotate secrets regularly (recommended: every 90 days)
 
-### .env File Example
-
-```bash
-# ============================================================================
-# AI SENTINEL CONFIGURATION
-# ============================================================================
-
-# Hugging Face API Key (REQUIRED)
-# Create your key at: https://huggingface.co/settings/tokens
-HUGGING_FACE_API_KEY=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-# ============================================================================
-# CONFLUENCE CONFIGURATION (REQUIRED)
-# ============================================================================
-CONFLUENCE_BASE_URL=https://your-company.atlassian.net/wiki
-CONFLUENCE_USERNAME=your.email@company.com
-CONFLUENCE_API_TOKEN=ATATT3xFfGF0xxxxxxxxxxxxxxxxxxxxx
-
-# ============================================================================
-# CONFLUENCE PROXY (Optional)
-# ============================================================================
-CONFLUENCE_ENABLE_PROXY=false
-# CONFLUENCE_PROXY_HOST=proxy.company.com
-# CONFLUENCE_PROXY_PORT=8080
-# CONFLUENCE_PROXY_USERNAME=
-# CONFLUENCE_PROXY_PASSWORD=
-
-# ============================================================================
-# CACHE & POLLING (Optional - recommended default values)
-# ============================================================================
-CONFLUENCE_CACHE_REFRESH_INTERVAL=300000
-CONFLUENCE_CACHE_INITIAL_DELAY=5000
-CONFLUENCE_POLLING_INTERVAL=60000
-
-# ============================================================================
-# DATABASE (Optional - default values OK for standard usage)
-# ============================================================================
-# DB_HOST=postgres
-# DB_PORT=5432
-# DB_NAME=ai-sentinel
-# DB_USERNAME=postgres
-# DB_PASSWORD=postgres
-```
+⚠️ **Important:**
+- The `secrets/` folder is excluded from version control
+- Keep a secure backup of `infisical_encryption_key.txt` if using self-hosted Infisical
+- Use separate Machine Identities for dev and prod environments
 
 ### AI Models Configuration
 

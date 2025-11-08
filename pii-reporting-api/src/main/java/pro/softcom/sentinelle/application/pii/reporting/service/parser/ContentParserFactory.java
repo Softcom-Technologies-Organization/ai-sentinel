@@ -1,14 +1,12 @@
 package pro.softcom.sentinelle.application.pii.reporting.service.parser;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 /**
  * Factory for selecting the appropriate content parser based on content type.
  * <p>
  * Supports automatic detection of HTML vs plain text content using heuristics.
  */
-@Component
 @RequiredArgsConstructor
 public class ContentParserFactory {
     
@@ -65,8 +63,9 @@ public class ContentParserFactory {
         }
         
         // Check for common HTML block tags
-        boolean hasBlockTags = sample.contains("<p") 
-                            || sample.contains("<div") 
+
+        return sample.contains("<p")
+                            || sample.contains("<div")
                             || sample.contains("<br")
                             || sample.contains("<html")
                             || sample.contains("<body")
@@ -74,7 +73,5 @@ public class ContentParserFactory {
                             || sample.contains("<h2")
                             || sample.contains("<li")
                             || sample.contains("<table");
-        
-        return hasBlockTags;
     }
 }

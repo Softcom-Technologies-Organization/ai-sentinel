@@ -1,8 +1,10 @@
 package pro.softcom.sentinelle.infrastructure.confluence.adapter.out.jpa.mapper;
 
-import java.time.LocalDateTime;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.jpa.entity.ConfluenceSpaceEntity;
+
+import java.time.LocalDateTime;
 
 public final class ConfluenceSpaceEntityMapper {
 
@@ -21,7 +23,8 @@ public final class ConfluenceSpaceEntityMapper {
             entity.getUrl(),
             entity.getDescription(),
             ConfluenceSpace.SpaceType.GLOBAL,
-            ConfluenceSpace.SpaceStatus.CURRENT
+            ConfluenceSpace.SpaceStatus.CURRENT,
+            new DataOwners.NotLoaded()
         );
     }
 

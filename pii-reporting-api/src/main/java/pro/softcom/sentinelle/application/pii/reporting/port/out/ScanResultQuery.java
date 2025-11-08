@@ -46,6 +46,16 @@ public interface ScanResultQuery {
     List<ScanResult> listItemEventsDecrypted(String scanId, String pageId, AccessPurpose purpose);
 
     /**
+     * Lists item events with ENCRYPTED PII data filtered by space.
+     * Use when PII values don't need to be viewed.
+     * 
+     * @param scanId scan identifier
+     * @param spaceKey Confluence space key to filter results
+     * @return list of scan results with encrypted PII for the specified space
+     */
+    List<ScanResult> listItemEventsEncryptedByScanIdAndSpaceKey(String scanId, String spaceKey);
+
+    /**
      * Projection de lecture (côté application) pour les compteurs par espace.
      */
     record SpaceCounter(String spaceKey, long pagesDone, long attachmentsDone, Instant lastEventTs) {}

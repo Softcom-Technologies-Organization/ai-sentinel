@@ -1,6 +1,7 @@
 package pro.softcom.sentinelle.infrastructure.confluence.adapter.out.mapper;
 
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.dto.ConfluenceSpaceDto;
 
 /**
@@ -28,7 +29,9 @@ public final class ConfluenceSpaceMapper {
         var spaceType = parseSpaceType(dto.type());
         var spaceStatus = parseSpaceStatus(dto.status());
         var descriptionText = extractDescription(dto);
-        String url = ConfluenceUrlBuilder.spaceOverviewUrl(dto.key());
+        var url = ConfluenceUrlBuilder.spaceOverviewUrl(dto.key());
+        var confluenceSpaceDataOwners = ConfluenceDataOwnerMapper.extractDataOwners(dto);
+        var dataOwners = new DataOwners.Loaded(confluenceSpaceDataOwners);
 
         return new ConfluenceSpace(
             dto.id(),
@@ -37,7 +40,8 @@ public final class ConfluenceSpaceMapper {
             url,
             descriptionText,
             spaceType,
-            spaceStatus
+            spaceStatus,
+            dataOwners
         );
     }
 
@@ -65,4 +69,5 @@ public final class ConfluenceSpaceMapper {
         }
         return "";
     }
+
 }

@@ -15,7 +15,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import pro.softcom.sentinelle.application.confluence.port.out.AttachmentTextExtractor;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachmentClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachmentDownloader;
@@ -23,7 +25,14 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
-import pro.softcom.sentinelle.application.pii.reporting.service.*;
+import pro.softcom.sentinelle.application.pii.reporting.port.out.PublishEventPort;
+import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
+import pro.softcom.sentinelle.application.pii.reporting.service.PiiContextExtractor;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanCheckpointService;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventDispatcher;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventFactory;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
+import pro.softcom.sentinelle.application.pii.reporting.service.ScanProgressCalculator;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParserFactory;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.HtmlContentParser;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.PlainTextParser;
@@ -31,12 +40,14 @@ import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.domain.pii.ScanStatus;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.JpaScanEventStoreAdapter;
+import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.event.ScanEventPublisherAdapter;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
@@ -81,16 +92,21 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         };
         
         // Create service instances
+        var applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
         var parserFactory = new ContentParserFactory(new PlainTextParser(), new HtmlContentParser());
         var piiContextExtractor = new PiiContextExtractor(parserFactory);
         ScanProgressCalculator progressCalculator = new ScanProgressCalculator();
         ScanEventFactory eventFactory = new ScanEventFactory(confluenceUrlProvider, piiContextExtractor);
         ScanCheckpointService checkpointService = new ScanCheckpointService(scanCheckpointRepository);
-        
+        PublishEventPort publishEventPort = new ScanEventPublisherAdapter(applicationEventPublisher);
+        ScanEventDispatcher scanEventDispatcher = new ScanEventDispatcher(publishEventPort,
+                                                                          Runnable::run);
+
         // Create parameter objects
         ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService);
-        ScanOrchestrator scanOrchestrator = new ScanOrchestrator(eventFactory, progressCalculator, 
-                                                                 checkpointService, jpaScanEventStoreAdapter);
+        ScanOrchestrator scanOrchestrator = new ScanOrchestrator(
+                eventFactory, progressCalculator, checkpointService, jpaScanEventStoreAdapter, scanEventDispatcher
+        );
         AttachmentProcessor attachmentProcessor = new AttachmentProcessor(
                 confluenceDownloadService,
                 attachmentTextExtractionService
@@ -111,7 +127,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         String scanId = "SID-1";
         String spaceKey = "RS1";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded());
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         ScanCheckpoint cp = ScanCheckpoint.builder()
@@ -148,7 +164,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         String scanId = "SID-2";
         String spaceKey = "RS2";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded());
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
         when(scanCheckpointRepository.findByScanAndSpace(scanId, spaceKey)).thenReturn(Optional.empty());
 
@@ -172,7 +188,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         String scanId = "SID-3";
         String spaceKey = "RS3";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded());
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         when(scanCheckpointRepository.findByScanAndSpace(anyString(), anyString())).thenThrow(new RuntimeException("prep-fail"));
@@ -208,7 +224,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         String scanId = "SID-5";
         String spaceKey = "RS4";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT);
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded());
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         ScanCheckpoint cp = ScanCheckpoint.builder()

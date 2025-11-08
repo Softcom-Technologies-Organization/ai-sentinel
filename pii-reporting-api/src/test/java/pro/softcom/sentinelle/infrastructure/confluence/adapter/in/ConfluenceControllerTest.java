@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.DataOwners;
 
 /**
  * Tests for the ConfluenceController class.
@@ -72,7 +73,8 @@ class ConfluenceControllerTest {
             "http://test.com",
             "A test space",
             ConfluenceSpace.SpaceType.GLOBAL,
-            ConfluenceSpace.SpaceStatus.CURRENT
+            ConfluenceSpace.SpaceStatus.CURRENT,
+            new DataOwners.NotLoaded()
         );
 
         when(confluenceUseCase.getSpace(spaceKey))
@@ -219,7 +221,8 @@ class ConfluenceControllerTest {
             "http://test.com",
             "A test space",
             ConfluenceSpace.SpaceType.GLOBAL,
-            ConfluenceSpace.SpaceStatus.CURRENT
+            ConfluenceSpace.SpaceStatus.CURRENT,
+            new DataOwners.NotLoaded()
         );
 
         when(confluenceUseCase.getSpace(spaceKey))
@@ -252,8 +255,8 @@ class ConfluenceControllerTest {
     @Test
     void getAllSpaces_ReturnsList() throws Exception {
         List<ConfluenceSpace> spaces = List.of(
-            new ConfluenceSpace("id-1", "KEY1", "Space 1", "http://s1", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT),
-            new ConfluenceSpace("id-2", "KEY2", "Space 2", "http://s2", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT)
+            new ConfluenceSpace("id-1", "KEY1", "Space 1", "http://s1", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded()),
+            new ConfluenceSpace("id-2", "KEY2", "Space 2", "http://s2", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded())
         );
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(spaces));

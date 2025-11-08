@@ -5,6 +5,7 @@ import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanEventStore;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.domain.pii.scan.ContentPiiDetection;
+import pro.softcom.sentinelle.domain.pii.scan.ScanEventType;
 
 /**
  * Orchestrates scan event lifecycle: creation, progress tracking, and persistence.
@@ -18,6 +19,7 @@ public class ScanOrchestrator {
     private final ScanProgressCalculator scanProgressCalculator;
     private final ScanCheckpointService scanCheckpointService;
     private final ScanEventStore scanEventStore;
+    private final ScanEventDispatcher scanEventDispatcher;
 
     public ScanResult createStartEvent(String scanId, String spaceKey, int total, double progress) {
         return scanEventFactory.createStartEvent(scanId, spaceKey, total, progress);
@@ -28,35 +30,35 @@ public class ScanOrchestrator {
     }
 
     public ScanResult createPageStartEvent(String scanId, String spaceKey, ConfluencePage page,
-                                          int currentIndex, int total, double progress) {
+                                           int currentIndex, int total, double progress) {
         return scanEventFactory.createPageStartEvent(scanId, spaceKey, page, currentIndex, total, progress);
     }
 
     public ScanResult createPageCompleteEvent(String scanId, String spaceKey, ConfluencePage page,
-                                             double progress) {
+                                              double progress) {
         return scanEventFactory.createPageCompleteEvent(scanId, spaceKey, page, progress);
     }
 
     public ScanResult createPageItemEvent(String scanId, String spaceKey, ConfluencePage page,
-                                         String content, ContentPiiDetection detection, double progress) {
+                                          String content, ContentPiiDetection detection, double progress) {
         return scanEventFactory.createPageItemEvent(scanId, spaceKey, page, content, detection, progress);
     }
 
     public ScanResult createEmptyPageItemEvent(String scanId, String spaceKey, ConfluencePage page,
-                                              double progress) {
+                                               double progress) {
         return scanEventFactory.createEmptyPageItemEvent(scanId, spaceKey, page, progress);
     }
 
     public ScanResult createAttachmentItemEvent(String scanId, String spaceKey, ConfluencePage page,
-                                               pro.softcom.sentinelle.domain.confluence.AttachmentInfo attachment,
-                                               String content, ContentPiiDetection detection,
-                                               double progress) {
+                                                pro.softcom.sentinelle.domain.confluence.AttachmentInfo attachment,
+                                                String content, ContentPiiDetection detection,
+                                                double progress) {
         return scanEventFactory.createAttachmentItemEvent(scanId, spaceKey, page, attachment, content,
-                                                          detection, progress);
+                detection, progress);
     }
 
     public ScanResult createErrorEvent(String scanId, String spaceKey, String pageId,
-                                      String message, double progress) {
+                                       String message, double progress) {
         return scanEventFactory.createErrorEvent(scanId, spaceKey, pageId, message, progress);
     }
 
@@ -68,6 +70,16 @@ public class ScanOrchestrator {
         scanCheckpointService.persistCheckpoint(event);
         if (scanEventStore != null) {
             scanEventStore.append(event);
+
+            // Has findings?
+            if (shouldPublishEvent(event)) {
+                // Publish the event only if transaction successfully committed
+                scanEventDispatcher.publishAfterCommit(event.scanId(), event.spaceKey());
+            }
         }
+    }
+
+    private static boolean shouldPublishEvent(ScanResult event) {
+        return ScanEventType.COMPLETE.getValue().equals(event.eventType());
     }
 }

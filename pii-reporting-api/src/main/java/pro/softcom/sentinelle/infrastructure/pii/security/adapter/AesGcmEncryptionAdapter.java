@@ -1,21 +1,22 @@
 package pro.softcom.sentinelle.infrastructure.pii.security.adapter;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-import pro.softcom.sentinelle.domain.pii.security.EncryptionException;
-import pro.softcom.sentinelle.domain.pii.security.EncryptionMetadata;
-import pro.softcom.sentinelle.domain.pii.security.EncryptionService;
-import pro.softcom.sentinelle.infrastructure.pii.security.config.EncryptionKeyProvider;
-
+import jakarta.validation.constraints.NotNull;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Base64;
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Base64;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import pro.softcom.sentinelle.domain.pii.security.CryptographicOperationException;
+import pro.softcom.sentinelle.domain.pii.security.EncryptionException;
+import pro.softcom.sentinelle.domain.pii.security.EncryptionMetadata;
+import pro.softcom.sentinelle.domain.pii.security.EncryptionService;
+import pro.softcom.sentinelle.infrastructure.pii.security.config.EncryptionKeyProvider;
 
 /**
  * AES-256-GCM encryption adapter with HKDF key derivation.
@@ -75,7 +76,7 @@ public class AesGcmEncryptionAdapter implements EncryptionService {
 
             byte[] salt = generateSalt();
             byte[] iv = generateIv();
-            dek = hkdf(kekBytes, salt, HKDF_INFO_DEK, DEK_LENGTH);
+            dek = hkdf(kekBytes, salt);
             byte[] aad = buildAad(metadata);
             byte[] ciphertext = encryptWithGcm(dek, iv, aad, plaintext);
 
@@ -104,7 +105,7 @@ public class AesGcmEncryptionAdapter implements EncryptionService {
                 throw new EncryptionException("KEK is not extractable");
             }
 
-            dek = hkdf(kekBytes, data.salt, HKDF_INFO_DEK, DEK_LENGTH);
+            dek = hkdf(kekBytes, data.salt);
             byte[] aad = buildAad(metadata);
             byte[] plaintext = decryptWithGcm(dek, data.iv, aad, data.ciphertext);
 
@@ -122,23 +123,28 @@ public class AesGcmEncryptionAdapter implements EncryptionService {
     /**
      * HKDF (RFC 5869): derive a sub-key from KEK, salt, and context (info).
      */
-    private byte[] hkdf(byte[] ikm, byte[] salt, byte[] info, int length) throws Exception {
-        // Extract: PRK = HMAC(salt, IKM)
-        Mac mac = Mac.getInstance(HKDF_MAC_ALGORITHM);
-        mac.init(new SecretKeySpec(salt, HKDF_MAC_ALGORITHM));
-        byte[] prk = mac.doFinal(ikm);
-
+    private byte[] hkdf(byte[] ikm, byte[] salt) throws CryptographicOperationException {
         try {
-            // Expand (single block): OKM = HMAC(PRK, info || 0x01)
-            // Single block is sufficient for AES-256 (32 bytes)
-            mac.init(new SecretKeySpec(prk, HKDF_MAC_ALGORITHM));
-            mac.update(info);
-            mac.update((byte) 0x01);
-            byte[] okm = mac.doFinal();
+            // Extract: PRK = HMAC(salt, IKM)
+            Mac mac = Mac.getInstance(HKDF_MAC_ALGORITHM);
+            mac.init(new SecretKeySpec(salt, HKDF_MAC_ALGORITHM));
+            byte[] prk = mac.doFinal(ikm);
 
-            return okm.length == length ? okm : Arrays.copyOf(okm, length);
-        } finally {
-            Arrays.fill(prk, (byte) 0);
+            try {
+                // Expand (single block): OKM = HMAC(PRK, info || 0x01)
+                // Single block is sufficient for AES-256 (32 bytes)
+                mac.init(new SecretKeySpec(prk, HKDF_MAC_ALGORITHM));
+                mac.update(AesGcmEncryptionAdapter.HKDF_INFO_DEK);
+                mac.update((byte) 0x01);
+                byte[] okm = mac.doFinal();
+
+                return okm.length == AesGcmEncryptionAdapter.DEK_LENGTH
+                    ? okm : Arrays.copyOf(okm, AesGcmEncryptionAdapter.DEK_LENGTH);
+            } finally {
+                Arrays.fill(prk, (byte) 0);
+            }
+        } catch (Exception e) {
+            throw new CryptographicOperationException("HKDF key derivation failed", e);
         }
     }
 
@@ -170,25 +176,33 @@ public class AesGcmEncryptionAdapter implements EncryptionService {
     /**
      * Encrypts plaintext using AES-GCM.
      */
-    private byte[] encryptWithGcm(byte[] dek, byte[] iv, byte[] aad, String plaintext) throws Exception {
-        Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
-        GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
-        SecretKey dekKey = new SecretKeySpec(dek, "AES");
-        cipher.init(Cipher.ENCRYPT_MODE, dekKey, spec);
-        cipher.updateAAD(aad);
-        return cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
+    private byte[] encryptWithGcm(byte[] dek, byte[] iv, byte[] aad, String plaintext) throws CryptographicOperationException {
+        try {
+            Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
+            GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
+            SecretKey dekKey = new SecretKeySpec(dek, "AES");
+            cipher.init(Cipher.ENCRYPT_MODE, dekKey, spec);
+            cipher.updateAAD(aad);
+            return cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            throw new CryptographicOperationException("AES-GCM encryption failed", e);
+        }
     }
 
     /**
      * Decrypts ciphertext using AES-GCM (tag verification is automatic).
      */
-    private byte[] decryptWithGcm(byte[] dek, byte[] iv, byte[] aad, byte[] ciphertext) throws Exception {
-        Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
-        GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
-        SecretKey dekKey = new SecretKeySpec(dek, "AES");
-        cipher.init(Cipher.DECRYPT_MODE, dekKey, spec);
-        cipher.updateAAD(aad);
-        return cipher.doFinal(ciphertext);
+    private byte[] decryptWithGcm(byte[] dek, byte[] iv, byte[] aad, byte[] ciphertext) throws CryptographicOperationException {
+        try {
+            Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
+            GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
+            SecretKey dekKey = new SecretKeySpec(dek, "AES");
+            cipher.init(Cipher.DECRYPT_MODE, dekKey, spec);
+            cipher.updateAAD(aad);
+            return cipher.doFinal(ciphertext);
+        } catch (Exception e) {
+            throw new CryptographicOperationException("AES-GCM decryption failed", e);
+        }
     }
 
     /**
@@ -263,5 +277,30 @@ public class AesGcmEncryptionAdapter implements EncryptionService {
             byte[] iv,
             byte[] ciphertext
     ) {
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (!(obj instanceof EncryptedData(byte[] salt1, byte[] iv1, byte[] ciphertext1))) return false;
+            return Arrays.equals(salt, salt1) &&
+                   Arrays.equals(iv, iv1) &&
+                   Arrays.equals(ciphertext, ciphertext1);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Arrays.hashCode(salt);
+            result = 31 * result + Arrays.hashCode(iv);
+            result = 31 * result + Arrays.hashCode(ciphertext);
+            return result;
+        }
+
+        @Override
+        public @NotNull String toString() {
+            return "EncryptedData{" +
+                    "salt=" + Arrays.toString(salt) +
+                    ", iv=" + Arrays.toString(iv) +
+                    ", ciphertext=" + Arrays.toString(ciphertext) +
+                    '}';
+        }
     }
 }

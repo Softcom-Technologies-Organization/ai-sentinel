@@ -112,6 +112,14 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
     }
 
     @Override
+    public CompletableFuture<Optional<ConfluenceSpace>> getSpaceWithPermissions(String spaceKey) {
+        log.info("Retrieving space with permissions: {}", spaceKey);
+        var request = buildSpaceRequestWithPermissions(spaceKey);
+        return retryExecutor.executeRequest(request)
+                .thenApply(this::parseSpaceResponse);
+    }
+
+    @Override
     public CompletableFuture<Optional<ConfluenceSpace>> getSpaceById(String spaceId) {
         log.info("Retrieving space by ID: {}", spaceId);
         var request = buildSpaceRequest(spaceId);
@@ -323,6 +331,11 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
 
     private HttpRequest buildSpaceRequest(String spaceKeyOrId) {
         var uri = urlBuilder.buildSpaceUri(spaceKeyOrId);
+        return buildGetRequest(uri);
+    }
+
+    private HttpRequest buildSpaceRequestWithPermissions(String spaceKey) {
+        var uri = urlBuilder.buildSpaceUriWithPermissions(spaceKey);
         return buildGetRequest(uri);
     }
 

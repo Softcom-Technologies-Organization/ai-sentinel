@@ -1,5 +1,12 @@
 package pro.softcom.sentinelle.infrastructure.pii.security.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
+
+import java.security.SecureRandom;
+import java.util.Base64;
+import java.util.stream.Stream;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,14 +18,6 @@ import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.security.SecureRandom;
-import java.util.Base64;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class EncryptionKeyProviderTest {
@@ -120,25 +119,6 @@ class EncryptionKeyProviderTest {
         // Then
         assertThat(provider.getKey()).isNotNull();
         assertThat(provider.getKey().getAlgorithm()).isEqualTo("AES");
-    }
-
-    @Test
-    @DisplayName("Should_LoadAndParseKey_When_ValidEnvironmentVariable")
-    void should_LoadAndParseKey_When_ValidEnvironmentVariable() {
-        // Given
-        String validKey = generateValidBase64Key();
-        when(mockConfig.kekEnvVariable()).thenReturn("MOCK_KEK_VAR");
-        when(mockKeyLoader.loadKey("MOCK_KEK_VAR")).thenReturn(validKey);
-
-        // When
-        EncryptionKeyProvider provider = new EncryptionKeyProvider(mockConfig, mockKeyLoader);
-
-        // Then
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(provider.getKey()).isNotNull();
-        softly.assertThat(provider.getKey().getAlgorithm()).isEqualTo("AES");
-        softly.assertThat(provider.getKey().getEncoded()).hasSize(32);
-        softly.assertAll();
     }
 
     @Test

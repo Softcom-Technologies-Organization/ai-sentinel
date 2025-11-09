@@ -26,6 +26,7 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvi
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.PublishEventPort;
+import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.PiiContextExtractor;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanCheckpointService;
@@ -45,7 +46,6 @@ import pro.softcom.sentinelle.domain.pii.ScanStatus;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.domain.pii.scan.ContentPiiDetection;
-import pro.softcom.sentinelle.infrastructure.config.ScanTimeoutConfig;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.JpaScanEventStoreAdapter;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.event.ScanEventPublisherAdapter;
@@ -77,7 +77,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
     private JpaScanEventStoreAdapter jpaScanEventStoreAdapter;
 
     @Mock
-    private ScanTimeoutConfig scanTimeoutConfig;
+    private ScanTimeOutConfig scanTimeoutConfig;
 
     private StreamConfluenceResumeScanUseCase streamConfluenceResumeScanUseCase;
 
@@ -132,7 +132,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         String scanId = "SID-1";
         String spaceKey = "RS1";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         ScanCheckpoint cp = ScanCheckpoint.builder()
@@ -169,7 +169,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         String scanId = "SID-2";
         String spaceKey = "RS2";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
         when(scanCheckpointRepository.findByScanAndSpace(scanId, spaceKey)).thenReturn(Optional.empty());
 
@@ -193,7 +193,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         String scanId = "SID-3";
         String spaceKey = "RS3";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         when(scanCheckpointRepository.findByScanAndSpace(anyString(), anyString())).thenThrow(new RuntimeException("prep-fail"));
@@ -229,7 +229,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         String scanId = "SID-5";
         String spaceKey = "RS4";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         ScanCheckpoint cp = ScanCheckpoint.builder()

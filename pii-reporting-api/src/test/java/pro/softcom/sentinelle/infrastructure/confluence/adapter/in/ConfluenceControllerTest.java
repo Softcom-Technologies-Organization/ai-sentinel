@@ -22,8 +22,8 @@ import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
 import pro.softcom.sentinelle.application.confluence.port.in.GetSpaceUpdateInfoUseCase;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
-import pro.softcom.sentinelle.domain.confluence.SpaceUpdateInfo;
 import pro.softcom.sentinelle.domain.confluence.DataOwners;
+import pro.softcom.sentinelle.domain.confluence.SpaceUpdateInfo;
 
 /**
  * Tests for the ConfluenceController class.
@@ -80,7 +80,8 @@ class ConfluenceControllerTest {
             "A test space",
             ConfluenceSpace.SpaceType.GLOBAL,
             ConfluenceSpace.SpaceStatus.CURRENT,
-            new DataOwners.NotLoaded()
+            new DataOwners.NotLoaded(),
+            null
         );
 
         when(confluenceUseCase.getSpace(spaceKey))
@@ -228,7 +229,8 @@ class ConfluenceControllerTest {
             "A test space",
             ConfluenceSpace.SpaceType.GLOBAL,
             ConfluenceSpace.SpaceStatus.CURRENT,
-            new DataOwners.NotLoaded()
+            new DataOwners.NotLoaded(),
+            null
         );
 
         when(confluenceUseCase.getSpace(spaceKey))
@@ -261,8 +263,8 @@ class ConfluenceControllerTest {
     @Test
     void getAllSpaces_ReturnsList() throws Exception {
         List<ConfluenceSpace> spaces = List.of(
-            new ConfluenceSpace("id-1", "KEY1", "Space 1", "http://s1", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded()),
-            new ConfluenceSpace("id-2", "KEY2", "Space 2", "http://s2", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded())
+            new ConfluenceSpace("id-1", "KEY1", "Space 1", "http://s1", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null),
+            new ConfluenceSpace("id-2", "KEY2", "Space 2", "http://s2", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null)
         );
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(spaces));

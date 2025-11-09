@@ -95,7 +95,8 @@ class ConfluenceUseCaseImplTest {
             "Test description",
             ConfluenceSpace.SpaceType.GLOBAL,
             ConfluenceSpace.SpaceStatus.CURRENT,
-            new DataOwners.NotLoaded()
+            new DataOwners.Loaded(List.of()),
+            null
         );
     }
 }

@@ -5,10 +5,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.jpa.entity.ConfluenceSpaceEntity;
 
 class ConfluenceSpaceEntityMapperTest {
@@ -105,6 +107,7 @@ class ConfluenceSpaceEntityMapperTest {
             "Desc 3",
             ConfluenceSpace.SpaceType.PROJECT,
             ConfluenceSpace.SpaceStatus.ARCHIVED,
+            new DataOwners.Loaded(List.of()),
             lastModified
         );
 
@@ -144,6 +147,7 @@ class ConfluenceSpaceEntityMapperTest {
             null,
             ConfluenceSpace.SpaceType.GLOBAL,
             ConfluenceSpace.SpaceStatus.CURRENT,
+            new DataOwners.Loaded(List.of()),
             null
         );
 

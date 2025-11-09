@@ -7,6 +7,7 @@ import pro.softcom.sentinelle.application.config.port.in.GetPollingConfigPort;
 import pro.softcom.sentinelle.application.config.port.out.ReadConfluenceConfigPort;
 import pro.softcom.sentinelle.application.config.usecase.GetPollingConfigUseCase;
 import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
+import pro.softcom.sentinelle.application.confluence.port.in.GetSpaceUpdateInfoUseCase;
 import pro.softcom.sentinelle.application.confluence.port.out.AttachmentTextExtractor;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachmentClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachmentDownloader;
@@ -16,6 +17,7 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvi
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceSpaceCacheRefreshService;
 import pro.softcom.sentinelle.application.confluence.usecase.ConfluenceUseCaseImpl;
+import pro.softcom.sentinelle.application.confluence.usecase.GetSpaceUpdateInfoUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.export.DetectionReportMapper;
 import pro.softcom.sentinelle.application.pii.export.port.in.ExportDetectionReportPort;
 import pro.softcom.sentinelle.application.pii.export.port.out.ReadExportContextPort;
@@ -32,6 +34,7 @@ import pro.softcom.sentinelle.application.pii.reporting.port.out.PublishEventPor
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ReadPiiConfigPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanEventStore;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanResultQuery;
+import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.PiiContextExtractor;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanCheckpointService;
@@ -126,7 +129,7 @@ public class ApplicationUseCasesConfig {
             PiiDetectorClient piiDetectorClient,
             ScanOrchestrator scanOrchestrator,
             AttachmentProcessor attachmentProcessor,
-            ScanTimeoutConfig scanTimeoutConfig) {
+            ScanTimeOutConfig scanTimeoutConfig) {
         return new StreamConfluenceScanUseCaseImpl(
                 confluenceAccessor,
                 piiDetectorClient,
@@ -143,7 +146,7 @@ public class ApplicationUseCasesConfig {
             ScanOrchestrator scanOrchestrator,
             AttachmentProcessor attachmentProcessor,
             ScanCheckpointRepository scanCheckpointRepository,
-            ScanTimeoutConfig scanTimeoutConfig) {
+            ScanTimeOutConfig scanTimeoutConfig) {
         return new StreamConfluenceResumeScanUseCaseImpl(
                 confluenceAccessor,
                 piiDetectorClient,
@@ -157,6 +160,15 @@ public class ApplicationUseCasesConfig {
     @Bean
     public PauseScanUseCase pauseScanUseCase(ScanCheckpointRepository scanCheckpointRepository) {
         return new PauseScanUseCaseImpl(scanCheckpointRepository);
+    }
+
+    @Bean
+    public GetSpaceUpdateInfoUseCase getSpaceUpdateInfoUseCase(
+        ConfluenceUseCase confluenceUseCase,
+        ConfluenceClient confluenceClient,
+        ScanCheckpointRepository scanCheckpointRepository
+    ){
+        return new GetSpaceUpdateInfoUseCaseImpl(confluenceUseCase, confluenceClient, scanCheckpointRepository);
     }
 
     @Bean

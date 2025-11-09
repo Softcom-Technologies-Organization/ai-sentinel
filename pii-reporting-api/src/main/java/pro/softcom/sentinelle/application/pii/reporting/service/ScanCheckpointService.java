@@ -86,17 +86,18 @@ public class ScanCheckpointService {
     private CheckpointData extractCheckpointData(String eventType, ScanResult scanResult) {
         return switch (eventType) {
             case "item" ->
-                // Do NOT advance lastProcessedPageId on interim page item
-                // Keep status as RUNNING and preserve existing lastProcessedPageId
+                // Interim page item: persist checkpoint with RUNNING status
+                // Pass null for lastProcessedPageId - repository merge strategy preserves existing value
                 new CheckpointData(null, null, ScanStatus.RUNNING);
             case "attachmentItem" -> 
                 // Persist attachment progress but do NOT advance lastProcessedPageId
+                // Repository merge strategy preserves existing lastProcessedPageId
                 new CheckpointData(null, scanResult.attachmentName(), ScanStatus.RUNNING);
             case "pageComplete" -> 
-                // Persist progress at end of page
+                // Persist progress at end of page - advance lastProcessedPageId
                 new CheckpointData(scanResult.pageId(), null, ScanStatus.RUNNING);
             case "complete" -> 
-                // Space-level completion
+                // Space-level completion - reset lastProcessedPageId
                 new CheckpointData(null, null, ScanStatus.COMPLETED);
             default -> null; // Ignore other events
         };

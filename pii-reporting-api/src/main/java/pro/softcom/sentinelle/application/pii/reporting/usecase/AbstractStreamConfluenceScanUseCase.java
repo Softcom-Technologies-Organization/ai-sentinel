@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
+import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentTextExtracted;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
@@ -15,7 +16,6 @@ import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.sentinelle.domain.pii.scan.ScanProgress;
-import pro.softcom.sentinelle.infrastructure.config.ScanTimeoutConfig;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -34,7 +34,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
     protected final PiiDetectorClient piiDetectorClient;
     protected final ScanOrchestrator scanOrchestrator;
     protected final AttachmentProcessor attachmentProcessor;
-    protected final ScanTimeoutConfig scanTimeoutConfig;
+    protected final ScanTimeOutConfig scanTimeoutConfig;
 
     protected record ConfluencePageContext(String scanId, String spaceKey, String pageId,
                                            String pageTitle) {

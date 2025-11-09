@@ -1,4 +1,4 @@
-package pro.softcom.sentinelle.application.confluence.service;
+package pro.softcom.sentinelle.application.confluence.usecase;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
 import pro.softcom.sentinelle.application.confluence.port.in.GetSpaceUpdateInfoUseCase;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
@@ -20,14 +19,12 @@ import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
 
 /**
  * Service responsible for determining if Confluence spaces have been updated since their last scan.
- * 
  * Business purpose: Enables the dashboard to show visual indicators for spaces that may need
  * re-scanning due to recent updates.
  */
-@Service
 @RequiredArgsConstructor
 @Slf4j
-public class SpaceUpdateInfoService implements GetSpaceUpdateInfoUseCase {
+public class GetSpaceUpdateInfoUseCaseImpl implements GetSpaceUpdateInfoUseCase {
 
     private final ConfluenceUseCase confluenceUseCase;
     private final ConfluenceClient confluenceClient;

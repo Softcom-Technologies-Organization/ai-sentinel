@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.domain.confluence.SpaceUpdateInfo;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.dto.ConfluencePageDto;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.dto.ConfluenceSpaceDto;
@@ -129,6 +130,7 @@ class ConfluenceApiMapperTest {
             "Test description",
             ConfluenceSpace.SpaceType.GLOBAL,
             ConfluenceSpace.SpaceStatus.CURRENT,
+            new DataOwners.Loaded(List.of()),
             now
         );
 
@@ -157,8 +159,9 @@ class ConfluenceApiMapperTest {
             "Test Space",
             null,
             null,
-            null, // Sera défini à GLOBAL par le constructeur compact
-            null, // Sera défini à CURRENT par le constructeur compact
+            null,
+            null,
+            null,
             null
         );
 
@@ -204,6 +207,7 @@ class ConfluenceApiMapperTest {
                 "desc1",
                 ConfluenceSpace.SpaceType.GLOBAL,
                 ConfluenceSpace.SpaceStatus.CURRENT,
+                new DataOwners.Loaded(List.of()),
                 Instant.now()
             ),
             new ConfluenceSpace(
@@ -214,6 +218,7 @@ class ConfluenceApiMapperTest {
                 "desc2",
                 ConfluenceSpace.SpaceType.PERSONAL,
                 ConfluenceSpace.SpaceStatus.ARCHIVED,
+                new DataOwners.Loaded(List.of()),
                 Instant.now()
             )
         );

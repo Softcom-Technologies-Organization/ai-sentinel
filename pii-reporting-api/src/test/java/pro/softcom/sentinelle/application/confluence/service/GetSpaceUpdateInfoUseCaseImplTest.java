@@ -21,8 +21,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
+import pro.softcom.sentinelle.application.confluence.usecase.GetSpaceUpdateInfoUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.domain.confluence.ModifiedPageInfo;
 import pro.softcom.sentinelle.domain.confluence.SpaceUpdateInfo;
 import pro.softcom.sentinelle.domain.pii.ScanStatus;
@@ -34,7 +36,7 @@ import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
  * since their last scan by comparing modification dates.
  */
 @ExtendWith(MockitoExtension.class)
-class SpaceUpdateInfoServiceTest {
+class GetSpaceUpdateInfoUseCaseImplTest {
 
     @Mock
     private ConfluenceUseCase confluenceUseCase;
@@ -45,17 +47,17 @@ class SpaceUpdateInfoServiceTest {
     @Mock
     private ScanCheckpointRepository scanCheckpointRepository;
 
-    private SpaceUpdateInfoService service;
+    private GetSpaceUpdateInfoUseCaseImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new SpaceUpdateInfoService(confluenceUseCase, confluenceClient, scanCheckpointRepository);
+        service = new GetSpaceUpdateInfoUseCaseImpl(confluenceUseCase, confluenceClient, scanCheckpointRepository);
     }
 
     @Test
     void Should_ReturnNoScanYet_When_NoCheckpointExists() {
         // Given - A space with no previous scan
-        ConfluenceSpace space = createSpace("TEST", "Test Space", Instant.now());
+        ConfluenceSpace space = createSpace("TEST", Instant.now());
         
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
@@ -84,8 +86,8 @@ class SpaceUpdateInfoServiceTest {
         Instant lastModified = Instant.now().minus(10, ChronoUnit.DAYS);
         Instant lastScanDate = Instant.now().minus(5, ChronoUnit.DAYS);
         
-        ConfluenceSpace space = createSpace("TEST", "Test Space", lastModified);
-        ScanCheckpoint checkpoint = createCheckpoint("TEST", lastScanDate, ScanStatus.COMPLETED);
+        ConfluenceSpace space = createSpace("TEST", lastModified);
+        ScanCheckpoint checkpoint = createCheckpoint(lastScanDate);
         
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
@@ -114,8 +116,8 @@ class SpaceUpdateInfoServiceTest {
         Instant lastScanDate = Instant.now().minus(10, ChronoUnit.DAYS);
         Instant lastModified = Instant.now().minus(5, ChronoUnit.DAYS);
         
-        ConfluenceSpace space = createSpace("TEST", "Test Space", lastModified);
-        ScanCheckpoint checkpoint = createCheckpoint("TEST", lastScanDate, ScanStatus.COMPLETED);
+        ConfluenceSpace space = createSpace("TEST", lastModified);
+        ScanCheckpoint checkpoint = createCheckpoint(lastScanDate);
         
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
@@ -146,8 +148,8 @@ class SpaceUpdateInfoServiceTest {
     @Test
     void Should_ReturnNoUpdates_When_LastModifiedIsNull() {
         // Given - A space with no lastModified date
-        ConfluenceSpace space = createSpace("TEST", "Test Space", null);
-        createCheckpoint("TEST", Instant.now(), ScanStatus.COMPLETED);
+        ConfluenceSpace space = createSpace("TEST", null);
+        createCheckpoint(Instant.now());
         
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
@@ -168,7 +170,7 @@ class SpaceUpdateInfoServiceTest {
     void Should_ReturnUpdateInfoForSpecificSpace_When_SpaceKeyProvided() {
         // Given
         String spaceKey = "TEST";
-        ConfluenceSpace space = createSpace(spaceKey, "Test Space", Instant.now());
+        ConfluenceSpace space = createSpace(spaceKey, Instant.now());
         
         when(confluenceUseCase.getSpace(spaceKey))
             .thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
@@ -204,8 +206,8 @@ class SpaceUpdateInfoServiceTest {
         Instant newerScanDate = Instant.now().minus(10, ChronoUnit.DAYS);
         Instant lastModified = Instant.now().minus(5, ChronoUnit.DAYS);
         
-        ConfluenceSpace space = createSpace("TEST", "Test Space", lastModified);
-        ScanCheckpoint newerCheckpoint = createCheckpoint("TEST", newerScanDate, ScanStatus.COMPLETED);
+        ConfluenceSpace space = createSpace("TEST", lastModified);
+        ScanCheckpoint newerCheckpoint = createCheckpoint(newerScanDate);
         
         when(confluenceUseCase.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
@@ -224,7 +226,7 @@ class SpaceUpdateInfoServiceTest {
         // Then - Should use the newer scan date for comparison
         assertSoftly(softly -> {
             softly.assertThat(result).hasSize(1);
-            SpaceUpdateInfo info = result.get(0);
+            SpaceUpdateInfo info = result.getFirst();
             softly.assertThat(info.lastScanDate()).isEqualTo(newerScanDate);
             softly.assertThat(info.hasBeenUpdated()).isTrue(); // lastModified (5d ago) > newerScan (10d ago)
         });
@@ -232,25 +234,26 @@ class SpaceUpdateInfoServiceTest {
 
     // Helper methods
 
-    private ConfluenceSpace createSpace(String key, String name, Instant lastModified) {
+    private ConfluenceSpace createSpace(String key, Instant lastModified) {
         return new ConfluenceSpace(
-            "space-" + key,  // id
-            key,              // key
-            name,             // name
-            "https://confluence.example.com/spaces/" + key,  // url
-            "Description for " + name,  // description
-            ConfluenceSpace.SpaceType.GLOBAL,  // type
-            ConfluenceSpace.SpaceStatus.CURRENT,  // status
-            lastModified      // lastModified
+            "space-" + key,
+            key,
+            "Test Space",
+            "https://confluence.example.com/spaces/" + key,
+            "Description for " + "Test Space",
+            ConfluenceSpace.SpaceType.GLOBAL,
+            ConfluenceSpace.SpaceStatus.CURRENT,
+            new DataOwners.Loaded(List.of()),
+            lastModified
         );
     }
 
-    private ScanCheckpoint createCheckpoint(String spaceKey, Instant scanDate, ScanStatus status) {
+    private ScanCheckpoint createCheckpoint(Instant scanDate) {
         LocalDateTime localDateTime = LocalDateTime.ofInstant(scanDate, ZoneId.systemDefault());
         return ScanCheckpoint.builder()
             .scanId("scan-123")
-            .spaceKey(spaceKey)
-            .scanStatus(status)
+            .spaceKey("TEST")
+            .scanStatus(ScanStatus.COMPLETED)
             .updatedAt(localDateTime)
             .build();
     }

@@ -5,6 +5,7 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
@@ -15,7 +16,6 @@ import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanRemainingPages;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResumeRemainingPagesCalculator;
-import pro.softcom.sentinelle.infrastructure.config.ScanTimeoutConfig;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -36,7 +36,7 @@ public class StreamConfluenceResumeScanUseCaseImpl extends
         ScanOrchestrator scanOrchestrator,
         AttachmentProcessor attachmentProcessor,
         ScanCheckpointRepository scanCheckpointRepository,
-        ScanTimeoutConfig scanTimeoutConfig) {
+        ScanTimeOutConfig scanTimeoutConfig) {
         super(confluenceAccessor, piiDetectorClient, scanOrchestrator, attachmentProcessor, scanTimeoutConfig);
         this.scanCheckpointRepository = scanCheckpointRepository;
     }

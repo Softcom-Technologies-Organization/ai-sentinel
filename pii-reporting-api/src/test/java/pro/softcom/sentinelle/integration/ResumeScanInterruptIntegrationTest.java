@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -37,12 +38,13 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvi
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
-import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.DetectionCheckpointRepository;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.DetectionEventRepository;
+import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanEventEntity;
 
 @Testcontainers
 @SpringBootTest(classes = SentinelleApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -102,7 +104,7 @@ class ResumeScanInterruptIntegrationTest {
                                         "http://test.com", "Test description",
                                         ConfluenceSpace.SpaceType.GLOBAL,
                                         ConfluenceSpace.SpaceStatus.CURRENT,
-                                        new DataOwners.NotLoaded());
+                                        new DataOwners.NotLoaded(), null);
         var p1 = ConfluencePage.builder().id("p1").title("Page 1").spaceKey("TEST")
             .content(new ConfluencePage.HtmlContent("hello 1")).metadata(
                 new ConfluencePage.PageMetadata("u", LocalDateTime.now(), "u", LocalDateTime.now(),
@@ -172,7 +174,7 @@ class ResumeScanInterruptIntegrationTest {
         var allPageCompletes = eventRepo.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId,
                                                                                       List.of(
                                                                                           ScanEventType.PAGE_COMPLETE.toJson()));
-        var pageIds = allPageCompletes.stream().map(e -> e.getPageId()).toList();
+        var pageIds = allPageCompletes.stream().map(ScanEventEntity::getPageId).toList();
 
         softly.assertThat(allPageCompletes).hasSize(3);
         softly.assertThat(pageIds).doesNotContainNull();
@@ -197,7 +199,7 @@ class ResumeScanInterruptIntegrationTest {
                                         "http://test.com", "Test description",
                                         ConfluenceSpace.SpaceType.GLOBAL, 
                                         ConfluenceSpace.SpaceStatus.CURRENT,
-                                        new DataOwners.NotLoaded());
+                                        new DataOwners.NotLoaded(), null);
         var p1 = ConfluencePage.builder().id("p1").title("Page 1").spaceKey("TEST")
             .content(new ConfluencePage.HtmlContent("hello 1")).metadata(
                 new ConfluencePage.PageMetadata("u", LocalDateTime.now(), "u", LocalDateTime.now(), 1, "current"))

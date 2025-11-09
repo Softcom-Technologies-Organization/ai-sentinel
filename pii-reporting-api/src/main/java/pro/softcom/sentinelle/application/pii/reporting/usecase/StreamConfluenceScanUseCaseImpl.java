@@ -7,12 +7,12 @@ import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
-import pro.softcom.sentinelle.infrastructure.config.ScanTimeoutConfig;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -30,7 +30,7 @@ public class StreamConfluenceScanUseCaseImpl extends AbstractStreamConfluenceSca
         PiiDetectorClient piiDetectorClient,
         ScanOrchestrator scanOrchestrator,
         AttachmentProcessor attachmentProcessor,
-        ScanTimeoutConfig scanTimeoutConfig) {
+        ScanTimeOutConfig scanTimeoutConfig) {
         super(confluenceAccessor, piiDetectorClient, scanOrchestrator, attachmentProcessor, scanTimeoutConfig);
     }
 

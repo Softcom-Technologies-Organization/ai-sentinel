@@ -452,39 +452,62 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
         return buildGetRequest(uri);
     }
 
-    //TODO: refactor this method to reduce cyclomatic complexity between 5 and 7
+    /**
+     * Extracts page modification date from Confluence API response.
+     * Tries version.when first, then falls back to history.lastUpdated.when.
+     *
+     * @param page JSON node containing page data from Confluence API
+     * @return modification date as Instant, or null if not found or unparseable
+     */
     private Instant extractPageModificationDate(JsonNode page) {
-        // Try version.when first (most reliable)
-        if (page.has("version")) {
-            var version = page.get("version");
-            if (version.has("when")) {
-                try {
-                    return parseInstant(version.get("when").asText());
-                } catch (ConfluenceDateParseException e) {
-                    log.error("Failed to parse modification date from version.when field in Confluence response. " +
-                                  "Will attempt fallback to history.lastUpdated.when", e);
-                }
-            }
-        }
+        return tryExtractFromVersionWhen(page)
+            .or(() -> tryExtractFromHistoryWhen(page))
+            .orElse(null);
+    }
 
-        // Fallback to history.lastUpdated.when
-        if (page.has("history")) {
-            var history = page.get("history");
-            if (history.has("lastUpdated")) {
-                var lastUpdated = history.get("lastUpdated");
-                if (lastUpdated.has("when")) {
-                    try {
-                        return parseInstant(lastUpdated.get("when").asText());
-                    } catch (ConfluenceDateParseException e) {
-                        log.error("Failed to parse modification date from history.lastUpdated.when field in Confluence response. " +
-                                      "Entry will be ignored. This may indicate a change in the API format.", e);
-                        return null;
-                    }
-                }
-            }
-        }
+    /**
+     * Attempts to extract modification date from version.when field.
+     *
+     * @param page JSON node containing page data
+     * @return Optional containing the parsed Instant, or empty if not found or unparseable
+     */
+    private Optional<Instant> tryExtractFromVersionWhen(JsonNode page) {
+        return Optional.ofNullable(page.get("version"))
+            .flatMap(version -> Optional.ofNullable(version.get("when")))
+            .flatMap(when -> parseInstantSafely(when, "version.when", 
+                "Will attempt fallback to history.lastUpdated.when"));
+    }
 
-        return null;
+    /**
+     * Attempts to extract modification date from history.lastUpdated.when field.
+     *
+     * @param page JSON node containing page data
+     * @return Optional containing the parsed Instant, or empty if not found or unparseable
+     */
+    private Optional<Instant> tryExtractFromHistoryWhen(JsonNode page) {
+        return Optional.ofNullable(page.get("history"))
+            .flatMap(history -> Optional.ofNullable(history.get("lastUpdated")))
+            .flatMap(lastUpdated -> Optional.ofNullable(lastUpdated.get("when")))
+            .flatMap(when -> parseInstantSafely(when, "history.lastUpdated.when",
+                "Entry will be ignored. This may indicate a change in the API format."));
+    }
+
+    /**
+     * Safely parses an Instant from a JsonNode, handling parsing exceptions.
+     *
+     * @param whenNode JSON node containing the date string
+     * @param fieldName name of the field for logging purposes
+     * @param additionalMessage additional context message for error logging
+     * @return Optional containing the parsed Instant, or empty if parsing fails
+     */
+    private Optional<Instant> parseInstantSafely(JsonNode whenNode, String fieldName, String additionalMessage) {
+        try {
+            return Optional.of(parseInstant(whenNode.asText()));
+        } catch (ConfluenceDateParseException e) {
+            log.error("Failed to parse modification date from {} field in Confluence response. {}", 
+                fieldName, additionalMessage, e);
+            return Optional.empty();
+        }
     }
 
     private Instant parseInstant(String dateString) {

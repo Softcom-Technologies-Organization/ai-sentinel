@@ -186,14 +186,17 @@ services:
       NODE_ENV: production
       REDIS_URL: redis://infisical-redis:6379
       SITE_URL: ${INFISICAL_SITE_URL:-http://localhost:8082}
-      # SMTP Configuration (use real SMTP in production)
-      SMTP_HOST: ${SMTP_HOST:mailhog}
+      # SMTP Configuration (MailHog for local development, configure real SMTP in production)
+      SMTP_HOST: ${SMTP_HOST:-mailhog}
       SMTP_PORT: ${SMTP_PORT:-1025}
-      SMTP_SECURE: ${SMTP_SECURE:-true}
-      SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS}
-      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-AI Sentinel}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS:-noreply@ai-sentinel.local}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-AI Sentinel Infisical}
       SMTP_USERNAME: ${SMTP_USERNAME:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_TLS_ENABLED: ${SMTP_TLS_ENABLED:-false}
+      SMTP_STARTTLS_ENABLED: ${SMTP_STARTTLS_ENABLED:-false}
+      SMTP_IGNORE_TLS: ${SMTP_IGNORE_TLS:-true}
     secrets:
       - infisical_encryption_key
       - infisical_auth_secret
@@ -204,6 +207,7 @@ services:
     depends_on:
       - infisical-db
       - infisical-redis
+      - mailhog
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/status"]
       interval: 10s

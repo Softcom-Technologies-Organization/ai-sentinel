@@ -24,11 +24,11 @@
     </licenses>
 
     <properties>
-        <java.version>24</java.version>
+        <java.version>25</java.version>
         <jackson.version>2.15.3</jackson.version>
         <springdoc.version>2.2.0</springdoc.version>
-        <grpc.version>1.75.0</grpc.version>
-        <protobuf.version>4.31.1</protobuf.version>
+        <grpc.version>1.76.0</grpc.version>
+        <protobuf.version>4.33.0</protobuf.version>
         <armeria-bom.version>1.33.4</armeria-bom.version>
         <jsoup.version>1.17.2</jsoup.version>
         <archunit-junit5.version>1.4.1</archunit-junit5.version>
@@ -38,7 +38,7 @@
         <pdfbox.version>3.0.5</pdfbox.version>
         <tika.version>3.2.2</tika.version>
         <lombok.version>1.18.40</lombok.version>
-        <grpc-api.version>1.75.0</grpc-api.version>
+        <grpc-api.version>1.76.0</grpc-api.version>
         <mockito-core.version>5.19.0</mockito-core.version>
         <awaitility.version>4.2.0</awaitility.version>
         <testcontainers.version>1.21.2</testcontainers.version>
@@ -490,7 +490,6 @@
                 </executions>
             </plugin>
 
-            <!-- SonarQube Maven Plugin -->
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>

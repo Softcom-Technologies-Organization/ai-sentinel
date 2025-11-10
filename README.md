@@ -136,8 +136,7 @@ Before starting, make sure you have:
   ```
 
 - **Infisical Account**: Required for secrets management
-  - Option 1: Use [Infisical Cloud](https://app.infisical.com) (recommended for production)
-  - Option 2: Self-hosted Infisical (included in docker-compose for development)
+  - Self-hosted Infisical (included in docker-compose)
   - Follow [Infisical UI Setup Guide](docs/INFISICAL_UI_SETUP.md) for configuration
 
 - **Confluence Credentials**: To scan your Confluence spaces (stored in Infisical)

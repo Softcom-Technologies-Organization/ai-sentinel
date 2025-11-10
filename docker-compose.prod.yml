@@ -167,6 +167,17 @@ services:
     networks:
       - ai-sentinel-network
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    restart: unless-stopped
+    ports:
+      # SMTP server is only needed inside Docker network; not exposed to host for security
+      # - "127.0.0.1:1025:1025"  # Uncomment if you need to test SMTP from the host
+      - "127.0.0.1:8025:8025"  # Web UI (localhost only)
+    networks:
+      - ai-sentinel-network
+
   infisical:
     image: infisical/infisical:latest-postgres
     container_name: infisical-prod
@@ -176,8 +187,8 @@ services:
       REDIS_URL: redis://infisical-redis:6379
       SITE_URL: ${INFISICAL_SITE_URL:-http://localhost:8082}
       # SMTP Configuration (use real SMTP in production)
-      SMTP_HOST: ${SMTP_HOST}
-      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_HOST: ${SMTP_HOST:mailhog}
+      SMTP_PORT: ${SMTP_PORT:-1025}
       SMTP_SECURE: ${SMTP_SECURE:-true}
       SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS}
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-AI Sentinel}

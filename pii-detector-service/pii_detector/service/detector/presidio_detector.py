@@ -268,53 +268,75 @@ class PresidioDetector:
             return
         
         try:
-            # Mapping from language codes to correct spaCy model names
-            spacy_model_map = {
-                "en": "en_core_web_sm",
-                "fr": "fr_core_news_sm",
-                "es": "es_core_news_sm",
-                "de": "de_core_news_sm",
-                "it": "it_core_news_sm",
-                "pt": "pt_core_news_sm",
-                "nl": "nl_core_news_sm",
-            }
-            
-            # Create NLP engine for selected languages
-            nlp_configuration = {
-                "nlp_engine_name": "spacy",
-                "models": [
-                    {
-                        "lang_code": lang, 
-                        "model_name": spacy_model_map.get(lang, f"{lang}_core_news_sm"),
-                        "labels_to_ignore": self._labels_to_ignore
-                    } 
-                    for lang in self._languages
-                ]
-            }
-            
-            provider = NlpEngineProvider(nlp_configuration=nlp_configuration)
-            nlp_engine = provider.create_engine()
-            
-            # Create analyzer with NLP engine
+            # Build NLP engine without triggering spaCy downloads.
+            # If the config lists concrete model packages, we will let NlpEngineProvider handle it.
+            # If it lists placeholders like "blank:xx" or has no models, we inject spaCy.blank pipelines directly.
+            nlp_section = self.config.get("nlp", {}) if isinstance(self.config, dict) else {}
+            models_cfg = []
+            if isinstance(nlp_section, dict):
+                models_cfg = nlp_section.get("models", []) or []
+
+            use_provider = False
+            if models_cfg:
+                # Decide whether the models are real packages or placeholders
+                # Any model_name starting with "blank:" should NOT be sent to provider
+                has_placeholder = any(
+                    isinstance(m, dict) and str(m.get("model_name", "")).startswith("blank:")
+                    for m in models_cfg
+                )
+                use_provider = not has_placeholder
+
+            if use_provider:
+                nlp_configuration = {**nlp_section}
+                provider = NlpEngineProvider(nlp_configuration=nlp_configuration)
+                nlp_engine = provider.create_engine()
+                supported_langs = self._languages
+            else:
+                # Inject blank pipelines for requested languages
+                try:
+                    from presidio_analyzer.nlp_engine import SpacyNlpEngine  # type: ignore
+                    import spacy  # type: ignore
+                except Exception as imp_err:
+                    raise RuntimeError(f"spaCy not available for blank injection: {imp_err}")
+
+                nlp_engine = SpacyNlpEngine()
+                # Ensure the engine has an 'nlp' mapping
+                if not hasattr(nlp_engine, "nlp") or getattr(nlp_engine, "nlp") is None:
+                    setattr(nlp_engine, "nlp", {})
+                loaded_langs: List[str] = []
+                for lang in self._languages:
+                    try:
+                        nlp_engine.nlp[lang] = spacy.blank(lang)
+                        loaded_langs.append(lang)
+                    except Exception as lang_err:
+                        self.logger.warning(f"Failed to initialize spaCy blank('{lang}'): {lang_err}")
+                supported_langs = loaded_langs if loaded_langs else ["en"]
+                if not loaded_langs and "en" in supported_langs:
+                    # Try at least English
+                    try:
+                        nlp_engine.nlp["en"] = spacy.blank("en")
+                    except Exception as en_err:
+                        self.logger.warning(f"Also failed to initialize spaCy blank('en'): {en_err}")
+
+            # Create analyzer with prepared NLP engine and supported languages
             self._analyzer = AnalyzerEngine(
                 nlp_engine=nlp_engine,
-                supported_languages=self._languages
+                supported_languages=supported_langs,
             )
-            
-            # Note: We keep SpacyRecognizer for detecting LOCATION, NRP, etc.
-            # False positives on PERSON names are avoided by setting person_name=false
-            # in config, which excludes PERSON from the allowed_entities whitelist
-            
+
             self.logger.info(
-                f"Presidio analyzer loaded successfully with "
-                f"{len(self._analyzer.registry.recognizers)} recognizers"
+                "Presidio analyzer loaded without spaCy package downloads (blank pipelines or preinstalled models)."
             )
-            
+
         except Exception as e:
-            self.logger.error(f"Failed to load Presidio analyzer: {e}")
-            # Create basic analyzer without NLP for fallback
-            self._analyzer = AnalyzerEngine()
-            self.logger.warning("Using basic Presidio analyzer without NLP support")
+            self.logger.error(f"Failed to load Presidio analyzer with configured NLP engine: {e}")
+            # Last resort fallback without NLP
+            try:
+                self._analyzer = AnalyzerEngine()
+                self.logger.warning("Using basic Presidio analyzer without NLP support")
+            except Exception as inner_e:
+                self.logger.error(f"AnalyzerEngine fallback failed: {inner_e}")
+                raise
     
     def _build_allowed_entities(self) -> List[str]:
         """

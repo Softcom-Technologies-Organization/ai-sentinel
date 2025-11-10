@@ -1,6 +1,7 @@
 package pro.softcom.sentinelle.infrastructure.confluence.adapter.out;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import java.io.IOException;
@@ -9,6 +10,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -21,6 +25,8 @@ import org.springframework.stereotype.Service;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.ModifiedAttachmentInfo;
+import pro.softcom.sentinelle.domain.confluence.ModifiedPageInfo;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.config.ConfluenceConnectionConfig;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.dto.ConfluencePageDto;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.dto.ConfluenceSpaceDto;
@@ -44,6 +50,12 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
     private static final String CONTENT_TYPE_HEADER_VALUE = "application/json";
     private static final String AUTHORIZATION_HEADER_NAME = "Authorization";
     private static final String RESULTS_FIELD = "results";
+    private static final DateTimeFormatter CQL_DATE_TIME_FORMATTER =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.of("UTC"));
+    public static final String TYPE_FIELD_NAME = "type";
+    public static final String TITLE_FIELD_NAME = "title";
+    public static final String ID_FIELD_NAME = "id";
+    public static final String PAGE_FIELD_NAME = "page";
 
     private final ConfluenceConnectionConfig config;
     private final ObjectMapper objectMapper;
@@ -109,6 +121,14 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
         log.info("Retrieving space: {}", spaceKey);
         var request = buildSpaceRequest(spaceKey);
         return retryExecutor.executeRequest(request).thenApply(this::parseSpaceResponse);
+    }
+
+    @Override
+    public CompletableFuture<Optional<ConfluenceSpace>> getSpaceWithPermissions(String spaceKey) {
+        log.info("Retrieving space with permissions: {}", spaceKey);
+        var request = buildSpaceRequestWithPermissions(spaceKey);
+        return retryExecutor.executeRequest(request)
+                .thenApply(this::parseSpaceResponse);
     }
 
     @Override
@@ -254,7 +274,7 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
 
     private List<ConfluencePage> extractPagesFromResponse(String responseBody, String spaceKey) throws IOException {
         var jsonNode = objectMapper.readTree(responseBody);
-        var pageNode = jsonNode.get("page");
+        var pageNode = jsonNode.get(PAGE_FIELD_NAME);
 
         if (pageNode == null || !pageNode.has(RESULTS_FIELD)) {
             return List.of();
@@ -323,6 +343,11 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
 
     private HttpRequest buildSpaceRequest(String spaceKeyOrId) {
         var uri = urlBuilder.buildSpaceUri(spaceKeyOrId);
+        return buildGetRequest(uri);
+    }
+
+    private HttpRequest buildSpaceRequestWithPermissions(String spaceKey) {
+        var uri = urlBuilder.buildSpaceUriWithPermissions(spaceKey);
         return buildGetRequest(uri);
     }
 
@@ -418,4 +443,232 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
         return merged;
     }
 
+    private String formatInstantForCql(Instant instant) {
+        return CQL_DATE_TIME_FORMATTER.format(instant);
+    }
+
+    private HttpRequest buildContentSearchModifiedSinceRequest(String spaceKey, String sinceDate) {
+        var uri = urlBuilder.buildContentSearchModifiedSinceUri(spaceKey, sinceDate);
+        return buildGetRequest(uri);
+    }
+
+    /**
+     * Extracts page modification date from Confluence API response.
+     * Tries version.when first, then falls back to history.lastUpdated.when.
+     *
+     * @param page JSON node containing page data from Confluence API
+     * @return modification date as Instant, or null if not found or unparseable
+     */
+    private Instant extractPageModificationDate(JsonNode page) {
+        return tryExtractFromVersionWhen(page)
+            .or(() -> tryExtractFromHistoryWhen(page))
+            .orElse(null);
+    }
+
+    /**
+     * Attempts to extract modification date from version.when field.
+     *
+     * @param page JSON node containing page data
+     * @return Optional containing the parsed Instant, or empty if not found or unparseable
+     */
+    private Optional<Instant> tryExtractFromVersionWhen(JsonNode page) {
+        return Optional.ofNullable(page.get("version"))
+            .flatMap(version -> Optional.ofNullable(version.get("when")))
+            .flatMap(when -> parseInstantSafely(when, "version.when", 
+                "Will attempt fallback to history.lastUpdated.when"));
+    }
+
+    /**
+     * Attempts to extract modification date from history.lastUpdated.when field.
+     *
+     * @param page JSON node containing page data
+     * @return Optional containing the parsed Instant, or empty if not found or unparseable
+     */
+    private Optional<Instant> tryExtractFromHistoryWhen(JsonNode page) {
+        return Optional.ofNullable(page.get("history"))
+            .flatMap(history -> Optional.ofNullable(history.get("lastUpdated")))
+            .flatMap(lastUpdated -> Optional.ofNullable(lastUpdated.get("when")))
+            .flatMap(when -> parseInstantSafely(when, "history.lastUpdated.when",
+                "Entry will be ignored. This may indicate a change in the API format."));
+    }
+
+    /**
+     * Safely parses an Instant from a JsonNode, handling parsing exceptions.
+     *
+     * @param whenNode JSON node containing the date string
+     * @param fieldName name of the field for logging purposes
+     * @param additionalMessage additional context message for error logging
+     * @return Optional containing the parsed Instant, or empty if parsing fails
+     */
+    private Optional<Instant> parseInstantSafely(JsonNode whenNode, String fieldName, String additionalMessage) {
+        try {
+            return Optional.of(parseInstant(whenNode.asText()));
+        } catch (ConfluenceDateParseException e) {
+            log.error("Failed to parse modification date from {} field in Confluence response. {}", 
+                fieldName, additionalMessage, e);
+            return Optional.empty();
+        }
+    }
+
+    private Instant parseInstant(String dateString) {
+        try {
+            return Instant.parse(dateString);
+        } catch (Exception e) {
+            throw new ConfluenceDateParseException(dateString, e);
+        }
+    }
+
+    @Override
+    public CompletableFuture<List<ModifiedPageInfo>> getModifiedPagesSince(
+        String spaceKey, Instant sinceDate) {
+        
+        log.debug("Getting modified pages for space {} since {}", spaceKey, sinceDate);
+        
+        var sinceDateFormatted = formatInstantForCql(sinceDate);
+        var request = buildContentSearchModifiedSinceRequest(spaceKey, sinceDateFormatted);
+        
+        return retryExecutor.executeRequest(request)
+            .thenApply(this::extractModifiedPagesInfo)
+            .exceptionally(ex -> handleModifiedPagesError(ex, spaceKey));
+    }
+
+    private List<ModifiedPageInfo> extractModifiedPagesInfo(
+        HttpResponse<String> response) {
+        
+        if (response.statusCode() != 200) {
+            log.warn("CQL Search returned non-200 status: {}", response.statusCode());
+            return List.of();
+        }
+
+        try {
+            var jsonNode = objectMapper.readTree(response.body());
+            
+            if (!jsonNode.has(RESULTS_FIELD)) {
+                return List.of();
+            }
+
+            var results = jsonNode.get(RESULTS_FIELD);
+            if (!results.isArray() || results.isEmpty()) {
+                return List.of();
+            }
+
+            return extractPageInfoList(results);
+            
+        } catch (IOException e) {
+            log.error("Error parsing CQL search response", e);
+            return List.of();
+        }
+    }
+
+    private List<ModifiedPageInfo> extractPageInfoList(
+        JsonNode results) {
+        
+        var pageInfoList = new ArrayList<ModifiedPageInfo>();
+
+        for (var page : results) {
+            var pageInfo = extractSinglePageInfo(page);
+            if (pageInfo != null) {
+                pageInfoList.add(pageInfo);
+            }
+        }
+
+        return pageInfoList;
+    }
+
+    private ModifiedPageInfo extractSinglePageInfo(
+        JsonNode page) {
+        
+        try {
+            String type = page.has(TYPE_FIELD_NAME) ? page.get(TYPE_FIELD_NAME).asText() : null;
+            if (!PAGE_FIELD_NAME.equalsIgnoreCase(type)) {
+                return null;
+            }
+
+            String pageId = page.has(ID_FIELD_NAME) ? page.get(ID_FIELD_NAME).asText() : null;
+            String title = page.has(TITLE_FIELD_NAME) ? page.get(TITLE_FIELD_NAME).asText() : "Untitled";
+            Instant lastModified = extractPageModificationDate(page);
+            
+            if (pageId == null || lastModified == null) {
+                return null;
+            }
+            
+            return new ModifiedPageInfo(
+                pageId,
+                title,
+                lastModified
+            );
+        } catch (Exception e) {
+            log.warn("Failed to extract page info from JSON node", e);
+            return null;
+        }
+    }
+
+    private List<ModifiedPageInfo> handleModifiedPagesError(
+        Throwable ex, String spaceKey) {
+        
+        log.error("Error retrieving modified pages for space {}", spaceKey, ex);
+        return List.of();
+    }
+
+    @Override
+    public CompletableFuture<List<ModifiedAttachmentInfo>> getModifiedAttachmentsSince(
+        String spaceKey, Instant sinceDate) {
+
+        log.debug("Getting modified attachments for space {} since {}", spaceKey, sinceDate);
+
+        var sinceDateFormatted = formatInstantForCql(sinceDate);
+        var cql = String.format("space='%s' AND type=attachment AND lastmodified >= '%s'",
+                                spaceKey, sinceDateFormatted);
+        var request = buildGetRequest(urlBuilder.buildSearchUri(cql));
+
+        return retryExecutor.executeRequest(request)
+            .thenApply(this::extractModifiedAttachmentsInfo)
+            .exceptionally(ex -> {
+                log.error("Error retrieving modified attachments for space {}", spaceKey, ex);
+                return List.of();
+            });
+    }
+
+    private List<ModifiedAttachmentInfo> extractModifiedAttachmentsInfo(HttpResponse<String> response) {
+        if (response.statusCode() != 200) {
+            log.warn("CQL Search (attachments) returned non-200 status: {}", response.statusCode());
+            return List.of();
+        }
+        try {
+            var jsonNode = objectMapper.readTree(response.body());
+            if (!jsonNode.has(RESULTS_FIELD)) {
+                return List.of();
+            }
+            var results = jsonNode.get(RESULTS_FIELD);
+            if (!results.isArray() || results.isEmpty()) {
+                return List.of();
+            }
+            var modifiedAttachmentInfos = new ArrayList<ModifiedAttachmentInfo>(results.size());
+            for (var node : results) {
+                var info = extractSingleAttachmentInfo(node);
+                if (info != null) {
+                    modifiedAttachmentInfos.add(info);
+                }
+            }
+            return modifiedAttachmentInfos;
+        } catch (IOException e) {
+            log.error("Error parsing attachment CQL search response", e);
+            return List.of();
+        }
+    }
+
+    private ModifiedAttachmentInfo extractSingleAttachmentInfo(JsonNode node) {
+        try {
+            String id = node.has(ID_FIELD_NAME) ? node.get(ID_FIELD_NAME).asText() : null;
+            String title = node.has(TITLE_FIELD_NAME) ? node.get(TITLE_FIELD_NAME).asText() : "Unnamed";
+            Instant lastModified = extractPageModificationDate(node);
+            if (id == null || lastModified == null) {
+                return null;
+            }
+            return new ModifiedAttachmentInfo(id, title, lastModified);
+        } catch (Exception e) {
+            log.warn("Failed to extract attachment info from JSON node", e);
+            return null;
+        }
+    }
 }

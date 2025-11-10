@@ -4,7 +4,8 @@ import lombok.Getter;
 
 @Getter
 public sealed class ConfluenceException extends RuntimeException permits ConfluenceApiException,
-    ConfluenceAuthenticationException, ConfluenceConnectionException, ConfluenceNotFoundException {
+    ConfluenceAuthenticationException, ConfluenceConnectionException, ConfluenceNotFoundException,
+    ConfluenceDateParseException {
     private final int statusCode;
     private final String confluenceMessage;
     
@@ -40,5 +41,20 @@ final class ConfluenceNotFoundException extends ConfluenceException {
 final class ConfluenceConnectionException extends ConfluenceException {
     public ConfluenceConnectionException(String message, Throwable cause) {
         super(message, cause);
+    }
+}
+
+/**
+ * Exception raised when the parsing of a date from the Confluence API fails.
+ * This may indicate a change in the date format or corrupted data.
+ */
+@Getter
+final class ConfluenceDateParseException extends ConfluenceException {
+    private final String invalidDateString;
+    
+    public ConfluenceDateParseException(String invalidDateString, Throwable cause) {
+        super(String.format("Échec du parsing du format de date Confluence: '%s'. " +
+            "Cela peut indiquer un changement dans l'API Confluence.", invalidDateString), cause);
+        this.invalidDateString = invalidDateString;
     }
 }

@@ -30,14 +30,13 @@ import reactor.test.StepVerifier;
 class ScanControllerTest {
 
     private StreamConfluenceScanUseCaseImpl streamConfluenceScanUseCase;
-    private StreamConfluenceResumeScanUseCase streamConfluenceResumeScanUseCase;
 
     private ScanController controller;
 
     @BeforeEach
     void setUp() {
         streamConfluenceScanUseCase = mock(StreamConfluenceScanUseCaseImpl.class);
-        controller = new ScanController(streamConfluenceScanUseCase, streamConfluenceResumeScanUseCase, new ScanResultToScanEventMapper());
+        controller = new ScanController(streamConfluenceScanUseCase, mock(StreamConfluenceResumeScanUseCase.class), new ScanResultToScanEventMapper());
     }
 
     @Test
@@ -82,7 +81,7 @@ class ScanControllerTest {
         StepVerifier.create(flux)
                 .assertNext(sse -> {
                     assertThat(sse.data()).isNotNull();
-                    assertThat(sse.data().eventType()).isEqualTo(ScanEventType.ERROR.toJson());
+                    assertThat(sse.data().eventType()).isEqualTo(ScanEventType.ERROR);
                     assertThat(sse.data().message()).isEqualTo("Espace non trouvé");
                 })
                 .verifyComplete();

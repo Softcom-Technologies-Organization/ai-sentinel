@@ -1,13 +1,19 @@
 package pro.softcom.sentinelle.infrastructure.confluence.adapter.out.mapper;
 
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.dto.ConfluenceSpaceDto;
+import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.dto.ConfluenceSpaceDto.HistoryDto;
 
 /**
  * Maps ConfluenceSpaceDto (REST) to ConfluenceSpace (domain).
  * URL is presentation-facing; by default, we keep it null here to avoid leaking UI concerns.
  * An overloaded method allows providing a ConfluenceUrlBuilder to populate the URL when required.
  */
+@Slf4j
 public final class ConfluenceSpaceMapper {
 
     private ConfluenceSpaceMapper() {
@@ -23,12 +29,15 @@ public final class ConfluenceSpaceMapper {
      */
     public static ConfluenceSpace toDomain(ConfluenceSpaceDto dto) {
         if (dto == null) {
-            throw new IllegalArgumentException("ConfluenceSpaceDto ne peut pas être null");
+            throw new IllegalArgumentException("ConfluenceSpaceDto cannot be null");
         }
         var spaceType = parseSpaceType(dto.type());
         var spaceStatus = parseSpaceStatus(dto.status());
         var descriptionText = extractDescription(dto);
-        String url = ConfluenceUrlBuilder.spaceOverviewUrl(dto.key());
+        var url = ConfluenceUrlBuilder.spaceOverviewUrl(dto.key());
+        var confluenceSpaceDataOwners = ConfluenceDataOwnerMapper.extractDataOwners(dto);
+        var dataOwners = new DataOwners.Loaded(confluenceSpaceDataOwners);
+        Instant lastModified = extractLastModified(dto);
 
         return new ConfluenceSpace(
             dto.id(),
@@ -37,7 +46,9 @@ public final class ConfluenceSpaceMapper {
             url,
             descriptionText,
             spaceType,
-            spaceStatus
+            spaceStatus,
+            dataOwners,
+            lastModified
         );
     }
 
@@ -64,5 +75,36 @@ public final class ConfluenceSpaceMapper {
             return description.plain().value();
         }
         return "";
+    }
+
+    private static Instant extractLastModified(ConfluenceSpaceDto dto) {
+        var history = dto.history();
+
+        Instant lastModified = null;
+
+        if (history != null) {
+            if (hasHistoryBeenUpdated(history)) {
+                lastModified = parseInstantSafely(history.lastUpdated().when());
+            }
+
+            if (history.createdDate() != null) {
+                lastModified = parseInstantSafely(history.createdDate());
+            }
+        }
+
+        return lastModified;
+    }
+
+    private static boolean hasHistoryBeenUpdated(HistoryDto history) {
+        return history.lastUpdated() != null && history.lastUpdated().when() != null;
+    }
+
+    private static Instant parseInstantSafely(String dateString) {
+        try {
+            return Instant.parse(dateString);
+        } catch (DateTimeParseException e) {
+            log.error("Cannot parse {} to Instant", dateString, e);
+            return null;
+        }
     }
 }

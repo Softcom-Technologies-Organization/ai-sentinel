@@ -38,6 +38,7 @@ import {RawStreamPayload} from '../../core/models/stream-event-type';
 import {HistoryEntry} from '../../core/models/history-entry';
 import {ItemsBySpace} from '../../core/models/item-by-space';
 import {PiiItem} from '../../core/models/pii-item';
+import {SpaceUpdateInfo} from '../../core/models/space-update-info.model';
 import {Ripple} from 'primeng/ripple';
 import {TooltipModule} from 'primeng/tooltip';
 import {DataViewModule} from 'primeng/dataview';
@@ -102,9 +103,13 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly hasNewSpaces = signal<boolean>(false);
   readonly newSpacesCount = signal<number>(0);
 
+  // Space update info (to detect spaces modified since last scan)
+  readonly spacesUpdateInfo = signal<SpaceUpdateInfo[]>([]);
+
   ngOnInit(): void {
     this.fetchSpaces();
     this.loadLastScan();
+    this.loadSpacesUpdateInfo();
   }
 
   ngOnDestroy(): void {
@@ -436,6 +441,71 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Loads space update information to detect which spaces have been modified since last scan.
+   * Business purpose: enables visual indicators for spaces that may need re-scanning.
+   */
+  private loadSpacesUpdateInfo(): void {
+    this.sentinelleApiService.getSpacesUpdateInfo().subscribe({
+      next: (updateInfos) => {
+        this.spacesUpdateInfo.set(updateInfos);
+      },
+      error: (err) => {
+        console.error('[ui] Error loading spaces update info:', err);
+        this.spacesUpdateInfo.set([]);
+      }
+    });
+  }
+
+  /**
+   * Checks if a specific space has been updated since its last scan.
+   * Business purpose: used by template to show update indicator icons.
+   */
+  hasSpaceBeenUpdated(spaceKey: string): boolean {
+    const info = this.spacesUpdateInfo().find(i => i.spaceKey === spaceKey);
+    return info?.hasBeenUpdated ?? false;
+  }
+
+  /**
+   * Gets the update tooltip text for a space.
+   * Business purpose: provides human-readable details about what changed (pages/attachments).
+   */
+  getSpaceUpdateTooltip(spaceKey: string): string {
+    const info = this.spacesUpdateInfo().find(i => i.spaceKey === spaceKey);
+    if (!info?.hasBeenUpdated) {
+      return '';
+    }
+
+    const maxPerCategory = 5;
+
+    const parts: string[] = [];
+
+    const pages = Array.isArray(info.updatedPages) ? info.updatedPages : [];
+    if (pages.length > 0) {
+      const shown = pages.slice(0, maxPerCategory);
+      const more = pages.length - shown.length;
+      const list = `- ${shown.join('\n- ')}` + (more > 0 ? `\n… (+${more} de plus)` : '');
+      parts.push(`Pages modifiées :\n${list}`);
+    }
+
+    const attachments = Array.isArray(info.updatedAttachments) ? info.updatedAttachments : [];
+    if (attachments.length > 0) {
+      const shown = attachments.slice(0, maxPerCategory);
+      const more = attachments.length - shown.length;
+      const list = `- ${shown.join('\n- ')}` + (more > 0 ? `\n… (+${more} de plus)` : '');
+      parts.push(`Pièces jointes modifiées :\n${list}`);
+    }
+
+    // Fallback if no specific lists were provided by the backend
+    if (parts.length === 0) {
+      return 'Contenu modifié depuis le dernier scan';
+    }
+
+    // Note: do NOT include last scan date in tooltip per requirement
+    let tooltip = `Mis à jour : ${info.lastModified ? new Date(info.lastModified).toLocaleString('fr-FR') : 'Inconnue'}`;
+    return tooltip + '\n'+ parts.join('\n\n');
+  }
+
+  /**
    * Re-applies last known statuses and PII counts to UI spaces when the base list is (re)loaded.
    * Fixes race condition where loadLastScan() may finish before fetchSpaces(), causing badges not to refresh.
    */
@@ -660,13 +730,15 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
    * Skips empty items (no entities).
    */
   private addPiiItemToSpace(spaceKey: string, payload: RawStreamPayload): void {
-    const entities = Array.isArray(payload.entities) ? payload.entities : [];
+    const entities = Array.isArray(payload.detectedEntities) ? payload.detectedEntities : [];
     // Skip creating a card when no PII entities were detected
     if (!entities.length) {
       return;
     }
     const severity = this.sentinelleApiService.severityForEntities(entities);
     const piiItem: PiiItem = {
+      scanId: payload.scanId ?? '',
+      spaceKey: spaceKey,
       pageId: String(payload.pageId ?? ''),
       pageTitle: payload.pageTitle,
       pageUrl: payload.pageUrl,
@@ -674,15 +746,19 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
       isFinal: !!payload.isFinal,
       severity,
       summary: (payload.summary && typeof payload.summary === 'object') ? payload.summary : undefined,
-      entities: entities.map((e: any) => {
+      detectedEntities: entities.map((e: any) => {
         return {
-          label: e?.typeLabel,
-          type: e?.type,
-          text: e?.text,
-          score: typeof e?.score === 'number' ? e.score : undefined
+          startPosition: e?.startPosition,
+          endPosition: e?.endPosition,
+          piiTypeLabel: e?.piiTypeLabel,
+          piiType: e?.piiType,
+          sensitiveValue: e?.sensitiveValue,
+          sensitiveContext: e?.sensitiveContext,
+          maskedContext: e?.maskedContext,
+          confidence: typeof e?.confidence === 'number' ? e.confidence : undefined
         };
       }),
-      maskedHtml: this.sentinelleApiService.sanitizeMaskedHtml(payload.maskedContent),
+      // maskedHtml: this.sentinelleApiService.sanitizeMaskedHtml(payload.maskedContent),
       attachmentName: payload.attachmentName,
       attachmentType: payload.attachmentType,
       attachmentUrl: payload.attachmentUrl

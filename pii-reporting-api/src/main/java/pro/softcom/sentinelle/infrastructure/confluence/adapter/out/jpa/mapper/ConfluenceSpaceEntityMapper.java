@@ -1,8 +1,13 @@
 package pro.softcom.sentinelle.infrastructure.confluence.adapter.out.jpa.mapper;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.jpa.entity.ConfluenceSpaceEntity;
+
+import java.time.LocalDateTime;
 
 public final class ConfluenceSpaceEntityMapper {
 
@@ -14,6 +19,10 @@ public final class ConfluenceSpaceEntityMapper {
             return null;
         }
 
+        Instant lastModified = entity.getLastModifiedDate() != null
+            ? entity.getLastModifiedDate().atZone(ZoneId.systemDefault()).toInstant()
+            : null;
+
         return new ConfluenceSpace(
             entity.getId(),
             entity.getSpaceKey(),
@@ -21,7 +30,9 @@ public final class ConfluenceSpaceEntityMapper {
             entity.getUrl(),
             entity.getDescription(),
             ConfluenceSpace.SpaceType.GLOBAL,
-            ConfluenceSpace.SpaceStatus.CURRENT
+            ConfluenceSpace.SpaceStatus.CURRENT,
+            new DataOwners.NotLoaded(),
+            lastModified
         );
     }
 
@@ -31,6 +42,9 @@ public final class ConfluenceSpaceEntityMapper {
         }
 
         LocalDateTime now = LocalDateTime.now();
+        LocalDateTime lastModifiedDate = domain.lastModified() != null
+            ? LocalDateTime.ofInstant(domain.lastModified(), ZoneId.systemDefault())
+            : null;
 
         return ConfluenceSpaceEntity.builder()
             .id(domain.id())
@@ -40,6 +54,7 @@ public final class ConfluenceSpaceEntityMapper {
             .description(domain.description())
             .cacheTimestamp(now)
             .lastUpdated(now)
+            .lastModifiedDate(lastModifiedDate)
             .build();
     }
 }

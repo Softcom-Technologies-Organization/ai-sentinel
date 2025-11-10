@@ -82,20 +82,30 @@
             {{ revealed ? 'Masquer' : 'Révéler' }}
           </button>
         </div>
+
+        <br>
+
         <div class="chips mt-2">
-          @for (e of item?.entities; track e) {
-            <p-chip [class]="'entity-chip'" [removable]="false"
-                    [ngClass]="{'has-text': revealed && e.text}">
-              {{ e.label }}
-              @if (revealed && e.text) {
-                : "{{ e.text }}"
-              }
-              @if (e.score !== undefined) {
-                (score={{ formatScore(e.score) }})
-              }
-            </p-chip>
+          @for (e of item?.detectedEntities; track e) {
+            <div class="col-12 md:col-6 lg:col-4">
+              <p-card>
+                <p>
+                  @if (revealed) { {{ e.sensitiveContext || '—' }} }
+                  @else { {{ e.maskedContext || '—' }} }
+                </p>
+                <p-divider />
+                <div class="flex gap-2 flex-wrap">
+                  @if (e.confidence !== undefined) {
+                  <p-tag severity="secondary" [value]="'Score ' + formatScore(e.confidence)" />
+                  }
+                  <p-tag severity="secondary" [value]="'Start ' + e.startPosition" />
+                  <p-tag severity="secondary" [value]="'End ' + e.endPosition" />
+                </div>
+              </p-card>
+            </div>
           }
         </div>
+
       </div>
     }
     </div>

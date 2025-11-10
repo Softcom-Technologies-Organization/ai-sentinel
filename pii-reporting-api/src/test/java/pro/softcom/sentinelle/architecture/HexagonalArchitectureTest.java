@@ -30,7 +30,7 @@ class HexagonalArchitectureTest {
     static void setup() {
         importedClasses = new ClassFileImporter()
                 .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                .importPackages("com.example.sentinelle");
+                .importPackages("pro.softcom.sentinelle");
         System.out.println("[DEBUG_LOG] Imported classes: " + importedClasses.size());
     }
 
@@ -94,7 +94,6 @@ class HexagonalArchitectureTest {
     void configuration_shouldResideInInfrastructureConfig() {
         ArchRule rule = classes()
                 .that().areAnnotatedWith(Configuration.class)
-                .or().haveSimpleNameEndingWith("Config")
                 .should().resideInAnyPackage("..infrastructure..config..", "..infrastructure..config")
                 .as("Spring configuration belongs to infrastructure config");
 

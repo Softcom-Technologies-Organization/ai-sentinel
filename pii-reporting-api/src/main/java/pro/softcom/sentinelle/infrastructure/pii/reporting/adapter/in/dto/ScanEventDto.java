@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 import java.util.Map;
 import lombok.Builder;
+import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
 
 /**
  * Payload for Server-Sent Events emitted during a Confluence space scan.
@@ -15,15 +16,15 @@ import lombok.Builder;
 public record ScanEventDto(
         String scanId,
         String spaceKey,
-        String eventType,
+        ScanEventType eventType,
         Boolean isFinal,
         Integer pagesTotal,
         Integer pageIndex,
         String pageId,
         String pageTitle,
-        List<Map<String, Object>> entities,
+        List<PiiEntity> detectedEntities,
         Map<String, Integer> summary,
-        String maskedContent,
+//        String maskedContent,
         String message,
         String pageUrl,
         String emittedAt,
@@ -31,17 +32,4 @@ public record ScanEventDto(
         String attachmentType,
         String attachmentUrl,
         Double analysisProgressPercentage
-) {
-
-    /**
-     * Extension du builder Lombok pour conserver les aides de construction.
-     * Le nom DOIT correspondre au builder généré: <RecordName>Builder
-     */
-    public static class ScanEventDtoBuilder {
-        /** Surcharge pratique: accepte l'enum et alimente le champ JSON String. */
-        public ScanEventDtoBuilder eventType(ScanEventType type) {
-            this.eventType = type != null ? type.toJson() : null;
-            return this;
-        }
-    }
-}
+) { }

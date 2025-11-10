@@ -111,3 +111,16 @@
 .action-buttons-container p-button:not(:first-child) {
   margin-left: 0.5rem;
 }
+
+/* Space update indicator (shows when space has been modified since last scan) */
+.space-updated-indicator {
+  display: inline-block;
+  width: 0.5rem; /* small dot */
+  height: 0.5rem;
+  background-color: #f44336; /* red dot */
+  border-radius: 50%;
+  margin-left: 0.375rem; /* reasonable spacing */
+  vertical-align: super; /* placed above the text */
+  cursor: help;
+}
+

@@ -7,6 +7,7 @@ import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
@@ -28,36 +29,36 @@ public class StreamConfluenceScanUseCaseImpl extends AbstractStreamConfluenceSca
         ConfluenceAccessor confluenceAccessor,
         PiiDetectorClient piiDetectorClient,
         ScanOrchestrator scanOrchestrator,
-        AttachmentProcessor attachmentProcessor) {
-        super(confluenceAccessor, piiDetectorClient, scanOrchestrator, attachmentProcessor);
+        AttachmentProcessor attachmentProcessor,
+        ScanTimeOutConfig scanTimeoutConfig) {
+        super(confluenceAccessor, piiDetectorClient, scanOrchestrator, attachmentProcessor, scanTimeoutConfig);
     }
 
     /**
      * Streams scan events for a single Confluence space.
-     * Pédagogie WebFlux (technique) :
-     * — Un identifiant de scan est généré pour corréler tous les évènements du flux.
-     * — Mono.fromFuture(...) permet de "ponter" un CompletableFuture (API Confluence) vers le monde réactif.
-     * — FlatMapMany(...) transforme le Mono (0..1) en Flux (0..N) selon le résultat obtenu.
-     * — Si l'espace n'existe pas, on renvoie immédiatement un Flux à 1 élément (évènement d'erreur) via Flux.just(...).
-     * — Sinon, on charge les pages de l'espace (toujours via fromFuture), puis on délègue au runScanFlux(...)
-     *   qui produit un Flux<ScanResult> représentant la séquence d'évènements (start, progrès, résultats, fin...).
-     * — onErrorResume capture toute erreur asynchrone survenant dans la chaîne et bascule sur un Flux d'erreur métier lisible.
-     *
-     * Propriétés réactives utiles :
-     * — Paresse (laziness) : rien n'est exécuté tant qu'il n'y a pas d'abonné côté contrôleur (SSE par ex.).
-     * — Backpressure : Flux émet au rythme demandé par l'abonné ; ici, la concaténation et les opérateurs utilisés sont
-     *   safe pour un traitement séquentiel sans surcharge mémoire.
+     * WebFlux pedagogy (technical):
+     * — A scan identifier is generated to correlate all events within the stream.
+     * — Mono.fromFuture(...) bridges a CompletableFuture (Confluence API) into the reactive world.
+     * — flatMapMany(...) turns a Mono (0..1) into a Flux (0..N) based on the result.
+     * — If the space does not exist, immediately return a single-element Flux (error event) via Flux.just(...).
+     * — Otherwise, load the space pages (still via fromFuture), then delegate to runScanFlux(...)
+     *   which produces a Flux<ScanResult> representing the event sequence (start, progress, results, completion...).
+     * — onErrorResume captures any asynchronous error in the chain and switches to a readable business error Flux.
+     * Useful reactive properties:
+     * — Laziness: nothing executes until there is a subscriber on the controller side (e.g., SSE).
+     * — Backpressure: the Flux emits at the rate requested by the subscriber; here, concatenation and the operators used are
+     *   safe for sequential processing without memory pressure.
      */
     @Override
     public Flux<ScanResult> streamSpace(String spaceKey) {
-        // Identifiant unique pour tracer et regrouper tous les évènements d'un même scan
+        // Unique identifier to trace and group all events of the same scan
         String scanId = UUID.randomUUID().toString();
 
-        // Passage du monde Future → réactif. La requête n'est pas exécutée tant qu'il n'y a pas d'abonné.
+        // Bridging from Future to reactive. The request is not executed until there is a subscriber.
         return Mono.fromFuture(confluenceAccessor.getSpace(spaceKey))
-            // On transforme le Mono<Optional<ConfluenceSpace>> en Flux<ScanResult>
+            // Transform Mono<Optional<ConfluenceSpace>> into Flux<ScanResult>
             .flatMapMany(confluenceSpaceOpt -> {
-                // Cas 1 : espace introuvable → on retourne un petit Flux d'un seul évènement d'erreur
+                // Case 1: space not found → return a small Flux with a single error event
                 if (confluenceSpaceOpt.isEmpty()) {
                     return Flux.just(ScanResult.builder()
                                          .scanId(scanId)
@@ -67,12 +68,12 @@ public class StreamConfluenceScanUseCaseImpl extends AbstractStreamConfluenceSca
                                          .emittedAt(Instant.now().toString())
                                          .build());
                 }
-                // Cas 2 : espace trouvé → on récupère toutes ses pages puis on lance le flux de scan
+                // Case 2: space found → retrieve all its pages then start the scan stream
                 return Mono.fromFuture(confluenceAccessor.getAllPagesInSpace(spaceKey))
-                    // runScanFlux(...) retourne déjà un Flux<ScanResult> représentant la progression complète
+                    // runScanFlux(...) already returns a Flux<ScanResult> representing the full progression
                     .flatMapMany(pages -> runScanFlux(scanId, spaceKey, pages, 0, pages.size()));
             })
-            // Filet de sécurité global : transforme toute exception en évènement d'erreur consommable côté UI
+            // Global safety net: transform any exception into a UI-consumable error event
             .onErrorResume(exception -> {
                 log.error("[USECASE] Erreur dans le flux: {}", exception.getMessage(), exception);
                 return Flux.just(ScanResult.builder()
@@ -87,26 +88,25 @@ public class StreamConfluenceScanUseCaseImpl extends AbstractStreamConfluenceSca
 
     /**
      * Streams scan events for all spaces sequentially.
-     *
-     * Pédagogie WebFlux (technique) :
-     * - On découpe le flux global en trois segments : en-tête (MULTI_START), corps (traitement espaces), pied (MULTI_COMPLETE).
-     * - Flux.concat(header, body, footer) garantit l'exécution stricte et séquentielle des segments dans cet ordre.
-     * - Chaque segment est un Flux paresseux, rien n'est lancé tant qu'il n'y a pas d'abonné.
+     * WebFlux pedagogy (technical):
+     * - The overall stream is split into three segments: header (MULTI_START), body (space processing), footer (MULTI_COMPLETE).
+     * - Flux.concat(header, body, footer) guarantees strict sequential execution of these segments in order.
+     * - Each segment is a lazy Flux; nothing starts until there is a subscriber.
      */
     @Override
     public Flux<ScanResult> streamAllSpaces() {
         String scanCorrelationId = UUID.randomUUID().toString();
 
-        // Segment d'ouverture: un seul évènement "MULTI_START"
+        // Opening segment: a single "MULTI_START" event
         Flux<ScanResult> header = buildAllSpaceScanFluxHeader(scanCorrelationId);
 
-        // Segment principal: itère sur les espaces et effectue les scans de façon séquentielle
+        // Main segment: iterate over spaces and perform scans sequentially
         Flux<ScanResult> body = buildAllSpaceScanFluxBody(scanCorrelationId);
 
-        // Segment de clôture: un seul évènement "MULTI_COMPLETE"
+        // Closing segment: a single "MULTI_COMPLETE" event
         Flux<ScanResult> footer = buildAllSpaceScanFluxFooter(scanCorrelationId);
 
-        // Concaténation séquentielle et ordonnée des segments
+        // Sequential and ordered concatenation of segments
         return Flux.concat(header, body, footer);
     }
 
@@ -119,17 +119,17 @@ public class StreamConfluenceScanUseCaseImpl extends AbstractStreamConfluenceSca
     }
 
     private Flux<ScanResult> buildAllSpaceScanFluxBody(String scanId) {
-        // Récupération asynchrone de tous les espaces (Future -> Mono)
+        // Asynchronous retrieval of all spaces (Future -> Mono)
         return Mono.fromFuture(confluenceAccessor.getAllSpaces())
-            // On déroule ensuite en Flux<ScanResult>
+            // Then unfold into Flux<ScanResult>
             .flatMapMany(spaces -> {
-                // Si la liste est vide, on génère un petit Flux d'erreur. Sinon, on crée le flux de scan.
-                // NB: createErrorScanResultIfNoSpace(...) renvoie null quand tout va bien, ce qui nous permet
-                // d'utiliser Objects.requireNonNullElseGet(...) pour basculer vers le flux de traitement.
+                // If the list is empty, generate a small error Flux. Otherwise, create the scan Flux.
+                // Note: createErrorScanResultIfNoSpace(...) returns null when everything is fine, which allows us
+                // to use Objects.requireNonNullElseGet(...) to fall back to the processing Flux.
                 Flux<ScanResult> errrorScanResultsFlux = createErrorScanResultIfNoSpace(scanId, spaces);
                 return Objects.requireNonNullElseGet(errrorScanResultsFlux, () -> createScanResultFlux(scanId, spaces));
             })
-            // Gestion d'erreur globale: toute exception est mappée sur un évènement métier lisible
+            // Global error handling: map any exception to a readable business event
             .onErrorResume(exception -> {
                 log.error("[USECASE] Erreur globale du flux multi-espaces: {}",
                           exception.getMessage(),
@@ -144,14 +144,14 @@ public class StreamConfluenceScanUseCaseImpl extends AbstractStreamConfluenceSca
     }
 
     private Flux<ScanResult> createScanResultFlux(String scanId, List<ConfluenceSpace> spaces) {
-        // Flux sur la liste des espaces à traiter
+        // Flux over the list of spaces to process
         return Flux.fromIterable(spaces)
-            // concatMap => traitement séquentiel (important pour garder un ordre prévisible et limiter la pression mémoire).
-            // A la différence de flatMap, concatMap attend la fin du flux précédent avant de passer au suivant.
+            // concatMap => sequential processing (important to keep a predictable order and limit memory pressure).
+            // Unlike flatMap, concatMap waits for the previous stream to complete before moving to the next.
             .concatMap(
                 space -> Mono.fromFuture(
                         confluenceAccessor.getAllPagesInSpace(space.key()))
-                    // On lance ensuite le flux de scan pour cet espace
+                    // Then start the scan stream for this space
                     .flatMapMany(
                         pages -> runScanFlux(scanId,
                                              space.key(),

@@ -1,6 +1,13 @@
 name: CI/CD - Tests and Publish
 
 on:
+  pull_request:
+    branches:
+      - develop
+      - main
+  push:
+    branches:
+      - '**'
   workflow_dispatch:
     inputs:
       tag:

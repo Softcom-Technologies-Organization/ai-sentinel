@@ -1,6 +1,7 @@
 package pro.softcom.sentinelle.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -38,10 +39,12 @@ import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluence
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.DetectionCheckpointRepository;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.DetectionEventRepository;
+import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanEventEntity;
 
 @Testcontainers
 @SpringBootTest(classes = SentinelleApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -94,13 +97,15 @@ class ResumeScanInterruptIntegrationTest {
     @Autowired
     private AttachmentTextExtractor attachmentTextExtractor;
 
+    //FIXME: fail one time out of two, needs to be stabilized
     @Test
     void Should_ResumeFromNextPage_When_ScanInterrupted() {
         // Arrange: program Mockito stubs for deterministic environment
         var space = new ConfluenceSpace("id-TEST", "TEST", "Test Space",
                                         "http://test.com", "Test description",
                                         ConfluenceSpace.SpaceType.GLOBAL,
-                                        ConfluenceSpace.SpaceStatus.CURRENT);
+                                        ConfluenceSpace.SpaceStatus.CURRENT,
+                                        new DataOwners.NotLoaded(), null);
         var p1 = ConfluencePage.builder().id("p1").title("Page 1").spaceKey("TEST")
             .content(new ConfluencePage.HtmlContent("hello 1")).metadata(
                 new ConfluencePage.PageMetadata("u", LocalDateTime.now(), "u", LocalDateTime.now(),
@@ -139,15 +144,32 @@ class ResumeScanInterruptIntegrationTest {
         String scanId = scanIdRef.get();
         assertThat(scanId).isNotBlank();
 
+        // Wait for async persistence to complete before checking DB
+        await().atMost(Duration.ofSeconds(10))
+            .pollInterval(Duration.ofMillis(200))
+            .untilAsserted(() -> {
+                var afterInterrupt = eventRepo.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId,
+                    List.of(ScanEventType.PAGE_COMPLETE.toJson()));
+                assertThat(afterInterrupt).hasSize(1);
+            });
+
         var afterInterrupt = eventRepo.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId, List.of(
             ScanEventType.PAGE_COMPLETE.toJson()));
-        assertThat(afterInterrupt).hasSize(1);
         String firstDonePage = afterInterrupt.getFirst().getPageId();
 
         // Act 2: Resume and let it complete
         List<String> resumedEvents = new ArrayList<>();
         streamConfluenceResumeScanUseCase.resumeAllSpaces(scanId)
             .doOnNext(ev -> resumedEvents.add(ev.eventType() + ":" + ev.pageId())).blockLast();
+
+        // Wait for async persistence of resumed scan to complete before checking DB
+        await().atMost(Duration.ofSeconds(10))
+            .pollInterval(Duration.ofMillis(200))
+            .untilAsserted(() -> {
+                var allCompletes = eventRepo.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId,
+                    List.of(ScanEventType.PAGE_COMPLETE.toJson()));
+                assertThat(allCompletes).as("All 3 pages should be completed").hasSize(3);
+            });
 
         // Determine expected next page after the interrupted one
         List<String> orderedPages = List.of("p1", "p2", "p3");
@@ -170,7 +192,7 @@ class ResumeScanInterruptIntegrationTest {
         var allPageCompletes = eventRepo.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId,
                                                                                       List.of(
                                                                                           ScanEventType.PAGE_COMPLETE.toJson()));
-        var pageIds = allPageCompletes.stream().map(e -> e.getPageId()).toList();
+        var pageIds = allPageCompletes.stream().map(ScanEventEntity::getPageId).toList();
 
         softly.assertThat(allPageCompletes).hasSize(3);
         softly.assertThat(pageIds).doesNotContainNull();
@@ -194,7 +216,8 @@ class ResumeScanInterruptIntegrationTest {
         var space = new ConfluenceSpace("id-TEST", "TEST", "Test Space", 
                                         "http://test.com", "Test description",
                                         ConfluenceSpace.SpaceType.GLOBAL, 
-                                        ConfluenceSpace.SpaceStatus.CURRENT);
+                                        ConfluenceSpace.SpaceStatus.CURRENT,
+                                        new DataOwners.NotLoaded(), null);
         var p1 = ConfluencePage.builder().id("p1").title("Page 1").spaceKey("TEST")
             .content(new ConfluencePage.HtmlContent("hello 1")).metadata(
                 new ConfluencePage.PageMetadata("u", LocalDateTime.now(), "u", LocalDateTime.now(), 1, "current"))
@@ -225,9 +248,14 @@ class ResumeScanInterruptIntegrationTest {
         String scanId = scanIdRef.get();
         assertThat(scanId).isNotBlank();
 
-        // Sanity check: exactly 1 page_complete persisted so far
-        var afterInterrupt = eventRepo.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId, List.of(ScanEventType.PAGE_COMPLETE.toJson()));
-        assertThat(afterInterrupt).hasSize(1);
+        // Wait for async persistence to complete before checking DB
+        await().atMost(Duration.ofSeconds(10))
+            .pollInterval(Duration.ofMillis(200))
+            .untilAsserted(() -> {
+                var afterInterrupt = eventRepo.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId,
+                    List.of(ScanEventType.PAGE_COMPLETE.toJson()));
+                assertThat(afterInterrupt).hasSize(1);
+            });
 
         // Phase 2: resume and collect resumed events
         var resumed = streamConfluenceResumeScanUseCase.resumeAllSpaces(scanId).collectList().block(Duration.ofSeconds(20));

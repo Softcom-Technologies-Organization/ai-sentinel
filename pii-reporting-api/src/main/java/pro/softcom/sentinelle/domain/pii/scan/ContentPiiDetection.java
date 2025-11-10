@@ -5,10 +5,19 @@ import java.util.List;
 import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.ToString;
 
 /**
- * Représente l'analyse du contenu d'une page Confluence.
+ * Represents PII findings for a single Confluence page.
+ * Business purpose: captures what sensitive elements were detected on a page
+ * along with basic statistics and the analysis timestamp. This is a pure
+ * domain read model used by reporting and risk scoring.
+ *
+ * @param pageId unique identifier of the page
+ * @param pageTitle human-readable title of the page
+ * @param spaceKey business key of the Confluence space
+ * @param analysisDate timestamp when the analysis was performed
+ * @param sensitiveDataFound list of detected sensitive elements on the page
+ * @param statistics aggregated counters for the page (keyed by metric name)
  */
 @Builder
 public record ContentPiiDetection(
@@ -21,10 +30,11 @@ public record ContentPiiDetection(
 ) {
     
     // Sonar S1192: avoid duplicate literal for phone number label
+    /** Label used for all phone number related data types. */
     public static final String PHONE_NUMBER_LABEL = "Numéro de téléphone";
 
     /**
-     * Types de données sensibles détectables
+     * Detectable categories of sensitive data found during analysis.
      */
     @Getter
     public enum DataType {
@@ -68,7 +78,15 @@ public record ContentPiiDetection(
     }
     
     /**
-     * Représente une donnée sensible trouvée
+     * Represents a single sensitive element detected on the page.
+     *
+     * @param type business category of the detected element
+     * @param value raw value as found in the content
+     * @param context short surrounding text to help understand the occurrence
+     * @param position start index of the occurrence in the content
+     * @param end end index of the occurrence in the content
+     * @param score confidence score provided by the detector (may be null)
+     * @param selector optional selector or hint pointing to the element location
      */
     public record SensitiveData(
         DataType type,
@@ -80,7 +98,9 @@ public record ContentPiiDetection(
         String selector
     ) {
         /**
-         * Masque la valeur sensible pour l'affichage
+         * Returns a masked version of the sensitive value for safe display.
+         * The masking keeps enough context to be informative while preventing
+         * disclosure of the actual secret (e.g., emails keep domain, cards keep last 4 digits).
          */
         public String getMaskedValue() {
             return switch (type) {
@@ -182,7 +202,10 @@ public record ContentPiiDetection(
     }
     
     /**
-     * Calcule le score de risque basé sur les données trouvées
+     * Computes an aggregate risk score based on detected data types.
+     * Higher-impact categories contribute more points to the total.
+     *
+     * @return total risk score for the page
      */
     public int getRiskScore() {
         return sensitiveDataFound.stream()
@@ -208,7 +231,11 @@ public record ContentPiiDetection(
     }
     
     /**
-     * Détermine le niveau de risque
+     * Determines the qualitative risk level from the score.
+     * Levels are cumulative thresholds: CRITIQUE (>=50), ÉLEVÉ (>=30),
+     * MOYEN (>=15), FAIBLE (>0), AUCUN (=0).
+     *
+     * @return the business risk level label
      */
     public String getRiskLevel() {
         int score = getRiskScore();

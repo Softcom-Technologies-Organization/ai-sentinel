@@ -13,6 +13,7 @@ export type StreamEventType =
   | 'keepalive';
 
 export interface RawStreamPayload {
+  scanId?: string;
   spaceKey?: string;
   pageId?: string | number;
   pageTitle?: string;
@@ -21,7 +22,14 @@ export interface RawStreamPayload {
   isFinal?: boolean;
   pagesTotal?: number;
   pageIndex?: number;
-  entities?: Array<{ typeLabel?: string; type?: string; text?: string; score?: number }>;
+  detectedEntities?: Array<{
+    piiTypeLabel?: string;
+    piiType?: string;
+    sensitiveValue?: string;
+    sensitiveContext?: string;
+    maskedContext?: string;
+    confidence?: number;
+  }>;
   summary?: Record<string, number>;
   maskedContent?: string;
   // Attachment context for 'attachment_item' events

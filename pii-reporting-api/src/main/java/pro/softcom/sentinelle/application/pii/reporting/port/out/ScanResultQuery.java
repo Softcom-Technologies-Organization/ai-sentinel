@@ -3,35 +3,78 @@ package pro.softcom.sentinelle.application.pii.reporting.port.out;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import pro.softcom.sentinelle.domain.pii.reporting.AccessPurpose;
 import pro.softcom.sentinelle.domain.pii.reporting.LastScanMeta;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 
 /**
- * Port sortant pour interroger les résultats de scan persistés.
- * Fournit des vues de lecture orientées présentation sans exposer d'entités JPA.
+ * Application out port used by the reporting layer to read scan outcomes.
  */
 public interface ScanResultQuery {
 
     /**
-     * Retourne les métadonnées du dernier scan (si disponible).
+     * Returns the most recent scan known by the system, if any.
+     *
+     * @return an Optional containing the metadata of the latest scan, or empty when no scan exists
      */
     Optional<LastScanMeta> findLatestScan();
 
     /**
-     * Retourne les compteurs par espace pour un scan donné.
-     * Cette méthode ne gère pas le statut fonctionnel (RUNNING/COMPLETED/etc.).
-     * Le statut est enrichi dans le cas d'usage en combinant avec les checkpoints.
+     * Returns progress counters per space for the given scan.
+     * The counters reflect how many pages and attachments have been processed,
+     * along with the timestamp of the last observed event for that space.
+     *
+     * @param scanId the business identifier of the scan to inspect
+     * @return a list of per-space counters for the requested scan (may be empty)
      */
     List<SpaceCounter> getSpaceCounters(String scanId);
 
     /**
-     * Liste les événements d'items (page/attachment) persistés pour un scan donné, dans l'ordre d'émission.
-     * Ces événements permettent d'afficher les résultats à froid (sans stream SSE).
+     * Lists the item events for the given scan in emission order.
+     * An item represents a content unit such as a page or an attachment.
+     *
+     * @param scanId the business identifier of the scan to inspect
+     * @return the ordered list of item events recorded for the scan (may be empty)
      */
     List<ScanResult> listItemEvents(String scanId);
 
     /**
-     * Projection de lecture (côté application) pour les compteurs par espace.
+     * Lists item events with ENCRYPTED PII data.
+     * Use when PII values don't need to be viewed (statistics, dashboards without detail).
+     *
+     * @param scanId scan identifier
+     * @return list of scan results with encrypted PII
+     */
+    List<ScanResult> listItemEventsEncrypted(String scanId);
+
+    /**
+     * Lists item events with DECRYPTED PII data.
+     * Automatically logs access for GDPR/nLPD compliance.
+     *
+     * @param scanId scan identifier
+     * @param pageId page ID
+     * @param purpose access purpose (for audit trail)
+     * @return list of scan results with decrypted PII
+     */
+    List<ScanResult> listItemEventsDecrypted(String scanId, String pageId, AccessPurpose purpose);
+
+    /**
+     * Lists item events with ENCRYPTED PII data filtered by space.
+     * Use when PII values don't need to be viewed.
+     *
+     * @param scanId scan identifier
+     * @param spaceKey Confluence space key to filter results
+     * @return list of scan results with encrypted PII for the specified space
+     */
+    List<ScanResult> listItemEventsEncryptedByScanIdAndSpaceKey(String scanId, String spaceKey);
+
+    /**
+     * Read-side projection representing per-space progress within a scan.
+     *
+     * @param spaceKey the business key of the space
+     * @param pagesDone number of pages processed in this space
+     * @param attachmentsDone number of attachments processed in this space
+     * @param lastEventTs timestamp of the last event observed for this space
      */
     record SpaceCounter(String spaceKey, long pagesDone, long attachmentsDone, Instant lastEventTs) {}
 }

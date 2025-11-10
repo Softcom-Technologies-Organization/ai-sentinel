@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jsoup.Jsoup;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -49,10 +50,13 @@ public class TestPiiDetectionClientConfiguration {
 
         @Override
         public ContentPiiDetection analyzePageContent(String pageId, String pageTitle, String spaceKey, String content, float threshold) {
+            // Clean HTML tags to plain text, like the real Python gRPC service does
+            String cleanedContent = stripHtml(content);
+            
             List<ContentPiiDetection.SensitiveData> items = new ArrayList<>();
 
             // Emails
-            Matcher m = EMAIL.matcher(content);
+            Matcher m = EMAIL.matcher(cleanedContent);
             while (m.find()) {
                 items.add(new ContentPiiDetection.SensitiveData(
                     ContentPiiDetection.DataType.EMAIL,
@@ -61,7 +65,7 @@ public class TestPiiDetectionClientConfiguration {
                     m.start(), m.end(), 0.95, "email"));
             }
             // Phones (simple heuristic)
-            m = PHONE.matcher(content);
+            m = PHONE.matcher(cleanedContent);
             while (m.find()) {
                 String value = m.group().trim();
                 if (value.length() < 8 || value.contains("@")) continue; // avoid overlaps
@@ -72,7 +76,7 @@ public class TestPiiDetectionClientConfiguration {
                     m.start(), m.end(), 0.80, "phone"));
             }
             // AVS numbers
-            m = AVS.matcher(content);
+            m = AVS.matcher(cleanedContent);
             while (m.find()) {
                 items.add(new ContentPiiDetection.SensitiveData(
                     ContentPiiDetection.DataType.AVS,
@@ -81,7 +85,7 @@ public class TestPiiDetectionClientConfiguration {
                     m.start(), m.end(), 0.99, "avs"));
             }
             // URLs and IPs -> mark as ATTACHMENT for backward compat of the test
-            m = URL.matcher(content);
+            m = URL.matcher(cleanedContent);
             while (m.find()) {
                 items.add(new ContentPiiDetection.SensitiveData(
                     ContentPiiDetection.DataType.ATTACHMENT,
@@ -90,7 +94,7 @@ public class TestPiiDetectionClientConfiguration {
                     m.start(), m.end(), 0.70, "url"));
             }
             // Simple security hints
-            if (content.toLowerCase().contains("password") || content.toLowerCase().contains("sk-")) {
+            if (cleanedContent.toLowerCase().contains("password") || cleanedContent.toLowerCase().contains("sk-")) {
                 items.add(new ContentPiiDetection.SensitiveData(
                     ContentPiiDetection.DataType.SECURITY,
                     "***",
@@ -116,6 +120,23 @@ public class TestPiiDetectionClientConfiguration {
 
         private static String ctx(int start, int end) {
             return "Detected at position " + start + "-" + end;
+        }
+        
+        /**
+         * Strips HTML tags from content to extract plain text, mimicking real gRPC service behavior.
+         * Uses Jsoup to parse HTML and extract text content, ensuring regex patterns work correctly
+         * without interference from HTML tags (especially for word boundaries).
+         */
+        private static String stripHtml(String content) {
+            if (content == null || content.isEmpty()) {
+                return content;
+            }
+            try {
+                return Jsoup.parse(content).text();
+            } catch (Exception _) {
+                // Fallback: return original content if Jsoup fails
+                return content;
+            }
         }
     }
 }

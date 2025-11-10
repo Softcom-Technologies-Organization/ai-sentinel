@@ -97,6 +97,7 @@ class ResumeScanInterruptIntegrationTest {
     @Autowired
     private AttachmentTextExtractor attachmentTextExtractor;
 
+    //FIXME: fail one time out of two, needs to be stabilized
     @Test
     void Should_ResumeFromNextPage_When_ScanInterrupted() {
         // Arrange: program Mockito stubs for deterministic environment
@@ -143,15 +144,32 @@ class ResumeScanInterruptIntegrationTest {
         String scanId = scanIdRef.get();
         assertThat(scanId).isNotBlank();
 
+        // Wait for async persistence to complete before checking DB
+        await().atMost(Duration.ofSeconds(10))
+            .pollInterval(Duration.ofMillis(200))
+            .untilAsserted(() -> {
+                var afterInterrupt = eventRepo.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId,
+                    List.of(ScanEventType.PAGE_COMPLETE.toJson()));
+                assertThat(afterInterrupt).hasSize(1);
+            });
+
         var afterInterrupt = eventRepo.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId, List.of(
             ScanEventType.PAGE_COMPLETE.toJson()));
-        assertThat(afterInterrupt).hasSize(1);
         String firstDonePage = afterInterrupt.getFirst().getPageId();
 
         // Act 2: Resume and let it complete
         List<String> resumedEvents = new ArrayList<>();
         streamConfluenceResumeScanUseCase.resumeAllSpaces(scanId)
             .doOnNext(ev -> resumedEvents.add(ev.eventType() + ":" + ev.pageId())).blockLast();
+
+        // Wait for async persistence of resumed scan to complete before checking DB
+        await().atMost(Duration.ofSeconds(10))
+            .pollInterval(Duration.ofMillis(200))
+            .untilAsserted(() -> {
+                var allCompletes = eventRepo.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId,
+                    List.of(ScanEventType.PAGE_COMPLETE.toJson()));
+                assertThat(allCompletes).as("All 3 pages should be completed").hasSize(3);
+            });
 
         // Determine expected next page after the interrupted one
         List<String> orderedPages = List.of("p1", "p2", "p3");
@@ -231,7 +249,8 @@ class ResumeScanInterruptIntegrationTest {
         assertThat(scanId).isNotBlank();
 
         // Wait for async persistence to complete before checking DB
-        await().atMost(Duration.ofSeconds(3))
+        await().atMost(Duration.ofSeconds(10))
+            .pollInterval(Duration.ofMillis(200))
             .untilAsserted(() -> {
                 var afterInterrupt = eventRepo.findByScanIdAndEventTypeInOrderByEventSeqAsc(scanId,
                     List.of(ScanEventType.PAGE_COMPLETE.toJson()));

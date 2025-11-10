@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
+import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentTextExtracted;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
@@ -33,6 +34,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
     protected final PiiDetectorClient piiDetectorClient;
     protected final ScanOrchestrator scanOrchestrator;
     protected final AttachmentProcessor attachmentProcessor;
+    protected final ScanTimeOutConfig scanTimeoutConfig;
 
     protected record ConfluencePageContext(String scanId, String spaceKey, String pageId,
                                            String pageTitle) {
@@ -53,7 +55,18 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         Flux<ScanResult> completeEvent = createCompleteEvent(scanId, spaceKey);
 
         return Flux.concat(startEvent, pageEvents, completeEvent)
-            .doOnNext(scanOrchestrator::persistEventAndCheckpoint);
+            .doOnEach(signal -> {
+                if (signal.isOnNext() && signal.get() != null) {
+                    // Persist in a non-cancellable way to survive SSE disconnections
+                    Mono.fromRunnable(() -> scanOrchestrator.persistEventAndCheckpoint(signal.get()))
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .onErrorResume(e -> {
+                            log.warn("[PERSISTENCE] Failed to persist event: {}", e.getMessage());
+                            return Mono.empty();
+                        })
+                        .subscribe();
+                }
+            });
     }
 
     private Flux<ScanResult> createStartEvent(String scanId, String spaceKey, int total,
@@ -139,16 +152,28 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                                                    ConfluencePage page,
                                                    AttachmentTextExtracted extracted,
                                                    ScanProgress scanProgress) {
-        ContentPiiDetection detection = detectPii(extracted.extractedText());
-        double progress = scanOrchestrator.calculateProgress(
-            scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
-            scanProgress.originalTotal());
+        return Mono.fromCallable(() -> {
+            ContentPiiDetection detection = detectPii(extracted.extractedText());
+            double progress = scanOrchestrator.calculateProgress(
+                scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
+                scanProgress.originalTotal());
 
-        ScanResult event = scanOrchestrator.createAttachmentItemEvent(
-            scanId, spaceKey, page, extracted.attachment(), extracted.extractedText(), detection,
-            progress);
-
-        return Mono.just(event);
+            return scanOrchestrator.createAttachmentItemEvent(
+                scanId, spaceKey, page, extracted.attachment(), extracted.extractedText(), detection,
+                progress);
+        })
+        .timeout(scanTimeoutConfig.getPiiDetection())
+        .onErrorResume(exception -> {
+            log.error("Error analyzing attachment {} for page {}: {}", 
+                      extracted.attachment().name(), page.id(), exception.getMessage());
+            double progress = scanOrchestrator.calculateProgress(
+                scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
+                scanProgress.originalTotal());
+            return Mono.just(scanOrchestrator.createErrorEvent(
+                scanId, spaceKey, page.id(), 
+                "Error analyzing attachment: " + exception.getMessage(), 
+                progress));
+        });
     }
 
 
@@ -184,6 +209,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         }
 
         return Mono.fromCallable(() -> detectPii(content))
+            .timeout(scanTimeoutConfig.getPiiDetection())
             .map(detection -> buildPageItemEvent(scanId, page, content, detection, scanProgress))
             .onErrorResume(
                 exception -> handleDetectionError(scanId, spaceKey, page, scanProgress, exception))

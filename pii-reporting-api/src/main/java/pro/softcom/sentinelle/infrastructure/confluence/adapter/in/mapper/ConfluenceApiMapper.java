@@ -3,8 +3,10 @@ package pro.softcom.sentinelle.infrastructure.confluence.adapter.in.mapper;
 import java.util.List;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.SpaceUpdateInfo;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.dto.ConfluencePageDto;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.dto.ConfluenceSpaceDto;
+import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.dto.SpaceUpdateInfoDto;
 
 /**
  * Mapper d'adaptateur pour convertir les objets du domaine Confluence vers des DTO d'API.
@@ -57,5 +59,27 @@ public final class ConfluenceApiMapper {
             return List.of();
         }
         return spaces.stream().map(ConfluenceApiMapper::toDto).toList();
+    }
+
+    public static SpaceUpdateInfoDto toDto(SpaceUpdateInfo updateInfo) {
+        if (updateInfo == null) {
+            return null;
+        }
+        return new SpaceUpdateInfoDto(
+            updateInfo.spaceKey(),
+            updateInfo.spaceName(),
+            updateInfo.hasBeenUpdated(),
+            updateInfo.lastModified(),
+            updateInfo.lastScanDate(),
+            updateInfo.updatedPages(),
+            updateInfo.updatedAttachments()
+        );
+    }
+
+    public static List<SpaceUpdateInfoDto> toDtoSpaceUpdateInfos(List<SpaceUpdateInfo> updateInfos) {
+        if (updateInfos == null || updateInfos.isEmpty()) {
+            return List.of();
+        }
+        return updateInfos.stream().map(ConfluenceApiMapper::toDto).toList();
     }
 }

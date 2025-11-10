@@ -39,6 +39,10 @@ public class ConfluenceSpaceEntity {
     @Column(name = "cache_timestamp", nullable = false)
     private LocalDateTime cacheTimestamp;
 
+    //TODO: this field needs to be renamed for better clarity
     @Column(name = "last_updated", nullable = false)
     private LocalDateTime lastUpdated;
+
+    @Column(name = "last_modified_date")
+    private LocalDateTime lastModifiedDate;
 }

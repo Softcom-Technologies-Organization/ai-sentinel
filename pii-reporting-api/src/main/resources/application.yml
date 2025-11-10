@@ -68,8 +68,13 @@ pii-detector:
   host: localhost
   port: 50051
   default-threshold: 0.5
-  connection-timeout-ms: 5000
-  request-timeout-ms: 120000
+  connection-timeout-ms: 300000  # 5 minutes to handle large attachments (e.g., CSV files)
+  request-timeout-ms: 300000      # 5 minutes to handle large attachments (e.g., CSV files)
+
+# Scan Timeouts Configuration
+scan:
+  timeouts:
+    pii-detection: 305s  # Should be > gRPC timeout (300s) to let gRPC exception trigger first
 
 pii-encryption:
   kek-env-variable: SENTINELLE_ENCRYPTION_KEY

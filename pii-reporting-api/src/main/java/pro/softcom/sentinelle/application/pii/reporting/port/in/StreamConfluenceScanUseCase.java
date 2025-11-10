@@ -4,7 +4,7 @@ import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import reactor.core.publisher.Flux;
 
 /**
- * Cas d'usage: scanner Confluence et produire un flux de résultats.
+ * Use case orchestrating Confluence scans and PII detection.
  */
 public interface StreamConfluenceScanUseCase {
     Flux<ScanResult> streamSpace(String spaceKey);

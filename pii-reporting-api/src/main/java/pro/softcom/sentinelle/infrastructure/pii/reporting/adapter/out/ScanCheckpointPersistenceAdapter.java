@@ -1,9 +1,11 @@
+
 package pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.pii.ScanStatus;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
@@ -25,35 +27,23 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
     }
 
     @Override
+    @Transactional
     public void save(ScanCheckpoint checkpoint) {
         if (checkpoint == null || isBlank(checkpoint.scanId()) || isBlank(checkpoint.spaceKey())) {
             return;
         }
-        // Merge semantics: never overwrite existing lastProcessed* with null values.
-        var existingOpt = jpaRepository.findByScanIdAndSpaceKey(checkpoint.scanId(), checkpoint.spaceKey());
 
-        String lastPage = checkpoint.lastProcessedPageId();
-        String lastAttachment = checkpoint.lastProcessedAttachmentName();
-        if (existingOpt.isPresent()) {
-            var existing = existingOpt.get();
-            if (lastPage == null || lastPage.isBlank()) {
-                lastPage = existing.getLastProcessedPageId();
-            }
-            if (lastAttachment == null || lastAttachment.isBlank()) {
-                lastAttachment = existing.getLastProcessedAttachmentName();
-            }
-        }
+        LocalDateTime lastUpdated = checkpoint.updatedAt() == null ? LocalDateTime.now() : checkpoint.updatedAt();
 
-        LocalDateTime ts = checkpoint.updatedAt() == null ? LocalDateTime.now() : checkpoint.updatedAt();
-        var entity = ScanCheckpointEntity.builder()
-            .scanId(checkpoint.scanId())
-            .spaceKey(checkpoint.spaceKey())
-            .lastProcessedPageId(lastPage)
-            .lastProcessedAttachmentName(lastAttachment)
-            .status(checkpoint.scanStatus().name())
-            .updatedAt(ts)
-            .build();
-        jpaRepository.save(entity);
+        // Use PostgreSQL UPSERT (INSERT ... ON CONFLICT DO UPDATE) for atomic operation
+        jpaRepository.upsertCheckpoint(
+            checkpoint.scanId(),
+            checkpoint.spaceKey(),
+            checkpoint.lastProcessedPageId(),
+            checkpoint.lastProcessedAttachmentName(),
+            checkpoint.scanStatus().name(),
+            lastUpdated
+        );
     }
 
     @Override
@@ -75,6 +65,24 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
     }
 
     @Override
+    public List<ScanCheckpoint> findBySpace(String spaceKey) {
+        if (isBlank(spaceKey)) {
+            return List.of();
+        }
+        return jpaRepository.findBySpaceKeyOrderByUpdatedAt(spaceKey).stream()
+            .map(ScanCheckpointPersistenceAdapter::toDomain).toList();
+    }
+
+    @Override
+    public Optional<ScanCheckpoint> findLatestBySpace(String spaceKey) {
+        if (isBlank(spaceKey)) {
+            return Optional.empty();
+        }
+        return jpaRepository.findFirstBySpaceKeyOrderByUpdatedAtDesc(spaceKey)
+            .map(ScanCheckpointPersistenceAdapter::toDomain);
+    }
+
+    @Override
     public void deleteByScan(String scanId) {
         if (isBlank(scanId)) {
             return;
@@ -82,7 +90,7 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
         jpaRepository.deleteByScanId(scanId);
     }
 
-    private static ScanCheckpoint toDomain(ScanCheckpointEntity e) {
+    public static ScanCheckpoint toDomain(ScanCheckpointEntity e) {
         return ScanCheckpoint.builder()
             .scanId(e.getScanId())
             .spaceKey(e.getSpaceKey())

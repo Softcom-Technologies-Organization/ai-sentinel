@@ -1,5 +1,15 @@
 package pro.softcom.sentinelle.infrastructure.pii.export.adapter.out;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,15 +28,6 @@ import pro.softcom.sentinelle.domain.confluence.ConfluenceSpaceDataOwner;
 import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.domain.pii.export.ExportContext;
 import pro.softcom.sentinelle.domain.pii.export.SourceType;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Confluence export context adapter tests")
@@ -173,7 +174,8 @@ class ConfluenceExportContextAdapterTest {
                 "Description",
                 spaceType,
                 spaceStatus,
-                new DataOwners.Loaded(List.of())
+                new DataOwners.Loaded(List.of()),
+                null
         );
         when(confluenceSpaceRepository.findByKey(spaceKey)).thenReturn(Optional.of(space));
 
@@ -222,7 +224,8 @@ class ConfluenceExportContextAdapterTest {
                 "Test description",
                 ConfluenceSpace.SpaceType.GLOBAL,
                 ConfluenceSpace.SpaceStatus.CURRENT,
-                dataOwners
+                dataOwners,
+                null
         );
     }
 }

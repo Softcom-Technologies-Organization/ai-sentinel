@@ -74,9 +74,9 @@ class ConfluenceSpaceCacheRefreshServiceTest {
     void Should_PersistSpaces_When_BackgroundRefreshRuns() {
         // Arrange
         var s1 = new ConfluenceSpace("id-ONE", "ONE", "One Space", "http://one", "desc one",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
         var s2 = new ConfluenceSpace("id-TWO", "TWO", "Two Space", "http://two", "desc two",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded());
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
         when(confluenceClient.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(s1, s2)));
 
         // Act

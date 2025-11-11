@@ -182,6 +182,8 @@ services:
     image: infisical/infisical:latest-postgres
     container_name: infisical-prod
     restart: unless-stopped
+    ports:
+      - "8082:8080"  # Expose Infisical UI on localhost:8082
     environment:
       NODE_ENV: production
       REDIS_URL: redis://infisical-redis:6379
@@ -216,8 +218,6 @@ services:
       start_period: 30s
     networks:
       - ai-sentinel-network
-    profiles:
-      - infisical  # Optional: start only with --profile infisical
 
   # ============================================================================
   # PGADMIN (Optional - Database Management UI)

@@ -13,13 +13,12 @@ All screenshots referenced below are available in docs/screenshots.
 ## 1) Sign up and sign in
 
 - Open the Infisical UI in your browser:
-  - Self‑hosted (development): http://localhost:8082
-  - Infisical Cloud: https://app.infisical.com
+- Self‑hosted (development): http://localhost:8082/admin/signup  
+Screenshots:  
+  
+![Admin sign up](./screenshots/0%20-%20sign%20up.png)
 
-Screenshots:
-
-![Sign up](./screenshots/infisical-1-signup.png)
-![General UI](./screenshots/infisical-2-general.png)
+![After sign up](./screenshots/1%20-%20after%20sign%20up.png)
 
 ---
 
@@ -30,23 +29,38 @@ Screenshots:
 
 Screenshots:
 
-![Projects list](./screenshots/infisical-3-projects.png)
-![Create project](./screenshots/infisical-4-create-project.png)
+![Project creation](./screenshots/2%20-%20project%20creation.png)
+![Create project](./screenshots/3%20-%20create%20project.png)
 
 After creation, open the Project Settings. You will need the Project ID in the next step.
+
+**Optional:** You may want to remove the default "staging" environment if not needed:
+
+![Remove staging](./screenshots/4%20-%20remove%20staging.png)
+![Remove staging confirm](./screenshots/5%20-%20remove%20staging%20confirm.png)
 
 ---
 
 ## 3) Save the Project ID for Docker (MANDATORY)
 
 - In the project Settings page, copy the Project ID (a UUID-like value)
+- You can find this in the project creation confirmation or in the project settings later
 
-![Copy project id](./screenshots/infisical-project-setting-project-id.png)
+Screenshots:  
+  
+![Copy project ID](./screenshots/3%20bis%20-%20copy%20project%20ID.png)
 
-- Save it to the repository so Docker can mount it as a secret in a file named infisical_project_id.txt under the secrets folder (which must be in the current directory of the docker-compose file)
+### Save the Project ID as a Docker secret
+
+Create a text file to store the Project ID:
+
+- **secrets/infisical_project_id.txt** — paste the Project ID on a single line (no extra spaces)
 
 This is required by docker-compose (both dev and prod) to authenticate the services with Infisical.
 
+Notes:
+- Do not commit this file to version control.
+- Ensure the file is plain text and stored in the secrets folder next to your docker-compose file.
 ---
 
 ## 4) Create a Machine Identity and generate credentials
@@ -65,19 +79,17 @@ This is required by docker-compose (both dev and prod) to authenticate the servi
 
 Screenshots (navigation and details):
 
-![Access management](./screenshots/infisical-5-access-management.png)
-![Machine identities](./screenshots/infisical-6-machine-identity.png)
-![Access control](./screenshots/infisical-7-access-control.png)
-![Identities list](./screenshots/infisical-8-access-control-identities.png)
-![Identity details](./screenshots/infisical-9-access-control-identity-details.png)
-![Identity auth tab](./screenshots/infisical-11-access-control-identity-detail-auth.png)
-![Auth details](./screenshots/infisical-12-access-control-identity-detail-auth-details.png)
-![Create client secret](./screenshots/infisical-13-access-control-identity-detail-auth-create-client-secret.png)
-![Client secret created](./screenshots/infisical-14-access-control-identity-detail-auth-client-secret-created.png)
+![Create identity](./screenshots/6%20-%20create%20identity.png)
+![Create identity form](./screenshots/7%20-%20create%20identity.png)
+![Auth settings](./screenshots/8%20-%20auth%20settings.png)
+![Add client secret](./screenshots/9%20-%20add%20client%20secret.png)
+![Add client secret form](./screenshots/10%20-%20add%20client%20secret.png)
+![Copy client secret](./screenshots/11%20-%20copy%20client%20secret.png)
 
 Finally, ensure the identity is added to the project:
 
-![Add identity to project](./screenshots/infisical-10-access-control-add-identity-to-project.png)
+![Add identity to project](./screenshots/15%20-%20add%20identity.png)
+![Add identity confirmation](./screenshots/16%20-%20add%20identity.png)
 
 ### Save the Machine Identity credentials as Docker secrets
 
@@ -100,6 +112,26 @@ Notes:
 ## 5) Add required application secrets inside Infisical
 
 Create these variables in your Infisical project for each target environment (dev and/or prod). The services will fetch them at runtime via Infisical CLI.
+
+Screenshots for secret management:
+
+![Secret management](./screenshots/12%20-%20secret%20management.png)
+
+### How to create a secret
+
+To add a new secret to your Infisical project:
+
+1. Click on the "Add Secret" button in the secret management interface
+2. Fill in the secret key name (e.g., CONFLUENCE_BASE_URL)
+3. Enter the secret value
+4. Click "Save" to create the secret
+
+![Add secret](./screenshots/13%20-%20add%20secret.png)
+![Create secret](./screenshots/14%20-%20create%20secret.png)
+
+Once you've added all the required secrets, you'll see them listed in the secret management interface:
+
+![Secrets created](./screenshots/14%20bis%20-%20secrets%20created.png)
 
 ### PII Reporting API (Spring Boot)
 

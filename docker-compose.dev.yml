@@ -234,9 +234,13 @@ services:
       - infisical_encryption_key
       - infisical_auth_secret
       - infisical_db_password
-    volumes:
-      - ./infisical-entrypoint.sh:/usr/local/bin/custom-entrypoint.sh:ro
-    entrypoint: ["/bin/sh", "/usr/local/bin/custom-entrypoint.sh"]
+    command: >
+      sh -c '
+        export ENCRYPTION_KEY=$$(cat /run/secrets/infisical_encryption_key) &&
+        export AUTH_SECRET=$$(cat /run/secrets/infisical_auth_secret) &&
+        export DB_CONNECTION_URI="postgres://infisical:$$(cat /run/secrets/infisical_db_password)@infisical-db:5432/infisical" &&
+        exec /usr/local/bin/docker-entrypoint.sh ./standalone-entrypoint.sh
+      '
     depends_on:
       - infisical-db
       - infisical-redis

@@ -44,7 +44,10 @@ import {TooltipModule} from 'primeng/tooltip';
 import {DataViewModule} from 'primeng/dataview';
 import {ProgressBarModule} from 'primeng/progressbar';
 import {SkeletonModule} from 'primeng/skeleton';
+import {MessageService} from 'primeng/api';
+import {ToastService} from '../../core/services/toast.service';
 import {TestIds} from '../test-ids.constants';
+import {ToastModule} from 'primeng/toast';
 
 /**
  * Dashboard to orchestrate scanning all Confluence spaces sequentially.
@@ -53,7 +56,8 @@ import {TestIds} from '../test-ids.constants';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, ToggleSwitchModule, PiiItemCardComponent, BadgeModule, InputTextModule, SelectModule, TableModule, TagModule, Ripple, TooltipModule, DataViewModule, ProgressBarModule, SkeletonModule],
+  imports: [CommonModule, FormsModule, ButtonModule, ToggleSwitchModule, PiiItemCardComponent, BadgeModule, InputTextModule, SelectModule, TableModule, TagModule, Ripple, TooltipModule, DataViewModule, ProgressBarModule, SkeletonModule, ToastModule],
+  providers: [MessageService, ToastService],
   templateUrl: './spaces-dashboard.component.html',
   styleUrl: './spaces-dashboard.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -62,6 +66,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly sentinelleApiService = inject(SentinelleApiService);
   readonly spacesDashboardUtils = inject(SpacesDashboardUtils);
   readonly pollingService = inject(ConfluenceSpacesPollingService);
+  readonly toastService = inject(ToastService);
   private sub?: Subscription;
   private pollingSub?: Subscription;
 
@@ -169,6 +174,8 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     this.expandedRowKeys.set({});
     this.selectedSpaceKey.set(null);
     this.activeSpaceKey.set(null);
+    // Clear previous error toasts when starting a new scan
+    this.toastService.clearScanErrors();
     // Reinitialize UI decoration (status/counts/lastScanTs) for all known spaces
     try {
       this.spacesDashboardUtils.setSpaces(this.spaces());
@@ -694,7 +701,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Marks a space as failed on error events and updates UI.
+   * Marks a space as failed on error events, displays a sticky toast notification, and updates UI.
    */
   private handleStreamError(payload: RawStreamPayload): void {
     const spaceKey = payload.spaceKey;
@@ -703,6 +710,20 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     }
     this.upsertScanHistory(spaceKey, 'failed');
     this.spacesDashboardUtils.updateSpace(spaceKey, { status: 'FAILED', lastScanTs: new Date().toISOString() });
+
+    // Display sticky error toast with full context
+    const errorMessage = (payload as any)?.errorMessage ?? 'Erreur inconnue';
+    const errorType = this.toastService.detectErrorType(errorMessage);
+
+    this.toastService.showScanError({
+      scanId: payload.scanId ?? '',
+      spaceKey,
+      pageId: payload.pageId == null ? undefined : String(payload.pageId),
+      pageTitle: payload.pageTitle,
+      attachmentName: (payload as any)?.attachmentName,
+      errorMessage,
+      errorType
+    });
   }
 
   /**
@@ -792,7 +813,6 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     }
     this.history.set([...this.history(), { spaceKey, status }]);
   }
-
 
   private append(line: string): void {
     const next = [...this.lines(), line];

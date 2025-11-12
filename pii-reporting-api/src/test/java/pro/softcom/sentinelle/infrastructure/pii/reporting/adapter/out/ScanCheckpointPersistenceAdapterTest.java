@@ -157,7 +157,7 @@ class ScanCheckpointPersistenceAdapterTest {
                 .status("FAILED")
                 .updatedAt(now)
                 .build();
-        when(jpaRepository.findBySpaceKeyOrderByUpdatedAt("SPACE")).thenReturn(List.of(e1, e2));
+        when(jpaRepository.findBySpaceKeyOrderByUpdatedAtDesc("SPACE")).thenReturn(List.of(e1, e2));
 
         var list = repository.findBySpace("SPACE");
         assertThat(list).hasSize(2);

@@ -1,7 +1,10 @@
 package pro.softcom.sentinelle.application.pii.reporting.usecase;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -163,12 +166,35 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                 progress);
         })
         .timeout(scanTimeoutConfig.getPiiDetection())
-        .onErrorResume(exception -> {
-            log.error("Error analyzing attachment {} for page {}: {}", 
-                      extracted.attachment().name(), page.id(), exception.getMessage());
+        .onErrorResume(TimeoutException.class, exception -> {
+            log.warn("[TIMEOUT][REACTOR] Space={}, PageId={}, AttachmentName=\"{}\", ReactorTimeout exceeded",
+                    spaceKey, page.id(), extracted.attachment().name());
+            
             double progress = scanOrchestrator.calculateProgress(
                 scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
                 scanProgress.originalTotal());
+            
+            return Mono.just(scanOrchestrator.createErrorEvent(
+                scanId, spaceKey, page.id(),
+                "PII detection timeout (Reactor) for attachment: " + extracted.attachment().name(),
+                progress));
+        })
+        .onErrorResume(exception -> {
+            // Try to find StatusRuntimeException in the cause chain
+            StatusRuntimeException grpcException = findGrpcException(exception);
+            
+            if (grpcException != null) {
+                return handleGrpcError(scanId, spaceKey, page, extracted.attachment(), scanProgress, grpcException);
+            }
+            
+            // Fallback: general error handling
+            log.error("[ERROR][GENERAL] Space={}, PageId={}, AttachmentName=\"{}\", Error analyzing attachment",
+                      spaceKey, page.id(), extracted.attachment().name(), exception);
+            
+            double progress = scanOrchestrator.calculateProgress(
+                scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
+                scanProgress.originalTotal());
+            
             return Mono.just(scanOrchestrator.createErrorEvent(
                 scanId, spaceKey, page.id(), 
                 "Error analyzing attachment: " + exception.getMessage(), 
@@ -211,8 +237,22 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         return Mono.fromCallable(() -> detectPii(content))
             .timeout(scanTimeoutConfig.getPiiDetection())
             .map(detection -> buildPageItemEvent(scanId, page, content, detection, scanProgress))
-            .onErrorResume(
-                exception -> handleDetectionError(scanId, spaceKey, page, scanProgress, exception))
+            .onErrorResume(exception -> {
+                // Handle TimeoutException directly
+                if (exception instanceof TimeoutException) {
+                    return handleReactorTimeoutError(scanId, spaceKey, page, scanProgress);
+                }
+                
+                // Try to find StatusRuntimeException in the cause chain
+                StatusRuntimeException grpcException = findGrpcException(exception);
+                
+                if (grpcException != null) {
+                    return handleGrpcError(scanId, spaceKey, page, null, scanProgress, grpcException);
+                }
+                
+                // Fallback: general error handling
+                return handleDetectionError(scanId, spaceKey, page, scanProgress, exception);
+            })
             .flux();
     }
 
@@ -236,16 +276,82 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                                                 progress);
     }
 
+    private Mono<ScanResult> handleReactorTimeoutError(String scanId, String spaceKey,
+                                                       ConfluencePage page,
+                                                       ScanProgress scanProgress) {
+        log.warn("[TIMEOUT][REACTOR] Space={}, PageId={}, PageTitle=\"{}\", ReactorTimeout exceeded",
+                spaceKey, page.id(), page.title());
+        
+        double progress = scanOrchestrator.calculateProgress(
+            scanProgress.analyzedOffset() + scanProgress.currentIndex(),
+            scanProgress.originalTotal());
+        
+        ScanResult errorEvent = scanOrchestrator.createErrorEvent(
+            scanId, spaceKey, page.id(),
+            "PII detection timeout (Reactor) for page: " + page.title(),
+            progress);
+        
+        return Mono.just(errorEvent);
+    }
+
+    private Mono<ScanResult> handleGrpcError(String scanId, String spaceKey,
+                                            ConfluencePage page,
+                                            AttachmentInfo attachment,
+                                            ScanProgress scanProgress,
+                                            StatusRuntimeException exception) {
+        String targetType = attachment != null ? "Attachment" : "Page";
+        String targetName = attachment != null ? attachment.name() : page.title();
+        String targetIdentifier = attachment != null ? page.id() + "/" + attachment.name() : page.id();
+        
+        if (exception.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
+            log.warn("[TIMEOUT][GRPC_DEADLINE_EXCEEDED] Space={}, {}=\"{}\", Identifier={}, gRPC deadline exceeded",
+                    spaceKey, targetType, targetName, targetIdentifier);
+            
+            double progress = scanOrchestrator.calculateProgress(
+                scanProgress.analyzedOffset() + scanProgress.currentIndex(),
+                scanProgress.originalTotal());
+            
+            String errorMessage = attachment != null
+                ? "PII detection timeout (gRPC DEADLINE_EXCEEDED) for attachment: " + targetName
+                : "PII detection timeout (gRPC DEADLINE_EXCEEDED) for page: " + targetName;
+            
+            ScanResult errorEvent = scanOrchestrator.createErrorEvent(
+                scanId, spaceKey, page.id(), errorMessage, progress);
+            
+            return Mono.just(errorEvent);
+        } else {
+            log.error("[ERROR][GRPC] Space={}, {}=\"{}\", Identifier={}, gRPC error: {} - {}",
+                    spaceKey, targetType, targetName, targetIdentifier,
+                    exception.getStatus().getCode(), exception.getMessage());
+            
+            double progress = scanOrchestrator.calculateProgress(
+                scanProgress.analyzedOffset() + scanProgress.currentIndex(),
+                scanProgress.originalTotal());
+            
+            String errorMessage = "PII detection failed (gRPC " + exception.getStatus().getCode() + ")";
+            ScanResult errorEvent = scanOrchestrator.createErrorEvent(
+                scanId, spaceKey, page.id(), errorMessage, progress);
+            
+            return Mono.just(errorEvent);
+        }
+    }
+
     private Mono<ScanResult> handleDetectionError(String scanId, String spaceKey,
                                                   ConfluencePage page,
                                                   ScanProgress scanProgress,
                                                   Throwable exception) {
-        log.error("Error analyzing page {}", page.id(), exception);
+        log.error("[ERROR][GENERAL] Space={}, PageId={}, PageTitle=\"{}\", Error analyzing page",
+                 spaceKey, page.id(), page.title(), exception);
+        
         double progress = scanOrchestrator.calculateProgress(
             scanProgress.analyzedOffset() + scanProgress.currentIndex(),
             scanProgress.originalTotal());
-        ScanResult errorEvent = scanOrchestrator.createErrorEvent(scanId, spaceKey, page.id(),
-                                                              exception.getMessage(), progress);
+        
+        ScanResult errorEvent = scanOrchestrator.createErrorEvent(
+            scanId, spaceKey, page.id(),
+            "Error analyzing page: " + exception.getMessage(),
+            progress);
+        
         return Mono.just(errorEvent);
     }
 
@@ -277,5 +383,35 @@ public abstract class AbstractStreamConfluenceScanUseCase {
 
     boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    /**
+     * Searches through the exception cause chain to find a StatusRuntimeException.
+     * This is necessary because gRPC exceptions are often wrapped in other exception types
+     * like PiiDetectionException.
+     *
+     * @param throwable The exception to search through
+     * @return StatusRuntimeException if found in the cause chain, null otherwise
+     */
+    private StatusRuntimeException findGrpcException(Throwable throwable) {
+        if (throwable == null) {
+            return null;
+        }
+        
+        // Check if the throwable itself is a StatusRuntimeException
+        if (throwable instanceof StatusRuntimeException sre) {
+            return sre;
+        }
+        
+        // Search through the cause chain
+        Throwable current = throwable;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+            if (current instanceof StatusRuntimeException sre) {
+                return sre;
+            }
+        }
+        
+        return null;
     }
 }

@@ -41,6 +41,15 @@ public class ReactorErrorHandlerConfig {
                 return;
             }
             
+            // gRPC DEADLINE_EXCEEDED should be caught by the reactive chain, not dropped here
+            // If we see this, it means the error wasn't properly handled upstream
+            if (throwable instanceof StatusRuntimeException sre && 
+                sre.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
+                log.warn("gRPC DEADLINE_EXCEEDED dropped (should have been caught by onErrorResume): {}", 
+                         throwable.getMessage());
+                return;
+            }
+            
             // Any other dropped error is unexpected and should be investigated
             log.error("Unexpected error dropped in reactive stream", throwable);
         });

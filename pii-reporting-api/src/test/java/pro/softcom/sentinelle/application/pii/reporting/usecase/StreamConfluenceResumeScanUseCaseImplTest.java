@@ -181,7 +181,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
 
         StepVerifier.create(flux)
             .assertNext(ev -> {
-                assertThat(ev.eventType()).isEqualTo("error");
+                assertThat(ev.eventType()).isEqualTo("scanError");
                 assertThat(ev.spaceKey()).isEqualTo(spaceKey);
             })
             .verifyComplete();
@@ -202,7 +202,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
 
         StepVerifier.create(flux)
             .assertNext(ev -> {
-                assertThat(ev.eventType()).isEqualTo("error");
+                assertThat(ev.eventType()).isEqualTo("scanError");
                 assertThat(ev.spaceKey()).isEqualTo(spaceKey);
             })
             .verifyComplete();
@@ -219,7 +219,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         Flux<ScanResult> flux = streamConfluenceResumeScanUseCase.resumeAllSpaces(scanId).timeout(Duration.ofSeconds(5));
 
         StepVerifier.create(flux)
-            .assertNext(ev -> assertThat(ev.eventType()).isEqualTo("error"))
+            .assertNext(ev -> assertThat(ev.eventType()).isEqualTo("scanError"))
             .verifyComplete();
     }
 

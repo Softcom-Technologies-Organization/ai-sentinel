@@ -69,7 +69,7 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
         if (isBlank(spaceKey)) {
             return List.of();
         }
-        return jpaRepository.findBySpaceKeyOrderByUpdatedAt(spaceKey).stream()
+        return jpaRepository.findBySpaceKeyOrderByUpdatedAtDesc(spaceKey).stream()
             .map(ScanCheckpointPersistenceAdapter::toDomain).toList();
     }
 

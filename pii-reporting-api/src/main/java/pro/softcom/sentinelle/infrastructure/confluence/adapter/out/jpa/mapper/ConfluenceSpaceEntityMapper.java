@@ -7,8 +7,6 @@ import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.domain.confluence.DataOwners;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.jpa.entity.ConfluenceSpaceEntity;
 
-import java.time.LocalDateTime;
-
 public final class ConfluenceSpaceEntityMapper {
 
     private ConfluenceSpaceEntityMapper() {

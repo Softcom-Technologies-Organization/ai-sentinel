@@ -19,7 +19,6 @@ import {Severity} from '../../core/models/severity';
 import {PiiItemCardUtils} from './pii-item-card.utils';
 import {TestIds} from '../test-ids.constants';
 import {SentinelleApiService} from '../../core/services/sentinelle-api.service';
-import {DataView} from 'primeng/dataview';
 import {Divider} from 'primeng/divider';
 
 /**
@@ -67,7 +66,6 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['item'] || changes['maskByDefault']) {
       this.revealed = !this.maskByDefault;
-      this.detailsOpen = false;
     }
   }
 

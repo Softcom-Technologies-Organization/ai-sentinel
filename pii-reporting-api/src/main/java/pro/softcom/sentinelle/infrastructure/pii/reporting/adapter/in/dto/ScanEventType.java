@@ -14,7 +14,7 @@ public enum ScanEventType {
     ITEM("item"),
     ATTACHMENT_ITEM("attachmentItem"),
     PAGE_COMPLETE("pageComplete"),
-    ERROR("error"),
+    ERROR("scanError"),
     COMPLETE("complete"),
     MULTI_COMPLETE("multiComplete"),
     KEEPALIVE("keepalive");

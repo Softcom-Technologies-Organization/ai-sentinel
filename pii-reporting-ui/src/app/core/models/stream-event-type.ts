@@ -7,7 +7,7 @@ export type StreamEventType =
   | 'item'
   | 'attachmentItem'
   | 'pageComplete'
-  | 'error'
+  | 'scanError'
   | 'complete'
   | 'multiComplete'
   | 'keepalive';

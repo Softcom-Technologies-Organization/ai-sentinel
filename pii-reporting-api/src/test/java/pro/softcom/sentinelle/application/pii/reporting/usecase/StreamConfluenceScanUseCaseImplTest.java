@@ -707,4 +707,100 @@ class StreamConfluenceScanUseCaseImplTest {
             cp.lastProcessedPageId() == null
         ));
     }
+
+    @Test
+    @DisplayName("streamAllSpaces - scans all spaces when AHVIV not found (fail-safe)")
+    void Should_ScanAllSpaces_When_AhvivNotFound() {
+        ConfluenceSpace space1 = new ConfluenceSpace("id1", "ABC", "Space ABC","http://test.com", "d",
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
+        ConfluenceSpace space2 = new ConfluenceSpace("id2", "DEF", "Space DEF","http://test.com", "d",
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
+
+        when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(
+            List.of(space1, space2)
+        ));
+
+        ConfluencePage abcPage = ConfluencePage.builder()
+            .id("p-abc")
+            .title("ABC Page")
+            .spaceKey("ABC")
+            .content(new ConfluencePage.HtmlContent("content"))
+            .build();
+        when(confluenceService.getAllPagesInSpace("ABC")).thenReturn(CompletableFuture.completedFuture(List.of(abcPage)));
+        when(confluenceAttachmentService.getPageAttachments("p-abc")).thenReturn(CompletableFuture.completedFuture(List.of()));
+        
+        ConfluencePage defPage = ConfluencePage.builder()
+            .id("p-def")
+            .title("DEF Page")
+            .spaceKey("DEF")
+            .content(new ConfluencePage.HtmlContent("content"))
+            .build();
+        when(confluenceService.getAllPagesInSpace("DEF")).thenReturn(CompletableFuture.completedFuture(List.of(defPage)));
+        when(confluenceAttachmentService.getPageAttachments("p-def")).thenReturn(CompletableFuture.completedFuture(List.of()));
+
+        when(piiDetectorClient.analyzeContent(any())).thenReturn(
+            ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
+        );
+
+        Flux<ScanResult> flux = streamConfluenceScanUseCase.streamAllSpaces()
+            .filter(ev -> ScanEventType.START.toJson().equals(ev.eventType()))
+            .timeout(Duration.ofSeconds(10));
+
+        StepVerifier.create(flux)
+            .expectNextMatches(ev -> "ABC".equals(ev.spaceKey()))
+            .expectNextMatches(ev -> "DEF".equals(ev.spaceKey()))
+            .verifyComplete();
+
+        // Verify both spaces were scanned (fail-safe behavior)
+        verify(confluenceService, atLeastOnce()).getAllPagesInSpace("ABC");
+        verify(confluenceService, atLeastOnce()).getAllPagesInSpace("DEF");
+    }
+
+    @Test
+    @DisplayName("streamAllSpaces - AHVIV at first position scans all spaces")
+    void Should_ScanAllSpaces_When_AhvivIsFirstSpace() {
+        ConfluenceSpace space1 = new ConfluenceSpace("id1", "AHVIV", "AHV/IV e-Form","http://test.com", "d",
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
+        ConfluenceSpace space2 = new ConfluenceSpace("id2", "XYZ", "Space XYZ","http://test.com", "d",
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
+
+        when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(
+            List.of(space1, space2)
+        ));
+
+        ConfluencePage ahvivPage = ConfluencePage.builder()
+            .id("p-ahviv")
+            .title("AHVIV Page")
+            .spaceKey("AHVIV")
+            .content(new ConfluencePage.HtmlContent("content"))
+            .build();
+        when(confluenceService.getAllPagesInSpace("AHVIV")).thenReturn(CompletableFuture.completedFuture(List.of(ahvivPage)));
+        when(confluenceAttachmentService.getPageAttachments("p-ahviv")).thenReturn(CompletableFuture.completedFuture(List.of()));
+        
+        ConfluencePage xyzPage = ConfluencePage.builder()
+            .id("p-xyz")
+            .title("XYZ Page")
+            .spaceKey("XYZ")
+            .content(new ConfluencePage.HtmlContent("content"))
+            .build();
+        when(confluenceService.getAllPagesInSpace("XYZ")).thenReturn(CompletableFuture.completedFuture(List.of(xyzPage)));
+        when(confluenceAttachmentService.getPageAttachments("p-xyz")).thenReturn(CompletableFuture.completedFuture(List.of()));
+
+        when(piiDetectorClient.analyzeContent(any())).thenReturn(
+            ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
+        );
+
+        Flux<ScanResult> flux = streamConfluenceScanUseCase.streamAllSpaces()
+            .filter(ev -> ScanEventType.START.toJson().equals(ev.eventType()))
+            .timeout(Duration.ofSeconds(10));
+
+        StepVerifier.create(flux)
+            .expectNextMatches(ev -> "AHVIV".equals(ev.spaceKey()))
+            .expectNextMatches(ev -> "XYZ".equals(ev.spaceKey()))
+            .verifyComplete();
+
+        // Verify both spaces were scanned
+        verify(confluenceService, atLeastOnce()).getAllPagesInSpace("AHVIV");
+        verify(confluenceService, atLeastOnce()).getAllPagesInSpace("XYZ");
+    }
 }

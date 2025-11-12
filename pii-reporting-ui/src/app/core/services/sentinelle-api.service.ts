@@ -157,7 +157,7 @@ export class SentinelleApiService {
       const es = new EventSource(url);
 
       const types: StreamEventType[] = [
-        'multiStart', 'start', 'pageStart', 'item', 'attachmentItem', 'pageComplete', 'error', 'complete', 'multiComplete', 'keepalive'
+        'multiStart', 'start', 'pageStart', 'item', 'attachmentItem', 'pageComplete', 'scanError', 'complete', 'multiComplete', 'keepalive'
       ];
 
       // Register event listeners with lightweight, named handlers to avoid deep nesting

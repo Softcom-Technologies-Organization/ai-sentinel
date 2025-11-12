@@ -580,7 +580,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
         this.handleItemEvent(payload);
         break;
       }
-      case 'error': {
+      case 'scanError': {
         this.handleStreamError(payload);
         break;
       }
@@ -702,19 +702,19 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
   /**
    * Marks a space as failed on error events, displays a sticky toast notification, and updates UI.
+   * IMPORTANT: Error events do not stop the scan - they are non-fatal and the scan continues.
    */
   private handleStreamError(payload: RawStreamPayload): void {
     const spaceKey = payload.spaceKey;
     if (!spaceKey) {
       return;
     }
-    this.upsertScanHistory(spaceKey, 'failed');
-    this.spacesDashboardUtils.updateSpace(spaceKey, { status: 'FAILED', lastScanTs: new Date().toISOString() });
 
-    // Display sticky error toast with full context
-    const errorMessage = (payload as any)?.errorMessage ?? 'Erreur inconnue';
+    // Extract error message from 'message' field (not 'errorMessage')
+    const errorMessage = (payload as any)?.message ?? (payload as any)?.errorMessage ?? 'Erreur inconnue';
     const errorType = this.toastService.detectErrorType(errorMessage);
 
+    // Display sticky error toast with full context
     this.toastService.showScanError({
       scanId: payload.scanId ?? '',
       spaceKey,
@@ -724,6 +724,15 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
       errorMessage,
       errorType
     });
+
+    // DO NOT mark the space as FAILED - errors are non-fatal
+    // The scan continues and will emit complete event when done
+    // Only update the last scan timestamp
+    this.spacesDashboardUtils.updateSpace(spaceKey, { lastScanTs: new Date().toISOString() });
+
+    // Log the error but do not update scan history to 'failed'
+    // The space should remain in RUNNING status
+    this.append(`[ui] Error for space ${spaceKey}: ${errorMessage}`);
   }
 
   /**

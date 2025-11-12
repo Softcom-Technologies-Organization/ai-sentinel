@@ -9,10 +9,12 @@ export type StreamEventType =
   | 'pageStart'
   | 'item'
   | 'attachmentItem'
-  | 'error'
+  | 'scanError'
   | 'complete'
   | 'multiStart'
-  | 'multiComplete';
+  | 'multiComplete'
+  | 'pageComplete'
+  | 'keepalive';
 
 /**
  * Returns a human-readable log line for the given event type and raw payload json.

@@ -29,25 +29,23 @@ import reactor.core.publisher.Flux;
  */
 @RestController
 @RequestMapping("/api/v1/stream")
-@Tag(name = "Streaming (WebFlux)", description = "Streaming de scan Confluence via SSE (WebFlux)")
+@Tag(name = "Streaming (WebFlux)", description = "Confluence scan streaming via SSE (WebFlux)")
 @RequiredArgsConstructor
 @Slf4j
 public class ScanController {
-
-    public static final String ERROR_EVENT_TYPE = "error";
 
     private final StreamConfluenceScanUseCase streamConfluenceScanUseCase;
     private final StreamConfluenceResumeScanUseCase streamConfluenceResumeScanUseCase;
     private final ScanResultToScanEventMapper scanResultToScanEventMapper;
 
     @GetMapping(value = "/confluence/space/{spaceKey}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "Stream du scan d'un espace Confluence (SSE)")
-    @ApiResponse(responseCode = "200", description = "Flux SSE démarré")
-    @ApiResponse(responseCode = "404", description = "Espace non trouvé")
+    @Operation(summary = "Stream Confluence space scan (SSE)")
+    @ApiResponse(responseCode = "200", description = "SSE stream started")
+    @ApiResponse(responseCode = "404", description = "Space not found")
     public Flux<ServerSentEvent<@NonNull ScanEventDto>> streamSpaceScan(
-            @Parameter(description = "Clé de l'espace à scanner") @PathVariable String spaceKey
+            @Parameter(description = "Key of the space to scan") @PathVariable String spaceKey
     ) {
-        log.info("[SSE] Démarrage du stream pour l'espace {}", spaceKey);
+        log.info("[SSE] Starting stream for space {}", spaceKey);
 
         Flux<ServerSentEvent<@NonNull ScanEventDto>> keepalive = Flux.interval(Duration.ofSeconds(15))
                 .map(i -> ServerSentEvent.<ScanEventDto>builder()
@@ -62,7 +60,7 @@ public class ScanController {
                         .build());
 
         return Flux.merge(data, keepalive)
-                .doFinally(sig -> log.info("[SSE] Connexion fermée pour l'espace {} (signal={})", spaceKey, sig));
+                .doFinally(sig -> log.info("[SSE] Connection closed for space {} (signal={})", spaceKey, sig));
     }
 
 
@@ -72,13 +70,13 @@ public class ScanController {
      * the same per-page events as the single-space scan endpoint (start, page_start, item, page_complete, complete).
      */
     @GetMapping(value = "/confluence/spaces/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "Stream du scan de tous les espaces Confluence (SSE)")
-    @ApiResponse(responseCode = "200", description = "Flux SSE démarré")
+    @Operation(summary = "Stream scan of all Confluence spaces (SSE)")
+    @ApiResponse(responseCode = "200", description = "SSE stream started")
     public Flux<ServerSentEvent<@NonNull ScanEventDto>> streamAllSpacesScan(
             @RequestParam(name = "scanId", required = false) String scanId
     ) {
         boolean resume = scanId != null && !scanId.isBlank();
-        log.info("[SSE] Démarrage du stream multi-espaces{}", resume ? " (resume scanId=" + scanId + ")" : "");
+        log.info("[SSE] Starting multi-space stream{}", resume ? " (resume scanId=" + scanId + ")" : "");
 
         Flux<ServerSentEvent<@NonNull ScanEventDto>> keepalive = Flux.interval(Duration.ofSeconds(15))
                 .map(i -> ServerSentEvent.<ScanEventDto>builder()
@@ -119,7 +117,7 @@ public class ScanController {
         }
 
         return Flux.merge(data, keepalive)
-                .doFinally(sig -> log.info("[SSE] Connexion fermée pour le scan multi-espaces (signal={})", sig));
+                .doFinally(sig -> log.info("[SSE] Connection closed for all spaces scan (signal={})", sig));
     }
 
     // Backward-compatible entry point used by unit tests that call the controller method directly

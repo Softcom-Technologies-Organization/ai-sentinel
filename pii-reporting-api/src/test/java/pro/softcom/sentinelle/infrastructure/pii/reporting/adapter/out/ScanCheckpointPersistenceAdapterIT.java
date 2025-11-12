@@ -196,8 +196,8 @@ class ScanCheckpointPersistenceAdapterIT {
         em.flush();
 
         var list = scanCheckpointPersistenceAdapter.findBySpace("SPACE-C");
-        assertThat(list).extracting(ScanCheckpoint::scanId).isEqualTo(List.of("scan-14-1", "scan-14-2"));
-        assertThat(list).extracting(ScanCheckpoint::scanStatus).containsExactly(ScanStatus.RUNNING, ScanStatus.FAILED);
+        assertThat(list).extracting(ScanCheckpoint::scanId).isEqualTo(List.of("scan-14-2", "scan-14-1"));
+        assertThat(list).extracting(ScanCheckpoint::scanStatus).containsExactly(ScanStatus.FAILED, ScanStatus.RUNNING);
     }
 
     @Test

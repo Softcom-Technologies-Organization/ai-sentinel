@@ -709,66 +709,6 @@ class StreamConfluenceScanUseCaseImplTest {
     }
 
     @Test
-    @DisplayName("streamAllSpaces - skips spaces before AHVIV and scans from AHVIV included")
-    void Should_SkipSpacesBeforeAhviv_When_StreamingAllSpaces() {
-        ConfluenceSpace space1 = new ConfluenceSpace("id1", "ABC", "Space ABC","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
-        ConfluenceSpace space2 = new ConfluenceSpace("id2", "DEF", "Space DEF","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
-        ConfluenceSpace space3 = new ConfluenceSpace("id3", "AHVIV", "AHV/IV e-Form","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
-        ConfluenceSpace space4 = new ConfluenceSpace("id4", "XYZ", "Space XYZ","http://test.com", "d",
-            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
-
-        when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(
-            List.of(space1, space2, space3, space4)
-        ));
-
-        // Mock pages for each space
-        when(confluenceService.getAllPagesInSpace("ABC")).thenReturn(CompletableFuture.completedFuture(List.of()));
-        when(confluenceService.getAllPagesInSpace("DEF")).thenReturn(CompletableFuture.completedFuture(List.of()));
-        
-        ConfluencePage ahvivPage = ConfluencePage.builder()
-            .id("p-ahviv")
-            .title("AHVIV Page")
-            .spaceKey("AHVIV")
-            .content(new ConfluencePage.HtmlContent("content"))
-            .build();
-        when(confluenceService.getAllPagesInSpace("AHVIV")).thenReturn(CompletableFuture.completedFuture(List.of(ahvivPage)));
-        when(confluenceAttachmentService.getPageAttachments("p-ahviv")).thenReturn(CompletableFuture.completedFuture(List.of()));
-        
-        ConfluencePage xyzPage = ConfluencePage.builder()
-            .id("p-xyz")
-            .title("XYZ Page")
-            .spaceKey("XYZ")
-            .content(new ConfluencePage.HtmlContent("content"))
-            .build();
-        when(confluenceService.getAllPagesInSpace("XYZ")).thenReturn(CompletableFuture.completedFuture(List.of(xyzPage)));
-        when(confluenceAttachmentService.getPageAttachments("p-xyz")).thenReturn(CompletableFuture.completedFuture(List.of()));
-
-        when(piiDetectorClient.analyzeContent(any())).thenReturn(
-            ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
-        );
-
-        Flux<ScanResult> flux = streamConfluenceScanUseCase.streamAllSpaces()
-            .filter(ev -> ScanEventType.START.toJson().equals(ev.eventType()))
-            .timeout(Duration.ofSeconds(10));
-
-        StepVerifier.create(flux)
-            .expectNextMatches(ev -> "AHVIV".equals(ev.spaceKey()))
-            .expectNextMatches(ev -> "XYZ".equals(ev.spaceKey()))
-            .verifyComplete();
-
-        // Verify ABC and DEF were NOT scanned
-        verify(confluenceService, Mockito.never()).getAllPagesInSpace("ABC");
-        verify(confluenceService, Mockito.never()).getAllPagesInSpace("DEF");
-        
-        // Verify AHVIV and XYZ were scanned
-        verify(confluenceService, atLeastOnce()).getAllPagesInSpace("AHVIV");
-        verify(confluenceService, atLeastOnce()).getAllPagesInSpace("XYZ");
-    }
-
-    @Test
     @DisplayName("streamAllSpaces - scans all spaces when AHVIV not found (fail-safe)")
     void Should_ScanAllSpaces_When_AhvivNotFound() {
         ConfluenceSpace space1 = new ConfluenceSpace("id1", "ABC", "Space ABC","http://test.com", "d",

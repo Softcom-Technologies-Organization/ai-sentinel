@@ -74,7 +74,7 @@ class ScanControllerTest {
         ));
 
         Flux<ServerSentEvent<@NonNull ScanEventDto>> flux = controller.streamSpaceScan("MISS")
-                .filter(sse -> "error".equals(sse.event()))
+                .filter(sse -> ScanEventType.ERROR.toJson().equals(sse.event()))
                 .take(1)
                 .timeout(Duration.ofSeconds(3));
 

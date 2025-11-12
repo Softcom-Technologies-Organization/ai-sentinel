@@ -157,22 +157,18 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                                                    ScanProgress scanProgress) {
         return Mono.fromCallable(() -> {
             ContentPiiDetection detection = detectPii(extracted.extractedText());
-            double progress = scanOrchestrator.calculateProgress(
-                scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
-                scanProgress.originalTotal());
+            double progress = calculateProgressForAttachment(scanProgress);
 
             return scanOrchestrator.createAttachmentItemEvent(
                 scanId, spaceKey, page, extracted.attachment(), extracted.extractedText(), detection,
                 progress);
         })
         .timeout(scanTimeoutConfig.getPiiDetection())
-        .onErrorResume(TimeoutException.class, exception -> {
+        .onErrorResume(TimeoutException.class, _ -> {
             log.warn("[TIMEOUT][REACTOR] Space={}, PageId={}, AttachmentName=\"{}\", ReactorTimeout exceeded",
                     spaceKey, page.id(), extracted.attachment().name());
             
-            double progress = scanOrchestrator.calculateProgress(
-                scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
-                scanProgress.originalTotal());
+            double progress = calculateProgressForAttachment(scanProgress);
             
             return Mono.just(scanOrchestrator.createErrorEvent(
                 scanId, spaceKey, page.id(),
@@ -191,9 +187,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
             log.error("[ERROR][GENERAL] Space={}, PageId={}, AttachmentName=\"{}\", Error analyzing attachment",
                       spaceKey, page.id(), extracted.attachment().name(), exception);
             
-            double progress = scanOrchestrator.calculateProgress(
-                scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
-                scanProgress.originalTotal());
+            double progress = calculateProgressForAttachment(scanProgress);
             
             return Mono.just(scanOrchestrator.createErrorEvent(
                 scanId, spaceKey, page.id(), 
@@ -259,9 +253,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
     private Flux<ScanResult> createEmptyPageItem(String scanId, String spaceKey,
                                                  ConfluencePage page,
                                                  ScanProgress scanProgress) {
-        double progress = scanOrchestrator.calculateProgress(
-            scanProgress.analyzedOffset() + scanProgress.currentIndex(),
-            scanProgress.originalTotal());
+        double progress = calculateProgressForCurrentItem(scanProgress);
         ScanResult event = scanOrchestrator.createEmptyPageItemEvent(scanId, spaceKey, page, progress);
         return Flux.just(event);
     }
@@ -269,9 +261,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
     private ScanResult buildPageItemEvent(String scanId, ConfluencePage page,
                                           String content, ContentPiiDetection detection,
                                           ScanProgress scanProgress) {
-        double progress = scanOrchestrator.calculateProgress(
-            scanProgress.analyzedOffset() + scanProgress.currentIndex(),
-            scanProgress.originalTotal());
+        double progress = calculateProgressForCurrentItem(scanProgress);
         return scanOrchestrator.createPageItemEvent(scanId, page.spaceKey(), page, content, detection,
                                                 progress);
     }
@@ -282,9 +272,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         log.warn("[TIMEOUT][REACTOR] Space={}, PageId={}, PageTitle=\"{}\", ReactorTimeout exceeded",
                 spaceKey, page.id(), page.title());
         
-        double progress = scanOrchestrator.calculateProgress(
-            scanProgress.analyzedOffset() + scanProgress.currentIndex(),
-            scanProgress.originalTotal());
+        double progress = calculateProgressForCurrentItem(scanProgress);
         
         ScanResult errorEvent = scanOrchestrator.createErrorEvent(
             scanId, spaceKey, page.id(),
@@ -294,6 +282,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         return Mono.just(errorEvent);
     }
 
+    //TODO: refactor to reduce cyclomatic complexity
     private Mono<ScanResult> handleGrpcError(String scanId, String spaceKey,
                                             ConfluencePage page,
                                             AttachmentInfo attachment,
@@ -307,9 +296,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
             log.warn("[TIMEOUT][GRPC_DEADLINE_EXCEEDED] Space={}, {}=\"{}\", Identifier={}, gRPC deadline exceeded",
                     spaceKey, targetType, targetName, targetIdentifier);
             
-            double progress = scanOrchestrator.calculateProgress(
-                scanProgress.analyzedOffset() + scanProgress.currentIndex(),
-                scanProgress.originalTotal());
+            double progress = calculateProgressForCurrentItem(scanProgress);
             
             String errorMessage = attachment != null
                 ? "PII detection timeout (gRPC DEADLINE_EXCEEDED) for attachment: " + targetName
@@ -324,9 +311,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                     spaceKey, targetType, targetName, targetIdentifier,
                     exception.getStatus().getCode(), exception.getMessage());
             
-            double progress = scanOrchestrator.calculateProgress(
-                scanProgress.analyzedOffset() + scanProgress.currentIndex(),
-                scanProgress.originalTotal());
+            double progress = calculateProgressForCurrentItem(scanProgress);
             
             String errorMessage = "PII detection failed (gRPC " + exception.getStatus().getCode() + ")";
             ScanResult errorEvent = scanOrchestrator.createErrorEvent(
@@ -343,9 +328,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         log.error("[ERROR][GENERAL] Space={}, PageId={}, PageTitle=\"{}\", Error analyzing page",
                  spaceKey, page.id(), page.title(), exception);
         
-        double progress = scanOrchestrator.calculateProgress(
-            scanProgress.analyzedOffset() + scanProgress.currentIndex(),
-            scanProgress.originalTotal());
+        double progress = calculateProgressForCurrentItem(scanProgress);
         
         ScanResult errorEvent = scanOrchestrator.createErrorEvent(
             scanId, spaceKey, page.id(),
@@ -359,6 +342,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         return page.content() != null ? page.content().body() : "";
     }
 
+    //TODO: refactor to reduce cyclomatic complexity
     private ContentPiiDetection detectPii(String content) {
         String safeContent = content != null ? content : "";
         int charCount = safeContent.length();
@@ -383,6 +367,26 @@ public abstract class AbstractStreamConfluenceScanUseCase {
 
     boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    /**
+     * Calculates progress for the current item being processed.
+     * Used when an item is completed or encounters an error during processing.
+     */
+    private double calculateProgressForCurrentItem(ScanProgress scanProgress) {
+        return scanOrchestrator.calculateProgress(
+            scanProgress.analyzedOffset() + scanProgress.currentIndex(),
+            scanProgress.originalTotal());
+    }
+
+    /**
+     * Calculates progress for an attachment being processed (before page content).
+     * Uses currentIndex - 1 because attachments are processed before the page item itself.
+     */
+    private double calculateProgressForAttachment(ScanProgress scanProgress) {
+        return scanOrchestrator.calculateProgress(
+            scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
+            scanProgress.originalTotal());
     }
 
     /**

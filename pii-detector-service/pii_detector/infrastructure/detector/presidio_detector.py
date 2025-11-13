@@ -22,7 +22,8 @@ import toml
 from presidio_analyzer import AnalyzerEngine, RecognizerRegistry
 from presidio_analyzer.nlp_engine import NlpEngineProvider
 
-from service.detector.models import PIIEntity, PIIType
+from domain.entity.pii_entity import PIIEntity
+from domain.entity.pii_type import PIIType
 
 
 logger = logging.getLogger(__name__)

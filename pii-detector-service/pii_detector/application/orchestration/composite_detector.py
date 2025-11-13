@@ -19,7 +19,7 @@ from typing import List, Optional, Tuple
 from domain.service.detection_merger import DetectionMerger
 from domain.port.pii_detector_protocol import PIIDetectorProtocol
 from infrastructure.detector.regex_detector import RegexDetector
-from service.detector.models import PIIEntity
+from domain.entity.pii_entity import PIIEntity
 
 try:
     from infrastructure.detector.presidio_detector import PresidioDetector

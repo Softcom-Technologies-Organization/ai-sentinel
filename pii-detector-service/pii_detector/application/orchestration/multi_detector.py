@@ -27,7 +27,6 @@ from domain.service.detection_merger import DetectionMerger
 from application.factory.detector_factory import DetectorFactory, create_default_factory
 from infrastructure.detector.pii_detector import DetectionConfig, PIIEntity
 from domain.port.pii_detector_protocol import PIIDetectorProtocol
-from application.config import get_config as get_app_config
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +34,8 @@ logger = logging.getLogger(__name__)
 def _get_provenance_logging() -> bool:
     """Get provenance logging setting from centralized configuration."""
     try:
+        # Lazy import to avoid circular dependency
+        from config import get_config as get_app_config
         cfg = get_app_config()
         return cfg.detection.multi_detector_log_provenance
     except (ValueError, AttributeError, ImportError):

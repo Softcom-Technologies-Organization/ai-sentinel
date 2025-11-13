@@ -102,7 +102,7 @@ def set_logging_level(debug=False):
 
 def _get_api_key_from_config():
     """Get API key from configuration."""
-    from pii_detector.config import get_config
+    from config import get_config
     try:
         config = get_config()
         return config.model.huggingface_api_key
@@ -317,7 +317,10 @@ def main():
 
     # Import the server module
     try:
-        from pii_detector.service.server.pii_service import serve
+        # Use importlib because 'in' is a reserved keyword in Python
+        import importlib
+        pii_service_module = importlib.import_module('pii_detector.infrastructure.adapter.in.grpc.pii_service')
+        serve = pii_service_module.serve
 
         # Start the server
         server = serve(port=args.port, max_workers=args.workers)

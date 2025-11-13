@@ -22,25 +22,25 @@ from grpc_reflection.v1alpha import reflection
 from pii_detector.proto.generated import pii_detection_pb2, \
   pii_detection_pb2_grpc
 # Import the PII detector
-from pii_detector.service.detector.pii_detector import PIIDetector
-from pii_detector.service.detector.pii_detector import \
+from infrastructure.detector.pii_detector import PIIDetector
+from infrastructure.detector.pii_detector import \
   PIIEntity as DetectedPIIEntity
 
 # Import GLiNER detector for GLiNER models
 try:
-    from pii_detector.service.detector.gliner_detector import GLiNERDetector
+    from infrastructure.detector.gliner_detector import GLiNERDetector
 except Exception:  # pragma: no cover - safe import guard
     GLiNERDetector = None  # type: ignore
 # Optional pre-caching of additional HF models (extensible)
 try:
-    from pii_detector.service.detector.model_cache import ensure_models_cached, get_env_extra_models
+    from infrastructure.model_management.model_cache import ensure_models_cached, get_env_extra_models
 except Exception:  # pragma: no cover - safe import guard
     ensure_models_cached = None
     get_env_extra_models = None
 
 # Optional multi-model composite (opt-in via config)
 try:
-    from pii_detector.service.detector.multi_detector import (
+    from application.orchestration.multi_detector import (
         MultiModelPIIDetector,
         get_multi_model_ids_from_config,
         should_use_multi_detector
@@ -52,7 +52,7 @@ except Exception:  # pragma: no cover - safe import guard
 
 # Optional composite detector (ML + Regex)
 try:
-    from pii_detector.service.detector.composite_detector import (
+    from application.orchestration.composite_detector import (
         CompositePIIDetector,
         create_composite_detector,
         should_use_composite_detector
@@ -174,7 +174,7 @@ def _create_multi_detector():
 
 def _create_single_detector():
     """Create and return a single-model detector instance, or None if no LLM models are enabled."""
-    from pii_detector.service.detector.models.detection_config import DetectionConfig, get_enabled_models, _load_llm_config
+    from application.config.detection_policy import DetectionConfig, get_enabled_models, _load_llm_config
     
     # Check if any LLM models are enabled
     try:
@@ -243,7 +243,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             True if throughput logging is enabled, False otherwise
         """
         try:
-            from pii_detector.service.detector.models.detection_config import _load_llm_config
+            from application.config.detection_policy import _load_llm_config
             config = _load_llm_config()
             detection_config = config.get("detection", {})
             return detection_config.get("log_throughput", True)

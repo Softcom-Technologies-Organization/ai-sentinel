@@ -13,8 +13,8 @@ import torch
 from huggingface_hub import hf_hub_download
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 
-from application.config.detection_policy import DetectionConfig
-from domain.exception.exceptions import APIKeyError, ModelLoadError
+from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.exception.exceptions import APIKeyError, ModelLoadError
 
 
 class ModelManager:

@@ -37,7 +37,7 @@ def _load_llm_config() -> dict:
     # Locate config directory relative to pii-detector-service root
     # From pii-detector-service/pii_detector/service/detector/models/detection_config.py
     # Go up 5 levels to reach pii-detector-service/
-    config_dir = Path(__file__).parent.parent.parent.parent.parent / "config"
+    config_dir = Path(__file__).parent.parent.parent.parent / "config"
     
     # Load global detection settings
     detection_settings_path = config_dir / "detection-settings.toml"
@@ -131,7 +131,7 @@ def get_enabled_models(config: dict) -> List[Dict[str, Any]]:
                 "No enabled models found in configuration. "
                 "Please set enabled = true for at least one model in config/models/. "
                 "Alternatively, enable regex_detection_enabled or presidio_detection_enabled "
-                "in config/detection-settings.toml."
+                "in config/detection_config.toml."
             )
     
     # Sort by priority (lowest number = highest priority)
@@ -144,7 +144,7 @@ def get_enabled_models(config: dict) -> List[Dict[str, Any]]:
 class DetectionConfig:
     """Configuration for PII detection.
     
-    Loads default values from config/detection-settings.toml and 
+    Loads default values from config/detection_config.toml and
     config/models/*.toml. All parameters can be overridden via 
     constructor to support runtime customization.
     
@@ -227,7 +227,7 @@ class DetectionConfig:
             missing_key = str(e).strip("'")
             raise ValueError(
                 f"Missing required configuration key: {missing_key} in configuration files. "
-                f"Please check config/detection-settings.toml and config/models/*.toml structure."
+                f"Please check config/detection_config.toml and config/models/*.toml structure."
             ) from e
             
         except Exception as e:

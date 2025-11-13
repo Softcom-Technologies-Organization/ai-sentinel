@@ -135,18 +135,14 @@ Before starting, make sure you have:
   docker compose version
   ```
 
-- **Infisical Account**: Required for secrets management
-  - Self-hosted Infisical (included in docker-compose)
-  - Follow [Infisical UI Setup Guide](docs/INFISICAL_UI_SETUP.md) for configuration
-
 - **Confluence Credentials**: To scan your Confluence spaces (stored in Infisical)
   - Base URL of your Confluence instance
   - Username or email
   - Confluence API token ([How to create a token](https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/))
 
-- **Hugging Face API Key**: Optional, only if using private AI models (stored in Infisical)
+- **Hugging Face API Key**: (to be stored in Infisical)
   - Create an account on [Hugging Face](https://huggingface.co/join)
-  - Generate an API key in [Settings > Access Tokens](https://huggingface.co/settings/tokens)
+  - Generate an API key in [Settings > Access Tokens](https://huggingface.co/settings/tokens) _(token type: read)_
 
 **Optional but recommended:**
 - Git (to clone the repository in development mode)

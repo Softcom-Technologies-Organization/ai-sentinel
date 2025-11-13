@@ -20,6 +20,7 @@ import {PiiItemCardUtils} from './pii-item-card.utils';
 import {TestIds} from '../test-ids.constants';
 import {SentinelleApiService} from '../../core/services/sentinelle-api.service';
 import {Divider} from 'primeng/divider';
+import {TranslocoModule, TranslocoService} from '@jsverse/transloco';
 
 /**
  * Display a single detection item with masked HTML snippet, entities and severity badge.
@@ -28,7 +29,7 @@ import {Divider} from 'primeng/divider';
 @Component({
   selector: 'app-pii-item-card',
   standalone: true,
-  imports: [CommonModule, ButtonModule, CardModule, TagModule, ChipModule, Divider],
+  imports: [CommonModule, ButtonModule, CardModule, TagModule, ChipModule, Divider, TranslocoModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pii-item-card.component.html',
   styleUrl: './pii-item-card.component.css',
@@ -51,6 +52,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
   readonly piiItemCardUtils = inject(PiiItemCardUtils);
   private readonly sentinelleApi = inject(SentinelleApiService);
   private readonly cdr = inject(ChangeDetectorRef);
+  readonly translocoService = inject(TranslocoService);
 
   // Test IDs for E2E testing
   readonly testIds = TestIds;
@@ -137,9 +139,21 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
   }
 
   sevLabel(sev?: Severity | null): string {
-    if (sev === 'high') return 'Élevée';
-    if (sev === 'medium') return 'Moyenne';
-    return 'Faible';
+    const key = this.getSeverityKey(sev);
+    return this.translocoService.translate(key);
+  }
+
+  private getSeverityKey(sev?: Severity | null): string {
+    switch (sev) {
+      case 'high':
+        return 'piiItem.severity.high';
+      case 'medium':
+        return 'piiItem.severity.medium';
+      case 'low':
+        return 'piiItem.severity.low';
+      default:
+        return 'piiItem.severity.low';
+    }
   }
 
   formatTs(ts?: string): string {

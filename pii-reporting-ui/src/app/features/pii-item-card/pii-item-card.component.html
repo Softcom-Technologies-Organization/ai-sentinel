@@ -8,9 +8,9 @@
               item?.pageTitle || item?.pageUrl
             }}</a>
         } @else {
-          <div class="title">{{ item?.pageTitle || 'Page' }}</div>
+          <div class="title">{{ item?.pageTitle || ('piiItem.fallback.page' | transloco) }}</div>
         }
-        <p-tag [value]="'Sévérité : ' + sevLabel(item?.severity)"
+        <p-tag [value]="'piiItem.severity.label' | transloco:{ value: sevLabel(item?.severity) }"
                [severity]="sevPrime(item?.severity)" class="mt-1"></p-tag>
       </div>
     </div>
@@ -21,22 +21,22 @@
       @if (item?.attachmentName) {
         <div class="attachment-row">
           <i class="pi pi-paperclip me-2" aria-hidden="true"></i>
-          <span class="attachment-label">Pièce jointe</span>
+          <span class="attachment-label">{{ 'piiItem.attachment.label' | transloco }}</span>
           @switch (attachmentKind(item?.attachmentType)) {
             @case ('pdf') {
-              <p-tag value="PDF" severity="danger" class="ml-2"></p-tag>
+              <p-tag [value]="'piiItem.attachment.types.pdf' | transloco" severity="danger" class="ml-2"></p-tag>
             }
             @case ('excel') {
-              <p-tag value="Excel" severity="warning" class="ml-2"></p-tag>
+              <p-tag [value]="'piiItem.attachment.types.excel' | transloco" severity="warning" class="ml-2"></p-tag>
             }
             @case ('word') {
-              <p-tag value="Word" severity="info" class="ml-2"></p-tag>
+              <p-tag [value]="'piiItem.attachment.types.word' | transloco" severity="info" class="ml-2"></p-tag>
             }
             @case ('ppt') {
-              <p-tag value="PowerPoint" severity="success" class="ml-2"></p-tag>
+              <p-tag [value]="'piiItem.attachment.types.ppt' | transloco" severity="success" class="ml-2"></p-tag>
             }
             @case ('txt') {
-              <p-tag value="Texte" severity="secondary" class="ml-2"></p-tag>
+              <p-tag [value]="'piiItem.attachment.types.txt' | transloco" severity="secondary" class="ml-2"></p-tag>
             }
           }
 
@@ -61,10 +61,10 @@
         <p-button (click)="toggleDetails()"
                   (keydown.enter)="$event.stopPropagation(); toggleDetails()"
                   (keydown.space)="$event.preventDefault(); $event.stopPropagation(); toggleDetails()"
-                  [ariaLabel]="detailsOpen ? 'Masquer le détail' : 'Voir détail'"
+                  [ariaLabel]="detailsOpen ? ('piiItem.actions.hideDetail' | transloco) : ('piiItem.actions.viewDetail' | transloco)"
                   [attr.aria-expanded]="detailsOpen"
                   icon="pi pi-angle-right"
-                  label="Voir détail"
+                  [label]="'piiItem.actions.viewDetail' | transloco"
                   styleClass="p-button-link"></p-button>
       </div>
     }
@@ -78,8 +78,8 @@
         <div class="controls mt-2">
           <button pButton pButtonIcon="revealed ? 'pi pi-eye-slash' : 'pi pi-eye'"
                   class="p-button-outlined" (click)="toggleReveal()"
-                  [attr.aria-label]="revealed ? 'Masquer les valeurs sensibles' : 'Afficher les valeurs sensibles (action auditée)'">
-            {{ revealed ? 'Masquer' : 'Révéler' }}
+                  [attr.aria-label]="revealed ? ('piiItem.actions.maskAriaLabel' | transloco) : ('piiItem.actions.revealAriaLabel' | transloco)">
+            {{ revealed ? ('piiItem.actions.mask' | transloco) : ('piiItem.actions.reveal' | transloco) }}
           </button>
         </div>
 
@@ -96,10 +96,10 @@
                 <p-divider />
                 <div class="flex gap-2 flex-wrap">
                   @if (e.confidence !== undefined) {
-                  <p-tag severity="secondary" [value]="'Score ' + formatScore(e.confidence)" />
+                  <p-tag severity="secondary" [value]="'piiItem.entity.score' | transloco:{ value: formatScore(e.confidence) }" />
                   }
-                  <p-tag severity="secondary" [value]="'Start ' + e.startPosition" />
-                  <p-tag severity="secondary" [value]="'End ' + e.endPosition" />
+                  <p-tag severity="secondary" [value]="'piiItem.entity.start' | transloco:{ value: e.startPosition }" />
+                  <p-tag severity="secondary" [value]="'piiItem.entity.end' | transloco:{ value: e.endPosition }" />
                 </div>
               </p-card>
             </div>

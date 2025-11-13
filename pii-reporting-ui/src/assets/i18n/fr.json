@@ -1,0 +1,146 @@
+{
+  "common": {
+    "appTitle": "Sentinel AI",
+    "actions": "Actions",
+    "search": "Rechercher",
+    "searchGlobally": "Rechercher globalement",
+    "refresh": "Rafraichir",
+    "close": "Fermer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "yes": "Oui",
+    "no": "Non",
+    "loading": "Chargement...",
+    "noData": "Aucune donnée disponible",
+    "error": "Erreur",
+    "success": "Succès",
+    "warning": "Attention",
+    "info": "Information"
+  },
+  "language": {
+    "select": "Choisir la langue",
+    "fr": "Français",
+    "en": "English"
+  },
+  "dashboard": {
+    "title": "Sentinel AI",
+    "table": {
+      "headers": {
+        "space": "Space",
+        "status": "Statut",
+        "progress": "Progression",
+        "lastScan": "Dernier scan",
+        "pii": "PII",
+        "actions": "Actions"
+      },
+      "emptyMessage": "Aucun élément à afficher",
+      "expand": "Développer",
+      "collapse": "Réduire"
+    },
+    "status": {
+      "running": "En cours",
+      "ok": "OK",
+      "failed": "Échec",
+      "pending": "En attente",
+      "paused": "En pause"
+    },
+    "actions": {
+      "startScan": "Démarrer le scan global",
+      "pauseScan": "Interrompre le scan",
+      "resumeScan": "Reprendre le dernier scan",
+      "openInConfluence": "Ouvrir dans Confluence",
+      "confluenceUnavailable": "URL indisponible (non fournie par le backend)"
+    },
+    "notifications": {
+      "newSpaces": {
+        "message": "{{count}} nouvel(aux) espace(s) Confluence disponible(s)",
+        "refreshButton": "Rafraichir",
+        "closeAriaLabel": "Fermer la notification"
+      },
+      "spaceUpdated": {
+        "indicator": "Cet espace a été modifié depuis le dernier scan",
+        "tooltip": {
+          "updated": "Mis à jour : {{date}}",
+          "pagesModified": "Pages modifiées :",
+          "attachmentsModified": "Pièces jointes modifiées :",
+          "andMore": "… (+{{count}} de plus)",
+          "contentModified": "Contenu modifié depuis le dernier scan"
+        }
+      }
+    },
+    "logs": {
+      "purging": "[ui] Purge des résultats précédents ...",
+      "purgeOk": "[ui] Purge OK. Connexion à /api/v1/stream/confluence/spaces/events ...",
+      "sseError": "[ui] Erreur de connexion SSE: {{error}}. Le scan continue sur le serveur.",
+      "purgeError": "[ui] Erreur lors de la purge des précédents scans: {{error}}",
+      "scanCancelled": "[ui] Global scan cancelled by user",
+      "resumeRequest": "[ui] Demande de reprise du scan {{scanId}} ...",
+      "resumeAccepted": "[ui] Reprise acceptée (HTTP 202). Connexion au flux d'événements ...",
+      "resumeError": "[ui] Echec de la reprise: {{error}}",
+      "scanPaused": "[ui] Scan {{scanId}} mis en pause",
+      "pauseError": "[ui] Erreur lors de la mise en pause: {{error}}",
+      "lastScanDetected": "[ui] Dernier scan détecté: {{scanId}} ({{count}} espaces)",
+      "noLastScan": "[ui] Aucun scan précédent trouvé",
+      "fetchSpacesError": "[ui] Failed to fetch spaces: {{error}}",
+      "errorForSpace": "[ui] Error for space {{spaceKey}}: {{error}}"
+    }
+  },
+  "confirmations": {
+    "globalScan": {
+      "header": "Confirmation de scan global",
+      "message": "<p>Êtes-vous sûr de vouloir démarrer le scan de tous les espaces Confluence ?</p>\n<p><b>Les données existantes seront écrasées.</b></p>\n<p>Cette opération peut prendre du temps.</p>",
+      "acceptLabel": "Oui, démarrer",
+      "rejectLabel": "Annuler"
+    }
+  },
+  "piiItem": {
+    "severity": {
+      "label": "Sévérité : {{value}}",
+      "high": "Élevée",
+      "medium": "Moyenne",
+      "low": "Faible"
+    },
+    "fallback": {
+      "page": "Page",
+      "items": "éléments"
+    },
+    "attachment": {
+      "label": "Pièce jointe",
+      "types": {
+        "pdf": "PDF",
+        "word": "Word",
+        "excel": "Excel",
+        "ppt": "PowerPoint",
+        "txt": "Texte",
+        "image": "Image",
+        "unknown": "Fichier"
+      }
+    },
+    "actions": {
+      "viewDetail": "Voir détail",
+      "hideDetail": "Masquer le détail",
+      "reveal": "Révéler",
+      "mask": "Masquer",
+      "revealAriaLabel": "Afficher les valeurs sensibles (action auditée)",
+      "maskAriaLabel": "Masquer les valeurs sensibles"
+    },
+    "entity": {
+      "score": "Score {{value}}",
+      "start": "Start {{value}}",
+      "end": "End {{value}}"
+    }
+  },
+  "spaceScanDetail": {
+    "title": "Détails du space",
+    "scanInProgress": "Scan en cours",
+    "selectedSpace": "Détails du space sélectionné",
+    "ariaLabel": "Détails du space"
+  },
+  "errors": {
+    "unknownError": "Erreur inconnue",
+    "scanError": "Erreur de scan",
+    "connectionError": "Erreur de connexion",
+    "timeout": "Délai d'attente dépassé",
+    "networkError": "Erreur réseau"
+  }
+}

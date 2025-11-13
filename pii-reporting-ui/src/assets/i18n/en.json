@@ -1,0 +1,146 @@
+{
+  "common": {
+    "appTitle": "Sentinel AI",
+    "actions": "Actions",
+    "search": "Search",
+    "searchGlobally": "Search globally",
+    "refresh": "Refresh",
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "loading": "Loading...",
+    "noData": "No data available",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "language": {
+    "select": "Select language",
+    "fr": "Français",
+    "en": "English"
+  },
+  "dashboard": {
+    "title": "Sentinel AI",
+    "table": {
+      "headers": {
+        "space": "Space",
+        "status": "Status",
+        "progress": "Progress",
+        "lastScan": "Last scan",
+        "pii": "PII",
+        "actions": "Actions"
+      },
+      "emptyMessage": "No items to display",
+      "expand": "Expand",
+      "collapse": "Collapse"
+    },
+    "status": {
+      "running": "Running",
+      "ok": "OK",
+      "failed": "Failed",
+      "pending": "Pending",
+      "paused": "Paused"
+    },
+    "actions": {
+      "startScan": "Start global scan",
+      "pauseScan": "Pause scan",
+      "resumeScan": "Resume last scan",
+      "openInConfluence": "Open in Confluence",
+      "confluenceUnavailable": "URL unavailable (not provided by backend)"
+    },
+    "notifications": {
+      "newSpaces": {
+        "message": "{{count}} new Confluence space(s) available",
+        "refreshButton": "Refresh",
+        "closeAriaLabel": "Close notification"
+      },
+      "spaceUpdated": {
+        "indicator": "This space has been modified since last scan",
+        "tooltip": {
+          "updated": "Updated: {{date}}",
+          "pagesModified": "Modified pages:",
+          "attachmentsModified": "Modified attachments:",
+          "andMore": "… (+{{count}} more)",
+          "contentModified": "Content modified since last scan"
+        }
+      }
+    },
+    "logs": {
+      "purging": "[ui] Purging previous results...",
+      "purgeOk": "[ui] Purge OK. Connecting to /api/v1/stream/confluence/spaces/events...",
+      "sseError": "[ui] SSE connection error: {{error}}. The scan continues on the server.",
+      "purgeError": "[ui] Error while purging previous scans: {{error}}",
+      "scanCancelled": "[ui] Global scan cancelled by user",
+      "resumeRequest": "[ui] Requesting resume of scan {{scanId}}...",
+      "resumeAccepted": "[ui] Resume accepted (HTTP 202). Connecting to event stream...",
+      "resumeError": "[ui] Resume failed: {{error}}",
+      "scanPaused": "[ui] Scan {{scanId}} paused",
+      "pauseError": "[ui] Error while pausing: {{error}}",
+      "lastScanDetected": "[ui] Last scan detected: {{scanId}} ({{count}} spaces)",
+      "noLastScan": "[ui] No previous scan found",
+      "fetchSpacesError": "[ui] Failed to fetch spaces: {{error}}",
+      "errorForSpace": "[ui] Error for space {{spaceKey}}: {{error}}"
+    }
+  },
+  "confirmations": {
+    "globalScan": {
+      "header": "Global scan confirmation",
+      "message": "<p>Are you sure you want to start scanning all Confluence spaces?</p>\n<p><b>Existing data will be overwritten.</b></p>\n<p>This operation may take some time.</p>",
+      "acceptLabel": "Yes, start",
+      "rejectLabel": "Cancel"
+    }
+  },
+  "piiItem": {
+    "severity": {
+      "label": "Severity: {{value}}",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "fallback": {
+      "page": "Page",
+      "items": "items"
+    },
+    "attachment": {
+      "label": "Attachment",
+      "types": {
+        "pdf": "PDF",
+        "word": "Word",
+        "excel": "Excel",
+        "ppt": "PowerPoint",
+        "txt": "Text",
+        "image": "Image",
+        "unknown": "File"
+      }
+    },
+    "actions": {
+      "viewDetail": "View detail",
+      "hideDetail": "Hide detail",
+      "reveal": "Reveal",
+      "mask": "Mask",
+      "revealAriaLabel": "Show sensitive values (audited action)",
+      "maskAriaLabel": "Hide sensitive values"
+    },
+    "entity": {
+      "score": "Score {{value}}",
+      "start": "Start {{value}}",
+      "end": "End {{value}}"
+    }
+  },
+  "spaceScanDetail": {
+    "title": "Space details",
+    "scanInProgress": "Scan in progress",
+    "selectedSpace": "Selected space details",
+    "ariaLabel": "Space details"
+  },
+  "errors": {
+    "unknownError": "Unknown error",
+    "scanError": "Scan error",
+    "connectionError": "Connection error",
+    "timeout": "Timeout",
+    "networkError": "Network error"
+  }
+}

@@ -3,8 +3,9 @@
 
 <div class="page p-3">
   <div class="header">
-    <h2 class="m-0">Sentinel AI</h2>
+    <h2 class="m-0">{{ 'dashboard.title' | transloco }}</h2>
     <div class="spacer"></div>
+    <app-language-selector></app-language-selector>
   </div>
 
   <!-- Phase 2: New spaces notification banner -->
@@ -12,19 +13,19 @@
     <div class="new-spaces-banner">
       <i class="pi pi-info-circle"></i>
       <span class="banner-message">
-        {{ newSpacesCount() }} nouvel(aux) espace(s) Confluence disponible(s)
+        {{ 'dashboard.notifications.newSpaces.message' | transloco:{ count: newSpacesCount() } }}
       </span>
       <button pButton type="button" class="p-button-raised p-button-sm"
               (click)="refreshSpaces()"
               (keydown.enter)="refreshSpaces()"
               (keydown.space)="$event.preventDefault(); refreshSpaces()">
-        Rafraichir
+        {{ 'dashboard.notifications.newSpaces.refreshButton' | transloco }}
       </button>
       <button pButton type="button" class="p-button-text p-button-sm" icon="pi pi-times"
               (click)="dismissNotification()"
               (keydown.enter)="dismissNotification()"
               (keydown.space)="$event.preventDefault(); dismissNotification()"
-              aria-label="Fermer la notification">
+              [attr.aria-label]="'dashboard.notifications.newSpaces.closeAriaLabel' | transloco">
       </button>
     </div>
   }
@@ -46,24 +47,26 @@
       <tr>
         <th id="col-toggle" style="width:3rem"></th>
         <th id="col-space" [attr.data-testid]="testIds.headers.space" pSortableColumn="name">
-          Space
+          {{ 'dashboard.table.headers.space' | transloco }}
           <p-sortIcon field="name"/>
         </th>
-        <th id="col-status" [attr.data-testid]="testIds.headers.status">Statut</th>
-        <th id="col-progress" [attr.data-testid]="testIds.headers.progress">Progression</th>
-        <th id="col-last-scan" [attr.data-testid]="testIds.headers.lastScan">Dernier scan</th>
+        <th id="col-status" [attr.data-testid]="testIds.headers.status">{{ 'dashboard.table.headers.status' | transloco }}</th>
+        <th id="col-progress" [attr.data-testid]="testIds.headers.progress">{{ 'dashboard.table.headers.progress' | transloco }}</th>
+        <th id="col-last-scan" [attr.data-testid]="testIds.headers.lastScan">{{ 'dashboard.table.headers.lastScan' | transloco }}</th>
         <th id="col-pii" [attr.data-testid]="testIds.headers.pii" pSortableColumn="piiCount">
-          PII
+          {{ 'dashboard.table.headers.pii' | transloco }}
           <p-sortIcon field="piiCount"/>
         </th>
-        <th id="col-actions" [attr.data-testid]="testIds.headers.actions">Actions</th>
+        <th id="col-actions" [attr.data-testid]="testIds.headers.actions">{{ 'dashboard.table.headers.actions' | transloco }}</th>
       </tr>
       <tr>
         <th id="col-toggle-value"></th>
         <th id="col-space-value">
-          <input class="search-global" pInputText type="text" placeholder="Rechercher"
+          <input class="search-global" pInputText type="text"
+                 [placeholder]="'common.search' | transloco"
                  [ngModel]="globalFilter()"
-                 (ngModelChange)="onGlobalChange($event)" aria-label="Rechercher globalement"/>
+                 (ngModelChange)="onGlobalChange($event)"
+                 [attr.aria-label]="'common.searchGlobally' | transloco"/>
         </th>
         <th id="col-status-value">
           <p-select [options]="statusOptions"
@@ -84,9 +87,9 @@
                     (keydown.enter)="startAll()"
                     (keydown.space)="$event.preventDefault(); startAll()"
                     [disabled]="!canStartScan()"
-                    pTooltip="Démarrer le scan global"
+                    [pTooltip]="'dashboard.actions.startScan' | transloco"
                     tooltipPosition="bottom"
-                    ariaLabel="Démarrer le scan global"
+                    [ariaLabel]="'dashboard.actions.startScan' | transloco"
                     [attr.data-testid]="testIds.buttons.startScan">
           </p-button>
           <p-button type="button"
@@ -96,9 +99,9 @@
                     (keydown.enter)="stopCurrentScan()"
                     (keydown.space)="$event.preventDefault(); stopCurrentScan()"
                     [disabled]="!isStreaming()"
-                    pTooltip="Interrompre le scan"
+                    [pTooltip]="'dashboard.actions.pauseScan' | transloco"
                     tooltipPosition="bottom"
-                    ariaLabel="Interrompre le scan"
+                    [ariaLabel]="'dashboard.actions.pauseScan' | transloco"
                     [attr.data-testid]="testIds.buttons.pauseScan">
           </p-button>
           <p-button type="button"
@@ -108,9 +111,9 @@
                     (keydown.enter)="resumeLastScan()"
                     (keydown.space)="$event.preventDefault(); resumeLastScan()"
                     [disabled]="!canResumeScan()"
-                    pTooltip="Reprendre le dernier scan"
+                    [pTooltip]="'dashboard.actions.resumeScan' | transloco"
                     tooltipPosition="bottom"
-                    ariaLabel="Reprendre le dernier scan"
+                    [ariaLabel]="'dashboard.actions.resumeScan' | transloco"
                     [attr.data-testid]="testIds.buttons.resumeScan">
           </p-button>
         </th>
@@ -125,7 +128,7 @@
                     [text]="true"
                     [rounded]="true"
                     [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
-                    [ariaLabel]="expanded ? 'Réduire' : 'Développer'"
+                    [ariaLabel]="(expanded ? 'dashboard.table.collapse' : 'dashboard.table.expand') | transloco"
                     [attr.data-testid]="testIds.expandButton">
           </p-button>
         </td>
@@ -136,7 +139,7 @@
               <span class="space-updated-indicator"
                     [pTooltip]="getSpaceUpdateTooltip(space.key)"
                     tooltipPosition="right"
-                    aria-label="Cet espace a été modifié depuis le dernier scan"></span>
+                    [attr.aria-label]="'dashboard.notifications.spaceUpdated.indicator' | transloco"></span>
             }
           </div>
         </td>
@@ -164,7 +167,7 @@
         </td>
         <td>
           <span
-            [pTooltip]="spacesDashboardUtils.hasConfluenceUrl(space) ? 'Ouvrir dans Confluence' : 'URL indisponible (non fournie par le backend)'"
+            [pTooltip]="(spacesDashboardUtils.hasConfluenceUrl(space) ? 'dashboard.actions.openInConfluence' : 'dashboard.actions.confluenceUnavailable') | transloco"
             tooltipPosition="top">
             <p-button icon="pi pi-external-link"
                       styleClass="p-button-text"
@@ -227,7 +230,7 @@
                   </div>
                 </ng-template>
                 <ng-template #empty>
-                  <div class="text-muted">Aucun élément à afficher</div>
+                  <div class="text-muted">{{ 'dashboard.table.emptyMessage' | transloco }}</div>
                 </ng-template>
               </p-dataview>
             </div>

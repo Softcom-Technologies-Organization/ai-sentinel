@@ -1,6 +1,7 @@
 import {
   APP_INITIALIZER,
   ApplicationConfig,
+  isDevMode,
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection
 } from '@angular/core';
@@ -13,6 +14,8 @@ import {provideHttpClient} from '@angular/common/http';
 import Aura from '@primeuix/themes/aura';
 import {provideAnimationsAsync} from '@angular/platform-browser/animations/async';
 import {ConfluenceSpacesPollingService} from './core/services/confluence-spaces-polling.service';
+import {provideTransloco} from '@jsverse/transloco';
+import {TranslocoHttpLoader} from './core/services/transloco-http-loader';
 
 /**
  * Initializes polling configuration from backend during app startup.
@@ -38,6 +41,20 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideHttpClient(),
     provideRouter(routes),
+    provideTransloco({
+      config: {
+        availableLangs: ['fr', 'en'],
+        defaultLang: 'fr',
+        reRenderOnLangChange: true,
+        prodMode: !isDevMode(),
+        fallbackLang: 'fr',
+        missingHandler: {
+          useFallbackTranslation: true,
+          logMissingKey: !isDevMode()
+        }
+      },
+      loader: TranslocoHttpLoader
+    }),
     {
       provide: APP_INITIALIZER,
       useFactory: initializePollingConfig,

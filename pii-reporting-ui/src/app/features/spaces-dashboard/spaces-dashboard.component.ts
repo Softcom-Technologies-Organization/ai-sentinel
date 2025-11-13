@@ -49,6 +49,9 @@ import {ToastService} from '../../core/services/toast.service';
 import {TestIds} from '../test-ids.constants';
 import {ToastModule} from 'primeng/toast';
 import {SortEvent} from 'primeng/api';
+import {ConfirmationService} from 'primeng/api';
+import {ConfirmDialogModule} from 'primeng/confirmdialog';
+import {CONFIRMATION_MESSAGES} from './confirmation-messages.constants';
 
 
 /**
@@ -58,8 +61,8 @@ import {SortEvent} from 'primeng/api';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, ToggleSwitchModule, PiiItemCardComponent, BadgeModule, InputTextModule, SelectModule, TableModule, TagModule, Ripple, TooltipModule, DataViewModule, ProgressBarModule, SkeletonModule, ToastModule],
-  providers: [MessageService, ToastService],
+  imports: [CommonModule, FormsModule, ButtonModule, ToggleSwitchModule, PiiItemCardComponent, BadgeModule, InputTextModule, SelectModule, TableModule, TagModule, Ripple, TooltipModule, DataViewModule, ProgressBarModule, SkeletonModule, ConfirmDialogModule, ToastModule],
+  providers: [ConfirmationService, MessageService, ToastService],
   templateUrl: './spaces-dashboard.component.html',
   styleUrl: './spaces-dashboard.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -69,6 +72,8 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly spacesDashboardUtils = inject(SpacesDashboardUtils);
   readonly pollingService = inject(ConfluenceSpacesPollingService);
   readonly toastService = inject(ToastService);
+  readonly confirmationService = inject(ConfirmationService);
+
   private sub?: Subscription;
   private pollingSub?: Subscription;
 
@@ -199,6 +204,20 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     if (this.isStreaming()) {
       return;
     }
+
+    // Display confirmation before starting the scan
+    this.confirmationService.confirm({
+      ...CONFIRMATION_MESSAGES.GLOBAL_SCAN,
+      accept: () => {
+        this.executeStartAll();
+      },
+      reject: () => {
+        this.append('[ui] Global scan cancelled by user');
+      }
+    });
+  }
+
+  private executeStartAll(): void {
     this.stopCurrentScan();
     // Clear previous dashboard results before starting a brand-new scan
     this.resetDashboardForNewScan();

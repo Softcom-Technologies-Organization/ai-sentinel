@@ -28,7 +28,6 @@ public class ConfluenceAttachmentHttpDownloaderAdapter implements ConfluenceAtta
 
     private static final String RESULTS_FIELD = "results";
     private static final String TITLE_FIELD = "title";
-    public static final String EXPAND_PARAM = "?expand=";
     public static final String ACCEPT_HEADER_NAME = "Accept";
     public static final String CONTENT_TYPE_HEADER_VALUE = "application/json";
     public static final String AUTHORIZATION_HEADER_NAME = "Authorization";
@@ -37,7 +36,6 @@ public class ConfluenceAttachmentHttpDownloaderAdapter implements ConfluenceAtta
         this.config = config;
         this.objectMapper = objectMapper;
 
-        // Utilisation des Virtual Threads pour une meilleure scalabilité
         var executor = Executors.newVirtualThreadPerTaskExecutor();
 
         this.httpClient = HttpClient.newBuilder()
@@ -47,7 +45,6 @@ public class ConfluenceAttachmentHttpDownloaderAdapter implements ConfluenceAtta
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
 
-        // Préparation de l'authentification Basic
         this.authHeader = createAuthHeader(config.username(), config.apiToken());
     }
 
@@ -134,7 +131,7 @@ public class ConfluenceAttachmentHttpDownloaderAdapter implements ConfluenceAtta
     }
 
     private boolean shouldRetry(int statusCode) {
-        return statusCode >= 500 || statusCode == 429; // Erreurs serveur ou rate limiting
+        return statusCode >= 500 || statusCode == 429;
     }
 
     /**

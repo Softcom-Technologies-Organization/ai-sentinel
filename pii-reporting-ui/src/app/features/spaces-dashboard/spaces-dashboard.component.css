@@ -111,3 +111,53 @@
 .action-buttons-container p-button:not(:first-child) {
   margin-left: 0.5rem;
 }
+
+/* Space update indicator (shows when space has been modified since last scan) */
+.space-updated-indicator {
+  display: inline-block;
+  width: 0.5rem; /* small dot */
+  height: 0.5rem;
+  background-color: #f44336; /* red dot */
+  border-radius: 50%;
+  margin-left: 0.375rem; /* reasonable spacing */
+  vertical-align: super; /* placed above the text */
+  cursor: help;
+}
+
+/* Scan Error Toast Styling - Using PrimeNG default template with custom colors */
+::ng-deep .p-toast.p-component {
+  z-index: 9999;
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error {
+  background-color: #ffebee;
+  border-left: 6px solid #f44336;
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.25);
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-message-icon {
+  color: #f44336;
+  font-size: 2rem;
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-summary {
+  font-weight: 600;
+  color: #c62828;
+  font-size: 1.05rem;
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-detail {
+  color: #424242;
+  white-space: pre-line;
+  margin-top: 0.5rem;
+  line-height: 1.6;
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-icon-close {
+  color: #666;
+  transition: color 0.2s;
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-icon-close:hover {
+  color: #f44336;
+}

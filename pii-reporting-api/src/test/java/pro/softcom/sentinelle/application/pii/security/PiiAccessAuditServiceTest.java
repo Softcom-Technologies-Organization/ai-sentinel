@@ -1,5 +1,16 @@
 package pro.softcom.sentinelle.application.pii.security;
 
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -8,36 +19,26 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
+import pro.softcom.sentinelle.application.pii.security.port.out.SavePiiAuditPort;
 import pro.softcom.sentinelle.domain.pii.reporting.AccessPurpose;
-import pro.softcom.sentinelle.infrastructure.pii.security.jpa.PiiAccessAuditRepository;
-import pro.softcom.sentinelle.infrastructure.pii.security.jpa.entity.PiiAccessAuditEntity;
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.SoftAssertions.assertSoftly;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import pro.softcom.sentinelle.domain.pii.security.PiiAuditRecord;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PiiAccessAuditService - PII access audit tracking")
 class PiiAccessAuditServiceTest {
 
     @Mock
-    private PiiAccessAuditRepository auditRepository;
+    private SavePiiAuditPort savePiiAuditPort;
 
     @Captor
-    private ArgumentCaptor<PiiAccessAuditEntity> auditEntityCaptor;
+    private ArgumentCaptor<PiiAuditRecord> auditRecordCaptor;
 
     private PiiAccessAuditService auditService;
+    private static final int DEFAULT_RETENTION_DAYS = 730;
 
     @BeforeEach
     void setUp() {
-        auditService = new PiiAccessAuditService(auditRepository);
-        // Set default retention to 730 days
-        ReflectionTestUtils.setField(auditService, "retentionDays", 730);
+        auditService = new PiiAccessAuditService(savePiiAuditPort, DEFAULT_RETENTION_DAYS);
     }
 
     // ========== auditPiiAccess Tests ==========
@@ -54,15 +55,15 @@ class PiiAccessAuditServiceTest {
         auditService.auditPiiAccess(scanId, purpose, piiCount);
 
         // Then
-        verify(auditRepository).save(auditEntityCaptor.capture());
-        PiiAccessAuditEntity savedEntity = auditEntityCaptor.getValue();
+        verify(savePiiAuditPort).save(auditRecordCaptor.capture());
+        PiiAuditRecord savedRecord = auditRecordCaptor.getValue();
         
         assertSoftly(softly -> {
-            softly.assertThat(savedEntity.getScanId()).isEqualTo(scanId);
-            softly.assertThat(savedEntity.getPurpose()).isEqualTo(purpose.name());
-            softly.assertThat(savedEntity.getPiiEntitiesCount()).isEqualTo(piiCount);
-            softly.assertThat(savedEntity.getAccessedAt()).isNotNull();
-            softly.assertThat(savedEntity.getRetentionUntil()).isNotNull();
+            softly.assertThat(savedRecord.scanId()).isEqualTo(scanId);
+            softly.assertThat(savedRecord.purpose()).isEqualTo(purpose);
+            softly.assertThat(savedRecord.piiEntitiesCount()).isEqualTo(piiCount);
+            softly.assertThat(savedRecord.accessedAt()).isNotNull();
+            softly.assertThat(savedRecord.retentionUntil()).isNotNull();
         });
     }
 
@@ -77,11 +78,11 @@ class PiiAccessAuditServiceTest {
         auditService.auditPiiAccess(scanId, AccessPurpose.USER_DISPLAY, 3);
 
         // Then
-        verify(auditRepository).save(auditEntityCaptor.capture());
-        PiiAccessAuditEntity savedEntity = auditEntityCaptor.getValue();
+        verify(savePiiAuditPort).save(auditRecordCaptor.capture());
+        PiiAuditRecord savedRecord = auditRecordCaptor.getValue();
         Instant after = Instant.now().plus(731, ChronoUnit.DAYS);
 
-        assertThat(savedEntity.getRetentionUntil())
+        assertThat(savedRecord.retentionUntil())
             .isBetween(before, after);
     }
 
@@ -96,7 +97,7 @@ class PiiAccessAuditServiceTest {
             auditService.auditPiiAccess(scanId, purpose, 1);
         }
 
-        verify(auditRepository, times(AccessPurpose.values().length)).save(any());
+        verify(savePiiAuditPort, times(AccessPurpose.values().length)).save(any());
     }
 
     @Test
@@ -109,37 +110,38 @@ class PiiAccessAuditServiceTest {
         auditService.auditPiiAccess(scanId, AccessPurpose.USER_DISPLAY, 0);
 
         // Then
-        verify(auditRepository).save(auditEntityCaptor.capture());
-        assertThat(auditEntityCaptor.getValue().getPiiEntitiesCount()).isZero();
+        verify(savePiiAuditPort).save(auditRecordCaptor.capture());
+        assertThat(auditRecordCaptor.getValue().piiEntitiesCount()).isZero();
     }
 
     @Test
     @DisplayName("Should_NotThrowException_When_RepositorySaveFails")
     void Should_NotThrowException_When_RepositorySaveFails() {
         // Given
-        when(auditRepository.save(any())).thenThrow(new RuntimeException("Database error"));
+        doThrow(new RuntimeException("Database error")).when(savePiiAuditPort).save(any());
 
         // When/Then - Should not throw
         auditService.auditPiiAccess("scan-123", AccessPurpose.USER_DISPLAY, 2);
 
-        verify(auditRepository).save(any());
+        verify(savePiiAuditPort).save(any());
     }
 
     @Test
     @DisplayName("Should_UseCustomRetention_When_ConfiguredDifferently")
     void Should_UseCustomRetention_When_ConfiguredDifferently() {
         // Given
-        ReflectionTestUtils.setField(auditService, "retentionDays", 365);
+        int customRetentionDays = 365;
+        auditService = new PiiAccessAuditService(savePiiAuditPort, customRetentionDays);
         Instant before = Instant.now().plus(364, ChronoUnit.DAYS);
 
         // When
         auditService.auditPiiAccess("scan-123", AccessPurpose.USER_DISPLAY, 1);
 
         // Then
-        verify(auditRepository).save(auditEntityCaptor.capture());
+        verify(savePiiAuditPort).save(auditRecordCaptor.capture());
         Instant after = Instant.now().plus(366, ChronoUnit.DAYS);
 
-        assertThat(auditEntityCaptor.getValue().getRetentionUntil())
+        assertThat(auditRecordCaptor.getValue().retentionUntil())
             .isBetween(before, after);
     }
 
@@ -150,7 +152,7 @@ class PiiAccessAuditServiceTest {
     void Should_DeleteExpiredLogs_When_PurgingExpiredLogs() {
         // Given
         int expectedDeleted = 10;
-        when(auditRepository.deleteByRetentionUntilBefore(any(Instant.class)))
+        when(savePiiAuditPort.deleteExpiredRecords(any(Instant.class)))
             .thenReturn(expectedDeleted);
 
         // When
@@ -158,7 +160,7 @@ class PiiAccessAuditServiceTest {
 
         // Then
         assertThat(actualDeleted).isEqualTo(expectedDeleted);
-        verify(auditRepository).deleteByRetentionUntilBefore(any(Instant.class));
+        verify(savePiiAuditPort).deleteExpiredRecords(any(Instant.class));
     }
 
     @Test
@@ -172,7 +174,7 @@ class PiiAccessAuditServiceTest {
         auditService.purgeExpiredLogs();
 
         // Then
-        verify(auditRepository).deleteByRetentionUntilBefore(instantCaptor.capture());
+        verify(savePiiAuditPort).deleteExpiredRecords(instantCaptor.capture());
         Instant after = Instant.now();
 
         assertThat(instantCaptor.getValue()).isBetween(before, after);
@@ -182,7 +184,7 @@ class PiiAccessAuditServiceTest {
     @DisplayName("Should_ReturnZero_When_NoLogsToDelete")
     void Should_ReturnZero_When_NoLogsToDelete() {
         // Given
-        when(auditRepository.deleteByRetentionUntilBefore(any(Instant.class)))
+        when(savePiiAuditPort.deleteExpiredRecords(any(Instant.class)))
             .thenReturn(0);
 
         // When
@@ -196,7 +198,7 @@ class PiiAccessAuditServiceTest {
     @DisplayName("Should_ReturnZeroAndNotThrow_When_PurgeFailsWithException")
     void Should_ReturnZeroAndNotThrow_When_PurgeFailsWithException() {
         // Given
-        when(auditRepository.deleteByRetentionUntilBefore(any(Instant.class)))
+        when(savePiiAuditPort.deleteExpiredRecords(any(Instant.class)))
             .thenThrow(new RuntimeException("Database error"));
 
         // When
@@ -204,7 +206,7 @@ class PiiAccessAuditServiceTest {
 
         // Then
         assertThat(deleted).isZero();
-        verify(auditRepository).deleteByRetentionUntilBefore(any(Instant.class));
+        verify(savePiiAuditPort).deleteExpiredRecords(any(Instant.class));
     }
 
     @Test
@@ -212,7 +214,7 @@ class PiiAccessAuditServiceTest {
     void Should_DeleteLargeNumberOfLogs_When_ManyLogsExpired() {
         // Given
         int largeNumber = 1000;
-        when(auditRepository.deleteByRetentionUntilBefore(any(Instant.class)))
+        when(savePiiAuditPort.deleteExpiredRecords(any(Instant.class)))
             .thenReturn(largeNumber);
 
         // When
@@ -236,7 +238,7 @@ class PiiAccessAuditServiceTest {
         auditService.auditPiiAccess(scanId, AccessPurpose.USER_DISPLAY, 3);
 
         // Then
-        verify(auditRepository, times(3)).save(any());
+        verify(savePiiAuditPort, times(3)).save(any());
     }
 
     @Test
@@ -249,8 +251,8 @@ class PiiAccessAuditServiceTest {
         auditService.auditPiiAccess("scan-123", AccessPurpose.USER_DISPLAY, largePiiCount);
 
         // Then
-        verify(auditRepository).save(auditEntityCaptor.capture());
-        assertThat(auditEntityCaptor.getValue().getPiiEntitiesCount())
+        verify(savePiiAuditPort).save(auditRecordCaptor.capture());
+        assertThat(auditRecordCaptor.getValue().piiEntitiesCount())
             .isEqualTo(largePiiCount);
     }
 }

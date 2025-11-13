@@ -16,7 +16,7 @@ import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
 public record ScanEventDto(
         String scanId,
         String spaceKey,
-        String eventType,
+        ScanEventType eventType,
         Boolean isFinal,
         Integer pagesTotal,
         Integer pageIndex,
@@ -32,17 +32,4 @@ public record ScanEventDto(
         String attachmentType,
         String attachmentUrl,
         Double analysisProgressPercentage
-) {
-
-    /**
-     * Extension du builder Lombok pour conserver les aides de construction.
-     * Le nom DOIT correspondre au builder généré: <RecordName>Builder
-     */
-    public static class ScanEventDtoBuilder {
-        /** Surcharge pratique: accepte l'enum et alimente le champ JSON String. */
-        public ScanEventDtoBuilder eventType(ScanEventType type) {
-            this.eventType = type != null ? type.toJson() : null;
-            return this;
-        }
-    }
-}
+) { }

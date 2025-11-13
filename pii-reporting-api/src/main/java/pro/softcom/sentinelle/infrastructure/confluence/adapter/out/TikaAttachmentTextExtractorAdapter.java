@@ -1,7 +1,6 @@
 package pro.softcom.sentinelle.infrastructure.confluence.adapter.out;
 
-import java.io.ByteArrayInputStream;
-import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
@@ -10,6 +9,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import pro.softcom.sentinelle.domain.confluence.AttachmentInfo;
+import pro.softcom.sentinelle.domain.confluence.AttachmentTypeFilter;
+import pro.softcom.sentinelle.infrastructure.document.validator.TextQualityValidator;
+
+import java.io.ByteArrayInputStream;
+import java.util.Optional;
 
 /**
  * WHAT: Attachment text extractor based on Apache Tika (programmatic API, no XML config).
@@ -20,15 +24,15 @@ public class TikaAttachmentTextExtractorAdapter implements AttachmentTextExtract
 
     private static final Logger logger = LoggerFactory.getLogger(TikaAttachmentTextExtractorAdapter.class);
 
+    private final TextQualityValidator textQualityValidator;
+
+    public TikaAttachmentTextExtractorAdapter(TextQualityValidator textQualityValidator) {
+        this.textQualityValidator = textQualityValidator;
+    }
+
     @Override
     public boolean supports(AttachmentInfo info) {
-        if (info == null) return false;
-        String ext = info.extension() != null ? info.extension().toLowerCase() : "";
-        // Broader support via Tika; start with common document types
-        return switch (ext) {
-            case "pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "rtf", "odt", "ods", "odp", "txt", "csv" -> true;
-            default -> false;
-        };
+        return AttachmentTypeFilter.isExtractable(info);
     }
 
     @Override
@@ -41,10 +45,10 @@ public class TikaAttachmentTextExtractorAdapter implements AttachmentTextExtract
             ParseContext context = new ParseContext();
 
             parser.parse(in, handler, metadata, context);
-            String text = safeTrim(handler.toString());
+            String text = StringUtils.trim(handler.toString());
 
             // If content looks like image-only (e.g., scanned PDF without OCR), skip indexing
-            if (looksImageOnly(text)) {
+            if (textQualityValidator.isImageOnlyDocument(text)) {
                 logger.debug("[ATTACHMENT_TEXT][TIKA][SKIP_IMAGE_ONLY] name='{}'", info != null ? info.name() : "?");
                 return Optional.empty();
             }
@@ -56,15 +60,4 @@ public class TikaAttachmentTextExtractorAdapter implements AttachmentTextExtract
         }
     }
 
-    private static boolean looksImageOnly(String text) {
-        if (text == null || text.isBlank()) return true;
-        int len = text.length();
-        long alnum = text.chars().filter(Character::isLetterOrDigit).count();
-        double ratio = alnum / (double) len;
-        return ratio < 0.05; // heuristic threshold
-    }
-
-    private static String safeTrim(String s) {
-        return s == null ? "" : s.trim();
-    }
 }

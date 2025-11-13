@@ -8,9 +8,9 @@ which handles entity processing and formatting operations.
 import pytest
 from unittest.mock import Mock, patch
 
-from pii_detector.service.detector.entity_processor import EntityProcessor
-from pii_detector.service.detector.models.pii_entity import PIIEntity
-from pii_detector.service.detector.models.pii_type import PIIType
+from pii_detector.domain.service.entity_processor import EntityProcessor
+from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.domain.entity.pii_type import PIIType
 
 
 class TestEntityProcessorInit:

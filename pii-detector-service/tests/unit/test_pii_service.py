@@ -18,14 +18,16 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import grpc
-from pii_detector.service.server.pii_service import (
-    get_detector_instance, 
-    PIIDetectionServicer, 
-    MemoryLimitedServer, 
-    serve,
-    _detector_instance,
-    _detector_lock
-)
+import importlib
+
+# Import from module with reserved keyword 'in'
+pii_service = importlib.import_module('pii_detector.infrastructure.adapter.in.grpc.pii_service')
+get_detector_instance = pii_service.get_detector_instance
+PIIDetectionServicer = pii_service.PIIDetectionServicer
+MemoryLimitedServer = pii_service.MemoryLimitedServer
+serve = pii_service.serve
+_detector_instance = pii_service._detector_instance
+_detector_lock = pii_service._detector_lock
 
 
 class TestGetDetectorInstance:
@@ -36,12 +38,12 @@ class TestGetDetectorInstance:
         global _detector_instance
         _detector_instance = None
     
-    @patch('pii_detector.service.server.pii_service._detector_instance', None)
-    @patch('pii_detector.service.server.pii_service.should_use_composite_detector', return_value=False)
-    @patch('pii_detector.service.server.pii_service.should_use_multi_detector', return_value=False)
-    @patch('pii_detector.service.server.pii_service.PIIDetector')
-    @patch('pii_detector.service.server.pii_service.GLiNERDetector', None)
-    @patch('pii_detector.service.detector.models.detection_config.DetectionConfig')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service._detector_instance', None)
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.should_use_composite_detector', return_value=False)
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.should_use_multi_detector', return_value=False)
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.PIIDetector')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.GLiNERDetector', None)
+    @patch('pii_detector.application.config.detection_policy.DetectionConfig')
     def test_get_detector_instance_creates_singleton(self, mock_config, mock_pii_detector, mock_should_multi, mock_should_composite):
         """Test that get_detector_instance creates a singleton instance."""
         # Setup config to use non-GLiNER model
@@ -66,10 +68,10 @@ class TestGetDetectorInstance:
         mock_detector.download_model.assert_called_once()
         mock_detector.load_model.assert_called_once()
     
-    @patch('pii_detector.service.server.pii_service._detector_instance', None)
-    @patch('pii_detector.service.server.pii_service.PIIDetector')
-    @patch('pii_detector.service.server.pii_service.GLiNERDetector', None)
-    @patch('pii_detector.service.detector.models.detection_config.DetectionConfig')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service._detector_instance', None)
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.PIIDetector')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.GLiNERDetector', None)
+    @patch('pii_detector.application.config.detection_policy.DetectionConfig')
     def test_get_detector_instance_thread_safety(self, mock_config, mock_pii_detector):
         """Test that get_detector_instance is thread-safe."""
         # Setup config to use non-GLiNER model
@@ -138,7 +140,7 @@ class TestPIIDetectionServicer:
         request.threshold = 0.5
         return request
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
     def test_init_default_parameters(self, mock_get_detector):
         """Test PIIDetectionServicer initialization with default parameters."""
         mock_detector = Mock()
@@ -153,7 +155,7 @@ class TestPIIDetectionServicer:
         assert servicer.gc_frequency == 10
         assert servicer.detector is mock_detector
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
     def test_init_custom_parameters(self, mock_get_detector):
         """Test PIIDetectionServicer initialization with custom parameters."""
         mock_detector = Mock()
@@ -168,9 +170,9 @@ class TestPIIDetectionServicer:
         assert servicer.enable_memory_monitoring is False
         assert servicer.detector is mock_detector
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
-    @patch('pii_detector.service.server.pii_service.threading.Thread')
-    @patch('pii_detector.service.server.pii_service.psutil.Process')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.threading.Thread')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.psutil.Process')
     def test_start_memory_monitoring(self, mock_process, mock_thread, mock_get_detector):
         """Test memory monitoring thread startup."""
         mock_detector = Mock()
@@ -181,7 +183,7 @@ class TestPIIDetectionServicer:
         mock_thread.assert_called_once()
         mock_thread.return_value.start.assert_called_once()
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
     def test_process_in_chunks_small_text(self, mock_get_detector, mock_detector):
         """Test _process_in_chunks with small text that doesn't need chunking."""
         mock_get_detector.return_value = mock_detector
@@ -197,8 +199,8 @@ class TestPIIDetectionServicer:
         mock_detector.detect_pii.assert_called_once_with(content, threshold)
         assert result == mock_detector.detect_pii.return_value
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
-    @patch('pii_detector.service.server.pii_service.gc.collect')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.gc.collect')
     def test_process_in_chunks_large_text(self, mock_gc_collect, mock_get_detector, mock_detector):
         """Test _process_in_chunks with large text that needs chunking."""
         mock_get_detector.return_value = mock_detector
@@ -223,8 +225,8 @@ class TestPIIDetectionServicer:
         mock_gc_collect.assert_called()
         assert len(result) == 2
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
-    @patch('pii_detector.service.server.pii_service.pii_detection_pb2.PIIDetectionResponse')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.pii_detection_pb2.PIIDetectionResponse')
     def test_detect_pii_success(self, mock_response_class, mock_get_detector, mock_detector, mock_request, mock_context):
         """Test successful DetectPII RPC call."""
         mock_get_detector.return_value = mock_detector
@@ -243,8 +245,8 @@ class TestPIIDetectionServicer:
         mock_detector.detect_pii.assert_called_once()
         mock_detector._apply_masks.assert_called_once()
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
-    @patch('pii_detector.service.server.pii_service.pii_detection_pb2.PIIDetectionResponse')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.pii_detection_pb2.PIIDetectionResponse')
     def test_detect_pii_empty_content(self, mock_response_class, mock_get_detector, mock_detector, mock_context):
         """Test DetectPII with empty content."""
         mock_get_detector.return_value = mock_detector
@@ -263,8 +265,8 @@ class TestPIIDetectionServicer:
         mock_context.set_code.assert_called_with(grpc.StatusCode.INVALID_ARGUMENT)
         mock_context.set_details.assert_called_with("Content cannot be empty")
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
-    @patch('pii_detector.service.server.pii_service.pii_detection_pb2.PIIDetectionResponse')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.pii_detection_pb2.PIIDetectionResponse')
     def test_detect_pii_content_too_large(self, mock_response_class, mock_get_detector, mock_detector, mock_context):
         """Test DetectPII with content exceeding size limit."""
         mock_get_detector.return_value = mock_detector
@@ -283,8 +285,8 @@ class TestPIIDetectionServicer:
         mock_context.set_code.assert_called_with(grpc.StatusCode.INVALID_ARGUMENT)
         assert "Content too large" in mock_context.set_details.call_args[0][0]
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
-    @patch('pii_detector.service.server.pii_service.pii_detection_pb2.PIIDetectionResponse')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.pii_detection_pb2.PIIDetectionResponse')
     def test_detect_pii_large_content_chunked(self, mock_response_class, mock_get_detector, mock_detector, mock_context):
         """Test DetectPII with large content (detector handles chunking internally)."""
         mock_get_detector.return_value = mock_detector
@@ -308,8 +310,8 @@ class TestPIIDetectionServicer:
         mock_detector.detect_pii.assert_called_once()
         assert result is mock_response
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
-    @patch('pii_detector.service.server.pii_service.pii_detection_pb2.PIIDetectionResponse')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.pii_detection_pb2.PIIDetectionResponse')
     def test_detect_pii_exception_handling(self, mock_response_class, mock_get_detector, mock_detector, mock_request, mock_context):
         """Test DetectPII exception handling."""
         mock_get_detector.return_value = mock_detector
@@ -327,8 +329,8 @@ class TestPIIDetectionServicer:
         mock_context.set_code.assert_called_with(grpc.StatusCode.INTERNAL)
         assert "Error processing request" in mock_context.set_details.call_args[0][0]
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
-    @patch('pii_detector.service.server.pii_service.gc.collect')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.gc.collect')
     def test_detect_pii_garbage_collection(self, mock_gc_collect, mock_get_detector, mock_detector, mock_request, mock_context):
         """Test that garbage collection is triggered periodically."""
         mock_get_detector.return_value = mock_detector
@@ -339,7 +341,7 @@ class TestPIIDetectionServicer:
         # Set request counter to trigger GC
         servicer.request_counter = 9  # Will become 10 after increment
         
-        with patch('pii_detector.service.server.pii_service.pii_detection_pb2.PIIDetectionResponse'):
+        with patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.pii_detection_pb2.PIIDetectionResponse'):
             servicer.DetectPII(mock_request, mock_context)
         
         mock_gc_collect.assert_called()
@@ -372,7 +374,7 @@ class TestMemoryLimitedServer:
         assert server.max_queued_requests == 200
         assert server.memory_limit_percent == 90.0
     
-    @patch('pii_detector.service.server.pii_service.psutil.Process')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.psutil.Process')
     def test_check_memory_within_limits(self, mock_process):
         """Test _check_memory when memory usage is within limits."""
         mock_process_instance = Mock()
@@ -385,7 +387,7 @@ class TestMemoryLimitedServer:
         
         assert result is True
     
-    @patch('pii_detector.service.server.pii_service.psutil.Process')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.psutil.Process')
     def test_check_memory_exceeds_limits(self, mock_process):
         """Test _check_memory when memory usage exceeds limits."""
         mock_process_instance = Mock()
@@ -398,10 +400,10 @@ class TestMemoryLimitedServer:
         
         assert result is False
     
-    @patch('pii_detector.service.server.pii_service.grpc.server')
-    @patch('pii_detector.service.server.pii_service.futures.ThreadPoolExecutor')
-    @patch('pii_detector.service.server.pii_service.pii_detection_pb2_grpc.add_PIIDetectionServiceServicer_to_server')
-    @patch('pii_detector.service.server.pii_service.reflection.enable_server_reflection')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.grpc.server')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.futures.ThreadPoolExecutor')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.pii_detection_pb2_grpc.add_PIIDetectionServiceServicer_to_server')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.reflection.enable_server_reflection')
     def test_serve_creates_server(self, mock_reflection, mock_add_servicer, mock_executor, mock_grpc_server):
         """Test that serve() creates and configures the gRPC server properly."""
         mock_server_instance = Mock()
@@ -440,7 +442,7 @@ class TestMemoryLimitedServer:
 class TestServeFunction:
     """Test cases for the serve() function."""
     
-    @patch('pii_detector.service.server.pii_service.MemoryLimitedServer')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.MemoryLimitedServer')
     def test_serve_function(self, mock_memory_limited_server):
         """Test the serve() function creates MemoryLimitedServer with correct parameters."""
         mock_server_instance = Mock()
@@ -459,7 +461,7 @@ class TestServeFunction:
         mock_server_class.serve.assert_called_once()
         assert result == "mock_grpc_server"
     
-    @patch('pii_detector.service.server.pii_service.MemoryLimitedServer')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.MemoryLimitedServer')
     def test_serve_function_default_parameters(self, mock_memory_limited_server):
         """Test the serve() function with default parameters."""
         mock_server_instance = Mock()
@@ -481,17 +483,18 @@ class TestGetDetectorInstanceAdditional:
     
     def setup_method(self):
         """Reset singleton state before each test."""
-        import pii_detector.service.server.pii_service as service_module
+        import importlib
+        service_module = importlib.import_module('pii_detector.infrastructure.adapter.in.grpc.pii_service')
         service_module._detector_instance = None
     
-    @patch('pii_detector.service.server.pii_service._detector_instance', None)
-    @patch('pii_detector.service.server.pii_service.should_use_composite_detector', return_value=False)
-    @patch('pii_detector.service.server.pii_service.should_use_multi_detector', return_value=False)
-    @patch('pii_detector.service.server.pii_service.ensure_models_cached')
-    @patch('pii_detector.service.server.pii_service.get_env_extra_models')
-    @patch('pii_detector.service.server.pii_service.PIIDetector')
-    @patch('pii_detector.service.server.pii_service.GLiNERDetector', None)
-    @patch('pii_detector.service.detector.models.detection_config.DetectionConfig')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service._detector_instance', None)
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.should_use_composite_detector', return_value=False)
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.should_use_multi_detector', return_value=False)
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.ensure_models_cached')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_env_extra_models')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.PIIDetector')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.GLiNERDetector', None)
+    @patch('pii_detector.application.config.detection_policy.DetectionConfig')
     def test_get_detector_instance_model_cache_exception(self, mock_config, mock_pii_detector, mock_get_env, mock_ensure_cached, mock_should_multi, mock_should_composite):
         """Test that model caching exceptions are handled gracefully."""
         mock_config_inst = Mock()
@@ -511,12 +514,12 @@ class TestGetDetectorInstanceAdditional:
         instance = get_detector_instance()
         assert instance is mock_detector
     
-    @patch('pii_detector.service.server.pii_service._detector_instance', None)
-    @patch('pii_detector.service.server.pii_service.should_use_composite_detector', return_value=False)
-    @patch('pii_detector.service.server.pii_service.should_use_multi_detector')
-    @patch('pii_detector.service.server.pii_service.PIIDetector')
-    @patch('pii_detector.service.server.pii_service.GLiNERDetector', None)
-    @patch('pii_detector.service.detector.models.detection_config.DetectionConfig')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service._detector_instance', None)
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.should_use_composite_detector', return_value=False)
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.should_use_multi_detector')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.PIIDetector')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.GLiNERDetector', None)
+    @patch('pii_detector.application.config.detection_policy.DetectionConfig')
     def test_get_detector_instance_should_use_multi_exception(self, mock_config, mock_pii_detector, mock_should_use, mock_should_composite):
         """Test exception handling in should_use_multi_detector."""
         mock_config_inst = Mock()
@@ -535,12 +538,12 @@ class TestGetDetectorInstanceAdditional:
         instance = get_detector_instance()
         assert instance is mock_detector
     
-    @patch('pii_detector.service.server.pii_service._detector_instance', None)
-    @patch('pii_detector.service.server.pii_service.should_use_composite_detector', return_value=False)
-    @patch('pii_detector.service.server.pii_service.MultiModelPIIDetector')
-    @patch('pii_detector.service.server.pii_service.should_use_multi_detector')
-    @patch('pii_detector.service.server.pii_service.get_multi_model_ids_from_config')
-    @patch('pii_detector.service.server.pii_service.PIIDetector')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service._detector_instance', None)
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.should_use_composite_detector', return_value=False)
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.MultiModelPIIDetector')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.should_use_multi_detector')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_multi_model_ids_from_config')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.PIIDetector')
     def test_get_detector_instance_multi_init_exception(self, mock_pii_detector, mock_get_models, mock_should_use, mock_multi, mock_should_composite):
         """Test fallback when multi-detector initialization fails."""
         mock_should_use.return_value = True
@@ -561,8 +564,8 @@ class TestGetDetectorInstanceAdditional:
 class TestPIIDetectionServicerAdditional:
     """Additional tests for PIIDetectionServicer to cover remaining paths."""
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
-    @patch('pii_detector.service.detector.models.detection_config._load_llm_config')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
+    @patch('pii_detector.application.config.detection_policy._load_llm_config')
     def test_load_log_throughput_config_exception(self, mock_load_config, mock_get_detector):
         """Test _load_log_throughput_config defaults to True on exception."""
         mock_load_config.side_effect = Exception("Config load failed")
@@ -575,10 +578,10 @@ class TestPIIDetectionServicerAdditional:
         # Should default to True
         assert servicer.log_throughput is True
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
-    @patch('pii_detector.service.server.pii_service.threading.Thread')
-    @patch('pii_detector.service.server.pii_service.psutil.Process')
-    @patch('pii_detector.service.server.pii_service.gc.collect')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.threading.Thread')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.psutil.Process')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.gc.collect')
     def test_memory_monitoring_high_usage(self, mock_gc, mock_process, mock_thread, mock_get_detector):
         """Test memory monitoring triggers GC when usage is high."""
         mock_detector = Mock()
@@ -610,7 +613,7 @@ class TestPIIDetectionServicerAdditional:
             try:
                 # Call the monitoring function once
                 import time
-                with patch('pii_detector.service.server.pii_service.time.sleep', side_effect=KeyboardInterrupt):
+                with patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.time.sleep', side_effect=KeyboardInterrupt):
                     monitor_func()
             except KeyboardInterrupt:
                 pass  # Expected to break the loop
@@ -625,7 +628,7 @@ class TestStreamDetectPII:
     @pytest.fixture
     def mock_streaming_detector(self):
         """Create a mock detector for streaming tests."""
-        from pii_detector.service.detector.pii_detector import PIIEntity
+        from pii_detector.domain.entity.pii_entity import PIIEntity
         
         detector = Mock()
         detector.config = Mock(chunk_size=1000, chunk_overlap=100)
@@ -654,11 +657,11 @@ class TestStreamDetectPII:
         context.is_active = Mock(return_value=True)
         return context
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
-    @patch('pii_detector.service.server.pii_service.gc.collect')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.gc.collect')
     def test_stream_detect_pii_success(self, mock_gc, mock_get_detector, mock_streaming_detector, mock_streaming_request, mock_streaming_context):
         """Test successful StreamDetectPII RPC call."""
-        from pii_detector.service.detector.pii_detector import PIIEntity
+        from pii_detector.domain.entity.pii_entity import PIIEntity
         
         mock_get_detector.return_value = mock_streaming_detector
         
@@ -682,7 +685,7 @@ class TestStreamDetectPII:
         mock_streaming_detector.memory_manager.clear_cache.assert_called()
         mock_gc.assert_called()
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
     def test_stream_detect_pii_empty_content(self, mock_get_detector, mock_streaming_detector, mock_streaming_context):
         """Test StreamDetectPII with empty content."""
         mock_get_detector.return_value = mock_streaming_detector
@@ -700,7 +703,7 @@ class TestStreamDetectPII:
         mock_streaming_context.set_code.assert_called_with(grpc.StatusCode.INVALID_ARGUMENT)
         mock_streaming_context.set_details.assert_called_with("Content cannot be empty")
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
     def test_stream_detect_pii_content_too_large(self, mock_get_detector, mock_streaming_detector, mock_streaming_context):
         """Test StreamDetectPII with content exceeding size limit."""
         mock_get_detector.return_value = mock_streaming_detector
@@ -718,7 +721,7 @@ class TestStreamDetectPII:
         mock_streaming_context.set_code.assert_called_with(grpc.StatusCode.INVALID_ARGUMENT)
         assert "Content too large" in mock_streaming_context.set_details.call_args[0][0]
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
     def test_stream_detect_pii_client_cancellation(self, mock_get_detector, mock_streaming_detector, mock_streaming_request):
         """Test StreamDetectPII handles client cancellation."""
         mock_get_detector.return_value = mock_streaming_detector
@@ -736,7 +739,7 @@ class TestStreamDetectPII:
         # Should have stopped early
         assert len(updates) < 10  # Would have more if completed
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
     def test_stream_detect_pii_exception_handling(self, mock_get_detector, mock_streaming_detector, mock_streaming_request, mock_streaming_context):
         """Test StreamDetectPII exception handling."""
         mock_get_detector.return_value = mock_streaming_detector
@@ -757,10 +760,10 @@ class TestStreamDetectPII:
 class TestMemoryLimitedServerAdditional:
     """Additional tests for MemoryLimitedServer to cover remaining paths."""
     
-    @patch('pii_detector.service.server.pii_service.grpc.server')
-    @patch('pii_detector.service.server.pii_service.futures.ThreadPoolExecutor')
-    @patch('pii_detector.service.server.pii_service.pii_detection_pb2_grpc.add_PIIDetectionServiceServicer_to_server')
-    @patch('pii_detector.service.server.pii_service.reflection.enable_server_reflection')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.grpc.server')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.futures.ThreadPoolExecutor')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.pii_detection_pb2_grpc.add_PIIDetectionServiceServicer_to_server')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.reflection.enable_server_reflection')
     def test_serve_ipv6_fallback_to_ipv4(self, mock_reflection, mock_add_servicer, mock_executor, mock_grpc_server):
         """Test IPv6 binding fallback to IPv4."""
         mock_server_instance = Mock()
@@ -778,10 +781,10 @@ class TestMemoryLimitedServerAdditional:
         assert mock_server_instance.add_insecure_port.call_count == 2
         assert result is mock_server_instance
     
-    @patch('pii_detector.service.server.pii_service.grpc.server')
-    @patch('pii_detector.service.server.pii_service.futures.ThreadPoolExecutor')
-    @patch('pii_detector.service.server.pii_service.pii_detection_pb2_grpc.add_PIIDetectionServiceServicer_to_server')
-    @patch('pii_detector.service.server.pii_service.reflection.enable_server_reflection')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.grpc.server')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.futures.ThreadPoolExecutor')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.pii_detection_pb2_grpc.add_PIIDetectionServiceServicer_to_server')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.reflection.enable_server_reflection')
     def test_serve_both_bindings_fail(self, mock_reflection, mock_add_servicer, mock_executor, mock_grpc_server):
         """Test when both IPv6 and IPv4 bindings fail."""
         mock_server_instance = Mock()
@@ -810,8 +813,8 @@ class TestDetectPIIAdditional:
         detector._apply_masks = Mock(return_value="masked")
         return detector
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
-    @patch('pii_detector.service.server.pii_service.pii_detection_pb2.PIIDetectionResponse')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.pii_detection_pb2.PIIDetectionResponse')
     def test_detect_pii_with_many_entities(self, mock_response_class, mock_get_detector, mock_detector):
         """Test DetectPII with more than 1000 entities to trigger truncation."""
         # Create 1500 entities
@@ -850,8 +853,8 @@ class TestDetectPIIAdditional:
         # Verify truncation happened (logging line 330)
         assert mock_response.entities.add.call_count == 1000
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
-    @patch('pii_detector.service.server.pii_service.pii_detection_pb2.PIIDetectionResponse')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.pii_detection_pb2.PIIDetectionResponse')
     def test_detect_pii_with_entity_types_logging(self, mock_response_class, mock_get_detector, mock_detector):
         """Test DetectPII logs entity types for debugging."""
         entities = [
@@ -885,11 +888,11 @@ class TestDetectPIIAdditional:
 class TestGetDetectorInstanceGLiNER:
     """Test GLiNER detector selection path."""
     
-    @patch('pii_detector.service.server.pii_service._detector_instance', None)
-    @patch('pii_detector.service.server.pii_service.should_use_composite_detector', return_value=False)
-    @patch('pii_detector.service.server.pii_service.should_use_multi_detector', return_value=False)
-    @patch('pii_detector.service.server.pii_service.GLiNERDetector')
-    @patch('pii_detector.service.detector.models.detection_config.DetectionConfig')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service._detector_instance', None)
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.should_use_composite_detector', return_value=False)
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.should_use_multi_detector', return_value=False)
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.GLiNERDetector')
+    @patch('pii_detector.application.config.detection_policy.DetectionConfig')
     def test_get_detector_instance_uses_gliner(self, mock_config, mock_gliner, mock_should_multi, mock_should_composite):
         """Test that GLiNER detector is used for gliner models."""
         mock_config_inst = Mock()
@@ -911,8 +914,8 @@ class TestGetDetectorInstanceGLiNER:
 class TestIntegration:
     """Integration tests for the PII service components."""
     
-    @patch('pii_detector.service.server.pii_service.get_detector_instance')
-    @patch('pii_detector.service.server.pii_service.pii_detection_pb2.PIIDetectionResponse')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.get_detector_instance')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.pii_detection_pb2.PIIDetectionResponse')
     def test_full_request_processing_flow(self, mock_response_class, mock_get_detector):
         """Test the complete flow from request to response."""
         # Setup mocks

@@ -1,10 +1,13 @@
 package pro.softcom.sentinelle.application.confluence.port.out;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
+import pro.softcom.sentinelle.domain.confluence.ModifiedAttachmentInfo;
+import pro.softcom.sentinelle.domain.confluence.ModifiedPageInfo;
 
 /**
  * Confluence client (outbound domain port).
@@ -42,6 +45,15 @@ public interface ConfluenceClient {
     CompletableFuture<Optional<ConfluenceSpace>> getSpace(String spaceKey);
 
     /**
+     * Retrieves space information with permissions/data owners.
+     * This method expands the permissions field to load data owners.
+     *
+     * @param spaceKey the space key
+     * @return the space information with loaded data owners
+     */
+    CompletableFuture<Optional<ConfluenceSpace>> getSpaceWithPermissions(String spaceKey);
+
+    /**
      * Retrieves space information par son ID
      * @param spaceId the space identifier
      * @return the space information
@@ -66,4 +78,25 @@ public interface ConfluenceClient {
      * @return list of pages in the space
      */
     CompletableFuture<List<ConfluencePage>> getAllPagesInSpace(String spaceKey);
+
+    /**
+     * Retrieves all pages modified in a space since a specific date.
+     * Uses CQL Content Search API to find pages modified after the given date.
+     * 
+     * Business purpose: Provides detailed information about which pages were modified
+     * to populate the dashboard with specific update counts and page titles.
+     * 
+     * @param spaceKey the space key
+     * @param sinceDate the date from which to search for modifications (typically last scan date)
+     * @return list of modified pages with their information, or empty list if no modifications found
+     */
+    CompletableFuture<List<ModifiedPageInfo>> getModifiedPagesSince(
+        String spaceKey, 
+        Instant sinceDate
+    );
+
+    CompletableFuture<List<ModifiedAttachmentInfo>> getModifiedAttachmentsSince(
+        String spaceKey,
+        Instant sinceDate
+    );
 }

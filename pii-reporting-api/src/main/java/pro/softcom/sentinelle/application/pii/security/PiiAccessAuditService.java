@@ -1,15 +1,11 @@
 package pro.softcom.sentinelle.application.pii.security;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import pro.softcom.sentinelle.domain.pii.reporting.AccessPurpose;
-import pro.softcom.sentinelle.infrastructure.pii.security.jpa.PiiAccessAuditRepository;
-import pro.softcom.sentinelle.infrastructure.pii.security.jpa.entity.PiiAccessAuditEntity;
-
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import lombok.extern.slf4j.Slf4j;
+import pro.softcom.sentinelle.application.pii.security.port.out.SavePiiAuditPort;
+import pro.softcom.sentinelle.domain.pii.reporting.AccessPurpose;
+import pro.softcom.sentinelle.domain.pii.security.PiiAuditRecord;
 
 /**
  * Audit service for PII access tracking (GDPR/nLPD compliance).
@@ -20,21 +16,23 @@ import java.time.temporal.ChronoUnit;
  * <p>The current implementation audits access at the <b>SCAN</b> level, meaning one audit
  * record is created per scan access, regardless of the number of PII entities accessed.</p>
  *
- * @see PiiAccessAuditEntity
+ * @see PiiAuditRecord
  * @see AccessPurpose
  */
-@Component
-@RequiredArgsConstructor
 @Slf4j
 public class PiiAccessAuditService {
 
-    private final PiiAccessAuditRepository auditRepository;
+    private final SavePiiAuditPort savePiiAuditPort;
 
     /**
      * Configurable retention period in days (default: 730 days = 2 years for nLPD compliance).
      */
-    @Value("${pii.audit.retention-days:730}")
-    private int retentionDays;
+    private final int retentionDays;
+
+    public PiiAccessAuditService(SavePiiAuditPort savePiiAuditPort, int retentionDays) {
+        this.savePiiAuditPort = savePiiAuditPort;
+        this.retentionDays = retentionDays;
+    }
 
     /**
      * Audits PII access for compliance purposes.
@@ -75,18 +73,18 @@ public class PiiAccessAuditService {
             Instant now = Instant.now();
             Instant retention = now.plus(retentionDays, ChronoUnit.DAYS);
 
-            PiiAccessAuditEntity audit = PiiAccessAuditEntity.builder()
-                    .scanId(scanId)
-                    .pageId(pageId)
-                    .pageTitle(pageTitle)
-                    .spaceKey(spaceKey)
-                    .accessedAt(now)
-                    .retentionUntil(retention)
-                    .purpose(purpose.name())
-                    .piiEntitiesCount(piiCount)
-                    .build();
+            PiiAuditRecord audit = new PiiAuditRecord(
+                    scanId,
+                    spaceKey,
+                    pageId,
+                    pageTitle,
+                    now,
+                    retention,
+                    purpose,
+                    piiCount
+            );
 
-            auditRepository.save(audit);
+            savePiiAuditPort.save(audit);
 
             log.info("[PII_ACCESS_AUDIT] scanId={} pageId={} spaceKey={} purpose={} count={} retentionUntil={}",
                     scanId, pageId, spaceKey, purpose, piiCount, retention);
@@ -105,7 +103,7 @@ public class PiiAccessAuditService {
     public int purgeExpiredLogs() {
         try {
             Instant now = Instant.now();
-            int deleted = auditRepository.deleteByRetentionUntilBefore(now);
+            int deleted = savePiiAuditPort.deleteExpiredRecords(now);
             log.info("[PII_AUDIT_PURGE] Deleted {} expired audit logs", deleted);
             return deleted;
         } catch (Exception e) {

@@ -1,3 +1,5 @@
+<p-toast key="scan-errors" position="top-right" [baseZIndex]="5000"></p-toast>
+
 <div class="page p-3">
   <div class="header">
     <h2 class="m-0">Sentinel AI</h2>
@@ -127,8 +129,14 @@
           </p-button>
         </td>
         <td>
-          <div class="d-flex align-items-center gap-2">
+          <div class="d-flex align-items-center">
             <span class="fw-600" [attr.data-testid]="testIds.spaceName">{{ space.name }}</span>
+            @if (hasSpaceBeenUpdated(space.key)) {
+              <span class="space-updated-indicator"
+                    [pTooltip]="getSpaceUpdateTooltip(space.key)"
+                    tooltipPosition="right"
+                    aria-label="Cet espace a été modifié depuis le dernier scan"></span>
+            }
           </div>
         </td>
         <td>
@@ -144,7 +152,7 @@
         <td>
           <p-badge [value]="space?.counts?.total ?? 0" size="large"
                    [attr.data-testid]="testIds.badges.total"></p-badge>
-          <span class="ml-2">
+          <span>
                 <p-badge [value]="space?.counts?.high ?? 0" severity="danger" class="ml-1"
                          size="large" [attr.data-testid]="testIds.badges.high"></p-badge>
                 <p-badge [value]="space?.counts?.medium ?? 0" severity="warn" class="ml-1"

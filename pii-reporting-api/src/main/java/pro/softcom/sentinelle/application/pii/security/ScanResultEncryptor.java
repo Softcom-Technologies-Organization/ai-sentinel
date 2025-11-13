@@ -1,21 +1,18 @@
 package pro.softcom.sentinelle.application.pii.security;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.domain.pii.security.EncryptionException;
 import pro.softcom.sentinelle.domain.pii.security.EncryptionMetadata;
 import pro.softcom.sentinelle.domain.pii.security.EncryptionService;
 
-import java.util.List;
-
 /**
  * Processor for encrypting/decrypting detectedEntities in ScanResult.
  * Business intent: orchestrate PII encryption in the business flow.
  */
-@Component
 @RequiredArgsConstructor
 @Slf4j
 public class ScanResultEncryptor {

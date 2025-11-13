@@ -1,5 +1,11 @@
 package pro.softcom.sentinelle.infrastructure.pii.security.adapter;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.security.SecureRandom;
+import java.util.Base64;
+import java.util.stream.Stream;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,13 +22,6 @@ import pro.softcom.sentinelle.infrastructure.pii.security.config.EncryptionConfi
 import pro.softcom.sentinelle.infrastructure.pii.security.config.EncryptionKeyProvider;
 import pro.softcom.sentinelle.infrastructure.pii.security.config.KeyLoader;
 
-import java.security.SecureRandom;
-import java.util.Base64;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 @ExtendWith(MockitoExtension.class)
 class AesGcmEncryptionAdapterTest {
 
@@ -35,7 +34,7 @@ class AesGcmEncryptionAdapterTest {
         String keyBase64 = Base64.getEncoder().encodeToString(testKey);
 
         EncryptionConfig cfg = new EncryptionConfig("IGNORED");
-        KeyLoader keyLoader = (_) -> keyBase64;
+        KeyLoader keyLoader = _ -> keyBase64;
         EncryptionKeyProvider keyProvider = new EncryptionKeyProvider(cfg, keyLoader);
         adapter = new AesGcmEncryptionAdapter(keyProvider);
     }

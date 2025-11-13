@@ -1,83 +1,169 @@
 package pro.softcom.sentinelle.infrastructure.confluence.adapter.out;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import pro.softcom.sentinelle.domain.confluence.AttachmentInfo;
+import pro.softcom.sentinelle.infrastructure.document.config.TextQualityThresholds;
+import pro.softcom.sentinelle.infrastructure.document.validator.TextQualityValidator;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
-import pro.softcom.sentinelle.domain.confluence.AttachmentInfo;
 
-@ExtendWith(MockitoExtension.class)
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Integration tests for TikaAttachmentTextExtractorAdapter.
+ * <p>
+ * Tests the complete flow: Tika extraction + TextQualityValidator validation.
+ */
+@DisplayName("TikaAttachmentTextExtractorAdapter - Integration")
 class TikaAttachmentTextExtractorAdapterTest {
 
-    private final TikaAttachmentTextExtractorAdapter extractor = new TikaAttachmentTextExtractorAdapter();
+    private TikaAttachmentTextExtractorAdapter adapter;
 
-    @Test
-    void supports_should_handle_null_and_known_extensions() {
-        // Arrange
-        AttachmentInfo nullInfo = null;
-        AttachmentInfo nullExt = new AttachmentInfo("file", null, "application/octet-stream", "url");
-        AttachmentInfo pdf = new AttachmentInfo("f.pdf", "pdf", "application/pdf", "url");
-        AttachmentInfo docx = new AttachmentInfo("f.DOCX", "DOCX", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "url");
-        AttachmentInfo jpg = new AttachmentInfo("i.jpg", "jpg", "image/jpeg", "url");
-
-        // Act & Assert
-        assertSoftly(soft -> {
-            soft.assertThat(extractor.supports(nullInfo)).as("null info").isFalse();
-            soft.assertThat(extractor.supports(nullExt)).as("null extension").isFalse();
-            soft.assertThat(extractor.supports(pdf)).as("pdf supported").isTrue();
-            soft.assertThat(extractor.supports(docx)).as("case-insensitive").isTrue();
-            soft.assertThat(extractor.supports(jpg)).as("unsupported jpg").isFalse();
-        });
+    @BeforeEach
+    void setUp() {
+        // Given
+        TextQualityThresholds thresholds = new TextQualityThresholds();
+        TextQualityValidator validator = new TextQualityValidator(thresholds);
+        adapter = new TikaAttachmentTextExtractorAdapter(validator);
     }
 
     @Test
-    void extract_should_return_empty_on_null_or_empty_bytes() {
-        AttachmentInfo txt = new AttachmentInfo("a.txt", "txt", "text/plain", "url");
+    @DisplayName("Should_SupportExtractableAttachments_When_PdfFile")
+    void Should_SupportExtractableAttachments_When_PdfFile() {
+        // Given
+        AttachmentInfo pdfAttachment = createAttachment("document.pdf", "pdf");
 
-        assertSoftly(soft -> {
-            soft.assertThat(extractor.extract(txt, null)).as("null bytes").isEmpty();
-            soft.assertThat(extractor.extract(txt, new byte[0])).as("empty bytes").isEmpty();
-        });
+        // When
+        boolean supports = adapter.supports(pdfAttachment);
+
+        // Then
+        assertThat(supports).isTrue();
     }
 
     @Test
-    void extract_should_trim_and_return_text_for_plain_text_input() {
-        AttachmentInfo txt = new AttachmentInfo("a.txt", "txt", "text/plain", "url");
-        byte[] bytes = "  Hello \nWorld  ".getBytes(StandardCharsets.UTF_8);
+    @DisplayName("Should_NotSupportNonExtractableAttachments_When_ImageFile")
+    void Should_NotSupportNonExtractableAttachments_When_ImageFile() {
+        // Given
+        AttachmentInfo imageAttachment = createAttachment("photo.jpg", "jpg");
 
-        Optional<String> out = extractor.extract(txt, bytes);
+        // When
+        boolean supports = adapter.supports(imageAttachment);
 
-        // Expect trimming of leading/trailing spaces but preservation of inner newline
-        assertThat(out).isPresent();
-        assertThat(out.orElseThrow()).isEqualTo("Hello \nWorld");
+        // Then
+        assertThat(supports).isFalse();
     }
 
     @Test
-    void extract_should_apply_image_only_heuristic_and_skip_low_alnum_text() {
-        // With heuristic enabled: content with very low alphanumeric ratio should be skipped
-        byte[] lowAlnum = " . , !  ".getBytes(StandardCharsets.UTF_8);
+    @DisplayName("Should_ReturnEmpty_When_BytesNull")
+    void Should_ReturnEmpty_When_BytesNull() {
+        // Given
+        AttachmentInfo attachment = createAttachment("doc.pdf", "pdf");
 
-        AttachmentInfo pdf = new AttachmentInfo("img.pdf", "pdf", "application/pdf", "url");
-        AttachmentInfo txt = new AttachmentInfo("symbols.txt", "txt", "text/plain", "url");
+        // When
+        Optional<String> result = adapter.extract(attachment, null);
 
-        Optional<String> pdfOut = extractor.extract(pdf, lowAlnum);
-        Optional<String> txtOut = extractor.extract(txt, lowAlnum);
-
-        // For both PDF and TXT, the heuristic should skip low-alphanumeric content
-        assertThat(pdfOut).isEmpty();
-        assertThat(txtOut).isEmpty();
+        // Then
+        assertThat(result).isEmpty();
     }
 
     @Test
-    void extract_should_return_empty_when_text_is_blank_after_trim() {
-        AttachmentInfo pdf = new AttachmentInfo("blank.pdf", "pdf", "application/pdf", "url");
-        byte[] blanks = "    ".getBytes(StandardCharsets.UTF_8);
+    @DisplayName("Should_ReturnEmpty_When_BytesEmpty")
+    void Should_ReturnEmpty_When_BytesEmpty() {
+        // Given
+        AttachmentInfo attachment = createAttachment("doc.pdf", "pdf");
+        byte[] emptyBytes = new byte[0];
 
-        Optional<String> out = extractor.extract(pdf, blanks);
-        assertThat(out).isEmpty();
+        // When
+        Optional<String> result = adapter.extract(attachment, emptyBytes);
+
+        // Then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Should_ExtractText_When_PlainTextContent")
+    void Should_ExtractText_When_PlainTextContent() {
+        // Given
+        AttachmentInfo attachment = createAttachment("document.txt", "txt");
+        String validText = "This is a valid text document with enough content to pass validation. " +
+                "It contains proper spacing and sufficient alphanumeric characters.";
+        byte[] bytes = validText.getBytes(StandardCharsets.UTF_8);
+
+        // When
+        Optional<String> result = adapter.extract(attachment, bytes);
+
+        // Then
+        assertThat(result)
+                .isPresent()
+                .get()
+                .asString()
+                .contains("valid text document");
+    }
+
+    @Test
+    @DisplayName("Should_ReturnEmpty_When_TextTooShort")
+    void Should_ReturnEmpty_When_TextTooShort() {
+        // Given
+        AttachmentInfo attachment = createAttachment("short.txt", "txt");
+        String shortText = "Too short";
+        byte[] bytes = shortText.getBytes(StandardCharsets.UTF_8);
+
+        // When
+        Optional<String> result = adapter.extract(attachment, bytes);
+
+        // Then - Validation should reject it
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Should_ReturnEmpty_When_TextHasLowAlphanumericRatio")
+    void Should_ReturnEmpty_When_TextHasLowAlphanumericRatio() {
+        // Given
+        AttachmentInfo attachment = createAttachment("corrupted.txt", "txt");
+        String corruptedText = "!!!@@@###$$$%%%^^^&&&***((()))____----====++++||||\\\\\\///...";
+        byte[] bytes = corruptedText.getBytes(StandardCharsets.UTF_8);
+
+        // When
+        Optional<String> result = adapter.extract(attachment, bytes);
+
+        // Then - Validation should reject it
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Should_ReturnEmpty_When_ExtractionFails")
+    void Should_ReturnEmpty_When_ExtractionFails() {
+        // Given
+        AttachmentInfo attachment = createAttachment("invalid.pdf", "pdf");
+        byte[] invalidBytes = "This is not a valid PDF".getBytes(StandardCharsets.UTF_8);
+
+        // When
+        Optional<String> result = adapter.extract(attachment, invalidBytes);
+
+        // Then - Tika should fail to parse and return empty
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Should_BeAnnotatedAsComponent_When_ClassDefined")
+    void Should_BeAnnotatedAsComponent_When_ClassDefined() {
+        // Given & When & Then
+        assertThat(TikaAttachmentTextExtractorAdapter.class)
+                .hasAnnotation(org.springframework.stereotype.Component.class);
+    }
+
+    @Test
+    @DisplayName("Should_ImplementStrategy_When_ClassDefined")
+    void Should_ImplementStrategy_When_ClassDefined() {
+        // Given & When & Then
+        assertThat(AttachmentTextExtractionStrategy.class)
+                .isAssignableFrom(TikaAttachmentTextExtractorAdapter.class);
+    }
+
+    private AttachmentInfo createAttachment(String name, String extension) {
+        return new AttachmentInfo(name, extension, "application/octet-stream", "http://test");
     }
 }

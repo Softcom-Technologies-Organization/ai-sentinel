@@ -9,7 +9,6 @@ import pii_detection.PIIDetectionServiceGrpc;
 /**
  * Provides an Armeria-based gRPC client stub for the PII Detection microservice.
  * This configuration is activated when property 'pii-detector.client=armeria'.
- *
  * Business intent: offer a more resilient HTTP/2/gRPC client with keepalive and
  * deadline support, while keeping the domain API unchanged.
  */

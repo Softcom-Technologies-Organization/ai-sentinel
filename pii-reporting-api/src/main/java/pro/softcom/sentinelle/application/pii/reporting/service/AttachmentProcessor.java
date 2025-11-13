@@ -6,14 +6,15 @@ import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.application.confluence.port.out.AttachmentTextExtractor;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachmentDownloader;
 import pro.softcom.sentinelle.domain.confluence.AttachmentInfo;
+import pro.softcom.sentinelle.domain.confluence.AttachmentTypeFilter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * Service responsable de l'extraction de texte des pièces jointes Confluence.
- * Business intent: Télécharge les pièces jointes et extrait leur contenu textuel
- * pour permettre l'analyse PII ultérieure. Ne réalise PAS la détection PII elle-même,
- * cette responsabilité appartient au use case orchestrateur.
+ * Service that extracts readable text from Confluence attachments.
+ * Business purpose: downloads attachments and turns their content into text
+ * so scans can analyze it later. It does not perform PII detection; that
+ * responsibility belongs to the orchestrating use case.
  */
 @RequiredArgsConstructor
 @Slf4j
@@ -23,16 +24,17 @@ public class AttachmentProcessor {
     private final AttachmentTextExtractor attachmentTextExtractionService;
 
     /**
-     * Extrait le texte de toutes les pièces jointes extractables d'une page.
-     * 
-     * @param pageId Identifiant de la page Confluence
-     * @param attachments Liste des pièces jointes à traiter
-     * @return Flux des textes extraits avec leurs métadonnées d'origine
+     * Extracts readable text from all extractable attachments of a page.
+     * Only supported file types are processed; others are ignored.
+     *
+     * @param pageId the Confluence page identifier
+     * @param attachments the attachments to process
+     * @return a Flux of extracted texts paired with their source attachment metadata
      */
     public Flux<AttachmentTextExtracted> extractAttachmentsText(String pageId,
                                                                 List<AttachmentInfo> attachments) {
         return Flux.fromIterable(attachments)
-            .filter(this::isExtractableExtension)
+            .filter(AttachmentTypeFilter::isExtractable)
             .concatMap(attachment -> extractAttachmentText(pageId, attachment));
     }
 
@@ -53,18 +55,5 @@ public class AttachmentProcessor {
         return Mono.fromCallable(
                 () -> attachmentTextExtractionService.extractText(attachment, bytes))
             .flatMap(textOptional -> textOptional.map(Mono::just).orElse(Mono.empty()));
-    }
-
-    private boolean isExtractableExtension(AttachmentInfo attachment) {
-        String extension = attachment.extension();
-        if (extension == null || extension.isBlank()) {
-            return false;
-        }
-        String lowercaseExtension = extension.toLowerCase();
-        return switch (lowercaseExtension) {
-            case "pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "rtf", "odt", "ods", "odp",
-                 "txt", "csv", "html", "htm" -> true;
-            default -> false;
-        };
     }
 }

@@ -8,14 +8,15 @@ to ensure per-entity-type threshold filtering works correctly.
 import pytest
 from unittest.mock import Mock, patch
 
-from pii_detector.service.detector.gliner_detector import GLiNERDetector
-from pii_detector.service.detector.models import PIIEntity, DetectionConfig
+from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
+from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.application.config.detection_policy import DetectionConfig
 
 
 class TestGLiNERScoringFilter:
     """Test cases for GLiNER scoring filter functionality."""
 
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_filter_entities_below_type_specific_threshold(self, mock_manager_class):
         """Test that entities below their type-specific threshold are filtered out."""
         # Arrange
@@ -66,7 +67,7 @@ class TestGLiNERScoringFilter:
         assert "john@test" not in filtered_texts
         assert "Jean" not in filtered_texts
 
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_keep_all_entities_when_no_scoring_overrides(self, mock_manager_class):
         """Test that all entities are kept when no scoring overrides are configured."""
         # Arrange
@@ -90,7 +91,7 @@ class TestGLiNERScoringFilter:
         assert len(filtered_entities) == 2, \
             "All entities should be kept when no scoring overrides are configured"
 
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_keep_entities_without_type_specific_threshold(self, mock_manager_class):
         """Test that entities without a type-specific threshold are kept."""
         # Arrange
@@ -128,7 +129,7 @@ class TestGLiNERScoringFilter:
         assert "GIVENNAME" in filtered_types
         assert "TELEPHONENUM" not in filtered_types
 
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_filter_multiple_entities_of_same_type(self, mock_manager_class):
         """Test filtering multiple entities of the same type."""
         # Arrange
@@ -166,7 +167,7 @@ class TestGLiNERScoringFilter:
             assert entity.score >= 0.95, \
                 f"Entity '{entity.text}' has score {entity.score} < 0.95"
 
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_handle_edge_case_score_equals_threshold(self, mock_manager_class):
         """Test that entities with score exactly equal to threshold are kept."""
         # Arrange
@@ -194,7 +195,7 @@ class TestGLiNERScoringFilter:
         assert filtered_entities[0].text == "+41 79 123 45 67"
         assert filtered_entities[0].score == 0.95
 
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_load_scoring_overrides_from_config(self, mock_manager_class):
         """Test that scoring overrides are loaded from configuration file."""
         # Arrange & Act
@@ -214,7 +215,7 @@ class TestGLiNERScoringFilter:
         assert 'GIVENNAME' in detector.scoring_overrides
         assert detector.scoring_overrides['GIVENNAME'] == 0.75
 
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_log_filtered_entities(self, mock_manager_class, caplog):
         """Test that filtered entities are logged for debugging."""
         # Arrange
@@ -243,7 +244,7 @@ class TestGLiNERScoringFilter:
         log_messages = [record.message for record in caplog.records]
         assert any("Post-filtered 1 entities" in msg for msg in log_messages)
 
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_load_scoring_overrides_for_gliner_model_id(self, mock_manager_class):
         """Test that scoring overrides are loaded correctly even with full HuggingFace model ID."""
         # Arrange & Act - Using the actual HuggingFace model ID from config

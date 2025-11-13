@@ -5,6 +5,7 @@ import {Space} from '../models/space';
 import {StreamEvent} from '../models/stream-event';
 import {RawStreamPayload, StreamEventType} from '../models/stream-event-type';
 import {Severity} from '../models/severity';
+import {SpaceUpdateInfo} from '../models/space-update-info.model';
 
 export interface LastScanMeta {
   scanId: string;
@@ -39,6 +40,22 @@ export class SentinelleApiService {
           observer.complete();
         },
         error: (err) => observer.error(err)
+      });
+      return () => sub.unsubscribe();
+    });
+  }
+
+  /** Fetch update information for all Confluence spaces. */
+  getSpacesUpdateInfo(): Observable<SpaceUpdateInfo[]> {
+    return new Observable<SpaceUpdateInfo[]>((observer) => {
+      const sub = this.http.get<SpaceUpdateInfo[]>('/api/v1/confluence/spaces/update-info').subscribe({
+        next: (data) => {
+          observer.next(Array.isArray(data) ? data : []);
+          observer.complete();
+        },
+        error: (err) => {
+          observer.error(err);
+        }
       });
       return () => sub.unsubscribe();
     });
@@ -140,7 +157,7 @@ export class SentinelleApiService {
       const es = new EventSource(url);
 
       const types: StreamEventType[] = [
-        'multiStart', 'start', 'pageStart', 'item', 'attachmentItem', 'pageComplete', 'error', 'complete', 'multiComplete', 'keepalive'
+        'multiStart', 'start', 'pageStart', 'item', 'attachmentItem', 'pageComplete', 'scanError', 'complete', 'multiComplete', 'keepalive'
       ];
 
       // Register event listeners with lightweight, named handlers to avoid deep nesting

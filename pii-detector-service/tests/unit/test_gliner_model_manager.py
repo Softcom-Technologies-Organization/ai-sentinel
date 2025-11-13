@@ -8,9 +8,9 @@ covering model downloading, loading, and error handling scenarios.
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 
-from pii_detector.service.detector.gliner_model_manager import GLiNERModelManager
-from pii_detector.service.detector.models.detection_config import DetectionConfig
-from pii_detector.service.detector.models.exceptions import ModelLoadError
+from pii_detector.infrastructure.model_management.gliner_model_manager import GLiNERModelManager
+from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.exception.exceptions import ModelLoadError
 
 
 class TestGLiNERModelManagerInit:
@@ -25,7 +25,7 @@ class TestGLiNERModelManagerInit:
         
         assert manager.config == config
         assert manager.logger is not None
-        assert manager.logger.name == "pii_detector.service.detector.gliner_model_manager.GLiNERModelManager"
+        assert manager.logger.name == "pii_detector.infrastructure.model_management.gliner_model_manager.GLiNERModelManager"
     
     def test_should_store_config_reference(self):
         """Test that config is stored as instance variable."""

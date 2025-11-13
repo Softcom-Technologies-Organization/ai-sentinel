@@ -1,6 +1,8 @@
 package pro.softcom.sentinelle.infrastructure.confluence.adapter.out.jpa;
 
 import java.util.List;
+import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceSpaceRepository;
@@ -19,6 +21,12 @@ public class ConfluenceSpaceRepositoryAdapter implements ConfluenceSpaceReposito
             .stream()
             .map(ConfluenceSpaceEntityMapper::toDomain)
             .toList();
+    }
+
+    @Override
+    public Optional<ConfluenceSpace> findByKey(String key) {
+        return jpaRepository.findBySpaceKey(key)
+                .map(ConfluenceSpaceEntityMapper::toDomain);
     }
 
     @Override

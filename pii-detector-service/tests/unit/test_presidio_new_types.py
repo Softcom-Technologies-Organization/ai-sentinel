@@ -3,8 +3,8 @@ Tests pour vérifier que tous les nouveaux types PII Presidio sont bien configur
 """
 
 import pytest
-from pii_detector.service.detector.models import PIIType
-from pii_detector.service.detector.presidio_detector import PRESIDIO_TO_PII_TYPE_MAP
+from pii_detector.domain.entity.pii_type import PIIType
+from pii_detector.infrastructure.detector.presidio_detector import PRESIDIO_TO_PII_TYPE_MAP
 
 
 class TestPresidioNewPiiTypes:

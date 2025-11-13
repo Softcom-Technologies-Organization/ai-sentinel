@@ -12,7 +12,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.sentinelle.domain.pii.ScanStatus;
@@ -64,15 +63,14 @@ class ScanCheckpointPersistenceAdapterTest {
 
         repository.save(cp);
 
-        ArgumentCaptor<ScanCheckpointEntity> captor = ArgumentCaptor.forClass(ScanCheckpointEntity.class);
-        verify(jpaRepository).save(captor.capture());
-        var saved = captor.getValue();
-        assertThat(saved.getScanId()).isEqualTo("scan-1");
-        assertThat(saved.getSpaceKey()).isEqualTo("SPACE");
-        assertThat(saved.getLastProcessedPageId()).isEqualTo("123");
-        assertThat(saved.getLastProcessedAttachmentName()).isEqualTo("file.txt");
-        assertThat(saved.getStatus()).isEqualTo("COMPLETED");
-        assertThat(saved.getUpdatedAt()).isEqualTo(now);
+        verify(jpaRepository).upsertCheckpoint(
+                "scan-1",
+                "SPACE",
+                "123",
+                "file.txt",
+                "COMPLETED",
+                now
+        );
     }
 
     @Test
@@ -135,5 +133,81 @@ class ScanCheckpointPersistenceAdapterTest {
         repository.deleteByScan("scan-x");
         verify(jpaRepository).deleteByScanId("scan-x");
         verifyNoMoreInteractions(jpaRepository);
+    }
+
+    @Test
+    void findBySpace_should_return_empty_list_on_blank_space() {
+        assertThat(repository.findBySpace(null)).isEmpty();
+        assertThat(repository.findBySpace(" ")).isEmpty();
+        verifyNoInteractions(jpaRepository);
+    }
+
+    @Test
+    void findBySpace_should_map_entities_to_domain() {
+        var now = LocalDateTime.now();
+        var e1 = ScanCheckpointEntity.builder()
+                .scanId("s1")
+                .spaceKey("SPACE")
+                .status("COMPLETED")
+                .updatedAt(now.minusMinutes(5))
+                .build();
+        var e2 = ScanCheckpointEntity.builder()
+                .scanId("s2")
+                .spaceKey("SPACE")
+                .status("FAILED")
+                .updatedAt(now)
+                .build();
+        when(jpaRepository.findBySpaceKeyOrderByUpdatedAtDesc("SPACE")).thenReturn(List.of(e1, e2));
+
+        var list = repository.findBySpace("SPACE");
+        assertThat(list).hasSize(2);
+        assertThat(list.get(0).scanId()).isEqualTo("s1");
+        assertThat(list.get(0).scanStatus()).isEqualTo(ScanStatus.COMPLETED);
+        assertThat(list.get(1).scanId()).isEqualTo("s2");
+        assertThat(list.get(1).scanStatus()).isEqualTo(ScanStatus.FAILED);
+    }
+
+    @Test
+    void Should_ReturnEmpty_When_FindLatestBySpaceWithBlankSpaceKey() {
+        assertThat(repository.findLatestBySpace(null)).isEmpty();
+        assertThat(repository.findLatestBySpace(" ")).isEmpty();
+        verifyNoInteractions(jpaRepository);
+    }
+
+    @Test
+    void Should_ReturnLatestCheckpoint_When_FindLatestBySpaceWithValidSpaceKey() {
+        var latestTimestamp = LocalDateTime.of(2024, 6, 15, 14, 30, 0);
+        var latestEntity = ScanCheckpointEntity.builder()
+                .scanId("scan-latest")
+                .spaceKey("SPACE")
+                .lastProcessedPageId("page-999")
+                .lastProcessedAttachmentName("latest.pdf")
+                .status("COMPLETED")
+                .updatedAt(latestTimestamp)
+                .build();
+        
+        when(jpaRepository.findFirstBySpaceKeyOrderByUpdatedAtDesc("SPACE"))
+                .thenReturn(Optional.of(latestEntity));
+
+        var result = repository.findLatestBySpace("SPACE");
+        
+        assertThat(result).isPresent();
+        var checkpoint = result.orElseThrow();
+        assertThat(checkpoint.scanId()).isEqualTo("scan-latest");
+        assertThat(checkpoint.spaceKey()).isEqualTo("SPACE");
+        assertThat(checkpoint.lastProcessedPageId()).isEqualTo("page-999");
+        assertThat(checkpoint.lastProcessedAttachmentName()).isEqualTo("latest.pdf");
+        assertThat(checkpoint.scanStatus()).isEqualTo(ScanStatus.COMPLETED);
+        assertThat(checkpoint.updatedAt()).isEqualTo(latestTimestamp);
+    }
+
+    @Test
+    void Should_ReturnEmpty_When_FindLatestBySpaceWithNoCheckpoints() {
+        when(jpaRepository.findFirstBySpaceKeyOrderByUpdatedAtDesc("EMPTY_SPACE"))
+                .thenReturn(Optional.empty());
+
+        var result = repository.findLatestBySpace("EMPTY_SPACE");
+        
+        assertThat(result).isEmpty();
     }
 }

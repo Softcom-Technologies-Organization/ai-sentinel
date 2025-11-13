@@ -1,3 +1,4 @@
+<p-toast key="scan-errors" position="top-right" [baseZIndex]="5000"></p-toast>
 <p-confirmDialog></p-confirmDialog>
 
 <div class="page p-3">
@@ -28,20 +29,33 @@
     </div>
   }
 
-  <p-table #dt [value]="filteredSpaces()" [paginator]="true" [rows]="10"
+  <p-table #dt [value]="sortedSpaces()"
+           dataKey="key"
+           sortField="name" [sortOrder]="1"
+           [paginator]="true"
            [tableStyle]="{'min-width':'60rem'}"
-           [rowsPerPageOptions]="[10,20,50]" dataKey="key"
-           [expandedRowKeys]="expandedRowKeys()" (onRowExpand)="onRowExpand($event)"
+           [loading]="isSpacesLoading()" [showLoader]="false"
+           [rows]="20"
+           [rowsPerPageOptions]="[10,20,50]"
+           [expandedRowKeys]="expandedRowKeys()"
+           (onRowExpand)="onRowExpand($event)"
            (onRowCollapse)="onRowCollapse($event)"
-           [loading]="isSpacesLoading()" [showLoader]="false" [attr.data-testid]="testIds.table">
-    <ng-template #header>
+           (onSort)="onCustomSort($event)" [customSort]="true"
+           [attr.data-testid]="testIds.table">
+  <ng-template #header>
       <tr>
         <th id="col-toggle" style="width:3rem"></th>
-        <th id="col-space" [attr.data-testid]="testIds.headers.space">Space</th>
+        <th id="col-space" [attr.data-testid]="testIds.headers.space" pSortableColumn="name">
+          Space
+          <p-sortIcon field="name"/>
+        </th>
         <th id="col-status" [attr.data-testid]="testIds.headers.status">Statut</th>
         <th id="col-progress" [attr.data-testid]="testIds.headers.progress">Progression</th>
         <th id="col-last-scan" [attr.data-testid]="testIds.headers.lastScan">Dernier scan</th>
-        <th id="col-pii" [attr.data-testid]="testIds.headers.pii">PII</th>
+        <th id="col-pii" [attr.data-testid]="testIds.headers.pii" pSortableColumn="piiCount">
+          PII
+          <p-sortIcon field="piiCount"/>
+        </th>
         <th id="col-actions" [attr.data-testid]="testIds.headers.actions">Actions</th>
       </tr>
       <tr>
@@ -116,8 +130,14 @@
           </p-button>
         </td>
         <td>
-          <div class="d-flex align-items-center gap-2">
+          <div class="d-flex align-items-center">
             <span class="fw-600" [attr.data-testid]="testIds.spaceName">{{ space.name }}</span>
+            @if (hasSpaceBeenUpdated(space.key)) {
+              <span class="space-updated-indicator"
+                    [pTooltip]="getSpaceUpdateTooltip(space.key)"
+                    tooltipPosition="right"
+                    aria-label="Cet espace a été modifié depuis le dernier scan"></span>
+            }
           </div>
         </td>
         <td>
@@ -133,7 +153,7 @@
         <td>
           <p-badge [value]="space?.counts?.total ?? 0" size="large"
                    [attr.data-testid]="testIds.badges.total"></p-badge>
-          <span class="ml-2">
+          <span>
                 <p-badge [value]="space?.counts?.high ?? 0" severity="danger" class="ml-1"
                          size="large" [attr.data-testid]="testIds.badges.high"></p-badge>
                 <p-badge [value]="space?.counts?.medium ?? 0" severity="warn" class="ml-1"

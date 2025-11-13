@@ -8,11 +8,11 @@ covering registration, creation, and factory patterns.
 import pytest
 from unittest.mock import Mock, patch
 
-from pii_detector.service.detector.detector_factory import (
+from pii_detector.application.factory.detector_factory import (
     DetectorFactory,
     create_default_factory
 )
-from pii_detector.service.detector.models import DetectionConfig
+from pii_detector.application.config.detection_policy import DetectionConfig
 
 
 class TestDetectorFactoryInitialization:
@@ -253,7 +253,7 @@ class TestDefaultFactory:
         assert hasattr(result, 'mask_pii')
         assert hasattr(result, 'model_id')
     
-    @patch('pii_detector.service.detector.pii_detector.PIIDetector')
+    @patch('pii_detector.infrastructure.detector.pii_detector.PIIDetector')
     def test_should_create_pii_detector_from_default_factory(self, mock_pii_detector):
         """Test creating PII detector from default factory."""
         mock_instance = Mock()
@@ -316,8 +316,8 @@ class TestEdgeCases:
 class TestIntegration:
     """Integration tests for DetectorFactory."""
     
-    @patch('pii_detector.service.detector.pii_detector.PIIDetector')
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERDetector')
+    @patch('pii_detector.infrastructure.detector.pii_detector.PIIDetector')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERDetector')
     def test_should_complete_full_workflow(self, mock_gliner, mock_pii):
         """Test complete workflow from registration to creation."""
         # Setup mocks

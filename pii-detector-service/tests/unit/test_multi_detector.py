@@ -9,26 +9,27 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 from typing import List
 
-from pii_detector.service.detector.multi_detector import (
+from pii_detector.application.orchestration.multi_detector import (
     MultiModelPIIDetector,
     get_multi_model_ids_from_config,
     should_use_multi_detector,
     _get_provenance_logging
 )
-from pii_detector.service.detector.models import PIIEntity, DetectionConfig
+from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.application.config.detection_policy import DetectionConfig
 
 
 @pytest.fixture
 def mock_logger():
     """Fixture to mock logger for MultiModelPIIDetector initialization."""
-    with patch('pii_detector.service.detector.multi_detector.logging.getLogger') as mock:
+    with patch('pii_detector.application.orchestration.multi_detector.logging.getLogger') as mock:
         yield mock
 
 
 class TestHelperFunctions:
     """Test cases for helper functions."""
     
-    @patch('pii_detector.service.detector.multi_detector.get_app_config')
+    @patch('pii_detector.config.get_config')
     def test_should_get_provenance_logging_when_enabled(self, mock_get_config):
         """Test getting provenance logging when enabled in config."""
         mock_config = Mock()
@@ -39,7 +40,7 @@ class TestHelperFunctions:
         
         assert result is True
     
-    @patch('pii_detector.service.detector.multi_detector.get_app_config')
+    @patch('pii_detector.config.get_config')
     def test_should_get_provenance_logging_when_disabled(self, mock_get_config):
         """Test getting provenance logging when disabled in config."""
         mock_config = Mock()
@@ -50,7 +51,7 @@ class TestHelperFunctions:
         
         assert result is False
     
-    @patch('pii_detector.service.detector.multi_detector.get_app_config')
+    @patch('pii_detector.config.get_config')
     def test_should_return_false_when_config_error(self, mock_get_config):
         """Test fallback to False when config loading fails."""
         mock_get_config.side_effect = ValueError("Config error")
@@ -59,8 +60,8 @@ class TestHelperFunctions:
         
         assert result is False
     
-    @patch('pii_detector.service.detector.models.detection_config._load_llm_config')
-    @patch('pii_detector.service.detector.models.detection_config.get_enabled_models')
+    @patch('pii_detector.application.config.detection_policy._load_llm_config')
+    @patch('pii_detector.application.config.detection_policy.get_enabled_models')
     def test_should_get_multi_model_ids_from_config(self, mock_get_enabled, mock_load_config):
         """Test getting model IDs from configuration."""
         mock_load_config.return_value = {}
@@ -73,7 +74,7 @@ class TestHelperFunctions:
         
         assert result == ["model1", "model2"]
     
-    @patch('pii_detector.service.detector.models.detection_config._load_llm_config')
+    @patch('pii_detector.application.config.detection_policy._load_llm_config')
     def test_should_return_default_when_config_fails(self, mock_load_config):
         """Test fallback to default model when config loading fails."""
         mock_load_config.side_effect = Exception("Config error")
@@ -82,8 +83,8 @@ class TestHelperFunctions:
         
         assert result == ["iiiorg/piiranha-v1-detect-personal-information"]
     
-    @patch('pii_detector.service.detector.models.detection_config._load_llm_config')
-    @patch('pii_detector.service.detector.models.detection_config.get_enabled_models')
+    @patch('pii_detector.application.config.detection_policy._load_llm_config')
+    @patch('pii_detector.application.config.detection_policy.get_enabled_models')
     def test_should_use_multi_detector_when_enabled(self, mock_get_enabled, mock_load_config):
         """Test multi-detector check when enabled with multiple models."""
         mock_config = {"detection": {"multi_detector_enabled": True}}
@@ -97,8 +98,8 @@ class TestHelperFunctions:
         
         assert result is True
     
-    @patch('pii_detector.service.detector.models.detection_config._load_llm_config')
-    @patch('pii_detector.service.detector.models.detection_config.get_enabled_models')
+    @patch('pii_detector.application.config.detection_policy._load_llm_config')
+    @patch('pii_detector.application.config.detection_policy.get_enabled_models')
     def test_should_not_use_multi_detector_when_disabled(self, mock_get_enabled, mock_load_config):
         """Test multi-detector check when disabled."""
         mock_config = {"detection": {"multi_detector_enabled": False}}
@@ -108,8 +109,8 @@ class TestHelperFunctions:
         
         assert result is False
     
-    @patch('pii_detector.service.detector.models.detection_config._load_llm_config')
-    @patch('pii_detector.service.detector.models.detection_config.get_enabled_models')
+    @patch('pii_detector.application.config.detection_policy._load_llm_config')
+    @patch('pii_detector.application.config.detection_policy.get_enabled_models')
     def test_should_not_use_multi_detector_with_single_model(self, mock_get_enabled, mock_load_config):
         """Test multi-detector check with only one model."""
         mock_config = {"detection": {"multi_detector_enabled": True}}
@@ -315,7 +316,7 @@ class TestPIIDetection:
         assert len(result) == 1
         assert result[0] == entity
     
-    @patch('pii_detector.service.detector.multi_detector.PROVENANCE_LOG_PROVENANCE', True)
+    @patch('pii_detector.application.orchestration.multi_detector.PROVENANCE_LOG_PROVENANCE', True)
     def test_should_log_provenance_when_enabled(self, mock_logger):
         """Test provenance logging when enabled."""
         entity = PIIEntity(text="test", pii_type="EMAIL", type_label="EMAIL", start=0, end=4, score=0.9)

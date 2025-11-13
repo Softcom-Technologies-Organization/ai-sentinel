@@ -93,5 +93,5 @@ parallel_execution = true
 # (comment out = auto-detect based on CPU cores)
 # max_workers = 4
 
-# Timeout per model in seconds
-model_timeout = 60
+# Timeout per model in seconds (increased to 180s to handle complex pages)
+model_timeout = 180

@@ -12,13 +12,10 @@ import unicodedata
 
 import pytest
 
-from pii_detector.service.detector.pii_detector import PIIDetector, setup_logging
-from pii_detector.service.detector.models import (
-    PIIEntity,
-    DetectionConfig,
-    PIIDetectionError,
-    ModelNotLoadedError,
-)
+from pii_detector.infrastructure.detector.pii_detector import PIIDetector, setup_logging
+from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.exception.exceptions import PIIDetectionError, ModelNotLoadedError
 
 
 # ============================================================================
@@ -99,10 +96,10 @@ def sample_pii_entities():
 def detector_with_mocks(mocker, mock_config, mock_tokenizer, mock_model, mock_pipeline):
     """Fixture providing a PIIDetector with mocked dependencies."""
     # Mock all external dependencies
-    mocker.patch("pii_detector.service.detector.pii_detector.torch.cuda.is_available", return_value=False)
-    mocker.patch("pii_detector.service.detector.pii_detector.MemoryManager")
-    mocker.patch("pii_detector.service.detector.pii_detector.ModelManager")
-    mocker.patch("pii_detector.service.detector.pii_detector.EntityProcessor")
+    mocker.patch("pii_detector.infrastructure.detector.pii_detector.torch.cuda.is_available", return_value=False)
+    mocker.patch("pii_detector.infrastructure.detector.pii_detector.MemoryManager")
+    mocker.patch("pii_detector.infrastructure.detector.pii_detector.ModelManager")
+    mocker.patch("pii_detector.infrastructure.detector.pii_detector.EntityProcessor")
     
     detector = PIIDetector(config=mock_config)
     detector.tokenizer = mock_tokenizer
@@ -121,10 +118,10 @@ class TestPIIDetectorInitialization:
 
     def test_should_initialize_with_config_when_config_provided(self, mocker, mock_config):
         """Should initialize detector with provided configuration."""
-        mocker.patch("pii_detector.service.detector.pii_detector.torch.cuda.is_available", return_value=False)
-        mocker.patch("pii_detector.service.detector.pii_detector.MemoryManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.ModelManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.EntityProcessor")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.torch.cuda.is_available", return_value=False)
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.MemoryManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.ModelManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.EntityProcessor")
         
         detector = PIIDetector(config=mock_config)
         
@@ -134,11 +131,11 @@ class TestPIIDetectorInitialization:
 
     def test_should_initialize_with_default_config_when_no_config_provided(self, mocker):
         """Should initialize detector with default configuration."""
-        mocker.patch("pii_detector.service.detector.pii_detector.torch.cuda.is_available", return_value=False)
-        mocker.patch("pii_detector.service.detector.pii_detector.MemoryManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.ModelManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.EntityProcessor")
-        mocker.patch("pii_detector.service.detector.pii_detector.DetectionConfig")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.torch.cuda.is_available", return_value=False)
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.MemoryManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.ModelManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.EntityProcessor")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.DetectionConfig")
         
         detector = PIIDetector()
         
@@ -146,10 +143,10 @@ class TestPIIDetectorInitialization:
 
     def test_should_use_cuda_when_available(self, mocker, mock_config):
         """Should use CUDA device when available."""
-        mocker.patch("pii_detector.service.detector.pii_detector.torch.cuda.is_available", return_value=True)
-        mocker.patch("pii_detector.service.detector.pii_detector.MemoryManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.ModelManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.EntityProcessor")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.torch.cuda.is_available", return_value=True)
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.MemoryManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.ModelManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.EntityProcessor")
         
         mock_config.device = None
         detector = PIIDetector(config=mock_config)
@@ -158,11 +155,11 @@ class TestPIIDetectorInitialization:
 
     def test_should_support_backward_compatible_constructor(self, mocker):
         """Should support old constructor signature for backward compatibility."""
-        mocker.patch("pii_detector.service.detector.pii_detector.torch.cuda.is_available", return_value=False)
-        mocker.patch("pii_detector.service.detector.pii_detector.MemoryManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.ModelManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.EntityProcessor")
-        mocker.patch("pii_detector.service.detector.pii_detector.DetectionConfig")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.torch.cuda.is_available", return_value=False)
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.MemoryManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.ModelManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.EntityProcessor")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.DetectionConfig")
         
         detector = PIIDetector(model_id="old-model", device="cpu", max_length=512)
         
@@ -178,10 +175,10 @@ class TestModelLoading:
 
     def test_should_download_model_successfully(self, mocker, mock_config):
         """Should download model using ModelManager."""
-        mocker.patch("pii_detector.service.detector.pii_detector.torch.cuda.is_available", return_value=False)
-        mocker.patch("pii_detector.service.detector.pii_detector.MemoryManager")
-        mock_model_manager = mocker.patch("pii_detector.service.detector.pii_detector.ModelManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.EntityProcessor")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.torch.cuda.is_available", return_value=False)
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.MemoryManager")
+        mock_model_manager = mocker.patch("pii_detector.infrastructure.detector.pii_detector.ModelManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.EntityProcessor")
         
         detector = PIIDetector(config=mock_config)
         detector.download_model()
@@ -190,11 +187,11 @@ class TestModelLoading:
 
     def test_should_load_model_successfully(self, mocker, mock_config, mock_tokenizer, mock_model):
         """Should load model components and create pipeline."""
-        mocker.patch("pii_detector.service.detector.pii_detector.torch.cuda.is_available", return_value=False)
-        mocker.patch("pii_detector.service.detector.pii_detector.MemoryManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.ModelManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.EntityProcessor")
-        mock_pipeline_func = mocker.patch("pii_detector.service.detector.pii_detector.pipeline")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.torch.cuda.is_available", return_value=False)
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.MemoryManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.ModelManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.EntityProcessor")
+        mock_pipeline_func = mocker.patch("pii_detector.infrastructure.detector.pii_detector.pipeline")
         
         detector = PIIDetector(config=mock_config)
         detector.model_manager.load_model_components.return_value = (mock_tokenizer, mock_model)
@@ -208,10 +205,10 @@ class TestModelLoading:
 
     def test_should_raise_error_when_model_loading_fails(self, mocker, mock_config):
         """Should raise exception when model loading fails."""
-        mocker.patch("pii_detector.service.detector.pii_detector.torch.cuda.is_available", return_value=False)
-        mocker.patch("pii_detector.service.detector.pii_detector.MemoryManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.ModelManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.EntityProcessor")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.torch.cuda.is_available", return_value=False)
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.MemoryManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.ModelManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.EntityProcessor")
         
         detector = PIIDetector(config=mock_config)
         detector.model_manager.load_model_components.side_effect = Exception("Load error")
@@ -649,7 +646,7 @@ class TestUtilities:
 
     def test_should_create_pipeline(self, detector_with_mocks, mocker):
         """Should create inference pipeline correctly."""
-        mock_pipeline_func = mocker.patch("pii_detector.service.detector.pii_detector.pipeline")
+        mock_pipeline_func = mocker.patch("pii_detector.infrastructure.detector.pii_detector.pipeline")
         
         pipeline = detector_with_mocks._create_pipeline()
         
@@ -997,10 +994,10 @@ class TestCleanup:
 
     def test_should_cleanup_on_destructor(self, mocker):
         """Should cleanup resources when detector is destroyed."""
-        mocker.patch("pii_detector.service.detector.pii_detector.torch.cuda.is_available", return_value=False)
-        mocker.patch("pii_detector.service.detector.pii_detector.MemoryManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.ModelManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.EntityProcessor")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.torch.cuda.is_available", return_value=False)
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.MemoryManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.ModelManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.EntityProcessor")
         
         detector = PIIDetector()
         detector.model = mocker.MagicMock()
@@ -1014,10 +1011,10 @@ class TestCleanup:
 
     def test_should_handle_cleanup_errors_gracefully(self, mocker):
         """Should handle errors during cleanup gracefully."""
-        mocker.patch("pii_detector.service.detector.pii_detector.torch.cuda.is_available", return_value=False)
-        mocker.patch("pii_detector.service.detector.pii_detector.MemoryManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.ModelManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.EntityProcessor")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.torch.cuda.is_available", return_value=False)
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.MemoryManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.ModelManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.EntityProcessor")
         
         detector = PIIDetector()
         detector.memory_manager.clear_cache.side_effect = Exception("Cleanup error")
@@ -1038,14 +1035,14 @@ class TestModuleLevelFunctions:
         setup_logging(level=logging.DEBUG)
         
         # Verify logging is configured
-        logger = logging.getLogger("pii_detector.service.detector.pii_detector")
+        logger = logging.getLogger("pii_detector.infrastructure.detector.pii_detector")
         assert logger is not None
 
     def test_should_use_default_logging_level(self):
         """Should use INFO as default logging level."""
         setup_logging()
         
-        logger = logging.getLogger("pii_detector.service.detector.pii_detector")
+        logger = logging.getLogger("pii_detector.infrastructure.detector.pii_detector")
         assert logger is not None
 
 
@@ -1092,10 +1089,10 @@ class TestParametrizedScenarios:
     @pytest.mark.parametrize("device", ["cpu", "cuda"])
     def test_should_support_different_devices(self, mocker, mock_config, device):
         """Should support both CPU and CUDA devices."""
-        mocker.patch("pii_detector.service.detector.pii_detector.torch.cuda.is_available", return_value=(device == "cuda"))
-        mocker.patch("pii_detector.service.detector.pii_detector.MemoryManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.ModelManager")
-        mocker.patch("pii_detector.service.detector.pii_detector.EntityProcessor")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.torch.cuda.is_available", return_value=(device == "cuda"))
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.MemoryManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.ModelManager")
+        mocker.patch("pii_detector.infrastructure.detector.pii_detector.EntityProcessor")
         
         mock_config.device = device
         detector = PIIDetector(config=mock_config)

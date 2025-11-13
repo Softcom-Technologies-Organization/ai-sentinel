@@ -38,15 +38,21 @@ import {RawStreamPayload} from '../../core/models/stream-event-type';
 import {HistoryEntry} from '../../core/models/history-entry';
 import {ItemsBySpace} from '../../core/models/item-by-space';
 import {PiiItem} from '../../core/models/pii-item';
+import {SpaceUpdateInfo} from '../../core/models/space-update-info.model';
 import {Ripple} from 'primeng/ripple';
 import {TooltipModule} from 'primeng/tooltip';
 import {DataViewModule} from 'primeng/dataview';
 import {ProgressBarModule} from 'primeng/progressbar';
 import {SkeletonModule} from 'primeng/skeleton';
+import {MessageService} from 'primeng/api';
+import {ToastService} from '../../core/services/toast.service';
 import {TestIds} from '../test-ids.constants';
+import {ToastModule} from 'primeng/toast';
+import {SortEvent} from 'primeng/api';
 import {ConfirmationService} from 'primeng/api';
 import {ConfirmDialogModule} from 'primeng/confirmdialog';
 import {CONFIRMATION_MESSAGES} from './confirmation-messages.constants';
+
 
 /**
  * Dashboard to orchestrate scanning all Confluence spaces sequentially.
@@ -55,8 +61,8 @@ import {CONFIRMATION_MESSAGES} from './confirmation-messages.constants';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, ToggleSwitchModule, PiiItemCardComponent, BadgeModule, InputTextModule, SelectModule, TableModule, TagModule, Ripple, TooltipModule, DataViewModule, ProgressBarModule, SkeletonModule, ConfirmDialogModule],
-  providers: [ConfirmationService],
+  imports: [CommonModule, FormsModule, ButtonModule, ToggleSwitchModule, PiiItemCardComponent, BadgeModule, InputTextModule, SelectModule, TableModule, TagModule, Ripple, TooltipModule, DataViewModule, ProgressBarModule, SkeletonModule, ConfirmDialogModule, ToastModule],
+  providers: [ConfirmationService, MessageService, ToastService],
   templateUrl: './spaces-dashboard.component.html',
   styleUrl: './spaces-dashboard.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -65,7 +71,9 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly sentinelleApiService = inject(SentinelleApiService);
   readonly spacesDashboardUtils = inject(SpacesDashboardUtils);
   readonly pollingService = inject(ConfluenceSpacesPollingService);
+  readonly toastService = inject(ToastService);
   readonly confirmationService = inject(ConfirmationService);
+
   private sub?: Subscription;
   private pollingSub?: Subscription;
 
@@ -99,6 +107,10 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly canStartScan = computed(() => !this.isStreaming() && !this.isSpacesLoading() && this.spaces().length > 0);
   readonly canResumeScan = computed(() => !this.isStreaming() && !this.isSpacesLoading() && !!this.lastScanMeta() && !this.isResuming());
 
+  // Sorting state
+  readonly sortField = signal<string | null>(null);
+  readonly sortOrder = signal<number>(1); // 1 for ascending, -1 for descending
+
   // Manual refresh state (Phase 1)
   readonly lastRefresh = signal<Date | null>(null);
   readonly isRefreshing = signal<boolean>(false);
@@ -107,9 +119,13 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly hasNewSpaces = signal<boolean>(false);
   readonly newSpacesCount = signal<number>(0);
 
+  // Space update info (to detect spaces modified since last scan)
+  readonly spacesUpdateInfo = signal<SpaceUpdateInfo[]>([]);
+
   ngOnInit(): void {
     this.fetchSpaces();
     this.loadLastScan();
+    this.loadSpacesUpdateInfo();
   }
 
   ngOnDestroy(): void {
@@ -122,9 +138,65 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     return this.spacesDashboardUtils.filteredSpaces();
   });
 
+  /**
+   * Sorted spaces based on current sort field and order.
+   * Supports sorting by:
+   * - name: alphabetical order
+   * - piiCount: by priority - high first, then medium, then low
+   */
+  readonly sortedSpaces = computed(() => {
+    const spaces = [...this.filteredSpaces()];
+    const field = this.sortField();
+    const order = this.sortOrder();
+
+    if (!field) {
+      return spaces;
+    }
+
+    return spaces.sort((a, b) => {
+      let compareValue = 0;
+
+      if (field === 'name') {
+        const nameA = (a.name ?? '').toLowerCase();
+        const nameB = (b.name ?? '').toLowerCase();
+        compareValue = nameA.localeCompare(nameB);
+      } else if (field === 'piiCount') {
+        // Sort by priority: high > medium > low (descending for each)
+        const priorities = ['high', 'medium', 'low'] as const;
+
+        for (const priority of priorities) {
+          const countA = a.counts?.[priority] ?? 0;
+          const countB = b.counts?.[priority] ?? 0;
+
+          if (countA !== countB) {
+            compareValue = countB - countA;
+            break;
+          }
+        }
+      }
+
+      return compareValue * order;
+    });
+  });
+
   onGlobalChange(v: string): void {
     this.globalFilter.set(v);
     this.spacesDashboardUtils.globalFilter.set(v);
+  }
+
+  /**
+   * Handle custom sort event from PrimeNG table.
+   * Updates sort field and order signals to trigger sortedSpaces() recomputation.
+   */
+  onCustomSort(event: SortEvent): void {
+    if (!event.field) {
+      this.sortField.set(null);
+      this.sortOrder.set(1);
+      return;
+    }
+
+    this.sortField.set(event.field);
+    this.sortOrder.set(event.order ?? 1);
   }
 
   // UI actions
@@ -183,6 +255,8 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     this.expandedRowKeys.set({});
     this.selectedSpaceKey.set(null);
     this.activeSpaceKey.set(null);
+    // Clear previous error toasts when starting a new scan
+    this.toastService.clearScanErrors();
     // Reinitialize UI decoration (status/counts/lastScanTs) for all known spaces
     try {
       this.spacesDashboardUtils.setSpaces(this.spaces());
@@ -455,6 +529,71 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Loads space update information to detect which spaces have been modified since last scan.
+   * Business purpose: enables visual indicators for spaces that may need re-scanning.
+   */
+  private loadSpacesUpdateInfo(): void {
+    this.sentinelleApiService.getSpacesUpdateInfo().subscribe({
+      next: (updateInfos) => {
+        this.spacesUpdateInfo.set(updateInfos);
+      },
+      error: (err) => {
+        console.error('[ui] Error loading spaces update info:', err);
+        this.spacesUpdateInfo.set([]);
+      }
+    });
+  }
+
+  /**
+   * Checks if a specific space has been updated since its last scan.
+   * Business purpose: used by template to show update indicator icons.
+   */
+  hasSpaceBeenUpdated(spaceKey: string): boolean {
+    const info = this.spacesUpdateInfo().find(i => i.spaceKey === spaceKey);
+    return info?.hasBeenUpdated ?? false;
+  }
+
+  /**
+   * Gets the update tooltip text for a space.
+   * Business purpose: provides human-readable details about what changed (pages/attachments).
+   */
+  getSpaceUpdateTooltip(spaceKey: string): string {
+    const info = this.spacesUpdateInfo().find(i => i.spaceKey === spaceKey);
+    if (!info?.hasBeenUpdated) {
+      return '';
+    }
+
+    const maxPerCategory = 5;
+
+    const parts: string[] = [];
+
+    const pages = Array.isArray(info.updatedPages) ? info.updatedPages : [];
+    if (pages.length > 0) {
+      const shown = pages.slice(0, maxPerCategory);
+      const more = pages.length - shown.length;
+      const list = `- ${shown.join('\n- ')}` + (more > 0 ? `\n… (+${more} de plus)` : '');
+      parts.push(`Pages modifiées :\n${list}`);
+    }
+
+    const attachments = Array.isArray(info.updatedAttachments) ? info.updatedAttachments : [];
+    if (attachments.length > 0) {
+      const shown = attachments.slice(0, maxPerCategory);
+      const more = attachments.length - shown.length;
+      const list = `- ${shown.join('\n- ')}` + (more > 0 ? `\n… (+${more} de plus)` : '');
+      parts.push(`Pièces jointes modifiées :\n${list}`);
+    }
+
+    // Fallback if no specific lists were provided by the backend
+    if (parts.length === 0) {
+      return 'Contenu modifié depuis le dernier scan';
+    }
+
+    // Note: do NOT include last scan date in tooltip per requirement
+    let tooltip = `Mis à jour : ${info.lastModified ? new Date(info.lastModified).toLocaleString('fr-FR') : 'Inconnue'}`;
+    return tooltip + '\n'+ parts.join('\n\n');
+  }
+
+  /**
    * Re-applies last known statuses and PII counts to UI spaces when the base list is (re)loaded.
    * Fixes race condition where loadLastScan() may finish before fetchSpaces(), causing badges not to refresh.
    */
@@ -522,7 +661,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
         this.handleItemEvent(payload);
         break;
       }
-      case 'error': {
+      case 'scanError': {
         this.handleStreamError(payload);
         break;
       }
@@ -643,15 +782,38 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Marks a space as failed on error events and updates UI.
+   * Marks a space as failed on error events, displays a sticky toast notification, and updates UI.
+   * IMPORTANT: Error events do not stop the scan - they are non-fatal and the scan continues.
    */
   private handleStreamError(payload: RawStreamPayload): void {
     const spaceKey = payload.spaceKey;
     if (!spaceKey) {
       return;
     }
-    this.upsertScanHistory(spaceKey, 'failed');
-    this.spacesDashboardUtils.updateSpace(spaceKey, { status: 'FAILED', lastScanTs: new Date().toISOString() });
+
+    // Extract error message from 'message' field (not 'errorMessage')
+    const errorMessage = (payload as any)?.message ?? (payload as any)?.errorMessage ?? 'Erreur inconnue';
+    const errorType = this.toastService.detectErrorType(errorMessage);
+
+    // Display sticky error toast with full context
+    this.toastService.showScanError({
+      scanId: payload.scanId ?? '',
+      spaceKey,
+      pageId: payload.pageId == null ? undefined : String(payload.pageId),
+      pageTitle: payload.pageTitle,
+      attachmentName: (payload as any)?.attachmentName,
+      errorMessage,
+      errorType
+    });
+
+    // DO NOT mark the space as FAILED - errors are non-fatal
+    // The scan continues and will emit complete event when done
+    // Only update the last scan timestamp
+    this.spacesDashboardUtils.updateSpace(spaceKey, { lastScanTs: new Date().toISOString() });
+
+    // Log the error but do not update scan history to 'failed'
+    // The space should remain in RUNNING status
+    this.append(`[ui] Error for space ${spaceKey}: ${errorMessage}`);
   }
 
   /**
@@ -741,7 +903,6 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     }
     this.history.set([...this.history(), { spaceKey, status }]);
   }
-
 
   private append(line: string): void {
     const next = [...this.lines(), line];

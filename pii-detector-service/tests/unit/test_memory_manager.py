@@ -10,7 +10,7 @@ import gc
 import pytest
 from unittest.mock import Mock, patch, call
 
-from pii_detector.service.detector.memory_manager import MemoryManager
+from pii_detector.infrastructure.model_management.memory_manager import MemoryManager
 
 
 class TestSetupMemoryOptimization:
@@ -68,21 +68,21 @@ class TestSetupMemoryOptimization:
 class TestOptimizeForDevice:
     """Test cases for optimize_for_device method."""
     
-    @patch('pii_detector.service.detector.memory_manager.torch')
+    @patch('pii_detector.infrastructure.model_management.memory_manager.torch')
     def test_should_set_single_thread_for_cpu(self, mock_torch):
         """Test that torch is configured for single thread on CPU."""
         MemoryManager.optimize_for_device('cpu')
         
         mock_torch.set_num_threads.assert_called_once_with(1)
     
-    @patch('pii_detector.service.detector.memory_manager.torch')
+    @patch('pii_detector.infrastructure.model_management.memory_manager.torch')
     def test_should_not_set_threads_for_cuda(self, mock_torch):
         """Test that torch threads are not set for CUDA device."""
         MemoryManager.optimize_for_device('cuda')
         
         mock_torch.set_num_threads.assert_not_called()
     
-    @patch('pii_detector.service.detector.memory_manager.torch')
+    @patch('pii_detector.infrastructure.model_management.memory_manager.torch')
     def test_should_not_set_threads_for_other_devices(self, mock_torch):
         """Test that torch threads are not set for other devices."""
         MemoryManager.optimize_for_device('mps')
@@ -90,7 +90,7 @@ class TestOptimizeForDevice:
         
         mock_torch.set_num_threads.assert_not_called()
     
-    @patch('pii_detector.service.detector.memory_manager.torch')
+    @patch('pii_detector.infrastructure.model_management.memory_manager.torch')
     def test_should_handle_case_sensitive_device_name(self, mock_torch):
         """Test that device name is case-sensitive."""
         # Only 'cpu' should trigger optimization, not 'CPU'
@@ -98,7 +98,7 @@ class TestOptimizeForDevice:
         
         mock_torch.set_num_threads.assert_not_called()
     
-    @patch('pii_detector.service.detector.memory_manager.torch')
+    @patch('pii_detector.infrastructure.model_management.memory_manager.torch')
     def test_should_be_callable_multiple_times(self, mock_torch):
         """Test that method can be called multiple times."""
         MemoryManager.optimize_for_device('cpu')
@@ -178,7 +178,7 @@ class TestEdgeCases:
     
     @patch('os.environ', {})
     @patch('warnings.filterwarnings')
-    @patch('pii_detector.service.detector.memory_manager.torch')
+    @patch('pii_detector.infrastructure.model_management.memory_manager.torch')
     @patch('gc.collect')
     def test_should_handle_complete_workflow(self, mock_gc, mock_torch, mock_filterwarnings):
         """Test complete workflow of memory optimization."""
@@ -196,7 +196,7 @@ class TestEdgeCases:
         mock_torch.set_num_threads.assert_called_once_with(1)
         mock_gc.assert_called_once()
     
-    @patch('pii_detector.service.detector.memory_manager.torch')
+    @patch('pii_detector.infrastructure.model_management.memory_manager.torch')
     def test_should_handle_empty_device_string(self, mock_torch):
         """Test handling of empty device string."""
         # Should not raise exception
@@ -217,7 +217,7 @@ class TestEdgeCases:
 class TestStaticMethods:
     """Test cases to verify static method behavior."""
     
-    @patch('pii_detector.service.detector.memory_manager.torch')
+    @patch('pii_detector.infrastructure.model_management.memory_manager.torch')
     def test_should_be_static_methods(self, mock_torch):
         """Test that all methods are static and don't require instance."""
         # Should not raise TypeError
@@ -225,7 +225,7 @@ class TestStaticMethods:
         MemoryManager.optimize_for_device('cpu')
         MemoryManager.clear_cache('cpu')
     
-    @patch('pii_detector.service.detector.memory_manager.torch')
+    @patch('pii_detector.infrastructure.model_management.memory_manager.torch')
     def test_should_not_maintain_state(self, mock_torch):
         """Test that MemoryManager does not maintain state between calls."""
         MemoryManager.optimize_for_device('cpu')

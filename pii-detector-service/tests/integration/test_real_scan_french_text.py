@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from service.detector.pii_detector import PIIDetector, PIIEntity
+from infrastructure.detector.pii_detector import PIIDetector, PIIEntity
 
 
 SAMPLE_TEXT = (

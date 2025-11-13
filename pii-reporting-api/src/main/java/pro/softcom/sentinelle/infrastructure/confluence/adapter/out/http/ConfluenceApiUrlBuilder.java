@@ -3,6 +3,7 @@ package pro.softcom.sentinelle.infrastructure.confluence.adapter.out.http;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import org.apache.commons.lang3.StringUtils;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.out.config.ConfluenceConnectionConfig;
 
 /**
@@ -77,5 +78,28 @@ public class ConfluenceApiUrlBuilder {
      */
     public URI buildConnectionTestUri() {
         return URI.create(config.getRestApiUrl() + config.spacePath());
+    }
+
+    /**
+     * Construit l'URI pour récupérer un espace avec ses permissions/data owners.
+     */
+    public URI buildSpaceUriWithPermissions(String spaceKey) {
+        var defaultSpaceExpands = config.defaultSpaceExpands();
+        var expandParam = StringUtils.isBlank(defaultSpaceExpands)
+                ? "permissions"
+                : defaultSpaceExpands + ",permissions";
+
+        return URI.create(
+                config.getRestApiUrl() + config.spacePath() + "/" + spaceKey + EXPAND_PARAM + expandParam
+        );
+    }
+
+    //TODO: not sure which method to keep during merge conflict resolving - remove if no need
+    public URI buildContentSearchModifiedSinceUri(String spaceKey, String sinceDate) {
+        var cql = String.format("lastModified>=\"%s\" AND space=\"%s\"", sinceDate, spaceKey);
+        var encodedCql = URLEncoder.encode(cql, StandardCharsets.UTF_8);
+        return URI.create(
+            config.getRestApiUrl() + config.searchContentPath() + "?cql=" + encodedCql
+                + "&expand=version,history.lastUpdated");
     }
 }

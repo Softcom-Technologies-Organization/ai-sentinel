@@ -9,8 +9,8 @@ creating PIIEntity objects, and managing label mappings.
 import logging
 from typing import Dict, List
 
-from .models.pii_entity import PIIEntity
-from .models.pii_type import PIIType
+from domain.entity.pii_entity import PIIEntity
+from domain.entity.pii_type import PIIType
 
 
 class EntityProcessor:

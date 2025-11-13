@@ -12,8 +12,7 @@ from typing import Dict, List, Optional, Tuple
 
 import toml
 
-from .models import PIIEntity, DetectionConfig, PIIDetectionError
-from .pii_detector_protocol import PIIDetectorProtocol
+from service.detector.models import PIIEntity, DetectionConfig, PIIDetectionError
 
 
 class RegexPattern:

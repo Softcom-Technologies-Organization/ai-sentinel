@@ -14,12 +14,12 @@ import unicodedata
 from transformers import AutoTokenizer, AutoModelForTokenClassification, \
   pipeline
 
-from .entity_processor import EntityProcessor
+from domain.service.entity_processor import EntityProcessor
 # Import managers
-from .memory_manager import MemoryManager
-from .model_manager import ModelManager
+from infrastructure.model_management.memory_manager import MemoryManager
+from service.detector.model_manager import ModelManager
 # Import models from the models package
-from .models import (
+from service.detector.models import (
   PIIEntity,
   DetectionConfig,
   PIIDetectionError,

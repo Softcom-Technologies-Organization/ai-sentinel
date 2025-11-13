@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from .detection_config import DetectionConfig
-from .model_config import ModelConfig
+from application.config.model_config import ModelConfig
 from .server_config import ServerConfig
 
 

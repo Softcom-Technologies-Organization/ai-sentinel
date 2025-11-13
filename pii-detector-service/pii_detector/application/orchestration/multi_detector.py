@@ -23,11 +23,11 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Iterable, List, Optional, Tuple, Dict
 
-from .detection_merger import DetectionMerger
-from .detector_factory import DetectorFactory, create_default_factory
-from .pii_detector import DetectionConfig, PIIEntity
-from .pii_detector_protocol import PIIDetectorProtocol
-from ...config import get_config as get_app_config
+from domain.service.detection_merger import DetectionMerger
+from application.factory.detector_factory import DetectorFactory, create_default_factory
+from infrastructure.detector.pii_detector import DetectionConfig, PIIEntity
+from domain.port.pii_detector_protocol import PIIDetectorProtocol
+from application.config import get_config as get_app_config
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ def get_multi_model_ids_from_config() -> List[str]:
 
     Returns list of model_ids for all enabled models, sorted by priority.
     """
-    from .models.detection_config import _load_llm_config, get_enabled_models
+    from application.config.detection_policy import _load_llm_config, get_enabled_models
     
     try:
         config = _load_llm_config()
@@ -72,7 +72,7 @@ def should_use_multi_detector() -> bool:
     - multi_detector_enabled is true in config
     - AND at least 2 models are enabled
     """
-    from .models.detection_config import _load_llm_config, get_enabled_models
+    from application.config.detection_policy import _load_llm_config, get_enabled_models
     
     try:
         config = _load_llm_config()

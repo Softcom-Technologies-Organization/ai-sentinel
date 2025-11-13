@@ -13,8 +13,8 @@ import torch
 from huggingface_hub import hf_hub_download
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 
-from .models.detection_config import DetectionConfig
-from .models.exceptions import APIKeyError, ModelLoadError
+from application.config.detection_policy import DetectionConfig
+from domain.exception.exceptions import APIKeyError, ModelLoadError
 
 
 class ModelManager:
@@ -71,7 +71,7 @@ class ModelManager:
 
     def _get_api_key(self) -> str:
         """Get Hugging Face API key from centralized configuration."""
-        from config import get_config
+        from application.config import get_config
         
         try:
             config = get_config()

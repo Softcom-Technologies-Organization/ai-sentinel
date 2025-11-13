@@ -48,6 +48,8 @@ import {MessageService} from 'primeng/api';
 import {ToastService} from '../../core/services/toast.service';
 import {TestIds} from '../test-ids.constants';
 import {ToastModule} from 'primeng/toast';
+import {SortEvent} from 'primeng/api';
+
 
 /**
  * Dashboard to orchestrate scanning all Confluence spaces sequentially.
@@ -100,6 +102,10 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly canStartScan = computed(() => !this.isStreaming() && !this.isSpacesLoading() && this.spaces().length > 0);
   readonly canResumeScan = computed(() => !this.isStreaming() && !this.isSpacesLoading() && !!this.lastScanMeta() && !this.isResuming());
 
+  // Sorting state
+  readonly sortField = signal<string | null>(null);
+  readonly sortOrder = signal<number>(1); // 1 for ascending, -1 for descending
+
   // Manual refresh state (Phase 1)
   readonly lastRefresh = signal<Date | null>(null);
   readonly isRefreshing = signal<boolean>(false);
@@ -127,9 +133,65 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     return this.spacesDashboardUtils.filteredSpaces();
   });
 
+  /**
+   * Sorted spaces based on current sort field and order.
+   * Supports sorting by:
+   * - name: alphabetical order
+   * - piiCount: by priority - high first, then medium, then low
+   */
+  readonly sortedSpaces = computed(() => {
+    const spaces = [...this.filteredSpaces()];
+    const field = this.sortField();
+    const order = this.sortOrder();
+
+    if (!field) {
+      return spaces;
+    }
+
+    return spaces.sort((a, b) => {
+      let compareValue = 0;
+
+      if (field === 'name') {
+        const nameA = (a.name ?? '').toLowerCase();
+        const nameB = (b.name ?? '').toLowerCase();
+        compareValue = nameA.localeCompare(nameB);
+      } else if (field === 'piiCount') {
+        // Sort by priority: high > medium > low (descending for each)
+        const priorities = ['high', 'medium', 'low'] as const;
+
+        for (const priority of priorities) {
+          const countA = a.counts?.[priority] ?? 0;
+          const countB = b.counts?.[priority] ?? 0;
+
+          if (countA !== countB) {
+            compareValue = countB - countA;
+            break;
+          }
+        }
+      }
+
+      return compareValue * order;
+    });
+  });
+
   onGlobalChange(v: string): void {
     this.globalFilter.set(v);
     this.spacesDashboardUtils.globalFilter.set(v);
+  }
+
+  /**
+   * Handle custom sort event from PrimeNG table.
+   * Updates sort field and order signals to trigger sortedSpaces() recomputation.
+   */
+  onCustomSort(event: SortEvent): void {
+    if (!event.field) {
+      this.sortField.set(null);
+      this.sortOrder.set(1);
+      return;
+    }
+
+    this.sortField.set(event.field);
+    this.sortOrder.set(event.order ?? 1);
   }
 
   // UI actions

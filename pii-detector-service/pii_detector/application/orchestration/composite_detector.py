@@ -16,14 +16,13 @@ from __future__ import annotations
 import logging
 from typing import List, Optional, Tuple
 
-from .detection_merger import DetectionMerger
-from .multi_detector import MultiModelPIIDetector
-from .pii_detector_protocol import PIIDetectorProtocol
-from .regex_detector import RegexDetector
-from .models import PIIEntity, DetectionConfig
+from pii_detector.domain.service.detection_merger import DetectionMerger
+from pii_detector.domain.port.pii_detector_protocol import PIIDetectorProtocol
+from pii_detector.infrastructure.detector.regex_detector import RegexDetector
+from pii_detector.domain.entity.pii_entity import PIIEntity
 
 try:
-    from .presidio_detector import PresidioDetector
+    from infrastructure.detector.presidio_detector import PresidioDetector
     PRESIDIO_AVAILABLE = True
 except ImportError:
     PRESIDIO_AVAILABLE = False
@@ -328,7 +327,7 @@ def should_use_composite_detector() -> bool:
         True if composite detector should be used
     """
     try:
-        from .models.detection_config import _load_llm_config
+        from application.config.detection_policy import _load_llm_config
         
         config = _load_llm_config()
         detection_config = config.get("detection", {})
@@ -362,7 +361,7 @@ def _load_detection_config() -> Tuple[bool, bool]:
     Returns:
         Tuple of (regex_enabled, presidio_enabled)
     """
-    from .models.detection_config import _load_llm_config
+    from application.config.detection_policy import _load_llm_config
     
     try:
         config = _load_llm_config()

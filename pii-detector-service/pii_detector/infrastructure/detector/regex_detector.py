@@ -12,8 +12,9 @@ from typing import Dict, List, Optional, Tuple
 
 import toml
 
-from .models import PIIEntity, DetectionConfig, PIIDetectionError
-from .pii_detector_protocol import PIIDetectorProtocol
+from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.exception.exceptions import PIIDetectionError
 
 
 class RegexPattern:

@@ -122,7 +122,7 @@ def run_piiranha_detection(test_text):
             # Then try to import from the pii_detector directory
             try:
                 sys.path.insert(0, str(Path(__file__).parent.parent / "pii_detector"))
-                from service.detector.pii_detector import PIIDetector
+                from infrastructure.detector.pii_detector import PIIDetector
                 print("Imported PIIDetector from service.detector.pii_detector")
             except ImportError:
                 print("Error: Could not import PIIDetector class.")

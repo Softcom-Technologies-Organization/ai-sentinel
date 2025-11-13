@@ -14,8 +14,8 @@ from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 from presidio_analyzer import RecognizerResult
 
-from pii_detector.service.detector.presidio_detector import PresidioDetector
-from pii_detector.service.detector.models import PIIType
+from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
+from pii_detector.domain.entity.pii_type import PIIType
 
 
 class TestPresidioDetectorImprovements:

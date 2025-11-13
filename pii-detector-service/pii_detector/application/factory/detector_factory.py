@@ -10,9 +10,9 @@ from __future__ import annotations
 import logging
 from typing import Callable, Dict, Optional
 
-from .gliner_detector import GLiNERDetector
-from .models.detection_config import DetectionConfig
-from .pii_detector_protocol import PIIDetectorProtocol
+from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
+from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.port.pii_detector_protocol import PIIDetectorProtocol
 
 
 logger = logging.getLogger(__name__)
@@ -180,9 +180,9 @@ def create_default_factory() -> DetectorFactory:
     Returns:
         Configured DetectorFactory instance
     """
-    from .gliner_detector import GLiNERDetector
-    from .pii_detector import PIIDetector
-    from .regex_detector import RegexDetector
+    from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
+    from pii_detector.infrastructure.detector.pii_detector import PIIDetector
+    from pii_detector.infrastructure.detector.regex_detector import RegexDetector
     
     factory = DetectorFactory()
     

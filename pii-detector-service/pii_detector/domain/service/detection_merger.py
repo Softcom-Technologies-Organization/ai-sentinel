@@ -8,8 +8,8 @@ overlap resolution, and result fusion for multi-model PII detection.
 import logging
 from typing import Dict, List, Optional, Tuple
 
-from .models import PIIEntity
-from .pii_detector_protocol import PIIDetectorProtocol
+from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.domain.port.pii_detector_protocol import PIIDetectorProtocol
 
 
 class DetectionMerger:

@@ -8,9 +8,9 @@ covering model downloading, loading, and error handling scenarios.
 import pytest
 from unittest.mock import Mock, patch, MagicMock, call
 
-from pii_detector.service.detector.model_manager import ModelManager
-from pii_detector.service.detector.models.detection_config import DetectionConfig
-from pii_detector.service.detector.models.exceptions import APIKeyError, ModelLoadError
+from pii_detector.infrastructure.model_management.model_manager import ModelManager
+from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.exception.exceptions import APIKeyError, ModelLoadError
 
 
 class TestModelManagerInit:
@@ -25,7 +25,7 @@ class TestModelManagerInit:
         
         assert manager.config == config
         assert manager.logger is not None
-        assert manager.logger.name == "pii_detector.service.detector.model_manager.ModelManager"
+        assert manager.logger.name == "pii_detector.infrastructure.model_management.model_manager.ModelManager"
     
     def test_should_store_config_reference(self):
         """Test that config is stored as instance variable."""
@@ -40,7 +40,7 @@ class TestModelManagerInit:
 class TestDownloadModel:
     """Test cases for download_model method."""
     
-    @patch('pii_detector.service.detector.model_manager.hf_hub_download')
+    @patch('pii_detector.infrastructure.model_management.model_manager.hf_hub_download')
     def test_should_download_default_files(self, mock_hf_download):
         """Test downloading model with default filenames."""
         config = Mock(spec=DetectionConfig)
@@ -61,7 +61,7 @@ class TestDownloadModel:
             assert call_kwargs["filename"] == filename
             assert call_kwargs["token"] == "test-key"
     
-    @patch('pii_detector.service.detector.model_manager.hf_hub_download')
+    @patch('pii_detector.infrastructure.model_management.model_manager.hf_hub_download')
     def test_should_use_custom_filenames_when_provided(self, mock_hf_download):
         """Test downloading with custom filenames."""
         config = Mock(spec=DetectionConfig)
@@ -84,7 +84,7 @@ class TestDownloadModel:
         # Verify logging
         assert any("Using custom filenames" in str(call) for call in mock_info.call_args_list)
     
-    @patch('pii_detector.service.detector.model_manager.hf_hub_download')
+    @patch('pii_detector.infrastructure.model_management.model_manager.hf_hub_download')
     def test_should_raise_error_on_download_failure(self, mock_hf_download):
         """Test that exceptions are re-raised on download failure."""
         config = Mock(spec=DetectionConfig)
@@ -103,7 +103,7 @@ class TestDownloadModel:
                 assert exc_info.value == error
                 mock_error.assert_called_once()
     
-    @patch('pii_detector.service.detector.model_manager.hf_hub_download')
+    @patch('pii_detector.infrastructure.model_management.model_manager.hf_hub_download')
     def test_should_log_download_progress(self, mock_hf_download):
         """Test that download progress is logged."""
         config = Mock(spec=DetectionConfig)
@@ -125,9 +125,9 @@ class TestDownloadModel:
 class TestLoadModelComponents:
     """Test cases for load_model_components method."""
     
-    @patch('pii_detector.service.detector.model_manager.AutoModelForTokenClassification')
-    @patch('pii_detector.service.detector.model_manager.AutoTokenizer')
-    @patch('pii_detector.service.detector.model_manager.torch')
+    @patch('pii_detector.infrastructure.model_management.model_manager.AutoModelForTokenClassification')
+    @patch('pii_detector.infrastructure.model_management.model_manager.AutoTokenizer')
+    @patch('pii_detector.infrastructure.model_management.model_manager.torch')
     def test_should_load_tokenizer_and_model(self, mock_torch, mock_tokenizer_class, mock_model_class):
         """Test successful loading of model components."""
         config = Mock(spec=DetectionConfig)
@@ -153,8 +153,8 @@ class TestLoadModelComponents:
         assert tokenizer == mock_tokenizer
         assert model == mock_model
     
-    @patch('pii_detector.service.detector.model_manager.AutoModelForTokenClassification')
-    @patch('pii_detector.service.detector.model_manager.AutoTokenizer')
+    @patch('pii_detector.infrastructure.model_management.model_manager.AutoModelForTokenClassification')
+    @patch('pii_detector.infrastructure.model_management.model_manager.AutoTokenizer')
     def test_should_raise_model_load_error_on_failure(self, mock_tokenizer_class, mock_model_class):
         """Test ModelLoadError when loading fails."""
         config = Mock(spec=DetectionConfig)
@@ -174,7 +174,7 @@ class TestLoadModelComponents:
 class TestLoadTokenizer:
     """Test cases for _load_tokenizer method."""
     
-    @patch('pii_detector.service.detector.model_manager.AutoTokenizer')
+    @patch('pii_detector.infrastructure.model_management.model_manager.AutoTokenizer')
     def test_should_load_tokenizer_with_correct_parameters(self, mock_tokenizer_class):
         """Test tokenizer is loaded with correct configuration."""
         config = Mock(spec=DetectionConfig)
@@ -200,8 +200,8 @@ class TestLoadTokenizer:
 class TestLoadModel:
     """Test cases for _load_model method."""
     
-    @patch('pii_detector.service.detector.model_manager.AutoModelForTokenClassification')
-    @patch('pii_detector.service.detector.model_manager.torch')
+    @patch('pii_detector.infrastructure.model_management.model_manager.AutoModelForTokenClassification')
+    @patch('pii_detector.infrastructure.model_management.model_manager.torch')
     def test_should_load_model_for_cpu(self, mock_torch, mock_model_class):
         """Test model loading for CPU device."""
         config = Mock(spec=DetectionConfig)
@@ -229,8 +229,8 @@ class TestLoadModel:
         mock_model.eval.assert_called_once()
         assert result == mock_model
     
-    @patch('pii_detector.service.detector.model_manager.AutoModelForTokenClassification')
-    @patch('pii_detector.service.detector.model_manager.torch')
+    @patch('pii_detector.infrastructure.model_management.model_manager.AutoModelForTokenClassification')
+    @patch('pii_detector.infrastructure.model_management.model_manager.torch')
     def test_should_load_model_for_cuda(self, mock_torch, mock_model_class):
         """Test model loading for CUDA device."""
         config = Mock(spec=DetectionConfig)
@@ -255,8 +255,8 @@ class TestLoadModel:
         mock_model.to.assert_called_once_with('cuda')
         mock_model.eval.assert_called_once()
     
-    @patch('pii_detector.service.detector.model_manager.AutoModelForTokenClassification')
-    @patch('pii_detector.service.detector.model_manager.torch')
+    @patch('pii_detector.infrastructure.model_management.model_manager.AutoModelForTokenClassification')
+    @patch('pii_detector.infrastructure.model_management.model_manager.torch')
     def test_should_auto_detect_device_when_none(self, mock_torch, mock_model_class):
         """Test device auto-detection when config.device is None."""
         config = Mock(spec=DetectionConfig)
@@ -277,8 +277,8 @@ class TestLoadModel:
         
         mock_model.to.assert_called_once_with('cpu')
     
-    @patch('pii_detector.service.detector.model_manager.AutoModelForTokenClassification')
-    @patch('pii_detector.service.detector.model_manager.torch')
+    @patch('pii_detector.infrastructure.model_management.model_manager.AutoModelForTokenClassification')
+    @patch('pii_detector.infrastructure.model_management.model_manager.torch')
     def test_should_fallback_without_low_cpu_mem_usage(self, mock_torch, mock_model_class):
         """Test fallback when accelerate is not available."""
         config = Mock(spec=DetectionConfig)
@@ -312,8 +312,8 @@ class TestLoadModel:
         mock_warning.assert_called_once()
         assert result == mock_model
     
-    @patch('pii_detector.service.detector.model_manager.AutoModelForTokenClassification')
-    @patch('pii_detector.service.detector.model_manager.torch')
+    @patch('pii_detector.infrastructure.model_management.model_manager.AutoModelForTokenClassification')
+    @patch('pii_detector.infrastructure.model_management.model_manager.torch')
     def test_should_disable_gradients(self, mock_torch, mock_model_class):
         """Test that gradients are disabled for inference."""
         config = Mock(spec=DetectionConfig)
@@ -340,7 +340,7 @@ class TestLoadModel:
 class TestEdgeCases:
     """Test cases for edge cases and integration scenarios."""
     
-    @patch('pii_detector.service.detector.model_manager.hf_hub_download')
+    @patch('pii_detector.infrastructure.model_management.model_manager.hf_hub_download')
     def test_should_handle_custom_filenames_partially_specified(self, mock_hf_download):
         """Test custom filenames with only some files specified."""
         config = Mock(spec=DetectionConfig)
@@ -358,9 +358,9 @@ class TestEdgeCases:
         assert "model.safetensors" in filenames  # default
         assert "tokenizer.json" in filenames  # default
     
-    @patch('pii_detector.service.detector.model_manager.AutoModelForTokenClassification')
-    @patch('pii_detector.service.detector.model_manager.AutoTokenizer')
-    @patch('pii_detector.service.detector.model_manager.torch')
+    @patch('pii_detector.infrastructure.model_management.model_manager.AutoModelForTokenClassification')
+    @patch('pii_detector.infrastructure.model_management.model_manager.AutoTokenizer')
+    @patch('pii_detector.infrastructure.model_management.model_manager.torch')
     def test_should_handle_complete_workflow(self, mock_torch, mock_tokenizer_class, mock_model_class):
         """Test complete workflow from initialization to loading."""
         config = Mock(spec=DetectionConfig)

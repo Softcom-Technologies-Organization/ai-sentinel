@@ -23,11 +23,11 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Iterable, List, Optional, Tuple, Dict
 
-from .detection_merger import DetectionMerger
-from .detector_factory import DetectorFactory, create_default_factory
-from .pii_detector import DetectionConfig, PIIEntity
-from .pii_detector_protocol import PIIDetectorProtocol
-from ...config import get_config as get_app_config
+from pii_detector.domain.service.detection_merger import DetectionMerger
+from pii_detector.application.factory.detector_factory import DetectorFactory, create_default_factory
+from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.domain.port.pii_detector_protocol import PIIDetectorProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,8 @@ logger = logging.getLogger(__name__)
 def _get_provenance_logging() -> bool:
     """Get provenance logging setting from centralized configuration."""
     try:
+        # Lazy import to avoid circular dependency
+        from pii_detector.config import get_config as get_app_config
         cfg = get_app_config()
         return cfg.detection.multi_detector_log_provenance
     except (ValueError, AttributeError, ImportError):
@@ -50,7 +52,7 @@ def get_multi_model_ids_from_config() -> List[str]:
 
     Returns list of model_ids for all enabled models, sorted by priority.
     """
-    from .models.detection_config import _load_llm_config, get_enabled_models
+    from pii_detector.application.config.detection_policy import _load_llm_config, get_enabled_models
     
     try:
         config = _load_llm_config()
@@ -72,7 +74,7 @@ def should_use_multi_detector() -> bool:
     - multi_detector_enabled is true in config
     - AND at least 2 models are enabled
     """
-    from .models.detection_config import _load_llm_config, get_enabled_models
+    from pii_detector.application.config.detection_policy import _load_llm_config, get_enabled_models
     
     try:
         config = _load_llm_config()

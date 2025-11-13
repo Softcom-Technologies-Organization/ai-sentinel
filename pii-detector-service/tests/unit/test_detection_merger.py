@@ -8,8 +8,8 @@ covering deduplication, overlap resolution, and provenance logging.
 import pytest
 from unittest.mock import Mock, patch
 
-from pii_detector.service.detector.detection_merger import DetectionMerger
-from pii_detector.service.detector.models import PIIEntity
+from pii_detector.domain.service.detection_merger import DetectionMerger
+from pii_detector.domain.entity.pii_entity import PIIEntity
 
 
 class TestDetectionMergerInitialization:

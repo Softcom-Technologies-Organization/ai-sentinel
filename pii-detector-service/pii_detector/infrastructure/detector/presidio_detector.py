@@ -22,8 +22,8 @@ import toml
 from presidio_analyzer import AnalyzerEngine, RecognizerRegistry
 from presidio_analyzer.nlp_engine import NlpEngineProvider
 
-from .pii_detector_protocol import PIIDetectorProtocol
-from .models import PIIEntity, PIIType
+from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.domain.entity.pii_type import PIIType
 
 
 logger = logging.getLogger(__name__)
@@ -624,7 +624,7 @@ def should_use_presidio_detector() -> bool:
         True if Presidio detector should be used
     """
     try:
-        from .models.detection_config import _load_llm_config
+        from application.config.detection_policy import _load_llm_config
         
         config = _load_llm_config()
         

@@ -14,17 +14,13 @@ import unicodedata
 from transformers import AutoTokenizer, AutoModelForTokenClassification, \
   pipeline
 
-from .entity_processor import EntityProcessor
+from pii_detector.domain.service.entity_processor import EntityProcessor
+from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.exception.exceptions import PIIDetectionError, ModelNotLoadedError
 # Import managers
-from .memory_manager import MemoryManager
-from .model_manager import ModelManager
-# Import models from the models package
-from .models import (
-  PIIEntity,
-  DetectionConfig,
-  PIIDetectionError,
-  ModelNotLoadedError,
-)
+from pii_detector.infrastructure.model_management.memory_manager import MemoryManager
+from pii_detector.infrastructure.model_management.model_manager import ModelManager
 
 # Constants
 _MODEL_NOT_LOADED_ERROR_MESSAGE = "The model must be loaded before use"
@@ -36,6 +32,7 @@ _SEPARATOR_CHARS = {" ", "\t", "\n", ",", ";", ":"}
 class PIIDetector:
     """
     Modern PII detector with improved code structure and error handling.
+
 
     This class follows SOLID principles and modern Python best practices
     for detecting Personally Identifiable Information in text.

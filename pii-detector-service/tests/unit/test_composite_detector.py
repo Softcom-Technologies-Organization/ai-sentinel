@@ -7,8 +7,8 @@ Tests the hybrid detection approach combining ML and regex detectors.
 import pytest
 from unittest.mock import Mock, MagicMock, patch
 
-from pii_detector.service.detector.composite_detector import CompositePIIDetector
-from pii_detector.service.detector.models import PIIEntity
+from pii_detector.application.orchestration.composite_detector import CompositePIIDetector
+from pii_detector.domain.entity.pii_entity import PIIEntity
 
 
 class TestCompositePIIDetector:
@@ -59,7 +59,7 @@ class TestCompositePIIDetector:
         assert composite.ml_detector is mock_ml_detector
         assert composite.enable_regex is False
     
-    @patch('pii_detector.service.detector.composite_detector.PresidioDetector')
+    @patch('pii_detector.application.orchestration.composite_detector.PresidioDetector')
     def test_Should_CallBothDetectors_When_BothEnabled(
         self, mock_presidio_class, mock_ml_detector, mock_regex_detector
     ):
@@ -106,7 +106,7 @@ class TestCompositePIIDetector:
         # Should have entities from both detectors
         assert len(entities) >= 1
     
-    @patch('pii_detector.service.detector.composite_detector.PresidioDetector')
+    @patch('pii_detector.application.orchestration.composite_detector.PresidioDetector')
     def test_Should_HandleMLFailure_When_ExceptionThrown(
         self, mock_presidio_class, mock_ml_detector, mock_regex_detector
     ):
@@ -142,7 +142,7 @@ class TestCompositePIIDetector:
         assert len(entities) >= 1
         assert any(e.pii_type == "EMAIL" for e in entities)
     
-    @patch('pii_detector.service.detector.composite_detector.PresidioDetector')
+    @patch('pii_detector.application.orchestration.composite_detector.PresidioDetector')
     def test_Should_HandleRegexFailure_When_ExceptionThrown(
         self, mock_presidio_class, mock_ml_detector, mock_regex_detector
     ):
@@ -194,7 +194,7 @@ class TestCompositePIIDetector:
         mock_ml_detector.detect_pii.assert_not_called()
         mock_regex_detector.detect_pii.assert_not_called()
     
-    @patch('pii_detector.service.detector.composite_detector.PresidioDetector')
+    @patch('pii_detector.application.orchestration.composite_detector.PresidioDetector')
     def test_Should_PassThreshold_When_Provided(
         self, mock_presidio_class, mock_ml_detector, mock_regex_detector
     ):
@@ -216,7 +216,7 @@ class TestCompositePIIDetector:
         mock_ml_detector.detect_pii.assert_called_once_with(text, threshold)
         mock_regex_detector.detect_pii.assert_called_once_with(text, threshold)
     
-    @patch('pii_detector.service.detector.composite_detector.PresidioDetector')
+    @patch('pii_detector.application.orchestration.composite_detector.PresidioDetector')
     def test_Should_MaskPII_When_DetectedEntities(
         self, mock_presidio_class, mock_ml_detector, mock_regex_detector
     ):
@@ -304,7 +304,7 @@ class TestCompositePIIDetector:
         
         assert composite.model_id == "composite-regex-only"
     
-    @patch('pii_detector.service.detector.composite_detector.RegexDetector')
+    @patch('pii_detector.application.orchestration.composite_detector.RegexDetector')
     def test_Should_ContinueWithoutRegex_When_InitializationFails(
         self, mock_regex_class, mock_ml_detector
     ):
@@ -327,10 +327,10 @@ class TestCompositePIIDetector:
 class TestCompositePIIDetectorIntegration:
     """Integration tests for CompositePIIDetector."""
     
-    @patch('pii_detector.service.detector.composite_detector.PresidioDetector')
+    @patch('pii_detector.application.orchestration.composite_detector.PresidioDetector')
     def test_Should_DetectWithRealRegex_When_IntegrationTest(self, mock_presidio_class):
         """Should detect PII using real regex detector."""
-        from pii_detector.service.detector.regex_detector import RegexDetector
+        from pii_detector.infrastructure.detector.regex_detector import RegexDetector
         
         # Mock presidio detector
         mock_presidio = Mock()

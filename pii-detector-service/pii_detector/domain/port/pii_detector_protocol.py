@@ -7,7 +7,7 @@ must follow, formalizing the Strategy pattern used in the detection architecture
 
 from typing import List, Optional, Protocol, Tuple
 
-from .models import PIIEntity
+from pii_detector.domain.entity.pii_entity import PIIEntity
 
 
 class PIIDetectorProtocol(Protocol):

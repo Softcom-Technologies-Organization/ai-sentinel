@@ -8,8 +8,8 @@ and loading of GLiNER models from Hugging Face.
 import logging
 from typing import Any
 
-from .models.detection_config import DetectionConfig
-from .models.exceptions import ModelLoadError
+from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.exception.exceptions import ModelLoadError
 
 
 class GLiNERModelManager:

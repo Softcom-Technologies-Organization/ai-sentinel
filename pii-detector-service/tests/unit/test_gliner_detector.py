@@ -10,20 +10,17 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 from typing import List, Dict
 
-from pii_detector.service.detector.gliner_detector import GLiNERDetector
-from pii_detector.service.detector.models import (
-    PIIEntity, 
-    DetectionConfig, 
-    ModelNotLoadedError, 
-    PIIDetectionError
-)
-from pii_detector.service.detector.semantic_chunker import ChunkResult
+from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
+from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.exception.exceptions import ModelNotLoadedError, PIIDetectionError
+from pii_detector.infrastructure.text_processing.semantic_chunker import ChunkResult
 
 
 class TestGLiNERDetectorInitialization:
     """Test cases for GLiNERDetector initialization."""
     
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_initialize_with_default_config(self, mock_manager_class):
         """Test initialization with default configuration."""
         detector = GLiNERDetector()
@@ -36,7 +33,7 @@ class TestGLiNERDetectorInitialization:
         assert isinstance(detector.log_throughput, bool)
         mock_manager_class.assert_called_once()
     
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_initialize_with_custom_config(self, mock_manager_class):
         """Test initialization with custom configuration."""
         config = DetectionConfig(
@@ -52,7 +49,7 @@ class TestGLiNERDetectorInitialization:
         assert detector.config.threshold == 0.7
         mock_manager_class.assert_called_once_with(config)
     
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_have_model_id_property(self, mock_manager_class):
         """Test model_id property for backward compatibility."""
         config = DetectionConfig(model_id="test-model-id")
@@ -64,7 +61,7 @@ class TestGLiNERDetectorInitialization:
 class TestModelManagement:
     """Test cases for model loading and management."""
     
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_download_model(self, mock_manager_class):
         """Test model download."""
         mock_manager = Mock()
@@ -75,8 +72,8 @@ class TestModelManagement:
         
         mock_manager.download_model.assert_called_once()
     
-    @patch('pii_detector.service.detector.gliner_detector.create_chunker')
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.create_chunker')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     @patch('transformers.AutoTokenizer')
     def test_should_load_model_successfully(self, mock_tokenizer_class, mock_manager_class, mock_create_chunker):
         """Test successful model loading with semantic chunker."""
@@ -104,8 +101,8 @@ class TestModelManagement:
         assert detector.model is mock_model
         assert detector.semantic_chunker is mock_chunker
     
-    @patch('pii_detector.service.detector.gliner_detector.create_chunker')
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.create_chunker')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     @patch('transformers.AutoTokenizer')
     def test_should_use_fallback_tokenizer(self, mock_tokenizer_class, mock_manager_class, mock_create_chunker):
         """Test loading with fallback tokenizer."""
@@ -133,8 +130,8 @@ class TestModelManagement:
         
         mock_tokenizer_class.from_pretrained.assert_called_once()
     
-    @patch('pii_detector.service.detector.gliner_detector.create_chunker')
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.create_chunker')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     @patch('transformers.AutoTokenizer')
     def test_should_raise_error_when_fallback_chunker_created(self, mock_tokenizer_class, mock_manager_class, mock_create_chunker):
         """Test error when fallback chunker is created."""
@@ -164,7 +161,7 @@ class TestModelManagement:
 class TestPIIDetection:
     """Test cases for PII detection."""
     
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_raise_error_when_model_not_loaded(self, mock_manager_class):
         """Test error when detecting without loaded model."""
         detector = GLiNERDetector()
@@ -172,7 +169,7 @@ class TestPIIDetection:
         with pytest.raises(ModelNotLoadedError):
             detector.detect_pii("test text")
     
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_detect_pii_successfully(self, mock_manager_class):
         """Test successful PII detection."""
         detector = GLiNERDetector()
@@ -189,7 +186,7 @@ class TestPIIDetection:
 class TestPIIMasking:
     """Test cases for PII masking."""
     
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_mask_pii_entities(self, mock_manager_class):
         """Test PII masking functionality."""
         detector = GLiNERDetector()
@@ -207,7 +204,7 @@ class TestPIIMasking:
 class TestConfiguration:
     """Test cases for configuration loading."""
     
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_load_pii_type_mapping_from_config(self, mock_manager_class):
         """Test loading PII type mapping from configuration."""
         config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
@@ -217,7 +214,7 @@ class TestConfiguration:
         assert isinstance(detector.pii_type_mapping, dict)
         assert len(detector.pii_type_mapping) > 0
     
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_use_default_mapping_when_config_missing(self, mock_manager_class):
         """Test using default mapping when config is missing."""
         config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
@@ -226,7 +223,7 @@ class TestConfiguration:
         default_mapping = detector._get_default_mapping()
         assert detector.pii_type_mapping == default_mapping
     
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_get_gliner_labels(self, mock_manager_class):
         """Test getting GLiNER labels from mapping."""
         config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
@@ -238,7 +235,7 @@ class TestConfiguration:
         assert len(labels) > 0
         assert "email" in labels
     
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_convert_gliner_entities(self, mock_manager_class):
         """Test conversion from GLiNER format to PIIEntity format."""
         config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
@@ -255,7 +252,7 @@ class TestConfiguration:
         assert result[0].text == "john@example.com"
         assert result[0].pii_type == "EMAIL"
     
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_apply_masks_correctly(self, mock_manager_class):
         """Test applying masks to detected entities."""
         config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
@@ -271,7 +268,7 @@ class TestConfiguration:
         
         assert result == "Contact [EMAIL] and call [PHONE]"
     
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_generate_detection_id(self, mock_manager_class):
         """Test detection ID generation."""
         config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
@@ -286,7 +283,7 @@ class TestConfiguration:
 class TestChunkingDetection:
     """Test cases for detection with chunking."""
     
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_raise_error_when_chunker_not_initialized(self, mock_manager_class):
         """Test error when chunker is not initialized."""
         detector = GLiNERDetector()
@@ -296,7 +293,7 @@ class TestChunkingDetection:
         with pytest.raises(RuntimeError, match="Semantic chunker not initialized"):
             detector._detect_pii_with_chunking("test", 0.5, "test_id")
     
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_detect_with_chunking_successfully(self, mock_manager_class):
         """Test successful detection with chunking."""
         detector = GLiNERDetector()
@@ -325,7 +322,7 @@ class TestChunkingDetection:
 class TestCleanup:
     """Test cases for cleanup and destruction."""
     
-    @patch('pii_detector.service.detector.gliner_detector.GLiNERModelManager')
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_cleanup_on_destruction(self, mock_manager_class):
         """Test cleanup when detector is destroyed."""
         detector = GLiNERDetector()

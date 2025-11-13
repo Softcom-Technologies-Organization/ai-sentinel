@@ -7,7 +7,12 @@ to ensure Protobuf compatibility, especially for NumPy types from Presidio detec
 
 import pytest
 from unittest.mock import Mock, MagicMock
-from pii_detector.service.server.pii_service import PIIDetectionServicer
+import importlib
+
+# Import from module with reserved keyword 'in'
+pii_service = importlib.import_module('pii_detector.infrastructure.adapter.in.grpc.pii_service')
+PIIDetectionServicer = pii_service.PIIDetectionServicer
+
 from pii_detector.proto.generated import pii_detection_pb2
 
 
@@ -196,7 +201,7 @@ class TestProtobufTypeConversion:
         Then: Values should be converted to native Python types
         """
         import numpy as np
-        from pii_detector.service.detector.pii_detector import PIIEntity
+        from pii_detector.domain.entity.pii_entity import PIIEntity
         
         entities = [
             PIIEntity(

@@ -171,7 +171,7 @@ class GLiNERDetector:
         Returns:
             Dictionary mapping GLiNER labels to PII types
         """
-        from application.config.detection_policy import _load_llm_config
+        from pii_detector.application.config.detection_policy import _load_llm_config
         
         try:
             config = _load_llm_config()
@@ -223,7 +223,7 @@ class GLiNERDetector:
         Returns:
             True if throughput logging is enabled, False otherwise
         """
-        from application.config.detection_policy import _load_llm_config
+        from pii_detector.application.config.detection_policy import _load_llm_config
         
         try:
             config = _load_llm_config()
@@ -240,7 +240,7 @@ class GLiNERDetector:
         Returns:
             Dictionary mapping PII types to minimum confidence thresholds
         """
-        from application.config.detection_policy import _load_llm_config
+        from pii_detector.application.config.detection_policy import _load_llm_config
         
         try:
             config = _load_llm_config()
@@ -266,7 +266,7 @@ class GLiNERDetector:
         Returns:
             Tuple of (parallel_enabled, max_workers)
         """
-        from application.config.detection_policy import _load_llm_config
+        from pii_detector.application.config.detection_policy import _load_llm_config
         
         try:
             config = _load_llm_config()

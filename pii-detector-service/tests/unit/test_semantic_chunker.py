@@ -12,7 +12,7 @@ from unittest.mock import Mock, MagicMock, patch
 
 import pytest
 
-from pii_detector.service.detector.semantic_chunker import (
+from pii_detector.infrastructure.text_processing.semantic_chunker import (
     ChunkResult,
     SemanticTextChunker,
     FallbackChunker,
@@ -89,8 +89,8 @@ class TestChunkResult:
 class TestSemanticTextChunkerInitialization:
     """Test suite for SemanticTextChunker initialization."""
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_initialize_with_valid_parameters(self, mock_semchunk, mock_tokenizer):
         """Should initialize semantic chunker with valid parameters."""
         mock_semchunk.chunkerify.return_value = Mock()
@@ -106,7 +106,7 @@ class TestSemanticTextChunkerInitialization:
         assert chunker.overlap == 100
         mock_semchunk.chunkerify.assert_called_once_with(mock_tokenizer, 768)
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', False)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', False)
     def test_should_raise_import_error_when_semchunk_not_available(self, mock_tokenizer):
         """Should raise ImportError when semchunk is not installed."""
         with pytest.raises(ImportError, match="semchunk library is required"):
@@ -116,8 +116,8 @@ class TestSemanticTextChunkerInitialization:
                 overlap=100
             )
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_raise_value_error_when_chunk_size_less_than_overlap(
         self, mock_semchunk, mock_tokenizer
     ):
@@ -129,8 +129,8 @@ class TestSemanticTextChunkerInitialization:
                 overlap=100
             )
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_use_custom_logger_when_provided(
         self, mock_semchunk, mock_tokenizer, logger_mock
     ):
@@ -147,8 +147,8 @@ class TestSemanticTextChunkerInitialization:
         assert chunker.logger == logger_mock
         logger_mock.info.assert_called_once()
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_create_default_logger_when_not_provided(
         self, mock_semchunk, mock_tokenizer
     ):
@@ -171,8 +171,8 @@ class TestSemanticTextChunkerInitialization:
 class TestSemanticTextChunkerChunking:
     """Test suite for SemanticTextChunker text chunking operations."""
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_chunk_text_successfully(
         self, mock_semchunk, mock_tokenizer, sample_text
     ):
@@ -194,8 +194,8 @@ class TestSemanticTextChunkerChunking:
         assert results[1].text == "Second chunk."
         assert isinstance(results[0], ChunkResult)
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_return_empty_list_for_empty_text(
         self, mock_semchunk, mock_tokenizer
     ):
@@ -212,8 +212,8 @@ class TestSemanticTextChunkerChunking:
         
         assert results == []
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_track_chunk_positions_correctly(
         self, mock_semchunk, mock_tokenizer
     ):
@@ -236,8 +236,8 @@ class TestSemanticTextChunkerChunking:
         assert results[1].start == 13
         assert results[1].end == 26
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_handle_chunk_not_found_in_text(
         self, mock_semchunk, mock_tokenizer
     ):
@@ -259,8 +259,8 @@ class TestSemanticTextChunkerChunking:
         assert len(results) == 1
         assert results[0].start >= 0
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_raise_runtime_error_when_chunking_fails(
         self, mock_semchunk, mock_tokenizer
     ):
@@ -278,8 +278,8 @@ class TestSemanticTextChunkerChunking:
         with pytest.raises(RuntimeError, match="Failed to chunk text"):
             chunker.chunk_text("test text")
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_set_token_count_to_none(
         self, mock_semchunk, mock_tokenizer, sample_text
     ):
@@ -306,8 +306,8 @@ class TestSemanticTextChunkerChunking:
 class TestSemanticTextChunkerInfo:
     """Test suite for SemanticTextChunker information retrieval."""
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_return_chunk_info(self, mock_semchunk, mock_tokenizer):
         """Should return chunker configuration information."""
         mock_semchunk.chunkerify.return_value = Mock()
@@ -424,8 +424,8 @@ class TestFallbackChunker:
 class TestCreateChunker:
     """Test suite for create_chunker factory function."""
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_create_semantic_chunker_when_available(
         self, mock_semchunk, mock_tokenizer
     ):
@@ -441,7 +441,7 @@ class TestCreateChunker:
         
         assert isinstance(chunker, SemanticTextChunker)
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', False)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', False)
     def test_should_create_fallback_when_semchunk_not_available(self, mock_tokenizer):
         """Should create FallbackChunker when semchunk not available."""
         chunker = create_chunker(
@@ -453,7 +453,7 @@ class TestCreateChunker:
         
         assert isinstance(chunker, FallbackChunker)
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
     def test_should_create_fallback_when_tokenizer_is_none(self):
         """Should create FallbackChunker when tokenizer is None."""
         chunker = create_chunker(
@@ -465,8 +465,8 @@ class TestCreateChunker:
         
         assert isinstance(chunker, FallbackChunker)
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_create_fallback_when_use_semantic_false(
         self, mock_semchunk, mock_tokenizer
     ):
@@ -480,8 +480,8 @@ class TestCreateChunker:
         
         assert isinstance(chunker, FallbackChunker)
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_create_fallback_when_semantic_init_fails(
         self, mock_semchunk, mock_tokenizer, logger_mock
     ):
@@ -499,8 +499,8 @@ class TestCreateChunker:
         assert isinstance(chunker, FallbackChunker)
         logger_mock.warning.assert_called()
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_use_custom_logger_in_factory(
         self, mock_semchunk, mock_tokenizer, logger_mock
     ):
@@ -517,8 +517,8 @@ class TestCreateChunker:
         
         assert chunker.logger == logger_mock
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_pass_parameters_to_semantic_chunker(
         self, mock_semchunk, mock_tokenizer
     ):
@@ -583,8 +583,8 @@ class TestEdgeCasesAndIntegration:
         # Should still produce multiple chunks
         assert len(results) >= 2
 
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_handle_unicode_text(self, mock_semchunk, mock_tokenizer):
         """Should handle Unicode text correctly."""
         text = "Héllo wörld! 你好世界 🌍"
@@ -629,8 +629,8 @@ class TestParametrizedScenarios:
         (100, 100, False),  # chunk_size == overlap
         (100, 150, False),  # chunk_size < overlap
     ])
-    @patch('pii_detector.service.detector.semantic_chunker.SEMCHUNK_AVAILABLE', True)
-    @patch('pii_detector.service.detector.semantic_chunker.semchunk')
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.SEMCHUNK_AVAILABLE', True)
+    @patch('pii_detector.infrastructure.text_processing.semantic_chunker.semchunk')
     def test_should_validate_chunk_size_and_overlap(
         self, mock_semchunk, chunk_size, overlap, should_succeed, mock_tokenizer
     ):

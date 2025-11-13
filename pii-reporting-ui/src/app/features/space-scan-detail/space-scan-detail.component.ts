@@ -54,4 +54,13 @@ export class SpaceScanDetailComponent {
     if (status === 'RUNNING') return 'warning';
     return 'success';
   }
+
+  /**
+   * TrackBy function to preserve component state when list updates.
+   * Uses pageId + attachmentName as unique identifier to prevent unnecessary re-renders.
+   * This ensures user interactions (expanded details, revealed state) are preserved when new items arrive.
+   */
+  trackByItem(index: number, item: PiiItem): string {
+    return `${item.pageId}-${item.attachmentName || 'page'}`;
+  }
 }

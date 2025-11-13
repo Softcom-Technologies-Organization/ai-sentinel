@@ -11,7 +11,9 @@ import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ButtonModule} from 'primeng/button';
 import {TranslocoModule, TranslocoService} from '@jsverse/transloco';
-import {LanguageSelectorComponent} from '../../core/components/language-selector/language-selector.component';
+import {
+  LanguageSelectorComponent
+} from '../../core/components/language-selector/language-selector.component';
 import {PiiItemCardComponent} from '../pii-item-card/pii-item-card.component';
 import {
   LastScanMeta,
@@ -46,12 +48,10 @@ import {TooltipModule} from 'primeng/tooltip';
 import {DataViewModule} from 'primeng/dataview';
 import {ProgressBarModule} from 'primeng/progressbar';
 import {SkeletonModule} from 'primeng/skeleton';
-import {MessageService} from 'primeng/api';
+import {ConfirmationService, MessageService, SortEvent} from 'primeng/api';
 import {ToastService} from '../../core/services/toast.service';
 import {TestIds} from '../test-ids.constants';
 import {ToastModule} from 'primeng/toast';
-import {SortEvent} from 'primeng/api';
-import {ConfirmationService} from 'primeng/api';
 import {ConfirmDialogModule} from 'primeng/confirmdialog';
 
 
@@ -431,7 +431,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   }
 
   get statusOptions() {
-    return this.spacesDashboardUtils.statusOptions;
+    return this.spacesDashboardUtils.statusOptions();
   }
 
   statusLabel(status?: string): string {

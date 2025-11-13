@@ -70,11 +70,18 @@
         </th>
         <th id="col-status-value">
           <p-select [options]="statusOptions"
-                    optionLabel="label"
+                    optionLabel="labelKey"
                     optionValue="value"
                     [ngModel]="statusFilter()"
                     (ngModelChange)="onFilter('status', $event)"
-                    [showClear]="true"></p-select>
+                    [showClear]="true">
+            <ng-template pTemplate="item" let-option>
+              {{ option.labelKey | transloco }}
+            </ng-template>
+            <ng-template pTemplate="selectedItem" let-option>
+              {{ option.labelKey | transloco }}
+            </ng-template>
+          </p-select>
         </th>
         <th id="col-progress-value"></th>
         <th id="col-last-scan-value"></th>

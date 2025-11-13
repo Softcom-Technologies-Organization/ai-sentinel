@@ -25,7 +25,7 @@
       <p-tag [value]="statusLabel(s.status)" [severity]="statusSeverity(s.status)"></p-tag>
     </div>
     <div class="pii-cards">
-      <p-dataView [value]="items()" layout="list" [paginator]="true" [rows]="10">
+      <p-dataView [value]="items()" layout="list" [paginator]="true" [rows]="10" [trackBy]="trackByItem">
         <ng-template let-item pTemplate="listItem">
           <app-pii-item-card [item]="item" [maskByDefault]="true"></app-pii-item-card>
         </ng-template>

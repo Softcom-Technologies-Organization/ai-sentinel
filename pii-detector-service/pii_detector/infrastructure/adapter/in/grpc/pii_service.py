@@ -623,6 +623,9 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
     ) -> None:
         """Add entity type summary to response.
         
+        Business rule: Summary keys are normalized to UPPERCASE for consistency across all detectors.
+        This ensures uniform display in the UI and alignment with Java PiiType enum.
+        
         Args:
             response: Response object to populate
             entities: Detected entities
@@ -631,7 +634,10 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         logger.debug(f"[{request_id}] Creating response summary...")
         summary = {}
         for entity in entities:
-            pii_type = entity['type_label']
+            # Normalize to UPPERCASE for uniformity across all detectors
+            # Convert to string first (entity['type'] may be PIIType enum object)
+            pii_type_raw = entity.get('type', 'UNKNOWN')
+            pii_type = str(pii_type_raw).upper() if pii_type_raw else 'UNKNOWN'
             summary[pii_type] = summary.get(pii_type, 0) + 1
         
         logger.debug(f"[{request_id}] Adding summary to response: {dict(summary)}")

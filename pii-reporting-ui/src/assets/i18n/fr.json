@@ -4,7 +4,7 @@
     "actions": "Actions",
     "search": "Rechercher",
     "searchGlobally": "Rechercher globalement",
-    "refresh": "Rafraichir",
+    "refresh": "Rafraîchir",
     "close": "Fermer",
     "cancel": "Annuler",
     "confirm": "Confirmer",
@@ -26,7 +26,7 @@
     "title": "Sentinel AI",
     "table": {
       "headers": {
-        "space": "Space",
+        "space": "Espace",
         "status": "Statut",
         "progress": "Progression",
         "lastScan": "Dernier scan",
@@ -39,7 +39,7 @@
     },
     "status": {
       "running": "En cours",
-      "ok": "OK",
+      "ok": "Terminé",
       "failed": "Échec",
       "pending": "En attente",
       "paused": "En pause"
@@ -54,7 +54,7 @@
     "notifications": {
       "newSpaces": {
         "message": "{{count}} nouvel(aux) espace(s) Confluence disponible(s)",
-        "refreshButton": "Rafraichir",
+        "refreshButton": "Rafraîchir",
         "closeAriaLabel": "Fermer la notification"
       },
       "spaceUpdated": {
@@ -73,16 +73,16 @@
       "purgeOk": "[ui] Purge OK. Connexion à /api/v1/stream/confluence/spaces/events ...",
       "sseError": "[ui] Erreur de connexion SSE: {{error}}. Le scan continue sur le serveur.",
       "purgeError": "[ui] Erreur lors de la purge des précédents scans: {{error}}",
-      "scanCancelled": "[ui] Global scan cancelled by user",
+      "scanCancelled": "[ui] Scan global annulé par l'utilisateur",
       "resumeRequest": "[ui] Demande de reprise du scan {{scanId}} ...",
       "resumeAccepted": "[ui] Reprise acceptée (HTTP 202). Connexion au flux d'événements ...",
-      "resumeError": "[ui] Echec de la reprise: {{error}}",
+      "resumeError": "[ui] Échec de la reprise : {{error}}",
       "scanPaused": "[ui] Scan {{scanId}} mis en pause",
-      "pauseError": "[ui] Erreur lors de la mise en pause: {{error}}",
-      "lastScanDetected": "[ui] Dernier scan détecté: {{scanId}} ({{count}} espaces)",
+      "pauseError": "[ui] Erreur lors de la mise en pause : {{error}}",
+      "lastScanDetected": "[ui] Dernier scan détecté : {{scanId}} ({{count}} espaces)",
       "noLastScan": "[ui] Aucun scan précédent trouvé",
-      "fetchSpacesError": "[ui] Failed to fetch spaces: {{error}}",
-      "errorForSpace": "[ui] Error for space {{spaceKey}}: {{error}}"
+      "fetchSpacesError": "[ui] Échec de récupération des espaces : {{error}}",
+      "errorForSpace": "[ui] Erreur pour l'espace {{spaceKey}} : {{error}}"
     }
   },
   "confirmations": {
@@ -125,16 +125,14 @@
       "maskAriaLabel": "Masquer les valeurs sensibles"
     },
     "entity": {
-      "score": "Score {{value}}",
-      "start": "Start {{value}}",
-      "end": "End {{value}}"
+      "score": "Confiance {{value}}"
     }
   },
   "spaceScanDetail": {
-    "title": "Détails du space",
+    "title": "Détails de l'espace",
     "scanInProgress": "Scan en cours",
-    "selectedSpace": "Détails du space sélectionné",
-    "ariaLabel": "Détails du space"
+    "selectedSpace": "Détails de l'espace sélectionné",
+    "ariaLabel": "Détails de l'espace"
   },
   "errors": {
     "unknownError": "Erreur inconnue",
@@ -142,5 +140,81 @@
     "connectionError": "Erreur de connexion",
     "timeout": "Délai d'attente dépassé",
     "networkError": "Erreur réseau"
+  },
+  "piiTypes": {
+    "EMAIL": "Email",
+    "PHONE": "Téléphone",
+    "TELEPHONENUM": "Numéro de téléphone",
+    "CREDIT_CARD": "Carte bancaire",
+    "CREDITCARDNUMBER": "Numéro de carte de crédit",
+    "SSN": "Numéro de sécurité sociale",
+    "SOCIALNUM": "Numéro de sécurité sociale",
+    "PASSPORT": "Passeport",
+    "DRIVER_LICENSE": "Permis de conduire",
+    "DRIVERLICENSENUM": "Numéro de permis de conduire",
+    "ACCOUNTNUM": "Numéro de compte",
+    "BUILDINGNUM": "Numéro de bâtiment",
+    "CITY": "Ville",
+    "DATEOFBIRTH": "Date de naissance",
+    "GIVENNAME": "Prénom",
+    "IDCARDNUM": "Numéro de carte d'identité",
+    "PASSWORD": "Mot de passe",
+    "STREET": "Rue",
+    "SURNAME": "Nom de famille",
+    "TAXNUM": "Numéro fiscal",
+    "USERNAME": "Nom d'utilisateur",
+    "ZIPCODE": "Code postal",
+    "URL": "URL",
+    "IBAN": "IBAN",
+    "CRYPTO_WALLET": "Portefeuille crypto",
+    "NHS_NUMBER": "Numéro NHS",
+    "NRIC": "NRIC",
+    "ABN": "ABN",
+    "ACN": "ACN",
+    "TFN": "TFN",
+    "MEDICARE": "Medicare",
+    "IP_ADDRESS": "Adresse IP",
+    "MAC_ADDRESS": "Adresse MAC",
+    "PERSON_NAME": "Nom de personne",
+    "LOCATION": "Lieu",
+    "DATE": "Date",
+    "AGE": "Âge",
+    "MEDICAL_LICENSE": "Licence médicale",
+    "ITIN": "ITIN",
+    "NRP": "Groupe nationalité/religion/politique",
+    "US_BANK_NUMBER": "Numéro de compte bancaire US",
+    "US_DRIVER_LICENSE": "Permis de conduire US",
+    "US_ITIN": "ITIN US",
+    "US_PASSPORT": "Passeport US",
+    "US_SSN": "SSN US",
+    "UK_NHS": "Numéro NHS UK",
+    "UK_NINO": "NINO UK",
+    "ES_NIF": "NIF espagnol",
+    "ES_NIE": "NIE espagnol",
+    "IT_FISCAL_CODE": "Code fiscal italien",
+    "IT_DRIVER_LICENSE": "Permis de conduire italien",
+    "IT_VAT_CODE": "Code TVA italien",
+    "IT_PASSPORT": "Passeport italien",
+    "IT_IDENTITY_CARD": "Carte d'identité italienne",
+    "PL_PESEL": "PESEL polonais",
+    "SG_NRIC_FIN": "NRIC/FIN singapourien",
+    "SG_UEN": "UEN singapourien",
+    "AU_ABN": "ABN australien",
+    "AU_ACN": "ACN australien",
+    "AU_TFN": "TFN australien",
+    "AU_MEDICARE": "Medicare australien",
+    "IN_PAN": "PAN indien",
+    "IN_AADHAAR": "Aadhaar indien",
+    "IN_VEHICLE_REGISTRATION": "Immatriculation véhicule indien",
+    "IN_VOTER": "Carte d'électeur indienne",
+    "IN_PASSPORT": "Passeport indien",
+    "FI_PERSONAL_IDENTITY_CODE": "Code d'identité finlandais",
+    "KR_RRN": "RRN coréen",
+    "TH_TNIN": "TNIN thaïlandais",
+    "API_KEY": "Clé API",
+    "JWT_TOKEN": "Jeton JWT",
+    "GITHUB_TOKEN": "Jeton GitHub",
+    "AWS_KEY": "Clé AWS",
+    "UNKNOWN": "Inconnu"
   }
 }

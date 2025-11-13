@@ -55,7 +55,7 @@
       <div class="row chips-row">
         <div class="chips">
           @for (k of objectKeys(summary); track k) {
-            <p-chip [label]="k + ' × ' + summary[k]"></p-chip>
+            <p-chip [label]="translatePiiType(k) + ' × ' + summary[k]"></p-chip>
           }
         </div>
         <p-button (click)="toggleDetails()"
@@ -98,8 +98,6 @@
                   @if (e.confidence !== undefined) {
                   <p-tag severity="secondary" [value]="'piiItem.entity.score' | transloco:{ value: formatScore(e.confidence) }" />
                   }
-                  <p-tag severity="secondary" [value]="'piiItem.entity.start' | transloco:{ value: e.startPosition }" />
-                  <p-tag severity="secondary" [value]="'piiItem.entity.end' | transloco:{ value: e.endPosition }" />
                 </div>
               </p-card>
             </div>

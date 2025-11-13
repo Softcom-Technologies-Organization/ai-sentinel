@@ -14,13 +14,13 @@ import unicodedata
 from transformers import AutoTokenizer, AutoModelForTokenClassification, \
   pipeline
 
-from domain.service.entity_processor import EntityProcessor
-from domain.entity.pii_entity import PIIEntity
-from application.config.detection_policy import DetectionConfig
-from domain.exception.exceptions import PIIDetectionError, ModelNotLoadedError
+from pii_detector.domain.service.entity_processor import EntityProcessor
+from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.exception.exceptions import PIIDetectionError, ModelNotLoadedError
 # Import managers
-from infrastructure.model_management.memory_manager import MemoryManager
-from infrastructure.model_management.model_manager import ModelManager
+from pii_detector.infrastructure.model_management.memory_manager import MemoryManager
+from pii_detector.infrastructure.model_management.model_manager import ModelManager
 
 # Constants
 _MODEL_NOT_LOADED_ERROR_MESSAGE = "The model must be loaded before use"

@@ -16,10 +16,10 @@ from __future__ import annotations
 import logging
 from typing import List, Optional, Tuple
 
-from domain.service.detection_merger import DetectionMerger
-from domain.port.pii_detector_protocol import PIIDetectorProtocol
-from infrastructure.detector.regex_detector import RegexDetector
-from domain.entity.pii_entity import PIIEntity
+from pii_detector.domain.service.detection_merger import DetectionMerger
+from pii_detector.domain.port.pii_detector_protocol import PIIDetectorProtocol
+from pii_detector.infrastructure.detector.regex_detector import RegexDetector
+from pii_detector.domain.entity.pii_entity import PIIEntity
 
 try:
     from infrastructure.detector.presidio_detector import PresidioDetector

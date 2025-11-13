@@ -10,12 +10,12 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Optional, Tuple, Any
 
-from infrastructure.model_management.gliner_model_manager import GLiNERModelManager
-from domain.entity.pii_entity import PIIEntity
-from application.config.detection_policy import DetectionConfig
-from domain.exception.exceptions import ModelNotLoadedError
+from pii_detector.infrastructure.model_management.gliner_model_manager import GLiNERModelManager
+from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.exception.exceptions import ModelNotLoadedError
 # FIXME: from service.detector.models import 
-from infrastructure.text_processing.semantic_chunker import create_chunker
+from pii_detector.infrastructure.text_processing.semantic_chunker import create_chunker
 
 
 class GLiNERDetector:

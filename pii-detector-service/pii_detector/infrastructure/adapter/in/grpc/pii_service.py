@@ -22,8 +22,8 @@ from grpc_reflection.v1alpha import reflection
 from pii_detector.proto.generated import pii_detection_pb2, \
   pii_detection_pb2_grpc
 # Import the PII detector
-from infrastructure.detector.pii_detector import PIIDetector
-from infrastructure.detector.pii_detector import \
+from pii_detector.infrastructure.detector.pii_detector import PIIDetector
+from pii_detector.infrastructure.detector.pii_detector import \
   PIIEntity as DetectedPIIEntity
 
 # Import GLiNER detector for GLiNER models

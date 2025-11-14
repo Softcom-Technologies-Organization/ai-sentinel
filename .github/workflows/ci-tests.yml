@@ -9,10 +9,11 @@ on:
     branches:
       - main
       - develop
+    types: [opened, synchronize, reopened]
   workflow_dispatch: {}
 
 concurrency:
-  group: ci-tests-${{ github.ref }}
+  group: ci-tests-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

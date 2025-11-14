@@ -1,7 +1,114 @@
-# Docker Compose pour production - utilise les images pré-buildées depuis GitHub Container Registry
-# Usage: docker-compose -f docker-compose.prod.yml up
+# Docker Compose for production - uses pre-built images from GitHub Container Registry
+# Usage (full stack):  docker-compose -f docker-compose.prod.yml up
+# Usage (secrets only): docker-compose -f docker-compose.prod.yml up secrets-bootstrap
 
 services:
+  # ============================================================================
+  # BOOTSTRAP SECRETS (one-shot)
+  # Creates ./secrets and generates the secrets required for Infisical on first startup
+  # - infisical_encryption_key.txt (32 hex)
+  # - infisical_auth_secret.txt (base64 44)
+  # - infisical_db_password.txt (24 alphanum)
+  # And creates placeholder files if missing:
+  # - infisical_prod_client_id.txt
+  # - infisical_prod_client_secret.txt
+  # - infisical_project_id.txt
+  # ============================================================================
+  secrets-bootstrap:
+    image: alpine:3.20
+    container_name: ai-sentinel-secrets-bootstrap
+    restart: "no"
+    command: >
+      sh -c '
+        set -eu;
+        
+        echo "[secrets-bootstrap] Starting secrets initialization...";
+        echo "[secrets-bootstrap] Creating /secrets directory...";
+        mkdir -p /secrets || { echo "[ERROR] Failed to create /secrets directory"; exit 1; };
+        
+        # Verify directory is writable
+        if [ ! -w /secrets ]; then
+          echo "[ERROR] /secrets directory is not writable!";
+          echo "[ERROR] Make sure Docker has permissions to write to the mounted volume.";
+          exit 1;
+        fi;
+        
+        echo "[secrets-bootstrap] Directory /secrets is ready and writable.";
+
+        # Quick exit if required secrets already exist and look valid
+        if [ -f /secrets/infisical_encryption_key.txt ] \
+          && [ "$(wc -c < /secrets/infisical_encryption_key.txt 2>/dev/null || echo 0)" -eq 32 ] \
+          && [ -f /secrets/infisical_auth_secret.txt ] \
+          && [ "$(wc -c < /secrets/infisical_auth_secret.txt 2>/dev/null || echo 0)" -ge 44 ] \
+          && [ -s /secrets/infisical_db_password.txt ]; then
+          echo "[secrets-bootstrap] Core secrets already initialized and valid.";
+          
+          # Still create placeholder files if they do not exist
+          [ -f /secrets/infisical_prod_client_id.txt ] || { echo "[secrets-bootstrap] Creating placeholder: infisical_prod_client_id.txt"; touch /secrets/infisical_prod_client_id.txt; };
+          [ -f /secrets/infisical_prod_client_secret.txt ] || { echo "[secrets-bootstrap] Creating placeholder: infisical_prod_client_secret.txt"; touch /secrets/infisical_prod_client_secret.txt; };
+          [ -f /secrets/infisical_project_id.txt ] || { echo "[secrets-bootstrap] Creating placeholder: infisical_project_id.txt"; touch /secrets/infisical_project_id.txt; };
+          
+          echo "[secrets-bootstrap] All done - secrets are ready!";
+          exit 0;
+        fi;
+
+        echo "[secrets-bootstrap] Generating Infisical internal secrets...";
+
+        # Infisical internal secrets
+        if [ ! -f /secrets/infisical_encryption_key.txt ] \
+          || [ "$(wc -c < /secrets/infisical_encryption_key.txt 2>/dev/null || echo 0)" -ne 32 ]; then
+          echo "[secrets-bootstrap] Generating infisical_encryption_key.txt (32 hex chars)...";
+          od -An -tx1 -N16 /dev/urandom | tr -d " \n" > /secrets/infisical_encryption_key.txt || { echo "[ERROR] Failed to create encryption key"; exit 1; };
+          echo "[secrets-bootstrap] ✓ infisical_encryption_key.txt created";
+        else
+          echo "[secrets-bootstrap] ✓ infisical_encryption_key.txt already exists and is valid";
+        fi;
+
+        if [ ! -f /secrets/infisical_auth_secret.txt ] \
+          || [ "$(wc -c < /secrets/infisical_auth_secret.txt 2>/dev/null || echo 0)" -lt 44 ]; then
+          echo "[secrets-bootstrap] Generating infisical_auth_secret.txt (base64 44 chars)...";
+          head -c 32 /dev/urandom | base64 | tr -d "\n\r" > /secrets/infisical_auth_secret.txt || { echo "[ERROR] Failed to create auth secret"; exit 1; };
+          echo "[secrets-bootstrap] ✓ infisical_auth_secret.txt created";
+        else
+          echo "[secrets-bootstrap] ✓ infisical_auth_secret.txt already exists and is valid";
+        fi;
+
+        if [ ! -s /secrets/infisical_db_password.txt ]; then
+          echo "[secrets-bootstrap] Generating infisical_db_password.txt (24 alphanumeric)...";
+          head -c 256 /dev/urandom | tr -dc "A-Za-z0-9" | head -c 24 > /secrets/infisical_db_password.txt || { echo "[ERROR] Failed to create DB password"; exit 1; };
+          echo "[secrets-bootstrap] ✓ infisical_db_password.txt created";
+        else
+          echo "[secrets-bootstrap] ✓ infisical_db_password.txt already exists";
+        fi;
+
+        echo "[secrets-bootstrap] Creating placeholder files for manual configuration...";
+        # Placeholders to link other services later (must be filled manually)
+        touch /secrets/infisical_prod_client_id.txt || { echo "[ERROR] Failed to create infisical_prod_client_id.txt"; exit 1; };
+        echo "[secrets-bootstrap] ✓ infisical_prod_client_id.txt created (EMPTY - fill manually)";
+        
+        touch /secrets/infisical_prod_client_secret.txt || { echo "[ERROR] Failed to create infisical_prod_client_secret.txt"; exit 1; };
+        echo "[secrets-bootstrap] ✓ infisical_prod_client_secret.txt created (EMPTY - fill manually)";
+        
+        touch /secrets/infisical_project_id.txt || { echo "[ERROR] Failed to create infisical_project_id.txt"; exit 1; };
+        echo "[secrets-bootstrap] ✓ infisical_project_id.txt created (EMPTY - fill manually)";
+        
+        echo "";
+        echo "[secrets-bootstrap] ========================================";
+        echo "[secrets-bootstrap] SUCCESS! All secret files created.";
+        echo "[secrets-bootstrap] ========================================";
+        echo "[secrets-bootstrap] ";
+        echo "[secrets-bootstrap] NEXT STEPS:";
+        echo "[secrets-bootstrap] 1. Fill in these files manually with values from Infisical UI:";
+        echo "[secrets-bootstrap]    - infisical_prod_client_id.txt";
+        echo "[secrets-bootstrap]    - infisical_prod_client_secret.txt";
+        echo "[secrets-bootstrap]    - infisical_project_id.txt";
+        echo "[secrets-bootstrap] 2. See secrets/README.md for detailed instructions";
+        echo "[secrets-bootstrap] ";
+      '
+    volumes:
+      - ./secrets:/secrets
+    networks:
+      - ai-sentinel-network
   # ============================================================================
   # DATABASE SERVICE
   # ============================================================================
@@ -24,7 +131,7 @@ services:
       - ai-sentinel-network
 
   # ============================================================================
-  # PII DETECTOR SERVICE (Python/gRPC) - IMAGE PRÉ-BUILDÉE
+  # PII DETECTOR SERVICE (Python/gRPC) - PRE-BUILT IMAGE
   # ============================================================================
   pii-detector:
     image: ghcr.io/softcom-technologies-organization/ai-sentinel-pii-detector:0.0.1
@@ -33,23 +140,22 @@ services:
     ports:
       - "50051:50051"
     environment:
-      # Infisical Configuration - secrets will be read from /run/secrets/
-      INFISICAL_CLIENT_ID_FILE: /run/secrets/infisical_prod_client_id
-      INFISICAL_CLIENT_SECRET_FILE: /run/secrets/infisical_prod_client_secret
-      INFISICAL_PROJECT_ID_FILE: /run/secrets/infisical_project_id
+      # Infisical Configuration - secrets will be read from /secrets/
+      INFISICAL_CLIENT_ID_FILE: /secrets/infisical_prod_client_id.txt
+      INFISICAL_CLIENT_SECRET_FILE: /secrets/infisical_prod_client_secret.txt
+      INFISICAL_PROJECT_ID_FILE: /secrets/infisical_project_id.txt
       INFISICAL_API_URL: http://infisical:8080
       INFISICAL_ENV: prod
 
       # Static non-sensitive configuration
       HF_HOME: /app/.cache/huggingface
       TRANSFORMERS_CACHE: /app/.cache/huggingface
-    secrets:
-      - infisical_prod_client_id
-      - infisical_prod_client_secret
-      - infisical_project_id
     volumes:
       - huggingface-cache:/app/.cache/huggingface
+      - ./secrets:/secrets:ro
     depends_on:
+      secrets-bootstrap:
+        condition: service_completed_successfully
       infisical:
         condition: service_healthy
     healthcheck:
@@ -62,7 +168,7 @@ services:
       - ai-sentinel-network
 
   # ============================================================================
-  # PII REPORTING API (Spring Boot) - IMAGE PRÉ-BUILDÉE
+  # PII REPORTING API (Spring Boot) - PRE-BUILT IMAGE
   # ============================================================================
   pii-reporting-api:
     image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-api:0.0.1
@@ -72,10 +178,10 @@ services:
       - "8080:8080"
       - "8090:8090"  # Armeria internal services (health, metrics, docs)
     environment:
-      # Infisical Configuration - secrets will be read from /run/secrets/
-      INFISICAL_CLIENT_ID_FILE: /run/secrets/infisical_prod_client_id
-      INFISICAL_CLIENT_SECRET_FILE: /run/secrets/infisical_prod_client_secret
-      INFISICAL_PROJECT_ID_FILE: /run/secrets/infisical_project_id
+      # Infisical Configuration - secrets will be read from /secrets/
+      INFISICAL_CLIENT_ID_FILE: /secrets/infisical_prod_client_id.txt
+      INFISICAL_CLIENT_SECRET_FILE: /secrets/infisical_prod_client_secret.txt
+      INFISICAL_PROJECT_ID_FILE: /secrets/infisical_project_id.txt
       INFISICAL_API_URL: http://infisical:8080
       INFISICAL_ENV: prod
 
@@ -98,10 +204,8 @@ services:
       CONFLUENCE_CACHE_INITIAL_DELAY: ${CONFLUENCE_CACHE_INITIAL_DELAY:-5000}
       CONFLUENCE_POLLING_INTERVAL: ${CONFLUENCE_POLLING_INTERVAL:-60000}
       SENTINELLE_ENCRYPTION_KEY: ${SENTINELLE_ENCRYPTION_KEY}
-    secrets:
-      - infisical_prod_client_id
-      - infisical_prod_client_secret
-      - infisical_project_id
+    volumes:
+      - ./secrets:/secrets:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -109,6 +213,8 @@ services:
         condition: service_started
       infisical:
         condition: service_healthy
+      secrets-bootstrap:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/sentinelle/actuator/health"]
       interval: 30s
@@ -119,7 +225,7 @@ services:
       - ai-sentinel-network
 
   # ============================================================================
-  # PII REPORTING UI (Angular + Nginx) - IMAGE PRÉ-BUILDÉE
+  # PII REPORTING UI (Angular + Nginx) - PRE-BUILT IMAGE
   # ============================================================================
   pii-reporting-ui:
     image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-ui:0.0.1
@@ -148,12 +254,11 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: infisical
-      POSTGRES_PASSWORD_FILE: /run/secrets/infisical_db_password
+      POSTGRES_PASSWORD_FILE: /secrets/infisical_db_password.txt
       POSTGRES_DB: infisical
-    secrets:
-      - infisical_db_password
     volumes:
       - infisical-db-data:/var/lib/postgresql/data
+      - ./secrets:/secrets:ro
     networks:
       - ai-sentinel-network
 
@@ -199,21 +304,24 @@ services:
       SMTP_TLS_ENABLED: ${SMTP_TLS_ENABLED:-false}
       SMTP_STARTTLS_ENABLED: ${SMTP_STARTTLS_ENABLED:-false}
       SMTP_IGNORE_TLS: ${SMTP_IGNORE_TLS:-true}
-    secrets:
-      - infisical_encryption_key
-      - infisical_auth_secret
-      - infisical_db_password
     command: >
       sh -c '
-        export ENCRYPTION_KEY=$$(cat /run/secrets/infisical_encryption_key) &&
-        export AUTH_SECRET=$$(cat /run/secrets/infisical_auth_secret) &&
-        export DB_CONNECTION_URI="postgres://infisical:$$(cat /run/secrets/infisical_db_password)@infisical-db:5432/infisical" &&
+        export ENCRYPTION_KEY=$$(cat /secrets/infisical_encryption_key.txt) &&
+        export AUTH_SECRET=$$(cat /secrets/infisical_auth_secret.txt) &&
+        export DB_CONNECTION_URI="postgres://infisical:$$(cat /secrets/infisical_db_password.txt)@infisical-db:5432/infisical" &&
         exec /usr/local/bin/docker-entrypoint.sh ./standalone-entrypoint.sh
       '
     depends_on:
-      - infisical-db
-      - infisical-redis
-      - mailhog
+      secrets-bootstrap:
+        condition: service_completed_successfully
+      infisical-db:
+        condition: service_started
+      infisical-redis:
+        condition: service_started
+      mailhog:
+        condition: service_started
+    volumes:
+      - ./secrets:/secrets:ro
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/status"]
       interval: 10s
@@ -263,16 +371,5 @@ networks:
     name: ai-sentinel-network
     driver: bridge
 
-secrets:
-  infisical_prod_client_id:
-    file: ./secrets/infisical_prod_client_id.txt
-  infisical_prod_client_secret:
-    file: ./secrets/infisical_prod_client_secret.txt
-  infisical_project_id:
-    file: ./secrets/infisical_project_id.txt
-  infisical_encryption_key:
-    file: ./secrets/infisical_encryption_key.txt
-  infisical_auth_secret:
-    file: ./secrets/infisical_auth_secret.txt
-  infisical_db_password:
-    file: ./secrets/infisical_db_password.txt
+# Note: We use a bind volume ./secrets to simplify automatic bootstrap.
+# For increased security in production, replace it with Docker secrets managed by your orchestrator.

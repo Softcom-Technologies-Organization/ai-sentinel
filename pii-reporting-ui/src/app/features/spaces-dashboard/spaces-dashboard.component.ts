@@ -10,6 +10,10 @@ import {
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ButtonModule} from 'primeng/button';
+import {TranslocoModule, TranslocoService} from '@jsverse/transloco';
+import {
+  LanguageSelectorComponent
+} from '../../core/components/language-selector/language-selector.component';
 import {PiiItemCardComponent} from '../pii-item-card/pii-item-card.component';
 import {
   LastScanMeta,
@@ -44,14 +48,11 @@ import {TooltipModule} from 'primeng/tooltip';
 import {DataViewModule} from 'primeng/dataview';
 import {ProgressBarModule} from 'primeng/progressbar';
 import {SkeletonModule} from 'primeng/skeleton';
-import {MessageService} from 'primeng/api';
+import {ConfirmationService, MessageService, SortEvent} from 'primeng/api';
 import {ToastService} from '../../core/services/toast.service';
 import {TestIds} from '../test-ids.constants';
 import {ToastModule} from 'primeng/toast';
-import {SortEvent} from 'primeng/api';
-import {ConfirmationService} from 'primeng/api';
 import {ConfirmDialogModule} from 'primeng/confirmdialog';
-import {CONFIRMATION_MESSAGES} from './confirmation-messages.constants';
 
 
 /**
@@ -61,7 +62,7 @@ import {CONFIRMATION_MESSAGES} from './confirmation-messages.constants';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, ToggleSwitchModule, PiiItemCardComponent, BadgeModule, InputTextModule, SelectModule, TableModule, TagModule, Ripple, TooltipModule, DataViewModule, ProgressBarModule, SkeletonModule, ConfirmDialogModule, ToastModule],
+  imports: [CommonModule, FormsModule, ButtonModule, ToggleSwitchModule, PiiItemCardComponent, BadgeModule, InputTextModule, SelectModule, TableModule, TagModule, Ripple, TooltipModule, DataViewModule, ProgressBarModule, SkeletonModule, ConfirmDialogModule, ToastModule, TranslocoModule, LanguageSelectorComponent],
   providers: [ConfirmationService, MessageService, ToastService],
   templateUrl: './spaces-dashboard.component.html',
   styleUrl: './spaces-dashboard.component.css',
@@ -73,6 +74,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly pollingService = inject(ConfluenceSpacesPollingService);
   readonly toastService = inject(ToastService);
   readonly confirmationService = inject(ConfirmationService);
+  readonly translocoService = inject(TranslocoService);
 
   private sub?: Subscription;
   private pollingSub?: Subscription;
@@ -207,12 +209,18 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
     // Display confirmation before starting the scan
     this.confirmationService.confirm({
-      ...CONFIRMATION_MESSAGES.GLOBAL_SCAN,
+      header: this.translocoService.translate('confirmations.globalScan.header'),
+      message: this.translocoService.translate('confirmations.globalScan.message'),
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: this.translocoService.translate('confirmations.globalScan.acceptLabel'),
+      rejectLabel: this.translocoService.translate('confirmations.globalScan.rejectLabel'),
+      acceptButtonStyleClass: 'p-button-primary',
+      rejectButtonStyleClass: 'p-button-secondary',
       accept: () => {
         this.executeStartAll();
       },
       reject: () => {
-        this.append('[ui] Global scan cancelled by user');
+        this.append(this.translocoService.translate('dashboard.logs.scanCancelled'));
       }
     });
   }
@@ -222,21 +230,21 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     // Clear previous dashboard results before starting a brand-new scan
     this.resetDashboardForNewScan();
 
-    this.append(`[ui] Purge des résultats précédents ...`);
+    this.append(this.translocoService.translate('dashboard.logs.purging'));
     this.sentinelleApiService.purgeAllScans().subscribe({
       next: () => {
-        this.append(`[ui] Purge OK. Connexion à /api/v1/stream/confluence/spaces/events ...`);
+        this.append(this.translocoService.translate('dashboard.logs.purgeOk'));
         this.isStreaming.set(true);
         this.sub = this.sentinelleApiService.startAllSpacesStream().subscribe({
           next: (ev) => this.routeStreamEvent(ev.type as StreamEventType, ev.data),
           error: (err) => {
-            this.append(`[ui] Erreur de connexion SSE: ${err?.message ?? err}. Le scan continue sur le serveur.`);
+            this.append(this.translocoService.translate('dashboard.logs.sseError', { error: err?.message ?? err }));
             this.isStreaming.set(false);
           }
         });
       },
       error: (err) => {
-        this.append(`[ui] Erreur lors de la purge des précédents scans: ${err?.message ?? err}`);
+        this.append(this.translocoService.translate('dashboard.logs.purgeError', { error: err?.message ?? err }));
         this.isStreaming.set(false);
       }
     });
@@ -279,12 +287,12 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     if (scanId) {
       this.sentinelleApiService.pauseScan(scanId).subscribe({
         next: () => {
-          this.append(`[ui] Scan ${scanId} mis en pause`);
+          this.append(this.translocoService.translate('dashboard.logs.scanPaused', { scanId }));
           this.loadLastSpaceStatuses(false);
           this.loadLastScan();
         },
         error: (err) => {
-          this.append(`[ui] Erreur lors de la mise en pause: ${err?.message ?? err}`);
+          this.append(this.translocoService.translate('dashboard.logs.pauseError', { error: err?.message ?? err }));
           // Still reload statuses even if pause fails
           this.loadLastSpaceStatuses(false);
           this.loadLastScan();
@@ -303,10 +311,10 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
       next: (meta) => {
         this.lastScanMeta.set(meta);
         if (meta) {
-          this.append(`[ui] Dernier scan détecté: ${meta.scanId} (${meta.spacesCount} espaces)`);
+          this.append(this.translocoService.translate('dashboard.logs.lastScanDetected', { scanId: meta.scanId, count: meta.spacesCount }));
           this.loadLastSpaceStatuses();
         } else {
-          this.append('[ui] Aucun scan précédent trouvé');
+          this.append(this.translocoService.translate('dashboard.logs.noLastScan'));
         }
       },
       error: () => {
@@ -389,18 +397,18 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     const meta = this.lastScanMeta();
     if (!meta || this.isStreaming() || this.isResuming()) return;
     this.isResuming.set(true);
-    this.append(`[ui] Demande de reprise du scan ${meta.scanId} ...`);
+    this.append(this.translocoService.translate('dashboard.logs.resumeRequest', { scanId: meta.scanId }));
     this.sentinelleApiService.resumeScan(meta.scanId).subscribe({
       next: () => {
         this.isResuming.set(false);
         // Immediately reconnect to the SSE stream so new WebFlux events are displayed live
-        this.append('[ui] Reprise acceptée (HTTP 202). Connexion au flux d\'événements ...');
+        this.append(this.translocoService.translate('dashboard.logs.resumeAccepted'));
         // Ensure no leftover subscription then open the stream
         this.isStreaming.set(true);
         this.sub = this.sentinelleApiService.startAllSpacesStream(meta.scanId).subscribe({
           next: (ev) => this.routeStreamEvent(ev.type as StreamEventType, ev.data),
           error: (err) => {
-            this.append(`[ui] Erreur de connexion SSE: ${err?.message ?? err}. Le scan continue sur le serveur.`);
+            this.append(this.translocoService.translate('dashboard.logs.sseError', { error: err?.message ?? err }));
             this.isStreaming.set(false);
           }
         });
@@ -410,7 +418,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
       },
       error: (e) => {
         this.isResuming.set(false);
-        this.append(`[ui] Echec de la reprise: ${e?.message ?? e}`);
+        this.append(this.translocoService.translate('dashboard.logs.resumeError', { error: e?.message ?? e }));
       }
     });
   }
@@ -423,11 +431,29 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   }
 
   get statusOptions() {
-    return this.spacesDashboardUtils.statusOptions;
+    return this.spacesDashboardUtils.statusOptions();
   }
 
   statusLabel(status?: string): string {
-    return this.spacesDashboardUtils.statusLabel(status);
+    const key = this.getStatusKey(status);
+    return this.translocoService.translate(key);
+  }
+
+  private getStatusKey(status?: string): string {
+    switch (status?.toUpperCase()) {
+      case 'RUNNING':
+        return 'dashboard.status.running';
+      case 'OK':
+        return 'dashboard.status.ok';
+      case 'FAILED':
+        return 'dashboard.status.failed';
+      case 'PENDING':
+        return 'dashboard.status.pending';
+      case 'PAUSED':
+        return 'dashboard.status.paused';
+      default:
+        return 'dashboard.status.pending';
+    }
   }
 
   statusSeverity(status?: string): 'danger' | 'warning' | 'success' | 'info' | 'secondary' {
@@ -482,7 +508,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
         }
       },
       error: (e) => {
-        this.append(`[ui] Failed to fetch spaces: ${e?.message ?? e}`);
+        this.append(this.translocoService.translate('dashboard.logs.fetchSpacesError', { error: e?.message ?? e }));
         this.isSpacesLoading.set(false);
         this.isRefreshing.set(false);
       }
@@ -571,26 +597,31 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     if (pages.length > 0) {
       const shown = pages.slice(0, maxPerCategory);
       const more = pages.length - shown.length;
-      const list = `- ${shown.join('\n- ')}` + (more > 0 ? `\n… (+${more} de plus)` : '');
-      parts.push(`Pages modifiées :\n${list}`);
+      const andMore = more > 0 ? `\n${this.translocoService.translate('dashboard.notifications.spaceUpdated.tooltip.andMore', { count: more })}` : '';
+      const list = `- ${shown.join('\n- ')}${andMore}`;
+      parts.push(`${this.translocoService.translate('dashboard.notifications.spaceUpdated.tooltip.pagesModified')}\n${list}`);
     }
 
     const attachments = Array.isArray(info.updatedAttachments) ? info.updatedAttachments : [];
     if (attachments.length > 0) {
       const shown = attachments.slice(0, maxPerCategory);
       const more = attachments.length - shown.length;
-      const list = `- ${shown.join('\n- ')}` + (more > 0 ? `\n… (+${more} de plus)` : '');
-      parts.push(`Pièces jointes modifiées :\n${list}`);
+      const andMore = more > 0 ? `\n${this.translocoService.translate('dashboard.notifications.spaceUpdated.tooltip.andMore', { count: more })}` : '';
+      const list = `- ${shown.join('\n- ')}${andMore}`;
+      parts.push(`${this.translocoService.translate('dashboard.notifications.spaceUpdated.tooltip.attachmentsModified')}\n${list}`);
     }
 
     // Fallback if no specific lists were provided by the backend
     if (parts.length === 0) {
-      return 'Contenu modifié depuis le dernier scan';
+      return this.translocoService.translate('dashboard.notifications.spaceUpdated.tooltip.contentModified');
     }
 
     // Note: do NOT include last scan date in tooltip per requirement
-    let tooltip = `Mis à jour : ${info.lastModified ? new Date(info.lastModified).toLocaleString('fr-FR') : 'Inconnue'}`;
-    return tooltip + '\n'+ parts.join('\n\n');
+    const currentLang = this.translocoService.getActiveLang();
+    const locale = currentLang === 'en' ? 'en-US' : 'fr-FR';
+    const dateStr = info.lastModified ? new Date(info.lastModified).toLocaleString(locale) : this.translocoService.translate('dashboard.notifications.spaceUpdated.tooltip.updated', { date: 'Unknown' });
+    const updatedLabel = info.lastModified ? this.translocoService.translate('dashboard.notifications.spaceUpdated.tooltip.updated', { date: dateStr }) : dateStr;
+    return updatedLabel + '\n'+ parts.join('\n\n');
   }
 
   /**
@@ -813,7 +844,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
     // Log the error but do not update scan history to 'failed'
     // The space should remain in RUNNING status
-    this.append(`[ui] Error for space ${spaceKey}: ${errorMessage}`);
+    this.append(this.translocoService.translate('dashboard.logs.errorForSpace', { spaceKey, error: errorMessage }));
   }
 
   /**

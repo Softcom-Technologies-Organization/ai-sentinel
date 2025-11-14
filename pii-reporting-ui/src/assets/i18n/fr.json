@@ -1,0 +1,220 @@
+{
+  "common": {
+    "appTitle": "Sentinel AI",
+    "actions": "Actions",
+    "search": "Rechercher",
+    "searchGlobally": "Rechercher globalement",
+    "refresh": "Rafraîchir",
+    "close": "Fermer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "yes": "Oui",
+    "no": "Non",
+    "loading": "Chargement...",
+    "noData": "Aucune donnée disponible",
+    "error": "Erreur",
+    "success": "Succès",
+    "warning": "Attention",
+    "info": "Information"
+  },
+  "language": {
+    "select": "Choisir la langue",
+    "fr": "Français",
+    "en": "English"
+  },
+  "dashboard": {
+    "title": "Sentinel AI",
+    "table": {
+      "headers": {
+        "space": "Espace",
+        "status": "Statut",
+        "progress": "Progression",
+        "lastScan": "Dernier scan",
+        "pii": "PII",
+        "actions": "Actions"
+      },
+      "emptyMessage": "Aucun élément à afficher",
+      "expand": "Développer",
+      "collapse": "Réduire"
+    },
+    "status": {
+      "running": "En cours",
+      "ok": "Terminé",
+      "failed": "Échec",
+      "pending": "En attente",
+      "paused": "En pause"
+    },
+    "actions": {
+      "startScan": "Démarrer le scan global",
+      "pauseScan": "Interrompre le scan",
+      "resumeScan": "Reprendre le dernier scan",
+      "openInConfluence": "Ouvrir dans Confluence",
+      "confluenceUnavailable": "URL indisponible (non fournie par le backend)"
+    },
+    "notifications": {
+      "newSpaces": {
+        "message": "{{count}} nouvel(aux) espace(s) Confluence disponible(s)",
+        "refreshButton": "Rafraîchir",
+        "closeAriaLabel": "Fermer la notification"
+      },
+      "spaceUpdated": {
+        "indicator": "Cet espace a été modifié depuis le dernier scan",
+        "tooltip": {
+          "updated": "Mis à jour : {{date}}",
+          "pagesModified": "Pages modifiées :",
+          "attachmentsModified": "Pièces jointes modifiées :",
+          "andMore": "… (+{{count}} de plus)",
+          "contentModified": "Contenu modifié depuis le dernier scan"
+        }
+      }
+    },
+    "logs": {
+      "purging": "[ui] Purge des résultats précédents ...",
+      "purgeOk": "[ui] Purge OK. Connexion à /api/v1/stream/confluence/spaces/events ...",
+      "sseError": "[ui] Erreur de connexion SSE: {{error}}. Le scan continue sur le serveur.",
+      "purgeError": "[ui] Erreur lors de la purge des précédents scans: {{error}}",
+      "scanCancelled": "[ui] Scan global annulé par l'utilisateur",
+      "resumeRequest": "[ui] Demande de reprise du scan {{scanId}} ...",
+      "resumeAccepted": "[ui] Reprise acceptée (HTTP 202). Connexion au flux d'événements ...",
+      "resumeError": "[ui] Échec de la reprise : {{error}}",
+      "scanPaused": "[ui] Scan {{scanId}} mis en pause",
+      "pauseError": "[ui] Erreur lors de la mise en pause : {{error}}",
+      "lastScanDetected": "[ui] Dernier scan détecté : {{scanId}} ({{count}} espaces)",
+      "noLastScan": "[ui] Aucun scan précédent trouvé",
+      "fetchSpacesError": "[ui] Échec de récupération des espaces : {{error}}",
+      "errorForSpace": "[ui] Erreur pour l'espace {{spaceKey}} : {{error}}"
+    }
+  },
+  "confirmations": {
+    "globalScan": {
+      "header": "Confirmation de scan global",
+      "message": "<p>Êtes-vous sûr de vouloir démarrer le scan de tous les espaces Confluence ?</p>\n<p><b>Les données existantes seront écrasées.</b></p>\n<p>Cette opération peut prendre du temps.</p>",
+      "acceptLabel": "Oui, démarrer",
+      "rejectLabel": "Annuler"
+    }
+  },
+  "piiItem": {
+    "severity": {
+      "label": "Sévérité : {{value}}",
+      "high": "Élevée",
+      "medium": "Moyenne",
+      "low": "Faible"
+    },
+    "fallback": {
+      "page": "Page",
+      "items": "éléments"
+    },
+    "attachment": {
+      "label": "Pièce jointe",
+      "types": {
+        "pdf": "PDF",
+        "word": "Word",
+        "excel": "Excel",
+        "ppt": "PowerPoint",
+        "txt": "Texte",
+        "image": "Image",
+        "unknown": "Fichier"
+      }
+    },
+    "actions": {
+      "viewDetail": "Voir détail",
+      "hideDetail": "Masquer le détail",
+      "reveal": "Révéler",
+      "mask": "Masquer",
+      "revealAriaLabel": "Afficher les valeurs sensibles (action auditée)",
+      "maskAriaLabel": "Masquer les valeurs sensibles"
+    },
+    "entity": {
+      "score": "Confiance {{value}}"
+    }
+  },
+  "spaceScanDetail": {
+    "title": "Détails de l'espace",
+    "scanInProgress": "Scan en cours",
+    "selectedSpace": "Détails de l'espace sélectionné",
+    "ariaLabel": "Détails de l'espace"
+  },
+  "errors": {
+    "unknownError": "Erreur inconnue",
+    "scanError": "Erreur de scan",
+    "connectionError": "Erreur de connexion",
+    "timeout": "Délai d'attente dépassé",
+    "networkError": "Erreur réseau"
+  },
+  "piiTypes": {
+    "EMAIL": "Email",
+    "PHONE": "Téléphone",
+    "TELEPHONENUM": "Numéro de téléphone",
+    "CREDIT_CARD": "Carte bancaire",
+    "CREDITCARDNUMBER": "Numéro de carte de crédit",
+    "SSN": "Numéro de sécurité sociale",
+    "SOCIALNUM": "Numéro de sécurité sociale",
+    "PASSPORT": "Passeport",
+    "DRIVER_LICENSE": "Permis de conduire",
+    "DRIVERLICENSENUM": "Numéro de permis de conduire",
+    "ACCOUNTNUM": "Numéro de compte",
+    "BUILDINGNUM": "Numéro de bâtiment",
+    "CITY": "Ville",
+    "DATEOFBIRTH": "Date de naissance",
+    "GIVENNAME": "Prénom",
+    "IDCARDNUM": "Numéro de carte d'identité",
+    "PASSWORD": "Mot de passe",
+    "STREET": "Rue",
+    "SURNAME": "Nom de famille",
+    "TAXNUM": "Numéro fiscal",
+    "USERNAME": "Nom d'utilisateur",
+    "ZIPCODE": "Code postal",
+    "URL": "URL",
+    "IBAN": "IBAN",
+    "CRYPTO_WALLET": "Portefeuille crypto",
+    "NHS_NUMBER": "Numéro NHS",
+    "NRIC": "NRIC",
+    "ABN": "ABN",
+    "ACN": "ACN",
+    "TFN": "TFN",
+    "MEDICARE": "Medicare",
+    "IP_ADDRESS": "Adresse IP",
+    "MAC_ADDRESS": "Adresse MAC",
+    "PERSON_NAME": "Nom de personne",
+    "LOCATION": "Lieu",
+    "DATE": "Date",
+    "AGE": "Âge",
+    "MEDICAL_LICENSE": "Licence médicale",
+    "ITIN": "ITIN",
+    "NRP": "Groupe nationalité/religion/politique",
+    "US_BANK_NUMBER": "Numéro de compte bancaire US",
+    "US_DRIVER_LICENSE": "Permis de conduire US",
+    "US_ITIN": "ITIN US",
+    "US_PASSPORT": "Passeport US",
+    "US_SSN": "SSN US",
+    "UK_NHS": "Numéro NHS UK",
+    "UK_NINO": "NINO UK",
+    "ES_NIF": "NIF espagnol",
+    "ES_NIE": "NIE espagnol",
+    "IT_FISCAL_CODE": "Code fiscal italien",
+    "IT_DRIVER_LICENSE": "Permis de conduire italien",
+    "IT_VAT_CODE": "Code TVA italien",
+    "IT_PASSPORT": "Passeport italien",
+    "IT_IDENTITY_CARD": "Carte d'identité italienne",
+    "PL_PESEL": "PESEL polonais",
+    "SG_NRIC_FIN": "NRIC/FIN singapourien",
+    "SG_UEN": "UEN singapourien",
+    "AU_ABN": "ABN australien",
+    "AU_ACN": "ACN australien",
+    "AU_TFN": "TFN australien",
+    "AU_MEDICARE": "Medicare australien",
+    "IN_PAN": "PAN indien",
+    "IN_AADHAAR": "Aadhaar indien",
+    "IN_VEHICLE_REGISTRATION": "Immatriculation véhicule indien",
+    "IN_VOTER": "Carte d'électeur indienne",
+    "IN_PASSPORT": "Passeport indien",
+    "FI_PERSONAL_IDENTITY_CODE": "Code d'identité finlandais",
+    "KR_RRN": "RRN coréen",
+    "TH_TNIN": "TNIN thaïlandais",
+    "API_KEY": "Clé API",
+    "JWT_TOKEN": "Jeton JWT",
+    "GITHUB_TOKEN": "Jeton GitHub",
+    "AWS_KEY": "Clé AWS",
+    "UNKNOWN": "Inconnu"
+  }
+}

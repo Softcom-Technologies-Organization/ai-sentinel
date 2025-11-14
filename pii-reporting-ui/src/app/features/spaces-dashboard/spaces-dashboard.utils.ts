@@ -1,6 +1,7 @@
-import {computed, Injectable, signal} from '@angular/core';
+import {computed, inject, Injectable, signal} from '@angular/core';
 import {Space} from '../../core/models/space';
 import {PiiItem} from '../../core/models/pii-item';
+import {TranslocoService} from '@jsverse/transloco';
 
 /**
  * Facade for Spaces Dashboard UI concerns.
@@ -16,6 +17,8 @@ export interface UISpace extends Space {
 
 @Injectable({ providedIn: 'root' })
 export class SpacesDashboardUtils {
+  private readonly translocoService = inject(TranslocoService);
+
   // raw ui list populated from backend spaces with safe defaults for display fields
   private readonly uiSpaces = signal<UISpace[]>([]);
 
@@ -23,13 +26,17 @@ export class SpacesDashboardUtils {
   readonly globalFilter = signal<string>('');
   private readonly filters = signal<{ name?: string; status?: string | null }>({});
 
-  readonly statusOptions = [
-    { label: 'Non démarré', value: 'PENDING' },
-    { label: 'En pause', value: 'PAUSED' },
-    { label: 'En cours', value: 'RUNNING' },
-    { label: 'Terminé', value: 'OK' },
-    { label: 'En échec', value: 'FAILED' }
-  ];
+  /**
+   * Status options for dropdown filter with i18n support.
+   * The translation is handled in the template using transloco pipe.
+   */
+  readonly statusOptions = signal<Array<{ labelKey: string; value: string }>>([
+    { labelKey: 'dashboard.status.pending', value: 'PENDING' },
+    { labelKey: 'dashboard.status.paused', value: 'PAUSED' },
+    { labelKey: 'dashboard.status.running', value: 'RUNNING' },
+    { labelKey: 'dashboard.status.ok', value: 'OK' },
+    { labelKey: 'dashboard.status.failed', value: 'FAILED' }
+  ]);
 
   /**
    * UI-facing, filtered list of spaces according to current filters.

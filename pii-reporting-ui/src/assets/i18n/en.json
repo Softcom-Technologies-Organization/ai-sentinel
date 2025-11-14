@@ -1,0 +1,220 @@
+{
+  "common": {
+    "appTitle": "Sentinel AI",
+    "actions": "Actions",
+    "search": "Search",
+    "searchGlobally": "Search globally",
+    "refresh": "Refresh",
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "loading": "Loading...",
+    "noData": "No data available",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "language": {
+    "select": "Select language",
+    "fr": "Français",
+    "en": "English"
+  },
+  "dashboard": {
+    "title": "Sentinel AI",
+    "table": {
+      "headers": {
+        "space": "Space",
+        "status": "Status",
+        "progress": "Progress",
+        "lastScan": "Last scan",
+        "pii": "PII",
+        "actions": "Actions"
+      },
+      "emptyMessage": "No items to display",
+      "expand": "Expand",
+      "collapse": "Collapse"
+    },
+    "status": {
+      "running": "Running",
+      "ok": "Finished",
+      "failed": "Failed",
+      "pending": "Pending",
+      "paused": "Paused"
+    },
+    "actions": {
+      "startScan": "Start global scan",
+      "pauseScan": "Pause scan",
+      "resumeScan": "Resume last scan",
+      "openInConfluence": "Open in Confluence",
+      "confluenceUnavailable": "URL unavailable (not provided by backend)"
+    },
+    "notifications": {
+      "newSpaces": {
+        "message": "{{count}} new Confluence space(s) available",
+        "refreshButton": "Refresh",
+        "closeAriaLabel": "Close notification"
+      },
+      "spaceUpdated": {
+        "indicator": "This space has been modified since last scan",
+        "tooltip": {
+          "updated": "Updated: {{date}}",
+          "pagesModified": "Modified pages:",
+          "attachmentsModified": "Modified attachments:",
+          "andMore": "… (+{{count}} more)",
+          "contentModified": "Content modified since last scan"
+        }
+      }
+    },
+    "logs": {
+      "purging": "[ui] Purging previous results...",
+      "purgeOk": "[ui] Purge OK. Connecting to /api/v1/stream/confluence/spaces/events...",
+      "sseError": "[ui] SSE connection error: {{error}}. The scan continues on the server.",
+      "purgeError": "[ui] Error while purging previous scans: {{error}}",
+      "scanCancelled": "[ui] Global scan cancelled by user",
+      "resumeRequest": "[ui] Requesting resume of scan {{scanId}}...",
+      "resumeAccepted": "[ui] Resume accepted (HTTP 202). Connecting to event stream...",
+      "resumeError": "[ui] Resume failed: {{error}}",
+      "scanPaused": "[ui] Scan {{scanId}} paused",
+      "pauseError": "[ui] Error while pausing: {{error}}",
+      "lastScanDetected": "[ui] Last scan detected: {{scanId}} ({{count}} spaces)",
+      "noLastScan": "[ui] No previous scan found",
+      "fetchSpacesError": "[ui] Failed to fetch spaces: {{error}}",
+      "errorForSpace": "[ui] Error for space {{spaceKey}}: {{error}}"
+    }
+  },
+  "confirmations": {
+    "globalScan": {
+      "header": "Global scan confirmation",
+      "message": "<p>Are you sure you want to start scanning all Confluence spaces?</p>\n<p><b>Existing data will be overwritten.</b></p>\n<p>This operation may take some time.</p>",
+      "acceptLabel": "Yes, start",
+      "rejectLabel": "Cancel"
+    }
+  },
+  "piiItem": {
+    "severity": {
+      "label": "Severity: {{value}}",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "fallback": {
+      "page": "Page",
+      "items": "items"
+    },
+    "attachment": {
+      "label": "Attachment",
+      "types": {
+        "pdf": "PDF",
+        "word": "Word",
+        "excel": "Excel",
+        "ppt": "PowerPoint",
+        "txt": "Text",
+        "image": "Image",
+        "unknown": "File"
+      }
+    },
+    "actions": {
+      "viewDetail": "View detail",
+      "hideDetail": "Hide detail",
+      "reveal": "Reveal",
+      "mask": "Mask",
+      "revealAriaLabel": "Show sensitive values (audited action)",
+      "maskAriaLabel": "Hide sensitive values"
+    },
+    "entity": {
+      "score": "Confidence {{value}}",
+    }
+  },
+  "spaceScanDetail": {
+    "title": "Space details",
+    "scanInProgress": "Scan in progress",
+    "selectedSpace": "Selected space details",
+    "ariaLabel": "Space details"
+  },
+  "errors": {
+    "unknownError": "Unknown error",
+    "scanError": "Scan error",
+    "connectionError": "Connection error",
+    "timeout": "Timeout",
+    "networkError": "Network error"
+  },
+  "piiTypes": {
+    "EMAIL": "Email",
+    "PHONE": "Phone Number",
+    "TELEPHONENUM": "Telephone Number",
+    "CREDIT_CARD": "Credit Card",
+    "CREDITCARDNUMBER": "Credit Card Number",
+    "SSN": "Social Security Number",
+    "SOCIALNUM": "Social Security Number",
+    "PASSPORT": "Passport",
+    "DRIVER_LICENSE": "Driver License",
+    "DRIVERLICENSENUM": "Driver License Number",
+    "ACCOUNTNUM": "Account Number",
+    "BUILDINGNUM": "Building Number",
+    "CITY": "City",
+    "DATEOFBIRTH": "Date of Birth",
+    "GIVENNAME": "First Name",
+    "IDCARDNUM": "ID Card Number",
+    "PASSWORD": "Password",
+    "STREET": "Street",
+    "SURNAME": "Last Name",
+    "TAXNUM": "Tax Number",
+    "USERNAME": "Username",
+    "ZIPCODE": "Zip Code",
+    "URL": "URL",
+    "IBAN": "IBAN",
+    "CRYPTO_WALLET": "Crypto Wallet",
+    "NHS_NUMBER": "NHS Number",
+    "NRIC": "NRIC",
+    "ABN": "ABN",
+    "ACN": "ACN",
+    "TFN": "TFN",
+    "MEDICARE": "Medicare",
+    "IP_ADDRESS": "IP Address",
+    "MAC_ADDRESS": "MAC Address",
+    "PERSON_NAME": "Person Name",
+    "LOCATION": "Location",
+    "DATE": "Date",
+    "AGE": "Age",
+    "MEDICAL_LICENSE": "Medical License",
+    "ITIN": "ITIN",
+    "NRP": "Nationality/Religion/Politics",
+    "US_BANK_NUMBER": "US Bank Account Number",
+    "US_DRIVER_LICENSE": "US Driver License",
+    "US_ITIN": "US ITIN",
+    "US_PASSPORT": "US Passport",
+    "US_SSN": "US SSN",
+    "UK_NHS": "UK NHS Number",
+    "UK_NINO": "UK NINO",
+    "ES_NIF": "Spanish NIF",
+    "ES_NIE": "Spanish NIE",
+    "IT_FISCAL_CODE": "Italian Fiscal Code",
+    "IT_DRIVER_LICENSE": "Italian Driver License",
+    "IT_VAT_CODE": "Italian VAT Code",
+    "IT_PASSPORT": "Italian Passport",
+    "IT_IDENTITY_CARD": "Italian Identity Card",
+    "PL_PESEL": "Polish PESEL",
+    "SG_NRIC_FIN": "Singapore NRIC/FIN",
+    "SG_UEN": "Singapore UEN",
+    "AU_ABN": "Australian ABN",
+    "AU_ACN": "Australian ACN",
+    "AU_TFN": "Australian TFN",
+    "AU_MEDICARE": "Australian Medicare",
+    "IN_PAN": "Indian PAN",
+    "IN_AADHAAR": "Indian Aadhaar",
+    "IN_VEHICLE_REGISTRATION": "Indian Vehicle Registration",
+    "IN_VOTER": "Indian Voter ID",
+    "IN_PASSPORT": "Indian Passport",
+    "FI_PERSONAL_IDENTITY_CODE": "Finnish Personal Identity Code",
+    "KR_RRN": "Korean RRN",
+    "TH_TNIN": "Thai TNIN",
+    "API_KEY": "API Key",
+    "JWT_TOKEN": "JWT Token",
+    "GITHUB_TOKEN": "GitHub Token",
+    "AWS_KEY": "AWS Key",
+    "UNKNOWN": "Unknown"
+  }
+}

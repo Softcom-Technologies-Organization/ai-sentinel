@@ -20,6 +20,7 @@ import {PiiItemCardUtils} from './pii-item-card.utils';
 import {TestIds} from '../test-ids.constants';
 import {SentinelleApiService} from '../../core/services/sentinelle-api.service';
 import {Divider} from 'primeng/divider';
+import {TranslocoModule, TranslocoService} from '@jsverse/transloco';
 
 /**
  * Display a single detection item with masked HTML snippet, entities and severity badge.
@@ -28,7 +29,7 @@ import {Divider} from 'primeng/divider';
 @Component({
   selector: 'app-pii-item-card',
   standalone: true,
-  imports: [CommonModule, ButtonModule, CardModule, TagModule, ChipModule, Divider],
+  imports: [CommonModule, ButtonModule, CardModule, TagModule, ChipModule, Divider, TranslocoModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pii-item-card.component.html',
   styleUrl: './pii-item-card.component.css',
@@ -47,10 +48,14 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
   /** Whether a reveal request is in progress */
   readonly isRevealing = signal<boolean>(false);
 
+  // Track previous item identity to avoid resetting user state on same item
+  private previousItemId: string | null = null;
+
   // Utils facade for UI helper methods
   readonly piiItemCardUtils = inject(PiiItemCardUtils);
   private readonly sentinelleApi = inject(SentinelleApiService);
   private readonly cdr = inject(ChangeDetectorRef);
+  readonly translocoService = inject(TranslocoService);
 
   // Test IDs for E2E testing
   readonly testIds = TestIds;
@@ -61,12 +66,37 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
       next: (allowed) => this.canRevealSecrets.set(allowed),
       error: () => this.canRevealSecrets.set(false)
     });
+    // Initialize revealed state on first load only
+    this.revealed = !this.maskByDefault;
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['item'] || changes['maskByDefault']) {
+    // Only reset user interaction states if this is a genuinely different item
+    if (changes['item'] && this.item) {
+      const currentItemId = this.getItemIdentity(this.item);
+      const isNewItem = this.previousItemId !== currentItemId;
+
+      if (isNewItem) {
+        // New item: reset all user interaction states
+        this.revealed = !this.maskByDefault;
+        this.detailsOpen = false;
+        this.previousItemId = currentItemId;
+      }
+      // Same item: preserve user interaction states (detailsOpen, revealed)
+    }
+
+    // Handle maskByDefault changes only if item hasn't changed or if it's a new item
+    if (changes['maskByDefault'] && !changes['item']) {
       this.revealed = !this.maskByDefault;
     }
+  }
+
+  /**
+   * Generate a unique identifier for an item based on its content.
+   * Used to detect when we're receiving the same item vs a new one.
+   */
+  private getItemIdentity(item: PiiItem): string {
+    return `${item.pageId}-${item.attachmentName || 'page'}`;
   }
 
   get maskedHtmlSafe(): string | null {
@@ -137,9 +167,21 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
   }
 
   sevLabel(sev?: Severity | null): string {
-    if (sev === 'high') return 'Élevée';
-    if (sev === 'medium') return 'Moyenne';
-    return 'Faible';
+    const key = this.getSeverityKey(sev);
+    return this.translocoService.translate(key);
+  }
+
+  private getSeverityKey(sev?: Severity | null): string {
+    switch (sev) {
+      case 'high':
+        return 'piiItem.severity.high';
+      case 'medium':
+        return 'piiItem.severity.medium';
+      case 'low':
+        return 'piiItem.severity.low';
+      default:
+        return 'piiItem.severity.low';
+    }
   }
 
   formatTs(ts?: string): string {
@@ -148,6 +190,49 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
   }
 
   objectKeys(obj: Record<string, number>): string[] { return Object.keys(obj || {}); }
+
+  /**
+   * Translate PII type key to user-friendly label.
+   * Uses i18n translation with fallback to formatted key.
+   *
+   * Business rule: All PII type keys are normalized to UPPERCASE at the source (Python gRPC service),
+   * ensuring consistent translation lookup across all detectors.
+   *
+   * @param key PII type key (e.g., "EMAIL", "CREDIT_CARD", "Piitype.email")
+   * @returns Translated label or formatted fallback
+   */
+  translatePiiType(key: string): string {
+    // Handle edge case where key itself contains "piiTypes." or "Piitype." prefix
+    let cleanKey = key;
+    if (key.toLowerCase().startsWith('piitype')) {
+      // Extract just the actual type after the dot
+      const parts = key.split('.');
+      cleanKey = parts.length > 1 ? parts[parts.length - 1] : key;
+    }
+
+    const normalizedKey = cleanKey.toUpperCase();
+    const translationKey = `piiTypes.${normalizedKey}`;
+    const translated = this.translocoService.translate(translationKey);
+
+    // If translation returns the key itself (not found), use formatted fallback
+    // Check if it contains "piiTypes." which indicates translation was not found
+    const isTranslationMissing = translated === translationKey || translated.includes('piiTypes.');
+    return isTranslationMissing ? this.formatFallbackLabel(cleanKey) : translated;
+  }
+
+  /**
+   * Format a key as fallback when translation is missing.
+   * Converts "CREDIT_CARD" to "Credit Card", "EMAIL" to "Email", etc.
+   *
+   * @param key Raw PII type key
+   * @returns Formatted human-readable label
+   */
+  private formatFallbackLabel(key: string): string {
+    return key
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  }
 
   /** Format a numeric score with 2 decimals for chip display */
   formatScore(score: number | undefined | null): string {

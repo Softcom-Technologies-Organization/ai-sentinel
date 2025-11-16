@@ -25,7 +25,7 @@ import pro.softcom.sentinelle.application.pii.export.port.out.ReadScanEventsPort
 import pro.softcom.sentinelle.application.pii.export.port.out.WriteDetectionReportPort;
 import pro.softcom.sentinelle.application.pii.export.usecase.ExportDetectionReportUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanUseCase;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.RevealPiiSecretsPort;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.RevealPiiSecretsUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
@@ -46,7 +46,7 @@ import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentPa
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.HtmlContentParser;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.PlainTextParser;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.PauseScanUseCaseImpl;
-import pro.softcom.sentinelle.application.pii.reporting.usecase.RevealPiiSecretsUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.usecase.RevealPiiSecretsUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.ScanReportingUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceResumeScanUseCaseImpl;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceScanUseCaseImpl;
@@ -243,9 +243,9 @@ public class ApplicationUseCasesConfig {
 
     // PII Access Services
     @Bean
-    public RevealPiiSecretsPort revealPiiSecretsPort(
+    public RevealPiiSecretsUseCase revealPiiSecretsPort(
             ReadPiiConfigPort readPiiConfigPort,
             ScanResultQuery scanResultQuery) {
-        return new RevealPiiSecretsUseCase(readPiiConfigPort, scanResultQuery);
+        return new RevealPiiSecretsUseCaseImpl(readPiiConfigPort, scanResultQuery);
     }
 }

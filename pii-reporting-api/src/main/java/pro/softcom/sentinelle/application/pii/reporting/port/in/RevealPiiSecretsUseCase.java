@@ -11,7 +11,7 @@ import java.util.Optional;
  * <p>Business Rule: Secrets can only be revealed when explicitly authorized
  * by configuration.</p>
  */
-public interface RevealPiiSecretsPort {
+public interface RevealPiiSecretsUseCase {
 
     /**
      * Checks if secret revelation is currently allowed by configuration.

@@ -1,6 +1,12 @@
 # Docker Secrets for AI Sentinel
 
-This directory contains secret files used by Docker Compose for secure configuration management.
+This directory contains the secret files that Docker Compose can use for secure configuration management.
+
+In normal conditions you **do not need** to create these files manually:
+- in **production**, they are generated automatically by the `secrets-bootstrap` service described in the main `README.md` (Infisical Setup, Step 0)
+- in **development**, they are usually created while following the Infisical UI guide in the root `README.md`
+
+This document explains an **optional, manual procedure** to create or recreate the same secrets **only if needed** (for example if automatic generation is not available on your environment or if you want to regenerate them for troubleshooting).
 
 ## 📋 Secret Files
 
@@ -13,9 +19,11 @@ This directory contains secret files used by Docker Compose for secure configura
 
 ## 🔧 Initial Setup
 
-### Step 1: Generate Infisical Internal Secrets
+### Step 1: Generate Infisical Internal Secrets (optional manual method)
 
-⚠️ **CRITICAL**: Infisical requires specific formats for encryption keys:
+⚠️ **CRITICAL**: Infisical requires specific formats for encryption keys.
+
+If you are self-hosting Infisical **without** using the automatic `secrets-bootstrap` service (or if you need to regenerate corrupted files), you can generate the internal secrets manually with the commands below.
 
 #### A. Generate ENCRYPTION_KEY (32 hex characters)
 
@@ -57,9 +65,9 @@ openssl rand -base64 32 | tr -d '\n' | tee secrets/infisical_auth_secret.txt
 openssl rand -base64 24 | tr -d '\n' | tee secrets/infisical_db_password.txt
 ```
 
-### Step 2: Start Infisical
+### Step 2: Start Infisical (self-hosted development only)
 
-With the generated secrets, start Infisical:
+If you run a local, self-hosted Infisical instance for development and you created the internal secrets manually, start Infisical with:
 
 ```bash
 docker-compose -f docker-compose.dev.yml up -d infisical
@@ -70,7 +78,7 @@ Wait for it to be healthy:
 docker logs infisical -f
 ```
 
-### Step 3: Create Project and Get Project ID
+### Step 3: Create Project and Get Project ID (same steps as in main README)
 
 1. Access Infisical web interface: http://localhost:8082
 2. Log in with your account
@@ -82,7 +90,7 @@ docker logs infisical -f
 
 Create a text file named `infisical_project_id.txt` in the `secrets` folder and paste your Project ID on a single line (no extra spaces or trailing newline).
 
-### Step 4: Create Machine Identity and Get Credentials
+### Step 4: Create Machine Identity and Get Credentials (same steps as in main README)
 
 1. In your project, navigate to: **Settings → Access Control → Machine Identities**
 2. Click **+ Add Identity**
@@ -100,7 +108,7 @@ If you also configure production:
 - `infisical_prod_client_id.txt` — Machine Identity Client ID (prod)
 - `infisical_prod_client_secret.txt` — Machine Identity Client Secret (prod)
 
-### Step 5: Start All Services
+### Step 5: Start All Services (development stack)
 
 ```bash
 docker-compose -f docker-compose.dev.yml up -d

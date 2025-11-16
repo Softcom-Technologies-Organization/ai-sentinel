@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.NonNull;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -21,7 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.RevealPiiSecretsPort;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.RevealPiiSecretsUseCase;
 import pro.softcom.sentinelle.domain.pii.reporting.PageSecretsResponse;
 import pro.softcom.sentinelle.domain.pii.reporting.RevealedSecret;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.PiiAccessController.PageRevealRequest;
@@ -33,7 +34,7 @@ import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.PiiAccessC
 class PiiAccessControllerTest {
 
     @Mock
-    private RevealPiiSecretsPort revealPiiSecretsPort;
+    private RevealPiiSecretsUseCase revealPiiSecretsUseCase;
 
     @Mock
     private PageSecretsResponseMapper mapper;
@@ -42,7 +43,7 @@ class PiiAccessControllerTest {
 
     @BeforeEach
     void setUp() {
-        controller = new PiiAccessController(revealPiiSecretsPort, mapper);
+        controller = new PiiAccessController(revealPiiSecretsUseCase, mapper);
     }
 
     // ========== isRevealAllowed() Tests ==========
@@ -55,7 +56,7 @@ class PiiAccessControllerTest {
         @DisplayName("Should_ReturnTrue_When_RevealIsAllowedByConfiguration")
         void Should_ReturnTrue_When_RevealIsAllowedByConfiguration() {
             // Given
-            when(revealPiiSecretsPort.isRevealAllowed()).thenReturn(true);
+            when(revealPiiSecretsUseCase.isRevealAllowed()).thenReturn(true);
 
             // When
             ResponseEntity<@NonNull Boolean> response = controller.isRevealAllowed();
@@ -65,14 +66,14 @@ class PiiAccessControllerTest {
                 softly.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
                 softly.assertThat(response.getBody()).isTrue();
             });
-            verify(revealPiiSecretsPort).isRevealAllowed();
+            verify(revealPiiSecretsUseCase).isRevealAllowed();
         }
 
         @Test
         @DisplayName("Should_ReturnFalse_When_RevealIsNotAllowedByConfiguration")
         void Should_ReturnFalse_When_RevealIsNotAllowedByConfiguration() {
             // Given
-            when(revealPiiSecretsPort.isRevealAllowed()).thenReturn(false);
+            when(revealPiiSecretsUseCase.isRevealAllowed()).thenReturn(false);
 
             // When
             ResponseEntity<@NonNull Boolean> response = controller.isRevealAllowed();
@@ -82,21 +83,21 @@ class PiiAccessControllerTest {
                 softly.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
                 softly.assertThat(response.getBody()).isFalse();
             });
-            verify(revealPiiSecretsPort).isRevealAllowed();
+            verify(revealPiiSecretsUseCase).isRevealAllowed();
         }
 
         @Test
         @DisplayName("Should_CallPortOnlyOnce_When_CheckingRevealAllowed")
         void Should_CallPortOnlyOnce_When_CheckingRevealAllowed() {
             // Given
-            when(revealPiiSecretsPort.isRevealAllowed()).thenReturn(true);
+            when(revealPiiSecretsUseCase.isRevealAllowed()).thenReturn(true);
 
             // When
             controller.isRevealAllowed();
 
             // Then
-            verify(revealPiiSecretsPort, times(1)).isRevealAllowed();
-            verifyNoMoreInteractions(revealPiiSecretsPort);
+            verify(revealPiiSecretsUseCase, times(1)).isRevealAllowed();
+            verifyNoMoreInteractions(revealPiiSecretsUseCase);
         }
     }
 
@@ -114,32 +115,32 @@ class PiiAccessControllerTest {
         @DisplayName("Should_ReturnForbidden_When_SecurityExceptionThrown")
         void Should_ReturnForbidden_When_SecurityExceptionThrown() {
             // Given
-            when(revealPiiSecretsPort.revealPageSecrets(any(), any()))
+            when(revealPiiSecretsUseCase.revealPageSecrets(any(), any()))
                     .thenThrow(new SecurityException("Not allowed"));
             PageRevealRequest request = new PageRevealRequest(SCAN_ID, PAGE_ID);
 
             // When
-            ResponseEntity<PageSecretsResponseDto> response = controller.revealPageSecrets(request);
+            ResponseEntity<@NonNull PageSecretsResponseDto> response = controller.revealPageSecrets(request);
 
             // Then
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-            verify(revealPiiSecretsPort).revealPageSecrets(SCAN_ID, PAGE_ID);
+            verify(revealPiiSecretsUseCase).revealPageSecrets(SCAN_ID, PAGE_ID);
         }
 
         @Test
         @DisplayName("Should_ReturnNotFound_When_PortReturnsEmpty")
         void Should_ReturnNotFound_When_PortReturnsEmpty() {
             // Given
-            when(revealPiiSecretsPort.revealPageSecrets(SCAN_ID, PAGE_ID))
+            when(revealPiiSecretsUseCase.revealPageSecrets(SCAN_ID, PAGE_ID))
                     .thenReturn(Optional.empty());
             PageRevealRequest request = new PageRevealRequest(SCAN_ID, PAGE_ID);
 
             // When
-            ResponseEntity<PageSecretsResponseDto> response = controller.revealPageSecrets(request);
+            ResponseEntity<@NonNull PageSecretsResponseDto> response = controller.revealPageSecrets(request);
 
             // Then
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-            verify(revealPiiSecretsPort).revealPageSecrets(SCAN_ID, PAGE_ID);
+            verify(revealPiiSecretsUseCase).revealPageSecrets(SCAN_ID, PAGE_ID);
         }
 
         @Test
@@ -165,14 +166,14 @@ class PiiAccessControllerTest {
             PageSecretsResponseDto dto = new PageSecretsResponseDto(SCAN_ID, PAGE_ID, PAGE_TITLE,
                     List.of(secretDto1, secretDto2));
 
-            when(revealPiiSecretsPort.revealPageSecrets(SCAN_ID, PAGE_ID))
+            when(revealPiiSecretsUseCase.revealPageSecrets(SCAN_ID, PAGE_ID))
                     .thenReturn(Optional.of(domainResponse));
             when(mapper.toDto(domainResponse)).thenReturn(dto);
 
             PageRevealRequest request = new PageRevealRequest(SCAN_ID, PAGE_ID);
 
             // When
-            ResponseEntity<PageSecretsResponseDto> response = controller.revealPageSecrets(request);
+            ResponseEntity<@NonNull PageSecretsResponseDto> response = controller.revealPageSecrets(request);
 
             // Then
             assertSoftly(softly -> {
@@ -180,6 +181,7 @@ class PiiAccessControllerTest {
                 softly.assertThat(response.getBody()).isNotNull();
 
                 PageSecretsResponseDto body = response.getBody();
+                Assertions.assertNotNull(body);
                 softly.assertThat(body.scanId()).isEqualTo(SCAN_ID);
                 softly.assertThat(body.pageId()).isEqualTo(PAGE_ID);
                 softly.assertThat(body.pageTitle()).isEqualTo(PAGE_TITLE);
@@ -198,7 +200,7 @@ class PiiAccessControllerTest {
                 softly.assertThat(actualDto2.sensitiveValue()).isEqualTo("1234567890");
             });
 
-            verify(revealPiiSecretsPort).revealPageSecrets(SCAN_ID, PAGE_ID);
+            verify(revealPiiSecretsUseCase).revealPageSecrets(SCAN_ID, PAGE_ID);
             verify(mapper).toDto(domainResponse);
         }
 
@@ -216,19 +218,20 @@ class PiiAccessControllerTest {
             PageSecretsResponseDto dto = new PageSecretsResponseDto(SCAN_ID, PAGE_ID, PAGE_TITLE,
                     Collections.emptyList());
 
-            when(revealPiiSecretsPort.revealPageSecrets(SCAN_ID, PAGE_ID))
+            when(revealPiiSecretsUseCase.revealPageSecrets(SCAN_ID, PAGE_ID))
                     .thenReturn(Optional.of(domainResponse));
             when(mapper.toDto(domainResponse)).thenReturn(dto);
 
             PageRevealRequest request = new PageRevealRequest(SCAN_ID, PAGE_ID);
 
             // When
-            ResponseEntity<PageSecretsResponseDto> response = controller.revealPageSecrets(request);
+            ResponseEntity<@NonNull PageSecretsResponseDto> response = controller.revealPageSecrets(request);
 
             // Then
             assertSoftly(softly -> {
                 softly.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
                 softly.assertThat(response.getBody()).isNotNull();
+                Assertions.assertNotNull(response.getBody());
                 softly.assertThat(response.getBody().secrets()).isEmpty();
             });
         }
@@ -237,7 +240,7 @@ class PiiAccessControllerTest {
         @DisplayName("Should_CallPortWithCorrectParameters_When_RevealingSecrets")
         void Should_CallPortWithCorrectParameters_When_RevealingSecrets() {
             // Given
-            when(revealPiiSecretsPort.revealPageSecrets(any(), any()))
+            when(revealPiiSecretsUseCase.revealPageSecrets(any(), any()))
                     .thenReturn(Optional.empty());
 
             PageRevealRequest request = new PageRevealRequest(SCAN_ID, PAGE_ID);
@@ -246,7 +249,7 @@ class PiiAccessControllerTest {
             controller.revealPageSecrets(request);
 
             // Then
-            verify(revealPiiSecretsPort).revealPageSecrets(SCAN_ID, PAGE_ID);
+            verify(revealPiiSecretsUseCase).revealPageSecrets(SCAN_ID, PAGE_ID);
         }
 
         @Test
@@ -273,19 +276,20 @@ class PiiAccessControllerTest {
             PageSecretsResponseDto dto = new PageSecretsResponseDto(SCAN_ID, PAGE_ID, PAGE_TITLE,
                     List.of(secretDto));
 
-            when(revealPiiSecretsPort.revealPageSecrets(any(), any()))
+            when(revealPiiSecretsUseCase.revealPageSecrets(any(), any()))
                     .thenReturn(Optional.of(domainResponse));
             when(mapper.toDto(any())).thenReturn(dto);
 
             PageRevealRequest request = new PageRevealRequest(SCAN_ID, PAGE_ID);
 
             // When
-            ResponseEntity<PageSecretsResponseDto> response = controller.revealPageSecrets(request);
+            ResponseEntity<@NonNull PageSecretsResponseDto> response = controller.revealPageSecrets(request);
 
             // Then
             assertSoftly(softly -> {
                 softly.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
                 softly.assertThat(response.getBody()).isNotNull();
+                Assertions.assertNotNull(response.getBody());
                 softly.assertThat(response.getBody().secrets()).hasSize(1);
 
                 RevealedSecretDto actualDto = response.getBody().secrets().getFirst();
@@ -321,19 +325,20 @@ class PiiAccessControllerTest {
             );
             PageSecretsResponseDto dto = new PageSecretsResponseDto(SCAN_ID, PAGE_ID, PAGE_TITLE, secretDtos);
 
-            when(revealPiiSecretsPort.revealPageSecrets(any(), any()))
+            when(revealPiiSecretsUseCase.revealPageSecrets(any(), any()))
                     .thenReturn(Optional.of(domainResponse));
             when(mapper.toDto(any())).thenReturn(dto);
 
             PageRevealRequest request = new PageRevealRequest(SCAN_ID, PAGE_ID);
 
             // When
-            ResponseEntity<PageSecretsResponseDto> response = controller.revealPageSecrets(request);
+            ResponseEntity<@NonNull PageSecretsResponseDto> response = controller.revealPageSecrets(request);
 
             // Then
             assertSoftly(softly -> {
                 softly.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
                 softly.assertThat(response.getBody()).isNotNull();
+                Assertions.assertNotNull(response.getBody());
                 softly.assertThat(response.getBody().secrets()).hasSize(4);
             });
         }
@@ -362,16 +367,17 @@ class PiiAccessControllerTest {
             );
             PageSecretsResponseDto dto = new PageSecretsResponseDto(SCAN_ID, PAGE_ID, PAGE_TITLE, secretDtos);
 
-            when(revealPiiSecretsPort.revealPageSecrets(any(), any()))
+            when(revealPiiSecretsUseCase.revealPageSecrets(any(), any()))
                     .thenReturn(Optional.of(domainResponse));
             when(mapper.toDto(any())).thenReturn(dto);
 
             PageRevealRequest request = new PageRevealRequest(SCAN_ID, PAGE_ID);
 
             // When
-            ResponseEntity<PageSecretsResponseDto> response = controller.revealPageSecrets(request);
+            ResponseEntity<@NonNull PageSecretsResponseDto> response = controller.revealPageSecrets(request);
 
             // Then
+            Assertions.assertNotNull(response.getBody());
             List<RevealedSecretDto> actualDtos = response.getBody().secrets();
             assertSoftly(softly -> {
                 softly.assertThat(actualDtos.get(0).sensitiveValue()).isEqualTo("first");

@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.PurgeDetectionDataUseCase;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanCheckpointStore;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanEventStore;
-import pro.softcom.sentinelle.application.pii.reporting.usecase.PurgeDetectionDataService;
+import pro.softcom.sentinelle.application.pii.reporting.usecase.PurgeDetectionDataUseCaseImpl;
 
 /**
  * Infrastructure configuration wiring the PurgeScanDataUseCase to its implementation.
@@ -18,6 +18,6 @@ public class PurgeScanConfiguration {
             ScanEventStore eventStore,
             ScanCheckpointStore checkpointStore
     ) {
-        return new PurgeDetectionDataService(eventStore, checkpointStore);
+        return new PurgeDetectionDataUseCaseImpl(eventStore, checkpointStore);
     }
 }

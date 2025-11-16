@@ -12,7 +12,7 @@ import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanEventStore;
  */
 @Slf4j
 @RequiredArgsConstructor
-public class PurgeDetectionDataService implements PurgeDetectionDataUseCase {
+public class PurgeDetectionDataUseCaseImpl implements PurgeDetectionDataUseCase {
 
     private final ScanEventStore eventStore;
     private final ScanCheckpointStore checkpointStore;

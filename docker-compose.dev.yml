@@ -212,7 +212,7 @@ services:
       - ai-sentinel-network
 
   infisical:
-    image: infisical/infisical:latest-postgres
+    image: infisical/infisical:v0.140.0-postgres
     container_name: infisical
     restart: unless-stopped
     ports:

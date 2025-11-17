@@ -20,6 +20,9 @@ public record ConfluenceConfig(
     @ConstructorBinding
     public ConfluenceConfig {
 
+        log.info("Configuration Confluence initialisée - baseUrl: {}, username: {}, apiToken: [MASKED]",
+                 baseUrl, username);
+
         if (baseUrl == null || baseUrl.isBlank()) {
             throw new IllegalArgumentException(
                 "Configuration Confluence invalide : 'confluence.base-url' (CONFLUENCE_BASE_URL) est requis. " +

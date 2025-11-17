@@ -214,47 +214,15 @@ services:
 
         echo "[infisical-config] ✓ Super admin created successfully";
         echo "";
-
-        # Login as the super admin user to obtain a user access token.
-        # Projects created with an identity access token do not automatically
-        # grant project membership to the human user, so the super admin would
-        # not see the project in the UI. By logging in with email/password and
-        # using the resulting user token for project creation, we ensure that
-        # the super admin becomes a project member, exactly as when the project
-        # is created via the Infisical web UI.
-        echo "[infisical-config] Logging in super admin to obtain user access token...";
-        LOGIN_RESPONSE=$$(curl -s -w "\n%{http_code}" -X POST "$${INFISICAL_URL}/api/v1/auth/login" \
-          -H "Content-Type: application/json" \
-          -d "{\"email\":\"$${ADMIN_EMAIL}\",\"password\":\"$${ADMIN_PASSWORD}\",\"organizationId\":\"$${ORG_ID}\"}");
-
-        HTTP_CODE=$$(echo "$$LOGIN_RESPONSE" | tail -n1);
-        LOGIN_BODY=$$(echo "$$LOGIN_RESPONSE" | head -n -1);
-
-        echo "[infisical-config] DEBUG - Login HTTP Code: $$HTTP_CODE";
-        echo "[infisical-config] DEBUG - Login Response: $$LOGIN_BODY";
-
-        if [ "$$HTTP_CODE" != "200" ]; then
-          echo "[ERROR] Failed to login super admin user (HTTP $$HTTP_CODE)";
-          echo "[ERROR] API Response: $$LOGIN_BODY";
-          echo "[ERROR] This prevents automatic project membership creation for the admin.";
-          exit 1;
-        fi;
-
-        ADMIN_USER_TOKEN=$$(echo "$$LOGIN_BODY" | jq -r ".token // .accessToken" 2>/dev/null);
-        if [ -z "$$ADMIN_USER_TOKEN" ] || [ "$$ADMIN_USER_TOKEN" = "null" ]; then
-          echo "[ERROR] Failed to extract user access token from login response";
-          echo "[ERROR] DEBUG - Full login response for token extraction: $$LOGIN_BODY";
-          exit 1;
-        fi;
-        echo "[infisical-config] ✓ Super admin user access token retrieved";
-        echo "";
         
-        # Step 2: Create project (with complete body like UI does)
+        # Step 2: Create project using the identity token from bootstrap
+        # The identity token has sufficient privileges to create projects and the
+        # bootstrap user will automatically have access to the organization workspace.
         echo "[infisical-config] Step 2/5: Creating project \"$${PROJECT_NAME}\"...";
-        PROJECT_RESPONSE=$$(curl -s -w "\n%{http_code}" -X POST "$${INFISICAL_URL}/api/v2/workspace" \
-          -H "Authorization: Bearer $${ADMIN_USER_TOKEN}" \
+        PROJECT_RESPONSE=$$(curl -s -w "\n%{http_code}" -X POST "$${INFISICAL_URL}/api/v1/projects" \
+          -H "Authorization: Bearer $${ADMIN_TOKEN}" \
           -H "Content-Type: application/json" \
-          -d "{\"projectName\":\"$${PROJECT_NAME}\",\"projectDescription\":\"\",\"template\":\"default\",\"type\":\"secret-manager\"}");
+          -d "{\"projectName\":\"$${PROJECT_NAME}\",\"projectDescription\":\"Auto-configured AI Sentinel project\",\"type\":\"secret-manager\",\"shouldCreateDefaultEnvs\":true}");
         
         HTTP_CODE=$$(echo "$$PROJECT_RESPONSE" | tail -n1);
         PROJECT_BODY=$$(echo "$$PROJECT_RESPONSE" | head -n -1);
@@ -280,17 +248,6 @@ services:
         echo "$$PROJECT_ID" > /secrets/infisical_project_id.txt;
         echo "";
         
-        # Step 2b: User membership handling
-        # In recent Infisical versions, legacy user invite APIs (such as
-        # POST /api/v1/projects/{projectId}/invite and the deprecated
-        # project user membership endpoints) are no longer available.
-        # The super admin created during bootstrap already has access to
-        # the organization and workspaces, and our services authenticate
-        # via a dedicated machine identity that we attach to the project
-        # in the next steps. To avoid depending on deprecated routes,
-        # we skip explicit user membership updates here.
-        echo "[infisical-config] Skipping explicit admin user membership configuration (handled by bootstrap and identity membership)";
-        echo "";
         
         # Step 3: Create machine identity (Universal Auth)
         echo "[infisical-config] Step 3/5: Creating machine identity for \"$${ENV_NAME}\" environment...";
@@ -402,14 +359,13 @@ services:
         # Step 4: Create required secrets with placeholder values
         echo "[infisical-config] Step 4/5: Creating required secrets in project...";
         
-        # Environments are already in the project response, no need for extra API call
-        # Create secrets with placeholder values
+        # Use the current v4 API endpoint for creating secrets
         for secret_name in "HUGGING_FACE_API_KEY" "CONFLUENCE_BASE_URL" "CONFLUENCE_USERNAME" "CONFLUENCE_API_TOKEN"; do
           echo "[infisical-config]   Creating secret: $$secret_name";
-          curl -sf -X POST "$${INFISICAL_URL}/api/v3/secrets/raw/$${secret_name}" \
+          curl -sf -X POST "$${INFISICAL_URL}/api/v4/secrets/$${secret_name}" \
             -H "Authorization: Bearer $${ADMIN_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"workspaceId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretValue\":\"CHANGEME_$${secret_name}\",\"secretComment\":\"Auto-generated placeholder - please update with real value\",\"type\":\"shared\"}" \
+            -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"CHANGEME_$${secret_name}\",\"secretComment\":\"Auto-generated placeholder - please update with real value\",\"type\":\"shared\"}" \
             > /dev/null 2>&1 && echo "[infisical-config]   ✓ $$secret_name created" || echo "[infisical-config]   ⚠ $$secret_name may already exist";
         done;
         echo "[infisical-config] ✓ Secrets created with placeholder values";
@@ -630,7 +586,7 @@ services:
       - ai-sentinel-network
 
   infisical:
-    image: infisical/infisical:v0.140.0-postgres
+    image: infisical/infisical:v0.153.4
     container_name: infisical-prod
     restart: unless-stopped
     ports:

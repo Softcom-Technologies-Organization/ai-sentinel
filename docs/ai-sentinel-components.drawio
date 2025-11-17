@@ -1,0 +1,131 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36" version="29.0.3">
+  <diagram id="jGyH3qKUyeOlPn9naKsC" name="AI Sentinel - Component View">
+    <mxGraphModel dx="1861" dy="1822" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="QbP0zrG1yisw16LyJvj7-76" value="Users &amp; UI" style="swimlane;rounded=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="40" y="40" width="360" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-77" value="End User" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=12;" parent="QbP0zrG1yisw16LyJvj7-76" vertex="1">
+          <mxGeometry x="20" y="80" width="60" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-78" value="PII Reporting UI&#xa;(Angular + Nginx)" style="shape=rectangle;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="QbP0zrG1yisw16LyJvj7-76" vertex="1">
+          <mxGeometry x="140" y="90" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-79" value="HTTP (port 4200)" style="endArrow=block;html=1;strokeColor=#6c8ebf;fontSize=11;" parent="QbP0zrG1yisw16LyJvj7-76" source="QbP0zrG1yisw16LyJvj7-77" target="QbP0zrG1yisw16LyJvj7-78" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-80" value="Application Core" style="swimlane;rounded=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="440" y="40" width="590" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-81" value="PII Reporting API&#xa;(Spring Boot + Armeria)" style="shape=rectangle;rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" parent="QbP0zrG1yisw16LyJvj7-80" vertex="1">
+          <mxGeometry x="40" y="80" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-82" value="Postgres&#xa;(ai-sentinel DB)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" parent="QbP0zrG1yisw16LyJvj7-80" vertex="1">
+          <mxGeometry x="450" y="90" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-83" value="JDBC&#xa;SPRING_DATASOURCE_URL" style="endArrow=block;html=1;strokeColor=#d6b656;fontSize=11;flowAnimation=1;" parent="QbP0zrG1yisw16LyJvj7-80" source="QbP0zrG1yisw16LyJvj7-81" target="QbP0zrG1yisw16LyJvj7-82" edge="1">
+          <mxGeometry x="-0.0426" y="-34" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-84" value="REST /sentinelle/*&#xa;HTTP (8080)" style="endArrow=block;html=1;strokeColor=#6c8ebf;fontSize=11;shape=link;flowAnimation=1;" parent="1" source="QbP0zrG1yisw16LyJvj7-78" target="QbP0zrG1yisw16LyJvj7-81" edge="1">
+          <mxGeometry x="0.0184" y="35" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-85" value="PII Detection" style="swimlane;rounded=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="1126" y="40" width="520" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-86" value="PII Detector Service&#xa;(Python + gRPC)" style="shape=rectangle;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#e07a1f;fontSize=12;" parent="QbP0zrG1yisw16LyJvj7-85" vertex="1">
+          <mxGeometry x="50" y="80" width="230" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-111" value="Presidio Analyzer&#xa;(core + custom recognizers)" style="shape=rectangle;rounded=1;dashed=1;whiteSpace=wrap;html=1;fillColor=#e6ffe6;strokeColor=#82b366;fontSize=11;" parent="QbP0zrG1yisw16LyJvj7-85" vertex="1">
+          <mxGeometry x="347" y="80" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-87" value="LLM / NLP Models&#xa;(Transformers, PII pipeline)" style="shape=rectangle;rounded=1;dashed=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" parent="QbP0zrG1yisw16LyJvj7-85" vertex="1">
+          <mxGeometry x="70" y="230" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-88" value="HuggingFace Cache&#xa;(huggingface-cache volume)" style="shape=rectangle;rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" parent="QbP0zrG1yisw16LyJvj7-85" vertex="1">
+          <mxGeometry x="320" y="230" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-89" value="Inference&#xa;local models" style="endArrow=block;html=1;strokeColor=#d6b656;fontSize=10;flowAnimation=1;" parent="QbP0zrG1yisw16LyJvj7-85" source="QbP0zrG1yisw16LyJvj7-111" target="QbP0zrG1yisw16LyJvj7-87" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-90" value="Model weights&#xa;HF_HOME" style="endArrow=block;html=1;strokeColor=#b85450;fontSize=10;" parent="QbP0zrG1yisw16LyJvj7-85" source="QbP0zrG1yisw16LyJvj7-111" target="QbP0zrG1yisw16LyJvj7-88" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-112" value="PII analysis&#xa;via Presidio" style="endArrow=block;html=1;strokeColor=#e07a1f;fontSize=10;" parent="QbP0zrG1yisw16LyJvj7-85" source="QbP0zrG1yisw16LyJvj7-86" target="QbP0zrG1yisw16LyJvj7-111" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-91" value="gRPC (50051)" style="endArrow=block;html=1;strokeColor=#e07a1f;fontSize=11;flowAnimation=1;shape=link;" parent="1" source="QbP0zrG1yisw16LyJvj7-81" target="QbP0zrG1yisw16LyJvj7-86" edge="1">
+          <mxGeometry x="0.0499" y="20" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="950" y="110" />
+            </Array>
+            <mxPoint x="-3" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-92" value="Secrets &amp; Configuration" style="swimlane;rounded=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="440" y="400" width="860" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-93" value="Infisical&#xa;(Secret Manager)" style="shape=rectangle;rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="QbP0zrG1yisw16LyJvj7-92" vertex="1">
+          <mxGeometry x="40" y="80" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-94" value="Infisical DB&#xa;(Postgres)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" parent="QbP0zrG1yisw16LyJvj7-92" vertex="1">
+          <mxGeometry x="370" y="80" width="110" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-95" value="Infisical Redis" style="shape=rectangle;rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" parent="QbP0zrG1yisw16LyJvj7-92" vertex="1">
+          <mxGeometry x="594" y="80" width="110" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-96" value="secrets-bootstrap&#xa;(generate internal keys)" style="shape=rectangle;rounded=1;dashed=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;" parent="QbP0zrG1yisw16LyJvj7-92" vertex="1">
+          <mxGeometry x="40" y="170" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-97" value="infisical-configurator&#xa;(bootstrap project &amp; machine identity)" style="shape=rectangle;rounded=1;dashed=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;" parent="QbP0zrG1yisw16LyJvj7-92" vertex="1">
+          <mxGeometry x="270" y="170" width="250" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-98" value="DB_CONNECTION_URI" style="endArrow=block;html=1;strokeColor=#d6b656;fontSize=10;" parent="QbP0zrG1yisw16LyJvj7-92" source="QbP0zrG1yisw16LyJvj7-93" target="QbP0zrG1yisw16LyJvj7-94" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-99" value="REDIS_URL" style="endArrow=block;html=1;strokeColor=#b85450;fontSize=10;" parent="QbP0zrG1yisw16LyJvj7-92" source="QbP0zrG1yisw16LyJvj7-93" target="QbP0zrG1yisw16LyJvj7-95" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="430" y="60" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-100" value="Generate DB password" style="endArrow=block;html=1;dashed=1;strokeColor=#999999;fontSize=9;" parent="QbP0zrG1yisw16LyJvj7-92" source="QbP0zrG1yisw16LyJvj7-96" target="QbP0zrG1yisw16LyJvj7-94" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-101" value="ENCRYPTION_KEY / AUTH_SECRET" style="endArrow=block;html=1;dashed=1;strokeColor=#999999;fontSize=9;" parent="QbP0zrG1yisw16LyJvj7-92" source="QbP0zrG1yisw16LyJvj7-96" target="QbP0zrG1yisw16LyJvj7-93" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-102" value="Bootstrap org, project, machine identity" style="endArrow=block;html=1;dashed=1;strokeColor=#999999;fontSize=9;" parent="QbP0zrG1yisw16LyJvj7-92" source="QbP0zrG1yisw16LyJvj7-97" target="QbP0zrG1yisw16LyJvj7-93" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-103" value="External Services" style="swimlane;rounded=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="40" y="400" width="360" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-104" value="Confluence&#xa;(Atlassian Cloud / DC)" style="shape=rectangle;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="QbP0zrG1yisw16LyJvj7-103" vertex="1">
+          <mxGeometry x="40" y="80" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-105" value="Mailhog&#xa;(SMTP test)" style="shape=rectangle;rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" parent="QbP0zrG1yisw16LyJvj7-103" vertex="1">
+          <mxGeometry x="40" y="170" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-107" value="HTTPS&#xa;Confluence REST API" style="endArrow=block;html=1;strokeColor=#6c8ebf;fontSize=11;flowAnimation=1;" parent="1" source="QbP0zrG1yisw16LyJvj7-81" target="QbP0zrG1yisw16LyJvj7-104" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-108" value="SMTP (MailHog)" style="endArrow=block;html=1;strokeColor=#b85450;fontSize=10;" parent="1" source="QbP0zrG1yisw16LyJvj7-93" target="QbP0zrG1yisw16LyJvj7-105" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-109" value="Secrets (DB, Confluence, encryption key)" style="endArrow=block;html=1;strokeColor=#9673a6;fontSize=10;" parent="1" source="QbP0zrG1yisw16LyJvj7-93" target="QbP0zrG1yisw16LyJvj7-81" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="QbP0zrG1yisw16LyJvj7-110" value="Secrets (HUGGING_FACE_API_KEY, etc.)" style="endArrow=block;html=1;strokeColor=#9673a6;fontSize=10;" parent="1" source="QbP0zrG1yisw16LyJvj7-93" target="QbP0zrG1yisw16LyJvj7-86" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

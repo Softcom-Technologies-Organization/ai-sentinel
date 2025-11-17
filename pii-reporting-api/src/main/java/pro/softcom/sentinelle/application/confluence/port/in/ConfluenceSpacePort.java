@@ -6,7 +6,7 @@ import java.util.concurrent.CompletableFuture;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 
-public interface ConfluenceUseCase {
+public interface ConfluenceSpacePort {
   CompletableFuture<Boolean> testConnection();
   CompletableFuture<Optional<ConfluencePage>> getPage(String pageId);
   CompletableFuture<List<ConfluencePage>> searchPages(String spaceKey, String query);

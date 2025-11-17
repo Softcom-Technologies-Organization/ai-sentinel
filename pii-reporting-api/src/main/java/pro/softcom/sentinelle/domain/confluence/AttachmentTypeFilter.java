@@ -1,6 +1,5 @@
 package pro.softcom.sentinelle.domain.confluence;
 
-import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -41,7 +40,6 @@ public final class AttachmentTypeFilter {
 
     /**
      * Checks if an attachment is extractable based on its extension.
-     *
      * Business rule: An attachment is considered extractable if its extension
      * matches one of the supported document formats. Comparison is case-insensitive.
      *
@@ -64,6 +62,6 @@ public final class AttachmentTypeFilter {
      * @return Immutable set of supported extensions
      */
     public static Set<String> getSupportedExtensions() {
-        return Collections.unmodifiableSet(EXTRACTABLE_EXTENSIONS);
+        return EXTRACTABLE_EXTENSIONS;
     }
 }

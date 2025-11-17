@@ -7,15 +7,15 @@ import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
-import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
+import pro.softcom.sentinelle.application.pii.reporting.service.ContentScanOrchestrator;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.domain.pii.ScanStatus;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanRemainingPages;
+import pro.softcom.sentinelle.domain.pii.reporting.ScanRemainingPagesCalculator;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
-import pro.softcom.sentinelle.domain.pii.reporting.ScanResumeRemainingPagesCalculator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -33,11 +33,11 @@ public class StreamConfluenceResumeScanUseCase extends
     public StreamConfluenceResumeScanUseCase(
         ConfluenceAccessor confluenceAccessor,
         PiiDetectorClient piiDetectorClient,
-        ScanOrchestrator scanOrchestrator,
+        ContentScanOrchestrator contentScanOrchestrator,
         AttachmentProcessor attachmentProcessor,
         ScanCheckpointRepository scanCheckpointRepository,
         ScanTimeOutConfig scanTimeoutConfig) {
-        super(confluenceAccessor, piiDetectorClient, scanOrchestrator, attachmentProcessor, scanTimeoutConfig);
+        super(confluenceAccessor, piiDetectorClient, contentScanOrchestrator, attachmentProcessor, scanTimeoutConfig);
         this.scanCheckpointRepository = scanCheckpointRepository;
     }
 
@@ -67,8 +67,8 @@ public class StreamConfluenceResumeScanUseCase extends
                     confluenceAccessor.getAllPagesInSpace(space.key()))
                 .flatMapMany(pages -> {
                     ScanRemainingPages scanRemainingPages =
-                        ScanResumeRemainingPagesCalculator.computeRemainPages(pages,
-                                                                              scanCheckpoint);
+                        ScanRemainingPagesCalculator.computeRemainPages(pages,
+                                                                        scanCheckpoint);
                     if (scanRemainingPages.remaining().isEmpty()) {
                         return Flux.empty();
                     }

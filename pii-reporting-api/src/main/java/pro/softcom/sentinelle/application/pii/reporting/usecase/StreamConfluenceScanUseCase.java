@@ -9,7 +9,7 @@ import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
-import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
+import pro.softcom.sentinelle.application.pii.reporting.service.ContentScanOrchestrator;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
@@ -29,10 +29,10 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
     public StreamConfluenceScanUseCase(
         ConfluenceAccessor confluenceAccessor,
         PiiDetectorClient piiDetectorClient,
-        ScanOrchestrator scanOrchestrator,
+        ContentScanOrchestrator contentScanOrchestrator,
         AttachmentProcessor attachmentProcessor,
         ScanTimeOutConfig scanTimeoutConfig) {
-        super(confluenceAccessor, piiDetectorClient, scanOrchestrator, attachmentProcessor, scanTimeoutConfig);
+        super(confluenceAccessor, piiDetectorClient, contentScanOrchestrator, attachmentProcessor, scanTimeoutConfig);
     }
 
     /**

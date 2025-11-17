@@ -19,7 +19,7 @@ import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.domain.confluence.DataOwners;
 
 @ExtendWith(MockitoExtension.class)
-class ConfluenceUseCaseImplTest {
+class FetchConfluenceSpaceContentUseCaseTest {
 
     @Mock
     private ConfluenceClient confluenceClient;
@@ -27,11 +27,11 @@ class ConfluenceUseCaseImplTest {
     @Mock
     private ConfluenceSpaceRepository spaceRepository;
 
-    private ConfluenceUseCaseImpl useCase;
+    private FetchConfluenceSpaceContentUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new ConfluenceUseCaseImpl(confluenceClient, spaceRepository);
+        useCase = new FetchConfluenceSpaceContentUseCase(confluenceClient, spaceRepository);
     }
 
     @Test

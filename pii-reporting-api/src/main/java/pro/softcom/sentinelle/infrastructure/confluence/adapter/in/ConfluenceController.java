@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
-import pro.softcom.sentinelle.application.confluence.port.in.GetSpaceUpdateInfoUseCase;
+import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceSpacePort;
+import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceSpaceUpdateInfoPort;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.dto.ConfluencePageDto;
 import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.dto.ConfluenceSearchResponseDto;
@@ -36,15 +36,15 @@ import pro.softcom.sentinelle.infrastructure.confluence.adapter.in.mapper.Conflu
 @Slf4j
 public class ConfluenceController {
 
-    private final ConfluenceUseCase confluenceUseCase;
-    private final GetSpaceUpdateInfoUseCase getSpaceUpdateInfoUseCase;
+    private final ConfluenceSpacePort confluenceSpacePort;
+    private final ConfluenceSpaceUpdateInfoPort confluenceSpaceUpdateInfoPort;
 
     @GetMapping("/health")
     @Operation(summary = "Check Confluence connection")
     @ApiResponse(responseCode = "200", description = "Connection established")
     @ApiResponse(responseCode = "503", description = "Confluence not accessible")
     public CompletableFuture<ResponseEntity<@NonNull ConfluenceHealthCheckResponse>> checkHealth() {
-        return confluenceUseCase.testConnection()
+        return confluenceSpacePort.testConnection()
                 .thenApply(isConnected -> {
                     var response = new ConfluenceHealthCheckResponse(
                             Boolean.TRUE.equals(isConnected) ? "UP" : "DOWN",
@@ -65,7 +65,7 @@ public class ConfluenceController {
 
         log.info("GET request /pages/{}", pageId);
 
-        return confluenceUseCase.getPage(pageId)
+        return confluenceSpacePort.getPage(pageId)
                 .thenApply(optionalPage ->
                         optionalPage
                                 .map(ConfluenceApiMapper::toDto)
@@ -84,7 +84,7 @@ public class ConfluenceController {
 
         log.info("Search in space {} : {}", spaceKey, query);
 
-        return confluenceUseCase.searchPages(spaceKey, query)
+        return confluenceSpacePort.searchPages(spaceKey, query)
                 .thenApply(pages -> {
                     var limitedPages = pages == null ? List.<ConfluencePage>of() : pages.stream().limit(limit).toList();
                     var dtoPages = ConfluenceApiMapper.toDtoPages(limitedPages);
@@ -102,7 +102,7 @@ public class ConfluenceController {
 
         log.info("GET request /spaces/{}", spaceKey);
 
-        return confluenceUseCase.getSpace(spaceKey)
+        return confluenceSpacePort.getSpace(spaceKey)
                 .thenApply(optionalSpace ->
                         optionalSpace
                                 .map(ConfluenceApiMapper::toDto)
@@ -120,7 +120,7 @@ public class ConfluenceController {
 
         log.info("GET request /spaces/{}/pages", spaceKey);
 
-        return confluenceUseCase.getSpace(spaceKey)
+        return confluenceSpacePort.getSpace(spaceKey)
                 .thenCompose(optionalSpace -> {
                     if (optionalSpace.isEmpty()) {
                         return CompletableFuture.completedFuture(
@@ -128,7 +128,7 @@ public class ConfluenceController {
                         );
                     }
 
-                    return confluenceUseCase.getAllPagesInSpace(spaceKey)
+                    return confluenceSpacePort.getAllPagesInSpace(spaceKey)
                             .thenApply(pages -> ResponseEntity.ok(ConfluenceApiMapper.toDtoPages(pages)));
                 });
     }
@@ -139,7 +139,7 @@ public class ConfluenceController {
     public CompletableFuture<ResponseEntity<@NonNull List<ConfluenceSpaceDto>>> getAllSpaces() {
         log.info("GET request /spaces");
 
-        return confluenceUseCase.getAllSpaces()
+        return confluenceSpacePort.getAllSpaces()
             .thenApply(spaces -> ResponseEntity.ok(ConfluenceApiMapper.toDtoSpaces(spaces)))
             .exceptionally(ex -> {
                 log.error("Error retrieving spaces", ex);
@@ -153,7 +153,7 @@ public class ConfluenceController {
     public CompletableFuture<ResponseEntity<@NonNull List<SpaceUpdateInfoDto>>> getAllSpacesUpdateInfo() {
         log.info("GET request /spaces/update-info");
 
-        return getSpaceUpdateInfoUseCase.getAllSpacesUpdateInfo()
+        return confluenceSpaceUpdateInfoPort.getAllSpacesUpdateInfo()
             .thenApply(updateInfos -> ResponseEntity.ok(ConfluenceApiMapper.toDtoSpaceUpdateInfos(updateInfos)))
             .exceptionally(ex -> {
                 log.error("Error retrieving spaces update info", ex);
@@ -170,7 +170,7 @@ public class ConfluenceController {
 
         log.info("GET request /spaces/{}/update-info", spaceKey);
 
-        return getSpaceUpdateInfoUseCase.getSpaceUpdateInfo(spaceKey)
+        return confluenceSpaceUpdateInfoPort.getSpaceUpdateInfo(spaceKey)
             .thenApply(optionalUpdateInfo ->
                 optionalUpdateInfo
                     .map(ConfluenceApiMapper::toDto)

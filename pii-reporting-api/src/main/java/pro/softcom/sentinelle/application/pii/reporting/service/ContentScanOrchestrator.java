@@ -13,7 +13,7 @@ import pro.softcom.sentinelle.domain.pii.scan.ScanEventType;
  * to enable resumable scans and progress reporting.
  */
 @RequiredArgsConstructor
-public class ScanOrchestrator {
+public class ContentScanOrchestrator {
 
     private final ScanEventFactory scanEventFactory;
     private final ScanProgressCalculator scanProgressCalculator;

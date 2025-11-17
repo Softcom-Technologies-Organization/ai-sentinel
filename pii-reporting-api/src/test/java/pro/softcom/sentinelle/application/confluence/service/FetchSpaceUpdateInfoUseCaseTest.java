@@ -19,9 +19,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
+import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceSpacePort;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
-import pro.softcom.sentinelle.application.confluence.usecase.GetSpaceUpdateInfoUseCaseImpl;
+import pro.softcom.sentinelle.application.confluence.usecase.FetchSpaceUpdateInfoUseCase;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.domain.confluence.DataOwners;
@@ -36,10 +36,10 @@ import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
  * since their last scan by comparing modification dates.
  */
 @ExtendWith(MockitoExtension.class)
-class GetSpaceUpdateInfoUseCaseImplTest {
+class FetchSpaceUpdateInfoUseCaseTest {
 
     @Mock
-    private ConfluenceUseCase confluenceUseCase;
+    private ConfluenceSpacePort confluenceSpacePort;
 
     @Mock
     private ConfluenceClient confluenceClient;
@@ -47,11 +47,11 @@ class GetSpaceUpdateInfoUseCaseImplTest {
     @Mock
     private ScanCheckpointRepository scanCheckpointRepository;
 
-    private GetSpaceUpdateInfoUseCaseImpl service;
+    private FetchSpaceUpdateInfoUseCase service;
 
     @BeforeEach
     void setUp() {
-        service = new GetSpaceUpdateInfoUseCaseImpl(confluenceUseCase, confluenceClient, scanCheckpointRepository);
+        service = new FetchSpaceUpdateInfoUseCase(confluenceSpacePort, confluenceClient, scanCheckpointRepository);
     }
 
     @Test
@@ -59,7 +59,7 @@ class GetSpaceUpdateInfoUseCaseImplTest {
         // Given - A space with no previous scan
         ConfluenceSpace space = createSpace("TEST", Instant.now());
         
-        when(confluenceUseCase.getAllSpaces())
+        when(confluenceSpacePort.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         // When
@@ -76,7 +76,7 @@ class GetSpaceUpdateInfoUseCaseImplTest {
             softly.assertThat(info.lastModified()).isNull();
         });
         
-        verify(confluenceUseCase).getAllSpaces();
+        verify(confluenceSpacePort).getAllSpaces();
         verify(scanCheckpointRepository).findLatestBySpace("TEST");
     }
 
@@ -89,7 +89,7 @@ class GetSpaceUpdateInfoUseCaseImplTest {
         ConfluenceSpace space = createSpace("TEST", lastModified);
         ScanCheckpoint checkpoint = createCheckpoint(lastScanDate);
         
-        when(confluenceUseCase.getAllSpaces())
+        when(confluenceSpacePort.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
         when(scanCheckpointRepository.findLatestBySpace(anyString()))
             .thenReturn(Optional.of(checkpoint));
@@ -119,7 +119,7 @@ class GetSpaceUpdateInfoUseCaseImplTest {
         ConfluenceSpace space = createSpace("TEST", lastModified);
         ScanCheckpoint checkpoint = createCheckpoint(lastScanDate);
         
-        when(confluenceUseCase.getAllSpaces())
+        when(confluenceSpacePort.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
         when(scanCheckpointRepository.findLatestBySpace(anyString()))
             .thenReturn(Optional.of(checkpoint));
@@ -151,7 +151,7 @@ class GetSpaceUpdateInfoUseCaseImplTest {
         ConfluenceSpace space = createSpace("TEST", null);
         createCheckpoint(Instant.now());
         
-        when(confluenceUseCase.getAllSpaces())
+        when(confluenceSpacePort.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         // When
@@ -172,7 +172,7 @@ class GetSpaceUpdateInfoUseCaseImplTest {
         String spaceKey = "TEST";
         ConfluenceSpace space = createSpace(spaceKey, Instant.now());
         
-        when(confluenceUseCase.getSpace(spaceKey))
+        when(confluenceSpacePort.getSpace(spaceKey))
             .thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         // When
@@ -182,7 +182,7 @@ class GetSpaceUpdateInfoUseCaseImplTest {
         assertThat(result).isPresent();
         assertThat(result.get().spaceKey()).isEqualTo(spaceKey);
         
-        verify(confluenceUseCase).getSpace(spaceKey);
+        verify(confluenceSpacePort).getSpace(spaceKey);
     }
 
     @Test
@@ -190,7 +190,7 @@ class GetSpaceUpdateInfoUseCaseImplTest {
         // Given
         String spaceKey = "NOTFOUND";
         
-        when(confluenceUseCase.getSpace(spaceKey))
+        when(confluenceSpacePort.getSpace(spaceKey))
             .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
         // When
@@ -209,7 +209,7 @@ class GetSpaceUpdateInfoUseCaseImplTest {
         ConfluenceSpace space = createSpace("TEST", lastModified);
         ScanCheckpoint newerCheckpoint = createCheckpoint(newerScanDate);
         
-        when(confluenceUseCase.getAllSpaces())
+        when(confluenceSpacePort.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(List.of(space)));
         when(scanCheckpointRepository.findLatestBySpace(anyString()))
             .thenReturn(Optional.of(newerCheckpoint));

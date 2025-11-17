@@ -7,8 +7,8 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
-import pro.softcom.sentinelle.application.confluence.port.in.GetSpaceUpdateInfoUseCase;
+import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceSpacePort;
+import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceSpaceUpdateInfoPort;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
@@ -24,9 +24,9 @@ import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
  */
 @RequiredArgsConstructor
 @Slf4j
-public class GetSpaceUpdateInfoUseCaseImpl implements GetSpaceUpdateInfoUseCase {
+public class FetchSpaceUpdateInfoUseCase implements ConfluenceSpaceUpdateInfoPort {
 
-    private final ConfluenceUseCase confluenceUseCase;
+    private final ConfluenceSpacePort confluenceSpacePort;
     private final ConfluenceClient confluenceClient;
     private final ScanCheckpointRepository scanCheckpointRepository;
 
@@ -34,7 +34,7 @@ public class GetSpaceUpdateInfoUseCaseImpl implements GetSpaceUpdateInfoUseCase 
     public CompletableFuture<List<SpaceUpdateInfo>> getAllSpacesUpdateInfo() {
         log.debug("Getting update info for all spaces");
         
-        return confluenceUseCase.getAllSpaces()
+        return confluenceSpacePort.getAllSpaces()
             .thenCompose(spaces -> {
                 List<CompletableFuture<SpaceUpdateInfo>> futures = spaces.stream()
                     .map(this::buildSpaceUpdateInfo)
@@ -50,7 +50,7 @@ public class GetSpaceUpdateInfoUseCaseImpl implements GetSpaceUpdateInfoUseCase 
     public CompletableFuture<Optional<SpaceUpdateInfo>> getSpaceUpdateInfo(String spaceKey) {
         log.debug("Getting update info for space: {}", spaceKey);
         
-        return confluenceUseCase.getSpace(spaceKey)
+        return confluenceSpacePort.getSpace(spaceKey)
             .thenCompose(optionalSpace -> optionalSpace.map(confluenceSpace -> buildSpaceUpdateInfo(confluenceSpace)
                     .thenApply(Optional::of))
                 .orElseGet(() -> CompletableFuture.completedFuture(Optional.empty())));

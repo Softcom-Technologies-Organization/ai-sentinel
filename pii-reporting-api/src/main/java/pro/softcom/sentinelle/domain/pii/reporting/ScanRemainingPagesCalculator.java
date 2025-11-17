@@ -9,9 +9,9 @@ import pro.softcom.sentinelle.domain.pii.ScanStatus;
  * quel est l’offset déjà analysé.
  * Métier pur (indépendant de toute techno/rx/IO).
  */
-public final class ScanResumeRemainingPagesCalculator {
+public final class ScanRemainingPagesCalculator {
 
-    private ScanResumeRemainingPagesCalculator() {
+    private ScanRemainingPagesCalculator() {
         //private constructor to hide the implicit public one
     }
 

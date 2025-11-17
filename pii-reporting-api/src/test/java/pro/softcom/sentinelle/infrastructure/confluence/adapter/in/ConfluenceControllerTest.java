@@ -18,8 +18,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
-import pro.softcom.sentinelle.application.confluence.port.in.GetSpaceUpdateInfoUseCase;
+import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceSpacePort;
+import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceSpaceUpdateInfoPort;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.domain.confluence.DataOwners;
@@ -36,10 +36,10 @@ class ConfluenceControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ConfluenceUseCase confluenceUseCase;
+    private ConfluenceSpacePort confluenceSpacePort;
 
     @MockitoBean
-    private GetSpaceUpdateInfoUseCase getSpaceUpdateInfoUseCase;
+    private ConfluenceSpaceUpdateInfoPort confluenceSpaceUpdateInfoPort;
 
     /**
      * Tests that the controller correctly returns all pages in a space.
@@ -84,11 +84,11 @@ class ConfluenceControllerTest {
             null
         );
 
-        when(confluenceUseCase.getSpace(spaceKey))
+        when(confluenceSpacePort.getSpace(spaceKey))
             .thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         // Mock the service to return the test pages
-        when(confluenceUseCase.getAllPagesInSpace(spaceKey))
+        when(confluenceSpacePort.getAllPagesInSpace(spaceKey))
             .thenReturn(CompletableFuture.completedFuture(pages));
 
         // Act
@@ -118,7 +118,7 @@ class ConfluenceControllerTest {
         String spaceKey = "NONEXISTENT";
 
         // Mock the space existence check to return empty
-        when(confluenceUseCase.getSpace(spaceKey))
+        when(confluenceSpacePort.getSpace(spaceKey))
             .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
         // Act
@@ -149,7 +149,7 @@ class ConfluenceControllerTest {
             .build();
 
         // Mock the service to return the test page
-        when(confluenceUseCase.getPage(pageId))
+        when(confluenceSpacePort.getPage(pageId))
             .thenReturn(CompletableFuture.completedFuture(Optional.of(page)));
 
         // Act
@@ -175,7 +175,7 @@ class ConfluenceControllerTest {
         String pageId = "nonexistent";
 
         // Mock the service to return empty
-        when(confluenceUseCase.getPage(pageId))
+        when(confluenceSpacePort.getPage(pageId))
             .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
         // Act
@@ -191,7 +191,7 @@ class ConfluenceControllerTest {
 
     @Test
     void checkHealth_ReturnsUpStatus() throws Exception {
-        when(confluenceUseCase.testConnection())
+        when(confluenceSpacePort.testConnection())
             .thenReturn(CompletableFuture.completedFuture(true));
 
         var mvcResult = mockMvc.perform(get("/api/v1/confluence/health"))
@@ -206,7 +206,7 @@ class ConfluenceControllerTest {
 
     @Test
     void checkHealth_ReturnsDownStatus() throws Exception {
-        when(confluenceUseCase.testConnection())
+        when(confluenceSpacePort.testConnection())
             .thenReturn(CompletableFuture.completedFuture(false));
 
         var mvcResult = mockMvc.perform(get("/api/v1/confluence/health"))
@@ -233,7 +233,7 @@ class ConfluenceControllerTest {
             null
         );
 
-        when(confluenceUseCase.getSpace(spaceKey))
+        when(confluenceSpacePort.getSpace(spaceKey))
             .thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
 
         var mvcResult = mockMvc.perform(get("/api/v1/confluence/spaces/{spaceKey}", spaceKey))
@@ -249,7 +249,7 @@ class ConfluenceControllerTest {
     @Test
     void getSpace_ReturnsNotFound() throws Exception {
         String spaceKey = "UNKNOWN";
-        when(confluenceUseCase.getSpace(spaceKey))
+        when(confluenceSpacePort.getSpace(spaceKey))
             .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
         var mvcResult = mockMvc.perform(get("/api/v1/confluence/spaces/{spaceKey}", spaceKey))
@@ -266,7 +266,7 @@ class ConfluenceControllerTest {
             new ConfluenceSpace("id-1", "KEY1", "Space 1", "http://s1", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null),
             new ConfluenceSpace("id-2", "KEY2", "Space 2", "http://s2", "desc", ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null)
         );
-        when(confluenceUseCase.getAllSpaces())
+        when(confluenceSpacePort.getAllSpaces())
             .thenReturn(CompletableFuture.completedFuture(spaces));
 
         var mvcResult = mockMvc.perform(get("/api/v1/confluence/spaces"))
@@ -282,7 +282,7 @@ class ConfluenceControllerTest {
 
     @Test
     void getAllSpaces_Returns500_WhenServiceFails() throws Exception {
-        when(confluenceUseCase.getAllSpaces())
+        when(confluenceSpacePort.getAllSpaces())
             .thenReturn(CompletableFuture.failedFuture(new RuntimeException("boom")));
 
         var mvcResult = mockMvc.perform(get("/api/v1/confluence/spaces"))
@@ -301,7 +301,7 @@ class ConfluenceControllerTest {
             ConfluencePage.builder().id("p2").title("T2").spaceKey(spaceKey).content(new ConfluencePage.HtmlContent("<p>2</p>")).build(),
             ConfluencePage.builder().id("p3").title("T3").spaceKey(spaceKey).content(new ConfluencePage.HtmlContent("<p>3</p>")).build()
         );
-        when(confluenceUseCase.searchPages(spaceKey, "term"))
+        when(confluenceSpacePort.searchPages(spaceKey, "term"))
             .thenReturn(CompletableFuture.completedFuture(pages));
 
         var mvcResult = mockMvc.perform(get("/api/v1/confluence/spaces/{spaceKey}/search", spaceKey)
@@ -325,7 +325,7 @@ class ConfluenceControllerTest {
             SpaceUpdateInfo.noUpdates("KEY2", "Space 2", now, now)
         );
 
-        when(getSpaceUpdateInfoUseCase.getAllSpacesUpdateInfo())
+        when(confluenceSpaceUpdateInfoPort.getAllSpacesUpdateInfo())
             .thenReturn(CompletableFuture.completedFuture(infos));
 
         var mvcResult = mockMvc.perform(get("/api/v1/confluence/spaces/update-info"))
@@ -347,7 +347,7 @@ class ConfluenceControllerTest {
 
     @Test
     void Should_Return500_When_GetAllSpacesUpdateInfoFails() throws Exception {
-        when(getSpaceUpdateInfoUseCase.getAllSpacesUpdateInfo())
+        when(confluenceSpaceUpdateInfoPort.getAllSpacesUpdateInfo())
             .thenReturn(CompletableFuture.failedFuture(new RuntimeException("boom")));
 
         var mvcResult = mockMvc.perform(get("/api/v1/confluence/spaces/update-info"))
@@ -371,7 +371,7 @@ class ConfluenceControllerTest {
             List.of("A1")
         );
 
-        when(getSpaceUpdateInfoUseCase.getSpaceUpdateInfo(spaceKey))
+        when(confluenceSpaceUpdateInfoPort.getSpaceUpdateInfo(spaceKey))
             .thenReturn(CompletableFuture.completedFuture(Optional.of(info)));
 
         var mvcResult = mockMvc.perform(get("/api/v1/confluence/spaces/{spaceKey}/update-info", spaceKey))
@@ -392,7 +392,7 @@ class ConfluenceControllerTest {
     @Test
     void Should_Return404_When_GetSpaceUpdateInfoNotFound() throws Exception {
         String spaceKey = "UNKNOWN";
-        when(getSpaceUpdateInfoUseCase.getSpaceUpdateInfo(spaceKey))
+        when(confluenceSpaceUpdateInfoPort.getSpaceUpdateInfo(spaceKey))
             .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
         var mvcResult = mockMvc.perform(get("/api/v1/confluence/spaces/{spaceKey}/update-info", spaceKey))
@@ -406,7 +406,7 @@ class ConfluenceControllerTest {
     @Test
     void Should_Return500_When_GetSpaceUpdateInfoFails() throws Exception {
         String spaceKey = "KEY1";
-        when(getSpaceUpdateInfoUseCase.getSpaceUpdateInfo(spaceKey))
+        when(confluenceSpaceUpdateInfoPort.getSpaceUpdateInfo(spaceKey))
             .thenReturn(CompletableFuture.failedFuture(new RuntimeException("boom")));
 
         var mvcResult = mockMvc.perform(get("/api/v1/confluence/spaces/{spaceKey}/update-info", spaceKey))

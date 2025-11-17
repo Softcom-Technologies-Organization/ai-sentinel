@@ -5,7 +5,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
+import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceSpacePort;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceSpaceRepository;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
@@ -13,7 +13,7 @@ import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 
 @RequiredArgsConstructor
 @Slf4j
-public class ConfluenceUseCaseImpl implements ConfluenceUseCase {
+public class FetchConfluenceSpaceContentUseCase implements ConfluenceSpacePort {
 
   private final ConfluenceClient confluenceClient;
   private final ConfluenceSpaceRepository spaceRepository;

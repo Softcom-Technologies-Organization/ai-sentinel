@@ -6,8 +6,8 @@ import org.springframework.context.annotation.Configuration;
 import pro.softcom.sentinelle.application.config.port.in.GetPollingConfigPort;
 import pro.softcom.sentinelle.application.config.port.out.ReadConfluenceConfigPort;
 import pro.softcom.sentinelle.application.config.usecase.GetPollingConfigUseCase;
-import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceUseCase;
-import pro.softcom.sentinelle.application.confluence.port.in.GetSpaceUpdateInfoUseCase;
+import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceSpacePort;
+import pro.softcom.sentinelle.application.confluence.port.in.ConfluenceSpaceUpdateInfoPort;
 import pro.softcom.sentinelle.application.confluence.port.out.AttachmentTextExtractor;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachmentClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachmentDownloader;
@@ -16,8 +16,8 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceSpaceRep
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceSpaceCacheRefreshService;
-import pro.softcom.sentinelle.application.confluence.usecase.ConfluenceUseCaseImpl;
-import pro.softcom.sentinelle.application.confluence.usecase.GetSpaceUpdateInfoUseCaseImpl;
+import pro.softcom.sentinelle.application.confluence.usecase.FetchConfluenceSpaceContentUseCase;
+import pro.softcom.sentinelle.application.confluence.usecase.FetchSpaceUpdateInfoUseCase;
 import pro.softcom.sentinelle.application.pii.export.DetectionReportMapper;
 import pro.softcom.sentinelle.application.pii.export.port.in.ExportDetectionReportPort;
 import pro.softcom.sentinelle.application.pii.export.port.out.ReadExportContextPort;
@@ -36,11 +36,11 @@ import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanEventStore;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanResultQuery;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
+import pro.softcom.sentinelle.application.pii.reporting.service.ContentScanOrchestrator;
 import pro.softcom.sentinelle.application.pii.reporting.service.PiiContextExtractor;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanCheckpointService;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventDispatcher;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventFactory;
-import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanProgressCalculator;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParserFactory;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.HtmlContentParser;
@@ -66,9 +66,9 @@ import pro.softcom.sentinelle.domain.pii.security.EncryptionService;
 public class ApplicationUseCasesConfig {
 
     @Bean
-    public ConfluenceUseCase confluenceUseCase(ConfluenceClient confluenceClient,
-                                                ConfluenceSpaceRepository spaceRepository) {
-        return new ConfluenceUseCaseImpl(confluenceClient, spaceRepository);
+    public ConfluenceSpacePort confluenceUseCase(ConfluenceClient confluenceClient,
+                                                 ConfluenceSpaceRepository spaceRepository) {
+        return new FetchConfluenceSpaceContentUseCase(confluenceClient, spaceRepository);
     }
 
     @Bean
@@ -106,12 +106,12 @@ public class ApplicationUseCasesConfig {
     }
 
     @Bean
-    public ScanOrchestrator scanOrchestrator(ScanEventFactory scanEventFactory,
-                                             ScanProgressCalculator scanProgressCalculator,
-                                             ScanCheckpointService scanCheckpointService,
-                                             ScanEventStore scanEventStore,
-                                             ScanEventDispatcher scanEventDispatcher) {
-        return new ScanOrchestrator(
+    public ContentScanOrchestrator scanOrchestrator(ScanEventFactory scanEventFactory,
+                                                    ScanProgressCalculator scanProgressCalculator,
+                                                    ScanCheckpointService scanCheckpointService,
+                                                    ScanEventStore scanEventStore,
+                                                    ScanEventDispatcher scanEventDispatcher) {
+        return new ContentScanOrchestrator(
                 scanEventFactory, scanProgressCalculator, scanCheckpointService, scanEventStore, scanEventDispatcher
         );
     }
@@ -127,13 +127,13 @@ public class ApplicationUseCasesConfig {
     public StreamConfluenceScanPort streamConfluenceScanUseCase(
             ConfluenceAccessor confluenceAccessor,
             PiiDetectorClient piiDetectorClient,
-            ScanOrchestrator scanOrchestrator,
+            ContentScanOrchestrator contentScanOrchestrator,
             AttachmentProcessor attachmentProcessor,
             ScanTimeOutConfig scanTimeoutConfig) {
         return new StreamConfluenceScanUseCase(
                 confluenceAccessor,
                 piiDetectorClient,
-                scanOrchestrator,
+                contentScanOrchestrator,
                 attachmentProcessor,
                 scanTimeoutConfig
         );
@@ -143,14 +143,14 @@ public class ApplicationUseCasesConfig {
     public StreamConfluenceResumeScanPort streamConfluenceResumeScanUseCase(
             ConfluenceAccessor confluenceAccessor,
             PiiDetectorClient piiDetectorClient,
-            ScanOrchestrator scanOrchestrator,
+            ContentScanOrchestrator contentScanOrchestrator,
             AttachmentProcessor attachmentProcessor,
             ScanCheckpointRepository scanCheckpointRepository,
             ScanTimeOutConfig scanTimeoutConfig) {
         return new StreamConfluenceResumeScanUseCase(
                 confluenceAccessor,
                 piiDetectorClient,
-                scanOrchestrator,
+                contentScanOrchestrator,
                 attachmentProcessor,
                 scanCheckpointRepository,
                 scanTimeoutConfig
@@ -163,12 +163,12 @@ public class ApplicationUseCasesConfig {
     }
 
     @Bean
-    public GetSpaceUpdateInfoUseCase getSpaceUpdateInfoUseCase(
-        ConfluenceUseCase confluenceUseCase,
+    public ConfluenceSpaceUpdateInfoPort getSpaceUpdateInfoUseCase(
+        ConfluenceSpacePort confluenceSpacePort,
         ConfluenceClient confluenceClient,
         ScanCheckpointRepository scanCheckpointRepository
     ){
-        return new GetSpaceUpdateInfoUseCaseImpl(confluenceUseCase, confluenceClient, scanCheckpointRepository);
+        return new FetchSpaceUpdateInfoUseCase(confluenceSpacePort, confluenceClient, scanCheckpointRepository);
     }
 
     @Bean

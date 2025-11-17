@@ -31,11 +31,11 @@ import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.PublishEventPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
+import pro.softcom.sentinelle.application.pii.reporting.service.ContentScanOrchestrator;
 import pro.softcom.sentinelle.application.pii.reporting.service.PiiContextExtractor;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanCheckpointService;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventDispatcher;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanEventFactory;
-import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanProgressCalculator;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParserFactory;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.HtmlContentParser;
@@ -114,7 +114,7 @@ class StreamConfluenceScanPortImplTest {
 
         // Create parameter objects
         ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService);
-        ScanOrchestrator scanOrchestrator = new ScanOrchestrator(
+        ContentScanOrchestrator contentScanOrchestrator = new ContentScanOrchestrator(
                 eventFactory, progressCalculator, checkpointService, jpaScanEventStoreAdapter, scanEventDispatcher
         );
         AttachmentProcessor attachmentProcessor = new AttachmentProcessor(
@@ -125,7 +125,7 @@ class StreamConfluenceScanPortImplTest {
         streamConfluenceScanUseCase = new StreamConfluenceScanUseCase(
                 confluenceAccessor,
                 piiDetectorClient,
-                scanOrchestrator,
+                contentScanOrchestrator,
                 attachmentProcessor,
                 scanTimeoutConfig
         );
@@ -555,7 +555,7 @@ class StreamConfluenceScanPortImplTest {
 
         // Create parameter objects
         ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService);
-        ScanOrchestrator scanOrchestrator = new ScanOrchestrator(
+        ContentScanOrchestrator contentScanOrchestrator = new ContentScanOrchestrator(
                 eventFactory, progressCalculator, checkpointService, jpaScanEventStoreAdapter, scanEventDispatcher
         );
         AttachmentProcessor attachmentProcessor = new AttachmentProcessor(
@@ -566,7 +566,7 @@ class StreamConfluenceScanPortImplTest {
         StreamConfluenceScanUseCase svc = new StreamConfluenceScanUseCase(
             confluenceAccessor,
             piiDetectorClient,
-            scanOrchestrator,
+            contentScanOrchestrator,
             attachmentProcessor,
             scanTimeoutConfig
         );
@@ -628,7 +628,7 @@ class StreamConfluenceScanPortImplTest {
 
         // Create parameter objects
         ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService);
-        ScanOrchestrator scanOrchestrator = new ScanOrchestrator(
+        ContentScanOrchestrator contentScanOrchestrator = new ContentScanOrchestrator(
                 eventFactory, progressCalculator, checkpointService, jpaScanEventStoreAdapter, scanEventDispatcher
         );
         AttachmentProcessor attachmentProcessor = new AttachmentProcessor(
@@ -639,7 +639,7 @@ class StreamConfluenceScanPortImplTest {
         StreamConfluenceScanUseCase svc = new StreamConfluenceScanUseCase(
             confluenceAccessor,
             piiDetectorClient,
-            scanOrchestrator,
+            contentScanOrchestrator,
             attachmentProcessor,
             scanTimeoutConfig
         );

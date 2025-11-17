@@ -6,11 +6,4 @@ public record ScanProgress(
         int originalTotal,
         int remainingTotal
     ) {
-        public int analyzedCount() {
-            return analyzedOffset + (currentIndex - 1);
-        }
-
-        public int completedCount() {
-            return analyzedOffset + currentIndex;
-        }
     }

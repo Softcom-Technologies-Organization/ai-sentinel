@@ -10,7 +10,7 @@ import pro.softcom.sentinelle.domain.confluence.SpaceUpdateInfo;
  * Business purpose: Allows the frontend to detect which spaces have been updated
  * since their last scan, enabling users to identify content that may need re-scanning.
  */
-public interface GetSpaceUpdateInfoUseCase {
+public interface ConfluenceSpaceUpdateInfoPort {
     
     /**
      * Gets update information for all spaces.

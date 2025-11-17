@@ -90,8 +90,6 @@ class DirectPiiDetectionIntegrationTest {
         System.out.println("[DEBUG_LOG] Page Title: " + result.pageTitle());
         System.out.println("[DEBUG_LOG] Space Key: " + result.spaceKey());
         System.out.println("[DEBUG_LOG] Sensitive data found: " + result.sensitiveDataFound().size());
-        System.out.println("[DEBUG_LOG] Risk score: " + result.getRiskScore());
-        System.out.println("[DEBUG_LOG] Risk level: " + result.getRiskLevel());
         System.out.println("[DEBUG_LOG] Statistics: " + result.statistics());
 
         // Verify basic analysis structure
@@ -111,7 +109,7 @@ class DirectPiiDetectionIntegrationTest {
         assertThat(emailData).isNotEmpty();
         System.out.println("[DEBUG_LOG] Emails detected: " + emailData.size());
         emailData.forEach(email ->
-            System.out.println("[DEBUG_LOG]   - Email: " + email.value() + " (masked: " + email.getMaskedValue() + ")")
+            System.out.println("[DEBUG_LOG]   - Email: " + email.value())
         );
 
         // Check for PHONE detection
@@ -121,7 +119,7 @@ class DirectPiiDetectionIntegrationTest {
         assertThat(phoneData).isNotEmpty();
         System.out.println("[DEBUG_LOG] Phones detected: " + phoneData.size());
         phoneData.forEach(phone ->
-            System.out.println("[DEBUG_LOG]   - Phone: " + phone.value() + " (masked: " + phone.getMaskedValue() + ")")
+            System.out.println("[DEBUG_LOG]   - Phone: " + phone.value())
         );
 
         // Check for ADDRESS detection (includes person names)
@@ -130,7 +128,7 @@ class DirectPiiDetectionIntegrationTest {
             .toList();
         System.out.println("[DEBUG_LOG] Addresses/Names detected: " + addressData.size());
         addressData.forEach(address ->
-            System.out.println("[DEBUG_LOG]   - Address/Name: " + address.value() + " (masked: " + address.getMaskedValue() + ")")
+            System.out.println("[DEBUG_LOG]   - Address/Name: " + address.value())
         );
 
         // Check for AVS detection (financial data)
@@ -139,7 +137,7 @@ class DirectPiiDetectionIntegrationTest {
             .toList();
         System.out.println("[DEBUG_LOG] Financial data detected: " + avsData.size());
         avsData.forEach(avs ->
-            System.out.println("[DEBUG_LOG]   - Financial: " + avs.value() + " (masked: " + avs.getMaskedValue() + ")")
+            System.out.println("[DEBUG_LOG]   - Financial: " + avs.value())
         );
 
         // Check for SECURITY detection
@@ -148,7 +146,7 @@ class DirectPiiDetectionIntegrationTest {
             .toList();
         System.out.println("[DEBUG_LOG] Security data detected: " + securityData.size());
         securityData.forEach(security ->
-            System.out.println("[DEBUG_LOG]   - Security: " + security.value() + " (masked: " + security.getMaskedValue() + ")")
+            System.out.println("[DEBUG_LOG]   - Security: " + security.value())
         );
 
         // Check for ATTACHMENT detection (URLs, IPs)
@@ -157,12 +155,10 @@ class DirectPiiDetectionIntegrationTest {
             .toList();
         System.out.println("[DEBUG_LOG] URLs/IPs detected: " + attachmentData.size());
         attachmentData.forEach(attachment ->
-            System.out.println("[DEBUG_LOG]   - URL/IP: " + attachment.value() + " (masked: " + attachment.getMaskedValue() + ")")
+            System.out.println("[DEBUG_LOG]   - URL/IP: " + attachment.value())
         );
 
         // Verify risk assessment
-        assertThat(result.getRiskScore()).isGreaterThan(0);
-        assertThat(result.getRiskLevel()).isIn("FAIBLE", "MOYEN", "ÉLEVÉ", "CRITIQUE");
 
         // Verify statistics
         assertThat(result.statistics()).isNotEmpty();

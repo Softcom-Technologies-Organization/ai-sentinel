@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanPort;
 
 @RestController
 @RequestMapping("/api/v1/scans")
@@ -16,7 +16,7 @@ import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanUseCase
 @Slf4j
 public class ResumeScanController {
 
-    private final PauseScanUseCase pauseScanUseCase;
+    private final PauseScanPort pauseScanPort;
 
     @PostMapping("/{scanId}/resume")
     public ResponseEntity<@NonNull Void> resume(@PathVariable String scanId) {
@@ -27,7 +27,7 @@ public class ResumeScanController {
     @PostMapping("/{scanId}/pause")
     public ResponseEntity<@NonNull Void> pause(@PathVariable String scanId) {
         log.info("[PAUSE] Requested pause for scan {}", scanId);
-        pauseScanUseCase.pauseScan(scanId);
+        pauseScanPort.pauseScan(scanId);
         return ResponseEntity.accepted().build();
     }
 }

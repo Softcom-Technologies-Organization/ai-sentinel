@@ -56,7 +56,7 @@ import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 @ExtendWith(MockitoExtension.class)
-class StreamConfluenceScanUseCaseImplTest {
+class StreamConfluenceScanPortImplTest {
 
     @Mock
     private ConfluenceClient confluenceService;
@@ -82,7 +82,7 @@ class StreamConfluenceScanUseCaseImplTest {
     @Mock
     private ScanTimeOutConfig scanTimeoutConfig;
 
-    private StreamConfluenceScanUseCaseImpl streamConfluenceScanUseCase;
+    private StreamConfluenceScanUseCase streamConfluenceScanUseCase;
 
     @BeforeEach
     void setUp() {
@@ -122,7 +122,7 @@ class StreamConfluenceScanUseCaseImplTest {
                 attachmentTextExtractionService
         );
 
-        streamConfluenceScanUseCase = new StreamConfluenceScanUseCaseImpl(
+        streamConfluenceScanUseCase = new StreamConfluenceScanUseCase(
                 confluenceAccessor,
                 piiDetectorClient,
                 scanOrchestrator,
@@ -563,7 +563,7 @@ class StreamConfluenceScanUseCaseImplTest {
                 attachmentTextExtractionService
         );
 
-        StreamConfluenceScanUseCaseImpl svc = new StreamConfluenceScanUseCaseImpl(
+        StreamConfluenceScanUseCase svc = new StreamConfluenceScanUseCase(
             confluenceAccessor,
             piiDetectorClient,
             scanOrchestrator,
@@ -636,7 +636,7 @@ class StreamConfluenceScanUseCaseImplTest {
                 attachmentTextExtractionService
         );
 
-        StreamConfluenceScanUseCaseImpl svc = new StreamConfluenceScanUseCaseImpl(
+        StreamConfluenceScanUseCase svc = new StreamConfluenceScanUseCase(
             confluenceAccessor,
             piiDetectorClient,
             scanOrchestrator,

@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.codec.ServerSentEvent;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
-import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceScanUseCaseImpl;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanPort;
+import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceScanUseCase;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventDto;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
@@ -29,14 +29,15 @@ import reactor.test.StepVerifier;
 @ExtendWith(MockitoExtension.class)
 class ScanControllerTest {
 
-    private StreamConfluenceScanUseCaseImpl streamConfluenceScanUseCase;
+    private StreamConfluenceScanUseCase streamConfluenceScanUseCase;
 
     private ScanController controller;
 
     @BeforeEach
     void setUp() {
-        streamConfluenceScanUseCase = mock(StreamConfluenceScanUseCaseImpl.class);
-        controller = new ScanController(streamConfluenceScanUseCase, mock(StreamConfluenceResumeScanUseCase.class), new ScanResultToScanEventMapper());
+        streamConfluenceScanUseCase = mock(StreamConfluenceScanUseCase.class);
+        controller = new ScanController(streamConfluenceScanUseCase, mock(
+            StreamConfluenceResumeScanPort.class), new ScanResultToScanEventMapper());
     }
 
     @Test

@@ -52,7 +52,7 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.sentinelle.application.pii.export.port.in.ExportDetectionReportPort;
 import pro.softcom.sentinelle.application.pii.export.port.out.ReadExportContextPort;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanPort;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.domain.confluence.DataOwners;
@@ -94,7 +94,7 @@ class ExcelExportFullScanIntegrationTest {
     }
 
     @Autowired
-    private StreamConfluenceScanUseCase streamConfluenceScanUseCase;
+    private StreamConfluenceScanPort streamConfluenceScanPort;
 
     @Autowired
     private ExportDetectionReportPort exportDetectionReportPort;
@@ -167,7 +167,7 @@ class ExcelExportFullScanIntegrationTest {
         
         AtomicReference<String> scanIdRef = new AtomicReference<>();
         
-        streamConfluenceScanUseCase.streamAllSpaces()
+        streamConfluenceScanPort.streamAllSpaces()
             .doOnNext(event -> scanIdRef.compareAndSet(null, event.scanId()))
             .blockLast(Duration.ofSeconds(30));
         

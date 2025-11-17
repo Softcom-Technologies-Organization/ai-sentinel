@@ -24,11 +24,11 @@ import pro.softcom.sentinelle.application.pii.export.port.out.ReadExportContextP
 import pro.softcom.sentinelle.application.pii.export.port.out.ReadScanEventsPort;
 import pro.softcom.sentinelle.application.pii.export.port.out.WriteDetectionReportPort;
 import pro.softcom.sentinelle.application.pii.export.usecase.ExportDetectionReportUseCase;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanUseCase;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.RevealPiiSecretsUseCase;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingUseCase;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanPort;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.RevealPiiSecretsPort;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingPort;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanPort;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.AfterCommitExecutionPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.PublishEventPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ReadPiiConfigPort;
@@ -45,11 +45,11 @@ import pro.softcom.sentinelle.application.pii.reporting.service.ScanProgressCalc
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.ContentParserFactory;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.HtmlContentParser;
 import pro.softcom.sentinelle.application.pii.reporting.service.parser.PlainTextParser;
-import pro.softcom.sentinelle.application.pii.reporting.usecase.PauseScanUseCaseImpl;
-import pro.softcom.sentinelle.application.pii.reporting.usecase.RevealPiiSecretsUseCaseImpl;
-import pro.softcom.sentinelle.application.pii.reporting.usecase.ScanReportingUseCaseImpl;
-import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceResumeScanUseCaseImpl;
-import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceScanUseCaseImpl;
+import pro.softcom.sentinelle.application.pii.reporting.usecase.PauseScanUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.usecase.RevealPiiSecretsUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.usecase.ScanReportingUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceResumeScanUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceScanUseCase;
 import pro.softcom.sentinelle.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.application.pii.security.PiiAccessAuditService;
@@ -72,9 +72,9 @@ public class ApplicationUseCasesConfig {
     }
 
     @Bean
-    public ScanReportingUseCase scanResultUseCase(ScanResultQuery scanResultQuery,
-                                                  ScanCheckpointRepository checkpointRepo) {
-        return new ScanReportingUseCaseImpl(scanResultQuery, checkpointRepo);
+    public ScanReportingPort scanResultUseCase(ScanResultQuery scanResultQuery,
+                                               ScanCheckpointRepository checkpointRepo) {
+        return new ScanReportingUseCase(scanResultQuery, checkpointRepo);
     }
 
     @Bean
@@ -124,13 +124,13 @@ public class ApplicationUseCasesConfig {
     }
 
     @Bean
-    public StreamConfluenceScanUseCase streamConfluenceScanUseCase(
+    public StreamConfluenceScanPort streamConfluenceScanUseCase(
             ConfluenceAccessor confluenceAccessor,
             PiiDetectorClient piiDetectorClient,
             ScanOrchestrator scanOrchestrator,
             AttachmentProcessor attachmentProcessor,
             ScanTimeOutConfig scanTimeoutConfig) {
-        return new StreamConfluenceScanUseCaseImpl(
+        return new StreamConfluenceScanUseCase(
                 confluenceAccessor,
                 piiDetectorClient,
                 scanOrchestrator,
@@ -140,14 +140,14 @@ public class ApplicationUseCasesConfig {
     }
 
     @Bean
-    public StreamConfluenceResumeScanUseCase streamConfluenceResumeScanUseCase(
+    public StreamConfluenceResumeScanPort streamConfluenceResumeScanUseCase(
             ConfluenceAccessor confluenceAccessor,
             PiiDetectorClient piiDetectorClient,
             ScanOrchestrator scanOrchestrator,
             AttachmentProcessor attachmentProcessor,
             ScanCheckpointRepository scanCheckpointRepository,
             ScanTimeOutConfig scanTimeoutConfig) {
-        return new StreamConfluenceResumeScanUseCaseImpl(
+        return new StreamConfluenceResumeScanUseCase(
                 confluenceAccessor,
                 piiDetectorClient,
                 scanOrchestrator,
@@ -158,8 +158,8 @@ public class ApplicationUseCasesConfig {
     }
 
     @Bean
-    public PauseScanUseCase pauseScanUseCase(ScanCheckpointRepository scanCheckpointRepository) {
-        return new PauseScanUseCaseImpl(scanCheckpointRepository);
+    public PauseScanPort pauseScanUseCase(ScanCheckpointRepository scanCheckpointRepository) {
+        return new PauseScanUseCase(scanCheckpointRepository);
     }
 
     @Bean
@@ -243,9 +243,9 @@ public class ApplicationUseCasesConfig {
 
     // PII Access Services
     @Bean
-    public RevealPiiSecretsUseCase revealPiiSecretsPort(
+    public RevealPiiSecretsPort revealPiiSecretsPort(
             ReadPiiConfigPort readPiiConfigPort,
             ScanResultQuery scanResultQuery) {
-        return new RevealPiiSecretsUseCaseImpl(readPiiConfigPort, scanResultQuery);
+        return new RevealPiiSecretsUseCase(readPiiConfigPort, scanResultQuery);
     }
 }

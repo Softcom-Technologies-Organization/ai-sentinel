@@ -24,7 +24,7 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachme
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.PublishEventPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
@@ -53,7 +53,7 @@ import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 @ExtendWith(MockitoExtension.class)
-class StreamConfluenceResumeScanUseCaseImplTest {
+class StreamConfluenceResumeScanPortImplTest {
 
     @Mock
     private ConfluenceClient confluenceService;
@@ -79,7 +79,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
     @Mock
     private ScanTimeOutConfig scanTimeoutConfig;
 
-    private StreamConfluenceResumeScanUseCase streamConfluenceResumeScanUseCase;
+    private StreamConfluenceResumeScanPort streamConfluenceResumeScanPort;
 
     @BeforeEach
     void setUp() {
@@ -116,7 +116,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
                 attachmentTextExtractionService
         );
         
-        streamConfluenceResumeScanUseCase = new StreamConfluenceResumeScanUseCaseImpl(
+        streamConfluenceResumeScanPort = new StreamConfluenceResumeScanUseCase(
                 confluenceAccessor,
                 piiDetectorClient,
                 scanOrchestrator,
@@ -154,7 +154,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
             ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
         );
 
-        Flux<ScanResult> flux = streamConfluenceResumeScanUseCase.resumeAllSpaces(scanId)
+        Flux<ScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId)
             .filter(ev -> "start".equals(ev.eventType()))
             .timeout(Duration.ofSeconds(5));
 
@@ -177,7 +177,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         failing.completeExceptionally(new RuntimeException("resume-pages-fail"));
         when(confluenceService.getAllPagesInSpace(spaceKey)).thenReturn(failing);
 
-        Flux<ScanResult> flux = streamConfluenceResumeScanUseCase.resumeAllSpaces(scanId).timeout(Duration.ofSeconds(5));
+        Flux<ScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId).timeout(Duration.ofSeconds(5));
 
         StepVerifier.create(flux)
             .assertNext(ev -> {
@@ -198,7 +198,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
 
         when(scanCheckpointRepository.findByScanAndSpace(anyString(), anyString())).thenThrow(new RuntimeException("prep-fail"));
 
-        Flux<ScanResult> flux = streamConfluenceResumeScanUseCase.resumeAllSpaces(scanId).timeout(Duration.ofSeconds(5));
+        Flux<ScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId).timeout(Duration.ofSeconds(5));
 
         StepVerifier.create(flux)
             .assertNext(ev -> {
@@ -216,7 +216,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
         failing.completeExceptionally(new RuntimeException("resume-allspaces-fail"));
         when(confluenceService.getAllSpaces()).thenReturn(failing);
 
-        Flux<ScanResult> flux = streamConfluenceResumeScanUseCase.resumeAllSpaces(scanId).timeout(Duration.ofSeconds(5));
+        Flux<ScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId).timeout(Duration.ofSeconds(5));
 
         StepVerifier.create(flux)
             .assertNext(ev -> assertThat(ev.eventType()).isEqualTo("scanError"))
@@ -250,7 +250,7 @@ class StreamConfluenceResumeScanUseCaseImplTest {
             ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
         );
 
-        Flux<ScanResult> flux = streamConfluenceResumeScanUseCase.resumeAllSpaces(scanId)
+        Flux<ScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId)
             .filter(ev -> ScanEventType.PAGE_START.toJson().equals(ev.eventType()))
             .take(2)
             .timeout(Duration.ofSeconds(5));

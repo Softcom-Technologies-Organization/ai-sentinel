@@ -2,14 +2,14 @@ package pro.softcom.sentinelle.application.pii.reporting.usecase;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanPort;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.pii.ScanStatus;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
 
 @RequiredArgsConstructor
 @Slf4j
-public class PauseScanUseCaseImpl implements PauseScanUseCase {
+public class PauseScanUseCase implements PauseScanPort {
 
     private final ScanCheckpointRepository scanCheckpointRepository;
 

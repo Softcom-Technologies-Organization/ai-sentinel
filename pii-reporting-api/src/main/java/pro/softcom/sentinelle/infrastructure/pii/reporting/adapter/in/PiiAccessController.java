@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.RevealPiiSecretsUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.RevealPiiSecretsPort;
 
 /**
  * REST controller for PII data access control.
@@ -27,14 +27,14 @@ import pro.softcom.sentinelle.application.pii.reporting.port.in.RevealPiiSecrets
 @Slf4j
 public class PiiAccessController {
 
-    private final RevealPiiSecretsUseCase revealPiiSecretsUseCase;
+    private final RevealPiiSecretsPort revealPiiSecretsPort;
     private final PageSecretsResponseMapper mapper;
 
     @GetMapping("/config/reveal-allowed")
     @Operation(summary = "Checks if secret revelation is allowed")
     @ApiResponse(responseCode = "200", description = "Configuration returned")
     public ResponseEntity<@NonNull Boolean> isRevealAllowed() {
-        return ResponseEntity.ok(revealPiiSecretsUseCase.isRevealAllowed());
+        return ResponseEntity.ok(revealPiiSecretsPort.isRevealAllowed());
     }
 
     @PostMapping("/reveal-page")
@@ -46,7 +46,7 @@ public class PiiAccessController {
             @RequestBody PageRevealRequest request
     ) {
         try {
-            return revealPiiSecretsUseCase.revealPageSecrets(request.scanId(), request.pageId())
+            return revealPiiSecretsPort.revealPageSecrets(request.scanId(), request.pageId())
                     .map(response -> ResponseEntity.ok(mapper.toDto(response)))
                     .orElseGet(() -> {
                         log.warn("[PII_ACCESS] No results found for pageId={}", request.pageId());

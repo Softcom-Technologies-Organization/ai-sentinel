@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanPort;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanPort;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventDto;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.mapper.ScanResultToScanEventMapper;
@@ -34,8 +34,8 @@ import reactor.core.publisher.Flux;
 @Slf4j
 public class ScanController {
 
-    private final StreamConfluenceScanUseCase streamConfluenceScanUseCase;
-    private final StreamConfluenceResumeScanUseCase streamConfluenceResumeScanUseCase;
+    private final StreamConfluenceScanPort streamConfluenceScanPort;
+    private final StreamConfluenceResumeScanPort streamConfluenceResumeScanPort;
     private final ScanResultToScanEventMapper scanResultToScanEventMapper;
 
     @GetMapping(value = "/confluence/space/{spaceKey}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -53,7 +53,7 @@ public class ScanController {
                         .comment("ping")
                         .build());
 
-        Flux<ServerSentEvent<@NonNull ScanEventDto>> data = streamConfluenceScanUseCase.streamSpace(spaceKey)
+        Flux<ServerSentEvent<@NonNull ScanEventDto>> data = streamConfluenceScanPort.streamSpace(spaceKey)
                 .map(ev -> ServerSentEvent.<ScanEventDto>builder()
                         .event(ev.eventType())
                         .data(scanResultToScanEventMapper.toDto(ev))
@@ -96,7 +96,7 @@ public class ScanController {
                                     .build())
                             .build()
             );
-            Flux<ServerSentEvent<@NonNull ScanEventDto>> body = streamConfluenceResumeScanUseCase.resumeAllSpaces(scanId)
+            Flux<ServerSentEvent<@NonNull ScanEventDto>> body = streamConfluenceResumeScanPort.resumeAllSpaces(scanId)
                     .map(ev -> ServerSentEvent.<ScanEventDto>builder()
                             .event(ev.eventType())
                             .data(scanResultToScanEventMapper.toDto(ev))
@@ -108,7 +108,7 @@ public class ScanController {
         } else {
             // Fresh multi-space scan: rely on use case framing (MULTI_START/MULTI_COMPLETE with scanId)
             // and delay the subscription a bit so EventSource listeners are attached before the first event.
-            data = streamConfluenceScanUseCase.streamAllSpaces()
+            data = streamConfluenceScanPort.streamAllSpaces()
                 .delaySubscription(Duration.ofMillis(50))
                 .map(ev -> ServerSentEvent.<ScanEventDto>builder()
                     .event(ev.eventType())

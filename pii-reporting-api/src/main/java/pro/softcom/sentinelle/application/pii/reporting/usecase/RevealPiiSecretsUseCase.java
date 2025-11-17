@@ -2,6 +2,7 @@ package pro.softcom.sentinelle.application.pii.reporting.usecase;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.RevealPiiSecretsPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ReadPiiConfigPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanResultQuery;
 import pro.softcom.sentinelle.domain.pii.reporting.AccessPurpose;
@@ -17,15 +18,15 @@ import java.util.Optional;
  * Use case for revealing PII secrets from scan results.
  * Implements the business logic for controlled access to decrypted PII data.
  */
-public class RevealPiiSecretsUseCaseImpl implements
-    pro.softcom.sentinelle.application.pii.reporting.port.in.RevealPiiSecretsUseCase {
+public class RevealPiiSecretsUseCase implements
+    RevealPiiSecretsPort {
 
-    private static final Logger log = LoggerFactory.getLogger(RevealPiiSecretsUseCaseImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(RevealPiiSecretsUseCase.class);
 
     private final ReadPiiConfigPort readPiiConfigPort;
     private final ScanResultQuery scanResultQuery;
 
-    public RevealPiiSecretsUseCaseImpl(
+    public RevealPiiSecretsUseCase(
             ReadPiiConfigPort readPiiConfigPort,
             ScanResultQuery scanResultQuery
     ) {

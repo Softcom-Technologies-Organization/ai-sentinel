@@ -3,8 +3,8 @@ package pro.softcom.sentinelle.integration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingUseCase;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingPort;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanPort;
 import pro.softcom.sentinelle.domain.pii.reporting.LastScanMeta;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.domain.pii.scan.ConfluenceSpaceScanState;
@@ -18,8 +18,8 @@ public class TestWebContextStubsConfiguration {
 
     @Bean
     @Primary
-    public StreamConfluenceScanUseCase streamConfluenceScanUseCaseStub() {
-        return new StreamConfluenceScanUseCase() {
+    public StreamConfluenceScanPort streamConfluenceScanUseCaseStub() {
+        return new StreamConfluenceScanPort() {
             @Override
             public Flux<ScanResult> streamSpace(String spaceKey) {
                 return Flux.empty();
@@ -34,8 +34,8 @@ public class TestWebContextStubsConfiguration {
 
     @Bean
     @Primary
-    public ScanReportingUseCase scanResultUseCaseStub() {
-        return new ScanReportingUseCase() {
+    public ScanReportingPort scanResultUseCaseStub() {
+        return new ScanReportingPort() {
             @Override
             public java.util.Optional<LastScanMeta> getLatestScan() {
                 return java.util.Optional.empty();

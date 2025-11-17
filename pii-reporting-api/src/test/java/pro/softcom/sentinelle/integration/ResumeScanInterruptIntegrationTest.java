@@ -35,8 +35,8 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachme
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceAttachmentDownloader;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanUseCase;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanPort;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanPort;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
 import pro.softcom.sentinelle.domain.confluence.ConfluenceSpace;
 import pro.softcom.sentinelle.domain.confluence.DataOwners;
@@ -71,10 +71,10 @@ class ResumeScanInterruptIntegrationTest {
     }
 
     @Autowired
-    private StreamConfluenceScanUseCase streamConfluenceScanUseCase;
+    private StreamConfluenceScanPort streamConfluenceScanPort;
 
     @Autowired
-    private StreamConfluenceResumeScanUseCase streamConfluenceResumeScanUseCase;
+    private StreamConfluenceResumeScanPort streamConfluenceResumeScanPort;
 
     @Autowired
     private DetectionEventRepository eventRepo;
@@ -134,7 +134,7 @@ class ResumeScanInterruptIntegrationTest {
         AtomicReference<String> scanIdRef = new AtomicReference<>();
 
         // Phase 1: subscribe and stop the upstream pipeline exactly at first page_complete
-        var firstPhase = streamConfluenceScanUseCase.streamAllSpaces().doOnNext(ev -> {
+        var firstPhase = streamConfluenceScanPort.streamAllSpaces().doOnNext(ev -> {
                 scanIdRef.compareAndSet(null, ev.scanId());
             }).takeUntil(ev -> ScanEventType.PAGE_COMPLETE.toJson().equals(ev.eventType())).collectList()
             .block(Duration.ofSeconds(15));
@@ -159,7 +159,7 @@ class ResumeScanInterruptIntegrationTest {
 
         // Act 2: Resume and let it complete
         List<String> resumedEvents = new ArrayList<>();
-        streamConfluenceResumeScanUseCase.resumeAllSpaces(scanId)
+        streamConfluenceResumeScanPort.resumeAllSpaces(scanId)
             .doOnNext(ev -> resumedEvents.add(ev.eventType() + ":" + ev.pageId())).blockLast();
 
         // Wait for async persistence of resumed scan to complete before checking DB
@@ -238,7 +238,7 @@ class ResumeScanInterruptIntegrationTest {
 
         // Phase 1: start and interrupt at first page_complete
         AtomicReference<String> scanIdRef = new AtomicReference<>();
-        var firstPhase = streamConfluenceScanUseCase.streamAllSpaces()
+        var firstPhase = streamConfluenceScanPort.streamAllSpaces()
             .doOnNext(ev -> scanIdRef.compareAndSet(null, ev.scanId()))
             .takeUntil(ev -> ScanEventType.PAGE_COMPLETE.toJson().equals(ev.eventType()))
             .collectList()
@@ -258,7 +258,7 @@ class ResumeScanInterruptIntegrationTest {
             });
 
         // Phase 2: resume and collect resumed events
-        var resumed = streamConfluenceResumeScanUseCase.resumeAllSpaces(scanId).collectList().block(Duration.ofSeconds(20));
+        var resumed = streamConfluenceResumeScanPort.resumeAllSpaces(scanId).collectList().block(Duration.ofSeconds(20));
         assertThat(resumed).isNotNull().isNotEmpty();
 
         // Filter only our TEST space (single space anyway)

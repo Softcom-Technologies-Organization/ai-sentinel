@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.ScanOrchestrator;
@@ -22,10 +22,11 @@ import reactor.core.publisher.Mono;
  * Returns ScanEvent stream that the presentation layer can turn into SSE.
  */
 @Slf4j
-public class StreamConfluenceScanUseCaseImpl extends AbstractStreamConfluenceScanUseCase implements StreamConfluenceScanUseCase {
+public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUseCase implements
+    StreamConfluenceScanPort {
 
 
-    public StreamConfluenceScanUseCaseImpl(
+    public StreamConfluenceScanUseCase(
         ConfluenceAccessor confluenceAccessor,
         PiiDetectorClient piiDetectorClient,
         ScanOrchestrator scanOrchestrator,

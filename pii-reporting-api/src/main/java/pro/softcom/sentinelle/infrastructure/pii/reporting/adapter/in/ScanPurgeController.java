@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.PurgeDetectionDataUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.PurgeDetectionDataPort;
 
 /**
  * Command endpoint to purge all persisted data from previous scans.
@@ -23,7 +23,7 @@ import pro.softcom.sentinelle.application.pii.reporting.port.in.PurgeDetectionDa
 @Tag(name = "Scan Admin", description = "Administrative operations for scan lifecycle")
 public class ScanPurgeController {
 
-    private final PurgeDetectionDataUseCase purgeDetectionDataUseCase;
+    private final PurgeDetectionDataPort purgeDetectionDataPort;
 
     /**
      * Deletes all scan-related persisted data (events and checkpoints).
@@ -35,7 +35,7 @@ public class ScanPurgeController {
     public ResponseEntity<@NonNull Void> purgeAll() {
         log.info("[PURGE] Deleting all scan_events and scan_checkpoints before starting a new scan");
         try {
-            purgeDetectionDataUseCase.purgeAll();
+            purgeDetectionDataPort.purgeAll();
             return ResponseEntity.accepted().build();
         } catch (RuntimeException ex) {
             log.error("[PURGE] Failed to purge previous scan data: {}", ex.getMessage(), ex);

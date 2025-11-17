@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingPort;
 import pro.softcom.sentinelle.domain.pii.scan.ConfluenceSpaceScanState;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.LastScanDto;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventDto;
@@ -21,14 +21,14 @@ import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.mapper.Spa
 @RequiredArgsConstructor
 public class LastScanController {
 
-    private final ScanReportingUseCase scanReportingUseCase;
+    private final ScanReportingPort scanReportingPort;
     private final LastScanMapper lastScanMapper;
     private final SpaceStatusMapper spaceStatusMapper;
     private final ScanResultToScanEventMapper scanResultToScanEventMapper;
 
     @GetMapping("/last")
     public ResponseEntity<@NonNull LastScanDto> getLastScan() {
-        return scanReportingUseCase.getLatestScan()
+        return scanReportingPort.getLatestScan()
                 .map(lastScanMapper::toDto)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.noContent().build());
@@ -36,9 +36,9 @@ public class LastScanController {
 
     @GetMapping("/last/spaces")
     public ResponseEntity<@NonNull List<SpaceScanStateDto>> getLastScanSpaceStatuses() {
-        return scanReportingUseCase.getLatestScan()
+        return scanReportingPort.getLatestScan()
                 .map(meta -> {
-                    List<ConfluenceSpaceScanState> list = scanReportingUseCase.getLatestSpaceScanStateList(
+                    List<ConfluenceSpaceScanState> list = scanReportingPort.getLatestSpaceScanStateList(
                         meta.scanId());
                     return ResponseEntity.ok(spaceStatusMapper.toDtoList(list));
                 })
@@ -47,7 +47,7 @@ public class LastScanController {
 
     @GetMapping("/last/items")
     public ResponseEntity<@NonNull List<ScanEventDto>> getLastScanItems() {
-        List<ScanEventDto> items = scanReportingUseCase.getLatestSpaceScanResultList().stream()
+        List<ScanEventDto> items = scanReportingPort.getLatestSpaceScanResultList().stream()
                 .map(scanResultToScanEventMapper::toDto)
                 .toList();
         if (items.isEmpty()) return ResponseEntity.noContent().build();

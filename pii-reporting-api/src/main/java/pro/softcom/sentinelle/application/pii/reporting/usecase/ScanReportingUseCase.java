@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingUseCase;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanResultQuery;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.pii.reporting.LastScanMeta;
@@ -16,7 +16,7 @@ import pro.softcom.sentinelle.domain.pii.scan.ConfluenceSpaceScanState;
 
 @RequiredArgsConstructor
 @Slf4j
-public class ScanReportingUseCaseImpl implements ScanReportingUseCase {
+public class ScanReportingUseCase implements ScanReportingPort {
 
     private final ScanResultQuery scanResultQuery;
     private final ScanCheckpointRepository checkpointRepo;

@@ -6,7 +6,7 @@ import reactor.core.publisher.Flux;
 /**
  * Use case orchestrating Confluence scans and PII detection.
  */
-public interface StreamConfluenceScanUseCase {
+public interface StreamConfluenceScanPort {
     Flux<ScanResult> streamSpace(String spaceKey);
     Flux<ScanResult> streamAllSpaces();
 }

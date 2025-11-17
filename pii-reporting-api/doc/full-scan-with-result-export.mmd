@@ -1,0 +1,137 @@
+sequenceDiagram
+    autonumber
+    participant Client
+    participant Controller as ScanController
+    participant UseCase as StreamConfluenceScanUseCase
+    participant ResumeUC as StreamConfluenceResumeScanUseCase
+    participant ConfSvc as ConfluenceClient
+    participant AttSvc as ConfluenceAttachmentClient
+    participant DwnSvc as ConfluenceAttachmentDownloader
+    participant TxtExt as AttachmentTextExtractor
+    participant PII as PiiDetectionClient (gRPC)
+    participant DB as Database (Persistence)
+    participant EventBus as Spring Events
+    participant Listener as SpaceScanCompletedListener
+    participant ExportUC as ExportDetectionReportUseCase
+    participant ExcelWriter as ExcelDetectionReportWriterAdapter
+
+    Client->>Controller: GET /api/v1/stream/confluence/spaces/events?scanId={opt} (SSE)
+    note right of Controller: Démarre keepalive (15s) et flux data
+
+    alt Nouveau scan (scanId absent)
+        Controller->>UseCase: streamAllSpaces()
+        UseCase-->>Controller: event "MULTI_START" (avec scanId généré)
+        Controller-->>Client: SSE: MULTI_START
+        
+        UseCase->>ConfSvc: getAllSpaces()
+        alt Aucun espace trouvé
+            UseCase-->>Controller: event "error" (Aucun espace trouvé)
+            UseCase-->>Controller: event "MULTI_COMPLETE"
+            Controller-->>Client: Flux SSE (error, MULTI_COMPLETE + keepalive)
+        else Espaces trouvés
+            loop Pour chaque espace
+                UseCase->>ConfSvc: getAllPagesInSpace(space.key)
+                UseCase-->>Controller: event "start" (pagesTotal, spaceKey)
+                Controller-->>Client: SSE: start
+
+                loop Pour chaque page
+                    note over UseCase: runScanFlux
+                    UseCase-->>Controller: event "pageStart"
+                    Controller-->>Client: SSE: pageStart
+
+                    UseCase->>AttSvc: getPageAttachments(page.id)
+                    alt Aucun attachement
+                        note right of UseCase: Analyse du contenu de page
+                    else Attachements présents
+                        loop Pour chaque attachement extractible
+                            UseCase->>DwnSvc: downloadAttachmentContent(page.id, att.name)
+                            alt Contenu indisponible
+                                note right of UseCase: ignore PJ
+                            else Contenu disponible
+                                UseCase->>TxtExt: extractText(att, bytes)
+                                alt Texte non extractible
+                                    note right of UseCase: ignore PJ
+                                else Texte OK
+                                    UseCase->>PII: analyzeContent(text)
+                                    PII-->>UseCase: ContentPiiDetection
+                                    UseCase->>DB: persist(ScanEvent)
+                                    UseCase-->>Controller: event "attachmentItem"
+                                    Controller-->>Client: SSE: attachmentItem
+                                end
+                            end
+                        end
+                    end
+
+                    alt Contenu page vide
+                        UseCase->>DB: persist(ScanEvent vide)
+                        UseCase-->>Controller: event "item" (vide)
+                        Controller-->>Client: SSE: item
+                    else Contenu page présent
+                        UseCase->>PII: analyzeContent(content)
+                        alt gRPC error
+                            UseCase-->>Controller: event "error" (status)
+                            Controller-->>Client: SSE: error
+                        else OK
+                            PII-->>UseCase: ContentPiiDetection
+                            UseCase->>DB: persist(ScanEvent)
+                            UseCase-->>Controller: event "item"
+                            Controller-->>Client: SSE: item
+                        end
+                    end
+
+                    UseCase-->>Controller: event "pageComplete"
+                    Controller-->>Client: SSE: pageComplete
+                end
+
+                UseCase-->>Controller: event "complete"
+                Controller-->>Client: SSE: complete
+                
+                UseCase->>EventBus: publish(SpaceScanCompleted)
+                note right of EventBus: Événement asynchrone
+                
+                EventBus->>Listener: onSpaceScanCompleted(event)
+                Listener->>ExportUC: export(scanId, CONFLUENCE, spaceKey)
+                
+                ExportUC->>DB: readExportContext(spaceKey)
+                DB-->>ExportUC: ExportContext (nom, URL, contacts)
+                
+                ExportUC->>ExcelWriter: openReportSession(scanId, context)
+                ExcelWriter-->>ExportUC: ReportSession
+                
+                ExportUC->>ExcelWriter: startReport()
+                note right of ExcelWriter: Crée fichier .xlsx<br/>Feuille "Space Summary"<br/>Feuille "Detection Report"
+                
+                ExportUC->>DB: streamByScanIdAndSpaceKey(scanId, spaceKey)
+                loop Pour chaque ScanResult
+                    DB-->>ExportUC: ScanResult
+                    ExportUC->>ExcelWriter: writeReportEntry(entry)
+                    note right of ExcelWriter: Écrit ligne dans<br/>"Detection Report"
+                end
+                
+                ExportUC->>ExcelWriter: finishReport()
+                note right of ExcelWriter: Finalise et sauvegarde<br/>le fichier Excel
+                ExportUC->>ExcelWriter: close()
+            end
+
+            UseCase-->>Controller: event "MULTI_COMPLETE"
+            Controller-->>Client: SSE: MULTI_COMPLETE + keepalive
+        end
+        
+    else Reprise de scan (scanId présent)
+        Controller->>Controller: Wrap avec MULTI_START/MULTI_COMPLETE
+        Controller-->>Client: SSE: MULTI_START (scanId fourni)
+        
+        Controller->>ResumeUC: resumeAllSpaces(scanId)
+        note right of ResumeUC: Reprend les espaces non terminés
+        
+        loop Pour chaque espace non terminé
+            note over ResumeUC: Logique similaire au nouveau scan
+            ResumeUC-->>Controller: events (start, pageStart, item, etc.)
+            Controller-->>Client: SSE: events progressifs
+            
+            ResumeUC->>EventBus: publish(SpaceScanCompleted)
+            note right of EventBus: Export Excel déclenché<br/>comme pour nouveau scan
+        end
+        
+        Controller-->>Client: SSE: MULTI_COMPLETE + keepalive
+    end

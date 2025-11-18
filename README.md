@@ -58,29 +58,10 @@
 
 ### Overview
 
-AI Sentinel consists of three main services orchestrated via Docker Compose:
+AI Sentinel consists of the following components orchestrated via Docker Compose:  
+  
+![Description du diagramme](./docs/ai-sentinel-components.drawio.svg)
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         AI Sentinel                         │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌─────────────────┐  ┌──────────────────┐  ┌────────────┐  │
-│  │  Frontend (UI)  │  │  Backend (API)   │  │  Detector  │  │
-│  │                 │  │                  │  │  Service   │  │
-│  │  Angular 19     │  │  Spring Boot 3   │  │  Python    │  │
-│  │  Port: 4200     │  │  Port: 8080/8090 │  │  gRPC      │  │
-│  │                 │  │                  │  │  Port:50051│  │
-│  └────────┬────────┘  └────────┬─────────┘  └──────┬─────┘  │
-│           │                    │                   │        │
-│           └────────────────────┴───────────────────┘        │
-│                                │                            │
-│                      ┌─────────▼──────────┐                 │
-│                      │   PostgreSQL 18    │                 │
-│                      │   Port: 5432       │                 │
-│                      └────────────────────┘                 │
-└─────────────────────────────────────────────────────────────┘
-```
 
 ### Project Structure
 

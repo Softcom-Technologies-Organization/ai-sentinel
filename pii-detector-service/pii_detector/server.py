@@ -102,7 +102,7 @@ def set_logging_level(debug=False):
 
 def _get_api_key_from_config():
     """Get API key from configuration."""
-    from config import get_config
+    from pii_detector.config import get_config
     try:
         config = get_config()
         return config.model.huggingface_api_key

@@ -134,237 +134,146 @@ Before starting, make sure you have:
 
 AI Sentinel uses **Infisical** for secure secrets management. No `.env` files are used.
 
-### Infisical Setup - Complete Step-by-Step Guide
+### ✨ Simplified Setup with Automatic Bootstrapping
 
-This guide explains how to configure Infisical using the Web UI for AI Sentinel. All screenshots referenced below are available in [docs/screenshots](docs/screenshots).
-#### Step 0: Generate secrets for Infisical
-Before you start configuring Infisical in the UI, you should create the secret files that Docker Compose uses as Docker secrets.
+**AI Sentinel now automatically configures Infisical for you!** The setup has been greatly simplified thanks to automated bootstrapping.
 
-The **production** compose file (`docker-compose.prod.yml`) contains a one-shot service named `secrets-bootstrap` that automatically prepares these files for you:
+### Quick Setup Guide (3 Simple Steps)
 
+#### Step 1: Start AI Sentinel with Docker Compose
+
+**Production mode:**
 ```bash
-# Generate /secrets files only (no application services yet)
-docker compose -f docker-compose.prod.yml up secrets-bootstrap
+docker compose -f docker-compose.prod.yml up -d
 ```
 
-This command will:
-
-- Create the local `./secrets` directory if it does not exist
-- Generate strong, random internal Infisical secrets
-- Create placeholder files for the values that must be provided later from the Infisical UI
-
-**Secrets generated automatically (internal Infisical secrets):**
-
-- `secrets/infisical_encryption_key.txt`  
-  Type: 32-character hexadecimal key used by Infisical to encrypt data at rest (`ENCRYPTION_KEY`).
-- `secrets/infisical_auth_secret.txt`  
-  Type: Base64 secret (at least 44 characters) used by Infisical to sign and verify authentication tokens (`AUTH_SECRET`).
-- `secrets/infisical_db_password.txt`  
-  Type: 24-character alphanumeric password used by Infisical's internal PostgreSQL database.
-
-**Secrets created as empty placeholders (to be filled manually later):**
-
-These three files are created but left **empty** because their values depend on the project and Machine Identity that you will configure in the next steps of this guide:
-
-- `secrets/infisical_project_id.txt`  
-  To be filled with your Infisical **Project ID** (copied from the Infisical project settings).
-- `secrets/infisical_prod_client_id.txt`  
-  To be filled with the **Machine Identity Client ID** for the `prod` environment.
-- `secrets/infisical_prod_client_secret.txt`  
-  To be filled with the **Machine Identity Client Secret** for the `prod` environment.
-
-After completing **Step 1 to Step 5** of this guide in the Infisical UI (project creation and Machine Identity setup), come back to these three files and paste the corresponding values on a single line in each file (no extra spaces or newlines).
-
-#### Step 1: Sign up and sign in to Infisical
-
-**Self-hosted (development):** Open http://localhost:8082/admin/signup in your browser
-
-**Cloud (production):** Sign up at https://app.infisical.com
-
-![Admin sign up](docs/screenshots/0%20-%20sign%20up.png)
-
-![After sign up](docs/screenshots/1%20-%20after%20sign%20up.png)
-
-#### Step 2: Create a project
-
-1. In the top navigation, open **Projects** and click **Create Project**
-2. Name it (for example: **AI Sentinel**)
-
-![Project creation](docs/screenshots/2%20-%20project%20creation.png)
-
-![Create project](docs/screenshots/3%20-%20create%20project.png)
-
-After creation, open the Project Settings. You will need the **Project ID** in the next step.
-
-**Optional:** You may want to remove the default "staging" environment if not needed:
-
-![Remove staging](docs/screenshots/4%20-%20remove%20staging.png)
-
-![Remove staging confirm](docs/screenshots/5%20-%20remove%20staging%20confirm.png)
-
-#### Step 3: Save the Project ID for Docker (MANDATORY)
-
-1. In the project Settings page, copy the **Project ID** (a UUID-like value)
-2. You can find this in the project creation confirmation or in the project settings later
-
-![Copy project ID](docs/screenshots/3%20bis%20-%20copy%20project%20ID.png)
-
-**Save the Project ID as a Docker secret:**
-
-Create a text file to store the Project ID:
-
+**Development mode:**
 ```bash
-# Create secrets directory if it doesn't exist
-mkdir -p secrets
-
-# Save Project ID (replace with your actual ID)
-echo "YOUR_PROJECT_ID_HERE" > secrets/infisical_project_id.txt
+docker compose -f docker-compose.dev.yml up -d
 ```
 
-- **File:** `secrets/infisical_project_id.txt`
-- **Content:** Paste the Project ID on a single line (no extra spaces)
+The `ai-sentinel-infisical-configurator` container will automatically:
+- ✅ Create the Infisical instance
+- ✅ Create a Super Admin account
+- ✅ Create the `ai-sentinel` project
+- ✅ Create the necessary environments (dev/prod)
+- ✅ Create a Machine Identity with credentials
+- ✅ Configure authentication settings
 
-This is required by docker-compose (both dev and prod) to authenticate the services with Infisical.
+#### Step 2: Retrieve Your Super Admin Credentials
 
-⚠️ **Important:**
-- Do not commit this file to version control
-- Ensure the file is plain text and stored in the `secrets/` folder next to your docker-compose file
-
-#### Step 4: Create a Machine Identity and generate credentials
-
-1. Go to your project → **Settings** → **Access Control** → **Machine Identities**
-2. Click **+ Add Identity**
-3. Choose a meaningful name, for example:
-    - `ai-sentinel-dev` (Environment: dev)
-    - `ai-sentinel-prod` (Environment: prod)
-4. Assign a role (**Admin** for simplicity; you can tighten later with fine-grained permissions)
-5. Open the identity details → **Authentication** tab (Universal Auth)
-6. Generate a **Client Secret**
-7. Copy **BOTH** values now:
-    - **Client ID**
-    - **Client Secret** (will be shown only once)
-
-![Create identity](docs/screenshots/6%20-%20create%20identity.png)
-
-![Create identity form](docs/screenshots/7%20-%20create%20identity.png)
-
-![Auth settings](docs/screenshots/8%20-%20auth%20settings.png)
-
-![Add client secret](docs/screenshots/9%20-%20add%20client%20secret.png)
-
-![Add client secret form](docs/screenshots/10%20-%20add%20client%20secret.png)
-
-![Copy client secret](docs/screenshots/11%20-%20copy%20client%20secret.png)
-
-Finally, ensure the identity is added to the project:
-
-![Add identity to project](docs/screenshots/15%20-%20add%20identity.png)
-
-![Add identity confirmation](docs/screenshots/16%20-%20add%20identity.png)
-
-**Save the Machine Identity credentials as Docker secrets:**
-
-Save credentials to files under the repository's `secrets/` folder so docker-compose can mount them.
-
-**For the DEV environment identity** (recommended during development):
+Watch the logs to get your Super Admin credentials:
 
 ```bash
-# Save Client ID (replace with your actual ID)
-echo "YOUR_DEV_CLIENT_ID_HERE" > secrets/infisical_dev_client_id.txt
-
-# Save Client Secret (replace with your actual secret)
-echo "YOUR_DEV_CLIENT_SECRET_HERE" > secrets/infisical_dev_client_secret.txt
+# Follow the configurator logs in real-time
+docker logs -f ai-sentinel-infisical-configurator
 ```
 
-**For the PROD environment identity** (if you plan production):
+**Look for these lines in the output:**
+
+```
+[infisical-config] ========================================
+[infisical-config] Super Admin Account:
+[infisical-config]   Email:    admin@ai-sentinel.local
+[infisical-config]   Password: xxxxxxxxxxxxxxxxxxx
+[infisical-config] ========================================
+```
+
+**⚠️ Important:** Save these credentials securely - you'll need them to access the Infisical UI.
+
+**Alternative - View logs after container finished:**
+
+**Linux/macOS:**
+```bash
+# If the container has already stopped
+docker logs ai-sentinel-infisical-configurator 2>&1 | grep -A 3 "Super Admin Account"
+```
+
+**Windows PowerShell:**
+```powershell
+# If the container has already stopped
+docker logs ai-sentinel-infisical-configurator 2>&1 | Select-String -Pattern "Super Admin Account" -Context 0,3
+```
+
+#### Step 3: Configure Your Secrets in Infisical UI
+
+**3.1. Login to Infisical**
+
+- **Development:** Open http://localhost:8082
+- **Production:** Open your Infisical instance URL
+
+Use the Super Admin credentials from Step 2.
+
+![Login to Infisical](docs/screenshots/001-login.png)
+
+**3.2. Join the AI Sentinel Project as Admin**
+
+After login, you'll see the `ai-sentinel` project has been created automatically.
+
+Click **"Join as Admin"** to access the project.
+
+![Join as Admin](docs/screenshots/002-join-as-admin.png)
+
+**3.3. Configure the 4 Required Secrets**
+
+Navigate to the Secrets section and add the following 4 secrets:
+
+![Set Secrets](docs/screenshots/003-set-secrets.png)
+
+| Secret Name | Description | Example | Required |
+|-------------|-------------|---------|----------|
+| `CONFLUENCE_BASE_URL` | Your Confluence instance URL | `https://company.atlassian.net/wiki` | ✅ Yes |
+| `CONFLUENCE_USERNAME` | Confluence email or username | `user@company.com` | ✅ Yes |
+| `CONFLUENCE_API_TOKEN` | Confluence API token | `ATATT3xFfGF0...` | ✅ Yes |
+| `HUGGING_FACE_API_KEY` | Hugging Face API key (for private models) | `hf_...` | ✅ Yes |
+
+*Optional but recommended for accessing gated models.
+
+**How to get Confluence credentials:**
+- **Base URL:** Your Confluence instance (Cloud or Server/Data Center)
+- **API Token:** Create at https://id.atlassian.com/manage-profile/security/api-tokens
+
+**How to get Hugging Face API Key:**
+- Create account at https://huggingface.co/join
+- Generate token at https://huggingface.co/settings/tokens (token type: read)
+
+#### Step 4: Restart Application Components
+
+Once you've configured the secrets in Infisical, restart the application containers to load them:
 
 ```bash
-# Save Client ID (replace with your actual ID)
-echo "YOUR_PROD_CLIENT_ID_HERE" > secrets/infisical_prod_client_id.txt
-
-# Save Client Secret (replace with your actual secret)
-echo "YOUR_PROD_CLIENT_SECRET_HERE" > secrets/infisical_prod_client_secret.txt
+docker compose -f docker-compose.prod.yml up -d --force-recreate pii-detector pii-reporting-api pii-reporting-ui
 ```
 
-⚠️ **Important:**
-- Do not commit these files to version control
-- Ensure the files are plain text and stored in the `secrets/` folder next to your docker-compose file
-- Client Secret is shown only once - save it immediately
-
-#### Step 5: Add required application secrets inside Infisical
-
-Create these variables in your Infisical project for each target environment (dev and/or prod). The services will fetch them at runtime via Infisical CLI.
-
-![Secret management](docs/screenshots/12%20-%20secret%20management.png)
-
-**How to create a secret:**
-
-To add a new secret to your Infisical project:
-
-1. Click on the **"Add Secret"** button in the secret management interface
-2. Fill in the secret key name (e.g., `CONFLUENCE_BASE_URL`)
-3. Enter the secret value
-4. Click **"Save"** to create the secret
-
-![Add secret](docs/screenshots/13%20-%20add%20secret.png)
-
-![Create secret](docs/screenshots/14%20-%20create%20secret.png)
-
-Once you've added all the required secrets, you'll see them listed in the secret management interface:
-
-![Secrets created](docs/screenshots/14%20bis%20-%20secrets%20created.png)
-
-**Required secrets for PII Reporting API (Spring Boot):**
-
-| Secret Name | Description | Where to find |
-|-------------|-------------|---------------|
-| `CONFLUENCE_BASE_URL` | Your Confluence base URL | Your Confluence instance URL (Cloud or Server/Data Center)<br>Example: `https://company.atlassian.net/wiki` |
-| `CONFLUENCE_USERNAME` | Account email or username used to access Confluence | Your Atlassian account (id.atlassian.com) or corporate directory |
-| `CONFLUENCE_API_TOKEN` | Confluence API token for the above user | Atlassian Cloud: https://id.atlassian.com/manage-profile/security/api-tokens → Create token |
-
-**Optional proxy secrets** (only if your Confluence is reachable via a proxy):
-
-| Secret Name | Description | Default |
-|-------------|-------------|---------|
-| `CONFLUENCE_ENABLE_PROXY` | Enable proxy | `false` |
-| `CONFLUENCE_PROXY_HOST` | Proxy hostname | - |
-| `CONFLUENCE_PROXY_PORT` | Proxy port | `8080` |
-| `CONFLUENCE_PROXY_USERNAME` | Proxy username | - |
-| `CONFLUENCE_PROXY_PASSWORD` | Proxy password | - |
-
-**Note:** Database connectivity to Postgres is configured via docker-compose and is not stored in Infisical by default in this project. You may choose to manage DB_* variables in Infisical later if needed.
-
-**PII Detector Service (Python):**
-
-No mandatory secrets by default. Model configs and caches are handled via environment variables set in docker-compose. If your models require private access (e.g., Hugging Face tokens), you could add `HF_TOKEN` or similar to Infisical and consume it in your service wrapper.
-
-#### Step 6: Start the stack
-
-Once the files in `secrets/` are saved and the Infisical project is configured:
-
-**Development:**
+**Or for development mode:**
 ```bash
-# Start Infisical first
-docker-compose -f docker-compose.dev.yml up -d infisical
-
-# Wait until Infisical is healthy (~30 seconds)
-docker-compose -f docker-compose.dev.yml ps infisical
-
-# Then start the rest of the stack
-docker-compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml up -d --force-recreate pii-detector pii-reporting-api pii-reporting-ui
 ```
 
-**Production:**
+The services will now:
+- ✅ Authenticate with Infisical using the auto-generated Machine Identity
+- ✅ Load the secrets you configured
+- ✅ Start successfully with proper configuration
+
+**Verify services are running:**
 ```bash
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml ps
 ```
 
-The services will:
-- ✅ Read Machine Identity credentials and Project ID from Docker secrets
-- ✅ Authenticate to Infisical via Universal Auth
-- ✅ Inject the configured project secrets into the runtime environment
+You should see all services in "Up" status.
 
-#### Step 7: Infisical Troubleshooting
+---
+
+### 🎉 That's It!
+
+Your AI Sentinel instance is now fully configured and ready to use!
+
+Access the application at:
+- 📱 **Web Interface**: http://localhost:4200
+- 🔌 **Backend API**: http://localhost:8080/sentinelle
+- 🔐 **Infisical UI**: http://localhost:8082
+
+### Infisical Troubleshooting
 
 **401/403 from Infisical:**
 - Verify the Machine Identity (client ID/secret) is correct
@@ -401,49 +310,13 @@ docker logs pii-reporting-api 2>&1 | grep -i "infisical\|secret"
 curl http://localhost:8082/api/status
 ```
 
-#### Appendix: Docker Secret Files Reference
-
-These files are mounted by docker-compose for runtime authentication with Infisical:
-
-**Application secrets (required for all deployments):**
-- `secrets/infisical_project_id.txt` → Project ID from Infisical UI project settings
-- `secrets/infisical_dev_client_id.txt` → Machine Identity (dev) Client ID
-- `secrets/infisical_dev_client_secret.txt` → Machine Identity (dev) Client Secret
-- `secrets/infisical_prod_client_id.txt` → Machine Identity (prod) Client ID (if used)
-- `secrets/infisical_prod_client_secret.txt` → Machine Identity (prod) Client Secret (if used)
-
-**Infisical self-hosted secrets** (only if you self-host Infisical locally for development):
-- `secrets/infisical_encryption_key.txt` → Server encryption key (hex, 32 chars)
-- `secrets/infisical_auth_secret.txt` → Server auth secret (base64, 44 chars)
-- `secrets/infisical_db_password.txt` → Password for Infisical's Postgres DB
-
-For generation commands and details, see `secrets/README.md`.
-
 ---
 
-### Quick Configuration Summary
+### Optional: Advanced Configuration
 
-**1. Infisical Project Setup**
-- Create a project in Infisical (Cloud: https://app.infisical.com or self-hosted: http://localhost:8082)
-- Create a Machine Identity with credentials (separate for dev and prod environments)
-- Save Docker secret files in the `secrets/` folder:
-    - `infisical_project_id.txt` - Your Infisical project ID
-    - `infisical_dev_client_id.txt` / `infisical_prod_client_id.txt` - Machine Identity Client ID
-    - `infisical_dev_client_secret.txt` / `infisical_prod_client_secret.txt` - Machine Identity Client Secret
+If you need to configure additional optional secrets (proxy, advanced settings), add them in Infisical:
 
-**2. Required Secrets in Infisical**
-
-Configure these secrets in your Infisical project (environment: dev or prod):
-
-| Secret Name | Description | Example | Environment |
-|-------------|-------------|---------|-------------|
-| `CONFLUENCE_BASE_URL` | Confluence instance URL | `https://company.atlassian.net/wiki` | dev, prod |
-| `CONFLUENCE_USERNAME` | Confluence email or username | `user@company.com` | dev, prod |
-| `CONFLUENCE_API_TOKEN` | Confluence API token | `ATATT3xFfGF0...` | dev, prod |
-| `DB_USERNAME` | PostgreSQL username | `postgres` | prod |
-| `DB_PASSWORD` | PostgreSQL password | `<random-password>` | prod |
-
-**3. Optional Secrets (Confluence Proxy)**
+**Optional Secrets (Confluence Proxy):**
 
 | Secret Name | Description | Default | Required |
 |-------------|-------------|---------|----------|
@@ -453,28 +326,27 @@ Configure these secrets in your Infisical project (environment: dev or prod):
 | `CONFLUENCE_PROXY_USERNAME` | Proxy username | - | If proxy auth |
 | `CONFLUENCE_PROXY_PASSWORD` | Proxy password | - | If proxy auth |
 
-**4. Optional Secrets (Advanced Configuration)**
+**Optional Secrets (Advanced Configuration):**
 
 | Secret Name | Description | Default | Required |
 |-------------|-------------|---------|----------|
 | `CONFLUENCE_CACHE_REFRESH_INTERVAL` | Cache refresh interval (ms) | `300000` | No |
 | `CONFLUENCE_CACHE_INITIAL_DELAY` | Initial delay (ms) | `5000` | No |
 | `CONFLUENCE_POLLING_INTERVAL` | Polling interval (ms) | `60000` | No |
-| `HUGGING_FACE_API_KEY` | Hugging Face API key | - | Only for private models |
 
 ### Security Notes
 
 ✅ **Best Practices:**
-- All secrets are stored securely in Infisical (encrypted at rest)
-- Secrets are injected at runtime via Docker secrets
-- Never commit secret files to version control (included in `.gitignore`)
-- Use Infisical Cloud for production (high availability, backups, audit logs)
+- All secrets are automatically encrypted at rest in Infisical
+- Secrets are never stored in `.env` files or version control
+- Machine Identity credentials are generated with strong entropy
+- Use separate environments (dev/prod) for security isolation
 - Rotate secrets regularly (recommended: every 90 days)
 
 ⚠️ **Important:**
-- The `secrets/` folder is excluded from version control
-- Keep a secure backup of `infisical_encryption_key.txt` if using self-hosted Infisical
-- Use separate Machine Identities for dev and prod environments
+- Save your Super Admin credentials securely (password manager recommended)
+- The bootstrapping process runs once - subsequent starts will skip configuration
+- For production deployments, consider using Infisical Cloud for high availability
 
 ### AI Models Configuration
 

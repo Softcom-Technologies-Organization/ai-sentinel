@@ -1,6 +1,5 @@
-package pro.softcom.sentinelle.infrastructure.pii.security.adapter;
+package pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out;
 
-import jakarta.validation.constraints.NotNull;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -11,12 +10,13 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 import pro.softcom.sentinelle.domain.pii.security.CryptographicOperationException;
 import pro.softcom.sentinelle.domain.pii.security.EncryptionException;
 import pro.softcom.sentinelle.domain.pii.security.EncryptionMetadata;
 import pro.softcom.sentinelle.domain.pii.security.EncryptionService;
-import pro.softcom.sentinelle.infrastructure.pii.security.config.EncryptionKeyProvider;
+import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.config.EncryptionKeyProvider;
 
 /**
  * AES-256-GCM encryption adapter with HKDF key derivation.
@@ -295,7 +295,7 @@ public class AesGcmEncryptionAdapter implements EncryptionService {
         }
 
         @Override
-        public @NotNull String toString() {
+        public @NonNull String toString() {
             return "EncryptedData{" +
                     "salt=" + Arrays.toString(salt) +
                     ", iv=" + Arrays.toString(iv) +

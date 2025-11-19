@@ -1,17 +1,17 @@
-package pro.softcom.sentinelle.infrastructure.pii.security.jpa;
+package pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa;
 
+import java.time.Instant;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
-import pro.softcom.sentinelle.infrastructure.pii.security.jpa.entity.PiiAccessAuditEntity;
-
-import java.time.Instant;
+import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.entity.PiiAccessAuditEntity;
 
 /**
  * Repository for PII access audit logs.
  */
-public interface PiiAccessAuditRepository extends JpaRepository<PiiAccessAuditEntity, Long> {
+public interface PiiAccessAuditRepository extends JpaRepository<@NonNull PiiAccessAuditEntity, @NonNull Long> {
     
     /**
      * Deletes all audit logs expired before the given instant.

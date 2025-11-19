@@ -85,7 +85,7 @@ services:
         if [ ! -f /secrets/pii_database_encryption_key.txt ] \
           || [ "$(wc -c < /secrets/pii_database_encryption_key.txt 2>/dev/null || echo 0)" -lt 44 ]; then
           echo "[secrets-bootstrap] Generating pii_database_encryption_key.txt (base64 44 chars)...";
-          head -c 32 /dev/urandom | base64 | tr -d "\n\r" > /secrets/pii_database_encryption_key.txt
+          head -c 32 /dev/urandom | base64 | tr -d "\n\r" > /secrets/pii_database_encryption_key.txt || { echo "[ERROR] Failed to create PII encryption key"; exit 1; };
           echo "[secrets-bootstrap] ✓ pii_database_encryption_key.txt created";
         fi;
 

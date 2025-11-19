@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>Configuration:</p>
  * <ul>
- *   <li>The encyption key is provided via {@link EncryptionConfig#kekPiiEncryptionKey()}.</li>
+ *   <li>The encryption key is provided via {@link EncryptionConfig#kekPiiEncryptionKey()}.</li>
  *   <li>The expected format is Base64-encoded 256-bit key.</li>
  * </ul>
  *
@@ -40,7 +40,7 @@ public class EncryptionKeyProvider {
 
     private SecretKey parseKeyFromBase64(String keyBase64) {
         if (StringUtils.isBlank(keyBase64)) {
-            throw new IllegalStateException("Missing KEK environment variable: " + this.config.kekPiiEncryptionKey());
+            throw new IllegalStateException("Missing KEK encryption key: " + this.config.kekPiiEncryptionKey());
         }
 
         byte[] keyBytes = null;

@@ -70,7 +70,7 @@ public class PiiAccessAuditEntity {
     @PrePersist
     void calculateRetention() {
         if (retentionUntil == null && accessedAt != null) {
-            retentionUntil = accessedAt.plus(DEFAULT_RETENTION_DAYS, ChronoUnit.DAYS); // 2 years
+            retentionUntil = accessedAt.plus(DEFAULT_RETENTION_DAYS, ChronoUnit.DAYS);
         }
     }
 

@@ -30,7 +30,6 @@ import org.hibernate.proxy.HibernateProxy;
 @ToString
 @RequiredArgsConstructor
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
 public class PiiAccessAuditEntity {
     private static final long DEFAULT_RETENTION_DAYS = 730;

@@ -80,6 +80,14 @@ services:
         else
           echo "[secrets-bootstrap] ✓ infisical_db_password.txt already exists";
         fi;
+      
+        # PII Database Encryption Key (AES-256: 32 bytes = 44 base64 chars)
+        if [ ! -f /secrets/pii_database_encryption_key.txt ] \
+          || [ "$(wc -c < /secrets/pii_database_encryption_key.txt 2>/dev/null || echo 0)" -lt 44 ]; then
+          echo "[secrets-bootstrap] Generating pii_database_encryption_key.txt (base64 44 chars)...";
+          head -c 32 /dev/urandom | base64 | tr -d "\n\r" > /secrets/pii_database_encryption_key.txt || { echo "[ERROR] Failed to create PII encryption key"; exit 1; };
+          echo "[secrets-bootstrap] ✓ pii_database_encryption_key.txt created";
+        fi;
 
         echo "[secrets-bootstrap] Creating placeholder files for manual configuration...";
         # Placeholders to link other services later (must be filled manually)
@@ -368,7 +376,33 @@ services:
             -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"CHANGEME_$${secret_name}\",\"secretComment\":\"Auto-generated placeholder - please update with real value\",\"type\":\"shared\"}" \
             > /dev/null 2>&1 && echo "[infisical-config]   ✓ $$secret_name created" || echo "[infisical-config]   ⚠ $$secret_name may already exist";
         done;
-        echo "[infisical-config] ✓ Secrets created with placeholder values";
+        # Create or update PII_DATABASE_ENCRYPTION_KEY idempotently
+        PII_DB_ENCRYPTION_KEY=$$(cat /secrets/pii_database_encryption_key.txt);
+
+        # Try POST first and capture HTTP status without failing the script
+        HTTP_CODE=$$(curl -s -o /dev/null -w "%{http_code}" -X POST "$${INFISICAL_URL}/api/v4/secrets/PII_DATABASE_ENCRYPTION_KEY" \
+          -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"$${PII_DB_ENCRYPTION_KEY}\",\"secretComment\":\"Auto-generated AES-256 encryption key for PII database (32 bytes base64-encoded)\",\"type\":\"shared\"}");
+
+        if [ "$$HTTP_CODE" = "200" ] || [ "$$HTTP_CODE" = "201" ]; then
+          echo "[infisical-config]   ✓ PII_DATABASE_ENCRYPTION_KEY created";
+        elif [ "$$HTTP_CODE" = "409" ]; then
+          # Secret exists -> attempt update (PUT)
+          HTTP_CODE_PUT=$$(curl -s -o /dev/null -w "%{http_code}" -X PUT "$${INFISICAL_URL}/api/v4/secrets/PII_DATABASE_ENCRYPTION_KEY" \
+            -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"$${PII_DB_ENCRYPTION_KEY}\",\"type\":\"shared\"}");
+          if [ "$$HTTP_CODE_PUT" = "200" ]; then
+            echo "[infisical-config]   ✓ PII_DATABASE_ENCRYPTION_KEY updated";
+          else
+            echo "[infisical-config]   ⚠ PII_DATABASE_ENCRYPTION_KEY exists but update returned HTTP $$HTTP_CODE_PUT; continuing";
+          fi
+        else
+          echo "[infisical-config]   ⚠ Failed to create PII_DATABASE_ENCRYPTION_KEY (HTTP $$HTTP_CODE); continuing";
+        fi
+
+        echo "[infisical-config] ✓ Secrets created with placeholder or real values";
         echo "";
         
         # Step 5: Display success summary
@@ -396,6 +430,7 @@ services:
         echo "[infisical-config]   - CONFLUENCE_BASE_URL";
         echo "[infisical-config]   - CONFLUENCE_USERNAME";
         echo "[infisical-config]   - CONFLUENCE_API_TOKEN";
+        echo "[infisical-config]   - PII_DATABASE_ENCRYPTION_KEY";
         echo "";
         echo "[infisical-config] Access Infisical UI at: http://localhost:8082";
         echo "[infisical-config] ================================================";
@@ -505,7 +540,6 @@ services:
       CONFLUENCE_CACHE_REFRESH_INTERVAL: ${CONFLUENCE_CACHE_REFRESH_INTERVAL:-300000}
       CONFLUENCE_CACHE_INITIAL_DELAY: ${CONFLUENCE_CACHE_INITIAL_DELAY:-5000}
       CONFLUENCE_POLLING_INTERVAL: ${CONFLUENCE_POLLING_INTERVAL:-60000}
-      SENTINELLE_ENCRYPTION_KEY: ${SENTINELLE_ENCRYPTION_KEY}
     volumes:
       - ./secrets:/secrets:ro
     depends_on:

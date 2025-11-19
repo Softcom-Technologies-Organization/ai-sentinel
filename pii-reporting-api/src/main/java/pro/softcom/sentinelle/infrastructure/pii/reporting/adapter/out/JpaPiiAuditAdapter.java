@@ -1,13 +1,12 @@
-package pro.softcom.sentinelle.infrastructure.pii.security.adapter.out;
+package pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out;
 
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import pro.softcom.sentinelle.application.pii.security.port.out.SavePiiAuditPort;
 import pro.softcom.sentinelle.domain.pii.security.PiiAuditRecord;
-import pro.softcom.sentinelle.infrastructure.pii.security.jpa.PiiAccessAuditRepository;
-import pro.softcom.sentinelle.infrastructure.pii.security.jpa.entity.PiiAccessAuditEntity;
-
-import java.time.Instant;
+import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.PiiAccessAuditRepository;
+import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.entity.PiiAccessAuditEntity;
 
 /**
  * JPA adapter implementing the SavePiiAuditPort for hexagonal architecture compliance.

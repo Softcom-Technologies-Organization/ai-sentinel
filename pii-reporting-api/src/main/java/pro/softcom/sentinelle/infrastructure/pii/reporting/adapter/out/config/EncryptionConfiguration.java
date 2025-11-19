@@ -1,4 +1,4 @@
-package pro.softcom.sentinelle.infrastructure.pii.security.config;
+package pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.config;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;

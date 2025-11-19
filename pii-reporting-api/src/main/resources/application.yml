@@ -77,7 +77,7 @@ scan:
     pii-detection: 305s  # Should be > gRPC timeout (300s) to let gRPC exception trigger first
 
 pii-encryption:
-  kek-env-variable: SENTINELLE_ENCRYPTION_KEY
+  kek-pii-encryption-key: ${PII_DATABASE_ENCRYPTION_KEY}
 
 # PII Configuration
 pii:

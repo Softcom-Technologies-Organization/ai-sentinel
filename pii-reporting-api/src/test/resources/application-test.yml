@@ -33,6 +33,9 @@ confluence:
     pages-limit: 10
     max-pages: 10
 
+pii-encryption:
+  kek-pii-encryption-key: '46TCyS1+5ie3I0zfG7RzePn7+0otW8nrwOQurxiS6z8='
+
 # Keep Armeria as default client in tests; use loopback host
 pii-detector:
   client: armeria

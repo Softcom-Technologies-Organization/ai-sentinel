@@ -1,4 +1,4 @@
-package pro.softcom.sentinelle.infrastructure.pii.security.adapter.out;
+package pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,7 @@ import pro.softcom.sentinelle.application.pii.security.PiiAccessAuditService;
 @ConditionalOnProperty(name = "pii.audit.retention.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
-public class ScheduledPiiAuditRetentionJob {
+public class ScheduledPiiAuditRetentionJobAdapter {
 
     private final PiiAccessAuditService auditService;
 

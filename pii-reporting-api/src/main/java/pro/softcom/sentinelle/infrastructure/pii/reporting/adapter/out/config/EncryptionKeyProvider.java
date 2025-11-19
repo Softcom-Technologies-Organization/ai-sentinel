@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>Configuration:</p>
  * <ul>
- *   <li>The environment variable name is provided via {@link EncryptionConfig#kekPiiEncryptionKey()}.</li>
+ *   <li>The encyption key is provided via {@link EncryptionConfig#kekPiiEncryptionKey()}.</li>
  *   <li>The expected format is Base64-encoded 256-bit key.</li>
  * </ul>
  *
@@ -35,12 +35,7 @@ public class EncryptionKeyProvider {
 
     public EncryptionKeyProvider(EncryptionConfig config) {
         this.config = config;
-        this.key = loadKey();
-    }
-
-    private SecretKey loadKey() {
-        var base64Key = config.kekPiiEncryptionKey();
-        return parseKeyFromBase64(base64Key);
+        this.key = parseKeyFromBase64(config.kekPiiEncryptionKey());
     }
 
     private SecretKey parseKeyFromBase64(String keyBase64) {

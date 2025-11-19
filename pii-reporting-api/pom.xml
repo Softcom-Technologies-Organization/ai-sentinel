@@ -290,7 +290,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration combine.self="override">
-                            <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --enable-native-access=ALL-UNNAMED --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+                            <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
                             <includes>
                                 <include>**/Test*.java</include>
                                 <include>**/*Test.java</include>
@@ -319,7 +319,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                          <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --enable-native-access=ALL-UNNAMED --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+                          <argLine>@{argLine} -javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/${byte-buddy-agent.version}/byte-buddy-agent-${byte-buddy-agent.version}.jar -XX:+IgnoreUnrecognizedVMOptions --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
                             <excludes>
                                 <exclude>**/integration/*.java</exclude>
                             </excludes>
@@ -341,7 +341,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                          <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --enable-native-access=ALL-UNNAMED --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+                          <argLine>@{argLine} -javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/${byte-buddy-agent.version}/byte-buddy-agent-${byte-buddy-agent.version}.jar -XX:+IgnoreUnrecognizedVMOptions --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
                             <excludes>
                                 <exclude>**/integration/*.java</exclude>
                             </excludes>
@@ -392,8 +392,14 @@
                     <excludes>
                         <exclude>**/integration/*.java</exclude>
                     </excludes>
-                    <!-- Enable dynamic agent loading for Mockito with Java 25 -->
-                  <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --enable-native-access=ALL-UNNAMED --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+                    <!-- Load ByteBuddy Java agent statiquement pour Mockito (Java 25) -->
+                    <argLine>
+                        @{argLine}
+                        -javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/${byte-buddy-agent.version}/byte-buddy-agent-${byte-buddy-agent.version}.jar
+                        -XX:+IgnoreUnrecognizedVMOptions
+                        --add-opens java.base/sun.misc=ALL-UNNAMED
+                        --add-opens java.base/java.lang=ALL-UNNAMED
+                    </argLine>
                 </configuration>
             </plugin>
             <plugin>

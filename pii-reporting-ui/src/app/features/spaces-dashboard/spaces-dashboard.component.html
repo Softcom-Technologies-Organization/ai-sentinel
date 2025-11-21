@@ -9,26 +9,12 @@
   </div>
 
   <!-- Phase 2: New spaces notification banner -->
-  @if (hasNewSpaces()) {
-    <div class="new-spaces-banner">
-      <i class="pi pi-info-circle"></i>
-      <span class="banner-message">
-        {{ 'dashboard.notifications.newSpaces.message' | transloco:{ count: newSpacesCount() } }}
-      </span>
-      <button pButton type="button" class="p-button-raised p-button-sm"
-              (click)="refreshSpaces()"
-              (keydown.enter)="refreshSpaces()"
-              (keydown.space)="$event.preventDefault(); refreshSpaces()">
-        {{ 'dashboard.notifications.newSpaces.refreshButton' | transloco }}
-      </button>
-      <button pButton type="button" class="p-button-text p-button-sm" icon="pi pi-times"
-              (click)="dismissNotification()"
-              (keydown.enter)="dismissNotification()"
-              (keydown.space)="$event.preventDefault(); dismissNotification()"
-              [attr.aria-label]="'dashboard.notifications.newSpaces.closeAriaLabel' | transloco">
-      </button>
-    </div>
-  }
+  <app-new-spaces-banner
+    [hasNewSpaces]="hasNewSpaces()"
+    [newSpacesCount]="newSpacesCount()"
+    (refresh)="refreshSpaces()"
+    (dismiss)="dismissNotification()">
+  </app-new-spaces-banner>
 
   <p-table #dt [value]="sortedSpaces()"
            dataKey="key"
@@ -62,26 +48,40 @@
       <tr>
         <th id="col-toggle-value"></th>
         <th id="col-space-value">
-          <input class="search-global" pInputText type="text"
-                 [placeholder]="'common.search' | transloco"
-                 [ngModel]="globalFilter()"
-                 (ngModelChange)="onGlobalChange($event)"
-                 [attr.aria-label]="'common.searchGlobally' | transloco"/>
+          <div class="space-filters">
+            <div class="filter-item">
+              <input
+                class="search-global"
+                pInputText
+                type="text"
+                [placeholder]="'common.search' | transloco"
+                [ngModel]="globalFilter()"
+                (ngModelChange)="onGlobalChange($event)"
+                [attr.aria-label]="'common.searchGlobally' | transloco"
+                [attr.data-testid]="'global-filter-input'"/>
+            </div>
+          </div>
         </th>
         <th id="col-status-value">
-          <p-select [options]="statusOptions"
-                    optionLabel="labelKey"
-                    optionValue="value"
-                    [ngModel]="statusFilter()"
-                    (ngModelChange)="onFilter('status', $event)"
-                    [showClear]="true">
-            <ng-template pTemplate="item" let-option>
-              {{ option.labelKey | transloco }}
-            </ng-template>
-            <ng-template pTemplate="selectedItem" let-option>
-              {{ option.labelKey | transloco }}
-            </ng-template>
-          </p-select>
+          <div class="space-filters">
+            <div class="filter-item">
+              <p-select
+                [options]="statusOptions"
+                optionLabel="labelKey"
+                optionValue="value"
+                [ngModel]="statusFilter()"
+                (ngModelChange)="onFilter('status', $event)"
+                [showClear]="true"
+                [attr.data-testid]="'status-filter-select'">
+                <ng-template pTemplate="item" let-option>
+                  {{ option.labelKey | transloco }}
+                </ng-template>
+                <ng-template pTemplate="selectedItem" let-option>
+                  {{ option.labelKey | transloco }}
+                </ng-template>
+              </p-select>
+            </div>
+          </div>
         </th>
         <th id="col-progress-value"></th>
         <th id="col-last-scan-value"></th>

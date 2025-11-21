@@ -53,6 +53,9 @@ import {ToastService} from '../../core/services/toast.service';
 import {TestIds} from '../test-ids.constants';
 import {ToastModule} from 'primeng/toast';
 import {ConfirmDialogModule} from 'primeng/confirmdialog';
+import {ScanProgressService} from '../../core/services/scan-progress.service';
+import {NewSpacesBannerComponent} from '../../shared/components/new-spaces-banner/new-spaces-banner.component';
+import {SpaceFiltersComponent} from '../../shared/components/space-filters/space-filters.component';
 
 
 /**
@@ -62,7 +65,7 @@ import {ConfirmDialogModule} from 'primeng/confirmdialog';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, ToggleSwitchModule, PiiItemCardComponent, BadgeModule, InputTextModule, SelectModule, TableModule, TagModule, Ripple, TooltipModule, DataViewModule, ProgressBarModule, SkeletonModule, ConfirmDialogModule, ToastModule, TranslocoModule, LanguageSelectorComponent],
+  imports: [CommonModule, FormsModule, ButtonModule, ToggleSwitchModule, PiiItemCardComponent, BadgeModule, InputTextModule, SelectModule, TableModule, TagModule, Ripple, TooltipModule, DataViewModule, ProgressBarModule, SkeletonModule, ConfirmDialogModule, ToastModule, TranslocoModule, LanguageSelectorComponent, NewSpacesBannerComponent, SpaceFiltersComponent],
   providers: [ConfirmationService, MessageService, ToastService],
   templateUrl: './spaces-dashboard.component.html',
   styleUrl: './spaces-dashboard.component.css',
@@ -75,6 +78,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly toastService = inject(ToastService);
   readonly confirmationService = inject(ConfirmationService);
   readonly translocoService = inject(TranslocoService);
+  readonly scanProgressService = inject(ScanProgressService);
 
   private sub?: Subscription;
   private pollingSub?: Subscription;
@@ -90,7 +94,6 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly activeSpaceKey = signal<string | null>(null);
   readonly selectedSpaceKey = signal<string | null>(null);
   readonly history = signal<HistoryEntry[]>([]);
-  readonly progress = signal<Record<string, { total?: number; index?: number; percent?: number }>>({});
   readonly itemsBySpace = signal<ItemsBySpace>({});
   readonly maskByDefault = signal(true);
   readonly lines = signal<string[]>([]);
@@ -257,7 +260,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   private resetDashboardForNewScan(): void {
     // Clear in-memory per-space items and progress
     this.itemsBySpace.set({});
-    this.progress.set({});
+    this.scanProgressService.resetAllProgress();
     this.history.set([]);
     // Collapse all rows and reset selection/active markers
     this.expandedRowKeys.set({});
@@ -380,9 +383,9 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
           // This fixes the bug where intermediate progress was overwriting correct values
           if (spaceSummary.status === 'COMPLETED') {
             // Fallback to 100% for completed scans without explicit progress
-            this.updateProgress(spaceSummary.spaceKey, { percent: 100 });
+            this.scanProgressService.updateProgress(spaceSummary.spaceKey, { percent: 100 });
           } else if (spaceSummary.progressPercentage != null) {
-            this.updateProgress(spaceSummary.spaceKey, {
+            this.scanProgressService.updateProgress(spaceSummary.spaceKey, {
               percent: spaceSummary.progressPercentage
             });
           }
@@ -690,7 +693,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
       const uiStatus = this.computeUiStatus(s, isActive);
       this.spacesDashboardUtils.updateSpace(s.spaceKey, { status: uiStatus, lastScanTs: s.lastEventTs });
       if (s.status === 'COMPLETED') {
-        this.updateProgress(s.spaceKey, { percent: s.progressPercentage ?? 100 });
+        this.scanProgressService.updateProgress(s.spaceKey, { percent: s.progressPercentage ?? 100 });
       }
     }
     // Recompute counts from already loaded items (if any)
@@ -805,10 +808,10 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     }
     this.queue.set(this.queue().filter((queuedKey) => queuedKey !== spaceKey));
 
-    const current = this.progress()[spaceKey]?.percent;
+    const current = this.scanProgressService.getProgress()[spaceKey]?.percent;
     const percent = this.extractPercent(payload) ?? current ?? 0;
     const total = (payload as any).pagesTotal as number | undefined;
-    const prevTotal = this.progress()[spaceKey]?.total;
+    const prevTotal = this.scanProgressService.getProgress()[spaceKey]?.total;
     this.updateProgress(spaceKey, { total: total ?? prevTotal, index: 0, percent });
 
     this.upsertScanHistory(spaceKey, 'running');
@@ -824,7 +827,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     if (!spaceKey) {
       return;
     }
-    const currentProgress = this.progress()[spaceKey] ?? {};
+    const currentProgress = this.scanProgressService.getProgress()[spaceKey] ?? {};
     const total = (payload as any).pagesTotal ?? currentProgress.total;
     const index = (payload as any).pageIndex ?? currentProgress.index;
     let percent = this.extractPercent(payload);
@@ -995,33 +998,14 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
   // --- Progress helpers
   protected progressPercent(spaceKey: string | null | undefined): number {
-    if (!spaceKey) return 0;
-    const p = this.progress()[spaceKey];
-    if (!p) return 0;
-    if (typeof p.percent === 'number' && !Number.isNaN(p.percent)) {
-      return this.clampPercent(p.percent);
-    }
-    const total = p.total;
-    const index = p.index;
-    if (typeof total === 'number' && typeof index === 'number' && total > 0) {
-      return this.clampPercent(Math.round((index / total) * 100));
-    }
-    return 0;
-  }
-
-  private clampPercent(v: number): number {
-    if (v < 0) return 0;
-    if (v > 100) return 100;
-    return Math.round(v);
+    return this.scanProgressService.getProgressPercent(spaceKey);
   }
 
   private extractPercent(payload: RawStreamPayload): number | undefined {
-    const v = (payload as any)?.analysisProgressPercentage;
-    return typeof v === 'number' ? v : undefined;
+    return this.scanProgressService.extractPercentFromPayload(payload);
   }
 
   private updateProgress(spaceKey: string, patch: Partial<{ total: number; index: number; percent: number }>): void {
-    const current = this.progress()[spaceKey] ?? {};
-    this.progress.set({ ...this.progress(), [spaceKey]: { ...current, ...patch } });
+    this.scanProgressService.updateProgress(spaceKey, patch);
   }
 }

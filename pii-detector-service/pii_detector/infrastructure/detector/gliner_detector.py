@@ -435,6 +435,167 @@ class GLiNERDetector:
         
         return chunk_idx, adjusted_entities
 
+    def _process_chunks_parallel(
+        self,
+        chunk_results: List[Any],
+        labels: List[str],
+        threshold: float,
+        detection_id: str
+    ) -> List[PIIEntity]:
+        """
+        Process chunks in parallel using ThreadPoolExecutor.
+        
+        Args:
+            chunk_results: List of chunk results to process
+            labels: GLiNER labels for detection
+            threshold: Detection confidence threshold
+            detection_id: Detection ID for logging
+            
+        Returns:
+            List of detected PIIEntity objects with duplicates removed
+        """
+        self.logger.info(
+            f"[{detection_id}] Using parallel processing with {self.max_workers} workers"
+        )
+        
+        seen_entities: set = set()
+        all_entities: List[PIIEntity] = []
+        
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # Submit all chunks for parallel processing
+            future_to_chunk = {
+                executor.submit(
+                    self._process_single_chunk,
+                    chunk_idx,
+                    chunk_result,
+                    labels,
+                    threshold,
+                    detection_id
+                ): (chunk_idx, chunk_result)
+                for chunk_idx, chunk_result in enumerate(chunk_results)
+            }
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_chunk):
+                try:
+                    chunk_idx, chunk_entities = future.result()
+                    
+                    # Add entities to all_entities, avoiding duplicates
+                    for entity in chunk_entities:
+                        entity_key = (entity.start, entity.end, entity.pii_type)
+                        
+                        if entity_key not in seen_entities:
+                            seen_entities.add(entity_key)
+                            all_entities.append(entity)
+                    
+                except Exception as e:
+                    chunk_idx, _ = future_to_chunk[future]
+                    self.logger.error(
+                        f"[{detection_id}] Error processing chunk {chunk_idx + 1}: {str(e)}"
+                    )
+                    raise
+        
+        return all_entities
+
+    def _process_chunks_sequential(
+        self,
+        chunk_results: List[Any],
+        labels: List[str],
+        threshold: float,
+        detection_id: str
+    ) -> List[PIIEntity]:
+        """
+        Process chunks sequentially in a for loop.
+        
+        Args:
+            chunk_results: List of chunk results to process
+            labels: GLiNER labels for detection
+            threshold: Detection confidence threshold
+            detection_id: Detection ID for logging
+            
+        Returns:
+            List of detected PIIEntity objects with duplicates removed
+        """
+        if not self.parallel_enabled:
+            self.logger.info(f"[{detection_id}] Parallel processing disabled, using sequential mode")
+        else:
+            self.logger.info(f"[{detection_id}] Single chunk detected, using sequential mode")
+        
+        seen_entities: set = set()
+        all_entities: List[PIIEntity] = []
+        
+        for chunk_idx, chunk_result in enumerate(chunk_results):
+            self.logger.debug(
+                f"[{detection_id}] Processing chunk {chunk_idx + 1}/{len(chunk_results)}: "
+                f"{len(chunk_result.text)} chars"
+            )
+            
+            # Process single chunk with GLiNER
+            raw_entities = self.model.predict_entities(
+                chunk_result.text,
+                labels,
+                threshold=threshold
+            )
+            
+            # Convert raw entities to PIIEntity objects
+            chunk_entities = self._convert_to_pii_entities(raw_entities)
+            
+            # Adjust entity positions relative to original text and avoid duplicates
+            for entity in chunk_entities:
+                adjusted_start = entity.start + chunk_result.start
+                adjusted_end = entity.end + chunk_result.start
+                
+                entity_key = (adjusted_start, adjusted_end, entity.pii_type)
+                
+                if entity_key not in seen_entities:
+                    seen_entities.add(entity_key)
+                    adjusted = PIIEntity(
+                        text=entity.text,
+                        pii_type=entity.pii_type,
+                        type_label=entity.type_label,
+                        start=adjusted_start,
+                        end=adjusted_end,
+                        score=entity.score
+                    )
+                    all_entities.append(adjusted)
+        
+        return all_entities
+
+    def _log_detection_results(
+        self,
+        detection_id: str,
+        processing_mode: str,
+        detection_time: float,
+        chunk_count: int,
+        entity_count: int,
+        text_length: int
+    ) -> None:
+        """
+        Log detection results with optional throughput calculation.
+        
+        Args:
+            detection_id: Detection ID for logging
+            processing_mode: Processing mode used ("parallel" or "sequential")
+            detection_time: Time taken for detection
+            chunk_count: Number of chunks processed
+            entity_count: Number of entities found (after filtering)
+            text_length: Length of analyzed text in characters
+        """
+        if self.log_throughput:
+            throughput = text_length / detection_time if detection_time > 0 else 0
+            self.logger.info(
+                f"[{detection_id}] {processing_mode.capitalize()} processing completed in {detection_time:.3f}s, "
+                f"processed {chunk_count} chunks, "
+                f"found {entity_count} entities (after post-filter), "
+                f"throughput: {throughput:.0f} chars/s"
+            )
+        else:
+            self.logger.info(
+                f"[{detection_id}] {processing_mode.capitalize()} processing completed in {detection_time:.3f}s, "
+                f"processed {chunk_count} chunks, "
+                f"found {entity_count} entities (after post-filter)"
+            )
+
     def _detect_pii_with_chunking(self, text: str, threshold: float, detection_id: str) -> List[PIIEntity]:
         """
         Detect PII using semantic chunking with parallel or sequential processing.
@@ -466,95 +627,12 @@ class GLiNERDetector:
         # Pre-compute labels once for all chunks
         labels = self._get_gliner_labels()
         
-        # Use Set for O(1) duplicate detection
-        seen_entities: set = set()
-        all_entities: List[PIIEntity] = []
-        
         # Choose processing strategy based on configuration
         if self.parallel_enabled and len(chunk_results) > 1:
-            # PARALLEL PROCESSING with ThreadPoolExecutor
-            self.logger.info(
-                f"[{detection_id}] Using parallel processing with {self.max_workers} workers"
-            )
-            
-            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-                # Submit all chunks for parallel processing
-                future_to_chunk = {
-                    executor.submit(
-                        self._process_single_chunk,
-                        chunk_idx,
-                        chunk_result,
-                        labels,
-                        threshold,
-                        detection_id
-                    ): (chunk_idx, chunk_result)
-                    for chunk_idx, chunk_result in enumerate(chunk_results)
-                }
-                
-                # Collect results as they complete
-                for future in as_completed(future_to_chunk):
-                    try:
-                        chunk_idx, chunk_entities = future.result()
-                        
-                        # Add entities to all_entities, avoiding duplicates
-                        for entity in chunk_entities:
-                            entity_key = (entity.start, entity.end, entity.pii_type)
-                            
-                            if entity_key not in seen_entities:
-                                seen_entities.add(entity_key)
-                                all_entities.append(entity)
-                        
-                    except Exception as e:
-                        chunk_idx, _ = future_to_chunk[future]
-                        self.logger.error(
-                            f"[{detection_id}] Error processing chunk {chunk_idx + 1}: {str(e)}"
-                        )
-                        raise
-            
+            all_entities = self._process_chunks_parallel(chunk_results, labels, threshold, detection_id)
             processing_mode = "parallel"
-            
         else:
-            # SEQUENTIAL PROCESSING (fallback or single chunk)
-            if not self.parallel_enabled:
-                self.logger.info(f"[{detection_id}] Parallel processing disabled, using sequential mode")
-            else:
-                self.logger.info(f"[{detection_id}] Single chunk detected, using sequential mode")
-            
-            for chunk_idx, chunk_result in enumerate(chunk_results):
-                self.logger.debug(
-                    f"[{detection_id}] Processing chunk {chunk_idx + 1}/{len(chunk_results)}: "
-                    f"{len(chunk_result.text)} chars"
-                )
-                
-                # Process single chunk with GLiNER
-                raw_entities = self.model.predict_entities(
-                    chunk_result.text,
-                    labels,
-                    threshold=threshold
-                )
-                
-                # Convert raw entities to PIIEntity objects
-                chunk_entities = self._convert_to_pii_entities(raw_entities)
-                
-                # Adjust entity positions relative to original text and avoid duplicates
-                for entity in chunk_entities:
-                    adjusted_start = entity.start + chunk_result.start
-                    adjusted_end = entity.end + chunk_result.start
-                    
-                    entity_key = (adjusted_start, adjusted_end, entity.pii_type)
-                    
-                    if entity_key not in seen_entities:
-                        seen_entities.add(entity_key)
-                        adjusted = PIIEntity(
-                            text=entity.text,
-                            pii_type=entity.pii_type,
-                            type_label=entity.type_label,
-                            start=adjusted_start,
-                            end=adjusted_end,
-                            score=entity.score
-                        )
-                        all_entities.append(adjusted)
-            
+            all_entities = self._process_chunks_sequential(chunk_results, labels, threshold, detection_id)
             processing_mode = "sequential"
         
         detection_time = time.time() - start_time
@@ -562,21 +640,15 @@ class GLiNERDetector:
         # Apply per-entity-type threshold filtering (post-filter)
         filtered_entities = self._apply_entity_scoring_filter(all_entities)
         
-        # Calculate and log throughput if enabled
-        if self.log_throughput:
-            throughput = len(text) / detection_time if detection_time > 0 else 0
-            self.logger.info(
-                f"[{detection_id}] {processing_mode.capitalize()} processing completed in {detection_time:.3f}s, "
-                f"processed {len(chunk_results)} chunks, "
-                f"found {len(filtered_entities)} entities (after post-filter), "
-                f"throughput: {throughput:.0f} chars/s"
-            )
-        else:
-            self.logger.info(
-                f"[{detection_id}] {processing_mode.capitalize()} processing completed in {detection_time:.3f}s, "
-                f"processed {len(chunk_results)} chunks, "
-                f"found {len(filtered_entities)} entities (after post-filter)"
-            )
+        # Log detection results
+        self._log_detection_results(
+            detection_id=detection_id,
+            processing_mode=processing_mode,
+            detection_time=detection_time,
+            chunk_count=len(chunk_results),
+            entity_count=len(filtered_entities),
+            text_length=len(text)
+        )
         
         return filtered_entities
 

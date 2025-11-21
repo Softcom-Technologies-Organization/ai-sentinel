@@ -5,6 +5,7 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvi
 import pro.softcom.sentinelle.application.pii.reporting.usecase.DetectionReportingEventType;
 import pro.softcom.sentinelle.domain.confluence.AttachmentInfo;
 import pro.softcom.sentinelle.domain.confluence.ConfluencePage;
+import pro.softcom.sentinelle.domain.pii.ScanStatus;
 import pro.softcom.sentinelle.domain.pii.reporting.PiiEntity;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import pro.softcom.sentinelle.domain.pii.scan.ContentPiiDetection;
@@ -35,6 +36,7 @@ public class ScanEventFactory {
             .pagesTotal(pagesTotal)
             .emittedAt(Instant.now().toString())
             .analysisProgressPercentage(progress)
+            .scanStatus(ScanStatus.RUNNING)
             .build();
     }
 
@@ -48,6 +50,7 @@ public class ScanEventFactory {
             .eventType(DetectionReportingEventType.COMPLETE.getLabel())
             .emittedAt(Instant.now().toString())
             .analysisProgressPercentage(100.0)
+            .scanStatus(ScanStatus.COMPLETED)
             .build();
     }
 
@@ -67,6 +70,7 @@ public class ScanEventFactory {
             .pageUrl(buildPageUrl(page.id()))
             .emittedAt(Instant.now().toString())
             .analysisProgressPercentage(progress)
+            .scanStatus(ScanStatus.RUNNING)
             .build();
     }
 
@@ -84,6 +88,7 @@ public class ScanEventFactory {
             .pageUrl(buildPageUrl(page.id()))
             .emittedAt(Instant.now().toString())
             .analysisProgressPercentage(progress)
+            .scanStatus(ScanStatus.RUNNING)
             .build();
     }
 
@@ -105,6 +110,7 @@ public class ScanEventFactory {
                 .pageUrl(buildPageUrl(page.id()))
                 .emittedAt(Instant.now().toString())
                 .analysisProgressPercentage(progress)
+                .scanStatus(ScanStatus.RUNNING)
                 .build();
     }
 
@@ -130,6 +136,7 @@ public class ScanEventFactory {
             .pageUrl(buildPageUrl(page.id()))
             .emittedAt(Instant.now().toString())
             .analysisProgressPercentage(progress)
+            .scanStatus(ScanStatus.RUNNING)
             .build();
     }
 
@@ -158,6 +165,7 @@ public class ScanEventFactory {
             .attachmentUrl(attachment.url())
             .emittedAt(Instant.now().toString())
             .analysisProgressPercentage(progress)
+            .scanStatus(ScanStatus.RUNNING)
             .build();
     }
 
@@ -175,6 +183,7 @@ public class ScanEventFactory {
             .pageUrl(buildPageUrl(pageId))
             .emittedAt(Instant.now().toString())
             .analysisProgressPercentage(progress)
+            .scanStatus(ScanStatus.FAILED)
             .build();
     }
 

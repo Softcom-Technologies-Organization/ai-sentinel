@@ -30,5 +30,6 @@ public record ScanEventDto(
         String attachmentName,
         String attachmentType,
         String attachmentUrl,
-        Double analysisProgressPercentage
+        Double analysisProgressPercentage,
+        String status
 ) { }

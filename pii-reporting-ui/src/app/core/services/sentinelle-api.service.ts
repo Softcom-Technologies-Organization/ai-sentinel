@@ -19,6 +19,7 @@ export interface SpaceScanStateDto {
   pagesDone: number;
   attachmentsDone: number;
   lastEventTs: string;
+  progressPercentage?: number;
 }
 
 @Injectable({ providedIn: 'root' })

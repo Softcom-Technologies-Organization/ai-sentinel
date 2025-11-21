@@ -125,6 +125,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly spacesUpdateInfo = signal<SpaceUpdateInfo[]>([]);
 
   ngOnInit(): void {
+    console.log('Class: SpacesDashboardComponent, Function: ngOnInit, Param: arguments');
     this.fetchSpaces();
     this.loadLastScan();
     this.loadSpacesUpdateInfo();
@@ -327,12 +328,14 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     this.sentinelleApiService.getLastScanSpaceStatuses().subscribe({
       next: (spaceScanStateList) => {
         this.lastSpaceStatuses.set(spaceScanStateList);
+        console.log('Class: SpacesDashboardComponent, Function: next, Param: spaceScanStateList', spaceScanStateList);
         const isActive = this.isStreaming();
         for (const spaceScanState of spaceScanStateList) {
           const uiStatus = this.computeUiStatus(spaceScanState, isActive);
           this.spacesDashboardUtils.updateSpace(spaceScanState.spaceKey, { status: uiStatus, lastScanTs: spaceScanState.lastEventTs });
           if (spaceScanState.status === 'COMPLETED') {
-            this.updateProgress(spaceScanState.spaceKey, { percent: 100 });
+            console.log('Class: SpacesDashboardComponent, Function: next, Param: spaceScanState', spaceScanState);
+            this.updateProgress(spaceScanState.spaceKey, { percent: spaceScanState.progressPercentage ?? 100 });
           }
         }
         // Apply counts from any items already loaded
@@ -365,13 +368,14 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     this.sentinelleApiService.getLastScanItems().subscribe({
       next: (events) => {
         for (const event of events) {
+          console.log('Class: SpacesDashboardComponent, Function: next, Param: event', event);
           const type = (event as any)?.eventType as string | undefined;
           if (type !== 'item' && type !== 'attachmentItem') continue;
           const incomingKey = coerceSpaceKey(event);
           if (!incomingKey) continue;
           this.addPiiItemToSpace(incomingKey, event);
           const spaceScanProgress = this.extractPercent(event as any);
-          if (spaceScanProgress != null) {
+          if (spaceScanProgress != null && event.status !== 'COMPLETED') {
             this.updateProgress(incomingKey, { percent: spaceScanProgress });
           }
         }
@@ -639,7 +643,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
       const uiStatus = this.computeUiStatus(s, isActive);
       this.spacesDashboardUtils.updateSpace(s.spaceKey, { status: uiStatus, lastScanTs: s.lastEventTs });
       if (s.status === 'COMPLETED') {
-        this.updateProgress(s.spaceKey, { percent: 100 });
+        this.updateProgress(s.spaceKey, { percent: s.progressPercentage ?? 100 });
       }
     }
     // Recompute counts from already loaded items (if any)
@@ -800,8 +804,9 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     this.addPiiItemToSpace(spaceKey, payload);
 
     // Reflect progress if backend provides percentage on item events
+    // Skip progress update for completed scans to preserve persisted value
     const p = this.extractPercent(payload);
-    if (p != null) {
+    if (p != null && payload.status !== 'COMPLETED') {
       this.updateProgress(spaceKey, { percent: p });
     }
 
@@ -969,6 +974,8 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   }
 
   private updateProgress(spaceKey: string, patch: Partial<{ total: number; index: number; percent: number }>): void {
+    console.log('Class: SpacesDashboardComponent, Function: updateProgress, Param: spaceKey', spaceKey);
+    console.log('Class: SpacesDashboardComponent, Function: updateProgress, Param: ', patch);
     const current = this.progress()[spaceKey] ?? {};
     this.progress.set({ ...this.progress(), [spaceKey]: { ...current, ...patch } });
   }

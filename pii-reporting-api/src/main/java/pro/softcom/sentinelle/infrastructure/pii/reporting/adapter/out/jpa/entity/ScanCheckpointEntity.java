@@ -43,6 +43,9 @@ public class ScanCheckpointEntity {
     @Column(name = "status", nullable = false)
     private String status;
 
+    @Column(name = "progress_percentage")
+    private Double progressPercentage;
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 }

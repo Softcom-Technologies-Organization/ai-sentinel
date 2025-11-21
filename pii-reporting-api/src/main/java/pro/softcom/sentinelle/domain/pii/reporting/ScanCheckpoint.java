@@ -15,5 +15,6 @@ public record ScanCheckpoint(
     String lastProcessedPageId,
     String lastProcessedAttachmentName,
     ScanStatus scanStatus,
+    Double progressPercentage,
     LocalDateTime updatedAt
 ) { }

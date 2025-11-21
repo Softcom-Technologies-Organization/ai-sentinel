@@ -7,5 +7,6 @@ public record SpaceScanStateDto(
         String status,
         long pagesDone,
         long attachmentsDone,
-        Instant lastEventTs
+        Instant lastEventTs,
+        Double progressPercentage
 ) { }

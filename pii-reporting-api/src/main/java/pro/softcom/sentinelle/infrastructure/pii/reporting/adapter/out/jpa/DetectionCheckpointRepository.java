@@ -65,12 +65,13 @@ public interface DetectionCheckpointRepository extends
      */
     @Modifying(clearAutomatically = true)
     @Query(value = """
-        INSERT INTO scan_checkpoints (scan_id, space_key, last_processed_page_id, last_processed_attachment_name, status, updated_at)
-        VALUES (:scanId, :spaceKey, :pageId, :attachmentName, :status, :updatedAt)
+        INSERT INTO scan_checkpoints (scan_id, space_key, last_processed_page_id, last_processed_attachment_name, status, progress_percentage, updated_at)
+        VALUES (:scanId, :spaceKey, :pageId, :attachmentName, :status, :progressPercentage, :updatedAt)
         ON CONFLICT (scan_id, space_key) DO UPDATE
         SET last_processed_page_id = CASE WHEN :pageId IS NOT NULL AND :pageId != '' THEN :pageId ELSE scan_checkpoints.last_processed_page_id END,
             last_processed_attachment_name = CASE WHEN :attachmentName IS NOT NULL AND :attachmentName != '' THEN :attachmentName ELSE scan_checkpoints.last_processed_attachment_name END,
             status = :status,
+            progress_percentage = :progressPercentage,
             updated_at = :updatedAt
         """, nativeQuery = true)
     void upsertCheckpoint(@Param("scanId") String scanId,
@@ -78,5 +79,6 @@ public interface DetectionCheckpointRepository extends
                          @Param("pageId") String pageId,
                          @Param("attachmentName") String attachmentName,
                          @Param("status") String status,
+                         @Param("progressPercentage") Double progressPercentage,
                          @Param("updatedAt") LocalDateTime updatedAt);
 }

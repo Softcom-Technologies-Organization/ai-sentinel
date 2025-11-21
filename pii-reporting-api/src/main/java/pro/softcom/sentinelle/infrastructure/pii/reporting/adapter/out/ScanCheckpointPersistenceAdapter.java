@@ -42,6 +42,7 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
             checkpoint.lastProcessedPageId(),
             checkpoint.lastProcessedAttachmentName(),
             checkpoint.scanStatus().name(),
+            checkpoint.progressPercentage(),
             lastUpdated
         );
     }
@@ -97,6 +98,7 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
             .lastProcessedPageId(e.getLastProcessedPageId())
             .lastProcessedAttachmentName(e.getLastProcessedAttachmentName())
             .scanStatus(parseStatus(e.getStatus()))
+            .progressPercentage(e.getProgressPercentage())
             .updatedAt(e.getUpdatedAt())
             .build();
     }

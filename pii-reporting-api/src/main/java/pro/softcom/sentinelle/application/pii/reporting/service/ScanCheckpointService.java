@@ -7,6 +7,8 @@ import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointReposi
 import pro.softcom.sentinelle.domain.pii.ScanStatus;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * Manages scan checkpoint persistence for resume capability.
@@ -17,6 +19,19 @@ import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 public class ScanCheckpointService {
 
     private final ScanCheckpointRepository scanCheckpointRepository;
+
+    /**
+     * Persists checkpoint based on scan event reactively.
+     * Uses boundedElastic scheduler to avoid blocking the event loop.
+     *
+     * @param scanResult the scan event to persist
+     * @return Mono that completes when checkpoint is persisted
+     */
+    public Mono<Void> persistCheckpointReactive(ScanResult scanResult) {
+        return Mono.fromRunnable(() -> persistCheckpoint(scanResult))
+                .subscribeOn(Schedulers.boundedElastic())
+                .then();
+    }
 
     /**
      * Persists checkpoint based on scan event.
@@ -80,6 +95,7 @@ public class ScanCheckpointService {
             .lastProcessedPageId(data.lastPage())
             .lastProcessedAttachmentName(data.lastAttachment())
             .scanStatus(data.status())
+            .progressPercentage(scanResult.analysisProgressPercentage())
             .build();
     }
 

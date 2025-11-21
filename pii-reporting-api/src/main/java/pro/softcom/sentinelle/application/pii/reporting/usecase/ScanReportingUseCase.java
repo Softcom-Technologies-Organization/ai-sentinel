@@ -35,12 +35,14 @@ public class ScanReportingUseCase implements ScanReportingPort {
     public List<ConfluenceSpaceScanState> getLatestSpaceScanStateList(String scanId) {
         if (scanId == null || scanId.isBlank()) return List.of();
 
-        // 1) Load checkpoint statuses (may be empty if no checkpoint yet for a space)
+        // 1) Load checkpoint statuses and progress percentages (may be empty if no checkpoint yet for a space)
         Map<String, String> statuses = new HashMap<>();
+        Map<String, Double> progressPercentages = new HashMap<>();
         try {
             List<ScanCheckpoint> cps = checkpointRepo.findByScan(scanId);
             for (ScanCheckpoint cp : cps) {
                 statuses.put(cp.spaceKey(), cp.scanStatus().name());
+                progressPercentages.put(cp.spaceKey(), cp.progressPercentage());
             }
         } catch (Exception ex) {
             log.warn("[LAST_SCAN] Failed to load checkpoint statuses: {}", ex.getMessage());
@@ -54,7 +56,8 @@ public class ScanReportingUseCase implements ScanReportingPort {
                     mapPresentationStatus(statuses.get(c.spaceKey()), c.pagesDone(), c.attachmentsDone()),
                     c.pagesDone(),
                     c.attachmentsDone(),
-                    c.lastEventTs()
+                    c.lastEventTs(),
+                    progressPercentages.get(c.spaceKey())
                 ))
                 .toList();
         } catch (Exception ex) {

@@ -24,7 +24,6 @@ public record ScanEventDto(
         String pageTitle,
         List<PiiEntity> detectedEntities,
         Map<String, Integer> summary,
-//        String maskedContent,
         String message,
         String pageUrl,
         String emittedAt,

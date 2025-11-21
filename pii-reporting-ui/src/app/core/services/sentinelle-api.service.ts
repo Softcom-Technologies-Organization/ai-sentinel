@@ -22,6 +22,22 @@ export interface SpaceScanStateDto {
   progressPercentage?: number;
 }
 
+export interface SpaceSummaryDto {
+  spaceKey: string;
+  status: string;
+  progressPercentage: number | null;
+  pagesDone: number;
+  attachmentsDone: number;
+  lastEventTs: string;
+}
+
+export interface ScanReportingSummaryDto {
+  scanId: string;
+  lastUpdated: string;
+  spacesCount: number;
+  spaces: SpaceSummaryDto[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class SentinelleApiService {
   constructor(private readonly http: HttpClient, private readonly zone: NgZone) {
@@ -107,6 +123,27 @@ export class SentinelleApiService {
         },
         error: () => {
           observer.next([]);
+          observer.complete();
+        }
+      });
+      return () => sub.unsubscribe();
+    });
+  }
+
+  /**
+   * Fetch unified dashboard summary combining authoritative progress from checkpoints
+   * with aggregated counters from events. Replaces separate getLastScanSpaceStatuses()
+   * and getLastScanItems() calls to avoid race conditions.
+   */
+  getDashboardSpacesSummary(): Observable<ScanReportingSummaryDto | null> {
+    return new Observable<ScanReportingSummaryDto | null>((observer) => {
+      const sub = this.http.get<ScanReportingSummaryDto>('/api/v1/scans/dashboard/spaces-summary').subscribe({
+        next: (summary) => {
+          observer.next(summary ?? null);
+          observer.complete();
+        },
+        error: () => {
+          observer.next(null);
           observer.complete();
         }
       });

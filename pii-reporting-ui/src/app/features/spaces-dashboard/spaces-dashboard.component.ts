@@ -125,7 +125,6 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly spacesUpdateInfo = signal<SpaceUpdateInfo[]>([]);
 
   ngOnInit(): void {
-    console.log('Class: SpacesDashboardComponent, Function: ngOnInit, Param: arguments');
     this.fetchSpaces();
     this.loadLastScan();
     this.loadSpacesUpdateInfo();
@@ -324,23 +323,76 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Load dashboard summary using unified endpoint that combines authoritative progress
+   * from checkpoints with aggregated counters from events. This replaces the previous
+   * dual API calls (getLastScanSpaceStatuses + getLastScanItems) that caused race
+   * conditions where progress was overwritten with intermediate values.
+   *
+   * Business rule:
+   * - If NO active scan: apply summary data to ALL spaces
+   * - If scan IS active: apply summary data ONLY to COMPLETED spaces (preserve SSE real-time data for others)
+   */
   private loadLastSpaceStatuses(alsoLoadItems: boolean = true): void {
-    this.sentinelleApiService.getLastScanSpaceStatuses().subscribe({
-      next: (spaceScanStateList) => {
+    this.sentinelleApiService.getDashboardSpacesSummary().subscribe({
+      next: (summary) => {
+        if (!summary) {
+          this.lastSpaceStatuses.set([]);
+          return;
+        }
+
+        // Convert SpaceSummaryDto to SpaceScanStateDto format for compatibility
+        const spaceScanStateList = summary.spaces.map(space => ({
+          spaceKey: space.spaceKey,
+          status: space.status,
+          pagesDone: space.pagesDone,
+          attachmentsDone: space.attachmentsDone,
+          lastEventTs: space.lastEventTs,
+          progressPercentage: space.progressPercentage ?? undefined
+        }));
+
         this.lastSpaceStatuses.set(spaceScanStateList);
-        console.log('Class: SpacesDashboardComponent, Function: next, Param: spaceScanStateList', spaceScanStateList);
         const isActive = this.isStreaming();
-        for (const spaceScanState of spaceScanStateList) {
+
+        for (const spaceSummary of summary.spaces) {
+          // BUSINESS RULE: If scan is active, only apply summary data to COMPLETED spaces
+          // This preserves real-time SSE data for spaces that are RUNNING, PENDING, or FAILED
+          if (isActive && spaceSummary.status !== 'COMPLETED') {
+            continue;
+          }
+
+          const spaceScanState = {
+            spaceKey: spaceSummary.spaceKey,
+            status: spaceSummary.status,
+            pagesDone: spaceSummary.pagesDone,
+            attachmentsDone: spaceSummary.attachmentsDone,
+            lastEventTs: spaceSummary.lastEventTs,
+            progressPercentage: spaceSummary.progressPercentage ?? undefined
+          };
+
           const uiStatus = this.computeUiStatus(spaceScanState, isActive);
-          this.spacesDashboardUtils.updateSpace(spaceScanState.spaceKey, { status: uiStatus, lastScanTs: spaceScanState.lastEventTs });
-          if (spaceScanState.status === 'COMPLETED') {
-            console.log('Class: SpacesDashboardComponent, Function: next, Param: spaceScanState', spaceScanState);
-            this.updateProgress(spaceScanState.spaceKey, { percent: spaceScanState.progressPercentage ?? 100 });
+          this.spacesDashboardUtils.updateSpace(spaceSummary.spaceKey, {
+            status: uiStatus,
+            lastScanTs: spaceSummary.lastEventTs
+          });
+
+          // CRITICAL: Always use progress from checkpoint (authoritative source)
+          // This fixes the bug where intermediate progress was overwriting correct values
+          if (spaceSummary.status === 'COMPLETED') {
+            // Fallback to 100% for completed scans without explicit progress
+            this.updateProgress(spaceSummary.spaceKey, { percent: 100 });
+          } else if (spaceSummary.progressPercentage != null) {
+            this.updateProgress(spaceSummary.spaceKey, {
+              percent: spaceSummary.progressPercentage
+            });
           }
         }
+
         // Apply counts from any items already loaded
         this.applyCountsFromItems();
-        // Also load persisted items to display them without streaming
+
+        // Still load persisted items to display PII cards (if needed)
+        // The unified endpoint provides progress and counters, but not the detailed PII items
         if (alsoLoadItems) {
           this.loadLastItems();
         }
@@ -368,16 +420,11 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     this.sentinelleApiService.getLastScanItems().subscribe({
       next: (events) => {
         for (const event of events) {
-          console.log('Class: SpacesDashboardComponent, Function: next, Param: event', event);
           const type = (event as any)?.eventType as string | undefined;
           if (type !== 'item' && type !== 'attachmentItem') continue;
           const incomingKey = coerceSpaceKey(event);
           if (!incomingKey) continue;
           this.addPiiItemToSpace(incomingKey, event);
-          const spaceScanProgress = this.extractPercent(event as any);
-          if (spaceScanProgress != null && event.status !== 'COMPLETED') {
-            this.updateProgress(incomingKey, { percent: spaceScanProgress });
-          }
         }
         // After adding items, compute counts for each space
         this.applyCountsFromItems();
@@ -974,8 +1021,6 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   }
 
   private updateProgress(spaceKey: string, patch: Partial<{ total: number; index: number; percent: number }>): void {
-    console.log('Class: SpacesDashboardComponent, Function: updateProgress, Param: spaceKey', spaceKey);
-    console.log('Class: SpacesDashboardComponent, Function: updateProgress, Param: ', patch);
     const current = this.progress()[spaceKey] ?? {};
     this.progress.set({ ...this.progress(), [spaceKey]: { ...current, ...patch } });
   }

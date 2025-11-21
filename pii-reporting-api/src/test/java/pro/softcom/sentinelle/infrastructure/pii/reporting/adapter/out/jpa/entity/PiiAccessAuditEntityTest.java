@@ -63,8 +63,9 @@ class PiiAccessAuditEntityTest {
         PiiAccessAuditEntity second = new PiiAccessAuditEntity();
         second.setId(1L);
 
-        assertThat(first).isEqualTo(second);
-        assertThat(first.hashCode()).isEqualTo(second.hashCode());
+        assertThat(first)
+            .isEqualTo(second)
+            .hasSameHashCodeAs(second);
     }
 
     @Test

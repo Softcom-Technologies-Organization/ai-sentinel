@@ -73,43 +73,68 @@ class GLiNERDetector:
             # Initialize semantic chunker with GLiNER's tokenizer
             # GLiNER has internal 768-token sentence limit, so we chunk at 768 tokens
             # CRITICAL: semantic chunking is REQUIRED to prevent truncation warnings
-            try:
-                # Access GLiNER's tokenizer (usually in data_processor)
-                tokenizer = getattr(self.model.data_processor.config, 'tokenizer', None)
-                if tokenizer is None:
-                    # Fallback: try to get from model name
-                    from transformers import AutoTokenizer
-                    model_name = getattr(self.model.config, 'model_name', 'bert-base-cased')
-                    tokenizer = AutoTokenizer.from_pretrained(model_name)
-                
-                self.semantic_chunker = create_chunker(
-                    tokenizer=tokenizer,
-                    chunk_size=768,  # GLiNER's hard limit per sentence
-                    overlap=100,     # Overlap to catch entities at boundaries
-                    use_semantic=True,
-                    logger=self.logger
-                )
-                
-                # Verify semantic chunking is active (not fallback)
-                chunk_info = self.semantic_chunker.get_chunk_info()
-                if chunk_info.get("library") != "semchunk":
-                    raise RuntimeError(
-                        "Semantic chunking REQUIRED but fallback chunker was created. "
-                        "Install semchunk: pip install semchunk"
-                    )
-                
-                self.logger.info("Semantic chunker initialized successfully with semchunk")
-                
-            except Exception as e:
-                self.logger.error(f"CRITICAL: Failed to initialize semantic chunker: {e}")
-                raise RuntimeError(
-                    "Semantic chunking is REQUIRED for GLiNER to prevent truncation. "
-                    f"Error: {str(e)}"
-                ) from e
+            self._initialize_semantic_chunker()
                 
         except Exception as e:
             self.logger.error(f"Failed to load GLiNER model: {str(e)}")
             raise
+
+    def _get_tokenizer_from_model(self) -> Any:
+        """
+        Extract tokenizer from GLiNER model with AutoTokenizer fallback.
+        
+        Returns:
+            Tokenizer object (either from model or AutoTokenizer)
+        """
+        tokenizer = getattr(self.model.data_processor.config, 'tokenizer', None)
+        if tokenizer is None:
+            # Fallback: try to get from model name
+            from transformers import AutoTokenizer
+            model_name = getattr(self.model.config, 'model_name', 'bert-base-cased')
+            tokenizer = AutoTokenizer.from_pretrained(model_name)
+        return tokenizer
+
+    def _verify_semantic_chunker(self) -> None:
+        """
+        Verify that semantic chunker uses semchunk library.
+        
+        Raises:
+            RuntimeError: If chunker is not using semchunk library
+        """
+        chunk_info = self.semantic_chunker.get_chunk_info()
+        if chunk_info.get("library") != "semchunk":
+            raise RuntimeError(
+                "Semantic chunking REQUIRED but fallback chunker was created. "
+                "Install semchunk: pip install semchunk"
+            )
+
+    def _initialize_semantic_chunker(self) -> None:
+        """
+        Initialize semantic chunker with GLiNER's tokenizer.
+        
+        Raises:
+            RuntimeError: If semantic chunker initialization fails
+        """
+        try:
+            tokenizer = self._get_tokenizer_from_model()
+            
+            self.semantic_chunker = create_chunker(
+                tokenizer=tokenizer,
+                chunk_size=768,  # GLiNER's hard limit per sentence
+                overlap=100,     # Overlap to catch entities at boundaries
+                use_semantic=True,
+                logger=self.logger
+            )
+            
+            self._verify_semantic_chunker()
+            self.logger.info("Semantic chunker initialized successfully with semchunk")
+            
+        except Exception as e:
+            self.logger.error(f"CRITICAL: Failed to initialize semantic chunker: {e}")
+            raise RuntimeError(
+                "Semantic chunking is REQUIRED for GLiNER to prevent truncation. "
+                f"Error: {str(e)}"
+            ) from e
 
     def detect_pii(self, text: str, threshold: Optional[float] = None) -> List[PIIEntity]:
         """

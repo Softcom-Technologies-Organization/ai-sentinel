@@ -13,7 +13,6 @@ import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
@@ -78,7 +77,7 @@ public class PiiAccessAuditEntity {
         if (this == o) {
             return true;
         }
-        if (o == null) {
+        if (o == null || this.getClass() != o.getClass()) {
             return false;
         }
         Class<?> oEffectiveClass = o instanceof HibernateProxy hibernateProxy

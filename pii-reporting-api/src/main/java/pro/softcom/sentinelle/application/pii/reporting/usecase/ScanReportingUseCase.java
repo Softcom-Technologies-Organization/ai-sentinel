@@ -1,17 +1,21 @@
 package pro.softcom.sentinelle.application.pii.reporting.usecase;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.ScanReportingPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanResultQuery;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
+import pro.softcom.sentinelle.domain.pii.reporting.ScanReportingSummary;
 import pro.softcom.sentinelle.domain.pii.reporting.LastScanMeta;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanCheckpoint;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
+import pro.softcom.sentinelle.domain.pii.reporting.SpaceSummary;
 import pro.softcom.sentinelle.domain.pii.scan.ConfluenceSpaceScanState;
 
 @RequiredArgsConstructor
@@ -75,6 +79,52 @@ public class ScanReportingUseCase implements ScanReportingPort {
         } catch (Exception ex) {
             log.warn("[LAST_SCAN] Failed to get latest scan items: {}", ex.getMessage());
             return List.of();
+        }
+    }
+
+    @Override
+    public Optional<ScanReportingSummary> getScanReportingSummary(String scanId) {
+        if (scanId == null || scanId.isBlank()) return Optional.empty();
+
+        try {
+            // 1) Load checkpoint statuses and progress percentages
+            Map<String, String> statuses = new HashMap<>();
+            Map<String, Double> progressPercentages = new HashMap<>();
+            List<ScanCheckpoint> cps = checkpointRepo.findByScan(scanId);
+            for (ScanCheckpoint cp : cps) {
+                statuses.put(cp.spaceKey(), cp.scanStatus().name());
+                progressPercentages.put(cp.spaceKey(), cp.progressPercentage());
+            }
+
+            // 2) Load counters from events per space
+            List<SpaceSummary> spaces = scanResultQuery.getSpaceCounters(scanId).stream()
+                .map(c -> new SpaceSummary(
+                    c.spaceKey(),
+                    mapPresentationStatus(statuses.get(c.spaceKey()), c.pagesDone(), c.attachmentsDone()),
+                    progressPercentages.get(c.spaceKey()),
+                    c.pagesDone(),
+                    c.attachmentsDone(),
+                    c.lastEventTs()
+                ))
+                .toList();
+
+            // 3) Find most recent timestamp
+            Instant lastUpdated = spaces.stream()
+                .map(SpaceSummary::lastEventTs)
+                .filter(Objects::nonNull)
+                .max(Instant::compareTo)
+                .orElse(Instant.now());
+
+            // 4) Build summary
+            return Optional.of(new ScanReportingSummary(
+                scanId,
+                lastUpdated,
+                spaces.size(),
+                spaces
+            ));
+        } catch (Exception ex) {
+            log.warn("[DASHBOARD] Failed to get dashboard summary for {}: {}", scanId, ex.getMessage());
+            return Optional.empty();
         }
     }
 

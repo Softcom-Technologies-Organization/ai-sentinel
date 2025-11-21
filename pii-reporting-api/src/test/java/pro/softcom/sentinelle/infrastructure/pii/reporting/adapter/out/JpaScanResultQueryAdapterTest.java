@@ -306,12 +306,12 @@ class JpaScanResultQueryAdapterTest {
         assertThat(results).containsExactly(decrypted1, decrypted2);
         // totalPiiCount = 1 + 2 = 3
         verify(auditService).auditPiiAccess(
-            eq(SCAN_ID),
-            eq(SPACE_KEY),
-            eq(PAGE_ID),
-            eq(decrypted1.pageTitle()),
-            eq(AccessPurpose.USER_DISPLAY),
-            eq(3)
+            SCAN_ID,
+            SPACE_KEY,
+            PAGE_ID,
+            decrypted1.pageTitle(),
+            AccessPurpose.USER_DISPLAY,
+            3
         );
     }
 

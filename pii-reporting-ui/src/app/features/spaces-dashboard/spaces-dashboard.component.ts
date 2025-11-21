@@ -65,7 +65,7 @@ import {SpaceFiltersComponent} from '../../shared/components/space-filters/space
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, ToggleSwitchModule, PiiItemCardComponent, BadgeModule, InputTextModule, SelectModule, TableModule, TagModule, Ripple, TooltipModule, DataViewModule, ProgressBarModule, SkeletonModule, ConfirmDialogModule, ToastModule, TranslocoModule, LanguageSelectorComponent, NewSpacesBannerComponent, SpaceFiltersComponent],
+  imports: [CommonModule, FormsModule, ButtonModule, ToggleSwitchModule, PiiItemCardComponent, BadgeModule, InputTextModule, SelectModule, TableModule, TagModule, Ripple, TooltipModule, DataViewModule, ProgressBarModule, SkeletonModule, ConfirmDialogModule, ToastModule, TranslocoModule, LanguageSelectorComponent, NewSpacesBannerComponent],
   providers: [ConfirmationService, MessageService, ToastService],
   templateUrl: './spaces-dashboard.component.html',
   styleUrl: './spaces-dashboard.component.css',

@@ -66,7 +66,7 @@
           <div class="space-filters">
             <div class="filter-item">
               <p-select
-                [options]="statusOptions"
+                [options]="statusOptions()"
                 optionLabel="labelKey"
                 optionValue="value"
                 [ngModel]="statusFilter()"
@@ -91,8 +91,6 @@
                     icon="pi pi-play"
                     styleClass="p-button-raised p-button-primary"
                     (click)="startAll()"
-                    (keydown.enter)="startAll()"
-                    (keydown.space)="$event.preventDefault(); startAll()"
                     [disabled]="!canStartScan()"
                     [pTooltip]="'dashboard.actions.startScan' | transloco"
                     tooltipPosition="bottom"
@@ -103,8 +101,6 @@
                     icon="pi pi-pause"
                     styleClass="p-button-raised p-button-danger"
                     (click)="stopCurrentScan()"
-                    (keydown.enter)="stopCurrentScan()"
-                    (keydown.space)="$event.preventDefault(); stopCurrentScan()"
                     [disabled]="!isStreaming()"
                     [pTooltip]="'dashboard.actions.pauseScan' | transloco"
                     tooltipPosition="bottom"
@@ -115,8 +111,6 @@
                     icon="pi pi-refresh"
                     styleClass="p-button-warning"
                     (click)="resumeLastScan()"
-                    (keydown.enter)="resumeLastScan()"
-                    (keydown.space)="$event.preventDefault(); resumeLastScan()"
                     [disabled]="!canResumeScan()"
                     [pTooltip]="'dashboard.actions.resumeScan' | transloco"
                     tooltipPosition="bottom"
@@ -146,7 +140,7 @@
               <span class="space-updated-indicator"
                     [pTooltip]="getSpaceUpdateTooltip(space.key)"
                     tooltipPosition="right"
-                    [attr.aria-label]="'dashboard.notifications.spaceUpdated.indicator' | transloco"></span>
+                    aria-hidden="true"></span>
             }
           </div>
         </td>
@@ -156,8 +150,7 @@
                  [attr.data-testid]="testIds.spaceStatus"></p-tag>
         </td>
         <td>
-          <p-progressBar [value]="progressPercent(space.key)" [showValue]="true"
-                         [style]="{'height':'0.75rem'}"></p-progressBar>
+          <app-scan-progress-bar [spaceKey]="space.key"></app-scan-progress-bar>
         </td>
         <td>{{ space.lastScanTs | date:'short' }}</td>
         <td>
@@ -180,8 +173,6 @@
                       styleClass="p-button-text"
                       [disabled]="!spacesDashboardUtils.hasConfluenceUrl(space)"
                       (click)="$event.stopPropagation(); openConfluence(space)"
-                      (keydown.enter)="$event.stopPropagation(); openConfluence(space)"
-                      (keydown.space)="$event.preventDefault(); $event.stopPropagation(); openConfluence(space)"
                       label="Confluence"></p-button>
           </span>
         </td>

@@ -93,17 +93,17 @@ jobs:
           cd pii-reporting-ui
           npm ci --legacy-peer-deps
 
-      - name: Run Jest tests
+      - name: Run Jest tests with coverage
         run: |
           cd pii-reporting-ui
-          npm test
+          npm run test:coverage
 
-      - name: Upload test results
+      - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ui-test-results
-          path: pii-reporting-ui/coverage/
+          name: ui-test-coverage
+          path: pii-reporting-ui/coverage/jest/
 
   tests-status:
     name: Tests Status Check

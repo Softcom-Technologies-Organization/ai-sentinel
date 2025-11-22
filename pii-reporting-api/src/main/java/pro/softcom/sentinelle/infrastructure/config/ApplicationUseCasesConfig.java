@@ -161,8 +161,9 @@ public class ApplicationUseCasesConfig {
     }
 
     @Bean
-    public PauseScanPort pauseScanUseCase(ScanCheckpointRepository scanCheckpointRepository) {
-        return new PauseScanUseCase(scanCheckpointRepository);
+    public PauseScanPort pauseScanUseCase(ScanCheckpointRepository scanCheckpointRepository,
+                                          ScanTaskManager scanTaskManager) {
+        return new PauseScanUseCase(scanCheckpointRepository, scanTaskManager);
     }
 
     @Bean

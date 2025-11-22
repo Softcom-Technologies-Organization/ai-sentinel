@@ -44,6 +44,7 @@ class PauseScanUseCaseTest {
                      () -> "org.hibernate.dialect.PostgreSQLDialect");
     }
 
+    @Autowired
     private PauseScanUseCase pauseScanUseCase;
 
     @Autowired
@@ -55,7 +56,6 @@ class PauseScanUseCaseTest {
 
     @BeforeEach
     void cleanDatabase() {
-        pauseScanUseCase = new PauseScanUseCase(scanCheckpointRepository);
         checkpointRepository.deleteAll();
     }
 

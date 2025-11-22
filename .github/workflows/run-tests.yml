@@ -74,19 +74,52 @@ jobs:
           name: api-test-results
           path: pii-reporting-api/target/surefire-reports/
 
+  test-ui:
+    name: Test Reporting UI (Angular Jest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+          cache-dependency-path: pii-reporting-ui/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd pii-reporting-ui
+          npm ci
+
+      - name: Run Jest tests
+        run: |
+          cd pii-reporting-ui
+          npm test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-results
+          path: pii-reporting-ui/coverage/
+
   tests-status:
     name: Tests Status Check
     runs-on: ubuntu-latest
-    needs: [test-detector, test-api]
+    needs: [test-detector, test-api, test-ui]
     if: always()
     steps:
       - name: Check tests results
         run: |
           if [ "${{ needs.test-detector.result }}" != "success" ] || \
-             [ "${{ needs.test-api.result }}" != "success" ]; then
+             [ "${{ needs.test-api.result }}" != "success" ] || \
+             [ "${{ needs.test-ui.result }}" != "success" ]; then
             echo "❌ At least one test job failed"
             echo "Detector: ${{ needs.test-detector.result }}"
             echo "API: ${{ needs.test-api.result }}"
+            echo "UI: ${{ needs.test-ui.result }}"
             exit 1
           fi
           echo "✅ All tests passed successfully"

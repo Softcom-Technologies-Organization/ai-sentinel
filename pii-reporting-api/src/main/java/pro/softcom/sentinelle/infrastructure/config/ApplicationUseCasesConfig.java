@@ -34,6 +34,7 @@ import pro.softcom.sentinelle.application.pii.reporting.port.out.PublishEventPor
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ReadPiiConfigPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanEventStore;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanResultQuery;
+import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTaskManager;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.ContentScanOrchestrator;
@@ -129,13 +130,15 @@ public class ApplicationUseCasesConfig {
             PiiDetectorClient piiDetectorClient,
             ContentScanOrchestrator contentScanOrchestrator,
             AttachmentProcessor attachmentProcessor,
-            ScanTimeOutConfig scanTimeoutConfig) {
+            ScanTimeOutConfig scanTimeoutConfig,
+            ScanTaskManager scanTaskManager) {
         return new StreamConfluenceScanUseCase(
                 confluenceAccessor,
                 piiDetectorClient,
                 contentScanOrchestrator,
                 attachmentProcessor,
-                scanTimeoutConfig
+                scanTimeoutConfig,
+                scanTaskManager
         );
     }
 

@@ -29,6 +29,7 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.PublishEventPort;
+import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTaskManager;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.ContentScanOrchestrator;
@@ -56,7 +57,7 @@ import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 @ExtendWith(MockitoExtension.class)
-class StreamConfluenceScanPortImplTest {
+class StreamConfluenceScanUseCaseTest {
 
     @Mock
     private ConfluenceClient confluenceService;
@@ -81,6 +82,9 @@ class StreamConfluenceScanPortImplTest {
 
     @Mock
     private ScanTimeOutConfig scanTimeoutConfig;
+
+    @Mock
+    private ScanTaskManager scanTaskManager;
 
     private StreamConfluenceScanUseCase streamConfluenceScanUseCase;
 
@@ -127,7 +131,8 @@ class StreamConfluenceScanPortImplTest {
                 piiDetectorClient,
                 contentScanOrchestrator,
                 attachmentProcessor,
-                scanTimeoutConfig
+                scanTimeoutConfig,
+                scanTaskManager
         );
     }
 
@@ -568,7 +573,8 @@ class StreamConfluenceScanPortImplTest {
             piiDetectorClient,
             contentScanOrchestrator,
             attachmentProcessor,
-            scanTimeoutConfig
+            scanTimeoutConfig,
+            scanTaskManager
         );
 
         String spaceKey = "S-BLANK";
@@ -641,7 +647,8 @@ class StreamConfluenceScanPortImplTest {
             piiDetectorClient,
             contentScanOrchestrator,
             attachmentProcessor,
-            scanTimeoutConfig
+            scanTimeoutConfig,
+            scanTaskManager
         );
 
         String spaceKey = "S-TRIM2";

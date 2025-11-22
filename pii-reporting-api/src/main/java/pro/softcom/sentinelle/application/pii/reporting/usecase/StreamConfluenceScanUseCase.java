@@ -7,6 +7,7 @@ import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanPort;
+import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTaskManager;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.ContentScanOrchestrator;
@@ -25,14 +26,17 @@ import reactor.core.publisher.Mono;
 public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUseCase implements
     StreamConfluenceScanPort {
 
+    private final ScanTaskManager scanTaskManager;
 
     public StreamConfluenceScanUseCase(
         ConfluenceAccessor confluenceAccessor,
         PiiDetectorClient piiDetectorClient,
         ContentScanOrchestrator contentScanOrchestrator,
         AttachmentProcessor attachmentProcessor,
-        ScanTimeOutConfig scanTimeoutConfig) {
+        ScanTimeOutConfig scanTimeoutConfig,
+        ScanTaskManager scanTaskManager) {
         super(confluenceAccessor, piiDetectorClient, contentScanOrchestrator, attachmentProcessor, scanTimeoutConfig);
+        this.scanTaskManager = scanTaskManager;
     }
 
     /**
@@ -55,8 +59,8 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
         // Unique identifier to trace and group all events of the same scan
         String scanId = UUID.randomUUID().toString();
 
-        // Bridging from Future to reactive. The request is not executed until there is a subscriber.
-        return Mono.fromFuture(confluenceAccessor.getSpace(spaceKey))
+        // Build the scan flux
+        Flux<ScanResult> scanFlux = Mono.fromFuture(confluenceAccessor.getSpace(spaceKey))
             // Transform Mono<Optional<ConfluenceSpace>> into Flux<ScanResult>
             .flatMapMany(confluenceSpaceOpt -> {
                 // Case 1: space not found → return a small Flux with a single error event
@@ -85,6 +89,10 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
                                      .emittedAt(Instant.now().toString())
                                      .build());
             });
+
+        // Start independent scan task and return subscription flux
+        scanTaskManager.startScan(scanId, scanFlux);
+        return scanTaskManager.subscribeScan(scanId);
     }
 
     /**
@@ -108,7 +116,11 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
         Flux<ScanResult> footer = buildAllSpaceScanFluxFooter(scanCorrelationId);
 
         // Sequential and ordered concatenation of segments
-        return Flux.concat(header, body, footer);
+        Flux<ScanResult> scanFlux = Flux.concat(header, body, footer);
+
+        // Start independent scan task and return subscription flux
+        scanTaskManager.startScan(scanCorrelationId, scanFlux);
+        return scanTaskManager.subscribeScan(scanCorrelationId);
     }
 
     private static Flux<ScanResult> buildAllSpaceScanFluxFooter(String scanId) {

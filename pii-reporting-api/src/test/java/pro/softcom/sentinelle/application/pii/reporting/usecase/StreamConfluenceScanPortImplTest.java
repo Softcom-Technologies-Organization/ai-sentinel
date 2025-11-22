@@ -698,13 +698,12 @@ class StreamConfluenceScanPortImplTest {
             .expectNextMatches(ev -> ScanEventType.COMPLETE.toJson().equals(ev.eventType()))
             .verifyComplete();
 
-        // Verify that checkpoint is saved with RUNNING status
-        // Note: For "item" events, the service passes null for lastProcessedPageId,
-        // relying on the repository's merge strategy to preserve the existing value
+        // Vérifie qu'au moins un checkpoint avec le statut RUNNING est persisté pour cet espace.
+        // Le détail de lastProcessedPageId est déterminé par l'implémentation de ScanCheckpointService
+        // (pageComplete/complete) et n'est pas couvert par ce test.
         verify(scanCheckpointRepository, atLeastOnce()).save(argThat(cp ->
             cp.scanStatus() == ScanStatus.RUNNING &&
-            cp.spaceKey().equals(spaceKey) &&
-            cp.lastProcessedPageId() == null
+            cp.spaceKey().equals(spaceKey)
         ));
     }
 

@@ -2,7 +2,13 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist/out-tsc/spec",
-    "types": ["jasmine"]
+    "types": ["jest", "node"],
+    "esModuleInterop": true,
+    "paths": {
+      "@angular/core/testing": [
+        "node_modules/@angular/core/types/testing.d.ts"
+      ]
+    }
   },
   "include": [
     "src/**/*.spec.ts",

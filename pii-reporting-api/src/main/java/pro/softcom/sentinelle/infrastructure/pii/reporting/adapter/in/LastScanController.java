@@ -12,6 +12,8 @@ import pro.softcom.sentinelle.domain.pii.scan.ConfluenceSpaceScanState;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.LastScanDto;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventDto;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.SpaceScanStateDto;
+import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanReportingSummaryDto;
+import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.mapper.ScanReportingSummaryMapper;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.mapper.LastScanMapper;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.mapper.ScanResultToScanEventMapper;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.mapper.SpaceStatusMapper;
@@ -25,6 +27,7 @@ public class LastScanController {
     private final LastScanMapper lastScanMapper;
     private final SpaceStatusMapper spaceStatusMapper;
     private final ScanResultToScanEventMapper scanResultToScanEventMapper;
+    private final ScanReportingSummaryMapper scanReportingSummaryMapper;
 
     @GetMapping("/last")
     public ResponseEntity<@NonNull LastScanDto> getLastScan() {
@@ -50,7 +53,25 @@ public class LastScanController {
         List<ScanEventDto> items = scanReportingPort.getLatestSpaceScanResultList().stream()
                 .map(scanResultToScanEventMapper::toDto)
                 .toList();
-        if (items.isEmpty()) return ResponseEntity.noContent().build();
+        if (items.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
         return ResponseEntity.ok(items);
+    }
+
+    /**
+     * Unified endpoint combining authoritative status/progress from scan_checkpoints
+     * with aggregated counters from scan_events.
+     * 
+     * Provides single source of truth for dashboard to eliminate race conditions
+     * and incorrect progress displays.
+     */
+    @GetMapping("/dashboard/spaces-summary")
+    public ResponseEntity<@NonNull ScanReportingSummaryDto> getDashboardSpacesSummary() {
+        return scanReportingPort.getLatestScan()
+                .flatMap(meta -> scanReportingPort.getScanReportingSummary(meta.scanId()))
+                .map(scanReportingSummaryMapper::toDto)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 }

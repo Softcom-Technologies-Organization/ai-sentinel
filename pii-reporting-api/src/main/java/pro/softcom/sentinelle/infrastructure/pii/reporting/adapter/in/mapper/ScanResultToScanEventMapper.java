@@ -51,6 +51,7 @@ public class ScanResultToScanEventMapper {
                 .attachmentType(scanResult.attachmentType())
                 .attachmentUrl(scanResult.attachmentUrl())
                 .analysisProgressPercentage(scanResult.analysisProgressPercentage())
+                .status(scanResult.scanStatus() != null ? scanResult.scanStatus().name() : null)
                 .build();
     }
 }

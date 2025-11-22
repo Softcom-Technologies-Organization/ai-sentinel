@@ -16,6 +16,8 @@ import {provideAnimationsAsync} from '@angular/platform-browser/animations/async
 import {ConfluenceSpacesPollingService} from './core/services/confluence-spaces-polling.service';
 import {provideTransloco} from '@jsverse/transloco';
 import {TranslocoHttpLoader} from './core/services/transloco-http-loader';
+import {ConfirmationService, MessageService} from 'primeng/api';
+import {ToastService} from './core/services/toast.service';
 
 /**
  * Initializes polling configuration from backend during app startup.
@@ -27,6 +29,9 @@ function initializePollingConfig(pollingService: ConfluenceSpacesPollingService)
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    ConfirmationService,
+    MessageService,
+    ToastService,
     provideAnimationsAsync(),
     provideAnimations(),
     providePrimeNG({

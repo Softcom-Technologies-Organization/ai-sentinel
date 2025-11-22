@@ -36,4 +36,6 @@ export interface RawStreamPayload {
   attachmentName?: string;
   attachmentType?: string;
   attachmentUrl?: string;
+  // Scan status from backend (e.g., 'RUNNING', 'COMPLETED', 'FAILED')
+  status?: string;
 }

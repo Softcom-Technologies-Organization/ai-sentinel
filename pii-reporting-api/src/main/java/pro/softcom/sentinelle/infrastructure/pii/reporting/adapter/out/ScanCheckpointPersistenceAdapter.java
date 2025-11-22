@@ -4,6 +4,7 @@ package pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
@@ -18,6 +19,7 @@ import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.entit
  * Data JPA/Hibernate for simplicity and maintainability.
  */
 @Component
+@Slf4j
 public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepository {
 
     private final DetectionCheckpointRepository jpaRepository;
@@ -42,6 +44,7 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
             checkpoint.lastProcessedPageId(),
             checkpoint.lastProcessedAttachmentName(),
             checkpoint.scanStatus().name(),
+            checkpoint.progressPercentage(),
             lastUpdated
         );
     }
@@ -97,16 +100,13 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
             .lastProcessedPageId(e.getLastProcessedPageId())
             .lastProcessedAttachmentName(e.getLastProcessedAttachmentName())
             .scanStatus(parseStatus(e.getStatus()))
+            .progressPercentage(e.getProgressPercentage())
             .updatedAt(e.getUpdatedAt())
             .build();
     }
 
     private static ScanStatus parseStatus(String s) {
-        try {
-            return ScanStatus.valueOf(s);
-        } catch (Exception _) {
-            return ScanStatus.RUNNING;
-        }
+        return ScanStatus.valueOf(s);
     }
 
     private static boolean isBlank(String s) {

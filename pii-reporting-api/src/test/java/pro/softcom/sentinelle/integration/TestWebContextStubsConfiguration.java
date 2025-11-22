@@ -51,6 +51,12 @@ public class TestWebContextStubsConfiguration {
             public java.util.List<ScanResult> getLatestSpaceScanResultList() {
                 return java.util.List.of();
             }
+
+            @Override
+            public java.util.Optional<pro.softcom.sentinelle.domain.pii.reporting.ScanReportingSummary> getScanReportingSummary(
+                String scanId) {
+                return java.util.Optional.empty();
+            }
         };
     }
 }

@@ -1,6 +1,7 @@
 package pro.softcom.sentinelle.domain.pii.reporting;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import pro.softcom.sentinelle.domain.pii.ScanStatus;
 import java.util.List;
 import java.util.Map;
 import lombok.Builder;
@@ -25,5 +26,6 @@ public record ScanResult(
         String attachmentName,
         String attachmentType,
         String attachmentUrl,
-        Double analysisProgressPercentage
+        Double analysisProgressPercentage,
+        ScanStatus scanStatus
 ) { }

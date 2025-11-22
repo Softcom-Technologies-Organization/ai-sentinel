@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import org.jspecify.annotations.NonNull;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,8 +20,6 @@ public interface DetectionEventRepository extends
     @Query("select count(distinct e.spaceKey) from ScanEventEntity e where e.scanId = :scanId")
     int countDistinctSpaceKeyByScanId(@Param("scanId") String scanId);
 
-    Object findByScanIdOrderByEventSeqAsc(String scanId);
-
     interface SpaceCountersProjection {
         String getSpaceKey();
         long getPagesDone();
@@ -29,8 +28,8 @@ public interface DetectionEventRepository extends
     }
 
     @Query("select e.spaceKey as spaceKey, " +
-        "sum(case when e.eventType = 'page_complete' then 1 else 0 end) as pagesDone, " +
-        "sum(case when e.eventType = 'attachment_item' then 1 else 0 end) as attachmentsDone, " +
+        "sum(case when e.eventType = 'pageComplete' then 1 else 0 end) as pagesDone, " +
+        "sum(case when e.eventType = 'attachmentItem' then 1 else 0 end) as attachmentsDone, " +
         "max(e.ts) as lastEventTs " +
         "from ScanEventEntity e where e.scanId = :scanId group by e.spaceKey")
     List<SpaceCountersProjection> aggregateSpaceCounters(@Param("scanId") String scanId);
@@ -42,7 +41,7 @@ public interface DetectionEventRepository extends
 
     @Query("select e.scanId as scanId, max(e.ts) as lastUpdated from ScanEventEntity e group by e.scanId order by max(e.ts) desc")
     java.util.List<LatestScanProjection> findLatestScanGrouped(
-        org.springframework.data.domain.Pageable pageable);
+        Pageable pageable);
 
     List<ScanEventEntity> findByScanIdAndEventTypeInOrderByEventSeqAsc(String scanId, Collection<String> eventTypes);
 

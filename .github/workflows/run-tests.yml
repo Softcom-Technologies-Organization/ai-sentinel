@@ -91,7 +91,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd pii-reporting-ui
-          npm ci
+          npm ci --legacy-peer-deps
 
       - name: Run Jest tests
         run: |

@@ -82,7 +82,8 @@
       "lastScanDetected": "[ui] Dernier scan détecté : {{scanId}} ({{count}} espaces)",
       "noLastScan": "[ui] Aucun scan précédent trouvé",
       "fetchSpacesError": "[ui] Échec de récupération des espaces : {{error}}",
-      "errorForSpace": "[ui] Erreur pour l'espace {{spaceKey}} : {{error}}"
+      "errorForSpace": "[ui] Erreur pour l'espace {{spaceKey}} : {{error}}",
+      "autoReconnect": "⚡ Scan en cours détecté ({{scanId}}). Reconnexion automatique au flux SSE..."
     }
   },
   "confirmations": {

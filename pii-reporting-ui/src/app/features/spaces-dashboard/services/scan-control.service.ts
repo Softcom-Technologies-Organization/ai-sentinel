@@ -91,7 +91,8 @@ export class ScanControlService {
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: this.translocoService.translate('confirmations.globalScan.acceptLabel'),
       rejectLabel: this.translocoService.translate('confirmations.globalScan.rejectLabel'),
-      acceptButtonStyleClass: 'p-button-primary',
+      // Use the same blue style as the Play button on the dashboard
+      acceptButtonStyleClass: 'p-button-info',
       rejectButtonStyleClass: 'p-button-secondary',
       accept: () => {
         this.executeStartAll();
@@ -306,18 +307,76 @@ export class ScanControlService {
 
 
   /**
-   * Gets the current SSE subscription observable.
-   * Business purpose: allows external monitoring of SSE connection state.
+   * Checks if a scan is currently running on backend and reconnects SSE stream if needed.
+   * Business purpose: automatic reconnection after page refresh or browser tab reopen.
+   *
+   * This method is called during dashboard initialization to detect orphaned running scans
+   * and automatically reattach the SSE stream without user interaction.
+   *
+   * Detection logic:
+   * 1. Verify lastScanMeta exists with valid scanId
+   * 2. Check if any space has RUNNING status in lastSpaceStatuses
+   * 3. Ensure no space has PAUSED status (user explicitly paused scan)
+   * 4. If conditions met: reconnect to SSE stream with scanId
+   *
+   * Flow:
+   * 1. Early return if already streaming (avoid double connection)
+   * 2. Get lastScanMeta and lastSpaceStatuses from dataManagement
+   * 3. Detect RUNNING spaces and check for PAUSED status
+   * 4. If scan is running AND not paused: log reconnection attempt and open SSE stream
+   * 5. Subscribe to SSE events (delegated to sseEventHandler)
+   * 6. Reload statuses to backfill gap during disconnection
+   *
+   * Business Rule: Only reconnect if scan is actively RUNNING, not if user explicitly PAUSED it.
    */
-  getSseSubscription(): Subscription | undefined {
-    return this.sseSubscription;
-  }
+  checkAndReconnectToRunningScan(): void {
+    // Avoid double connection if already streaming
+    if (this.isStreaming()) {
+      return;
+    }
 
-  /**
-   * Checks if SSE stream is currently active.
-   */
-  isStreamActive(): boolean {
-    return this.isStreaming() && !!this.sseSubscription && !this.sseSubscription.closed;
+    const meta = this.dataManagement.lastScanMeta();
+    const statuses = this.dataManagement.lastSpaceStatuses();
+
+    // No scan metadata available
+    if (!meta?.scanId) {
+      return;
+    }
+
+    // Only reconnect if at least one space is RUNNING
+    // AND no space is PAUSED (user explicitly paused the scan)
+    const hasRunningScan = statuses.some(s => s.status === 'RUNNING');
+    const hasPausedScan = statuses.some(s => s.status === 'PAUSED');
+
+    if (!hasRunningScan || hasPausedScan) {
+      return;
+    }
+
+    // Scan is running on backend, reconnect SSE stream automatically
+    this.uiStateService.append(
+      this.translocoService.translate('dashboard.logs.autoReconnect', {
+        scanId: meta.scanId
+      })
+    );
+
+    this.isStreaming.set(true);
+    this.sseSubscription = this.sentinelleApiService.startAllSpacesStream(meta.scanId).subscribe({
+      next: (ev) => {
+        this.sseEventHandler.routeStreamEvent(ev.type as StreamEventType, ev.data);
+      },
+      error: (err) => {
+        this.uiStateService.append(
+          this.translocoService.translate('dashboard.logs.sseError', {
+            error: err?.message ?? err
+          })
+        );
+        this.isStreaming.set(false);
+      }
+    });
+
+    // Reload statuses to backfill any events missed during disconnection
+    // The replay buffer on backend will also provide recent events
+    this.dataManagement.loadLastSpaceStatuses(true, true).subscribe();
   }
 
   /**

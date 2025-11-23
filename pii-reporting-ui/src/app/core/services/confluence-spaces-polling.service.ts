@@ -1,9 +1,10 @@
 import {inject, Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {firstValueFrom, Observable, timer} from 'rxjs';
-import {map, shareReplay, skip, switchMap} from 'rxjs/operators';
+import {catchError, map, shareReplay, skip, switchMap} from 'rxjs/operators';
 import {SentinelleApiService} from './sentinelle-api.service';
 import {Space} from '../models/space';
+import {SpaceUpdateInfo} from '../models/space-update-info.model';
 
 export interface SpaceChangeDetection {
   spaces: Space[];
@@ -61,6 +62,27 @@ export class ConfluenceSpacesPollingService {
           previousCount = detection.totalCount;
         }
         return detection;
+      }),
+      shareReplay(1)
+    );
+  }
+
+  /**
+   * Starts polling for Confluence spaces update information.
+   * Business purpose: keeps dashboard indicators in sync with backend without manual refresh.
+   *
+   * Uses the same interval configuration as space discovery polling.
+   */
+  startUpdateInfoPolling(): Observable<SpaceUpdateInfo[]> {
+    return timer(this.pollingIntervalMs, this.pollingIntervalMs).pipe(
+      skip(1),
+      switchMap(() => this.api.getSpacesUpdateInfo()),
+      catchError((err) => {
+        console.error('[polling] Error while polling spaces update info:', err);
+        return new Observable<SpaceUpdateInfo[]>((observer) => {
+          observer.next([]);
+          observer.complete();
+        });
       }),
       shareReplay(1)
     );

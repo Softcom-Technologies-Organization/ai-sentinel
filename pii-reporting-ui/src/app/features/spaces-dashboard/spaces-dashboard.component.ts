@@ -157,8 +157,16 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
     this.dataManagement.loadSpacesUpdateInfo().subscribe();
 
     // Load last scan summary (spaces statuses and PII items) for page refresh
-    // isActive=false because no scan is running during page load
-    this.dataManagement.loadLastSpaceStatuses(false, true).subscribe();
+    // isActive=false initially, but may detect RUNNING scan and reconnect
+    this.dataManagement.loadLastSpaceStatuses(false, true).subscribe({
+      next: () => {
+        // Phase 2: Auto-reconnect to running scan after page refresh
+        // If a scan was running when browser was closed/refreshed, reconnect SSE stream
+        setTimeout(() => {
+          this.scanControl.checkAndReconnectToRunningScan();
+        }, 100);
+      }
+    });
   }
 
   ngOnDestroy(): void {

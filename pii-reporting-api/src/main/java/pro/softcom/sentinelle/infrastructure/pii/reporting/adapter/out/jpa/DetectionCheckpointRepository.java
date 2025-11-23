@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanCheckpointEntity;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanCheckpointId;
 
@@ -45,6 +46,8 @@ public interface DetectionCheckpointRepository extends
      *   <li><strong>last_processed_attachment_name:</strong> Updated only if new value is non-null and non-empty,
      *       otherwise preserves existing value to maintain attachment processing state</li>
      *   <li><strong>status:</strong> Always updated to reflect current scan state</li>
+     *   <li><strong>progress_percentage:</strong> Updated only when a non-null value is provided,
+     *       otherwise preserves the existing non-null value to avoid regression of progress</li>
      *   <li><strong>updated_at:</strong> Always updated to track last checkpoint modification</li>
      * </ul>
      * 
@@ -64,6 +67,7 @@ public interface DetectionCheckpointRepository extends
      * @param updatedAt timestamp of checkpoint creation/update
      */
     @Modifying(clearAutomatically = true)
+    @Transactional
     @Query(value = """
         INSERT INTO scan_checkpoints (scan_id, space_key, last_processed_page_id, last_processed_attachment_name, status, progress_percentage, updated_at)
         VALUES (:scanId, :spaceKey, :pageId, :attachmentName, :status, :progressPercentage, :updatedAt)
@@ -71,14 +75,14 @@ public interface DetectionCheckpointRepository extends
         SET last_processed_page_id = CASE WHEN :pageId IS NOT NULL AND :pageId != '' THEN :pageId ELSE scan_checkpoints.last_processed_page_id END,
             last_processed_attachment_name = CASE WHEN :attachmentName IS NOT NULL AND :attachmentName != '' THEN :attachmentName ELSE scan_checkpoints.last_processed_attachment_name END,
             status = :status,
-            progress_percentage = :progressPercentage,
+            progress_percentage = CASE WHEN :progressPercentage IS NOT NULL THEN :progressPercentage ELSE scan_checkpoints.progress_percentage END,
             updated_at = :updatedAt
         """, nativeQuery = true)
     void upsertCheckpoint(@Param("scanId") String scanId,
-                         @Param("spaceKey") String spaceKey,
-                         @Param("pageId") String pageId,
-                         @Param("attachmentName") String attachmentName,
-                         @Param("status") String status,
-                         @Param("progressPercentage") Double progressPercentage,
-                         @Param("updatedAt") LocalDateTime updatedAt);
+                          @Param("spaceKey") String spaceKey,
+                          @Param("pageId") String pageId,
+                          @Param("attachmentName") String attachmentName,
+                          @Param("status") String status,
+                          @Param("progressPercentage") Double progressPercentage,
+                          @Param("updatedAt") LocalDateTime updatedAt);
 }

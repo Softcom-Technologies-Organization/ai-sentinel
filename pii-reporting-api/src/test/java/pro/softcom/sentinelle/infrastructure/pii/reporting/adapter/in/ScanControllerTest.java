@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.codec.ServerSentEvent;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanPort;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceScanUseCase;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
@@ -37,7 +38,7 @@ class ScanControllerTest {
     void setUp() {
         streamConfluenceScanUseCase = mock(StreamConfluenceScanUseCase.class);
         controller = new ScanController(streamConfluenceScanUseCase, mock(
-            StreamConfluenceResumeScanPort.class), new ScanResultToScanEventMapper());
+            StreamConfluenceResumeScanPort.class), mock(PauseScanPort.class), new ScanResultToScanEventMapper());
     }
 
     @Test
@@ -96,7 +97,7 @@ class ScanControllerTest {
             ScanResult.builder().eventType(ScanEventType.MULTI_COMPLETE.toJson()).build()
         ));
 
-        Flux<ServerSentEvent<@NonNull ScanEventDto>> flux = controller.streamAllSpacesScan()
+        Flux<ServerSentEvent<@NonNull ScanEventDto>> flux = controller.streamAllSpacesScan(null)
                 .filter(sse -> List.of(ScanEventType.ERROR.toJson(),ScanEventType.MULTI_COMPLETE.toJson()).contains(sse.event()))
                 .take(2)
                 .timeout(Duration.ofSeconds(5));
@@ -128,7 +129,7 @@ class ScanControllerTest {
         when(streamConfluenceScanUseCase.streamAllSpaces()).thenReturn(Flux.never());
 
         StepVerifier.withVirtualTime(() ->
-                controller.streamAllSpacesScan()
+                controller.streamAllSpacesScan(null)
                         .filter(sse -> ScanEventType.KEEPALIVE.toJson().equals(sse.event()))
                         .take(1)
         )

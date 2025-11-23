@@ -16,6 +16,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import pro.softcom.sentinelle.SentinelleApplication;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanPort;
 import pro.softcom.sentinelle.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.sentinelle.domain.pii.ScanStatus;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.DetectionCheckpointRepository;
@@ -44,7 +45,8 @@ class PauseScanUseCaseTest {
                      () -> "org.hibernate.dialect.PostgreSQLDialect");
     }
 
-    private PauseScanUseCase pauseScanUseCase;
+    @Autowired
+    private PauseScanPort pauseScanUseCase;
 
     @Autowired
     private DetectionCheckpointRepository checkpointRepository;
@@ -55,7 +57,6 @@ class PauseScanUseCaseTest {
 
     @BeforeEach
     void cleanDatabase() {
-        pauseScanUseCase = new PauseScanUseCase(scanCheckpointRepository);
         checkpointRepository.deleteAll();
     }
 
@@ -141,5 +142,77 @@ class PauseScanUseCaseTest {
         // Assert
         var after = checkpointRepository.count();
         assertThat(after).isEqualTo(before);
+    }
+
+    @Test
+    void Should_PreserveProgressPercentage_When_PausingScan() {
+        // Arrange
+        var scanId = "scan-200";
+        var now = LocalDateTime.of(2024, 1, 2, 12, 0);
+
+        checkpointRepository.save(ScanCheckpointEntity.builder()
+                                      .scanId(scanId)
+                                      .spaceKey("SPACE-RUNNING")
+                                      .lastProcessedPageId("p1")
+                                      .lastProcessedAttachmentName("a1")
+                                      .status(ScanStatus.RUNNING.name())
+                                      .progressPercentage(37.5)
+                                      .updatedAt(now)
+                                      .build());
+
+        // Act
+        pauseScanUseCase.pauseScan(scanId);
+
+        // Assert
+        List<ScanCheckpointEntity> all =
+            checkpointRepository.findByScanIdOrderBySpaceKey(scanId);
+
+        assertThat(all).hasSize(1);
+
+        ScanCheckpointEntity paused = all.get(0);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(paused.getStatus()).isEqualTo(ScanStatus.PAUSED.name());
+        softly.assertThat(paused.getProgressPercentage()).isEqualTo(37.5);
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_NotOverwriteProgressPercentageWithNull_When_UpsertingExistingCheckpoint() {
+        // Arrange
+        var scanId = "scan-300";
+        var now = LocalDateTime.of(2024, 1, 3, 12, 0);
+
+        checkpointRepository.save(ScanCheckpointEntity.builder()
+                                      .scanId(scanId)
+                                      .spaceKey("SPACE-RUNNING")
+                                      .lastProcessedPageId("p1")
+                                      .lastProcessedAttachmentName("a1")
+                                      .status(ScanStatus.RUNNING.name())
+                                      .progressPercentage(42.0)
+                                      .updatedAt(now)
+                                      .build());
+
+        // Act: upsert with null progressPercentage should keep existing value
+        checkpointRepository.upsertCheckpoint(
+            scanId,
+            "SPACE-RUNNING",
+            "p1",
+            "a1",
+            ScanStatus.PAUSED.name(),
+            null,
+            now.plusMinutes(5)
+        );
+
+        // Assert
+        List<ScanCheckpointEntity> all =
+            checkpointRepository.findByScanIdOrderBySpaceKey(scanId);
+
+        assertThat(all).hasSize(1);
+
+        ScanCheckpointEntity checkpoint = all.get(0);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(checkpoint.getStatus()).isEqualTo(ScanStatus.PAUSED.name());
+        softly.assertThat(checkpoint.getProgressPercentage()).isEqualTo(42.0);
+        softly.assertAll();
     }
 }

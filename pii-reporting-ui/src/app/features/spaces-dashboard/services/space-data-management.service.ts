@@ -53,6 +53,7 @@ export class SpaceDataManagementService {
   private readonly translocoService = inject(TranslocoService);
 
   private pollingSub?: Subscription;
+  private updateInfoPollingSub?: Subscription;
 
   // Spaces data
   readonly spaces = signal<Space[]>([]);
@@ -382,6 +383,32 @@ export class SpaceDataManagementService {
   stopBackgroundPolling(): void {
     this.pollingSub?.unsubscribe();
     this.pollingSub = undefined;
+  }
+
+  /**
+   * Starts background polling of spaces update information.
+   * Business purpose: keeps update indicators in sync while user stays on dashboard.
+   */
+  startUpdateInfoBackgroundPolling(): void {
+    this.updateInfoPollingSub?.unsubscribe();
+
+    this.updateInfoPollingSub = this.pollingService.startUpdateInfoPolling().subscribe({
+      next: (updateInfos) => {
+        this.spacesUpdateInfo.set(updateInfos);
+      },
+      error: (err) => {
+        console.error('[polling] Error during spaces update-info polling:', err);
+      }
+    });
+  }
+
+  /**
+   * Stops background polling of spaces update information.
+   * Business purpose: cleanup on component destruction or manual stop.
+   */
+  stopUpdateInfoBackgroundPolling(): void {
+    this.updateInfoPollingSub?.unsubscribe();
+    this.updateInfoPollingSub = undefined;
   }
 
   /**

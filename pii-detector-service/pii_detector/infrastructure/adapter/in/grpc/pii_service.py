@@ -504,7 +504,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             List of detected PII entities
         """
         processing_start = time.time()
-        logger.info(f"[{request_id}] Starting PII detection processing...")
+        logger.debug("[%s] Starting PII detection processing...", request_id)
         
         entities = self.detector.detect_pii(content, threshold)
         processing_time = time.time() - processing_start
@@ -527,14 +527,22 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         """
         if self.log_throughput:
             throughput = len(content) / processing_time if processing_time > 0 else 0
-            logger.info(
-                f"[{request_id}] PII detection completed in {processing_time:.3f}s, "
-                f"found {len(entities)} entities, "
-                f"throughput: {throughput:.0f} chars/s"
+            # Throughput and per-request metrics are useful in diagnostics but
+            # too verbose for production traffic. Keep them at DEBUG level.
+            logger.debug(
+                "[%s] PII detection completed in %.3fs, found %s entities, throughput: %.0f chars/s",
+                request_id,
+                processing_time,
+                len(entities),
+                throughput,
             )
         else:
-            logger.info(f"[{request_id}] PII detection completed in {processing_time:.3f}s")
-            logger.info(f"[{request_id}] Found {len(entities)} PII entities")
+            logger.debug(
+                "[%s] PII detection completed in %.3fs with %s entities",
+                request_id,
+                processing_time,
+                len(entities),
+            )
 
     def _log_detected_entities(self, request_id: str, entities: List) -> None:
         """Log summary and sample of detected entities for debugging.

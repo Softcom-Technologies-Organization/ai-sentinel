@@ -9,12 +9,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanPort;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventDto;
@@ -36,6 +39,7 @@ public class ScanController {
 
     private final StreamConfluenceScanPort streamConfluenceScanPort;
     private final StreamConfluenceResumeScanPort streamConfluenceResumeScanPort;
+    private final PauseScanPort pauseScanPort;
     private final ScanResultToScanEventMapper scanResultToScanEventMapper;
 
     @GetMapping(value = "/confluence/space/{spaceKey}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -120,8 +124,16 @@ public class ScanController {
                 .doFinally(sig -> log.info("[SSE] Connection closed for all spaces scan (signal={})", sig));
     }
 
-    // Backward-compatible entry point used by unit tests that call the controller method directly
-    public Flux<ServerSentEvent<@NonNull ScanEventDto>> streamAllSpacesScan() {
-        return streamAllSpacesScan(null);
+    @PostMapping("/{scanId}/resume")
+    public ResponseEntity<@NonNull Void> resume(@PathVariable String scanId) {
+        log.info("[RESUME] Requested resume for scan {} (no background subscription; SSE will drive)", scanId);
+        return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/{scanId}/pause")
+    public ResponseEntity<@NonNull Void> pause(@PathVariable String scanId) {
+        log.info("[PAUSE] Requested pause for scan {}", scanId);
+        pauseScanPort.pauseScan(scanId);
+        return ResponseEntity.accepted().build();
     }
 }

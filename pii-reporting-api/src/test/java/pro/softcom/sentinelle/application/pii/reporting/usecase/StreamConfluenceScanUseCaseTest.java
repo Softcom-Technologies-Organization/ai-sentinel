@@ -29,6 +29,7 @@ import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.sentinelle.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.sentinelle.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.PublishEventPort;
+import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTaskManager;
 import pro.softcom.sentinelle.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.sentinelle.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.sentinelle.application.pii.reporting.service.ContentScanOrchestrator;
@@ -56,7 +57,7 @@ import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 @ExtendWith(MockitoExtension.class)
-class StreamConfluenceScanPortImplTest {
+class StreamConfluenceScanUseCaseTest {
 
     @Mock
     private ConfluenceClient confluenceService;
@@ -81,6 +82,9 @@ class StreamConfluenceScanPortImplTest {
 
     @Mock
     private ScanTimeOutConfig scanTimeoutConfig;
+
+    @Mock
+    private ScanTaskManager scanTaskManager;
 
     private StreamConfluenceScanUseCase streamConfluenceScanUseCase;
 
@@ -127,8 +131,23 @@ class StreamConfluenceScanPortImplTest {
                 piiDetectorClient,
                 contentScanOrchestrator,
                 attachmentProcessor,
-                scanTimeoutConfig
+                scanTimeoutConfig,
+                scanTaskManager
         );
+
+        // Le use case délègue la gestion du flux au ScanTaskManager.
+        // Dans les tests unitaires, on souhaite observer directement le Flux construit par le use case
+        // sans complexifier inutilement le comportement du mock.
+        // On configure donc le mock pour qu'il renvoie exactement le flux passé à startScan
+        // lorsque subscribeScan est appelé avec le même identifiant.
+        Mockito.lenient().doAnswer(invocation -> {
+                    String scanId = invocation.getArgument(0);
+                    Flux<ScanResult> flux = invocation.getArgument(1);
+                    when(scanTaskManager.subscribeScan(scanId)).thenReturn(flux);
+                    return null;
+                })
+                .when(scanTaskManager)
+                .startScan(any(), any());
     }
 
     @Test
@@ -568,7 +587,8 @@ class StreamConfluenceScanPortImplTest {
             piiDetectorClient,
             contentScanOrchestrator,
             attachmentProcessor,
-            scanTimeoutConfig
+            scanTimeoutConfig,
+            scanTaskManager
         );
 
         String spaceKey = "S-BLANK";
@@ -641,7 +661,8 @@ class StreamConfluenceScanPortImplTest {
             piiDetectorClient,
             contentScanOrchestrator,
             attachmentProcessor,
-            scanTimeoutConfig
+            scanTimeoutConfig,
+            scanTaskManager
         );
 
         String spaceKey = "S-TRIM2";

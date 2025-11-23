@@ -27,6 +27,13 @@ export class ScanProgressBarComponent {
   @Input({ required: true }) spaceKey!: string;
 
   /**
+   * Current scan status for the space.
+   * Business rule: when status is RUNNING and the scan is not yet complete,
+   * the progress bar should use the same blue tone as the "En cours" badge.
+   */
+  @Input() status: string | undefined;
+
+  /**
    * Computed signal that retrieves the current progress percentage from the service.
    * Business rule: Progress is calculated by the service with appropriate fallbacks.
    *
@@ -34,5 +41,22 @@ export class ScanProgressBarComponent {
    */
   readonly progressPercent = computed(() => {
     return this.scanProgressService.getProgressPercent(this.spaceKey);
+  });
+
+  /**
+   * True when the scan is currently running and not yet complete.
+   * Used to drive the visual style (blue progress bar) to align with the
+   * "En cours" status badge.
+   */
+  readonly isRunningAndNotComplete = computed(() => {
+    return this.status === 'RUNNING' && this.progressPercent() < 100;
+  });
+
+  /**
+   * True when the scan is currently paused.
+   * Used to align the progress bar color with the "En pause" status badge.
+   */
+  readonly isPaused = computed(() => {
+    return this.status === 'PAUSED';
   });
 }

@@ -155,7 +155,7 @@ export class SentinelleApiService {
   resumeScan(scanId: string): Observable<void> {
     return new Observable<void>((observer) => {
       const id = encodeURIComponent(String(scanId ?? ''));
-      const sub = this.http.post<void>(`/api/v1/scans/${id}/resume`, {}).subscribe({
+      const sub = this.http.post<void>(`/api/v1/stream/${id}/resume`, {}).subscribe({
         next: () => { observer.next(); observer.complete(); },
         error: (err) => { observer.error(err); }
       });
@@ -167,7 +167,7 @@ export class SentinelleApiService {
   pauseScan(scanId: string): Observable<void> {
     return new Observable<void>((observer) => {
       const id = encodeURIComponent(String(scanId ?? ''));
-      const sub = this.http.post<void>(`/api/v1/scans/${id}/pause`, {}).subscribe({
+      const sub = this.http.post<void>(`/api/v1/stream/${id}/pause`, {}).subscribe({
         next: () => { observer.next(); observer.complete(); },
         error: (err) => { observer.error(err); }
       });
@@ -247,19 +247,6 @@ export class SentinelleApiService {
     if (max >= 0.95) return 'high';
     if (max >= 0.85) return 'medium';
     return 'low';
-  }
-
-  /**
-   * Replace [TOKEN] style markup with chip spans; used only for visual amenity.
-   * Returned string should be considered unsafe; bind via DomSanitizer in components.
-   */
-  sanitizeMaskedHtml(raw?: string): string | undefined {
-    if (!raw) return undefined;
-    try {
-      return raw.replaceAll(/\[([A-Z_]+)]/g, (_m: string, g1: string) => `<span class="chip">[${g1}]</span>`);
-    } catch {
-      return raw;
-    }
   }
 
   /**

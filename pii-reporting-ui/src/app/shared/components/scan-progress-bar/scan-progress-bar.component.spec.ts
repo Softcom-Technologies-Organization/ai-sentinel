@@ -49,6 +49,34 @@ describe('ScanProgressBarComponent', () => {
     expect(progressBar).toBeTruthy();
   });
 
+  it('Should_ApplyRunningStyle_When_StatusRunningAndProgressBelowHundred', () => {
+    // Arrange
+    component.spaceKey = 'RUNNING_SPACE';
+    component.status = 'RUNNING';
+    progressServiceSpy.getProgressPercent.mockReturnValue(80);
+
+    // Act
+    fixture.detectChanges();
+
+    // Assert
+    const progressBar = fixture.nativeElement.querySelector('p-progressbar');
+    expect(progressBar.classList).toContain('scan-progress-running');
+  });
+
+  it('Should_ApplyPausedStyle_When_StatusPaused', () => {
+    // Arrange
+    component.spaceKey = 'PAUSED_SPACE';
+    component.status = 'PAUSED';
+    progressServiceSpy.getProgressPercent.mockReturnValue(40);
+
+    // Act
+    fixture.detectChanges();
+
+    // Assert
+    const progressBar = fixture.nativeElement.querySelector('p-progressbar');
+    expect(progressBar.classList).toContain('scan-progress-paused');
+  });
+
   it('Should_ShowZeroPercent_When_NoProgressData', () => {
     // Arrange
     component.spaceKey = 'TEST';

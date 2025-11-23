@@ -366,23 +366,31 @@ class GLiNERDetector:
         for entity in entities:
             # Get configured threshold for this entity type
             entity_threshold = self.scoring_overrides.get(entity.pii_type)
-            
+
             # Post-filter: discard if below entity-specific threshold
             if entity_threshold is not None and entity.score < entity_threshold:
                 filtered_count += 1
-                self.logger.info(
-                    f"Filtered out {entity.pii_type} (score={entity.score:.3f} < "
-                    f"threshold={entity_threshold:.3f}) text='{entity.text}' "
-                    f"at position {entity.start}-{entity.end}"
+                self.logger.debug(
+                    "Filtered out %s (score=%.3f < threshold=%.3f) text='%s' at position %s-%s",
+                    entity.pii_type,
+                    entity.score,
+                    entity_threshold,
+                    entity.text,
+                    entity.start,
+                    entity.end,
                 )
                 continue
-            
+
             filtered_entities.append(entity)
-        
+
         if filtered_count > 0:
-            self.logger.info(
-                f"Post-filtered {filtered_count} entities based on per-type thresholds "
-                f"({len(filtered_entities)}/{len(entities)} remaining)"
+            # Aggregate log kept at DEBUG level to avoid per-request noise in
+            # production while still being available for diagnostics.
+            self.logger.debug(
+                "Post-filtered %s entities based on per-type thresholds (%s/%s remaining)",
+                filtered_count,
+                len(filtered_entities),
+                len(entities),
             )
         
         return filtered_entities
@@ -608,17 +616,29 @@ class GLiNERDetector:
         """
         if self.log_throughput:
             throughput = text_length / detection_time if detection_time > 0 else 0
-            self.logger.info(
-                f"[{detection_id}] {processing_mode.capitalize()} processing completed in {detection_time:.3f}s, "
-                f"processed {chunk_count} chunks, "
-                f"found {entity_count} entities (after post-filter), "
-                f"throughput: {throughput:.0f} chars/s"
+            # Throughput logging is useful for benchmarking but expensive in
+            # production at high volume. Downgrade to DEBUG so it is only
+            # enabled when explicitly requested.
+            self.logger.debug(
+                "[%s] %s processing completed in %.3fs, processed %s chunks, "
+                "found %s entities (after post-filter), throughput: %.0f chars/s",
+                detection_id,
+                processing_mode.capitalize(),
+                detection_time,
+                chunk_count,
+                entity_count,
+                throughput,
             )
         else:
+            # Keep a compact INFO log without throughput details disabled by
+            # default to reduce noise.
             self.logger.info(
-                f"[{detection_id}] {processing_mode.capitalize()} processing completed in {detection_time:.3f}s, "
-                f"processed {chunk_count} chunks, "
-                f"found {entity_count} entities (after post-filter)"
+                "[%s] %s processing completed in %.3fs, processed %s chunks, found %s entities (after post-filter)",
+                detection_id,
+                processing_mode.capitalize(),
+                detection_time,
+                chunk_count,
+                entity_count,
             )
 
     def _detect_pii_with_chunking(self, text: str, threshold: float, detection_id: str) -> List[PIIEntity]:

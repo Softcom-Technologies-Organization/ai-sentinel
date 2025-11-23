@@ -20,30 +20,26 @@ public record ConfluenceConfig(
     @ConstructorBinding
     public ConfluenceConfig {
 
-        log.info("Configuration Confluence initialisée - baseUrl: {}, username: {}, apiToken: [MASKED]",
-                 baseUrl, username);
-
         if (baseUrl == null || baseUrl.isBlank()) {
             throw new IllegalArgumentException(
-                "Configuration Confluence invalide : 'confluence.base-url' (CONFLUENCE_BASE_URL) est requis. " +
-                "Valeur actuelle : '" + baseUrl + "'. " +
-                "Vérifiez votre fichier .env ou vos variables d'environnement."
+                "Invalid Confluence configuration: 'confluence.base-url' (CONFLUENCE_BASE_URL) is required. " +
+                "Check your environment variables or Infisical secrets."
             );
         }
         if (username == null || username.isBlank()) {
             throw new IllegalArgumentException(
-                "Configuration Confluence invalide : 'confluence.username' (CONFLUENCE_USERNAME) est requis. " +
-                "Valeur actuelle : '" + username + "'. " +
-                "Vérifiez votre fichier .env ou vos variables d'environnement."
+                "Invalid Confluence configuration: 'confluence.username' (CONFLUENCE_USERNAME) is required. " +
+                "Check your environment variables or Infisical secrets."
             );
         }
         if (apiToken == null || apiToken.isBlank()) {
             throw new IllegalArgumentException(
-                "Configuration Confluence invalide : 'confluence.api-token' (CONFLUENCE_API_TOKEN) est requis. " +
-                "Valeur actuelle : [MASQUÉ POUR SÉCURITÉ]. " +
-                "Vérifiez votre fichier .env ou vos variables d'environnement."
+                "Invalid Confluence configuration: 'confluence.api-token' (CONFLUENCE_API_TOKEN) is required. " +
+                "Check your environment variables or Infisical secrets."
             );
         }
+
+        log.info("Confluence configuration initialized");
     }
 
     @Override

@@ -1,12 +1,9 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Softcom PROD" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+  <configuration default="false" name="PROD" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
     <envs>
-      <env name="CONFLUENCE_API_TOKEN" value="" />
-      <env name="CONFLUENCE_BASE_URL" value="" />
-      <env name="CONFLUENCE_USERNAME" value="" />
       <env name="DB_PORT" value="5433" />
     </envs>
-    <module name="sentinelle" />
+    <module name="ai-sentinel" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="pro.softcom.sentinelle.SentinelleApplication" />
     <method v="2">
       <option name="Make" enabled="true" />

@@ -162,7 +162,9 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
       next: () => {
         // Phase 2: Auto-reconnect to running scan after page refresh
         // If a scan was running when browser was closed/refreshed, reconnect SSE stream
-        this.scanControl.checkAndReconnectToRunningScan();
+        setTimeout(() => {
+          this.scanControl.checkAndReconnectToRunningScan();
+        }, 100);
       }
     });
   }

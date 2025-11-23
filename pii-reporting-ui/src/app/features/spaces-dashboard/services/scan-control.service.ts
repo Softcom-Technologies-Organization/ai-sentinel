@@ -307,21 +307,6 @@ export class ScanControlService {
 
 
   /**
-   * Gets the current SSE subscription observable.
-   * Business purpose: allows external monitoring of SSE connection state.
-   */
-  getSseSubscription(): Subscription | undefined {
-    return this.sseSubscription;
-  }
-
-  /**
-   * Checks if SSE stream is currently active.
-   */
-  isStreamActive(): boolean {
-    return this.isStreaming() && !!this.sseSubscription && !this.sseSubscription.closed;
-  }
-
-  /**
    * Checks if a scan is currently running on backend and reconnects SSE stream if needed.
    * Business purpose: automatic reconnection after page refresh or browser tab reopen.
    *

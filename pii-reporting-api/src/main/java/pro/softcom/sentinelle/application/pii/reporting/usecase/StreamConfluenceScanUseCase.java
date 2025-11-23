@@ -170,10 +170,10 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
                                              space.key(),
                                              pages, 0,
                                              pages.size()))
-                    // Filet d'erreur local à un espace: on émet un évènement d'erreur mais on continue les autres espaces
+                    // Local error handling: map any exception to a readable business event and continue processing
                     .onErrorResume(exception -> {
                         log.error(
-                            "[USECASE] Erreur lors du scan de l'espace {}: {}",
+                            "[USECASE] Error during space scan {}: {}",
                             space.key(),
                             exception.getMessage(),
                             exception);

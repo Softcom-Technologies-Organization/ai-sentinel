@@ -2,6 +2,7 @@ package pro.softcom.sentinelle.application.pii.reporting.usecase;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeoutException;
@@ -22,6 +23,7 @@ import pro.softcom.sentinelle.domain.pii.scan.ScanProgress;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.retry.Retry;
 
 /**
  * Application use case orchestrating Confluence scans and PII detection. Business intent:
@@ -64,6 +66,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                     // Persist in a non-cancellable way to survive SSE disconnections
                     Mono.fromRunnable(() -> contentScanOrchestrator.persistEventAndCheckpoint(signal.get()))
                         .subscribeOn(Schedulers.boundedElastic())
+                        .retryWhen(Retry.backoff(3, Duration.ofMillis(100)))
                         .onErrorResume(e -> {
                             log.warn("[PERSISTENCE] Failed to persist event: {}", e.getMessage());
                             return Mono.empty();
@@ -354,7 +357,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
 
         //TODO: remove the following log before first release
         Mono.fromRunnable(() -> {
-            log.info("Content: {}", safeContent);
+//            log.info("Content: {}", safeContent);
             log.info("Time to send and received content pii scan result: {}", duration);
             log.info("Pii content: {}", contentPiiDetection);
             double charsPerSecond = duration > 0 ? (charCount * 1000.0) / duration : 0;

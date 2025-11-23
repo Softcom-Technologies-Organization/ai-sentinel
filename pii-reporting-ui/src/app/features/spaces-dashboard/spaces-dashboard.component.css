@@ -124,6 +124,38 @@
   cursor: help;
 }
 
+/* Status badge customization: running ("En cours") in blue tone */
+.status-running.p-tag {
+  background-color: #2196F3A8; /* light blue, similar tone intensity to existing green */
+  border-color: #2196F3DA; /* primary blue accent */
+  color: #263238; /* readable dark blue text */
+}
+
+/* Status badge customization: paused ("En pause") in neutral blue-grey tone */
+.status-paused.p-tag {
+  background-color: #CFD8D8; /* light grey-blue background */
+  border-color: #90A4AE; /* medium blue-grey border */
+  color: #263238; /* dark text for good readability */
+}
+
+/* Pause button styling aligned with "En pause" status badge.
+ *
+ * Note : les styles globaux du thème PrimeNG peuvent surcharger les couleurs
+ * par défaut des boutons. On utilise :host ::ng-deep avec !important pour
+ * garantir que le bouton pause garde la même palette que le badge
+ * .status-paused, sans impacter les autres boutons.
+ */
+:host ::ng-deep .pause-button.p-button {
+  background-color: #CFD8D8 !important;
+  border-color: #90A4AE !important;
+  color: #263238 !important;
+}
+
+:host ::ng-deep .pause-button.p-button .p-button-icon,
+:host ::ng-deep .pause-button.p-button .p-button-label {
+  color: #263238 !important;
+}
+
 /* Scan Error Toast Styling - Using PrimeNG default template with custom colors */
 ::ng-deep .p-toast.p-component {
   z-index: 9999;

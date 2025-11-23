@@ -321,6 +321,73 @@ export class ScanControlService {
   }
 
   /**
+   * Checks if a scan is currently running on backend and reconnects SSE stream if needed.
+   * Business purpose: automatic reconnection after page refresh or browser tab reopen.
+   *
+   * This method is called during dashboard initialization to detect orphaned running scans
+   * and automatically reattach the SSE stream without user interaction.
+   *
+   * Detection logic:
+   * 1. Verify lastScanMeta exists with valid scanId
+   * 2. Check if any space has RUNNING status in lastSpaceStatuses
+   * 3. If both conditions met: reconnect to SSE stream with scanId
+   *
+   * Flow:
+   * 1. Early return if already streaming (avoid double connection)
+   * 2. Get lastScanMeta and lastSpaceStatuses from dataManagement
+   * 3. Detect RUNNING spaces in statuses
+   * 4. If detected: log reconnection attempt and open SSE stream
+   * 5. Subscribe to SSE events (delegated to sseEventHandler)
+   * 6. Reload statuses to backfill gap during disconnection
+   */
+  checkAndReconnectToRunningScan(): void {
+    // Avoid double connection if already streaming
+    if (this.isStreaming()) {
+      return;
+    }
+
+    const meta = this.dataManagement.lastScanMeta();
+    const statuses = this.dataManagement.lastSpaceStatuses();
+
+    // No scan metadata available
+    if (!meta?.scanId) {
+      return;
+    }
+
+    // Check if any space is RUNNING (indicates active scan on backend)
+    const hasRunningScan = statuses.some(s => s.status === 'RUNNING');
+    if (!hasRunningScan) {
+      return;
+    }
+
+    // Scan is running on backend, reconnect SSE stream automatically
+    this.uiStateService.append(
+      this.translocoService.translate('dashboard.logs.autoReconnect', {
+        scanId: meta.scanId
+      })
+    );
+
+    this.isStreaming.set(true);
+    this.sseSubscription = this.sentinelleApiService.startAllSpacesStream(meta.scanId).subscribe({
+      next: (ev) => {
+        this.sseEventHandler.routeStreamEvent(ev.type as StreamEventType, ev.data);
+      },
+      error: (err) => {
+        this.uiStateService.append(
+          this.translocoService.translate('dashboard.logs.sseError', {
+            error: err?.message ?? err
+          })
+        );
+        this.isStreaming.set(false);
+      }
+    });
+
+    // Reload statuses to backfill any events missed during disconnection
+    // The replay buffer on backend will also provide recent events
+    this.dataManagement.loadLastSpaceStatuses(true, true).subscribe();
+  }
+
+  /**
    * Resets all scan control state to initial values.
    * Business purpose: cleanup for component destruction or full reset.
    */

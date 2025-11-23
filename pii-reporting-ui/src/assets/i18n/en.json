@@ -82,7 +82,8 @@
       "lastScanDetected": "[ui] Last scan detected: {{scanId}} ({{count}} spaces)",
       "noLastScan": "[ui] No previous scan found",
       "fetchSpacesError": "[ui] Failed to fetch spaces: {{error}}",
-      "errorForSpace": "[ui] Error for space {{spaceKey}}: {{error}}"
+      "errorForSpace": "[ui] Error for space {{spaceKey}}: {{error}}",
+      "autoReconnect": "⚡ Running scan detected ({{scanId}}). Automatically reconnecting to SSE stream..."
     }
   },
   "confirmations": {
@@ -125,7 +126,7 @@
       "maskAriaLabel": "Hide sensitive values"
     },
     "entity": {
-      "score": "Confidence {{value}}",
+      "score": "Confidence {{value}}"
     }
   },
   "spaceScanDetail": {

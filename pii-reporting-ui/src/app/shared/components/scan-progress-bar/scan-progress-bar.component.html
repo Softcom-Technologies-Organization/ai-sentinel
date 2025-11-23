@@ -1,2 +1,3 @@
 <p-progressBar [value]="progressPercent()" [showValue]="true"
-             [style]="{'height':'0.75rem'}"></p-progressBar>
+             [style]="{'height':'0.75rem'}"
+             [styleClass]="isRunningAndNotComplete() ? 'scan-progress-running' : (isPaused() ? 'scan-progress-paused' : '')"></p-progressBar>

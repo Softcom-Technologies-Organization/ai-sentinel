@@ -97,6 +97,21 @@ export class SpacesDashboardUtils {
     return 'success';
   }
 
+  /**
+   * Additional style class for status badge.
+   * Business rule: highlight running scan ("En cours") with a dedicated blue tone
+   * and paused scan ("En pause") with a distinct palette.
+   */
+  statusStyleClass(status?: string): string | undefined {
+    if (status === 'RUNNING') {
+      return 'status-running';
+    }
+    if (status === 'PAUSED') {
+      return 'status-paused';
+    }
+    return undefined;
+  }
+
   canViewResult(space: UISpace): boolean {
     // Allow viewing results while scan is running (partial results), or when a previous scan exists
     return space.status === 'RUNNING' || !!space.lastScanTs;

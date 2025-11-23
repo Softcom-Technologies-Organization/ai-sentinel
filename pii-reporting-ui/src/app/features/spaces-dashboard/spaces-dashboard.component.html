@@ -89,8 +89,10 @@
         <th id="col-actions-value" class="action-buttons-container">
           <p-button type="button"
                     icon="pi pi-play"
-                    styleClass="p-button-raised p-button-primary"
+                    styleClass="p-button-raised p-button-info"
                     (click)="startAll()"
+                    (keydown.enter)="startAll()"
+                    (keydown.space)="$event.preventDefault(); startAll()"
                     [disabled]="!canStartScan()"
                     [pTooltip]="'dashboard.actions.startScan' | transloco"
                     tooltipPosition="bottom"
@@ -99,8 +101,10 @@
           </p-button>
           <p-button type="button"
                     icon="pi pi-pause"
-                    styleClass="p-button-raised p-button-danger"
+                    styleClass="p-button-raised pause-button"
                     (click)="stopCurrentScan()"
+                    (keydown.enter)="stopCurrentScan()"
+                    (keydown.space)="$event.preventDefault(); stopCurrentScan()"
                     [disabled]="!isStreaming()"
                     [pTooltip]="'dashboard.actions.pauseScan' | transloco"
                     tooltipPosition="bottom"
@@ -109,8 +113,10 @@
           </p-button>
           <p-button type="button"
                     icon="pi pi-refresh"
-                    styleClass="p-button-warning"
+                    styleClass="p-button-raised p-button-primary"
                     (click)="resumeLastScan()"
+                    (keydown.enter)="resumeLastScan()"
+                    (keydown.space)="$event.preventDefault(); resumeLastScan()"
                     [disabled]="!canResumeScan()"
                     [pTooltip]="'dashboard.actions.resumeScan' | transloco"
                     tooltipPosition="bottom"
@@ -147,10 +153,11 @@
         <td>
           <p-tag [value]="statusLabel(space.status)"
                  [severity]="statusSeverity(space.status)"
+                 [styleClass]="spacesDashboardUtils.statusStyleClass(space.status)"
                  [attr.data-testid]="testIds.spaceStatus"></p-tag>
         </td>
         <td>
-          <app-scan-progress-bar [spaceKey]="space.key"></app-scan-progress-bar>
+          <app-scan-progress-bar [spaceKey]="space.key" [status]="space.status"></app-scan-progress-bar>
         </td>
         <td>{{ space.lastScanTs | date:'short' }}</td>
         <td>
@@ -173,6 +180,8 @@
                       styleClass="p-button-text"
                       [disabled]="!spacesDashboardUtils.hasConfluenceUrl(space)"
                       (click)="$event.stopPropagation(); openConfluence(space)"
+                      (keydown.enter)="$event.stopPropagation(); openConfluence(space)"
+                      (keydown.space)="$event.preventDefault(); $event.stopPropagation(); openConfluence(space)"
                       label="Confluence"></p-button>
           </span>
         </td>

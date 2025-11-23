@@ -112,8 +112,8 @@
                     [attr.data-testid]="testIds.buttons.pauseScan">
           </p-button>
           <p-button type="button"
-                    icon="pi pi-refresh"
-                    styleClass="p-button-raised p-button-primary"
+                    icon="pi pi-eject"
+                    styleClass="p-button-raised p-button-info resume-button"
                     (click)="resumeLastScan()"
                     (keydown.enter)="resumeLastScan()"
                     (keydown.space)="$event.preventDefault(); resumeLastScan()"
@@ -153,7 +153,7 @@
         <td>
           <p-tag [value]="statusLabel(space.status)"
                  [severity]="statusSeverity(space.status)"
-                 [styleClass]="'status-tag ' + (spacesDashboardUtils.statusStyleClass(space.status) || '')"
+                 [class]="'status-tag ' + (spacesDashboardUtils.statusStyleClass(space.status) || '')"
                  [attr.data-testid]="testIds.spaceStatus"></p-tag>
         </td>
         <td>

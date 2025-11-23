@@ -155,7 +155,7 @@ export class SentinelleApiService {
   resumeScan(scanId: string): Observable<void> {
     return new Observable<void>((observer) => {
       const id = encodeURIComponent(String(scanId ?? ''));
-      const sub = this.http.post<void>(`/api/v1/scans/${id}/resume`, {}).subscribe({
+      const sub = this.http.post<void>(`/api/v1/stream/${id}/resume`, {}).subscribe({
         next: () => { observer.next(); observer.complete(); },
         error: (err) => { observer.error(err); }
       });

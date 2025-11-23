@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.assertj.core.api.SoftAssertions;
@@ -48,6 +49,11 @@ class RevealPiiSecretsUseCaseIT {
 
     @DynamicPropertySource
     static void registerDataSourceProps(DynamicPropertyRegistry registry) {
+        // Ensure the PostgreSQL Testcontainer is started before Spring tries to
+        // initialize the datasource. While Testcontainers can start lazily on
+        // first usage, the Spring Boot test context may attempt to connect
+        // eagerly using the injected JDBC URL, which would fail if the
+        // container is not yet running.
         postgres.start();
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
@@ -75,6 +81,11 @@ class RevealPiiSecretsUseCaseIT {
 
     @org.springframework.boot.test.context.TestConfiguration
     static class TestConfig {
+
+        @Bean
+        ObjectMapper testObjectMapper() {
+            return new ObjectMapper();
+        }
 
         @Bean
         EncryptionService testEncryptionService() {
@@ -167,6 +178,7 @@ class RevealPiiSecretsUseCaseIT {
             .eventSeq(1L)
             .spaceKey("SPACE-1")
             .eventType("item")
+            .ts(Instant.parse("2024-01-01T10:00:00Z"))
             .pageId(pageId)
             .pageTitle("Page 1")
             .payload(payload)

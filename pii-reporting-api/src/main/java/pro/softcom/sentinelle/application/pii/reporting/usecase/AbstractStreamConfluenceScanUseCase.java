@@ -351,7 +351,8 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         ContentPiiDetection contentPiiDetection = piiDetectorClient.analyzeContent(safeContent);
         long endTime = System.currentTimeMillis();
         long duration = endTime - startTime;
-        
+
+        //TODO: remove the following log before first release
         Mono.fromRunnable(() -> {
             log.info("Content: {}", safeContent);
             log.info("Time to send and received content pii scan result: {}", duration);

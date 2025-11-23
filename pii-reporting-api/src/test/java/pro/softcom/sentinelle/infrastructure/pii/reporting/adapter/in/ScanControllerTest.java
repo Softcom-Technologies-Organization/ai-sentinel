@@ -96,7 +96,7 @@ class ScanControllerTest {
             ScanResult.builder().eventType(ScanEventType.MULTI_COMPLETE.toJson()).build()
         ));
 
-        Flux<ServerSentEvent<@NonNull ScanEventDto>> flux = controller.streamAllSpacesScan()
+        Flux<ServerSentEvent<@NonNull ScanEventDto>> flux = controller.streamAllSpacesScan(null)
                 .filter(sse -> List.of(ScanEventType.ERROR.toJson(),ScanEventType.MULTI_COMPLETE.toJson()).contains(sse.event()))
                 .take(2)
                 .timeout(Duration.ofSeconds(5));
@@ -128,7 +128,7 @@ class ScanControllerTest {
         when(streamConfluenceScanUseCase.streamAllSpaces()).thenReturn(Flux.never());
 
         StepVerifier.withVirtualTime(() ->
-                controller.streamAllSpacesScan()
+                controller.streamAllSpacesScan(null)
                         .filter(sse -> ScanEventType.KEEPALIVE.toJson().equals(sse.event()))
                         .take(1)
         )

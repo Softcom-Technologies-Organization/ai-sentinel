@@ -112,6 +112,13 @@
   margin-left: 0.5rem;
 }
 
+/* Resume scan button: rotate eject icon 90deg clockwise
+ * We need ::ng-deep to reach into the PrimeNG p-button internal template.
+ */
+:host ::ng-deep .resume-button .p-button-icon.pi-eject {
+  transform: rotate(90deg);
+}
+
 /* Space update indicator (shows when space has been modified since last scan) */
 .space-updated-indicator {
   display: inline-block;

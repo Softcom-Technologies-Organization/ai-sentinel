@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanCheckpointEntity;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanCheckpointId;
 
@@ -66,6 +67,7 @@ public interface DetectionCheckpointRepository extends
      * @param updatedAt timestamp of checkpoint creation/update
      */
     @Modifying(clearAutomatically = true)
+    @Transactional
     @Query(value = """
         INSERT INTO scan_checkpoints (scan_id, space_key, last_processed_page_id, last_processed_attachment_name, status, progress_percentage, updated_at)
         VALUES (:scanId, :spaceKey, :pageId, :attachmentName, :status, :progressPercentage, :updatedAt)
@@ -77,10 +79,10 @@ public interface DetectionCheckpointRepository extends
             updated_at = :updatedAt
         """, nativeQuery = true)
     void upsertCheckpoint(@Param("scanId") String scanId,
-                         @Param("spaceKey") String spaceKey,
-                         @Param("pageId") String pageId,
-                         @Param("attachmentName") String attachmentName,
-                         @Param("status") String status,
-                         @Param("progressPercentage") Double progressPercentage,
-                         @Param("updatedAt") LocalDateTime updatedAt);
+                          @Param("spaceKey") String spaceKey,
+                          @Param("pageId") String pageId,
+                          @Param("attachmentName") String attachmentName,
+                          @Param("status") String status,
+                          @Param("progressPercentage") Double progressPercentage,
+                          @Param("updatedAt") LocalDateTime updatedAt);
 }

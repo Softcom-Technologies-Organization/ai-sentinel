@@ -91,7 +91,8 @@ export class ScanControlService {
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: this.translocoService.translate('confirmations.globalScan.acceptLabel'),
       rejectLabel: this.translocoService.translate('confirmations.globalScan.rejectLabel'),
-      acceptButtonStyleClass: 'p-button-primary',
+      // Use the same blue style as the Play button on the dashboard
+      acceptButtonStyleClass: 'p-button-info',
       rejectButtonStyleClass: 'p-button-secondary',
       accept: () => {
         this.executeStartAll();

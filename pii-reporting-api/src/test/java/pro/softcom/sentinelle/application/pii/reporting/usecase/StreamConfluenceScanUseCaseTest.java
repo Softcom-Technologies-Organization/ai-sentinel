@@ -134,6 +134,20 @@ class StreamConfluenceScanUseCaseTest {
                 scanTimeoutConfig,
                 scanTaskManager
         );
+
+        // Le use case délègue la gestion du flux au ScanTaskManager.
+        // Dans les tests unitaires, on souhaite observer directement le Flux construit par le use case
+        // sans complexifier inutilement le comportement du mock.
+        // On configure donc le mock pour qu'il renvoie exactement le flux passé à startScan
+        // lorsque subscribeScan est appelé avec le même identifiant.
+        Mockito.lenient().doAnswer(invocation -> {
+                    String scanId = invocation.getArgument(0);
+                    Flux<ScanResult> flux = invocation.getArgument(1);
+                    when(scanTaskManager.subscribeScan(scanId)).thenReturn(flux);
+                    return null;
+                })
+                .when(scanTaskManager)
+                .startScan(any(), any());
     }
 
     @Test

@@ -9,9 +9,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -120,8 +122,9 @@ public class ScanController {
                 .doFinally(sig -> log.info("[SSE] Connection closed for all spaces scan (signal={})", sig));
     }
 
-    // Backward-compatible entry point used by unit tests that call the controller method directly
-    public Flux<ServerSentEvent<@NonNull ScanEventDto>> streamAllSpacesScan() {
-        return streamAllSpacesScan(null);
+    @PostMapping("/{scanId}/resume")
+    public ResponseEntity<@NonNull Void> resume(@PathVariable String scanId) {
+        log.info("[RESUME] Requested resume for scan {} (no background subscription; SSE will drive)", scanId);
+        return ResponseEntity.accepted().build();
     }
 }

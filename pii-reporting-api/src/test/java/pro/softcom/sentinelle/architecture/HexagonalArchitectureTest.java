@@ -166,67 +166,67 @@ class HexagonalArchitectureTest {
     }
 
     @Test
-    @DisplayName("Adapter.in (contrôleurs) ne doivent dépendre que des ports-in, pas des implémentations")
+    @DisplayName("Adapter.in controllers must depend only on in-ports, not on implementations")
     void adapterIn_shouldDependOnlyOnInPorts_NotOnUsecaseImpl() {
         ArchRule rule = noClasses()
             .that().resideInAPackage("..infrastructure..adapter.in..")
             .should().dependOnClassesThat().resideInAnyPackage("..application..usecase..")
-            .as("Les adapters in ne doivent pas connaître les implémentations des use cases");
+            .as("Adapter.in must not know use case implementations");
 
         rule.allowEmptyShould(true).check(importedClasses);
     }
 
     @Test
-    @DisplayName("Usecases ne doivent pas dépendre de l'infrastructure")
+    @DisplayName("Use cases must not depend on infrastructure")
     void usecases_shouldNotDependOnInfrastructure() {
         ArchRule rule = noClasses()
             .that().resideInAPackage("..application..usecase..")
             .should().dependOnClassesThat().resideInAnyPackage("..infrastructure..")
-            .as("Les implémentations de use case doivent rester dans le core (sans infra)");
+            .as("Use case implementations must remain in the core (without infrastructure)");
 
         rule.allowEmptyShould(true).check(importedClasses);
     }
 
     @Test
-    @DisplayName("Ports (in/out) ne doivent pas dépendre de Spring ou de l'infrastructure")
+    @DisplayName("In/out ports must not depend on Spring or infrastructure")
     void ports_shouldBeFrameworkAndInfraAgnostic() {
         ArchRule rule = noClasses()
             .that().resideInAnyPackage("..application..port.in..", "..application..port.out..")
             .should().dependOnClassesThat().resideInAnyPackage("org.springframework..", "..infrastructure..")
-            .as("Les ports doivent être agnostiques (pas de Spring/Infra)");
+            .as("Ports must be agnostic (no Spring/Infrastructure)");
 
         rule.allowEmptyShould(true).check(importedClasses);
     }
 
     @Test
-    @DisplayName("Out-ports ne doivent pas être implémentés dans l'application")
+    @DisplayName("Out-ports must not be implemented in the application")
     void outPorts_shouldNotBeImplementedInApplication() {
         List<Class<?>> outPorts = findPortInterfaces(".port.out.");
         for (Class<?> port : outPorts) {
             noClasses()
                 .that().resideInAPackage("..application..")
                 .should().implement(port)
-                .as("Les out-ports ne doivent pas être implémentés dans l'application: " + port.getSimpleName())
+                .as("Out-ports must not be implemented in the application: " + port.getSimpleName())
                 .allowEmptyShould(true)
                 .check(importedClasses);
         }
     }
 
     @Test
-    @DisplayName("Les controllers d'Adapter.in doivent dépendre des ports-in (API application)")
+    @DisplayName("Adapter.in controllers must depend on in-ports (application API)")
     void controllersInAdapterIn_shouldDependOnInPorts() {
         ArchRule rule = classes()
             .that().resideInAPackage("..infrastructure..adapter.in..")
             .and().areAnnotatedWith(RestController.class)
             .or().haveSimpleNameEndingWith("Controller")
             .should().dependOnClassesThat().resideInAPackage("..application..port.in..")
-            .as("Seuls les points d'entrée (controllers) doivent s'appuyer sur les ports-in");
+            .as("Only entry points (controllers) must rely on in-ports");
 
         rule.allowEmptyShould(true).check(importedClasses);
     }
 
     @Test
-    @DisplayName("Ports-in ne doivent avoir de dépendants que côté usecase, adapter.in ou config infra")
+    @DisplayName("In-ports must only have dependents in use cases, adapter.in or infrastructure config")
     void inPorts_shouldOnlyHaveDependentsInUsecaseOrAdapterInOrInfraConfig() {
         ArchRule rule = classes()
             .that().areInterfaces()
@@ -237,7 +237,7 @@ class HexagonalArchitectureTest {
                 "..infrastructure..adapter.in..",
                 "..infrastructure..config.."
             )
-            .as("Les ports-in ne doivent être référencés que par les use cases, les adapters d'entrée, ou la config infra");
+            .as("In-ports must only be referenced by use cases, input adapters, or infrastructure config");
 
         rule.allowEmptyShould(true).check(importedClasses);
     }

@@ -43,6 +43,7 @@ public class PauseScanUseCase implements PauseScanPort {
                     .lastProcessedPageId(checkpoint.lastProcessedPageId())
                     .lastProcessedAttachmentName(checkpoint.lastProcessedAttachmentName())
                     .scanStatus(ScanStatus.PAUSED)
+                    .progressPercentage(checkpoint.progressPercentage())
                     .build();
                 
                 scanCheckpointRepository.save(pausedCheckpoint);

@@ -45,6 +45,8 @@ public interface DetectionCheckpointRepository extends
      *   <li><strong>last_processed_attachment_name:</strong> Updated only if new value is non-null and non-empty,
      *       otherwise preserves existing value to maintain attachment processing state</li>
      *   <li><strong>status:</strong> Always updated to reflect current scan state</li>
+     *   <li><strong>progress_percentage:</strong> Updated only when a non-null value is provided,
+     *       otherwise preserves the existing non-null value to avoid regression of progress</li>
      *   <li><strong>updated_at:</strong> Always updated to track last checkpoint modification</li>
      * </ul>
      * 
@@ -71,7 +73,7 @@ public interface DetectionCheckpointRepository extends
         SET last_processed_page_id = CASE WHEN :pageId IS NOT NULL AND :pageId != '' THEN :pageId ELSE scan_checkpoints.last_processed_page_id END,
             last_processed_attachment_name = CASE WHEN :attachmentName IS NOT NULL AND :attachmentName != '' THEN :attachmentName ELSE scan_checkpoints.last_processed_attachment_name END,
             status = :status,
-            progress_percentage = :progressPercentage,
+            progress_percentage = CASE WHEN :progressPercentage IS NOT NULL THEN :progressPercentage ELSE scan_checkpoints.progress_percentage END,
             updated_at = :updatedAt
         """, nativeQuery = true)
     void upsertCheckpoint(@Param("scanId") String scanId,

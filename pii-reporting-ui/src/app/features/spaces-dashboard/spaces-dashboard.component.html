@@ -153,7 +153,7 @@
         <td>
           <p-tag [value]="statusLabel(space.status)"
                  [severity]="statusSeverity(space.status)"
-                 [styleClass]="spacesDashboardUtils.statusStyleClass(space.status)"
+                 [styleClass]="'status-tag ' + (spacesDashboardUtils.statusStyleClass(space.status) || '')"
                  [attr.data-testid]="testIds.spaceStatus"></p-tag>
         </td>
         <td>

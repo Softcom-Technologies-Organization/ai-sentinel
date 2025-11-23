@@ -124,6 +124,15 @@
   cursor: help;
 }
 
+/* Ensure all status tags in the table have the same visual width */
+.status-tag.p-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 7.5rem;
+  box-sizing: border-box;
+}
+
 /* Status badge customization: running ("En cours") in blue tone */
 .status-running.p-tag {
   background-color: #2196F3A8; /* light blue, similar tone intensity to existing green */

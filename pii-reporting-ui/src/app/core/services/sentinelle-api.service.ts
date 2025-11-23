@@ -250,19 +250,6 @@ export class SentinelleApiService {
   }
 
   /**
-   * Replace [TOKEN] style markup with chip spans; used only for visual amenity.
-   * Returned string should be considered unsafe; bind via DomSanitizer in components.
-   */
-  sanitizeMaskedHtml(raw?: string): string | undefined {
-    if (!raw) return undefined;
-    try {
-      return raw.replaceAll(/\[([A-Z_]+)]/g, (_m: string, g1: string) => `<span class="chip">[${g1}]</span>`);
-    } catch {
-      return raw;
-    }
-  }
-
-  /**
    * Check if revealing PII secrets is allowed by backend configuration.
    */
   getRevealConfig(): Observable<boolean> {

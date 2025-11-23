@@ -4,25 +4,24 @@ import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
 import reactor.core.publisher.Flux;
 
 /**
- * Port de sortie pour gérer les tâches de scan de manière découplée du SSE.
+ * Output port for managing scan tasks decoupled from SSE connections.
  * 
- * <p>Ce port permet de démarrer des scans qui continuent à s'exécuter indépendamment
- * des connexions SSE. Les scans sont identifiés par un ID unique et peuvent avoir
- * plusieurs souscripteurs simultanés.</p>
+ * <p>This port enables scans to continue executing independently of SSE connections.
+ * Scans are identified by a unique ID and can have multiple simultaneous subscribers.</p>
  * 
- * <p><strong>Responsabilités:</strong></p>
+ * <p><strong>Responsibilities:</strong></p>
  * <ul>
- *   <li>Démarrer un nouveau scan et retourner son identifiant</li>
- *   <li>Permettre la souscription à un scan existant via son ID</li>
- *   <li>Mettre en pause/arrêter un scan actif</li>
- *   <li>Gérer le cycle de vie des scans (cleanup automatique)</li>
+ *   <li>Start a new scan and return its identifier</li>
+ *   <li>Allow subscription to an existing scan via its ID</li>
+ *   <li>Pause/stop an active scan</li>
+ *   <li>Manage scan lifecycle (automatic cleanup after 1 hour TTL)</li>
  * </ul>
  * 
- * <p><strong>Garanties:</strong></p>
+ * <p><strong>Guarantees:</strong></p>
  * <ul>
- *   <li>Un scan continue même si tous les souscripteurs SSE se déconnectent</li>
- *   <li>Les nouveaux souscripteurs peuvent recevoir les événements passés (replay buffer)</li>
- *   <li>Thread-safe pour accès concurrents</li>
+ *   <li>A scan continues even if all SSE subscribers disconnect</li>
+ *   <li>New subscribers can receive past events (replay buffer of 1000 events)</li>
+ *   <li>Thread-safe for concurrent access</li>
  * </ul>
  * 
  * @since 1.0
@@ -30,43 +29,44 @@ import reactor.core.publisher.Flux;
 public interface ScanTaskManager {
     
     /**
-     * Démarre un nouveau scan indépendant avec le flux de données fourni.
+     * Starts a new independent scan with the provided data stream.
      *
-     * <p>Le scan s'exécute de manière autonome, découplé des connexions SSE.
-     * Même si tous les clients SSE se déconnectent, le scan continue.</p>
+     * <p>The scan executes autonomously, decoupled from SSE connections.
+     * Even if all SSE clients disconnect, the scan continues.</p>
      *
-     * <p>Le flux de scan fourni est souscrit de manière indépendante et ses événements
-     * sont publiés via un Sink interne. Cela permet de découpler complètement l'exécution du scan
-     * des souscripteurs SSE.</p>
+     * <p>The provided scan stream is subscribed independently and its events
+     * are published via an internal Sink with a replay buffer. This completely
+     * decouples scan execution from SSE subscribers.</p>
      *
-     * @param scanDataStream le flux réactif de résultats de scan à gérer (non null)
-     * @throws IllegalArgumentException si scanDataStream est null
-     * @throws IllegalStateException    si le scan ne peut pas être démarré
+     * @param scanId the unique identifier for this scan (non-null)
+     * @param scanDataStream the reactive stream of scan results to manage (non-null)
+     * @throws IllegalArgumentException if scanId or scanDataStream is null
      */
     void startScan(String scanId, Flux<ScanResult> scanDataStream);
     
     /**
-     * S'abonne à un scan existant pour recevoir ses événements.
+     * Subscribes to an existing scan to receive its events.
      * 
-     * <p>Permet à plusieurs clients de s'abonner au même scan simultanément.
-     * Les événements passés peuvent être rejoués grâce au replay buffer.</p>
+     * <p>Allows multiple clients to subscribe to the same scan simultaneously.
+     * Past events can be replayed thanks to the replay buffer (up to 1000 events).</p>
      * 
-     * @param scanId l'identifiant du scan (non null)
-     * @return un Flux d'événements du scan
-     * @throws IllegalArgumentException si scanId est null
-     * @throws java.util.NoSuchElementException si le scan n'existe pas ou est terminé
+     * @param scanId the scan identifier (non-null)
+     * @return a Flux of scan events
+     * @throws IllegalArgumentException if scanId is null
+     * @throws pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.out.ScanTaskManagerAdapter.ScanNotFoundException 
+     *         if the scan does not exist or has been cleaned up
      */
     Flux<ScanResult> subscribeScan(String scanId);
     
     /**
-     * Met en pause un scan actif.
+     * Pauses an active scan.
      * 
-     * <p>Arrête l'exécution du scan en disposant sa souscription réactive.
-     * Cette opération est définitive - le scan ne peut pas être repris.</p>
+     * <p>Stops the scan execution by disposing its reactive subscription.
+     * This operation is definitive - the scan cannot be resumed.</p>
      * 
-     * @param scanId l'identifiant du scan à mettre en pause (non null)
-     * @return true si le scan a été mis en pause, false si le scan n'existe pas ou est déjà terminé
-     * @throws IllegalArgumentException si scanId est null
+     * @param scanId the identifier of the scan to pause (non-null)
+     * @return true if the scan was paused, false if the scan does not exist or is already completed
+     * @throws IllegalArgumentException if scanId is null
      */
     boolean pauseScan(String scanId);
 }

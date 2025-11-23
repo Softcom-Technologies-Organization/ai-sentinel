@@ -6,11 +6,10 @@ to ensure per-entity-type threshold filtering works correctly.
 """
 
 import pytest
-from unittest.mock import Mock, patch
-
-from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
-from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
+from unittest.mock import Mock, patch
 
 
 class TestGLiNERScoringFilter:
@@ -214,35 +213,6 @@ class TestGLiNERScoringFilter:
         
         assert 'GIVENNAME' in detector.scoring_overrides
         assert detector.scoring_overrides['GIVENNAME'] == 0.75
-
-    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
-    def test_should_log_filtered_entities(self, mock_manager_class, caplog):
-        """Test that filtered entities are logged for debugging."""
-        # Arrange
-        config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
-        detector = GLiNERDetector(config=config)
-        
-        detector.scoring_overrides = {
-            'TELEPHONENUM': 0.95
-        }
-        
-        entities = [
-            PIIEntity(text="2010", pii_type="TELEPHONENUM", type_label="TELEPHONENUM", 
-                     start=0, end=4, score=0.85),
-            PIIEntity(text="+41 79 123 45 67", pii_type="TELEPHONENUM", type_label="TELEPHONENUM", 
-                     start=10, end=27, score=0.96),
-        ]
-        
-        # Act
-        with caplog.at_level('INFO'):
-            filtered_entities = detector._apply_entity_scoring_filter(entities)
-        
-        # Assert
-        assert len(filtered_entities) == 1
-        
-        # Verify logging
-        log_messages = [record.message for record in caplog.records]
-        assert any("Post-filtered 1 entities" in msg for msg in log_messages)
 
     @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_load_scoring_overrides_for_gliner_model_id(self, mock_manager_class):

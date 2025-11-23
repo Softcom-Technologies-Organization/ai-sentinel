@@ -20,30 +20,26 @@ public record ConfluenceConfig(
     @ConstructorBinding
     public ConfluenceConfig {
 
-        log.info("Confluence configuration initialized - baseUrl: {}, username: {}, apiToken: [MASKED]",
-                 baseUrl, username);
-
         if (baseUrl == null || baseUrl.isBlank()) {
             throw new IllegalArgumentException(
                 "Invalid Confluence configuration: 'confluence.base-url' (CONFLUENCE_BASE_URL) is required. " +
-                "Current value: '" + baseUrl + "'. " +
-                "Check your .env file or environment variables."
+                "Check your environment variables or Infisical secrets."
             );
         }
         if (username == null || username.isBlank()) {
             throw new IllegalArgumentException(
                 "Invalid Confluence configuration: 'confluence.username' (CONFLUENCE_USERNAME) is required. " +
-                "Current value: '" + username + "'. " +
-                "Check your .env file or environment variables."
+                "Check your environment variables or Infisical secrets."
             );
         }
         if (apiToken == null || apiToken.isBlank()) {
             throw new IllegalArgumentException(
                 "Invalid Confluence configuration: 'confluence.api-token' (CONFLUENCE_API_TOKEN) is required. " +
-                "Current value: [MASKED FOR SECURITY]. " +
-                "Check your .env file or environment variables."
+                "Check your environment variables or Infisical secrets."
             );
         }
+
+        log.info("Confluence configuration initialized");
     }
 
     @Override

@@ -64,6 +64,9 @@ public class ScanTaskManagerAdapter implements ScanTaskManager {
 
     @Override
     public void startScan(String scanId, Flux<ScanResult> scanDataStream) {
+        if (scanId == null) {
+            throw new IllegalArgumentException("scanId cannot be null");
+        }
         if (scanDataStream == null) {
             throw new IllegalArgumentException("scanDataStream cannot be null");
         }
@@ -122,7 +125,7 @@ public class ScanTaskManagerAdapter implements ScanTaskManager {
         
         // Return a Flux from the sink — provides replay buffer for late subscribers
         return scan.sink().asFlux()
-                .doOnSubscribe(sub -> log.debug("[ScanTaskManager] New subscriber for scanId={}", scanId))
+                .doOnSubscribe(_ -> log.debug("[ScanTaskManager] New subscriber for scanId={}", scanId))
                 .doOnCancel(() -> log.debug("[ScanTaskManager] Subscriber cancelled for scanId={} " +
                         "(scan continues independently)", scanId));
     }
@@ -148,25 +151,6 @@ public class ScanTaskManagerAdapter implements ScanTaskManager {
         return true;
     }
 
-    /**
-     * Checks whether a scan exists and is still active.
-     *
-     * @param scanId Scan identifier
-     * @return true if the scan exists and has not completed
-     */
-    public boolean isActive(String scanId) {
-        ManagedScan scan = managedScans.get(scanId);
-        return scan != null && !scan.isCompleted().get();
-    }
-
-    /**
-     * Returns the number of currently managed scans (active + completed not yet cleaned up).
-     *
-     * @return number of active scans
-     */
-    public int getActiveScanCount() {
-        return managedScans.size();
-    }
 
     /**
      * Marks a scan as completed (atomically).

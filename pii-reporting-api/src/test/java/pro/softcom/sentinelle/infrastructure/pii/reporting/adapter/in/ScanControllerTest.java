@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.codec.ServerSentEvent;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanPort;
 import pro.softcom.sentinelle.application.pii.reporting.usecase.StreamConfluenceScanUseCase;
 import pro.softcom.sentinelle.domain.pii.reporting.ScanResult;
@@ -37,7 +38,7 @@ class ScanControllerTest {
     void setUp() {
         streamConfluenceScanUseCase = mock(StreamConfluenceScanUseCase.class);
         controller = new ScanController(streamConfluenceScanUseCase, mock(
-            StreamConfluenceResumeScanPort.class), new ScanResultToScanEventMapper());
+            StreamConfluenceResumeScanPort.class), mock(PauseScanPort.class), new ScanResultToScanEventMapper());
     }
 
     @Test

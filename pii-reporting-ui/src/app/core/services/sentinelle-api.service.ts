@@ -167,7 +167,7 @@ export class SentinelleApiService {
   pauseScan(scanId: string): Observable<void> {
     return new Observable<void>((observer) => {
       const id = encodeURIComponent(String(scanId ?? ''));
-      const sub = this.http.post<void>(`/api/v1/scans/${id}/pause`, {}).subscribe({
+      const sub = this.http.post<void>(`/api/v1/stream/${id}/pause`, {}).subscribe({
         next: () => { observer.next(); observer.complete(); },
         error: (err) => { observer.error(err); }
       });

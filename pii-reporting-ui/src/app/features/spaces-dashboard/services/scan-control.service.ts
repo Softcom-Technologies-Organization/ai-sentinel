@@ -331,15 +331,18 @@ export class ScanControlService {
    * Detection logic:
    * 1. Verify lastScanMeta exists with valid scanId
    * 2. Check if any space has RUNNING status in lastSpaceStatuses
-   * 3. If both conditions met: reconnect to SSE stream with scanId
+   * 3. Ensure no space has PAUSED status (user explicitly paused scan)
+   * 4. If conditions met: reconnect to SSE stream with scanId
    *
    * Flow:
    * 1. Early return if already streaming (avoid double connection)
    * 2. Get lastScanMeta and lastSpaceStatuses from dataManagement
-   * 3. Detect RUNNING spaces in statuses
-   * 4. If detected: log reconnection attempt and open SSE stream
+   * 3. Detect RUNNING spaces and check for PAUSED status
+   * 4. If scan is running AND not paused: log reconnection attempt and open SSE stream
    * 5. Subscribe to SSE events (delegated to sseEventHandler)
    * 6. Reload statuses to backfill gap during disconnection
+   *
+   * Business Rule: Only reconnect if scan is actively RUNNING, not if user explicitly PAUSED it.
    */
   checkAndReconnectToRunningScan(): void {
     // Avoid double connection if already streaming
@@ -355,9 +358,12 @@ export class ScanControlService {
       return;
     }
 
-    // Check if any space is RUNNING (indicates active scan on backend)
+    // Only reconnect if at least one space is RUNNING
+    // AND no space is PAUSED (user explicitly paused the scan)
     const hasRunningScan = statuses.some(s => s.status === 'RUNNING');
-    if (!hasRunningScan) {
+    const hasPausedScan = statuses.some(s => s.status === 'PAUSED');
+
+    if (!hasRunningScan || hasPausedScan) {
       return;
     }
 

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import pro.softcom.sentinelle.application.pii.reporting.port.in.PauseScanPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceResumeScanPort;
 import pro.softcom.sentinelle.application.pii.reporting.port.in.StreamConfluenceScanPort;
 import pro.softcom.sentinelle.infrastructure.pii.reporting.adapter.in.dto.ScanEventDto;
@@ -38,6 +39,7 @@ public class ScanController {
 
     private final StreamConfluenceScanPort streamConfluenceScanPort;
     private final StreamConfluenceResumeScanPort streamConfluenceResumeScanPort;
+    private final PauseScanPort pauseScanPort;
     private final ScanResultToScanEventMapper scanResultToScanEventMapper;
 
     @GetMapping(value = "/confluence/space/{spaceKey}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -125,6 +127,13 @@ public class ScanController {
     @PostMapping("/{scanId}/resume")
     public ResponseEntity<@NonNull Void> resume(@PathVariable String scanId) {
         log.info("[RESUME] Requested resume for scan {} (no background subscription; SSE will drive)", scanId);
+        return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/{scanId}/pause")
+    public ResponseEntity<@NonNull Void> pause(@PathVariable String scanId) {
+        log.info("[PAUSE] Requested pause for scan {}", scanId);
+        pauseScanPort.pauseScan(scanId);
         return ResponseEntity.accepted().build();
     }
 }

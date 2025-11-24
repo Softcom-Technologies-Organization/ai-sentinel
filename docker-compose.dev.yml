@@ -103,7 +103,7 @@ services:
       CONFLUENCE_CACHE_REFRESH_INTERVAL: ${CONFLUENCE_CACHE_REFRESH_INTERVAL:-300000}
       CONFLUENCE_CACHE_INITIAL_DELAY: ${CONFLUENCE_CACHE_INITIAL_DELAY:-5000}
       CONFLUENCE_POLLING_INTERVAL: ${CONFLUENCE_POLLING_INTERVAL:-60000}
-      SENTINELLE_ENCRYPTION_KEY: ${SENTINELLE_ENCRYPTION_KEY}
+      PII_DB_ENCRYPTION_KEY: ${PII_DB_ENCRYPTION_KEY}
     secrets:
       - infisical_dev_client_id
       - infisical_dev_client_secret
@@ -116,7 +116,7 @@ services:
       infisical:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/sentinelle/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ai-sentinel/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 5

@@ -172,7 +172,7 @@ docker compose -f docker-compose.dev.yml logs -f
 **4. Access Services**
 
 - Frontend (UI): http://localhost:4200
-- Backend API: http://localhost:8080/sentinelle
+- Backend API: http://localhost:8080/ai-sentinel
 - PII Detector: gRPC on localhost:50051
 - Database: PostgreSQL on localhost:5432
 

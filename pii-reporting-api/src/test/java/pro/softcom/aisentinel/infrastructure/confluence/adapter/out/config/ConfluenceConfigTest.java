@@ -1,0 +1,260 @@
+package pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfig.ApiPaths;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfig.CacheSettings;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfig.ConnectionSettings;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfig.PaginationSettings;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfig.PollingSettings;
+
+@DisplayName("DefaultConfluenceConnectionConfig - Tests de validation et fonctionnalités")
+class ConfluenceConfigTest {
+
+    @Test
+    @DisplayName("Should_CreateValidConfig_When_AllParametersValid")
+    void shouldCreateValidConfigWhenAllParametersValid() {
+        // Arrange & Act
+        ConfluenceConfig config = new ConfluenceConfig(
+            "https://confluence.example.com",
+            "testuser",
+            "testtoken",
+            new ConfluenceConfig.ConnectionSettings(30000, 60000, 3, false, null),
+            new ConfluenceConfig.PaginationSettings(50, 100),
+            new ConfluenceConfig.ApiPaths(
+                "/content/",
+                "/content/search",
+                "/space",
+                "/child/attachment",
+                "body.storage,version,metadata,ancestors",
+                "permissions,metadata"
+            ),
+            new ConfluenceConfig.CacheSettings(300000, 5000),
+            new ConfluenceConfig.PollingSettings(60000)
+        );
+
+        // Assert
+        assertThat(config).isNotNull();
+        assertThat(config.isValid()).isTrue();
+        assertThat(config.baseUrl()).isEqualTo("https://confluence.example.com");
+        assertThat(config.username()).isEqualTo("testuser");
+        assertThat(config.apiToken()).isEqualTo("testtoken");
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("provideInvalidConfigurationParameters")
+    @DisplayName("Should_ThrowException_When_InvalidParameter")
+    void shouldThrowExceptionWhenInvalidParameter(
+        String testDescription,
+        String baseUrl,
+        String username,
+        String apiToken
+    ) {
+        // Arrange
+        ConnectionSettings connectionSettings = new ConnectionSettings(30000, 60000, 3, false, null);
+        PaginationSettings paginationSettings = new PaginationSettings(50, 100);
+        ApiPaths permissions = new ApiPaths(
+            "/content/", "/content/search", "/space", "/child/attachment",
+            "body.storage,version", "permissions"
+        );
+        CacheSettings cache = new CacheSettings(300000, 5000);
+        PollingSettings polling = new PollingSettings(60000);
+
+        // Act & Assert
+        assertThatThrownBy(() -> new ConfluenceConfig(
+            baseUrl,
+            username,
+            apiToken,
+            connectionSettings,
+            paginationSettings,
+            permissions,
+            cache,
+            polling
+        )).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    private static Stream<Arguments> provideInvalidConfigurationParameters() {
+        return Stream.of(
+            Arguments.of("BaseUrl is null", null, "testuser", "token-123"),
+            Arguments.of("BaseUrl is blank", "   ", "testuser", "token-123"),
+            Arguments.of("Username is null", "https://confluence.example.com", null, "token-123"),
+            Arguments.of("ApiToken is null", "https://confluence.example.com", "testuser", null)
+        );
+    }
+
+    @Test
+    @DisplayName("Should_ApplyDefaults_When_ConnectionSettingsInvalid")
+    void shouldApplyDefaultsWhenConnectionSettingsInvalid() {
+        // Arrange & Act
+        var connectionSettings = new ConfluenceConfig.ConnectionSettings(
+            -1,    // Invalid connectTimeout
+            -1,    // Invalid readTimeout
+            -1,    // Invalid maxRetries
+            false,
+            null
+        );
+
+        // Assert - defaults should be applied
+        assertThat(connectionSettings.connectTimeout()).isEqualTo(30000);
+        assertThat(connectionSettings.readTimeout()).isEqualTo(60000);
+        assertThat(connectionSettings.maxRetries()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("Should_ApplyDefaults_When_PaginationSettingsInvalid")
+    void shouldApplyDefaultsWhenPaginationSettingsInvalid() {
+        // Arrange & Act
+        var paginationSettings = new ConfluenceConfig.PaginationSettings(
+            -1,  // Invalid pagesLimit
+            -1   // Invalid maxPages
+        );
+
+        // Assert - defaults should be applied
+        assertThat(paginationSettings.pagesLimit()).isEqualTo(50);
+        assertThat(paginationSettings.maxPages()).isEqualTo(100);
+    }
+
+    @Test
+    @DisplayName("Should_ReturnCorrectRestApiUrl_When_BaseUrlEndsWithSlash")
+    void shouldReturnCorrectRestApiUrlWhenBaseUrlEndsWithSlash() {
+        // Arrange
+        ConfluenceConfig config = new ConfluenceConfig(
+            "https://confluence.example.com/",
+            "testuser",
+            "testtoken",
+            new ConfluenceConfig.ConnectionSettings(30000, 60000, 3, false, null),
+            new ConfluenceConfig.PaginationSettings(50, 100),
+            new ConfluenceConfig.ApiPaths(
+                "/content/", "/content/search", "/space", "/child/attachment",
+                "body.storage,version", "permissions"
+            ),
+            new ConfluenceConfig.CacheSettings(300000, 5000),
+            new ConfluenceConfig.PollingSettings(60000)
+        );
+
+        // Act & Assert
+        assertThat(config.getRestApiUrl()).isEqualTo("https://confluence.example.com/rest/api");
+    }
+
+    @Test
+    @DisplayName("Should_ReturnCorrectRestApiUrl_When_BaseUrlDoesNotEndWithSlash")
+    void shouldReturnCorrectRestApiUrlWhenBaseUrlDoesNotEndWithSlash() {
+        // Arrange
+        ConfluenceConfig config = new ConfluenceConfig(
+            "https://confluence.example.com",
+            "testuser",
+            "testtoken",
+            new ConfluenceConfig.ConnectionSettings(30000, 60000, 3, false, null),
+            new ConfluenceConfig.PaginationSettings(50, 100),
+            new ConfluenceConfig.ApiPaths(
+                "/content/", "/content/search", "/space", "/child/attachment",
+                "body.storage,version", "permissions"
+            ),
+            new ConfluenceConfig.CacheSettings(300000, 5000),
+            new ConfluenceConfig.PollingSettings(60000)
+        );
+
+        // Act & Assert
+        assertThat(config.getRestApiUrl()).isEqualTo("https://confluence.example.com/rest/api");
+    }
+
+    @Test
+    @DisplayName("Should_DelegateCorrectly_When_AccessingScalarProperties")
+    void shouldDelegateCorrectlyWhenAccessingScalarProperties() {
+        // Arrange
+        var proxySettings = new ConfluenceConfig.ProxySettings(
+            "proxy.example.com",
+            8080,
+            "proxyuser",
+            "proxypass"
+        );
+
+        var connectionSettings = new ConfluenceConfig.ConnectionSettings(
+            15000,
+            30000,
+            5,
+            true,
+            proxySettings
+        );
+
+        var paginationSettings = new ConfluenceConfig.PaginationSettings(25, 50);
+
+        var apiPaths = new ConfluenceConfig.ApiPaths(
+            "/api/content/",
+            "/api/content/search",
+            "/api/space",
+            "/api/child/attachment",
+            "body.storage,version",
+            "permissions"
+        );
+
+        ConfluenceConfig config = new ConfluenceConfig(
+            "https://confluence.example.com",
+            "testuser",
+            "testtoken",
+            connectionSettings,
+            paginationSettings,
+            apiPaths,
+            new ConfluenceConfig.CacheSettings(300000, 5000),
+            new ConfluenceConfig.PollingSettings(60000)
+        );
+
+        // Act & Assert
+        assertThat(config.connectTimeout()).isEqualTo(15000);
+        assertThat(config.readTimeout()).isEqualTo(30000);
+        assertThat(config.maxRetries()).isEqualTo(5);
+        assertThat(config.enableProxy()).isTrue();
+        assertThat(config.proxyHost()).isEqualTo("proxy.example.com");
+        assertThat(config.proxyPort()).isEqualTo(8080);
+        assertThat(config.proxyUsername()).isEqualTo("proxyuser");
+        assertThat(config.proxyPassword()).isEqualTo("proxypass");
+        assertThat(config.pagesLimit()).isEqualTo(25);
+        assertThat(config.maxPages()).isEqualTo(50);
+        assertThat(config.contentPath()).isEqualTo("/api/content/");
+        assertThat(config.searchContentPath()).isEqualTo("/api/content/search");
+        assertThat(config.spacePath()).isEqualTo("/api/space");
+        assertThat(config.attachmentChildSuffix()).isEqualTo("/api/child/attachment");
+        assertThat(config.defaultPageExpands()).isEqualTo("body.storage,version");
+        assertThat(config.defaultSpaceExpands()).isEqualTo("permissions");
+    }
+
+    @Test
+    @DisplayName("Should_ReturnNull_When_ProxySettingsIsNull")
+    void shouldReturnNullWhenProxySettingsIsNull() {
+        // Arrange
+        var connectionSettings = new ConfluenceConfig.ConnectionSettings(
+            30000,
+            60000,
+            3,
+            false,
+            null  // No proxy settings
+        );
+
+        ConfluenceConfig config = new ConfluenceConfig(
+            "https://confluence.example.com",
+            "testuser",
+            "testtoken",
+            connectionSettings,
+            new ConfluenceConfig.PaginationSettings(50, 100),
+            new ConfluenceConfig.ApiPaths(
+                "/content/", "/content/search", "/space", "/child/attachment",
+                "body.storage,version", "permissions"
+            ),
+            new ConfluenceConfig.CacheSettings(300000, 5000),
+            new ConfluenceConfig.PollingSettings(60000)
+        );
+
+        // Act & Assert
+        assertThat(config.proxyHost()).isNull();
+        assertThat(config.proxyPort()).isZero();
+        assertThat(config.proxyUsername()).isNull();
+        assertThat(config.proxyPassword()).isNull();
+    }
+}

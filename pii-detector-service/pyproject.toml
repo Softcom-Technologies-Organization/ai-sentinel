@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
 authors = [
-    {name = "Sentinelle Team", email = "team@sentinelle.com"},
+    {name = "AI-Sentinel Team", email = "team@sentinelle.com"},
 ]
 keywords = ["pii", "grpc", "microservice", "nlp", "privacy", "data-protection"]
 classifiers = [

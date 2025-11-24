@@ -1,6 +1,6 @@
 {
   "common": {
-    "appTitle": "Sentinel AI",
+    "appTitle": "AI Sentinel",
     "actions": "Actions",
     "search": "Search",
     "searchGlobally": "Search globally",
@@ -23,7 +23,7 @@
     "en": "English"
   },
   "dashboard": {
-    "title": "Sentinel AI",
+    "title": "AI Sentinel",
     "table": {
       "headers": {
         "space": "Space",

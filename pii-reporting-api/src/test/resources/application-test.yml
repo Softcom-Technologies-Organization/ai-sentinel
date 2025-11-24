@@ -5,7 +5,7 @@ spring:
     exclude:
       - com.linecorp.armeria.spring.ArmeriaAutoConfiguration
   application:
-    name: sentinelle
+    name: ai-sentinel
   datasource:
     url: jdbc:h2:mem:sentinelle;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false
     driver-class-name: org.h2.Driver
@@ -49,7 +49,7 @@ pii-detector:
 server:
   port: 0
   servlet:
-    context-path: /sentinelle
+    context-path: /ai-sentinel
 
 # Ensure Armeria internal services bind to a random port to avoid clashes during tests
 armeria:
@@ -60,5 +60,5 @@ armeria:
 logging:
   level:
     root: WARN
-    com.example.sentinelle: INFO
-    com.example.sentinelle.infrastructure.pii: INFO
+    pro.softcom.aisentinel: INFO
+    pro.softcom.aisentinel.infrastructure.pii: INFO

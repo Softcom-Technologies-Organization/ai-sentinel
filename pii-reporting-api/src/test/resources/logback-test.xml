@@ -8,7 +8,7 @@
 
     <!-- Reduce log level for controllers during tests -->
     <!-- Expected errors in tests will not be logged with stacktrace -->
-    <logger name="pro.softcom.sentinelle.infrastructure.confluence.adapter.in" level="WARN"/>
+    <logger name="pro.softcom.aisentinel.infrastructure.confluence.adapter.in" level="WARN"/>
 
     <!-- Default configuration for other packages -->
     <root level="INFO">

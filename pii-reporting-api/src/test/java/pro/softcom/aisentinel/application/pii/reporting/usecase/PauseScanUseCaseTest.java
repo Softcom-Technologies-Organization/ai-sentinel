@@ -1,0 +1,218 @@
+package pro.softcom.aisentinel.application.pii.reporting.usecase;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import pro.softcom.aisentinel.AiSentinelApplication;
+import pro.softcom.aisentinel.application.pii.reporting.port.in.PauseScanPort;
+import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
+import pro.softcom.aisentinel.domain.pii.ScanStatus;
+import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.DetectionCheckpointRepository;
+import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanCheckpointEntity;
+
+@Testcontainers
+@SpringBootTest(classes = AiSentinelApplication.class,
+                webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@ActiveProfiles("test")
+class PauseScanUseCaseTest {
+
+    @Container
+    static final PostgreSQLContainer<?> postgres =
+        new PostgreSQLContainer<>("postgres:17-alpine");
+
+    @DynamicPropertySource
+    static void registerDataSourceProps(DynamicPropertyRegistry registry) {
+        postgres.start();
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+        registry.add("spring.jpa.show-sql", () -> "false");
+        registry.add("spring.jpa.properties.hibernate.dialect",
+                     () -> "org.hibernate.dialect.PostgreSQLDialect");
+    }
+
+    @Autowired
+    private PauseScanPort pauseScanUseCase;
+
+    @Autowired
+    private DetectionCheckpointRepository checkpointRepository;
+
+    @Autowired
+    private ScanCheckpointRepository scanCheckpointRepository;
+
+
+    @BeforeEach
+    void cleanDatabase() {
+        checkpointRepository.deleteAll();
+    }
+
+    @Test
+    void Should_PauseNonTerminalCheckpoints_When_ScanHasMixedStatuses() {
+        // Arrange
+        var scanId = "scan-100";
+        var now = LocalDateTime.of(2024, 1, 1, 12, 0);
+
+        // running checkpoint should be paused
+        checkpointRepository.save(ScanCheckpointEntity.builder()
+                                      .scanId(scanId)
+                                      .spaceKey("SPACE-RUNNING")
+                                      .lastProcessedPageId("p1")
+                                      .lastProcessedAttachmentName("a1")
+                                      .status(ScanStatus.RUNNING.name())
+                                      .progressPercentage(10.0)
+                                      .updatedAt(now)
+                                      .build());
+
+        // completed checkpoint should stay completed
+        checkpointRepository.save(ScanCheckpointEntity.builder()
+                                      .scanId(scanId)
+                                      .spaceKey("SPACE-COMPLETED")
+                                      .lastProcessedPageId("p2")
+                                      .lastProcessedAttachmentName("a2")
+                                      .status(ScanStatus.COMPLETED.name())
+                                      .progressPercentage(100.0)
+                                      .updatedAt(now)
+                                      .build());
+
+        // failed checkpoint should stay failed
+        checkpointRepository.save(ScanCheckpointEntity.builder()
+                                      .scanId(scanId)
+                                      .spaceKey("SPACE-FAILED")
+                                      .lastProcessedPageId("p3")
+                                      .lastProcessedAttachmentName("a3")
+                                      .status(ScanStatus.FAILED.name())
+                                      .progressPercentage(50.0)
+                                      .updatedAt(now)
+                                      .build());
+
+        // Act
+        pauseScanUseCase.pauseScan(scanId);
+
+        // Assert
+        List<ScanCheckpointEntity> all =
+            checkpointRepository.findByScanIdOrderBySpaceKey(scanId);
+
+        assertThat(all).hasSize(3);
+
+        SoftAssertions softly = new SoftAssertions();
+
+        var running = all.stream()
+            .filter(e -> "SPACE-RUNNING".equals(e.getSpaceKey()))
+            .findFirst()
+            .orElseThrow();
+        softly.assertThat(running.getStatus()).isEqualTo(ScanStatus.PAUSED.name());
+
+        var completed = all.stream()
+            .filter(e -> "SPACE-COMPLETED".equals(e.getSpaceKey()))
+            .findFirst()
+            .orElseThrow();
+        softly.assertThat(completed.getStatus()).isEqualTo(ScanStatus.COMPLETED.name());
+
+        var failed = all.stream()
+            .filter(e -> "SPACE-FAILED".equals(e.getSpaceKey()))
+            .findFirst()
+            .orElseThrow();
+        softly.assertThat(failed.getStatus()).isEqualTo(ScanStatus.FAILED.name());
+
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_DoNothing_When_ScanIdBlank() {
+        // Arrange
+        var before = checkpointRepository.count();
+
+        // Act
+        pauseScanUseCase.pauseScan(" ");
+
+        // Assert
+        var after = checkpointRepository.count();
+        assertThat(after).isEqualTo(before);
+    }
+
+    @Test
+    void Should_PreserveProgressPercentage_When_PausingScan() {
+        // Arrange
+        var scanId = "scan-200";
+        var now = LocalDateTime.of(2024, 1, 2, 12, 0);
+
+        checkpointRepository.save(ScanCheckpointEntity.builder()
+                                      .scanId(scanId)
+                                      .spaceKey("SPACE-RUNNING")
+                                      .lastProcessedPageId("p1")
+                                      .lastProcessedAttachmentName("a1")
+                                      .status(ScanStatus.RUNNING.name())
+                                      .progressPercentage(37.5)
+                                      .updatedAt(now)
+                                      .build());
+
+        // Act
+        pauseScanUseCase.pauseScan(scanId);
+
+        // Assert
+        List<ScanCheckpointEntity> all =
+            checkpointRepository.findByScanIdOrderBySpaceKey(scanId);
+
+        assertThat(all).hasSize(1);
+
+        ScanCheckpointEntity paused = all.get(0);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(paused.getStatus()).isEqualTo(ScanStatus.PAUSED.name());
+        softly.assertThat(paused.getProgressPercentage()).isEqualTo(37.5);
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_NotOverwriteProgressPercentageWithNull_When_UpsertingExistingCheckpoint() {
+        // Arrange
+        var scanId = "scan-300";
+        var now = LocalDateTime.of(2024, 1, 3, 12, 0);
+
+        checkpointRepository.save(ScanCheckpointEntity.builder()
+                                      .scanId(scanId)
+                                      .spaceKey("SPACE-RUNNING")
+                                      .lastProcessedPageId("p1")
+                                      .lastProcessedAttachmentName("a1")
+                                      .status(ScanStatus.RUNNING.name())
+                                      .progressPercentage(42.0)
+                                      .updatedAt(now)
+                                      .build());
+
+        // Act: upsert with null progressPercentage should keep existing value
+        checkpointRepository.upsertCheckpoint(
+            scanId,
+            "SPACE-RUNNING",
+            "p1",
+            "a1",
+            ScanStatus.PAUSED.name(),
+            null,
+            now.plusMinutes(5)
+        );
+
+        // Assert
+        List<ScanCheckpointEntity> all =
+            checkpointRepository.findByScanIdOrderBySpaceKey(scanId);
+
+        assertThat(all).hasSize(1);
+
+        ScanCheckpointEntity checkpoint = all.get(0);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(checkpoint.getStatus()).isEqualTo(ScanStatus.PAUSED.name());
+        softly.assertThat(checkpoint.getProgressPercentage()).isEqualTo(42.0);
+        softly.assertAll();
+    }
+}

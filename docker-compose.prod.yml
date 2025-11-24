@@ -377,13 +377,13 @@ services:
             > /dev/null 2>&1 && echo "[infisical-config]   ✓ $$secret_name created" || echo "[infisical-config]   ⚠ $$secret_name may already exist";
         done;
         # Create or update PII_DATABASE_ENCRYPTION_KEY idempotently
-        PII_DB_ENCRYPTION_KEY=$$(cat /secrets/pii_database_encryption_key.txt);
+        PII_DATABASE_ENCRYPTION_KEY=$$(cat /secrets/pii_database_encryption_key.txt);
 
         # Try POST first and capture HTTP status without failing the script
         HTTP_CODE=$$(curl -s -o /dev/null -w "%{http_code}" -X POST "$${INFISICAL_URL}/api/v4/secrets/PII_DATABASE_ENCRYPTION_KEY" \
           -H "Authorization: Bearer $${ADMIN_TOKEN}" \
           -H "Content-Type: application/json" \
-          -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"$${PII_DB_ENCRYPTION_KEY}\",\"secretComment\":\"Auto-generated AES-256 encryption key for PII database (32 bytes base64-encoded)\",\"type\":\"shared\"}");
+          -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"$${PII_DATABASE_ENCRYPTION_KEY}\",\"secretComment\":\"Auto-generated AES-256 encryption key for PII database (32 bytes base64-encoded)\",\"type\":\"shared\"}");
 
         if [ "$$HTTP_CODE" = "200" ] || [ "$$HTTP_CODE" = "201" ]; then
           echo "[infisical-config]   ✓ PII_DATABASE_ENCRYPTION_KEY created";
@@ -392,7 +392,7 @@ services:
           HTTP_CODE_PUT=$$(curl -s -o /dev/null -w "%{http_code}" -X PUT "$${INFISICAL_URL}/api/v4/secrets/PII_DATABASE_ENCRYPTION_KEY" \
             -H "Authorization: Bearer $${ADMIN_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"$${PII_DB_ENCRYPTION_KEY}\",\"type\":\"shared\"}");
+            -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"$${PII_DATABASE_ENCRYPTION_KEY}\",\"type\":\"shared\"}");
           if [ "$$HTTP_CODE_PUT" = "200" ]; then
             echo "[infisical-config]   ✓ PII_DATABASE_ENCRYPTION_KEY updated";
           else
@@ -552,7 +552,7 @@ services:
       infisical:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/sentinelle/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ai-sentinel/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 5

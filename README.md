@@ -275,7 +275,7 @@ Your AI Sentinel instance is now fully configured and ready to use!
 
 Access the application at:
 - 📱 **Web Interface**: http://localhost:4200
-- 🔌 **Backend API**: http://localhost:8080/sentinelle
+- 🔌 **Backend API**: http://localhost:8080/ai-sentinel
 - 🔐 **Infisical UI**: http://localhost:8082
 
 ### Infisical Troubleshooting
@@ -514,22 +514,22 @@ docker system prune -a --volumes
 
 ### REST API Endpoints
 
-**Backend API** available at http://localhost:8080/sentinelle
+**Backend API** available at http://localhost:8080/ai-sentinel
 
 Main endpoints:
 
-- `GET /sentinelle/api/scans` - List of scans
-- `POST /sentinelle/api/scans` - Create a new scan
-- `GET /sentinelle/api/scans/{id}` - Scan details
-- `POST /sentinelle/api/scans/{id}/pause` - Pause a scan
-- `POST /sentinelle/api/scans/{id}/resume` - Resume a scan
-- `GET /sentinelle/actuator/health` - Health check
-- `GET /sentinelle/swagger-ui.html` - Swagger documentation
+- `GET /ai-sentinel/api/scans` - List of scans
+- `POST /ai-sentinel/api/scans` - Create a new scan
+- `GET /ai-sentinel/api/scans/{id}` - Scan details
+- `POST /ai-sentinel/api/scans/{id}/pause` - Pause a scan
+- `POST /ai-sentinel/api/scans/{id}/resume` - Resume a scan
+- `GET /ai-sentinel/actuator/health` - Health check
+- `GET /ai-sentinel/swagger-ui.html` - Swagger documentation
 
 **Example request:**
 ```bash
 # Create a new scan
-curl -X POST http://localhost:8080/sentinelle/api/scans \
+curl -X POST http://localhost:8080/ai-sentinel/api/scans \
   -H "Content-Type: application/json" \
   -d '{
     "spaceKey": "DS",
@@ -538,7 +538,7 @@ curl -X POST http://localhost:8080/sentinelle/api/scans \
   }'
 
 # Check API health
-curl http://localhost:8080/sentinelle/actuator/health
+curl http://localhost:8080/ai-sentinel/actuator/health
 ```
 
 ### gRPC PII Detector Service

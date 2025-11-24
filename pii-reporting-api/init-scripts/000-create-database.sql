@@ -1,4 +1,4 @@
--- Idempotent script to create the PostgreSQL database used by Sentinelle.
+-- Idempotent script to create the PostgreSQL database used by AI-Sentinel.
 -- It uses a psql meta-command (\gexec) to execute CREATE DATABASE only when it does not exist.
 -- Notes:
 -- - CREATE DATABASE cannot run inside a transaction block; this script assumes psql default autocommit.

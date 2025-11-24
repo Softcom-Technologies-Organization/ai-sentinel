@@ -1,6 +1,6 @@
 spring:
   application:
-    name: sentinelle
+    name: ai-sentinel
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:ai-sentinel}}
     username: ${DB_USERNAME:postgres}
@@ -58,8 +58,8 @@ confluence:
 # Logging Configuration
 logging:
   level:
-    com.example.sentinelle.infrastructure.confluence: DEBUG
-    com.example.sentinelle.infrastructure.pii: DEBUG
+    pro.softcom.aisentinel.infrastructure.confluence: DEBUG
+    pro.softcom.aisentinel.infrastructure.pii: DEBUG
     org.springframework.web.client: DEBUG
 
 # PII Detector Configuration
@@ -112,7 +112,7 @@ armeria:
 server:
   port: ${SERVER_PORT:8080}
   servlet:
-    context-path: /sentinelle
+    context-path: /ai-sentinel
   tomcat:
     connection-timeout: 60000  # 1 minute
     threads:

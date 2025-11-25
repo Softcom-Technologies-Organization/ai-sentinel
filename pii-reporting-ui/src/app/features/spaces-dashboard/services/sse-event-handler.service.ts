@@ -4,7 +4,6 @@ import {SentinelleApiService} from '../../../core/services/sentinelle-api.servic
 import {ScanProgressService} from '../../../core/services/scan-progress.service';
 import {ToastService} from '../../../core/services/toast.service';
 import {RawStreamPayload} from '../../../core/models/stream-event-type';
-import {PersonallyIdentifiableInformationScanResult} from '../../../core/models/personally-identifiable-information-scan-result';
 import {SpacesDashboardUtils} from '../spaces-dashboard.utils';
 import {
   coerceSpaceKey,
@@ -299,12 +298,20 @@ export class SseEventHandlerService {
     // Update severity counts in real-time only if item was actually added (not duplicate)
     if (wasAdded) {
       const currentCounts = this.spacesDashboardUtils.getSpaceCounts(spaceKey);
+
+      // Count actual number of PII entities in this event (not just 1 per event)
+      const piiList = Array.isArray(payload.detectedPersonallyIdentifiableInformationList)
+        ? payload.detectedPersonallyIdentifiableInformationList
+        : [];
+      const piiCount = piiList.length;
+
+      // Use backend-provided severity for all PII in this item, fallback to 'low'
       const severity = payload.severity?.toLowerCase();
       const newCounts = {
-        total: currentCounts.total + 1,
-        high: currentCounts.high + (severity === 'high' ? 1 : 0),
-        medium: currentCounts.medium + (severity === 'medium' ? 1 : 0),
-        low: currentCounts.low + (severity !== 'high' && severity !== 'medium' ? 1 : 0)
+        total: currentCounts.total + piiCount,
+        high: currentCounts.high + (severity === 'high' ? piiCount : 0),
+        medium: currentCounts.medium + (severity === 'medium' ? piiCount : 0),
+        low: currentCounts.low + (severity !== 'high' && severity !== 'medium' ? piiCount : 0)
       };
 
       this.spacesDashboardUtils.updateSpace(spaceKey, {

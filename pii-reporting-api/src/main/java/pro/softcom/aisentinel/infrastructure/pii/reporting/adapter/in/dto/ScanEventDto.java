@@ -22,7 +22,7 @@ public record ScanEventDto(
         Integer pageIndex,
         String pageId,
         String pageTitle,
-        List<DetectedPersonallyIdentifiableInformation> detectedEntities,
+        List<DetectedPersonallyIdentifiableInformation> detectedPersonallyIdentifiableInformationList,
         Map<String, Integer> summary,
         String message,
         String pageUrl,

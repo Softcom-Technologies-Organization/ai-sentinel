@@ -16,7 +16,7 @@ public record ScanResult(
         Integer pageIndex,
         String pageId,
         String pageTitle,
-        List<DetectedPersonallyIdentifiableInformation> detectedPIIs,
+        List<DetectedPersonallyIdentifiableInformation> detectedPersonallyIdentifiableInformationList,
         Map<String, Integer> summary,
         @JsonIgnore String sourceContent,
         String maskedContent,

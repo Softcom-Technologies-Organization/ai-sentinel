@@ -63,10 +63,10 @@ class ScanResultEncryptorTest {
 
         // Then
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(encrypted.detectedPIIs()).hasSize(2);
-        softly.assertThat(encrypted.detectedPIIs().get(0).sensitiveValue())
+        softly.assertThat(encrypted.detectedPersonallyIdentifiableInformationList()).hasSize(2);
+        softly.assertThat(encrypted.detectedPersonallyIdentifiableInformationList().get(0).sensitiveValue())
             .isEqualTo("ENC:v1:encrypted_email");
-        softly.assertThat(encrypted.detectedPIIs().get(1).sensitiveValue())
+        softly.assertThat(encrypted.detectedPersonallyIdentifiableInformationList().get(1).sensitiveValue())
             .isEqualTo("ENC:v1:encrypted_phone");
         softly.assertAll();
 
@@ -94,7 +94,7 @@ class ScanResultEncryptorTest {
         if (entities == null) {
             assertThat(result).isEqualTo(scanResult);
         } else {
-            assertThat(result.detectedPIIs()).isEmpty();
+            assertThat(result.detectedPersonallyIdentifiableInformationList()).isEmpty();
         }
         verifyNoInteractions(encryptionService);
     }
@@ -150,9 +150,9 @@ class ScanResultEncryptorTest {
 
         // Then
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(decrypted.detectedPIIs().get(0).sensitiveValue())
+        softly.assertThat(decrypted.detectedPersonallyIdentifiableInformationList().get(0).sensitiveValue())
             .isEqualTo("decrypted@email.com");
-        softly.assertThat(decrypted.detectedPIIs().get(1).sensitiveValue())
+        softly.assertThat(decrypted.detectedPersonallyIdentifiableInformationList().get(1).sensitiveValue())
             .isEqualTo("plaintext");
         softly.assertAll();
 
@@ -182,7 +182,7 @@ class ScanResultEncryptorTest {
             .scanId("scan-123")
             .spaceKey("SPACE")
             .pageId("page-456")
-            .detectedEntities(List.of(entity))
+            .detectedPersonallyIdentifiableInformationList(List.of(entity))
             .build();
 
         when(encryptionService.encrypt(anyString(), any()))
@@ -224,10 +224,10 @@ class ScanResultEncryptorTest {
 
         // Then
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(decrypted.detectedPIIs()).hasSize(2);
-        softly.assertThat(decrypted.detectedPIIs().get(0).sensitiveValue())
+        softly.assertThat(decrypted.detectedPersonallyIdentifiableInformationList()).hasSize(2);
+        softly.assertThat(decrypted.detectedPersonallyIdentifiableInformationList().get(0).sensitiveValue())
             .isEqualTo("email@test.com");
-        softly.assertThat(decrypted.detectedPIIs().get(1).sensitiveValue())
+        softly.assertThat(decrypted.detectedPersonallyIdentifiableInformationList().get(1).sensitiveValue())
             .isEqualTo("555-1234");
         softly.assertAll();
 
@@ -285,8 +285,8 @@ class ScanResultEncryptorTest {
 
         // Then
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(encrypted.detectedPIIs()).hasSize(501);
-        softly.assertThat(encrypted.detectedPIIs().getFirst().sensitiveValue())
+        softly.assertThat(encrypted.detectedPersonallyIdentifiableInformationList()).hasSize(501);
+        softly.assertThat(encrypted.detectedPersonallyIdentifiableInformationList().getFirst().sensitiveValue())
             .isEqualTo("ENC:v1:encrypted");
         softly.assertAll();
 
@@ -302,7 +302,7 @@ class ScanResultEncryptorTest {
             .scanId("scan-123")
             .spaceKey("SPACE")
             .pageId("page-456")
-            .detectedEntities(List.of(entity))
+            .detectedPersonallyIdentifiableInformationList(List.of(entity))
             .build();
 
         when(encryptionService.encrypt(anyString(), any()))
@@ -315,7 +315,7 @@ class ScanResultEncryptorTest {
         // Verify original scanResult is not modified (immutability)
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(original.scanId()).isEqualTo("scan-123");
-        softly.assertThat(original.detectedPIIs().getFirst().sensitiveValue())
+        softly.assertThat(original.detectedPersonallyIdentifiableInformationList().getFirst().sensitiveValue())
             .isEqualTo("test@example.com");
         softly.assertAll();
     }
@@ -334,7 +334,7 @@ class ScanResultEncryptorTest {
     private ScanResult createScanResult(List<DetectedPersonallyIdentifiableInformation> entities) {
         return ScanResult.builder()
             .scanId("test-scan")
-            .detectedEntities(entities)
+            .detectedPersonallyIdentifiableInformationList(entities)
             .build();
     }
 }

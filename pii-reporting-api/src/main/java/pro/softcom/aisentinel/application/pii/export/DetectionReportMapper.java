@@ -13,13 +13,13 @@ public class DetectionReportMapper {
             return List.of();
         }
 
-        return scanResult.detectedPIIs().stream()
+        return scanResult.detectedPersonallyIdentifiableInformationList().stream()
                 .map(piiEntity -> mapPiiEntityToDetectionReportEntry(piiEntity, scanResult))
                 .toList();
     }
 
     private boolean isValidResult(ScanResult result) {
-        return result != null && result.detectedPIIs() != null && !result.detectedPIIs().isEmpty();
+        return result != null && result.detectedPersonallyIdentifiableInformationList() != null && !result.detectedPersonallyIdentifiableInformationList().isEmpty();
     }
 
     private DetectionReportEntry mapPiiEntityToDetectionReportEntry(

@@ -30,7 +30,7 @@
         "status": "Statut",
         "progress": "Progression",
         "lastScan": "Dernier scan",
-        "pii": "Informations Personnelles Identifiables (IPI)",
+        "pii": "Niveau de sévérité des Informations Personnelles Identifiables (IPI)",
         "actions": "Actions"
       },
       "emptyMessage": "Aucun élément à afficher",
@@ -96,6 +96,26 @@
       "message": "<p>Êtes-vous sûr de vouloir démarrer le scan de tous les espaces Confluence ?</p>\n<p><b>Les données existantes seront écrasées.</b></p>\n<p>Cette opération peut prendre du temps.</p>",
       "acceptLabel": "Oui, démarrer",
       "rejectLabel": "Annuler"
+    }
+  },
+  "piiHelp": {
+    "buttonTooltip": "Aide sur les niveaux de sévérité",
+    "dialogTitle": "Comprendre les niveaux de sévérité des IPI",
+    "introduction": "Les badges colorés indiquent le nombre d'informations personnelles identifiables (IPI) détectées, classées par niveau de sévérité :",
+    "high": {
+      "title": "Sévérité élevée (Rouge)",
+      "description": "Données financières, identifiants d'authentification et documents gouvernementaux hautement sensibles.",
+      "types": "Mot de passe, Clé API, Jeton GitHub, Clé AWS, Jeton JWT, Numéro de carte de crédit, IBAN, Portefeuille crypto, Numéro de compte bancaire US, Numéro de sécurité sociale, SSN US, Licence médicale, Medicare australien, Aadhaar indien"
+    },
+    "medium": {
+      "title": "Sévérité moyenne (Orange)",
+      "description": "Documents officiels, numéros d'identification et informations personnelles détaillées.",
+      "types": "Numéro de permis de conduire, Numéro de carte d'identité, Numéro fiscal, Passeport US, Permis de conduire US, ITIN US, NIF espagnol, NIE espagnol, Code fiscal italien, Passeport italien, Carte d'identité italienne, Permis de conduire italien, Code TVA italien, PESEL polonais, NRIC/FIN singapourien, UEN singapourien, TFN australien, ABN australien, ACN australien, PAN indien, Immatriculation véhicule indien, Carte d'électeur indienne, Passeport indien, Code d'identité finlandais, RRN coréen, TNIN thaïlandais, Date de naissance, Âge"
+    },
+    "low": {
+      "title": "Sévérité faible (Bleu)",
+      "description": "Informations de contact, données de localisation et noms.",
+      "types": "Email, Numéro de téléphone, Prénom, Nom de famille, Nom d'utilisateur, Numéro de compte, Adresse IP, Adresse MAC, Ville, Rue, Numéro de bâtiment, Code postal"
     }
   },
   "piiItem": {

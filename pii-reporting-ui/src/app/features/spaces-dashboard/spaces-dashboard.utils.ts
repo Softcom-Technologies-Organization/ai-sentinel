@@ -132,6 +132,17 @@ export class SpacesDashboardUtils {
     return !!space?.url && space.url.length > 0;
   }
 
+  /**
+   * Get current severity counts for a space.
+   * Returns default zero counts if space not found.
+   */
+  getSpaceCounts(key: string): { total: number; high: number; medium: number; low: number } {
+    const nk = (v: string | null | undefined) => String(v ?? '').trim().toLowerCase();
+    const k = nk(key);
+    const space = this.uiSpaces().find(s => nk(s.key) === k);
+    return space?.counts ?? { total: 0, high: 0, medium: 0, low: 0 };
+  }
+
   severityCounts(arr: PersonallyIdentifiableInformationScanResult[]): { total: number; high: number; medium: number; low: number } {
     let high = 0, medium = 0, low = 0;
     for (const it of arr) {

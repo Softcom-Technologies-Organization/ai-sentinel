@@ -49,9 +49,19 @@
         <th id="col-status" [attr.data-testid]="testIds.headers.status">{{ 'dashboard.table.headers.status' | transloco }}</th>
         <th id="col-progress" [attr.data-testid]="testIds.headers.progress">{{ 'dashboard.table.headers.progress' | transloco }}</th>
         <th id="col-last-scan" [attr.data-testid]="testIds.headers.lastScan">{{ 'dashboard.table.headers.lastScan' | transloco }}</th>
-        <th id="col-pii" [attr.data-testid]="testIds.headers.pii" pSortableColumn="piiCount">
+        <th id="col-pii" class="pii-header-cell" [attr.data-testid]="testIds.headers.pii" pSortableColumn="piiCount">
           {{ 'dashboard.table.headers.pii' | transloco }}
           <p-sortIcon field="piiCount"/>
+          <p-button type="button"
+                    icon="pi pi-question-circle"
+                    [text]="true"
+                    [rounded]="true"
+                    (click)="openPiiHelpDialog(); $event.stopPropagation()"
+                    [pTooltip]="'piiHelp.buttonTooltip' | transloco"
+                    tooltipPosition="top"
+                    [ariaLabel]="'piiHelp.buttonTooltip' | transloco"
+                    styleClass="pii-help-button">
+          </p-button>
         </th>
         <th id="col-actions" [attr.data-testid]="testIds.headers.actions">{{ 'dashboard.table.headers.actions' | transloco }}</th>
       </tr>
@@ -256,4 +266,42 @@
       </tr>
     </ng-template>
   </p-table>
+
+  <!-- PII Severity Help Dialog -->
+  <p-dialog [header]="'piiHelp.dialogTitle' | transloco"
+            [(visible)]="showPiiHelpDialog"
+            [modal]="true"
+            [closable]="true"
+            [dismissableMask]="true"
+            [style]="{width: '600px'}"
+            styleClass="pii-help-dialog">
+    <p class="pii-help-intro">{{ 'piiHelp.introduction' | transloco }}</p>
+
+    <div class="pii-help-section pii-help-high">
+      <h4>
+        <p-badge severity="danger" [value]="''" styleClass="severity-badge-icon"></p-badge>
+        {{ 'piiHelp.high.title' | transloco }}
+      </h4>
+      <p class="pii-help-description">{{ 'piiHelp.high.description' | transloco }}</p>
+      <p class="pii-help-types"><strong>{{ 'piiHelp.high.types' | transloco }}</strong></p>
+    </div>
+
+    <div class="pii-help-section pii-help-medium">
+      <h4>
+        <p-badge severity="warn" [value]="''" styleClass="severity-badge-icon"></p-badge>
+        {{ 'piiHelp.medium.title' | transloco }}
+      </h4>
+      <p class="pii-help-description">{{ 'piiHelp.medium.description' | transloco }}</p>
+      <p class="pii-help-types"><strong>{{ 'piiHelp.medium.types' | transloco }}</strong></p>
+    </div>
+
+    <div class="pii-help-section pii-help-low">
+      <h4>
+        <p-badge severity="info" [value]="''" styleClass="severity-badge-icon"></p-badge>
+        {{ 'piiHelp.low.title' | transloco }}
+      </h4>
+      <p class="pii-help-description">{{ 'piiHelp.low.description' | transloco }}</p>
+      <p class="pii-help-types"><strong>{{ 'piiHelp.low.types' | transloco }}</strong></p>
+    </div>
+  </p-dialog>
 </div>

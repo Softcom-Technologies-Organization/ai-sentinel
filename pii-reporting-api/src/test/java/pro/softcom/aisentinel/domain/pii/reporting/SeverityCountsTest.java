@@ -92,8 +92,9 @@ class SeverityCountsTest {
         SeverityCounts counts3 = new SeverityCounts(5, 10, 4);
 
         // Assert
-        assertThat(counts1).isEqualTo(counts2);
-        assertThat(counts1).isNotEqualTo(counts3);
+        assertThat(counts1)
+            .isEqualTo(counts2)
+            .isNotEqualTo(counts3);
     }
 
     @Test
@@ -103,7 +104,7 @@ class SeverityCountsTest {
         SeverityCounts counts2 = new SeverityCounts(5, 10, 3);
 
         // Assert
-        assertThat(counts1.hashCode()).isEqualTo(counts2.hashCode());
+        assertThat(counts1).hasSameHashCodeAs(counts2);
     }
 
     @Test

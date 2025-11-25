@@ -15,8 +15,9 @@ class PiiSeverityTest {
         PiiSeverity[] severities = PiiSeverity.values();
 
         // Assert
-        assertThat(severities).hasSize(3);
-        assertThat(severities).containsExactlyInAnyOrder(
+        assertThat(severities)
+            .hasSize(3)
+            .containsExactlyInAnyOrder(
             PiiSeverity.HIGH,
             PiiSeverity.MEDIUM,
             PiiSeverity.LOW
@@ -53,7 +54,7 @@ class PiiSeverityTest {
     @Test
     void Should_HaveCorrectOrdinalValues() {
         // Assert - HIGH should be first (most severe)
-        assertThat(PiiSeverity.HIGH.ordinal()).isEqualTo(0);
+        assertThat(PiiSeverity.HIGH.ordinal()).isZero();
         assertThat(PiiSeverity.MEDIUM.ordinal()).isEqualTo(1);
         assertThat(PiiSeverity.LOW.ordinal()).isEqualTo(2);
     }

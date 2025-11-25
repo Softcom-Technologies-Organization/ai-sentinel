@@ -37,7 +37,7 @@ class ScanResultToScanEventMapperTest {
                 .pageIndex(3)
                 .pageId("pid")
                 .pageTitle("Title")
-                .detectedEntities(entities)
+                .detectedPersonallyIdentifiableInformationList(entities)
                 .summary(summary)
                 .sourceContent("abc")
                 .message("msg")
@@ -62,7 +62,7 @@ class ScanResultToScanEventMapperTest {
         softly.assertThat(dto.pageIndex()).isEqualTo(3);
         softly.assertThat(dto.pageId()).isEqualTo("pid");
         softly.assertThat(dto.pageTitle()).isEqualTo("Title");
-        softly.assertThat(dto.detectedEntities()).isEqualTo(entities);
+        softly.assertThat(dto.detectedPersonallyIdentifiableInformationList()).isEqualTo(entities);
         softly.assertThat(dto.summary()).isEqualTo(summary);
         softly.assertThat(dto.message()).isEqualTo("msg");
         softly.assertThat(dto.pageUrl()).isEqualTo("url");

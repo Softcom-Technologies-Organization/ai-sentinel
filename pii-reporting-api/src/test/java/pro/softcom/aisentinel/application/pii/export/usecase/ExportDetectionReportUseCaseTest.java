@@ -257,7 +257,7 @@ class ExportDetectionReportUseCaseTest {
                 .pageUrl("https://example.com/page")
                 .attachmentName("test.pdf")
                 .attachmentUrl("https://example.com/attachment")
-                .detectedEntities(List.of(
+                .detectedPersonallyIdentifiableInformationList(List.of(
                     DetectedPersonallyIdentifiableInformation.builder()
                                 .piiType("EMAIL")
                                 .piiTypeLabel("Email")

@@ -10,7 +10,7 @@ import pro.softcom.aisentinel.domain.pii.security.EncryptionMetadata;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionService;
 
 /**
- * Processor for encrypting/decrypting detectedPIIs in ScanResult.
+ * Processor for encrypting/decrypting detectedPersonallyIdentifiableInformationList in ScanResult.
  * Business intent: orchestrate PII encryption in the business flow.
  */
 @RequiredArgsConstructor
@@ -29,7 +29,7 @@ public class ScanResultEncryptor {
      * @throws EncryptionException if encryption fails for any entity
      */
     public ScanResult encrypt(ScanResult scanResult) {
-        var entities = scanResult.detectedPIIs();
+        var entities = scanResult.detectedPersonallyIdentifiableInformationList();
         if (entities == null) {
             return scanResult;
         }
@@ -37,7 +37,7 @@ public class ScanResultEncryptor {
         try {
             var encryptedEntities = encryptEntities(entities);
             return scanResult.toBuilder()
-                    .detectedEntities(encryptedEntities)
+                    .detectedPersonallyIdentifiableInformationList(encryptedEntities)
                     .build();
         } catch (EncryptionException e) {
             log.error("Failed to encrypt PII entities for scanId={}, entityCount={}",
@@ -55,7 +55,7 @@ public class ScanResultEncryptor {
      * @throws EncryptionException if decryption fails for any entity
      */
     public ScanResult decrypt(ScanResult scanResult) {
-        var entities = scanResult.detectedPIIs();
+        var entities = scanResult.detectedPersonallyIdentifiableInformationList();
         if (entities == null) {
             return scanResult;
         }
@@ -66,7 +66,7 @@ public class ScanResultEncryptor {
                     .toList();
 
             return scanResult.toBuilder()
-                    .detectedEntities(decryptedEntities)
+                    .detectedPersonallyIdentifiableInformationList(decryptedEntities)
                     .build();
         } catch (EncryptionException e) {
             log.error("Failed to decrypt PII entities for scanId={}, entityCount={}",

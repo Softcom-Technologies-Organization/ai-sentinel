@@ -92,14 +92,14 @@ class PiiContextExtractorTest {
         ScanResult scanResult = ScanResult.builder()
                 .scanId("scan-1")
                 .sourceContent("My email is john.doe@example.com and my phone")
-                .detectedEntities(List.of(entity))
+                .detectedPersonallyIdentifiableInformationList(List.of(entity))
                 .build();
 
         // When
         ScanResult result = piiContextExtractor.enrichContexts(scanResult);
 
         // Then
-        assertThat(result.detectedPIIs().getFirst().sensitiveContext())
+        assertThat(result.detectedPersonallyIdentifiableInformationList().getFirst().sensitiveContext())
                 .isEqualTo(existingContext);
     }
 
@@ -329,7 +329,7 @@ class PiiContextExtractorTest {
         ScanResult scanResult = ScanResult.builder()
                 .scanId("scan-1")
                 .sourceContent(source)
-                .detectedEntities(List.of(emailEntity, phoneEntity))
+                .detectedPersonallyIdentifiableInformationList(List.of(emailEntity, phoneEntity))
                 .build();
 
         // When: Enriching contexts via enrichContexts (not direct extract call)
@@ -337,10 +337,10 @@ class PiiContextExtractorTest {
 
         // Then: BOTH entities should have contexts with BOTH PIIs masked
         assertSoftly(softly -> {
-            softly.assertThat(result.detectedPIIs()).hasSize(2);
+            softly.assertThat(result.detectedPersonallyIdentifiableInformationList()).hasSize(2);
             
-            DetectedPersonallyIdentifiableInformation enrichedEmail = result.detectedPIIs().get(0);
-            DetectedPersonallyIdentifiableInformation enrichedPhone = result.detectedPIIs().get(1);
+            DetectedPersonallyIdentifiableInformation enrichedEmail = result.detectedPersonallyIdentifiableInformationList().get(0);
+            DetectedPersonallyIdentifiableInformation enrichedPhone = result.detectedPersonallyIdentifiableInformationList().get(1);
             
             // Email context should mask both EMAIL and PHONE
             softly.assertThat(enrichedEmail.maskedContext()).isNotNull();
@@ -498,14 +498,14 @@ class PiiContextExtractorTest {
         ScanResult scanResult = ScanResult.builder()
                 .scanId("scan-1")
                 .sourceContent(source)
-                .detectedEntities(List.of(entity))
+                .detectedPersonallyIdentifiableInformationList(List.of(entity))
                 .build();
 
         // When
         ScanResult result = piiContextExtractor.enrichContexts(scanResult);
 
         // Then: Both sensitiveContext and maskedContext should be populated
-        DetectedPersonallyIdentifiableInformation enriched = result.detectedPIIs().getFirst();
+        DetectedPersonallyIdentifiableInformation enriched = result.detectedPersonallyIdentifiableInformationList().getFirst();
         assertSoftly(softly -> {
             // Sensitive context contains real PII value
             softly.assertThat(enriched.sensitiveContext()).isNotNull();

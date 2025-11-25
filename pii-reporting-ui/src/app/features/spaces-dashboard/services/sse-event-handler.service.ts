@@ -285,7 +285,8 @@ export class SseEventHandlerService {
       this.uiStateService.append('[DEBUG_LOG] attachmentItem missing spaceKey; using activeSpaceKey=' + spaceKey);
     }
 
-    this.addPiiItemToSpace(spaceKey, payload);
+    // Add item to storage - returns true if item was added (not a duplicate)
+    const wasAdded = this.addPiiItemToSpace(spaceKey, payload);
 
     // Update progress if provided (skip for completed scans)
     const progressPercent = this.extractPercent(payload);
@@ -293,14 +294,31 @@ export class SseEventHandlerService {
       this.updateProgress(spaceKey, { percent: progressPercent });
     }
 
-    // Update UI with timestamp and status only
-    // NOTE: Do NOT recalculate counts from items - backend counts are authoritative
-    // Counts will be updated via the dashboard summary endpoint after scan completion
     const timestamp = (payload as any).ts ?? new Date().toISOString();
-    this.spacesDashboardUtils.updateSpace(spaceKey, {
-      lastScanTs: timestamp,
-      status: 'RUNNING'
-    });
+
+    // Update severity counts in real-time only if item was actually added (not duplicate)
+    if (wasAdded) {
+      const currentCounts = this.spacesDashboardUtils.getSpaceCounts(spaceKey);
+      const severity = payload.severity?.toLowerCase();
+      const newCounts = {
+        total: currentCounts.total + 1,
+        high: currentCounts.high + (severity === 'high' ? 1 : 0),
+        medium: currentCounts.medium + (severity === 'medium' ? 1 : 0),
+        low: currentCounts.low + (severity !== 'high' && severity !== 'medium' ? 1 : 0)
+      };
+
+      this.spacesDashboardUtils.updateSpace(spaceKey, {
+        lastScanTs: timestamp,
+        status: 'RUNNING',
+        counts: newCounts
+      });
+    } else {
+      // Item was duplicate or had no entities - just update timestamp and status
+      this.spacesDashboardUtils.updateSpace(spaceKey, {
+        lastScanTs: timestamp,
+        status: 'RUNNING'
+      });
+    }
   }
 
   /**
@@ -408,16 +426,13 @@ export class SseEventHandlerService {
    * Business Purpose:
    * - Delegates to PiiItemsStorageService for storage and deduplication
    *
-   * NOTE: Counts are NOT recalculated from items - backend counts are authoritative.
-   * Items are stored for UI card display only.
-   *
    * @param spaceKey Space identifier
    * @param payload Event payload with PII data (includes backend-calculated severity)
+   * @returns true if item was added (not a duplicate), false otherwise
    */
-  private addPiiItemToSpace(spaceKey: string, payload: RawStreamPayload): void {
+  private addPiiItemToSpace(spaceKey: string, payload: RawStreamPayload): boolean {
     // Delegate to storage service - it handles conversion, deduplication, and severity normalization
-    this.piiItemsStorageService.addPiiItemToSpace(spaceKey, payload);
-    // NOTE: Do NOT update counts here - backend counts are authoritative
+    return this.piiItemsStorageService.addPiiItemToSpace(spaceKey, payload);
   }
 
   /**

@@ -68,14 +68,15 @@ export class PiiItemsStorageService {
    * - Skips items without entities (no empty cards)
    * - Deduplicates by pageId + attachmentName
    * - Keeps max 400 items per space (FIFO)
-   * - Updates counts in SpacesDashboardUtils after adding
+   *
+   * @returns true if item was added (not a duplicate), false otherwise
    */
-  addPiiItemToSpace(spaceKey: string, payload: RawStreamPayload): void {
-    const entities = Array.isArray(payload.detectedEntities) ? payload.detectedEntities : [];
+  addPiiItemToSpace(spaceKey: string, payload: RawStreamPayload): boolean {
+    const entities = Array.isArray(payload.detectedPersonallyIdentifiableInformationList) ? payload.detectedPersonallyIdentifiableInformationList : [];
 
     // Skip creating a card when no PII entities were detected
     if (!entities.length) {
-      return;
+      return false;
     }
 
     // Use backend-provided severity, normalize to lowercase for frontend compatibility
@@ -94,7 +95,7 @@ export class PiiItemsStorageService {
       isFinal: !!payload.isFinal,
       severity,
       summary: (payload.summary && typeof payload.summary === 'object') ? payload.summary : undefined,
-      detectedPersonallyIdentifiableInfo: entities.map((e: any) => {
+      detectedPersonallyIdentifiableInformationList: entities.map((e: any) => {
         return {
           startPosition: e?.startPosition,
           endPosition: e?.endPosition,
@@ -119,7 +120,7 @@ export class PiiItemsStorageService {
     );
 
     if (isDuplicate) {
-      return;
+      return false;
     }
 
     // Add new item at the beginning (most recent first)
@@ -131,7 +132,7 @@ export class PiiItemsStorageService {
     }
 
     this.itemsBySpace.set({ ...this.itemsBySpace(), [spaceKey]: nextItems });
-    // NOTE: Do NOT update counts here - backend counts are authoritative
+    return true;
   }
 
   /**

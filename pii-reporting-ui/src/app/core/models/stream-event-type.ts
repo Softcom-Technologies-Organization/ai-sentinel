@@ -22,7 +22,7 @@ export interface RawStreamPayload {
   isFinal?: boolean;
   pagesTotal?: number;
   pageIndex?: number;
-  detectedEntities?: Array<{
+  detectedPersonallyIdentifiableInformationList?: Array<{
     piiTypeLabel?: string;
     piiType?: string;
     sensitiveValue?: string;

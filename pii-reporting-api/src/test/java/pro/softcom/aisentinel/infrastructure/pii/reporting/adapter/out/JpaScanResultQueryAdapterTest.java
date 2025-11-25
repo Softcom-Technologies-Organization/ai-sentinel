@@ -271,12 +271,12 @@ class JpaScanResultQueryAdapterTest {
     @Test
     void Should_DecryptAndAudit_When_DecryptedResultsFound() throws Exception {
         ScanResult encrypted1 = sampleScanResult().toBuilder()
-            .detectedEntities(List.of(DetectedPersonallyIdentifiableInformation.builder().build()))
+            .detectedPersonallyIdentifiableInformationList(List.of(DetectedPersonallyIdentifiableInformation.builder().build()))
             .build();
         ScanResult decrypted1 = encrypted1.toBuilder().message("dec1").build();
 
         ScanResult encrypted2 = sampleScanResult().toBuilder()
-            .detectedEntities(List.of(DetectedPersonallyIdentifiableInformation.builder().build(), DetectedPersonallyIdentifiableInformation.builder().build()))
+            .detectedPersonallyIdentifiableInformationList(List.of(DetectedPersonallyIdentifiableInformation.builder().build(), DetectedPersonallyIdentifiableInformation.builder().build()))
             .build();
         ScanResult decrypted2 = encrypted2.toBuilder().message("dec2").build();
 

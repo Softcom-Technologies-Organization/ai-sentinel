@@ -4,7 +4,8 @@ import {
   computed,
   inject,
   OnDestroy,
-  OnInit
+  OnInit,
+  signal
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
@@ -32,6 +33,7 @@ import {SortEvent} from 'primeng/api';
 import {TestIds} from '../test-ids.constants';
 import {ToastModule} from 'primeng/toast';
 import {ConfirmDialogModule} from 'primeng/confirmdialog';
+import {DialogModule} from 'primeng/dialog';
 import {
   NewSpacesBannerComponent
 } from '../../shared/components/new-spaces-banner/new-spaces-banner.component';
@@ -87,6 +89,7 @@ import {SseEventHandlerService} from './services/sse-event-handler.service';
     DataViewModule,
     SkeletonModule,
     ConfirmDialogModule,
+    DialogModule,
     ToastModule,
     TranslocoModule,
     LanguageSelectorComponent,
@@ -113,6 +116,9 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
   // 10 placeholder rows for loading skeleton
   readonly skeletonRows: number[] = Array.from({ length: 10 }, (_, i) => i);
+
+  // PII Help dialog visibility
+  readonly showPiiHelpDialog = signal(false);
 
   // ===== Computed signals exposing service state to template =====
 
@@ -294,5 +300,12 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
    */
   openConfluence(space: any): void {
     this.spacesDashboardUtils.openConfluence(space);
+  }
+
+  /**
+   * Opens the PII severity help dialog.
+   */
+  openPiiHelpDialog(): void {
+    this.showPiiHelpDialog.set(true);
   }
 }

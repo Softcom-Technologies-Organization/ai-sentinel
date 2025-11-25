@@ -112,7 +112,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
     }
 
     // Check if secrets are already loaded (detectedValue is present)
-    const hasSecrets = this.item?.detectedPersonallyIdentifiableInfo?.some(e => e.sensitiveValue !== null);
+    const hasSecrets = this.item?.detectedPersonallyIdentifiableInformationList?.some(e => e.sensitiveValue !== null);
     if (hasSecrets) {
       // Secrets already loaded, just reveal
       this.revealed = true;
@@ -129,7 +129,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
     this.sentinelleApi.revealPageSecrets(this.item.scanId, this.item.pageId).subscribe({
       next: (response) => {
         // Map secrets to entities by position
-        const enrichedEntities = this.item.detectedPersonallyIdentifiableInfo.map(entity => {
+        const enrichedEntities = this.item.detectedPersonallyIdentifiableInformationList.map(entity => {
           const secret = response.secrets.find(
             s => s.startPosition === entity.startPosition &&
               s.endPosition === entity.endPosition &&
@@ -139,7 +139,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
             ? {...entity, sensitiveValue: secret.sensitiveValue, sensitiveContext: secret.sensitiveContext}
             : entity;
         });
-        this.item = { ...this.item, detectedPersonallyIdentifiableInfo: enrichedEntities };
+        this.item = { ...this.item, detectedPersonallyIdentifiableInformationList: enrichedEntities };
         this.revealed = true;
         this.isRevealing.set(false);
         // Force change detection since we mutated the entities

@@ -86,7 +86,7 @@ class ContentScanOrchestratorTest {
                     .eventType("ITEM")
                     .pageId("page-1")
                     .pageTitle("Page Title")
-                    .detectedEntities(detectedEntities)
+                    .detectedPersonallyIdentifiableInformationList(detectedEntities)
                     .analysisProgressPercentage(50.0)
                     .build();
 
@@ -117,7 +117,7 @@ class ContentScanOrchestratorTest {
                     .eventType("ITEM")
                     .pageId("page-1")
                     .pageTitle("Page Title")
-                    .detectedEntities(Collections.emptyList())
+                    .detectedPersonallyIdentifiableInformationList(Collections.emptyList())
                     .analysisProgressPercentage(50.0)
                     .build();
 
@@ -171,7 +171,7 @@ class ContentScanOrchestratorTest {
                     .eventType("ITEM")
                     .pageId("page-1")
                     .pageTitle("Page Title")
-                    .detectedEntities(detectedEntities)
+                    .detectedPersonallyIdentifiableInformationList(detectedEntities)
                     .analysisProgressPercentage(50.0)
                     .build();
 
@@ -211,7 +211,7 @@ class ContentScanOrchestratorTest {
                     .eventType("ITEM")
                     .pageId("page-2")
                     .pageTitle("Test Page")
-                    .detectedEntities(detectedEntities)
+                    .detectedPersonallyIdentifiableInformationList(detectedEntities)
                     .analysisProgressPercentage(75.0)
                     .build();
 
@@ -267,7 +267,7 @@ class ContentScanOrchestratorTest {
                     .eventType("ITEM")
                     .pageId("page-3")
                     .pageTitle("Multi PII Page")
-                    .detectedEntities(detectedEntities)
+                    .detectedPersonallyIdentifiableInformationList(detectedEntities)
                     .analysisProgressPercentage(90.0)
                     .build();
 
@@ -299,7 +299,7 @@ class ContentScanOrchestratorTest {
                     .eventType("ITEM")
                     .pageId("page-1")
                     .pageTitle("Test")
-                    .detectedEntities(detectedEntities)
+                    .detectedPersonallyIdentifiableInformationList(detectedEntities)
                     .analysisProgressPercentage(50.0)
                     .build();
 
@@ -364,7 +364,7 @@ class ContentScanOrchestratorTest {
                     .scanId(scanId)
                     .spaceKey(spaceKey)
                     .eventType("complete")  // Must match ScanEventType.COMPLETE.getValue()
-                    .detectedEntities(detectedEntities)
+                    .detectedPersonallyIdentifiableInformationList(detectedEntities)
                     .analysisProgressPercentage(100.0)
                     .build();
 
@@ -408,7 +408,7 @@ class ContentScanOrchestratorTest {
                     .eventType("ITEM")
                     .pageId("page-1")
                     .pageTitle("Test")
-                    .detectedEntities(detectedEntities)
+                    .detectedPersonallyIdentifiableInformationList(detectedEntities)
                     .analysisProgressPercentage(50.0)
                     .build();
 

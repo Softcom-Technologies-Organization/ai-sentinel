@@ -63,7 +63,7 @@ public class RevealPiiSecretsUseCase implements
         // Extract decrypted secrets
         List<RevealedSecret> secrets = results.stream()
                 .filter(Objects::nonNull)
-                .flatMap(sr -> Optional.ofNullable(sr.detectedPIIs())
+                .flatMap(sr -> Optional.ofNullable(sr.detectedPersonallyIdentifiableInformationList())
                         .orElseGet(List::of)
                         .stream())
                 .filter(Objects::nonNull)

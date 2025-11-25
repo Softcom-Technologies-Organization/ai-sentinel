@@ -170,7 +170,7 @@ class RevealPiiSecretsUseCaseIT {
             .eventType("item")
             .pageId(pageId)
             .pageTitle("Page 1")
-            .detectedEntities(List.of(entity))
+            .detectedPersonallyIdentifiableInformationList(List.of(entity))
             .build();
 
         ObjectNode payload = objectMapper.valueToTree(scanResult);

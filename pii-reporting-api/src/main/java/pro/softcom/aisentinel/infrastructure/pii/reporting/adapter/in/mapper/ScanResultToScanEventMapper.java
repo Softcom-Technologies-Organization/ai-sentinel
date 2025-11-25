@@ -22,7 +22,7 @@ public class ScanResultToScanEventMapper {
     public ScanEventDto toDto(ScanResult scanResult) {
         if (scanResult == null) return null;
         // Mask sensitiveValue if reveal is not allowed
-        List<DetectedPersonallyIdentifiableInformation> entities = scanResult.detectedPIIs();
+        List<DetectedPersonallyIdentifiableInformation> entities = scanResult.detectedPersonallyIdentifiableInformationList();
         if (entities != null) {
             entities = entities.stream()
                     .map(e -> e.toBuilder()
@@ -41,7 +41,7 @@ public class ScanResultToScanEventMapper {
                 .pageIndex(scanResult.pageIndex())
                 .pageId(scanResult.pageId())
                 .pageTitle(scanResult.pageTitle())
-                .detectedEntities(entities)
+                .detectedPersonallyIdentifiableInformationList(entities)
                 .summary(scanResult.summary())
                 .message(scanResult.message())
                 .pageUrl(scanResult.pageUrl())

@@ -30,7 +30,7 @@
         "status": "Status",
         "progress": "Progress",
         "lastScan": "Last scan",
-        "pii": "Personally Identifiable Information (PII)",
+        "pii": "Personally Identifiable Information Severity Level (PII)",
         "actions": "Actions"
       },
       "emptyMessage": "No items to display",
@@ -96,6 +96,26 @@
       "message": "<p>Are you sure you want to start scanning all Confluence spaces?</p>\n<p><b>Existing data will be overwritten.</b></p>\n<p>This operation may take some time.</p>",
       "acceptLabel": "Yes, start",
       "rejectLabel": "Cancel"
+    }
+  },
+  "piiHelp": {
+    "buttonTooltip": "Help on severity levels",
+    "dialogTitle": "Understanding PII Severity Levels",
+    "introduction": "The colored badges indicate the number of Personally Identifiable Information (PII) detected, classified by severity level:",
+    "high": {
+      "title": "High Severity (Red)",
+      "description": "Financial data, authentication credentials, and highly sensitive government documents.",
+      "types": "Password, API Key, GitHub Token, AWS Key, JWT Token, Credit Card Number, IBAN, Crypto Wallet, US Bank Account Number, Social Security Number, US SSN, Medical License, Australian Medicare, Indian Aadhaar"
+    },
+    "medium": {
+      "title": "Medium Severity (Orange)",
+      "description": "Official documents, identification numbers, and detailed personal information.",
+      "types": "Driver License Number, ID Card Number, Tax Number, US Passport, US Driver License, US ITIN, Spanish NIF, Spanish NIE, Italian Fiscal Code, Italian Passport, Italian Identity Card, Italian Driver License, Italian VAT Code, Polish PESEL, Singapore NRIC/FIN, Singapore UEN, Australian TFN, Australian ABN, Australian ACN, Indian PAN, Indian Vehicle Registration, Indian Voter ID, Indian Passport, Finnish Personal Identity Code, Korean RRN, Thai TNIN, Date of Birth, Age"
+    },
+    "low": {
+      "title": "Low Severity (Blue)",
+      "description": "Contact information, location data, and names.",
+      "types": "Email, Phone Number, First Name, Last Name, Username, Account Number, IP Address, MAC Address, City, Street, Building Number, Zip Code"
     }
   },
   "piiItem": {

@@ -60,12 +60,12 @@ public class PiiContextExtractor {
         }
 
         try {
-            List<DetectedPersonallyIdentifiableInformation> allEntities = scanResult.detectedPIIs();
+            List<DetectedPersonallyIdentifiableInformation> allEntities = scanResult.detectedPersonallyIdentifiableInformationList();
             List<DetectedPersonallyIdentifiableInformation> enriched = allEntities.stream()
                     .map(entity -> enrichEntity(scanResult.sourceContent(), entity, allEntities))
                     .toList();
 
-            return scanResult.toBuilder().detectedEntities(enriched).build();
+            return scanResult.toBuilder().detectedPersonallyIdentifiableInformationList(enriched).build();
         } catch (IllegalArgumentException | NullPointerException e) {
             log.warn("Invalid input for PII context enrichment, scanId={}",
                     scanResult.scanId(), e);
@@ -83,8 +83,8 @@ public class PiiContextExtractor {
 
     private boolean needsEnrichment(ScanResult scanResult) {
         return scanResult != null
-                && scanResult.detectedPIIs() != null
-                && !scanResult.detectedPIIs().isEmpty()
+                && scanResult.detectedPersonallyIdentifiableInformationList() != null
+                && !scanResult.detectedPersonallyIdentifiableInformationList().isEmpty()
                 && scanResult.sourceContent() != null
                 && !scanResult.sourceContent().isBlank();
     }

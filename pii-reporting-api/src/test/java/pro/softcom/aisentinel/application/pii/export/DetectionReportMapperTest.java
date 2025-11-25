@@ -98,7 +98,7 @@ class DetectionReportMapperTest {
                 .pageUrl("https://custom.com/page")
                 .attachmentName("custom.doc")
                 .attachmentUrl("https://custom.com/att")
-                .detectedEntities(List.of(createPiiEntity("EMAIL", "Email", "test@test.com", 0.9)))
+                .detectedPersonallyIdentifiableInformationList(List.of(createPiiEntity("EMAIL", "Email", "test@test.com", 0.9)))
                 .build();
 
         // When
@@ -115,8 +115,8 @@ class DetectionReportMapperTest {
     private static Stream<Arguments> provideEmptyScenarios() {
         return Stream.of(
                 Arguments.of((ScanResult) null),
-                Arguments.of(ScanResult.builder().scanId("scan-123").spaceKey("TEST").detectedEntities(null).build()),
-                Arguments.of(ScanResult.builder().scanId("scan-123").spaceKey("TEST").detectedEntities(List.of()).build())
+                Arguments.of(ScanResult.builder().scanId("scan-123").spaceKey("TEST").detectedPersonallyIdentifiableInformationList(null).build()),
+                Arguments.of(ScanResult.builder().scanId("scan-123").spaceKey("TEST").detectedPersonallyIdentifiableInformationList(List.of()).build())
         );
     }
 
@@ -159,7 +159,7 @@ class DetectionReportMapperTest {
                 .pageUrl("https://example.com/page")
                 .attachmentName("doc.pdf")
                 .attachmentUrl("https://example.com/attachment")
-                .detectedEntities(entities)
+                .detectedPersonallyIdentifiableInformationList(entities)
                 .build();
     }
 }

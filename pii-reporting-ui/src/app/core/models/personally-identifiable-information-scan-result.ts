@@ -11,7 +11,7 @@ export interface PersonallyIdentifiableInformationScanResult {
   isFinal: boolean;
   severity: Severity;
   summary?: Record<string, number>;
-  detectedPersonallyIdentifiableInfo: DetectedPersonallyIdentifiableInformation[];
+  detectedPersonallyIdentifiableInformationList: DetectedPersonallyIdentifiableInformation[];
   maskedHtml?: string;
   // Attachment context when the item comes from an attachment scan
   attachmentName?: string;

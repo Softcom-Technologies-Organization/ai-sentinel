@@ -2,7 +2,6 @@ package pro.softcom.aisentinel.application.pii.reporting;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -39,7 +38,7 @@ class ScanSeverityCountServiceTest {
 
             service.incrementCounts(scanId, spaceKey, delta);
 
-            verify(repository).incrementCounts(eq(scanId), eq(spaceKey), eq(delta));
+            verify(repository).incrementCounts(scanId, spaceKey, delta);
         }
 
         @Test
@@ -100,7 +99,7 @@ class ScanSeverityCountServiceTest {
             Optional<SeverityCounts> result = service.getCounts(scanId, spaceKey);
 
             assertThat(result).isPresent().contains(expected);
-            verify(repository).findByScanIdAndSpaceKey(eq(scanId), eq(spaceKey));
+            verify(repository).findByScanIdAndSpaceKey(scanId, spaceKey);
         }
 
         @Test
@@ -113,7 +112,7 @@ class ScanSeverityCountServiceTest {
             Optional<SeverityCounts> result = service.getCounts(scanId, spaceKey);
 
             assertThat(result).isEmpty();
-            verify(repository).findByScanIdAndSpaceKey(eq(scanId), eq(spaceKey));
+            verify(repository).findByScanIdAndSpaceKey(scanId, spaceKey);
         }
 
         @Test
@@ -145,9 +144,8 @@ class ScanSeverityCountServiceTest {
 
             List<ScanSeverityCount> result = service.getCountsByScan(scanId);
 
-            assertThat(result).hasSize(2);
-            assertThat(result).isEqualTo(expected);
-            verify(repository).findByScanId(eq(scanId));
+            assertThat(result).hasSize(2).isEqualTo(expected);
+            verify(repository).findByScanId(scanId);
         }
 
         @Test
@@ -158,7 +156,7 @@ class ScanSeverityCountServiceTest {
             List<ScanSeverityCount> result = service.getCountsByScan(scanId);
 
             assertThat(result).isEmpty();
-            verify(repository).findByScanId(eq(scanId));
+            verify(repository).findByScanId(scanId);
         }
 
         @Test
@@ -185,7 +183,7 @@ class ScanSeverityCountServiceTest {
 
             service.deleteCounts(scanId);
 
-            verify(repository).deleteByScanId(eq(scanId));
+            verify(repository).deleteByScanId(scanId);
         }
 
         @Test

@@ -107,9 +107,11 @@
   }
 }
 
-/* Action buttons spacing */
-.action-buttons-container p-button:not(:first-child) {
-  margin-left: 0.5rem;
+/* Action buttons - horizontal alignment */
+.action-buttons-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* Resume scan button: rotate eject icon 90deg clockwise
@@ -260,4 +262,101 @@
     padding: 0.2rem 0.5rem;
     margin-left: 0.5rem;
   }
+}
+
+/* PII Header Cell - relative positioning for absolute button placement */
+.pii-header-cell {
+  position: relative;
+}
+
+/* PII Help Button - positioned at top-right of header cell */
+:host ::ng-deep .pii-help-button.p-button {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+:host ::ng-deep .pii-help-button.p-button .p-button-icon {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+:host ::ng-deep .pii-help-button.p-button:hover .p-button-icon {
+  color: #3b82f6;
+}
+
+/* PII Help Dialog Styling */
+::ng-deep .pii-help-dialog .p-dialog-content {
+  padding: 1.5rem;
+}
+
+.pii-help-intro {
+  margin-bottom: 1.5rem;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.pii-help-section {
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.pii-help-section h4 {
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.pii-help-section .pii-help-description {
+  margin: 0 0 0.5rem 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.pii-help-section .pii-help-types {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #334155;
+  line-height: 1.5;
+}
+
+/* High severity section - red theme */
+.pii-help-high {
+  background-color: #fef2f2;
+}
+
+.pii-help-high h4 {
+  color: #b91c1c;
+}
+
+/* Medium severity section - orange theme */
+.pii-help-medium {
+  background-color: #fffbeb;
+}
+
+.pii-help-medium h4 {
+  color: #b45309;
+}
+
+/* Low severity section - blue theme */
+.pii-help-low {
+  background-color: #eff6ff;
+}
+
+.pii-help-low h4 {
+  color: #1d4ed8;
+}
+
+/* Severity badge icon in dialog headers */
+::ng-deep .severity-badge-icon.p-badge {
+  width: 1rem;
+  height: 1rem;
+  min-width: 1rem;
+  border-radius: 50%;
 }

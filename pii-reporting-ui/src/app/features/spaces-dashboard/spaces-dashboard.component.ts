@@ -104,11 +104,9 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   private readonly piiItemsStorage = inject(PiiItemsStorageService);
   private readonly dataManagement = inject(SpaceDataManagementService);
   private readonly scanControl = inject(ScanControlService);
-  private readonly sseEventHandler = inject(SseEventHandlerService);
 
   // Utility services
   readonly spacesDashboardUtils = inject(SpacesDashboardUtils);
-  readonly translocoService = inject(TranslocoService);
 
   // Expose test IDs to template for E2E testing
   readonly testIds = TestIds.dashboard;
@@ -286,8 +284,8 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
    * Gets status severity for styling.
    * Delegates to DashboardUiStateService.
    */
-  statusSeverity(status?: string): 'danger' | 'warning' | 'success' | 'info' | 'secondary' {
-    return this.uiStateService.statusSeverity(status);
+  statusStyle(status?: string): 'danger' | 'warning' | 'success' | 'info' | 'secondary' {
+    return this.uiStateService.statusStyle(status);
   }
 
   /**

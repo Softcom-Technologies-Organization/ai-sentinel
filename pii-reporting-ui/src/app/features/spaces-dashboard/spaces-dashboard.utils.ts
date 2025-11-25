@@ -1,6 +1,6 @@
 import {computed, inject, Injectable, signal} from '@angular/core';
 import {Space} from '../../core/models/space';
-import {PiiItem} from '../../core/models/pii-item';
+import {PersonallyIdentifiableInformationScanResult} from '../../core/models/personally-identifiable-information-scan-result';
 import {TranslocoService} from '@jsverse/transloco';
 
 /**
@@ -88,7 +88,7 @@ export class SpacesDashboardUtils {
     return 'Terminé';
   }
 
-  statusSeverity(status?: string): 'danger' | 'warning' | 'success' | 'info' | 'secondary' {
+  statusStyle(status?: string): 'danger' | 'warning' | 'success' | 'info' | 'secondary' {
     // Use PrimeNG-supported severities for Tag: success | info | warning | danger | secondary
     if (status === 'FAILED') return 'danger';
     if (status === 'RUNNING') return 'warning';
@@ -132,7 +132,7 @@ export class SpacesDashboardUtils {
     return !!space?.url && space.url.length > 0;
   }
 
-  severityCounts(arr: PiiItem[]): { total: number; high: number; medium: number; low: number } {
+  severityCounts(arr: PersonallyIdentifiableInformationScanResult[]): { total: number; high: number; medium: number; low: number } {
     let high = 0, medium = 0, low = 0;
     for (const it of arr) {
       if (it.severity === 'high') high++;

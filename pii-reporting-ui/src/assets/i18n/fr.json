@@ -30,7 +30,7 @@
         "status": "Statut",
         "progress": "Progression",
         "lastScan": "Dernier scan",
-        "pii": "PII",
+        "pii": "Informations Personnelles Identifiables (IPI)",
         "actions": "Actions"
       },
       "emptyMessage": "Aucun élément à afficher",
@@ -67,6 +67,10 @@
           "contentModified": "Contenu modifié depuis le dernier scan"
         }
       }
+    },
+    "scanStatus": {
+      "active": "Scan en cours",
+      "inactive": "Scan inactif"
     },
     "logs": {
       "purging": "[ui] Purge des résultats précédents ...",

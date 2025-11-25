@@ -3,14 +3,14 @@ package pro.softcom.aisentinel.application.pii.security;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionException;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionMetadata;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionService;
 
 /**
- * Processor for encrypting/decrypting detectedEntities in ScanResult.
+ * Processor for encrypting/decrypting detectedPIIs in ScanResult.
  * Business intent: orchestrate PII encryption in the business flow.
  */
 @RequiredArgsConstructor
@@ -29,7 +29,7 @@ public class ScanResultEncryptor {
      * @throws EncryptionException if encryption fails for any entity
      */
     public ScanResult encrypt(ScanResult scanResult) {
-        var entities = scanResult.detectedEntities();
+        var entities = scanResult.detectedPIIs();
         if (entities == null) {
             return scanResult;
         }
@@ -55,7 +55,7 @@ public class ScanResultEncryptor {
      * @throws EncryptionException if decryption fails for any entity
      */
     public ScanResult decrypt(ScanResult scanResult) {
-        var entities = scanResult.detectedEntities();
+        var entities = scanResult.detectedPIIs();
         if (entities == null) {
             return scanResult;
         }
@@ -79,7 +79,7 @@ public class ScanResultEncryptor {
      * Encrypts a batch of PII entities.
      * Logs a warning if batch size exceeds soft cap for performance monitoring.
      */
-    private List<PiiEntity> encryptEntities(List<PiiEntity> entities) {
+    private List<DetectedPersonallyIdentifiableInformation> encryptEntities(List<DetectedPersonallyIdentifiableInformation> entities) {
         if (entities.size() > MAX_ENTITIES_SOFT_CAP) {
             log.warn("Encrypting {} entities (exceeds soft cap of {}). Consider reviewing batch size or enabling parallelization.",
                     entities.size(), MAX_ENTITIES_SOFT_CAP);
@@ -95,7 +95,8 @@ public class ScanResultEncryptor {
      * The metadata is used as Additional Authenticated Data (AAD) to ensure integrity.
      * Note: maskedContext is not encrypted as it contains only masked tokens, not real PII values.
      */
-    private PiiEntity encryptEntity(PiiEntity entity) {
+    private DetectedPersonallyIdentifiableInformation encryptEntity(
+        DetectedPersonallyIdentifiableInformation entity) {
         EncryptionMetadata metadata = buildMetadata(entity);
 
         var encryptedText = encryptionService.encrypt(entity.sensitiveValue(), metadata);
@@ -113,7 +114,8 @@ public class ScanResultEncryptor {
      * The metadata is verified during decryption to ensure integrity.
      * Note: maskedContext is never encrypted, so it's preserved as-is.
      */
-    private PiiEntity decryptEntity(PiiEntity entity) {
+    private DetectedPersonallyIdentifiableInformation decryptEntity(
+        DetectedPersonallyIdentifiableInformation entity) {
         EncryptionMetadata metadata = buildMetadata(entity);
 
         var decryptedText = entity.sensitiveValue();
@@ -137,7 +139,7 @@ public class ScanResultEncryptor {
      * Builds encryption metadata from PII entity for Additional Authenticated Data.
      * This metadata is cryptographically bound to ensure data integrity.
      */
-    private EncryptionMetadata buildMetadata(PiiEntity entity) {
+    private EncryptionMetadata buildMetadata(DetectedPersonallyIdentifiableInformation entity) {
         return new EncryptionMetadata(entity.piiType(), entity.startPosition(), entity.endPosition());
     }
 }

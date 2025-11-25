@@ -77,8 +77,8 @@ public class ContentScanOrchestrator {
         scanCheckpointService.persistCheckpoint(event);
         
         // Calculate and persist severity counts if event contains PII detections
-        if (event.detectedEntities() != null && !event.detectedEntities().isEmpty()) {
-            SeverityCounts counts = severityCalculationService.aggregateCounts(event.detectedEntities());
+        if (event.detectedPIIs() != null && !event.detectedPIIs().isEmpty()) {
+            SeverityCounts counts = severityCalculationService.aggregateCounts(event.detectedPIIs());
             scanSeverityCountService.incrementCounts(event.scanId(), event.spaceKey(), counts);
         }
         

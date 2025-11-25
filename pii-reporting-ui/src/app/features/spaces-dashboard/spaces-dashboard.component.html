@@ -3,7 +3,17 @@
 
 <div class="page p-3">
   <div class="header">
-    <h2 class="m-0">{{ 'dashboard.title' | transloco }}</h2>
+    <h2 class="m-0">
+      {{ 'dashboard.title' | transloco }}
+      <span class="scan-status-badge"
+            [class.scanning]="isStreaming()"
+            [class.inactive]="!isStreaming()"
+            role="status"
+            [attr.aria-live]="isStreaming() ? 'polite' : 'off'"
+            [attr.aria-label]="(isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco">
+        {{ (isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco }}
+      </span>
+    </h2>
     <div class="spacer"></div>
     <app-language-selector></app-language-selector>
   </div>
@@ -152,7 +162,7 @@
         </td>
         <td>
           <p-tag [value]="statusLabel(space.status)"
-                 [severity]="statusSeverity(space.status)"
+                 [severity]="statusStyle(space.status)"
                  [class]="'status-tag ' + (spacesDashboardUtils.statusStyleClass(space.status) || '')"
                  [attr.data-testid]="testIds.spaceStatus"></p-tag>
         </td>

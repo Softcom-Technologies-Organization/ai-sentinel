@@ -8,7 +8,7 @@ import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
@@ -27,7 +27,7 @@ class ScanResultToScanEventMapperTest {
     void Should_MapAllFields_When_ScanResultProvided() {
         // Arrange
         Map<String, Integer> summary = Map.of("EMAIL", 2, "PHONE", 1);
-        List<PiiEntity> entities = List.of(entity(0, 1, "EMAIL"));
+        List<DetectedPersonallyIdentifiableInformation> entities = List.of(entity(0, 1, "EMAIL"));
         ScanResult sr = ScanResult.builder()
                 .scanId("sid")
                 .spaceKey("space")
@@ -74,8 +74,8 @@ class ScanResultToScanEventMapperTest {
         softly.assertAll();
     }
 
-    private static PiiEntity entity(int start, int end, Object type) {
-        return new PiiEntity(
+    private static DetectedPersonallyIdentifiableInformation entity(int start, int end, Object type) {
+        return new DetectedPersonallyIdentifiableInformation(
                 start, 
                 end, 
                 type == null ? null : type.toString(), 

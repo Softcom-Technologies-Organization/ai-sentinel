@@ -106,7 +106,7 @@ class StreamConfluenceResumeScanPortImplTest {
         var parserFactory = new ContentParserFactory(new PlainTextParser(), new HtmlContentParser());
         var piiContextExtractor = new PiiContextExtractor(parserFactory);
         ScanProgressCalculator progressCalculator = new ScanProgressCalculator();
-        ScanEventFactory eventFactory = new ScanEventFactory(confluenceUrlProvider, piiContextExtractor);
+        ScanEventFactory eventFactory = new ScanEventFactory(confluenceUrlProvider, piiContextExtractor, severityCalculationService);
         ScanCheckpointService checkpointService = new ScanCheckpointService(scanCheckpointRepository);
         PublishEventPort publishEventPort = new ScanEventPublisherAdapter(applicationEventPublisher);
         ScanEventDispatcher scanEventDispatcher = new ScanEventDispatcher(publishEventPort,

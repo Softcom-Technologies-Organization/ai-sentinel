@@ -50,6 +50,7 @@ import pro.softcom.aisentinel.domain.confluence.DataOwners;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
+import pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.JpaScanEventStoreAdapter;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.event.ScanEventPublisherAdapter;
@@ -116,7 +117,7 @@ class StreamConfluenceScanUseCaseTest {
         var parserFactory = new ContentParserFactory(new PlainTextParser(), new HtmlContentParser());
         var piiContextExtractor = new PiiContextExtractor(parserFactory);
         ScanProgressCalculator progressCalculator = new ScanProgressCalculator();
-        ScanEventFactory eventFactory = new ScanEventFactory(confluenceUrlProvider, piiContextExtractor);
+        ScanEventFactory eventFactory = new ScanEventFactory(confluenceUrlProvider, piiContextExtractor, severityCalculationService);
         ScanCheckpointService checkpointService = new ScanCheckpointService(scanCheckpointRepository);
         PublishEventPort publishEventPort = new ScanEventPublisherAdapter(applicationEventPublisher);
         ScanEventDispatcher scanEventDispatcher = new ScanEventDispatcher(publishEventPort,
@@ -141,6 +142,10 @@ class StreamConfluenceScanUseCaseTest {
                 scanTimeoutConfig,
                 scanTaskManager
         );
+
+        // Configure severity calculation mock to return a default severity for any PII type
+        Mockito.lenient().when(severityCalculationService.calculateSeverity(any()))
+                .thenReturn(PiiSeverity.LOW);
 
         // Le use case délègue la gestion du flux au ScanTaskManager.
         // Dans les tests unitaires, on souhaite observer directement le Flux construit par le use case
@@ -205,7 +210,7 @@ class StreamConfluenceScanUseCaseTest {
         StepVerifier.create(flux)
                 .expectNextMatches(ev -> ScanEventType.START.toJson().equals(ev.eventType()))
                 .expectNextMatches(ev -> ScanEventType.PAGE_START.toJson().equals(ev.eventType()) && "p-1".equals(ev.pageId()))
-                .expectNextMatches(ev -> ScanEventType.ITEM.toJson().equals(ev.eventType()) && ev.detectedEntities() != null && ev.detectedEntities().isEmpty())
+                .expectNextMatches(ev -> ScanEventType.ITEM.toJson().equals(ev.eventType()) && ev.detectedPIIs() != null && ev.detectedPIIs().isEmpty())
                 .expectNextMatches(ev -> ScanEventType.PAGE_COMPLETE.toJson().equals(ev.eventType()) && "p-1".equals(ev.pageId()))
                 .expectNextMatches(ev -> ScanEventType.COMPLETE.toJson().equals(ev.eventType()))
                 .verifyComplete();
@@ -573,7 +578,7 @@ class StreamConfluenceScanUseCaseTest {
         var parserFactory = new ContentParserFactory(new PlainTextParser(), new HtmlContentParser());
         var piiContextExtractor = new PiiContextExtractor(parserFactory);
         ScanProgressCalculator progressCalculator = new ScanProgressCalculator();
-        ScanEventFactory eventFactory = new ScanEventFactory(blankUrlProvider, piiContextExtractor);
+        ScanEventFactory eventFactory = new ScanEventFactory(blankUrlProvider, piiContextExtractor, severityCalculationService);
         ScanCheckpointService checkpointService = new ScanCheckpointService(scanCheckpointRepository);
         PublishEventPort publishEventPort = new ScanEventPublisherAdapter(applicationEventPublisher);
         ScanEventDispatcher scanEventDispatcher = new ScanEventDispatcher(publishEventPort,
@@ -648,7 +653,7 @@ class StreamConfluenceScanUseCaseTest {
         var parserFactory = new ContentParserFactory(new PlainTextParser(), new HtmlContentParser());
         var piiContextExtractor = new PiiContextExtractor(parserFactory);
         ScanProgressCalculator progressCalculator = new ScanProgressCalculator();
-        ScanEventFactory eventFactory = new ScanEventFactory(confluenceUrlProvider, piiContextExtractor);
+        ScanEventFactory eventFactory = new ScanEventFactory(confluenceUrlProvider, piiContextExtractor, severityCalculationService);
         ScanCheckpointService checkpointService = new ScanCheckpointService(scanCheckpointRepository);
         PublishEventPort publishEventPort = new ScanEventPublisherAdapter(applicationEventPublisher);
         ScanEventDispatcher scanEventDispatcher = new ScanEventDispatcher(publishEventPort,

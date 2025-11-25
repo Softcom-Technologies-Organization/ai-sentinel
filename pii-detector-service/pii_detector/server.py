@@ -333,6 +333,8 @@ def main():
             server.wait_for_termination()
         except KeyboardInterrupt:
             logger.info("Server shutting down...")
+            server.stop(grace=5)
+            logger.info("Server stopped gracefully")
 
     except ImportError as e:
         logger.error(f"Error importing server module: {str(e)}")

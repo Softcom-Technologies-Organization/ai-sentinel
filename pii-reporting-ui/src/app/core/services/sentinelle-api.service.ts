@@ -29,6 +29,7 @@ export interface SpaceSummaryDto {
   pagesDone: number;
   attachmentsDone: number;
   lastEventTs: string;
+  severityCounts: { high: number; medium: number; low: number; total: number; } | null;
 }
 
 export interface ScanReportingSummaryDto {
@@ -236,18 +237,6 @@ export class SentinelleApiService {
     }
   }
 
-  /** Compute severity level based on max entity confidence. */
-  severityForEntities(entities: Array<{ confidence?: number }> | undefined): Severity {
-    if (!Array.isArray(entities) || entities.length === 0) return 'low';
-    let max = 0;
-    for (const e of entities) {
-      const s = typeof e?.confidence === 'number' ? e.confidence : 0;
-      if (s > max) max = s;
-    }
-    if (max >= 0.95) return 'high';
-    if (max >= 0.85) return 'medium';
-    return 'low';
-  }
 
   /**
    * Check if revealing PII secrets is allowed by backend configuration.

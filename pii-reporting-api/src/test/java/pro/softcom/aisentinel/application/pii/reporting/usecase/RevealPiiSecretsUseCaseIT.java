@@ -27,7 +27,7 @@ import pro.softcom.aisentinel.application.pii.security.PiiAccessAuditService;
 import pro.softcom.aisentinel.application.pii.security.ScanResultEncryptor;
 import pro.softcom.aisentinel.application.pii.security.port.out.SavePiiAuditPort;
 import pro.softcom.aisentinel.domain.pii.reporting.PageSecretsResponse;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionMetadata;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionService;
@@ -162,8 +162,8 @@ class RevealPiiSecretsUseCaseIT {
 
         ((TestReadPiiConfigPort) readPiiConfigPort).setAllow(true);
 
-        PiiEntity entity = new PiiEntity(0, 5, "EMAIL", "Email", 0.99,
-            "secret@example.com", "context", "masked");
+        DetectedPersonallyIdentifiableInformation entity = new DetectedPersonallyIdentifiableInformation(0, 5, "EMAIL", "Email", 0.99,
+                                                                                                         "secret@example.com", "context", "masked");
         ScanResult scanResult = ScanResult.builder()
             .scanId(scanId)
             .spaceKey("SPACE-1")

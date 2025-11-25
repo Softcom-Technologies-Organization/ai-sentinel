@@ -3,7 +3,7 @@ package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
@@ -22,7 +22,7 @@ public class ScanResultToScanEventMapper {
     public ScanEventDto toDto(ScanResult scanResult) {
         if (scanResult == null) return null;
         // Mask sensitiveValue if reveal is not allowed
-        List<PiiEntity> entities = scanResult.detectedEntities();
+        List<DetectedPersonallyIdentifiableInformation> entities = scanResult.detectedPIIs();
         if (entities != null) {
             entities = entities.stream()
                     .map(e -> e.toBuilder()

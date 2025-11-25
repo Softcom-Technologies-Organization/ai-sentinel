@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, inject, input} from '@angular/core';
 
 import {TagModule} from 'primeng/tag';
 import {DataViewModule} from 'primeng/dataview';
-import {PiiItem} from '../../core/models/pii-item';
+import {PersonallyIdentifiableInformationScanResult} from '../../core/models/personally-identifiable-information-scan-result';
 import {ProgressMap} from '../../core/models/progress-map';
 import {PiiItemCardComponent} from '../pii-item-card/pii-item-card.component';
 import {TranslocoModule, TranslocoService} from '@jsverse/transloco';
@@ -27,7 +27,7 @@ export class SpaceScanDetailComponent {
   readonly currentSpaceKey = input<string | null>(null);
   readonly progress = input<ProgressMap>({});
   readonly space = input<UISpaceLike>(null);
-  readonly items = input<PiiItem[]>([]);
+  readonly items = input<PersonallyIdentifiableInformationScanResult[]>([]);
   readonly translocoService = inject(TranslocoService);
 
   /** User-facing label for a technical status. */
@@ -60,7 +60,7 @@ export class SpaceScanDetailComponent {
    * Uses pageId + attachmentName as unique identifier to prevent unnecessary re-renders.
    * This ensures user interactions (expanded details, revealed state) are preserved when new items arrive.
    */
-  trackByItem(index: number, item: PiiItem): string {
+  trackByItem(index: number, item: PersonallyIdentifiableInformationScanResult): string {
     return `${item.pageId}-${item.attachmentName || 'page'}`;
   }
 }

@@ -230,10 +230,15 @@ export class SpaceDataManagementService {
                 percent: spaceSummary.progressPercentage
               });
             }
+
+            // Map severity counts from backend to Space model
+            // Fallback to zero counts if severityCounts is null
+            const counts = spaceSummary.severityCounts ?? { high: 0, medium: 0, low: 0, total: 0 };
+            this.spacesDashboardUtils.updateSpace(spaceSummary.spaceKey, { counts });
           }
 
-          // Apply counts from any items already loaded
-          this.piiItemsStorage.applyCountsFromItems();
+          // NOTE: Do NOT call applyCountsFromItems() here - backend counts are authoritative
+          // The backend counts represent the number of PII entities detected, not the number of items/cards
 
           // Still load persisted items to display PII cards (if needed)
           // The unified endpoint provides progress and counters, but not the detailed PII items
@@ -299,8 +304,8 @@ export class SpaceDataManagementService {
             this.piiItemsStorage.addPiiItemToSpace(incomingKey, event);
           }
 
-          // After adding items, compute counts for each space
-          this.piiItemsStorage.applyCountsFromItems();
+          // NOTE: Do NOT recalculate counts from items - backend counts are authoritative
+          // Items are loaded only to populate the PII cards UI, not to compute counts
 
           observer.next();
           observer.complete();
@@ -313,13 +318,16 @@ export class SpaceDataManagementService {
   }
 
   /**
-   * Re-applies last known statuses and PII counts to UI spaces when the base list is (re)loaded.
+   * Re-applies last known statuses to UI spaces when the base list is (re)loaded.
    * Fixes race condition where loadLastScan() may finish before fetchSpaces(), causing badges not to refresh.
+   *
+   * NOTE: Counts are NOT recomputed from items - backend counts are authoritative.
+   * The counts were already applied during loadLastScanSummary() and should not be overwritten.
    */
   private reapplyLastScanUi(): void {
     const list = this.lastSpaceStatuses();
     if (!Array.isArray(list) || list.length === 0) {
-      this.piiItemsStorage.applyCountsFromItems();
+      // No statuses to reapply - counts remain as set by backend
       return;
     }
 
@@ -340,8 +348,7 @@ export class SpaceDataManagementService {
       }
     }
 
-    // Recompute counts from already loaded items (if any)
-    this.piiItemsStorage.applyCountsFromItems();
+    // NOTE: Do NOT call applyCountsFromItems() - backend counts are authoritative
   }
 
   /**

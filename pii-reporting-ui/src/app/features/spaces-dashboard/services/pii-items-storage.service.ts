@@ -1,8 +1,8 @@
 import {computed, inject, Injectable, signal} from '@angular/core';
 import {ItemsBySpace} from '../../../core/models/item-by-space';
-import {PiiItem} from '../../../core/models/pii-item';
+import {PersonallyIdentifiableInformationScanResult} from '../../../core/models/personally-identifiable-information-scan-result';
 import {RawStreamPayload} from '../../../core/models/stream-event-type';
-import {SentinelleApiService} from '../../../core/services/sentinelle-api.service';
+import {Severity} from '../../../core/models/severity';
 import {SpacesDashboardUtils} from '../spaces-dashboard.utils';
 
 /**
@@ -29,7 +29,6 @@ import {SpacesDashboardUtils} from '../spaces-dashboard.utils';
   providedIn: 'root'
 })
 export class PiiItemsStorageService {
-  private readonly sentinelleApiService = inject(SentinelleApiService);
   private readonly spacesDashboardUtils = inject(SpacesDashboardUtils);
 
   // In-memory storage of PII items per space
@@ -50,7 +49,7 @@ export class PiiItemsStorageService {
   /**
    * Gets PII items for a specific space.
    */
-  getItemsForSpace(spaceKey: string): PiiItem[] {
+  getItemsForSpace(spaceKey: string): PersonallyIdentifiableInformationScanResult[] {
     return this.itemsBySpace()[spaceKey] ?? [];
   }
 
@@ -79,9 +78,13 @@ export class PiiItemsStorageService {
       return;
     }
 
-    const severity = this.sentinelleApiService.severityForEntities(entities);
+    // Use backend-provided severity, normalize to lowercase for frontend compatibility
+    const backendSeverity = payload.severity?.toLowerCase() as Severity | undefined;
+    const severity: Severity = backendSeverity && ['high', 'medium', 'low'].includes(backendSeverity)
+      ? backendSeverity
+      : 'low';  // Fallback for legacy events without severity
 
-    const piiItem: PiiItem = {
+    const piiItem: PersonallyIdentifiableInformationScanResult = {
       scanId: payload.scanId ?? '',
       spaceKey: spaceKey,
       pageId: String(payload.pageId ?? ''),
@@ -91,7 +94,7 @@ export class PiiItemsStorageService {
       isFinal: !!payload.isFinal,
       severity,
       summary: (payload.summary && typeof payload.summary === 'object') ? payload.summary : undefined,
-      detectedEntities: entities.map((e: any) => {
+      detectedPersonallyIdentifiableInfo: entities.map((e: any) => {
         return {
           startPosition: e?.startPosition,
           endPosition: e?.endPosition,
@@ -128,16 +131,14 @@ export class PiiItemsStorageService {
     }
 
     this.itemsBySpace.set({ ...this.itemsBySpace(), [spaceKey]: nextItems });
-
-    // Update counts in UI decoration immediately
-    this.updateCountsForSpace(spaceKey);
+    // NOTE: Do NOT update counts here - backend counts are authoritative
   }
 
   /**
    * Adds multiple PII items for a space (used for loading persisted items).
    * Applies same deduplication and limit rules as addPiiItemToSpace.
    */
-  addItemsForSpace(spaceKey: string, items: PiiItem[]): void {
+  addItemsForSpace(spaceKey: string, items: PersonallyIdentifiableInformationScanResult[]): void {
     const existing = this.itemsBySpace()[spaceKey] ?? [];
     const merged = [...items, ...existing];
 
@@ -158,29 +159,26 @@ export class PiiItemsStorageService {
     }
 
     this.itemsBySpace.set({ ...this.itemsBySpace(), [spaceKey]: deduped });
-
-    // Update counts in UI decoration
-    this.updateCountsForSpace(spaceKey);
+    // NOTE: Do NOT update counts here - backend counts are authoritative
   }
 
   /**
-   * Updates severity counts for a space in SpacesDashboardUtils.
+   * @deprecated Backend counts are authoritative - do not use local count calculation.
+   * This method is kept for backward compatibility but should not be called.
    */
-  private updateCountsForSpace(spaceKey: string): void {
-    const items = this.getItemsForSpace(spaceKey);
-    const counts = this.spacesDashboardUtils.severityCounts(items);
-    this.spacesDashboardUtils.updateSpace(spaceKey, { counts });
+  private updateCountsForSpace(_spaceKey: string): void {
+    // NO-OP: Backend counts are authoritative
+    // This method is intentionally empty to prevent accidental count overwriting
   }
 
   /**
-   * Applies counts from items to all spaces with PII.
-   * Business purpose: Bulk update of counts after loading persisted items.
+   * @deprecated Backend counts are authoritative - do not use local count calculation.
+   * This method is kept for backward compatibility but should not be called.
+   * Counts are now provided by the backend via the dashboard summary endpoint.
    */
   applyCountsFromItems(): void {
-    const map = this.itemsBySpace();
-    for (const key of Object.keys(map)) {
-      this.updateCountsForSpace(key);
-    }
+    // NO-OP: Backend counts are authoritative
+    // This method is intentionally empty to prevent accidental count overwriting
   }
 
   /**

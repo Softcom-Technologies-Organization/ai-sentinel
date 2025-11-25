@@ -38,4 +38,6 @@ export interface RawStreamPayload {
   attachmentUrl?: string;
   // Scan status from backend (e.g., 'RUNNING', 'COMPLETED', 'FAILED')
   status?: string;
+  // Pre-calculated severity from backend (HIGH/MEDIUM/LOW)
+  severity?: string;
 }

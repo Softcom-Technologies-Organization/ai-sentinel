@@ -24,7 +24,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionException;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionMetadata;
@@ -43,7 +43,7 @@ class ScanResultEncryptorTest {
     @DisplayName("Should_EncryptAllEntities_When_ScanResultHasMultipleEntities")
     void should_EncryptAllEntities_When_ScanResultHasMultipleEntities() {
         // Given
-        List<PiiEntity> entities = List.of(
+        List<DetectedPersonallyIdentifiableInformation> entities = List.of(
             createEntity("EMAIL", 0, 20, "john@example.com"),
             createEntity("PHONE", 25, 35, "1234567890")
         );
@@ -63,10 +63,10 @@ class ScanResultEncryptorTest {
 
         // Then
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(encrypted.detectedEntities()).hasSize(2);
-        softly.assertThat(encrypted.detectedEntities().get(0).sensitiveValue())
+        softly.assertThat(encrypted.detectedPIIs()).hasSize(2);
+        softly.assertThat(encrypted.detectedPIIs().get(0).sensitiveValue())
             .isEqualTo("ENC:v1:encrypted_email");
-        softly.assertThat(encrypted.detectedEntities().get(1).sensitiveValue())
+        softly.assertThat(encrypted.detectedPIIs().get(1).sensitiveValue())
             .isEqualTo("ENC:v1:encrypted_phone");
         softly.assertAll();
 
@@ -83,7 +83,7 @@ class ScanResultEncryptorTest {
     @ParameterizedTest(name = "[{index}] Should return unchanged when encrypting: {1}")
     @MethodSource("noEntitiesTestData")
     @DisplayName("Should_ReturnUnchanged_When_EncryptingWithNoEntities")
-    void should_ReturnUnchanged_When_EncryptingWithNoEntities(List<PiiEntity> entities) {
+    void should_ReturnUnchanged_When_EncryptingWithNoEntities(List<DetectedPersonallyIdentifiableInformation> entities) {
         // Given
         ScanResult scanResult = createScanResult(entities);
         
@@ -94,7 +94,7 @@ class ScanResultEncryptorTest {
         if (entities == null) {
             assertThat(result).isEqualTo(scanResult);
         } else {
-            assertThat(result.detectedEntities()).isEmpty();
+            assertThat(result.detectedPIIs()).isEmpty();
         }
         verifyNoInteractions(encryptionService);
     }
@@ -103,7 +103,7 @@ class ScanResultEncryptorTest {
     @DisplayName("Should_BuildCorrectMetadata_When_EncryptingEntity")
     void should_BuildCorrectMetadata_When_EncryptingEntity() {
         // Given
-        PiiEntity entity = createEntity("SSN", 10, 20, "123-45-6789");
+        DetectedPersonallyIdentifiableInformation entity = createEntity("SSN", 10, 20, "123-45-6789");
         ScanResult scanResult = createScanResult(List.of(entity));
 
         ArgumentCaptor<EncryptionMetadata> metadataCaptor =
@@ -130,7 +130,7 @@ class ScanResultEncryptorTest {
     @DisplayName("Should_DecryptOnlyEncryptedEntities_When_MixedEntities")
     void should_DecryptOnlyEncryptedEntities_When_MixedEntities() {
         // Given
-        List<PiiEntity> entities = List.of(
+        List<DetectedPersonallyIdentifiableInformation> entities = List.of(
             createEntity("EMAIL", 0, 10, "ENC:v1:encrypted"),
             createEntity("NAME", 15, 25, "plaintext")
         );
@@ -150,9 +150,9 @@ class ScanResultEncryptorTest {
 
         // Then
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(decrypted.detectedEntities().get(0).sensitiveValue())
+        softly.assertThat(decrypted.detectedPIIs().get(0).sensitiveValue())
             .isEqualTo("decrypted@email.com");
-        softly.assertThat(decrypted.detectedEntities().get(1).sensitiveValue())
+        softly.assertThat(decrypted.detectedPIIs().get(1).sensitiveValue())
             .isEqualTo("plaintext");
         softly.assertAll();
 
@@ -177,7 +177,7 @@ class ScanResultEncryptorTest {
     @DisplayName("Should_PreserveOtherFields_When_EncryptingEntities")
     void should_PreserveOtherFields_When_EncryptingEntities() {
         // Given
-        PiiEntity entity = createEntity("EMAIL", 0, 10, "email@test.com");
+        DetectedPersonallyIdentifiableInformation entity = createEntity("EMAIL", 0, 10, "email@test.com");
         ScanResult original = ScanResult.builder()
             .scanId("scan-123")
             .spaceKey("SPACE")
@@ -203,7 +203,7 @@ class ScanResultEncryptorTest {
     @DisplayName("Should_DecryptAllEncryptedEntities_When_AllAreEncrypted")
     void should_DecryptAllEncryptedEntities_When_AllAreEncrypted() {
         // Given
-        List<PiiEntity> entities = List.of(
+        List<DetectedPersonallyIdentifiableInformation> entities = List.of(
             createEntity("EMAIL", 0, 20, "ENC:v1:enc1"),
             createEntity("PHONE", 25, 35, "ENC:v1:enc2")
         );
@@ -224,10 +224,10 @@ class ScanResultEncryptorTest {
 
         // Then
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(decrypted.detectedEntities()).hasSize(2);
-        softly.assertThat(decrypted.detectedEntities().get(0).sensitiveValue())
+        softly.assertThat(decrypted.detectedPIIs()).hasSize(2);
+        softly.assertThat(decrypted.detectedPIIs().get(0).sensitiveValue())
             .isEqualTo("email@test.com");
-        softly.assertThat(decrypted.detectedEntities().get(1).sensitiveValue())
+        softly.assertThat(decrypted.detectedPIIs().get(1).sensitiveValue())
             .isEqualTo("555-1234");
         softly.assertAll();
 
@@ -238,7 +238,7 @@ class ScanResultEncryptorTest {
     @DisplayName("Should_PropagateEncryptionException_When_EncryptionFails")
     void should_PropagateEncryptionException_When_EncryptionFails() {
         // Given
-        PiiEntity entity = createEntity("EMAIL", 0, 20, "test@example.com");
+        DetectedPersonallyIdentifiableInformation entity = createEntity("EMAIL", 0, 20, "test@example.com");
         ScanResult scanResult = createScanResult(List.of(entity));
 
         when(encryptionService.encrypt(anyString(), any()))
@@ -254,7 +254,7 @@ class ScanResultEncryptorTest {
     @DisplayName("Should_PropagateEncryptionException_When_DecryptionFails")
     void should_PropagateEncryptionException_When_DecryptionFails() {
         // Given
-        PiiEntity entity = createEntity("EMAIL", 0, 20, "ENC:v1:corrupted");
+        DetectedPersonallyIdentifiableInformation entity = createEntity("EMAIL", 0, 20, "ENC:v1:corrupted");
         ScanResult scanResult = createScanResult(List.of(entity));
 
         when(encryptionService.isEncrypted("ENC:v1:corrupted")).thenReturn(true);
@@ -271,7 +271,7 @@ class ScanResultEncryptorTest {
     @DisplayName("Should_EncryptSuccessfully_When_EncryptingMoreThan500Entities")
     void should_EncryptSuccessfully_When_EncryptingMoreThan500Entities() {
         // Given
-        List<PiiEntity> largeEntityList = IntStream.range(0, 501)
+        List<DetectedPersonallyIdentifiableInformation> largeEntityList = IntStream.range(0, 501)
             .mapToObj(i -> createEntity("EMAIL", i * 10, i * 10 + 5, "email" + i + "@test.com"))
             .toList();
 
@@ -285,8 +285,8 @@ class ScanResultEncryptorTest {
 
         // Then
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(encrypted.detectedEntities()).hasSize(501);
-        softly.assertThat(encrypted.detectedEntities().getFirst().sensitiveValue())
+        softly.assertThat(encrypted.detectedPIIs()).hasSize(501);
+        softly.assertThat(encrypted.detectedPIIs().getFirst().sensitiveValue())
             .isEqualTo("ENC:v1:encrypted");
         softly.assertAll();
 
@@ -297,7 +297,7 @@ class ScanResultEncryptorTest {
     @DisplayName("Should_PreserveScanResultIntegrity_When_EncryptionExceptionOccurs")
     void should_PreserveScanResultIntegrity_When_EncryptionExceptionOccurs() {
         // Given
-        PiiEntity entity = createEntity("EMAIL", 0, 20, "test@example.com");
+        DetectedPersonallyIdentifiableInformation entity = createEntity("EMAIL", 0, 20, "test@example.com");
         ScanResult original = ScanResult.builder()
             .scanId("scan-123")
             .spaceKey("SPACE")
@@ -315,13 +315,13 @@ class ScanResultEncryptorTest {
         // Verify original scanResult is not modified (immutability)
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(original.scanId()).isEqualTo("scan-123");
-        softly.assertThat(original.detectedEntities().getFirst().sensitiveValue())
+        softly.assertThat(original.detectedPIIs().getFirst().sensitiveValue())
             .isEqualTo("test@example.com");
         softly.assertAll();
     }
 
-    private PiiEntity createEntity(String type, int start, int end, String text) {
-        return PiiEntity.builder()
+    private DetectedPersonallyIdentifiableInformation createEntity(String type, int start, int end, String text) {
+        return DetectedPersonallyIdentifiableInformation.builder()
             .piiType(type)
             .startPosition(start)
             .endPosition(end)
@@ -331,7 +331,7 @@ class ScanResultEncryptorTest {
             .build();
     }
 
-    private ScanResult createScanResult(List<PiiEntity> entities) {
+    private ScanResult createScanResult(List<DetectedPersonallyIdentifiableInformation> entities) {
         return ScanResult.builder()
             .scanId("test-scan")
             .detectedEntities(entities)

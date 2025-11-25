@@ -3,7 +3,7 @@ package pro.softcom.aisentinel.application.pii.reporting.service;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 
 /**
  * Small shared masking helpers used by both context extraction and presentation mappers.
@@ -41,13 +41,13 @@ public final class PiiMaskingUtils {
      * @param maxLen   the maximum result length (0 = no limit)
      * @return the masked content or null if parameters are invalid
      */
-    public static String buildMaskedContent(String source, List<PiiEntity> entities, int maxLen) {
+    public static String buildMaskedContent(String source, List<DetectedPersonallyIdentifiableInformation> entities, int maxLen) {
         if (!isValidInput(source, entities)) {
             return null;
         }
 
         try {
-            List<PiiEntity> sorted = sortEntitiesByPosition(entities);
+            List<DetectedPersonallyIdentifiableInformation> sorted = sortEntitiesByPosition(entities);
             String masked = maskEntitiesInSource(source, sorted);
             return truncateToLength(masked, maxLen);
         } catch (Exception _) {
@@ -62,7 +62,7 @@ public final class PiiMaskingUtils {
      * @param entities the entities list to validate
      * @return true if both parameters are valid, false otherwise
      */
-    private static boolean isValidInput(String source, List<PiiEntity> entities) {
+    private static boolean isValidInput(String source, List<DetectedPersonallyIdentifiableInformation> entities) {
         return source != null && !source.isBlank()
                 && entities != null && !entities.isEmpty();
     }
@@ -73,9 +73,9 @@ public final class PiiMaskingUtils {
      * @param entities the entities to sort
      * @return a new sorted list of entities
      */
-    private static List<PiiEntity> sortEntitiesByPosition(List<PiiEntity> entities) {
+    private static List<DetectedPersonallyIdentifiableInformation> sortEntitiesByPosition(List<DetectedPersonallyIdentifiableInformation> entities) {
         return entities.stream()
-                .sorted(Comparator.comparingInt(PiiEntity::startPosition))
+                .sorted(Comparator.comparingInt(DetectedPersonallyIdentifiableInformation::startPosition))
                 .toList();
     }
 
@@ -87,12 +87,12 @@ public final class PiiMaskingUtils {
      * @param sortedEntities the entities sorted by start position
      * @return the source content with all PII values replaced by tokens
      */
-    private static String maskEntitiesInSource(String source, List<PiiEntity> sortedEntities) {
+    private static String maskEntitiesInSource(String source, List<DetectedPersonallyIdentifiableInformation> sortedEntities) {
         int sourceLength = source.length();
         StringBuilder result = new StringBuilder(sourceLength);
         int currentIndex = 0;
 
-        for (PiiEntity entity : sortedEntities) {
+        for (DetectedPersonallyIdentifiableInformation entity : sortedEntities) {
             int start = Math.clamp(entity.startPosition(), 0, sourceLength);
             int end = Math.clamp(entity.endPosition(), start, sourceLength);
 

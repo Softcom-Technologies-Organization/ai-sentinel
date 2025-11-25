@@ -4,7 +4,7 @@ import {SentinelleApiService} from '../../../core/services/sentinelle-api.servic
 import {ScanProgressService} from '../../../core/services/scan-progress.service';
 import {ToastService} from '../../../core/services/toast.service';
 import {RawStreamPayload} from '../../../core/models/stream-event-type';
-import {PiiItem} from '../../../core/models/pii-item';
+import {PersonallyIdentifiableInformationScanResult} from '../../../core/models/personally-identifiable-information-scan-result';
 import {SpacesDashboardUtils} from '../spaces-dashboard.utils';
 import {
   coerceSpaceKey,
@@ -293,12 +293,11 @@ export class SseEventHandlerService {
       this.updateProgress(spaceKey, { percent: progressPercent });
     }
 
-    // Update UI with latest counts and timestamp
-    const items = this.piiItemsStorageService.getItemsForSpace(spaceKey);
-    const counts = this.spacesDashboardUtils.severityCounts(items);
+    // Update UI with timestamp and status only
+    // NOTE: Do NOT recalculate counts from items - backend counts are authoritative
+    // Counts will be updated via the dashboard summary endpoint after scan completion
     const timestamp = (payload as any).ts ?? new Date().toISOString();
     this.spacesDashboardUtils.updateSpace(spaceKey, {
-      counts,
       lastScanTs: timestamp,
       status: 'RUNNING'
     });
@@ -369,14 +368,15 @@ export class SseEventHandlerService {
    * Business Rules:
    * - Marks space as OK (successful completion)
    * - Sets progress to 100%
-   * - Finalizes PII counts from collected items
    * - Clears active space marker if this space was active
    *
    * UI Impact:
    * - Space shows OK status (green)
    * - Progress bar at 100%
-   * - PII badges show final counts
    * - Last scan timestamp updated
+   *
+   * NOTE: Counts are NOT recalculated from items - backend counts are authoritative.
+   * The dashboard will fetch final counts from backend after scan completion.
    *
    * @param payload Completion event payload
    */
@@ -390,13 +390,10 @@ export class SseEventHandlerService {
     this.uiStateService.upsertScanHistory(spaceKey, 'completed');
     this.updateProgress(spaceKey, { percent: 100 });
 
-    // Finalize counts and mark as OK
-    const items = this.piiItemsStorageService.getItemsForSpace(spaceKey);
-    const counts = this.spacesDashboardUtils.severityCounts(items);
+    // Mark as OK without recalculating counts (backend counts are authoritative)
     this.spacesDashboardUtils.updateSpace(spaceKey, {
       status: 'OK',
-      lastScanTs: new Date().toISOString(),
-      counts
+      lastScanTs: new Date().toISOString()
     });
 
     // Clear active marker if this was the active space
@@ -408,67 +405,19 @@ export class SseEventHandlerService {
   /**
    * Adds a PII item to storage for a specific space.
    *
-   * Business Rules:
-   * - Skips items with no detected entities (empty results)
-   * - Deduplicates by pageId + attachmentName
-   * - Maintains max 400 items per space (FIFO)
-   * - Sanitizes HTML content for security
-   * - Determines severity from entities
+   * Business Purpose:
+   * - Delegates to PiiItemsStorageService for storage and deduplication
    *
-   * Deduplication Logic:
-   * - Combination of pageId and attachmentName must be unique
-   * - Prevents duplicate cards from repeated events
-   *
-   * Storage Strategy:
-   * - Newest items first (prepend)
-   * - Oldest items dropped when limit exceeded
-   * - Immediate count update after addition
+   * NOTE: Counts are NOT recalculated from items - backend counts are authoritative.
+   * Items are stored for UI card display only.
    *
    * @param spaceKey Space identifier
-   * @param payload Event payload with PII data
+   * @param payload Event payload with PII data (includes backend-calculated severity)
    */
   private addPiiItemToSpace(spaceKey: string, payload: RawStreamPayload): void {
-    const entities = Array.isArray(payload.detectedEntities) ? payload.detectedEntities : [];
-
-    // Skip empty items (no PII detected)
-    if (entities.length === 0) {
-      return;
-    }
-
-    const severity = this.sentinelleApiService.severityForEntities(entities);
-
-    const piiItem: PiiItem = {
-      scanId: payload.scanId ?? '',
-      spaceKey: spaceKey,
-      pageId: String(payload.pageId ?? ''),
-      pageTitle: payload.pageTitle,
-      pageUrl: payload.pageUrl,
-      emittedAt: payload.emittedAt,
-      isFinal: !!payload.isFinal,
-      severity,
-      summary: (payload.summary && typeof payload.summary === 'object') ? payload.summary : undefined,
-      detectedEntities: entities.map((e: any) => ({
-        startPosition: e?.startPosition,
-        endPosition: e?.endPosition,
-        piiTypeLabel: e?.piiTypeLabel,
-        piiType: e?.piiType,
-        sensitiveValue: e?.sensitiveValue,
-        sensitiveContext: e?.sensitiveContext,
-        maskedContext: e?.maskedContext,
-        confidence: typeof e?.confidence === 'number' ? e.confidence : undefined
-      })),
-      attachmentName: payload.attachmentName,
-      attachmentType: payload.attachmentType,
-      attachmentUrl: payload.attachmentUrl
-    };
-
-    // Add to storage with deduplication
-    this.piiItemsStorageService.addPiiItemToSpace(spaceKey, piiItem);
-
-    // Update UI counts immediately
-    const items = this.piiItemsStorageService.getItemsForSpace(spaceKey);
-    const counts = this.spacesDashboardUtils.severityCounts(items);
-    this.spacesDashboardUtils.updateSpace(spaceKey, { counts });
+    // Delegate to storage service - it handles conversion, deduplication, and severity normalization
+    this.piiItemsStorageService.addPiiItemToSpace(spaceKey, payload);
+    // NOTE: Do NOT update counts here - backend counts are authoritative
   }
 
   /**

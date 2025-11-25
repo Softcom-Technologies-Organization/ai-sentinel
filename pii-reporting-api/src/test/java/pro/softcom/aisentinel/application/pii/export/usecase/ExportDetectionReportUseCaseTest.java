@@ -31,7 +31,7 @@ import pro.softcom.aisentinel.application.pii.export.port.out.ReadScanEventsPort
 import pro.softcom.aisentinel.application.pii.export.port.out.WriteDetectionReportPort;
 import pro.softcom.aisentinel.domain.pii.export.ExportContext;
 import pro.softcom.aisentinel.domain.pii.export.SourceType;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 
 @ExtendWith(MockitoExtension.class)
@@ -258,7 +258,7 @@ class ExportDetectionReportUseCaseTest {
                 .attachmentName("test.pdf")
                 .attachmentUrl("https://example.com/attachment")
                 .detectedEntities(List.of(
-                        PiiEntity.builder()
+                    DetectedPersonallyIdentifiableInformation.builder()
                                 .piiType("EMAIL")
                                 .piiTypeLabel("Email")
                                 .maskedContext("test@example.com")

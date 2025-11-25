@@ -3,7 +3,7 @@ package pro.softcom.aisentinel.application.pii.export;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.pii.export.dto.DetectionReportEntry;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 
 @Slf4j
@@ -13,16 +13,17 @@ public class DetectionReportMapper {
             return List.of();
         }
 
-        return scanResult.detectedEntities().stream()
+        return scanResult.detectedPIIs().stream()
                 .map(piiEntity -> mapPiiEntityToDetectionReportEntry(piiEntity, scanResult))
                 .toList();
     }
 
     private boolean isValidResult(ScanResult result) {
-        return result != null && result.detectedEntities() != null && !result.detectedEntities().isEmpty();
+        return result != null && result.detectedPIIs() != null && !result.detectedPIIs().isEmpty();
     }
 
-    private DetectionReportEntry mapPiiEntityToDetectionReportEntry(PiiEntity piiEntity, ScanResult scanResult) {
+    private DetectionReportEntry mapPiiEntityToDetectionReportEntry(
+        DetectedPersonallyIdentifiableInformation detectedPersonallyIdentifiableInformation, ScanResult scanResult) {
         return DetectionReportEntry.builder()
                 .scanId(scanResult.scanId())
                 .spaceKey(scanResult.spaceKey())
@@ -31,10 +32,10 @@ public class DetectionReportMapper {
                 .pageUrl(scanResult.pageUrl())
                 .attachmentName(scanResult.attachmentName())
                 .attachmentUrl(scanResult.attachmentUrl())
-                .maskedContext(piiEntity.maskedContext())
-                .type(piiEntity.piiType())
-                .typeLabel(piiEntity.piiTypeLabel())
-                .confidenceScore(piiEntity.confidence())
+                .maskedContext(detectedPersonallyIdentifiableInformation.maskedContext())
+                .type(detectedPersonallyIdentifiableInformation.piiType())
+                .typeLabel(detectedPersonallyIdentifiableInformation.piiTypeLabel())
+                .confidenceScore(detectedPersonallyIdentifiableInformation.confidence())
                 .build();
     }
 }

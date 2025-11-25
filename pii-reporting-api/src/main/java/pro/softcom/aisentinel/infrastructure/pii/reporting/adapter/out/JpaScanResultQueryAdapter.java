@@ -120,7 +120,7 @@ public class JpaScanResultQueryAdapter implements ScanResultQuery {
 
         // Audit access for GDPR/nLPD compliance
         int totalPiiCount = results.stream()
-            .mapToInt(r -> r.detectedEntities() != null ? r.detectedEntities().size() : 0)
+            .mapToInt(r -> r.detectedPIIs() != null ? r.detectedPIIs().size() : 0)
             .sum();
 
         var spaceKey = results.getFirst().spaceKey();

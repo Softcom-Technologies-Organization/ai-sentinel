@@ -12,7 +12,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 
 @DisplayName("PiiMaskingUtils - Utility methods for PII masking operations")
 class PiiMaskingUtilsTest {
@@ -120,7 +120,7 @@ class PiiMaskingUtilsTest {
         @DisplayName("Should_ReturnNull_When_SourceIsNull")
         void Should_ReturnNull_When_SourceIsNull() {
             // Given
-            List<PiiEntity> entities = List.of(createEntity(0, 5, "EMAIL"));
+            List<DetectedPersonallyIdentifiableInformation> entities = List.of(createEntity(0, 5, "EMAIL"));
 
             // When
             String result = PiiMaskingUtils.buildMaskedContent(null, entities, 100);
@@ -135,7 +135,7 @@ class PiiMaskingUtilsTest {
         @DisplayName("Should_ReturnNull_When_SourceIsBlankOrEmpty")
         void Should_ReturnNull_When_SourceIsBlankOrEmpty(String source) {
             // Given
-            List<PiiEntity> entities = List.of(createEntity(0, 5, "EMAIL"));
+            List<DetectedPersonallyIdentifiableInformation> entities = List.of(createEntity(0, 5, "EMAIL"));
 
             // When
             String result = PiiMaskingUtils.buildMaskedContent(source, entities, 100);
@@ -175,7 +175,7 @@ class PiiMaskingUtilsTest {
         void Should_MaskSingleEntity_When_OneEntityPresent() {
             // Given
             String source = "Contact: john@example.com";
-            List<PiiEntity> entities = List.of(createEntity(9, 25, "EMAIL"));
+            List<DetectedPersonallyIdentifiableInformation> entities = List.of(createEntity(9, 25, "EMAIL"));
 
             // When
             String result = PiiMaskingUtils.buildMaskedContent(source, entities, 100);
@@ -189,7 +189,7 @@ class PiiMaskingUtilsTest {
         void Should_MaskMultipleEntities_When_MultipleEntitiesPresent() {
             // Given
             String source = "Email: john@example.com, Phone: 555-1234";
-            List<PiiEntity> entities = List.of(
+            List<DetectedPersonallyIdentifiableInformation> entities = List.of(
                     createEntity(7, 23, "EMAIL"),
                     createEntity(32, 40, "PHONE")
             );
@@ -206,7 +206,7 @@ class PiiMaskingUtilsTest {
         void Should_SortEntitiesByPosition_When_EntitiesAreUnordered() {
             // Given
             String source = "Email: john@example.com, Phone: 555-1234";
-            List<PiiEntity> entities = List.of(
+            List<DetectedPersonallyIdentifiableInformation> entities = List.of(
                     createEntity(32, 40, "PHONE"),
                     createEntity(7, 23, "EMAIL")
             );
@@ -223,7 +223,7 @@ class PiiMaskingUtilsTest {
         void Should_TruncateWithEllipsis_When_ContentExceedsMaxLength() {
             // Given
             String source = "This is a very long email: john@example.com with lots of text";
-            List<PiiEntity> entities = List.of(createEntity(27, 43, "EMAIL"));
+            List<DetectedPersonallyIdentifiableInformation> entities = List.of(createEntity(27, 43, "EMAIL"));
             int maxLen = 30;
 
             // When
@@ -242,7 +242,7 @@ class PiiMaskingUtilsTest {
         void Should_NotTruncate_When_MaxLengthIsZero() {
             // Given
             String source = "Email: john@example.com";
-            List<PiiEntity> entities = List.of(createEntity(7, 23, "EMAIL"));
+            List<DetectedPersonallyIdentifiableInformation> entities = List.of(createEntity(7, 23, "EMAIL"));
 
             // When
             String result = PiiMaskingUtils.buildMaskedContent(source, entities, 0);
@@ -256,7 +256,7 @@ class PiiMaskingUtilsTest {
         void Should_NotTruncate_When_MaxLengthIsNegative() {
             // Given
             String source = "Email: john@example.com";
-            List<PiiEntity> entities = List.of(createEntity(7, 23, "EMAIL"));
+            List<DetectedPersonallyIdentifiableInformation> entities = List.of(createEntity(7, 23, "EMAIL"));
 
             // When
             String result = PiiMaskingUtils.buildMaskedContent(source, entities, -1);
@@ -270,7 +270,7 @@ class PiiMaskingUtilsTest {
         void Should_PreserveTextBetweenEntities_When_EntitiesAreNotContiguous() {
             // Given
             String source = "Start EMAIL middle PHONE end";
-            List<PiiEntity> entities = List.of(
+            List<DetectedPersonallyIdentifiableInformation> entities = List.of(
                     createEntity(6, 11, "EMAIL"),
                     createEntity(19, 24, "PHONE")
             );
@@ -287,7 +287,7 @@ class PiiMaskingUtilsTest {
         void Should_HandleEntityAtStart_When_FirstEntityStartsAtZero() {
             // Given
             String source = "john@example.com is the contact";
-            List<PiiEntity> entities = List.of(createEntity(0, 16, "EMAIL"));
+            List<DetectedPersonallyIdentifiableInformation> entities = List.of(createEntity(0, 16, "EMAIL"));
 
             // When
             String result = PiiMaskingUtils.buildMaskedContent(source, entities, 200);
@@ -301,7 +301,7 @@ class PiiMaskingUtilsTest {
         void Should_HandleEntityAtEnd_When_LastEntityEndsAtSourceLength() {
             // Given
             String source = "Contact email: john@example.com";
-            List<PiiEntity> entities = List.of(createEntity(15, 31, "EMAIL"));
+            List<DetectedPersonallyIdentifiableInformation> entities = List.of(createEntity(15, 31, "EMAIL"));
 
             // When
             String result = PiiMaskingUtils.buildMaskedContent(source, entities, 200);
@@ -315,7 +315,7 @@ class PiiMaskingUtilsTest {
         void Should_HandleMultipleConsecutiveEntities_When_NoTextBetween() {
             // Given
             String source = "EMAILPHONE";
-            List<PiiEntity> entities = List.of(
+            List<DetectedPersonallyIdentifiableInformation> entities = List.of(
                     createEntity(0, 5, "EMAIL"),
                     createEntity(5, 10, "PHONE")
             );
@@ -332,7 +332,7 @@ class PiiMaskingUtilsTest {
         void Should_HandleEntitiesWithUnknownType_When_TypeIsNull() {
             // Given
             String source = "Some sensitive data here";
-            List<PiiEntity> entities = List.of(createEntity(5, 14, null));
+            List<DetectedPersonallyIdentifiableInformation> entities = List.of(createEntity(5, 14, null));
 
             // When
             String result = PiiMaskingUtils.buildMaskedContent(source, entities, 200);
@@ -346,7 +346,7 @@ class PiiMaskingUtilsTest {
         void Should_ClampEntityPositions_When_PositionsExceedSourceLength() {
             // Given
             String source = "Short";
-            List<PiiEntity> entities = List.of(createEntity(0, 100, "EMAIL"));
+            List<DetectedPersonallyIdentifiableInformation> entities = List.of(createEntity(0, 100, "EMAIL"));
 
             // When
             String result = PiiMaskingUtils.buildMaskedContent(source, entities, 200);
@@ -360,7 +360,7 @@ class PiiMaskingUtilsTest {
         void Should_HandleComplexScenario_When_MultipleEntitiesWithVariousTypes() {
             // Given
             String source = "User: John Doe, Email: john@example.com, SSN: 123-45-6789, Phone: 555-1234";
-            List<PiiEntity> entities = List.of(
+            List<DetectedPersonallyIdentifiableInformation> entities = List.of(
                     createEntity(6, 14, "PERSON"),
                     createEntity(23, 39, "EMAIL"),
                     createEntity(46, 57, "SSN"),
@@ -377,8 +377,8 @@ class PiiMaskingUtilsTest {
 
     // ========== Helper Methods ==========
 
-    private static PiiEntity createEntity(int start, int end, String type) {
-        return PiiEntity.builder()
+    private static DetectedPersonallyIdentifiableInformation createEntity(int start, int end, String type) {
+        return DetectedPersonallyIdentifiableInformation.builder()
                 .startPosition(start)
                 .endPosition(end)
                 .piiType(type)

@@ -1,5 +1,5 @@
 
-export interface PiiEntity {
+export interface DetectedPersonallyIdentifiableInformation {
   startPosition: number;
   endPosition: number;
   piiTypeLabel: string; // Business label to display (e.g., "Email")

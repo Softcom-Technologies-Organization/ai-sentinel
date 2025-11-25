@@ -20,7 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.application.pii.reporting.ScanSeverityCountService;
 import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanEventStore;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 
@@ -74,10 +74,10 @@ class ContentScanOrchestratorTest {
             // Given
             String scanId = "scan-123";
             String spaceKey = "PROJ";
-            List<PiiEntity> detectedEntities = List.of(
-                    new PiiEntity(10, 21, "ssn", "SSN", 0.95, "123-45-6789", "context", "masked"),
-                    new PiiEntity(30, 47, "email", "Email", 0.98, "test@example.com", "context", "masked"),
-                    new PiiEntity(50, 68, "credit_card", "Credit Card", 0.99, "4111-1111-1111-1111", "context", "masked")
+            List<DetectedPersonallyIdentifiableInformation> detectedEntities = List.of(
+                    new DetectedPersonallyIdentifiableInformation(10, 21, "ssn", "SSN", 0.95, "123-45-6789", "context", "masked"),
+                    new DetectedPersonallyIdentifiableInformation(30, 47, "email", "Email", 0.98, "test@example.com", "context", "masked"),
+                    new DetectedPersonallyIdentifiableInformation(50, 68, "credit_card", "Credit Card", 0.99, "4111-1111-1111-1111", "context", "masked")
             );
 
             ScanResult event = ScanResult.builder()
@@ -161,8 +161,8 @@ class ContentScanOrchestratorTest {
             // Given
             String scanId = "scan-123";
             String spaceKey = "PROJ";
-            List<PiiEntity> detectedEntities = List.of(
-                    new PiiEntity(10, 27, "email", "Email", 0.98, "test@example.com", "context", "masked")
+            List<DetectedPersonallyIdentifiableInformation> detectedEntities = List.of(
+                    new DetectedPersonallyIdentifiableInformation(10, 27, "email", "Email", 0.98, "test@example.com", "context", "masked")
             );
 
             ScanResult event = ScanResult.builder()
@@ -201,8 +201,8 @@ class ContentScanOrchestratorTest {
             // Given
             String scanId = "scan-456";
             String spaceKey = "TEST";
-            List<PiiEntity> detectedEntities = List.of(
-                    new PiiEntity(0, 11, "ssn", "SSN", 0.99, "123-45-6789", "context", "masked")
+            List<DetectedPersonallyIdentifiableInformation> detectedEntities = List.of(
+                    new DetectedPersonallyIdentifiableInformation(0, 11, "ssn", "SSN", 0.99, "123-45-6789", "context", "masked")
             );
 
             ScanResult event = ScanResult.builder()
@@ -252,13 +252,13 @@ class ContentScanOrchestratorTest {
             // Given
             String scanId = "scan-789";
             String spaceKey = "MULTI";
-            List<PiiEntity> detectedEntities = List.of(
-                    new PiiEntity(0, 11, "ssn", "SSN", 0.99, "123-45-6789", "context", "masked"),
-                    new PiiEntity(20, 31, "ssn", "SSN", 0.98, "987-65-4321", "context", "masked"),
-                    new PiiEntity(40, 58, "credit_card", "Credit Card", 0.97, "4111-1111-1111-1111", "context", "masked"),
-                    new PiiEntity(60, 77, "email", "Email", 0.96, "test1@example.com", "context", "masked"),
-                    new PiiEntity(80, 97, "email", "Email", 0.95, "test2@example.com", "context", "masked"),
-                    new PiiEntity(100, 114, "phone", "Phone", 0.94, "(555) 123-4567", "context", "masked")
+            List<DetectedPersonallyIdentifiableInformation> detectedEntities = List.of(
+                    new DetectedPersonallyIdentifiableInformation(0, 11, "ssn", "SSN", 0.99, "123-45-6789", "context", "masked"),
+                    new DetectedPersonallyIdentifiableInformation(20, 31, "ssn", "SSN", 0.98, "987-65-4321", "context", "masked"),
+                    new DetectedPersonallyIdentifiableInformation(40, 58, "credit_card", "Credit Card", 0.97, "4111-1111-1111-1111", "context", "masked"),
+                    new DetectedPersonallyIdentifiableInformation(60, 77, "email", "Email", 0.96, "test1@example.com", "context", "masked"),
+                    new DetectedPersonallyIdentifiableInformation(80, 97, "email", "Email", 0.95, "test2@example.com", "context", "masked"),
+                    new DetectedPersonallyIdentifiableInformation(100, 114, "phone", "Phone", 0.94, "(555) 123-4567", "context", "masked")
             );
 
             ScanResult event = ScanResult.builder()
@@ -289,8 +289,8 @@ class ContentScanOrchestratorTest {
             // Given
             String scanId = "scan-pub";
             String spaceKey = "PUB";
-            List<PiiEntity> detectedEntities = List.of(
-                    new PiiEntity(0, 17, "email", "Email", 0.98, "test@example.com", "context", "masked")
+            List<DetectedPersonallyIdentifiableInformation> detectedEntities = List.of(
+                    new DetectedPersonallyIdentifiableInformation(0, 17, "email", "Email", 0.98, "test@example.com", "context", "masked")
             );
 
             ScanResult event = ScanResult.builder()
@@ -324,7 +324,7 @@ class ContentScanOrchestratorTest {
             ScanResult event = ScanResult.builder()
                     .scanId(scanId)
                     .spaceKey(spaceKey)
-                    .eventType("COMPLETE")
+                    .eventType("complete")  // Must match ScanEventType.COMPLETE.getValue()
                     .analysisProgressPercentage(100.0)
                     .build();
 
@@ -356,14 +356,14 @@ class ContentScanOrchestratorTest {
 
             String scanId = "scan-null";
             String spaceKey = "NULL";
-            List<PiiEntity> detectedEntities = List.of(
-                    new PiiEntity(0, 17, "email", "Email", 0.98, "test@example.com", "context", "masked")
+            List<DetectedPersonallyIdentifiableInformation> detectedEntities = List.of(
+                    new DetectedPersonallyIdentifiableInformation(0, 17, "email", "Email", 0.98, "test@example.com", "context", "masked")
             );
 
             ScanResult event = ScanResult.builder()
                     .scanId(scanId)
                     .spaceKey(spaceKey)
-                    .eventType("COMPLETE")
+                    .eventType("complete")  // Must match ScanEventType.COMPLETE.getValue()
                     .detectedEntities(detectedEntities)
                     .analysisProgressPercentage(100.0)
                     .build();
@@ -398,8 +398,8 @@ class ContentScanOrchestratorTest {
 
             String scanId = "scan-severity";
             String spaceKey = "SEV";
-            List<PiiEntity> detectedEntities = List.of(
-                    new PiiEntity(0, 11, "ssn", "SSN", 0.99, "123-45-6789", "context", "masked")
+            List<DetectedPersonallyIdentifiableInformation> detectedEntities = List.of(
+                    new DetectedPersonallyIdentifiableInformation(0, 11, "ssn", "SSN", 0.99, "123-45-6789", "context", "masked")
             );
 
             ScanResult event = ScanResult.builder()

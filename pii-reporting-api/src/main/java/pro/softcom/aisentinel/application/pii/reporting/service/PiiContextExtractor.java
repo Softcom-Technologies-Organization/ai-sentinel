@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.pii.reporting.service.parser.ContentParser;
 import pro.softcom.aisentinel.application.pii.reporting.service.parser.ContentParserFactory;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 
 /**
@@ -36,7 +36,7 @@ public class PiiContextExtractor {
      * Extracts context while masking all PII occurrences present in the same line as the principal one.
      * Useful when the source contains multiple PIIs to avoid leaking others in the context.
      */
-    public String extractMaskedContext(String source, int start, int end, String type, List<PiiEntity> allEntities) {
+    public String extractMaskedContext(String source, int start, int end, String type, List<DetectedPersonallyIdentifiableInformation> allEntities) {
         return extractLineContext(source, start, end, type, allEntities, true);
     }
 
@@ -60,8 +60,8 @@ public class PiiContextExtractor {
         }
 
         try {
-            List<PiiEntity> allEntities = scanResult.detectedEntities();
-            List<PiiEntity> enriched = allEntities.stream()
+            List<DetectedPersonallyIdentifiableInformation> allEntities = scanResult.detectedPIIs();
+            List<DetectedPersonallyIdentifiableInformation> enriched = allEntities.stream()
                     .map(entity -> enrichEntity(scanResult.sourceContent(), entity, allEntities))
                     .toList();
 
@@ -83,13 +83,13 @@ public class PiiContextExtractor {
 
     private boolean needsEnrichment(ScanResult scanResult) {
         return scanResult != null
-                && scanResult.detectedEntities() != null
-                && !scanResult.detectedEntities().isEmpty()
+                && scanResult.detectedPIIs() != null
+                && !scanResult.detectedPIIs().isEmpty()
                 && scanResult.sourceContent() != null
                 && !scanResult.sourceContent().isBlank();
     }
 
-    private PiiEntity enrichEntity(String source, PiiEntity entity, List<PiiEntity> allEntities) {
+    private DetectedPersonallyIdentifiableInformation enrichEntity(String source, DetectedPersonallyIdentifiableInformation entity, List<DetectedPersonallyIdentifiableInformation> allEntities) {
         if (entity == null || hasContext(entity)) {
             return entity;
         }
@@ -108,7 +108,7 @@ public class PiiContextExtractor {
                 .build();
     }
 
-    private boolean hasContext(PiiEntity entity) {
+    private boolean hasContext(DetectedPersonallyIdentifiableInformation entity) {
         return (entity.sensitiveContext() != null && !entity.sensitiveContext().isBlank())
                 || (entity.maskedContext() != null && !entity.maskedContext().isBlank());
     }
@@ -133,7 +133,7 @@ public class PiiContextExtractor {
      * @return extracted and truncated context, or null if extraction is not possible
      */
     private String extractLineContext(String source, int start, int end, String type,
-                                      List<PiiEntity> allEntities, boolean maskPii) {
+                                      List<DetectedPersonallyIdentifiableInformation> allEntities, boolean maskPii) {
         if (source == null || source.isBlank()) {
             return null;
         }
@@ -160,7 +160,7 @@ public class PiiContextExtractor {
                                         int mainStart,
                                         int mainEnd,
                                         String mainType,
-                                        List<PiiEntity> allEntities) {
+                                        List<DetectedPersonallyIdentifiableInformation> allEntities) {
         int lineLen = lineContext.length();
         List<TempEntity> relEntities = collectRelevantEntities(
                 lineLen, lineStartInSource, mainStart, mainEnd, mainType, allEntities
@@ -179,7 +179,7 @@ public class PiiContextExtractor {
                                                      int mainStart,
                                                      int mainEnd,
                                                      String mainType,
-                                                     List<PiiEntity> allEntities) {
+                                                     List<DetectedPersonallyIdentifiableInformation> allEntities) {
         List<TempEntity> relEntities = new ArrayList<>();
 
         // Always include the main entity
@@ -205,7 +205,7 @@ public class PiiContextExtractor {
     /**
      * Checks if an entity intersects with the current line.
      */
-    private boolean isEntityInLine(PiiEntity entity, int lineStart, int lineLen) {
+    private boolean isEntityInLine(DetectedPersonallyIdentifiableInformation entity, int lineStart, int lineLen) {
         int absE = entity.endPosition();
         int absS = entity.startPosition();
         return !(absE <= lineStart || absS >= lineStart + lineLen);
@@ -214,14 +214,14 @@ public class PiiContextExtractor {
     /**
      * Checks if an entity is the main entity being processed.
      */
-    private boolean isMainEntity(PiiEntity entity, int mainStart, int mainEnd) {
+    private boolean isMainEntity(DetectedPersonallyIdentifiableInformation entity, int mainStart, int mainEnd) {
         return entity.startPosition() == mainStart && entity.endPosition() == mainEnd;
     }
 
     /**
      * Creates a TempEntity from a PiiEntity, adjusting positions relative to the line start.
      */
-    private TempEntity createTempEntity(PiiEntity entity, int lineStartInSource, int lineLen) {
+    private TempEntity createTempEntity(DetectedPersonallyIdentifiableInformation entity, int lineStartInSource, int lineLen) {
         long absS = entity.startPosition();
         long absE = entity.endPosition();
         int rs = (int) Math.clamp(absS - lineStartInSource, 0L, lineLen);

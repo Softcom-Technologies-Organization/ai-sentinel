@@ -3,7 +3,7 @@ package pro.softcom.aisentinel.domain.pii.reporting;
 import lombok.Builder;
 
 @Builder(toBuilder = true)
-public record PiiEntity(
+public record DetectedPersonallyIdentifiableInformation(
         int startPosition,
         int endPosition,
         String piiType,

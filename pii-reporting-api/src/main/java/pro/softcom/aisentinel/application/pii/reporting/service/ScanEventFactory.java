@@ -5,11 +5,13 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceUrlProvider;
+import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
 import pro.softcom.aisentinel.application.pii.reporting.usecase.DetectionReportingEventType;
 import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
+import pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 
@@ -22,6 +24,7 @@ public class ScanEventFactory {
 
     private final ConfluenceUrlProvider confluenceUrlProvider;
     private final PiiContextExtractor piiContextExtractor;
+    private final SeverityCalculationService severityCalculationService;
 
 
     /**
@@ -104,12 +107,13 @@ public class ScanEventFactory {
                 .isFinal(true)
                 .pageId(page.id())
                 .pageTitle(page.title())
-                .detectedEntities(List.of())
+                .detectedPersonallyIdentifiableInformationList(List.of())
                 .summary(Map.of())
                 .pageUrl(buildPageUrl(page.id()))
                 .emittedAt(Instant.now().toString())
                 .analysisProgressPercentage(progress)
                 .scanStatus(ScanStatus.RUNNING)
+                .severity(null)
                 .build();
     }
 
@@ -119,8 +123,9 @@ public class ScanEventFactory {
     public ScanResult createPageItemEvent(String scanId, String spaceKey, ConfluencePage page,
                                          String content, ContentPiiDetection detection,
                                          double progress) {
-        List<PiiEntity> entities = mapToEntityList(detection, content);
+        List<DetectedPersonallyIdentifiableInformation> entities = mapToEntityList(detection, content);
         Map<String, Integer> summary = extractSummary(detection);
+        String severity = calculateHighestSeverity(entities);
 
         return ScanResult.builder()
             .scanId(scanId)
@@ -129,13 +134,14 @@ public class ScanEventFactory {
             .isFinal(true)
             .pageId(page.id())
             .pageTitle(page.title())
-            .detectedEntities(entities)
+            .detectedPersonallyIdentifiableInformationList(entities)
             .summary(summary)
             .sourceContent(content)
             .pageUrl(buildPageUrl(page.id()))
             .emittedAt(Instant.now().toString())
             .analysisProgressPercentage(progress)
             .scanStatus(ScanStatus.RUNNING)
+            .severity(severity)
             .build();
     }
 
@@ -145,8 +151,9 @@ public class ScanEventFactory {
     public ScanResult createAttachmentItemEvent(String scanId, String spaceKey, ConfluencePage page,
                                                AttachmentInfo attachment, String content,
                                                ContentPiiDetection detection, double progress) {
-        List<PiiEntity> entities = mapToEntityList(detection, content);
+        List<DetectedPersonallyIdentifiableInformation> entities = mapToEntityList(detection, content);
         Map<String, Integer> summary = extractSummary(detection);
+        String severity = calculateHighestSeverity(entities);
 
         return ScanResult.builder()
             .scanId(scanId)
@@ -155,7 +162,7 @@ public class ScanEventFactory {
             .isFinal(true)
             .pageId(page.id())
             .pageTitle(page.title())
-            .detectedEntities(entities)
+            .detectedPersonallyIdentifiableInformationList(entities)
             .summary(summary)
             .sourceContent(content)
             .pageUrl(buildPageUrl(page.id()))
@@ -165,6 +172,7 @@ public class ScanEventFactory {
             .emittedAt(Instant.now().toString())
             .analysisProgressPercentage(progress)
             .scanStatus(ScanStatus.RUNNING)
+            .severity(severity)
             .build();
     }
 
@@ -189,7 +197,7 @@ public class ScanEventFactory {
     /**
      * Maps PII detection results to entity list for event payload.
      */
-    private List<PiiEntity> mapToEntityList(ContentPiiDetection detection, String content) {
+    private List<DetectedPersonallyIdentifiableInformation> mapToEntityList(ContentPiiDetection detection, String content) {
         if (detection == null || detection.sensitiveDataFound() == null) {
             return List.of();
         }
@@ -198,18 +206,18 @@ public class ScanEventFactory {
             .toList();
     }
 
-    private PiiEntity mapSensitiveDataToEntity(ContentPiiDetection.SensitiveData data, String sourceContent, ContentPiiDetection detection) {
+    private DetectedPersonallyIdentifiableInformation mapSensitiveDataToEntity(ContentPiiDetection.SensitiveData data, String sourceContent, ContentPiiDetection detection) {
         String type = (data.type() != null ? data.type().name() : null);
         String typeLabel = (data.type() != null ? data.type().getLabel() : null);
         // Build a lightweight list of entities to ensure other PIIs in the same line are also masked in context
-        List<PiiEntity> all = detection == null || detection.sensitiveDataFound() == null ? List.of() :
+        List<DetectedPersonallyIdentifiableInformation> all = detection == null || detection.sensitiveDataFound() == null ? List.of() :
                 detection.sensitiveDataFound().stream()
                         .map(sd -> {
                             String sdType = null;
                             if (sd.type() != null) {
                                 sdType = sd.type().name();
                             }
-                            return PiiEntity.builder()
+                            return DetectedPersonallyIdentifiableInformation.builder()
                                     .startPosition(sd.position())
                                     .endPosition(sd.end())
                                     .piiType(sdType)
@@ -223,7 +231,7 @@ public class ScanEventFactory {
         // Extract real context (contains actual PII values, will be encrypted)
         String sensitiveContext = piiContextExtractor.extractSensitiveContext(sourceContent, data.position(), data.end());
         
-        return PiiEntity.builder()
+        return DetectedPersonallyIdentifiableInformation.builder()
                 .sensitiveContext(sensitiveContext)
                 .maskedContext(maskedContext)
                 .sensitiveValue(data.value())
@@ -241,6 +249,28 @@ public class ScanEventFactory {
         }
         Map<String, Integer> summary = detection.statistics();
         return summary.isEmpty() ? null : summary;
+    }
+
+    /**
+     * Calculates the highest severity from a list of PII entities.
+     * Business intent: Determine the overall severity of a page/attachment based on the most severe PII type found.
+     * 
+     * @param entities List of detected PII entities
+     * @return Severity as string (HIGH, MEDIUM, LOW) or null if no entities
+     */
+    private String calculateHighestSeverity(List<DetectedPersonallyIdentifiableInformation> entities) {
+        if (entities == null || entities.isEmpty()) {
+            return null;
+        }
+        
+        PiiSeverity highest = PiiSeverity.LOW;
+        for (DetectedPersonallyIdentifiableInformation entity : entities) {
+            PiiSeverity severity = severityCalculationService.calculateSeverity(entity.piiType());
+            if (severity.compareTo(highest) < 0) {  // Lower ordinal = higher severity (HIGH=0, MEDIUM=1, LOW=2)
+                highest = severity;
+            }
+        }
+        return highest.name(); // Returns "HIGH", "MEDIUM", or "LOW"
     }
 
     private String buildPageUrl(String pageId) {

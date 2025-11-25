@@ -206,8 +206,8 @@ export class DashboardUiStateService {
    * Maps status to PrimeNG severity for styling.
    * Business purpose: Provides visual feedback for different scan states.
    */
-  statusSeverity(status?: string): 'danger' | 'warning' | 'success' | 'info' | 'secondary' {
-    return this.spacesDashboardUtils.statusSeverity(status);
+  statusStyle(status?: string): 'danger' | 'warning' | 'success' | 'info' | 'secondary' {
+    return this.spacesDashboardUtils.statusStyle(status);
   }
 
   /**

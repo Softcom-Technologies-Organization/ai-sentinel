@@ -16,7 +16,7 @@ public record ScanResult(
         Integer pageIndex,
         String pageId,
         String pageTitle,
-        List<PiiEntity> detectedEntities,
+        List<DetectedPersonallyIdentifiableInformation> detectedPersonallyIdentifiableInformationList,
         Map<String, Integer> summary,
         @JsonIgnore String sourceContent,
         String maskedContent,
@@ -27,5 +27,6 @@ public record ScanResult(
         String attachmentType,
         String attachmentUrl,
         Double analysisProgressPercentage,
-        ScanStatus scanStatus
+        ScanStatus scanStatus,
+        String severity  // Pre-calculated severity from backend (HIGH/MEDIUM/LOW)
 ) { }

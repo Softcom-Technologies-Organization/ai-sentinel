@@ -73,7 +73,7 @@ enabled = true
 # - 3 workers: Good balance for 4-core CPUs (~43% gain)
 # - 5 workers: Optimal for 6-8 core CPUs (~49% gain)
 # - Set to 1 to disable parallelization (sequential processing)
-max_workers = 10
+max_workers = 6
 
 # Minimum number of texts to trigger parallel processing
 # If batch has fewer texts than this threshold, process sequentially

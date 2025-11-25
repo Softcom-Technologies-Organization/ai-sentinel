@@ -24,6 +24,8 @@ import pro.softcom.aisentinel.application.pii.export.port.out.ReadExportContextP
 import pro.softcom.aisentinel.application.pii.export.port.out.ReadScanEventsPort;
 import pro.softcom.aisentinel.application.pii.export.port.out.WriteDetectionReportPort;
 import pro.softcom.aisentinel.application.pii.export.usecase.ExportDetectionReportUseCase;
+import pro.softcom.aisentinel.application.pii.reporting.ScanSeverityCountService;
+import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.PauseScanPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.RevealPiiSecretsPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.ScanReportingPort;
@@ -85,8 +87,9 @@ public class ApplicationUseCasesConfig {
 
     @Bean
     public ScanEventFactory scanEventFactory(ConfluenceUrlProvider confluenceUrlProvider,
-                                             PiiContextExtractor piiContextExtractor) {
-        return new ScanEventFactory(confluenceUrlProvider, piiContextExtractor);
+                                             PiiContextExtractor piiContextExtractor,
+                                             SeverityCalculationService severityCalculationService) {
+        return new ScanEventFactory(confluenceUrlProvider, piiContextExtractor, severityCalculationService);
     }
 
     @Bean
@@ -111,9 +114,17 @@ public class ApplicationUseCasesConfig {
                                                     ScanProgressCalculator scanProgressCalculator,
                                                     ScanCheckpointService scanCheckpointService,
                                                     ScanEventStore scanEventStore,
-                                                    ScanEventDispatcher scanEventDispatcher) {
+                                                    ScanEventDispatcher scanEventDispatcher,
+                                                    SeverityCalculationService severityCalculationService,
+                                                    ScanSeverityCountService scanSeverityCountService) {
         return new ContentScanOrchestrator(
-                scanEventFactory, scanProgressCalculator, scanCheckpointService, scanEventStore, scanEventDispatcher
+                scanEventFactory, 
+                scanProgressCalculator, 
+                scanCheckpointService, 
+                scanEventStore, 
+                scanEventDispatcher,
+                severityCalculationService,
+                scanSeverityCountService
         );
     }
 

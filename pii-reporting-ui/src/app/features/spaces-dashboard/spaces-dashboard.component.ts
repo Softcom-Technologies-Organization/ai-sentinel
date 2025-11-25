@@ -4,12 +4,13 @@ import {
   computed,
   inject,
   OnDestroy,
-  OnInit
+  OnInit,
+  signal
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ButtonModule} from 'primeng/button';
-import {TranslocoModule, TranslocoService} from '@jsverse/transloco';
+import {TranslocoModule} from '@jsverse/transloco';
 import {
   LanguageSelectorComponent
 } from '../../core/components/language-selector/language-selector.component';
@@ -32,6 +33,7 @@ import {SortEvent} from 'primeng/api';
 import {TestIds} from '../test-ids.constants';
 import {ToastModule} from 'primeng/toast';
 import {ConfirmDialogModule} from 'primeng/confirmdialog';
+import {DialogModule} from 'primeng/dialog';
 import {
   NewSpacesBannerComponent
 } from '../../shared/components/new-spaces-banner/new-spaces-banner.component';
@@ -40,7 +42,6 @@ import {DashboardUiStateService} from './services/dashboard-ui-state.service';
 import {PiiItemsStorageService} from './services/pii-items-storage.service';
 import {SpaceDataManagementService} from './services/space-data-management.service';
 import {ScanControlService} from './services/scan-control.service';
-import {SseEventHandlerService} from './services/sse-event-handler.service';
 
 /**
  * Dashboard to orchestrate scanning all Confluence spaces sequentially.
@@ -87,6 +88,7 @@ import {SseEventHandlerService} from './services/sse-event-handler.service';
     DataViewModule,
     SkeletonModule,
     ConfirmDialogModule,
+    DialogModule,
     ToastModule,
     TranslocoModule,
     LanguageSelectorComponent,
@@ -104,17 +106,18 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   private readonly piiItemsStorage = inject(PiiItemsStorageService);
   private readonly dataManagement = inject(SpaceDataManagementService);
   private readonly scanControl = inject(ScanControlService);
-  private readonly sseEventHandler = inject(SseEventHandlerService);
 
   // Utility services
   readonly spacesDashboardUtils = inject(SpacesDashboardUtils);
-  readonly translocoService = inject(TranslocoService);
 
   // Expose test IDs to template for E2E testing
   readonly testIds = TestIds.dashboard;
 
   // 10 placeholder rows for loading skeleton
   readonly skeletonRows: number[] = Array.from({ length: 10 }, (_, i) => i);
+
+  // PII Help dialog visibility
+  readonly showPiiHelpDialog = signal(false);
 
   // ===== Computed signals exposing service state to template =====
 
@@ -286,8 +289,8 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
    * Gets status severity for styling.
    * Delegates to DashboardUiStateService.
    */
-  statusSeverity(status?: string): 'danger' | 'warning' | 'success' | 'info' | 'secondary' {
-    return this.uiStateService.statusSeverity(status);
+  statusStyle(status?: string): 'danger' | 'warning' | 'success' | 'info' | 'secondary' {
+    return this.uiStateService.statusStyle(status);
   }
 
   /**
@@ -296,5 +299,12 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
    */
   openConfluence(space: any): void {
     this.spacesDashboardUtils.openConfluence(space);
+  }
+
+  /**
+   * Opens the PII severity help dialog.
+   */
+  openPiiHelpDialog(): void {
+    this.showPiiHelpDialog.set(true);
   }
 }

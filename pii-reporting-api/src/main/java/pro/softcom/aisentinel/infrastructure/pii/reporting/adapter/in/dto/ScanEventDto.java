@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 import java.util.Map;
 import lombok.Builder;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 
 /**
  * Payload for Server-Sent Events emitted during a Confluence space scan.
@@ -22,7 +22,7 @@ public record ScanEventDto(
         Integer pageIndex,
         String pageId,
         String pageTitle,
-        List<PiiEntity> detectedEntities,
+        List<DetectedPersonallyIdentifiableInformation> detectedPersonallyIdentifiableInformationList,
         Map<String, Integer> summary,
         String message,
         String pageUrl,

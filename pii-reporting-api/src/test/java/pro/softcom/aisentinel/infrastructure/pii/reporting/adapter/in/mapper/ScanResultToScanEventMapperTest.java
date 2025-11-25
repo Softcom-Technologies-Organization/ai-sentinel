@@ -8,7 +8,7 @@ import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
@@ -27,7 +27,7 @@ class ScanResultToScanEventMapperTest {
     void Should_MapAllFields_When_ScanResultProvided() {
         // Arrange
         Map<String, Integer> summary = Map.of("EMAIL", 2, "PHONE", 1);
-        List<PiiEntity> entities = List.of(entity(0, 1, "EMAIL"));
+        List<DetectedPersonallyIdentifiableInformation> entities = List.of(entity());
         ScanResult sr = ScanResult.builder()
                 .scanId("sid")
                 .spaceKey("space")
@@ -37,7 +37,7 @@ class ScanResultToScanEventMapperTest {
                 .pageIndex(3)
                 .pageId("pid")
                 .pageTitle("Title")
-                .detectedEntities(entities)
+                .detectedPersonallyIdentifiableInformationList(entities)
                 .summary(summary)
                 .sourceContent("abc")
                 .message("msg")
@@ -62,7 +62,7 @@ class ScanResultToScanEventMapperTest {
         softly.assertThat(dto.pageIndex()).isEqualTo(3);
         softly.assertThat(dto.pageId()).isEqualTo("pid");
         softly.assertThat(dto.pageTitle()).isEqualTo("Title");
-        softly.assertThat(dto.detectedEntities()).isEqualTo(entities);
+        softly.assertThat(dto.detectedPersonallyIdentifiableInformationList()).isEqualTo(entities);
         softly.assertThat(dto.summary()).isEqualTo(summary);
         softly.assertThat(dto.message()).isEqualTo("msg");
         softly.assertThat(dto.pageUrl()).isEqualTo("url");
@@ -74,16 +74,16 @@ class ScanResultToScanEventMapperTest {
         softly.assertAll();
     }
 
-    private static PiiEntity entity(int start, int end, Object type) {
-        return new PiiEntity(
-                start, 
-                end, 
-                type == null ? null : type.toString(), 
-                type == null ? null : type.toString(), 
-                0, 
-                null,  // detectedValue
-                null,  // context
-                null   // maskedContext
+    private static DetectedPersonallyIdentifiableInformation entity() {
+        return new DetectedPersonallyIdentifiableInformation(
+            0,
+            1,
+            ((Object) "EMAIL").toString(),
+            ((Object) "EMAIL").toString(),
+            0,
+            null,  // detectedValue
+            null,  // context
+            null   // maskedContext
         );
     }
 }

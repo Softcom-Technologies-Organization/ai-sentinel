@@ -1,7 +1,8 @@
-import {computed, inject, Injectable, signal} from '@angular/core';
+import {computed, Injectable, signal} from '@angular/core';
 import {Space} from '../../core/models/space';
-import {PiiItem} from '../../core/models/pii-item';
-import {TranslocoService} from '@jsverse/transloco';
+import {
+  PersonallyIdentifiableInformationScanResult
+} from '../../core/models/personally-identifiable-information-scan-result';
 
 /**
  * Facade for Spaces Dashboard UI concerns.
@@ -17,7 +18,6 @@ export interface UISpace extends Space {
 
 @Injectable({ providedIn: 'root' })
 export class SpacesDashboardUtils {
-  private readonly translocoService = inject(TranslocoService);
 
   // raw ui list populated from backend spaces with safe defaults for display fields
   private readonly uiSpaces = signal<UISpace[]>([]);
@@ -88,7 +88,7 @@ export class SpacesDashboardUtils {
     return 'Terminé';
   }
 
-  statusSeverity(status?: string): 'danger' | 'warning' | 'success' | 'info' | 'secondary' {
+  statusStyle(status?: string): 'danger' | 'warning' | 'success' | 'info' | 'secondary' {
     // Use PrimeNG-supported severities for Tag: success | info | warning | danger | secondary
     if (status === 'FAILED') return 'danger';
     if (status === 'RUNNING') return 'warning';
@@ -132,7 +132,18 @@ export class SpacesDashboardUtils {
     return !!space?.url && space.url.length > 0;
   }
 
-  severityCounts(arr: PiiItem[]): { total: number; high: number; medium: number; low: number } {
+  /**
+   * Get current severity counts for a space.
+   * Returns default zero counts if space not found.
+   */
+  getSpaceCounts(key: string): { total: number; high: number; medium: number; low: number } {
+    const nk = (v: string | null | undefined) => String(v ?? '').trim().toLowerCase();
+    const k = nk(key);
+    const space = this.uiSpaces().find(s => nk(s.key) === k);
+    return space?.counts ?? { total: 0, high: 0, medium: 0, low: 0 };
+  }
+
+  severityCounts(arr: PersonallyIdentifiableInformationScanResult[]): { total: number; high: number; medium: number; low: number } {
     let high = 0, medium = 0, low = 0;
     for (const it of arr) {
       if (it.severity === 'high') high++;

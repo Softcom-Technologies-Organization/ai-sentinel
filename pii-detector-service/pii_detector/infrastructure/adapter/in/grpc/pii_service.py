@@ -956,6 +956,7 @@ class MemoryLimitedServer:
         self.max_queued_requests = max_queued_requests
         self.memory_limit_percent = memory_limit_percent
         self.server = None
+        self.executor = None
         
     def _check_memory(self):
         """Check if memory usage is within limits."""
@@ -963,17 +964,33 @@ class MemoryLimitedServer:
         memory_percent = process.memory_percent()
         return memory_percent < self.memory_limit_percent
     
+    def stop(self, grace: int = 5):
+        """
+        Stop the gRPC server gracefully.
+        
+        Args:
+            grace: Grace period in seconds for pending requests to complete.
+        """
+        if self.server:
+            logger.info(f"Stopping gRPC server with {grace}s grace period...")
+            self.server.stop(grace)
+            logger.info("gRPC server stopped")
+        if self.executor:
+            logger.info("Shutting down thread pool executor...")
+            self.executor.shutdown(wait=True)
+            logger.info("Thread pool executor shut down")
+    
     def serve(self):
         """Start the gRPC server with memory limits."""
         # Create a custom thread pool executor with bounded queue
-        executor = futures.ThreadPoolExecutor(
+        self.executor = futures.ThreadPoolExecutor(
             max_workers=self.max_workers,
             thread_name_prefix='grpc-worker'
         )
         
         # Create server with custom executor
         self.server = grpc.server(
-            executor,
+            self.executor,
             options=[
                 ('grpc.max_receive_message_length', 10 * 1024 * 1024),  # 10MB max message size
                 ('grpc.max_send_message_length', 10 * 1024 * 1024),
@@ -1049,3 +1066,5 @@ if __name__ == '__main__':
         server.wait_for_termination()
     except KeyboardInterrupt:
         logger.info("Server shutting down...")
+        server.stop(grace=5)
+        logger.info("Server stopped gracefully")

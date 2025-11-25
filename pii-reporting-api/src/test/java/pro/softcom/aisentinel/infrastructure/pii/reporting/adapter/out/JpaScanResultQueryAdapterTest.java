@@ -25,7 +25,7 @@ import pro.softcom.aisentinel.application.pii.security.ScanResultEncryptor;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
 import pro.softcom.aisentinel.domain.pii.reporting.AccessPurpose;
 import pro.softcom.aisentinel.domain.pii.reporting.LastScanMeta;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.DetectionEventRepository;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.DetectionEventRepository.LatestScanProjection;
@@ -271,12 +271,12 @@ class JpaScanResultQueryAdapterTest {
     @Test
     void Should_DecryptAndAudit_When_DecryptedResultsFound() throws Exception {
         ScanResult encrypted1 = sampleScanResult().toBuilder()
-            .detectedEntities(List.of(PiiEntity.builder().build()))
+            .detectedPersonallyIdentifiableInformationList(List.of(DetectedPersonallyIdentifiableInformation.builder().build()))
             .build();
         ScanResult decrypted1 = encrypted1.toBuilder().message("dec1").build();
 
         ScanResult encrypted2 = sampleScanResult().toBuilder()
-            .detectedEntities(List.of(PiiEntity.builder().build(), PiiEntity.builder().build()))
+            .detectedPersonallyIdentifiableInformationList(List.of(DetectedPersonallyIdentifiableInformation.builder().build(), DetectedPersonallyIdentifiableInformation.builder().build()))
             .build();
         ScanResult decrypted2 = encrypted2.toBuilder().message("dec2").build();
 

@@ -11,7 +11,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import pro.softcom.aisentinel.application.pii.export.dto.DetectionReportEntry;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 
 @DisplayName("Detection report mapper tests")
@@ -41,7 +41,7 @@ class DetectionReportMapperTest {
     @DisplayName("Should_MapSingleEntity_When_OneEntityDetected")
     void Should_MapSingleEntity_When_OneEntityDetected() {
         // Given
-        PiiEntity entity = createPiiEntity("EMAIL", "Email", "john@example.com", 0.95);
+        DetectedPersonallyIdentifiableInformation entity = createPiiEntity("EMAIL", "Email", "john@example.com", 0.95);
         ScanResult scanResult = createScanResult(List.of(entity));
 
         // When
@@ -56,7 +56,7 @@ class DetectionReportMapperTest {
     @ParameterizedTest
     @MethodSource("provideMultipleEntities")
     @DisplayName("Should_MapAllEntities_When_MultipleEntitiesDetected")
-    void Should_MapAllEntities_When_MultipleEntitiesDetected(List<PiiEntity> entities, int expectedCount) {
+    void Should_MapAllEntities_When_MultipleEntitiesDetected(List<DetectedPersonallyIdentifiableInformation> entities, int expectedCount) {
         // Given
         ScanResult scanResult = createScanResult(entities);
 
@@ -71,7 +71,7 @@ class DetectionReportMapperTest {
     @DisplayName("Should_MapEntityFields_When_Mapping")
     void Should_MapEntityFields_When_Mapping() {
         // Given
-        PiiEntity entity = createPiiEntity("EMAIL", "Email Label", "masked@example.com", 0.92);
+        DetectedPersonallyIdentifiableInformation entity = createPiiEntity("EMAIL", "Email Label", "masked@example.com", 0.92);
         ScanResult scanResult = createScanResult(List.of(entity));
 
         // When
@@ -98,7 +98,7 @@ class DetectionReportMapperTest {
                 .pageUrl("https://custom.com/page")
                 .attachmentName("custom.doc")
                 .attachmentUrl("https://custom.com/att")
-                .detectedEntities(List.of(createPiiEntity("EMAIL", "Email", "test@test.com", 0.9)))
+                .detectedPersonallyIdentifiableInformationList(List.of(createPiiEntity("EMAIL", "Email", "test@test.com", 0.9)))
                 .build();
 
         // When
@@ -115,20 +115,20 @@ class DetectionReportMapperTest {
     private static Stream<Arguments> provideEmptyScenarios() {
         return Stream.of(
                 Arguments.of((ScanResult) null),
-                Arguments.of(ScanResult.builder().scanId("scan-123").spaceKey("TEST").detectedEntities(null).build()),
-                Arguments.of(ScanResult.builder().scanId("scan-123").spaceKey("TEST").detectedEntities(List.of()).build())
+                Arguments.of(ScanResult.builder().scanId("scan-123").spaceKey("TEST").detectedPersonallyIdentifiableInformationList(null).build()),
+                Arguments.of(ScanResult.builder().scanId("scan-123").spaceKey("TEST").detectedPersonallyIdentifiableInformationList(List.of()).build())
         );
     }
 
     private static Stream<Arguments> provideMultipleEntities() {
-        List<PiiEntity> scenario1 = List.of(
+        List<DetectedPersonallyIdentifiableInformation> scenario1 = List.of(
                 createPiiEntity("EMAIL", "Email", "test@example.com", 0.9)
         );
-        List<PiiEntity> scenario2 = List.of(
+        List<DetectedPersonallyIdentifiableInformation> scenario2 = List.of(
                 createPiiEntity("EMAIL", "Email", "test@example.com", 0.9),
                 createPiiEntity("PHONE", "Phone", "+33123456789", 0.85)
         );
-        List<PiiEntity> scenario3 = List.of(
+        List<DetectedPersonallyIdentifiableInformation> scenario3 = List.of(
                 createPiiEntity("EMAIL", "Email", "a@example.com", 0.9),
                 createPiiEntity("PHONE", "Phone", "+33123456789", 0.85),
                 createPiiEntity("NAME", "Name", "John Doe", 0.88)
@@ -141,8 +141,8 @@ class DetectionReportMapperTest {
         );
     }
 
-    private static PiiEntity createPiiEntity(String type, String label, String context, double confidence) {
-        return PiiEntity.builder()
+    private static DetectedPersonallyIdentifiableInformation createPiiEntity(String type, String label, String context, double confidence) {
+        return DetectedPersonallyIdentifiableInformation.builder()
                 .piiType(type)
                 .piiTypeLabel(label)
                 .maskedContext(context)
@@ -150,7 +150,7 @@ class DetectionReportMapperTest {
                 .build();
     }
 
-    private ScanResult createScanResult(List<PiiEntity> entities) {
+    private ScanResult createScanResult(List<DetectedPersonallyIdentifiableInformation> entities) {
         return ScanResult.builder()
                 .scanId("scan-123")
                 .spaceKey("TEST")
@@ -159,7 +159,7 @@ class DetectionReportMapperTest {
                 .pageUrl("https://example.com/page")
                 .attachmentName("doc.pdf")
                 .attachmentUrl("https://example.com/attachment")
-                .detectedEntities(entities)
+                .detectedPersonallyIdentifiableInformationList(entities)
                 .build();
     }
 }

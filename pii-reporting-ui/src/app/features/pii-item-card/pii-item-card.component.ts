@@ -10,7 +10,7 @@ import {
   SimpleChanges
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {PiiItem} from '../../core/models/pii-item';
+import {PersonallyIdentifiableInformationScanResult} from '../../core/models/personally-identifiable-information-scan-result';
 import {ButtonModule} from 'primeng/button';
 import {CardModule} from 'primeng/card';
 import {TagModule} from 'primeng/tag';
@@ -36,7 +36,7 @@ import {TranslocoModule, TranslocoService} from '@jsverse/transloco';
 })
 export class PiiItemCardComponent implements OnInit, OnChanges {
   /** Item to render. */
-  @Input() item!: PiiItem;
+  @Input() item!: PersonallyIdentifiableInformationScanResult;
   /** If true, values are masked until user reveals. */
   @Input() maskByDefault = true;
 
@@ -95,7 +95,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
    * Generate a unique identifier for an item based on its content.
    * Used to detect when we're receiving the same item vs a new one.
    */
-  private getItemIdentity(item: PiiItem): string {
+  private getItemIdentity(item: PersonallyIdentifiableInformationScanResult): string {
     return `${item.pageId}-${item.attachmentName || 'page'}`;
   }
 
@@ -112,7 +112,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
     }
 
     // Check if secrets are already loaded (detectedValue is present)
-    const hasSecrets = this.item?.detectedEntities?.some(e => e.sensitiveValue !== null);
+    const hasSecrets = this.item?.detectedPersonallyIdentifiableInformationList?.some(e => e.sensitiveValue !== null);
     if (hasSecrets) {
       // Secrets already loaded, just reveal
       this.revealed = true;
@@ -129,7 +129,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
     this.sentinelleApi.revealPageSecrets(this.item.scanId, this.item.pageId).subscribe({
       next: (response) => {
         // Map secrets to entities by position
-        const enrichedEntities = this.item.detectedEntities.map(entity => {
+        const enrichedEntities = this.item.detectedPersonallyIdentifiableInformationList.map(entity => {
           const secret = response.secrets.find(
             s => s.startPosition === entity.startPosition &&
               s.endPosition === entity.endPosition &&
@@ -139,7 +139,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
             ? {...entity, sensitiveValue: secret.sensitiveValue, sensitiveContext: secret.sensitiveContext}
             : entity;
         });
-        this.item = { ...this.item, detectedEntities: enrichedEntities };
+        this.item = { ...this.item, detectedPersonallyIdentifiableInformationList: enrichedEntities };
         this.revealed = true;
         this.isRevealing.set(false);
         // Force change detection since we mutated the entities

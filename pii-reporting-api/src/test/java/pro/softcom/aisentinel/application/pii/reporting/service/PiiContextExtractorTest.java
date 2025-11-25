@@ -222,25 +222,7 @@ class PiiContextExtractorTest {
         });
     }
 
-    @Test
-    @DisplayName("Should_ReturnNull_When_ExtractingFromNullSource")
-    void Should_ReturnNull_When_ExtractingFromNullSource() {
-        // When
-        String result = piiContextExtractor.extractMaskedLineContext(null, 0, 10, "EMAIL");
 
-        // Then
-        assertThat(result).isNull();
-    }
-
-    @Test
-    @DisplayName("Should_ReturnNull_When_ExtractingFromBlankSource")
-    void Should_ReturnNull_When_ExtractingFromBlankSource() {
-        // When
-        String result = piiContextExtractor.extractMaskedLineContext("   ", 0, 10, "EMAIL");
-
-        // Then
-        assertThat(result).isNull();
-    }
 
     @Test
     @DisplayName("Should_HandleOutOfBoundsPositions_When_ExtractingContext")
@@ -364,7 +346,7 @@ class PiiContextExtractorTest {
     @MethodSource("sensitiveContextExtractionCases")
     @DisplayName("Should_ExtractUnmaskedContext_When_UsingSensitiveContextExtraction")
     void Should_ExtractUnmaskedContext_When_UsingSensitiveContextExtraction(
-            String source, String piiValue, String expectedContext, String testCase) {
+            String source, String piiValue, String expectedContext) {
         // Given
         int start = source.indexOf(piiValue);
         int end = start + piiValue.length();
@@ -398,7 +380,7 @@ class PiiContextExtractorTest {
     @ParameterizedTest(name = "{index} -> should return null for: {1}")
     @MethodSource("invalidSourceCases")
     @DisplayName("Should_ReturnNull_When_ExtractingSensitiveContextFromInvalidSource")
-    void Should_ReturnNull_When_ExtractingSensitiveContextFromInvalidSource(String source, String testCase) {
+    void Should_ReturnNull_When_ExtractingSensitiveContextFromInvalidSource(String source) {
         // When
         String result = piiContextExtractor.extractSensitiveContext(source, 0, 10);
 
@@ -419,7 +401,7 @@ class PiiContextExtractorTest {
     @MethodSource("multilineSourceCases")
     @DisplayName("Should_ExtractOnlyCurrentLine_When_SensitiveContextFromMultilineSource")
     void Should_ExtractOnlyCurrentLine_When_SensitiveContextFromMultilineSource(
-            String source, String piiValue, String testCase) {
+            String source, String piiValue) {
         // Given
         int start = source.indexOf(piiValue);
         int end = start + piiValue.length();

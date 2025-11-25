@@ -290,8 +290,8 @@ class ScanSeverityCountPersistenceAdapterIT {
 
         // Assert
         assertThat(results).hasSize(1);
-        assertThat(results.get(0).scanId()).isEqualTo("scan-006");
-        assertThat(results.get(0).spaceKey()).isEqualTo("SPACE-A");
+        assertThat(results.getFirst().scanId()).isEqualTo("scan-006");
+        assertThat(results.getFirst().spaceKey()).isEqualTo("SPACE-A");
     }
 
     @Test
@@ -339,7 +339,7 @@ class ScanSeverityCountPersistenceAdapterIT {
         
         assertThat(remainingForScan).isEmpty();
         assertThat(remainingOthers).hasSize(1);
-        assertThat(remainingOthers.get(0).getScanId()).isEqualTo("scan-009");
+        assertThat(remainingOthers.getFirst().getScanId()).isEqualTo("scan-009");
     }
 
     @Test

@@ -10,7 +10,7 @@ import {
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ButtonModule} from 'primeng/button';
-import {TranslocoModule, TranslocoService} from '@jsverse/transloco';
+import {TranslocoModule} from '@jsverse/transloco';
 import {
   LanguageSelectorComponent
 } from '../../core/components/language-selector/language-selector.component';
@@ -42,7 +42,6 @@ import {DashboardUiStateService} from './services/dashboard-ui-state.service';
 import {PiiItemsStorageService} from './services/pii-items-storage.service';
 import {SpaceDataManagementService} from './services/space-data-management.service';
 import {ScanControlService} from './services/scan-control.service';
-import {SseEventHandlerService} from './services/sse-event-handler.service';
 
 /**
  * Dashboard to orchestrate scanning all Confluence spaces sequentially.

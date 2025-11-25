@@ -156,7 +156,7 @@ class ScanResultEncryptorTest {
             .isEqualTo("plaintext");
         softly.assertAll();
 
-        verify(encryptionService, times(1 * 2)).decrypt(anyString(), any());
+        verify(encryptionService, times(2)).decrypt(anyString(), any());
     }
 
     @Test

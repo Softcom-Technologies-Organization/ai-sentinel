@@ -114,14 +114,6 @@ public class PiiContextExtractor {
     }
 
     /**
-     * Package-private method for testing purposes.
-     * Extracts masked line context with type information.
-     */
-    String extractMaskedLineContext(String source, int start, int end, String type) {
-        return extractLineContext(source, start, end, type, null, true);
-    }
-
-    /**
      * Unified method to extract line context, with optional masking.
      *
      * @param source      complete source content

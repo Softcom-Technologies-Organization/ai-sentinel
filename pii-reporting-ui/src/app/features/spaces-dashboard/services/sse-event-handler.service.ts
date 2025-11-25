@@ -1,6 +1,5 @@
 import {inject, Injectable} from '@angular/core';
 import {TranslocoService} from '@jsverse/transloco';
-import {SentinelleApiService} from '../../../core/services/sentinelle-api.service';
 import {ScanProgressService} from '../../../core/services/scan-progress.service';
 import {ToastService} from '../../../core/services/toast.service';
 import {RawStreamPayload} from '../../../core/models/stream-event-type';
@@ -56,7 +55,6 @@ import {DashboardUiStateService} from './dashboard-ui-state.service';
   providedIn: 'root'
 })
 export class SseEventHandlerService {
-  private readonly sentinelleApiService = inject(SentinelleApiService);
   private readonly spacesDashboardUtils = inject(SpacesDashboardUtils);
   private readonly translocoService = inject(TranslocoService);
   private readonly scanProgressService = inject(ScanProgressService);

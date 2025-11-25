@@ -1,6 +1,8 @@
-import {computed, inject, Injectable, signal} from '@angular/core';
+import {inject, Injectable, signal} from '@angular/core';
 import {ItemsBySpace} from '../../../core/models/item-by-space';
-import {PersonallyIdentifiableInformationScanResult} from '../../../core/models/personally-identifiable-information-scan-result';
+import {
+  PersonallyIdentifiableInformationScanResult
+} from '../../../core/models/personally-identifiable-information-scan-result';
 import {RawStreamPayload} from '../../../core/models/stream-event-type';
 import {Severity} from '../../../core/models/severity';
 import {SpacesDashboardUtils} from '../spaces-dashboard.utils';
@@ -33,33 +35,6 @@ export class PiiItemsStorageService {
 
   // In-memory storage of PII items per space
   readonly itemsBySpace = signal<ItemsBySpace>({});
-
-  // Computed: total items across all spaces
-  readonly totalItemsCount = computed(() => {
-    const map = this.itemsBySpace();
-    return Object.values(map).reduce((sum, items) => sum + items.length, 0);
-  });
-
-  // Computed: spaces with detected PII
-  readonly spacesWithPii = computed(() => {
-    const map = this.itemsBySpace();
-    return Object.keys(map).filter(key => (map[key]?.length ?? 0) > 0);
-  });
-
-  /**
-   * Gets PII items for a specific space.
-   */
-  getItemsForSpace(spaceKey: string): PersonallyIdentifiableInformationScanResult[] {
-    return this.itemsBySpace()[spaceKey] ?? [];
-  }
-
-  /**
-   * Gets severity counts for a specific space.
-   */
-  getCountsForSpace(spaceKey: string): { high: number; medium: number; low: number } {
-    const items = this.getItemsForSpace(spaceKey);
-    return this.spacesDashboardUtils.severityCounts(items);
-  }
 
   /**
    * Adds a PII item to the in-memory store for a space.
@@ -135,66 +110,6 @@ export class PiiItemsStorageService {
     return true;
   }
 
-  /**
-   * Adds multiple PII items for a space (used for loading persisted items).
-   * Applies same deduplication and limit rules as addPiiItemToSpace.
-   */
-  addItemsForSpace(spaceKey: string, items: PersonallyIdentifiableInformationScanResult[]): void {
-    const existing = this.itemsBySpace()[spaceKey] ?? [];
-    const merged = [...items, ...existing];
-
-    // Deduplicate by pageId + attachmentName
-    const seen = new Set<string>();
-    const deduped = merged.filter(item => {
-      const key = `${item.pageId}||${item.attachmentName || ''}`;
-      if (seen.has(key)) {
-        return false;
-      }
-      seen.add(key);
-      return true;
-    });
-
-    // Keep max 400 items
-    if (deduped.length > 400) {
-      deduped.length = 400;
-    }
-
-    this.itemsBySpace.set({ ...this.itemsBySpace(), [spaceKey]: deduped });
-    // NOTE: Do NOT update counts here - backend counts are authoritative
-  }
-
-  /**
-   * @deprecated Backend counts are authoritative - do not use local count calculation.
-   * This method is kept for backward compatibility but should not be called.
-   */
-  private updateCountsForSpace(_spaceKey: string): void {
-    // NO-OP: Backend counts are authoritative
-    // This method is intentionally empty to prevent accidental count overwriting
-  }
-
-  /**
-   * @deprecated Backend counts are authoritative - do not use local count calculation.
-   * This method is kept for backward compatibility but should not be called.
-   * Counts are now provided by the backend via the dashboard summary endpoint.
-   */
-  applyCountsFromItems(): void {
-    // NO-OP: Backend counts are authoritative
-    // This method is intentionally empty to prevent accidental count overwriting
-  }
-
-  /**
-   * Clears all items for a specific space.
-   */
-  clearItemsForSpace(spaceKey: string): void {
-    const map = { ...this.itemsBySpace() };
-    delete map[spaceKey];
-    this.itemsBySpace.set(map);
-
-    // Reset counts to zero
-    this.spacesDashboardUtils.updateSpace(spaceKey, {
-      counts: { total: 0, high: 0, medium: 0, low: 0 }
-    });
-  }
 
   /**
    * Clears all items for all spaces.
@@ -210,30 +125,5 @@ export class PiiItemsStorageService {
         counts: { total: 0, high: 0, medium: 0, low: 0 }
       });
     }
-  }
-
-
-  /**
-   * Gets statistics about stored items.
-   */
-  getStatistics(): {
-    totalSpaces: number;
-    totalItems: number;
-    spacesWithPii: number;
-    averageItemsPerSpace: number;
-  } {
-    const map = this.itemsBySpace();
-    const keys = Object.keys(map);
-    const totalSpaces = keys.length;
-    const totalItems = this.totalItemsCount();
-    const spacesWithPii = this.spacesWithPii().length;
-    const averageItemsPerSpace = totalSpaces > 0 ? totalItems / totalSpaces : 0;
-
-    return {
-      totalSpaces,
-      totalItems,
-      spacesWithPii,
-      averageItemsPerSpace: Math.round(averageItemsPerSpace * 100) / 100
-    };
   }
 }

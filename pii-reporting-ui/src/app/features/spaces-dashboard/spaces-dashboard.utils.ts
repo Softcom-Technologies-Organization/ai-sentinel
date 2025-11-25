@@ -1,7 +1,8 @@
-import {computed, inject, Injectable, signal} from '@angular/core';
+import {computed, Injectable, signal} from '@angular/core';
 import {Space} from '../../core/models/space';
-import {PersonallyIdentifiableInformationScanResult} from '../../core/models/personally-identifiable-information-scan-result';
-import {TranslocoService} from '@jsverse/transloco';
+import {
+  PersonallyIdentifiableInformationScanResult
+} from '../../core/models/personally-identifiable-information-scan-result';
 
 /**
  * Facade for Spaces Dashboard UI concerns.
@@ -17,7 +18,6 @@ export interface UISpace extends Space {
 
 @Injectable({ providedIn: 'root' })
 export class SpacesDashboardUtils {
-  private readonly translocoService = inject(TranslocoService);
 
   // raw ui list populated from backend spaces with safe defaults for display fields
   private readonly uiSpaces = signal<UISpace[]>([]);

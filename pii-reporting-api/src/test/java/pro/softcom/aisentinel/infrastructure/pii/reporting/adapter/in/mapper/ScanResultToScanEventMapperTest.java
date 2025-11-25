@@ -27,7 +27,7 @@ class ScanResultToScanEventMapperTest {
     void Should_MapAllFields_When_ScanResultProvided() {
         // Arrange
         Map<String, Integer> summary = Map.of("EMAIL", 2, "PHONE", 1);
-        List<DetectedPersonallyIdentifiableInformation> entities = List.of(entity(0, 1, "EMAIL"));
+        List<DetectedPersonallyIdentifiableInformation> entities = List.of(entity());
         ScanResult sr = ScanResult.builder()
                 .scanId("sid")
                 .spaceKey("space")
@@ -74,16 +74,16 @@ class ScanResultToScanEventMapperTest {
         softly.assertAll();
     }
 
-    private static DetectedPersonallyIdentifiableInformation entity(int start, int end, Object type) {
+    private static DetectedPersonallyIdentifiableInformation entity() {
         return new DetectedPersonallyIdentifiableInformation(
-                start, 
-                end, 
-                type == null ? null : type.toString(), 
-                type == null ? null : type.toString(), 
-                0, 
-                null,  // detectedValue
-                null,  // context
-                null   // maskedContext
+            0,
+            1,
+            ((Object) "EMAIL").toString(),
+            ((Object) "EMAIL").toString(),
+            0,
+            null,  // detectedValue
+            null,  // context
+            null   // maskedContext
         );
     }
 }

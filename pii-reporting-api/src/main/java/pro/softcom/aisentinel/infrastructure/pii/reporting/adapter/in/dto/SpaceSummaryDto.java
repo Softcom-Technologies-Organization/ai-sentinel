@@ -8,5 +8,6 @@ public record SpaceSummaryDto(
         Double progressPercentage,
         long pagesDone,
         long attachmentsDone,
-        Instant lastEventTs
+        Instant lastEventTs,
+        SeverityCountsDto severityCounts
 ) { }

@@ -1,6 +1,5 @@
 package pro.softcom.aisentinel.application.pii.reporting;
 
-import org.springframework.stereotype.Service;
 import pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 
@@ -31,7 +30,6 @@ import static pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity.*;
  * @see PiiSeverity
  * @see SeverityCounts
  */
-@Service
 public class SeverityCalculationService {
 
     /**
@@ -198,7 +196,7 @@ public class SeverityCalculationService {
             var method = entity.getClass().getMethod("piiType");
             Object result = method.invoke(entity);
             return result != null ? result.toString() : "";
-        } catch (Exception e) {
+        } catch (Exception _) {
             // Fallback: try to use toString() or return empty string
             return "";
         }

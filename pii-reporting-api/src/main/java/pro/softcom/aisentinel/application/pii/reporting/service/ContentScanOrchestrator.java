@@ -1,10 +1,13 @@
 package pro.softcom.aisentinel.application.pii.reporting.service;
 
 import lombok.RequiredArgsConstructor;
+import pro.softcom.aisentinel.application.pii.reporting.ScanSeverityCountService;
+import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanEventStore;
 import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
+import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ScanEventType;
 
@@ -12,6 +15,7 @@ import pro.softcom.aisentinel.domain.pii.scan.ScanEventType;
  * Orchestrates scan event lifecycle: creation, progress tracking, and persistence.
  * Business purpose: Coordinates the generation of scan events and manages scan checkpoints
  * to enable resumable scans and progress reporting.
+ * Additionally calculates and persists severity counts for PII detections.
  */
 @RequiredArgsConstructor
 public class ContentScanOrchestrator {
@@ -21,6 +25,8 @@ public class ContentScanOrchestrator {
     private final ScanCheckpointService scanCheckpointService;
     private final ScanEventStore scanEventStore;
     private final ScanEventDispatcher scanEventDispatcher;
+    private final SeverityCalculationService severityCalculationService;
+    private final ScanSeverityCountService scanSeverityCountService;
 
     public ScanResult createStartEvent(String scanId, String spaceKey, int total, double progress) {
         return scanEventFactory.createStartEvent(scanId, spaceKey, total, progress);
@@ -69,6 +75,13 @@ public class ContentScanOrchestrator {
 
     public void persistEventAndCheckpoint(ScanResult event) {
         scanCheckpointService.persistCheckpoint(event);
+        
+        // Calculate and persist severity counts if event contains PII detections
+        if (event.detectedEntities() != null && !event.detectedEntities().isEmpty()) {
+            SeverityCounts counts = severityCalculationService.aggregateCounts(event.detectedEntities());
+            scanSeverityCountService.incrementCounts(event.scanId(), event.spaceKey(), counts);
+        }
+        
         if (scanEventStore != null) {
             scanEventStore.append(event);
 

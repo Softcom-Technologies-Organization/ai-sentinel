@@ -2,7 +2,6 @@ package pro.softcom.aisentinel.application.pii.reporting;
 
 import java.util.List;
 import java.util.Optional;
-import org.springframework.stereotype.Service;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanSeverityCountRepository;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanSeverityCount;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
@@ -21,7 +20,6 @@ import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
  *   <li>Business rule enforcement for severity count operations</li>
  * </ul>
  */
-@Service
 public class ScanSeverityCountService {
 
     private final ScanSeverityCountRepository repository;

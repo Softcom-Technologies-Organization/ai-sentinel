@@ -79,6 +79,12 @@ class StreamConfluenceResumeScanPortImplTest {
     @Mock
     private ScanTimeOutConfig scanTimeoutConfig;
 
+    @Mock
+    private pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService severityCalculationService;
+
+    @Mock
+    private pro.softcom.aisentinel.application.pii.reporting.ScanSeverityCountService scanSeverityCountService;
+
     private StreamConfluenceResumeScanPort streamConfluenceResumeScanPort;
 
     @BeforeEach
@@ -109,7 +115,8 @@ class StreamConfluenceResumeScanPortImplTest {
         // Create parameter objects
         ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService);
         ContentScanOrchestrator contentScanOrchestrator = new ContentScanOrchestrator(
-                eventFactory, progressCalculator, checkpointService, jpaScanEventStoreAdapter, scanEventDispatcher
+                eventFactory, progressCalculator, checkpointService, jpaScanEventStoreAdapter, scanEventDispatcher,
+                severityCalculationService, scanSeverityCountService
         );
         AttachmentProcessor attachmentProcessor = new AttachmentProcessor(
                 confluenceDownloadService,

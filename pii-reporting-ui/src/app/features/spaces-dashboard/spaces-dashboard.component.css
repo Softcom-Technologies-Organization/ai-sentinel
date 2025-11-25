@@ -210,6 +210,12 @@
   color: #f44336;
 }
 
+/* Title container with badge - horizontal alignment */
+.header h2 {
+  display: inline-flex;
+  align-items: center;
+}
+
 /* Scan status badge - displayed next to the title */
 .scan-status-badge {
   display: inline-flex;
@@ -223,14 +229,12 @@
   letter-spacing: 0.5px;
   border-radius: 0.375rem;
   transition: all 0.3s ease;
-  vertical-align: middle;
 }
 
-/* Active state: scan in progress (blue with glowing effect) */
+/* Active state: scan in progress (blue with color pulse animation) */
 .scan-status-badge.scanning {
-  background-color: #2196F3;
   color: white;
-  animation: glow-pulse 2s ease-in-out infinite;
+  animation: color-pulse 2s ease-in-out infinite;
 }
 
 /* Inactive state: no scan running (grey) */
@@ -239,18 +243,13 @@
   color: #263238;
 }
 
-/* Glowing pulse animation */
-@keyframes glow-pulse {
+/* Color pulse animation - progressive color change from light blue to dark blue */
+@keyframes color-pulse {
   0%, 100% {
-    box-shadow:
-      0 0 8px rgba(33, 150, 243, 0.5),
-      0 0 16px rgba(33, 150, 243, 0.3);
+    background-color: #42A5F5; /* Light blue */
   }
   50% {
-    box-shadow:
-      0 0 16px rgba(33, 150, 243, 0.8),
-      0 0 32px rgba(33, 150, 243, 0.6),
-      0 0 48px rgba(33, 150, 243, 0.4);
+    background-color: #1565C0; /* Dark blue */
   }
 }
 

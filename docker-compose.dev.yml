@@ -34,6 +34,17 @@ services:
       dockerfile: pii-detector-service/Dockerfile
     container_name: pii-detector-service
     restart: unless-stopped
+    
+    # Resource limits for stability (prevents OOM and limits CPU usage)
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'      # Max 4 CPU cores (adjust based on host)
+          memory: 8G       # Max 8GB RAM for NLP/ML models
+        reservations:
+          cpus: '2.0'      # Guaranteed 2 CPU cores
+          memory: 4G       # Guaranteed 4GB RAM
+    
     ports:
       - "50051:50051"
     environment:

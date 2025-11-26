@@ -38,7 +38,7 @@ export class ToastService {
     const typeLabels: Record<ErrorToastData['errorType'], string> = {
       'TIMEOUT_REACTOR': 'Reactor Timeout',
       'TIMEOUT_GRPC': 'gRPC Timeout',
-      'ERROR_GRPC': 'gRPC error',
+      'ERROR_GRPC': 'Analyse du contenu impossible',
       'ERROR_GENERAL': 'Scan error'
     };
     return typeLabels[data.errorType];
@@ -46,19 +46,35 @@ export class ToastService {
 
   private formatDetail(data: ErrorToastData): string {
     const parts: string[] = [];
-    parts.push(`Space: ${data.spaceKey}`);
 
+    // Message user-friendly pour erreurs gRPC
+    if (data.errorType === 'ERROR_GRPC') {
+      parts.push('Service d\'analyse indisponible');
+    }
+
+    // Espace Confluence (libellé amélioré pour gRPC)
+    if (data.errorType === 'ERROR_GRPC') {
+      parts.push(`Espace confluence: ${data.spaceKey}`);
+    } else {
+      parts.push(`Space: ${data.spaceKey}`);
+    }
+
+    // Page info (identique pour tous)
     if (data.pageTitle) {
       parts.push(`Page: "${data.pageTitle}"`);
     } else if (data.pageId) {
       parts.push(`Page ID: ${data.pageId}`);
     }
 
+    // Attachement (si applicable)
     if (data.attachmentName) {
       parts.push(`Pièce jointe: "${data.attachmentName}"`);
     }
 
-    parts.push(`Message: ${data.errorMessage}`);
+    // Message technique uniquement pour non-gRPC errors
+    if (data.errorType !== 'ERROR_GRPC') {
+      parts.push(`Message: ${data.errorMessage}`);
+    }
 
     return parts.join('\n');
   }

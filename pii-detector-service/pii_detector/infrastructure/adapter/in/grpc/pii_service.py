@@ -1007,7 +1007,7 @@ class MemoryLimitedServer:
         Args:
             port: Port to listen on
             max_workers: Maximum number of worker threads
-            max_queued_requests: Maximum number of quCeued requests
+            max_queued_requests: Maximum number of queued requests
             memory_limit_percent: Maximum memory usage percentage before rejecting requests
         """
         self.port = port

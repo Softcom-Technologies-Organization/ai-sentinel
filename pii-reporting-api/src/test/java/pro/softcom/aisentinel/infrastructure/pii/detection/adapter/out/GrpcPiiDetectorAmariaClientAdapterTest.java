@@ -48,7 +48,7 @@ class GrpcPiiDetectorAmariaClientAdapterTest {
     }
 
     @Test
-    @DisplayName("analyzePageContent: maps entities and nbOfDetectedPIIBySeverity, uses deadline and returns ContentAnalysis")
+    @DisplayName("analyzePageContent: maps entities and summary, uses deadline and returns ContentAnalysis")
     void analyzePageContent_success() {
         // Given
         PiiDetection.PIIEntity emailEntity = PiiDetection.PIIEntity.newBuilder()
@@ -99,7 +99,7 @@ class GrpcPiiDetectorAmariaClientAdapterTest {
         assertThat(result.spaceKey()).isEqualTo("SPACE");
         assertThat(result.sensitiveDataFound()).hasSize(2);
 
-        ContentPiiDetection.SensitiveData sd1 = result.sensitiveDataFound().get(0);
+        ContentPiiDetection.SensitiveData sd1 = result.sensitiveDataFound().getFirst();
         assertThat(sd1.type()).isEqualTo(PersonallyIdentifiableInformationType.EMAIL);
         assertThat(sd1.value()).isEqualTo("john.doe@example.com");
         assertThat(sd1.context()).contains("5-25").contains("0.95");

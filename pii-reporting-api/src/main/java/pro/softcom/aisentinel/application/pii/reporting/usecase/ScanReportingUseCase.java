@@ -115,7 +115,7 @@ public class ScanReportingUseCase implements ScanReportingPort {
                 .max(Instant::compareTo)
                 .orElse(Instant.now());
 
-            // 4) Build nbOfDetectedPIIBySeverity
+            // 4) Build ScanReportingSummary
             return Optional.of(new ScanReportingSummary(
                 scanId,
                 lastUpdated,
@@ -123,7 +123,7 @@ public class ScanReportingUseCase implements ScanReportingPort {
                 spaces
             ));
         } catch (Exception ex) {
-            log.warn("[DASHBOARD] Failed to get dashboard nbOfDetectedPIIBySeverity for {}: {}", scanId, ex.getMessage());
+            log.warn("[DASHBOARD] Failed to get dashboard ScanReportingSummary for {}: {}", scanId, ex.getMessage());
             return Optional.empty();
         }
     }

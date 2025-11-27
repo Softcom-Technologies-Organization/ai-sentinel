@@ -1,8 +1,8 @@
 package pro.softcom.aisentinel.application.pii.export.port.out;
 
 import java.util.stream.Stream;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 
 public interface ReadScanEventsPort {
-    Stream<ScanResult> streamByScanIdAndSpaceKey(String scanId, String spaceKey);
+    Stream<ConfluenceContentScanResult> streamByScanIdAndSpaceKey(String scanId, String spaceKey);
 }

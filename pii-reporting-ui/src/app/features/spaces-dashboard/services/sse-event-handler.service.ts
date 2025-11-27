@@ -2,7 +2,9 @@ import {inject, Injectable} from '@angular/core';
 import {TranslocoService} from '@jsverse/transloco';
 import {ScanProgressService} from '../../../core/services/scan-progress.service';
 import {ToastService} from '../../../core/services/toast.service';
-import {RawStreamPayload} from '../../../core/models/stream-event-type';
+import {
+  ConfluenceContentPersonallyIdentifiableInformationScanResult
+} from '../../../core/models/stream-event-type';
 import {SpacesDashboardUtils} from '../spaces-dashboard.utils';
 import {
   coerceSpaceKey,
@@ -75,7 +77,7 @@ export class SseEventHandlerService {
    * @param type Event type from SSE stream
    * @param payload Event payload data
    */
-  routeStreamEvent(type: StreamEventType, payload?: RawStreamPayload): void {
+  routeStreamEvent(type: StreamEventType, payload?: ConfluenceContentPersonallyIdentifiableInformationScanResult): void {
     this.uiStateService.append(formatEventLog(type, JSON.stringify(payload ?? {})));
 
     // Handle multiStart early to refresh dashboard even if payload is missing
@@ -137,7 +139,7 @@ export class SseEventHandlerService {
    *
    * @param payload Optional scan initiation payload
    */
-  private handleAllSpaceScanStart(payload?: RawStreamPayload): void {
+  private handleAllSpaceScanStart(payload?: ConfluenceContentPersonallyIdentifiableInformationScanResult): void {
     if (payload) {
       this.ensureLastScanMetaFromPayload(payload);
     }
@@ -183,7 +185,7 @@ export class SseEventHandlerService {
    *
    * @param payload Space scan start payload with metadata
    */
-  private handleStreamScanStart(payload: RawStreamPayload): void {
+  private handleStreamScanStart(payload: ConfluenceContentPersonallyIdentifiableInformationScanResult): void {
     const spaceKey = payload.spaceKey;
     if (!spaceKey) {
       return;
@@ -231,7 +233,7 @@ export class SseEventHandlerService {
    *
    * @param payload Page start payload with progress data
    */
-  private handlePageStart(payload: RawStreamPayload): void {
+  private handlePageStart(payload: ConfluenceContentPersonallyIdentifiableInformationScanResult): void {
     const spaceKey = payload.spaceKey;
     if (!spaceKey) {
       return;
@@ -269,7 +271,7 @@ export class SseEventHandlerService {
    *
    * @param payload Item event payload with PII data
    */
-  private handleItemEvent(payload: RawStreamPayload): void {
+  private handleItemEvent(payload: ConfluenceContentPersonallyIdentifiableInformationScanResult): void {
     const incomingKey = coerceSpaceKey(payload);
     const looksLikeAttachment = isAttachmentPayload(payload);
     const spaceKey = incomingKey ?? (looksLikeAttachment ? this.uiStateService.activeSpaceKey() : null);
@@ -297,19 +299,19 @@ export class SseEventHandlerService {
     if (wasAdded) {
       const currentCounts = this.spacesDashboardUtils.getSpaceCounts(spaceKey);
 
-      // Count actual number of PII entities in this event (not just 1 per event)
-      const piiList = Array.isArray(payload.detectedPersonallyIdentifiableInformationList)
-        ? payload.detectedPersonallyIdentifiableInformationList
-        : [];
-      const piiCount = piiList.length;
+      // Use backend-provided severity counts from summary (already calculated per severity)
+      // Backend provides Map<String, Integer> with keys: "high", "medium", "low"
+      const summary = payload.nbOfDetectedPIIBySeverity as Record<string, number> | undefined;
+      const deltaHigh = summary?.high ?? summary?.HIGH ?? 0;
+      const deltaMedium = summary?.medium ?? summary?.MEDIUM ?? 0;
+      const deltaLow = summary?.low ?? summary?.LOW ?? 0;
+      const deltaTotal = deltaHigh + deltaMedium + deltaLow;
 
-      // Use backend-provided severity for all PII in this item, fallback to 'low'
-      const severity = payload.severity?.toLowerCase();
       const newCounts = {
-        total: currentCounts.total + piiCount,
-        high: currentCounts.high + (severity === 'high' ? piiCount : 0),
-        medium: currentCounts.medium + (severity === 'medium' ? piiCount : 0),
-        low: currentCounts.low + (severity !== 'high' && severity !== 'medium' ? piiCount : 0)
+        total: currentCounts.total + deltaTotal,
+        high: currentCounts.high + deltaHigh,
+        medium: currentCounts.medium + deltaMedium,
+        low: currentCounts.low + deltaLow
       };
 
       this.spacesDashboardUtils.updateSpace(spaceKey, {
@@ -349,7 +351,7 @@ export class SseEventHandlerService {
    *
    * @param payload Error event payload with error details
    */
-  private handleStreamError(payload: RawStreamPayload): void {
+  private handleStreamError(payload: ConfluenceContentPersonallyIdentifiableInformationScanResult): void {
     const spaceKey = payload.spaceKey;
     if (!spaceKey) {
       return;
@@ -403,7 +405,7 @@ export class SseEventHandlerService {
    *
    * @param payload Completion event payload
    */
-  private handleStreamComplete(payload: RawStreamPayload): void {
+  private handleStreamComplete(payload: ConfluenceContentPersonallyIdentifiableInformationScanResult): void {
     const spaceKey = payload.spaceKey;
     if (!spaceKey) {
       return;
@@ -435,7 +437,7 @@ export class SseEventHandlerService {
    * @param payload Event payload with PII data (includes backend-calculated severity)
    * @returns true if item was added (not a duplicate), false otherwise
    */
-  private addPiiItemToSpace(spaceKey: string, payload: RawStreamPayload): boolean {
+  private addPiiItemToSpace(spaceKey: string, payload: ConfluenceContentPersonallyIdentifiableInformationScanResult): boolean {
     // Delegate to storage service - it handles conversion, deduplication, and severity normalization
     return this.piiItemsStorageService.addPiiItemToSpace(spaceKey, payload);
   }
@@ -456,7 +458,7 @@ export class SseEventHandlerService {
    *
    * @param payload Event payload potentially containing scanId
    */
-  private ensureLastScanMetaFromPayload(payload: RawStreamPayload): void {
+  private ensureLastScanMetaFromPayload(payload: ConfluenceContentPersonallyIdentifiableInformationScanResult): void {
     try {
       const scanId = (payload as any)?.scanId as string | undefined;
       if (!scanId) {
@@ -485,7 +487,7 @@ export class SseEventHandlerService {
    * @param payload Event payload
    * @returns Progress percentage (0-100) or undefined
    */
-  private extractPercent(payload: RawStreamPayload): number | undefined {
+  private extractPercent(payload: ConfluenceContentPersonallyIdentifiableInformationScanResult): number | undefined {
     return this.scanProgressService.extractPercentFromPayload(payload);
   }
 

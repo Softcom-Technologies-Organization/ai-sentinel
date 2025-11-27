@@ -31,8 +31,8 @@ import pro.softcom.aisentinel.application.pii.export.port.out.ReadScanEventsPort
 import pro.softcom.aisentinel.application.pii.export.port.out.WriteDetectionReportPort;
 import pro.softcom.aisentinel.domain.pii.export.ExportContext;
 import pro.softcom.aisentinel.domain.pii.export.SourceType;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Export detection report use case tests")
@@ -103,13 +103,15 @@ class ExportDetectionReportUseCaseTest {
         // Given
         ExportContext exportContext = createExportContext();
         WriteDetectionReportPort.ReportSession reportSession = mock(WriteDetectionReportPort.ReportSession.class);
-        ScanResult scanResult = createScanResult();
+        ConfluenceContentScanResult confluenceContentScanResult = createScanResult();
         DetectionReportEntry entry = createDetectionReportEntry();
 
         when(readExportContextPort.findContext(SourceType.CONFLUENCE, "TEST")).thenReturn(exportContext);
         when(writeDetectionReportPort.openReportSession("scan-123", exportContext)).thenReturn(reportSession);
-        when(readScanEventsPort.streamByScanIdAndSpaceKey("scan-123", "TEST")).thenReturn(Stream.of(scanResult));
-        when(detectionReportMapper.toDetectionReportEntries(scanResult)).thenReturn(List.of(entry));
+        when(readScanEventsPort.streamByScanIdAndSpaceKey("scan-123", "TEST")).thenReturn(Stream.of(
+            confluenceContentScanResult));
+        when(detectionReportMapper.toDetectionReportEntries(
+            confluenceContentScanResult)).thenReturn(List.of(entry));
 
         // When
         useCase.export("scan-123", SourceType.CONFLUENCE, "TEST");
@@ -129,17 +131,19 @@ class ExportDetectionReportUseCaseTest {
         ExportContext exportContext = createExportContext();
         WriteDetectionReportPort.ReportSession reportSession = mock(WriteDetectionReportPort.ReportSession.class);
         
-        ScanResult scanResult1 = createScanResult();
-        ScanResult scanResult2 = createScanResult();
+        ConfluenceContentScanResult confluenceContentScanResult1 = createScanResult();
+        ConfluenceContentScanResult confluenceContentScanResult2 = createScanResult();
         DetectionReportEntry entry1 = createDetectionReportEntry();
         DetectionReportEntry entry2 = createDetectionReportEntry();
 
         when(readExportContextPort.findContext(SourceType.CONFLUENCE, "TEST")).thenReturn(exportContext);
         when(writeDetectionReportPort.openReportSession("scan-123", exportContext)).thenReturn(reportSession);
         when(readScanEventsPort.streamByScanIdAndSpaceKey("scan-123", "TEST"))
-                .thenReturn(Stream.of(scanResult1, scanResult2));
-        when(detectionReportMapper.toDetectionReportEntries(scanResult1)).thenReturn(List.of(entry1));
-        when(detectionReportMapper.toDetectionReportEntries(scanResult2)).thenReturn(List.of(entry2));
+                .thenReturn(Stream.of(confluenceContentScanResult1, confluenceContentScanResult2));
+        when(detectionReportMapper.toDetectionReportEntries(
+            confluenceContentScanResult1)).thenReturn(List.of(entry1));
+        when(detectionReportMapper.toDetectionReportEntries(
+            confluenceContentScanResult2)).thenReturn(List.of(entry2));
 
         // When
         useCase.export("scan-123", SourceType.CONFLUENCE, "TEST");
@@ -196,13 +200,15 @@ class ExportDetectionReportUseCaseTest {
         // Given
         ExportContext exportContext = createExportContext();
         WriteDetectionReportPort.ReportSession reportSession = mock(WriteDetectionReportPort.ReportSession.class);
-        ScanResult scanResult = createScanResult();
+        ConfluenceContentScanResult confluenceContentScanResult = createScanResult();
         DetectionReportEntry entry = createDetectionReportEntry();
 
         when(readExportContextPort.findContext(SourceType.CONFLUENCE, "TEST")).thenReturn(exportContext);
         when(writeDetectionReportPort.openReportSession("scan-123", exportContext)).thenReturn(reportSession);
-        when(readScanEventsPort.streamByScanIdAndSpaceKey("scan-123", "TEST")).thenReturn(Stream.of(scanResult));
-        when(detectionReportMapper.toDetectionReportEntries(scanResult)).thenReturn(List.of(entry));
+        when(readScanEventsPort.streamByScanIdAndSpaceKey("scan-123", "TEST")).thenReturn(Stream.of(
+            confluenceContentScanResult));
+        when(detectionReportMapper.toDetectionReportEntries(
+            confluenceContentScanResult)).thenReturn(List.of(entry));
         doThrow(new IOException("Write entry failed")).when(reportSession).writeReportEntry(entry);
 
         // When & Then
@@ -219,15 +225,16 @@ class ExportDetectionReportUseCaseTest {
         // Given
         ExportContext exportContext = createExportContext();
         WriteDetectionReportPort.ReportSession reportSession = mock(WriteDetectionReportPort.ReportSession.class);
-        ScanResult scanResult = createScanResult();
+        ConfluenceContentScanResult confluenceContentScanResult = createScanResult();
         DetectionReportEntry entry1 = createDetectionReportEntry();
         DetectionReportEntry entry2 = createDetectionReportEntry();
         DetectionReportEntry entry3 = createDetectionReportEntry();
 
         when(readExportContextPort.findContext(SourceType.CONFLUENCE, "TEST")).thenReturn(exportContext);
         when(writeDetectionReportPort.openReportSession("scan-123", exportContext)).thenReturn(reportSession);
-        when(readScanEventsPort.streamByScanIdAndSpaceKey("scan-123", "TEST")).thenReturn(Stream.of(scanResult));
-        when(detectionReportMapper.toDetectionReportEntries(scanResult))
+        when(readScanEventsPort.streamByScanIdAndSpaceKey("scan-123", "TEST")).thenReturn(Stream.of(
+            confluenceContentScanResult));
+        when(detectionReportMapper.toDetectionReportEntries(confluenceContentScanResult))
                 .thenReturn(List.of(entry1, entry2, entry3));
 
         // When
@@ -248,8 +255,8 @@ class ExportDetectionReportUseCaseTest {
                 .build();
     }
 
-    private ScanResult createScanResult() {
-        return ScanResult.builder()
+    private ConfluenceContentScanResult createScanResult() {
+        return ConfluenceContentScanResult.builder()
                 .scanId("scan-123")
                 .spaceKey("TEST")
                 .emittedAt("2024-01-15T10:00:00Z")
@@ -257,7 +264,7 @@ class ExportDetectionReportUseCaseTest {
                 .pageUrl("https://example.com/page")
                 .attachmentName("test.pdf")
                 .attachmentUrl("https://example.com/attachment")
-                .detectedPersonallyIdentifiableInformationList(List.of(
+                .detectedPIIList(List.of(
                     DetectedPersonallyIdentifiableInformation.builder()
                                 .piiType("EMAIL")
                                 .piiTypeLabel("Email")

@@ -4,8 +4,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import pro.softcom.aisentinel.domain.pii.reporting.AccessPurpose;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.LastScanMeta;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 
 /**
  * Application out port used by the reporting layer to read scan outcomes.
@@ -36,7 +36,7 @@ public interface ScanResultQuery {
      * @param scanId the business identifier of the scan to inspect
      * @return the ordered list of item events recorded for the scan (may be empty)
      */
-    List<ScanResult> listItemEvents(String scanId);
+    List<ConfluenceContentScanResult> listItemEvents(String scanId);
 
     /**
      * Lists item events with ENCRYPTED PII data.
@@ -45,7 +45,7 @@ public interface ScanResultQuery {
      * @param scanId scan identifier
      * @return list of scan results with encrypted PII
      */
-    List<ScanResult> listItemEventsEncrypted(String scanId);
+    List<ConfluenceContentScanResult> listItemEventsEncrypted(String scanId);
 
     /**
      * Lists item events with DECRYPTED PII data.
@@ -56,7 +56,7 @@ public interface ScanResultQuery {
      * @param purpose access purpose (for audit trail)
      * @return list of scan results with decrypted PII
      */
-    List<ScanResult> listItemEventsDecrypted(String scanId, String pageId, AccessPurpose purpose);
+    List<ConfluenceContentScanResult> listItemEventsDecrypted(String scanId, String pageId, AccessPurpose purpose);
 
     /**
      * Lists item events with ENCRYPTED PII data filtered by space.
@@ -66,7 +66,7 @@ public interface ScanResultQuery {
      * @param spaceKey Confluence space key to filter results
      * @return list of scan results with encrypted PII for the specified space
      */
-    List<ScanResult> listItemEventsEncryptedByScanIdAndSpaceKey(String scanId, String spaceKey);
+    List<ConfluenceContentScanResult> listItemEventsEncryptedByScanIdAndSpaceKey(String scanId, String spaceKey);
 
     /**
      * Read-side projection representing per-space progress within a scan.

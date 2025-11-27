@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
+import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIdentifiableInformationType;
 
 /**
  * Direct integration test for PII detection service with real gRPC calls.
@@ -104,7 +105,7 @@ class DirectPiiDetectionIntegrationTest {
 
         // Check for EMAIL detection
         var emailData = sensitiveData.stream()
-            .filter(data -> data.type() == ContentPiiDetection.DataType.EMAIL)
+            .filter(data -> data.type() == PersonallyIdentifiableInformationType.EMAIL)
             .toList();
         assertThat(emailData).isNotEmpty();
         System.out.println("[DEBUG_LOG] Emails detected: " + emailData.size());
@@ -114,7 +115,7 @@ class DirectPiiDetectionIntegrationTest {
 
         // Check for PHONE detection
         var phoneData = sensitiveData.stream()
-            .filter(data -> data.type() == ContentPiiDetection.DataType.PHONE)
+            .filter(data -> data.type() == PersonallyIdentifiableInformationType.PHONE)
             .toList();
         assertThat(phoneData).isNotEmpty();
         System.out.println("[DEBUG_LOG] Phones detected: " + phoneData.size());
@@ -124,7 +125,7 @@ class DirectPiiDetectionIntegrationTest {
 
         // Check for ADDRESS detection (includes person names)
         var addressData = sensitiveData.stream()
-            .filter(data -> data.type() == ContentPiiDetection.DataType.ADDRESS)
+            .filter(data -> data.type() == PersonallyIdentifiableInformationType.ADDRESS)
             .toList();
         System.out.println("[DEBUG_LOG] Addresses/Names detected: " + addressData.size());
         addressData.forEach(address ->
@@ -133,7 +134,7 @@ class DirectPiiDetectionIntegrationTest {
 
         // Check for AVS detection (financial data)
         var avsData = sensitiveData.stream()
-            .filter(data -> data.type() == ContentPiiDetection.DataType.AVS)
+            .filter(data -> data.type() == PersonallyIdentifiableInformationType.AVS)
             .toList();
         System.out.println("[DEBUG_LOG] Financial data detected: " + avsData.size());
         avsData.forEach(avs ->
@@ -142,7 +143,7 @@ class DirectPiiDetectionIntegrationTest {
 
         // Check for SECURITY detection
         var securityData = sensitiveData.stream()
-            .filter(data -> data.type() == ContentPiiDetection.DataType.SECURITY)
+            .filter(data -> data.type() == PersonallyIdentifiableInformationType.SECURITY)
             .toList();
         System.out.println("[DEBUG_LOG] Security data detected: " + securityData.size());
         securityData.forEach(security ->
@@ -151,7 +152,7 @@ class DirectPiiDetectionIntegrationTest {
 
         // Check for ATTACHMENT detection (URLs, IPs)
         var attachmentData = sensitiveData.stream()
-            .filter(data -> data.type() == ContentPiiDetection.DataType.ATTACHMENT)
+            .filter(data -> data.type() == PersonallyIdentifiableInformationType.ATTACHMENT)
             .toList();
         System.out.println("[DEBUG_LOG] URLs/IPs detected: " + attachmentData.size());
         attachmentData.forEach(attachment ->
@@ -186,7 +187,7 @@ class DirectPiiDetectionIntegrationTest {
         assertThat(sensitiveData).isNotEmpty();
 
         var emailData = sensitiveData.stream()
-            .filter(data -> data.type() == ContentPiiDetection.DataType.EMAIL)
+            .filter(data -> data.type() == PersonallyIdentifiableInformationType.EMAIL)
             .toList();
         assertThat(emailData).hasSize(1);
         assertThat(emailData.getFirst().value()).contains("john@example.com");

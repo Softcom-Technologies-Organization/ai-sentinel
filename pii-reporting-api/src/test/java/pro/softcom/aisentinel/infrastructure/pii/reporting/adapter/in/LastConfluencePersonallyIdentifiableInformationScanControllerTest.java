@@ -28,8 +28,8 @@ import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.Sca
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.ScanResultToScanEventMapper;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.SpaceStatusMapper;
 
-@WebMvcTest(LastScanController.class)
-class LastScanControllerTest {
+@WebMvcTest(LastConfluencePersonallyIdentifiableInformationScanController.class)
+class LastConfluencePersonallyIdentifiableInformationScanControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

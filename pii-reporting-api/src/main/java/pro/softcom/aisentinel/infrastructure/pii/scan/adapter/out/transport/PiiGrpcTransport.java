@@ -14,7 +14,7 @@ public interface PiiGrpcTransport {
      * @param content   content to analyze (may be empty but not null depending on implementation)
      * @param threshold confidence threshold to apply server-side
      * @param timeoutMs per-call deadline in milliseconds
-     * @return gRPC response with entities and summary
+     * @return gRPC response with entities and nbOfDetectedPIIBySeverity
      */
     PiiDetection.PIIDetectionResponse detect(String content, float threshold, long timeoutMs);
 }

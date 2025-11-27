@@ -8,8 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.pii.reporting.service.parser.ContentParser;
 import pro.softcom.aisentinel.application.pii.reporting.service.parser.ContentParserFactory;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 
 /**
  * Extracts a readable context around detected PII occurrences.
@@ -27,6 +27,7 @@ import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 public class PiiContextExtractor {
 
     private final ContentParserFactory parserFactory;
+
 
     public String extractMaskedContext(String source, int start, int end, String type) {
         return extractLineContext(source, start, end, type, null, true);
@@ -54,39 +55,40 @@ public class PiiContextExtractor {
      * Returns the original result if enrichment is not applicable.
      * All PIIs in the same line are masked to prevent data leakage.
      */
-    public ScanResult enrichContexts(ScanResult scanResult) {
-        if (!needsEnrichment(scanResult)) {
-            return scanResult;
+    public ConfluenceContentScanResult enrichContexts(
+        ConfluenceContentScanResult confluenceContentScanResult) {
+        if (!needsEnrichment(confluenceContentScanResult)) {
+            return confluenceContentScanResult;
         }
 
         try {
-            List<DetectedPersonallyIdentifiableInformation> allEntities = scanResult.detectedPersonallyIdentifiableInformationList();
+            List<DetectedPersonallyIdentifiableInformation> allEntities = confluenceContentScanResult.detectedPIIList();
             List<DetectedPersonallyIdentifiableInformation> enriched = allEntities.stream()
-                    .map(entity -> enrichEntity(scanResult.sourceContent(), entity, allEntities))
+                    .map(entity -> enrichEntity(confluenceContentScanResult.sourceContent(), entity, allEntities))
                     .toList();
 
-            return scanResult.toBuilder().detectedPersonallyIdentifiableInformationList(enriched).build();
+            return confluenceContentScanResult.toBuilder().detectedPIIList(enriched).build();
         } catch (IllegalArgumentException | NullPointerException e) {
             log.warn("Invalid input for PII context enrichment, scanId={}",
-                    scanResult.scanId(), e);
-            return scanResult;
+                     confluenceContentScanResult.scanId(), e);
+            return confluenceContentScanResult;
         } catch (IndexOutOfBoundsException e) {
             log.error("Position error during context extraction, scanId={}",
-                    scanResult.scanId(), e);
-            return scanResult;
+                      confluenceContentScanResult.scanId(), e);
+            return confluenceContentScanResult;
         } catch (Exception e) {
             log.error("Unexpected error during PII context enrichment, scanId={}",
-                    scanResult.scanId(), e);
-            return scanResult;
+                      confluenceContentScanResult.scanId(), e);
+            return confluenceContentScanResult;
         }
     }
 
-    private boolean needsEnrichment(ScanResult scanResult) {
-        return scanResult != null
-                && scanResult.detectedPersonallyIdentifiableInformationList() != null
-                && !scanResult.detectedPersonallyIdentifiableInformationList().isEmpty()
-                && scanResult.sourceContent() != null
-                && !scanResult.sourceContent().isBlank();
+    private boolean needsEnrichment(ConfluenceContentScanResult confluenceContentScanResult) {
+        return confluenceContentScanResult != null
+                && confluenceContentScanResult.detectedPIIList() != null
+                && !confluenceContentScanResult.detectedPIIList().isEmpty()
+                && confluenceContentScanResult.sourceContent() != null
+                && !confluenceContentScanResult.sourceContent().isBlank();
     }
 
     private DetectedPersonallyIdentifiableInformation enrichEntity(String source, DetectedPersonallyIdentifiableInformation entity, List<DetectedPersonallyIdentifiableInformation> allEntities) {
@@ -144,6 +146,9 @@ public class PiiContextExtractor {
 
         // Clean HTML tags if present
         lineContext = parser.cleanText(lineContext);
+
+        // Le masquage repose uniquement sur les positions start/end fournies par le détecteur.
+        // Aucun ajustement heuristique supplémentaire n'est appliqué sur le suffixe.
         return lineContext;
     }
 

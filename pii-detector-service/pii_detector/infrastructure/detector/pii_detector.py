@@ -7,20 +7,21 @@ in text content using the Piiranha model with optimizations for memory usage and
 
 import logging
 import time
-from typing import Dict, List, Optional, Tuple
-
 import torch
 import unicodedata
+from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.domain.exception.exceptions import PIIDetectionError, \
+  ModelNotLoadedError
+from pii_detector.domain.service.entity_processor import EntityProcessor
+# Import managers
+from pii_detector.infrastructure.model_management.memory_manager import \
+  MemoryManager
+from pii_detector.infrastructure.model_management.model_manager import \
+  ModelManager
 from transformers import AutoTokenizer, AutoModelForTokenClassification, \
   pipeline
-
-from pii_detector.domain.service.entity_processor import EntityProcessor
-from pii_detector.domain.entity.pii_entity import PIIEntity
-from pii_detector.application.config.detection_policy import DetectionConfig
-from pii_detector.domain.exception.exceptions import PIIDetectionError, ModelNotLoadedError
-# Import managers
-from pii_detector.infrastructure.model_management.memory_manager import MemoryManager
-from pii_detector.infrastructure.model_management.model_manager import ModelManager
+from typing import Dict, List, Optional, Tuple
 
 # Constants
 _MODEL_NOT_LOADED_ERROR_MESSAGE = "The model must be loaded before use"
@@ -218,7 +219,7 @@ class PIIDetector:
 
     def get_summary(self, text: str, threshold: Optional[float] = None) -> Dict[str, int]:
         """
-        Get a summary of detected PII types.
+        Get a nbOfDetectedPIIBySeverity of detected PII types.
 
         Args:
             text: Text to analyze
@@ -234,7 +235,7 @@ class PIIDetector:
             pii_type = entity.type_label
             summary[pii_type] = summary.get(pii_type, 0) + 1
 
-        self.logger.info(f"Generated summary with {len(summary)} PII types")
+        self.logger.info(f"Generated nbOfDetectedPIIBySeverity with {len(summary)} PII types")
         return summary
 
     def clear_cache(self) -> None:

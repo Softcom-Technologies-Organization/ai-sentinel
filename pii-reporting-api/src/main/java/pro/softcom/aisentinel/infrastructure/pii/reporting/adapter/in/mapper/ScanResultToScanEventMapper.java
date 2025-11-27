@@ -3,9 +3,9 @@ package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
-import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventDto;
+import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ConfluenceContentScanResultEventDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 
 /**
@@ -19,12 +19,13 @@ import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEv
 @RequiredArgsConstructor
 public class ScanResultToScanEventMapper {
 
-    public ScanEventDto toDto(ScanResult scanResult) {
-        if (scanResult == null) return null;
+    public ConfluenceContentScanResultEventDto toDto(
+        ConfluenceContentScanResult confluenceContentScanResult) {
+        if (confluenceContentScanResult == null) return null;
         // Mask sensitiveValue if reveal is not allowed
-        List<DetectedPersonallyIdentifiableInformation> entities = scanResult.detectedPersonallyIdentifiableInformationList();
-        if (entities != null) {
-            entities = entities.stream()
+        List<DetectedPersonallyIdentifiableInformation> detectedPIIs = confluenceContentScanResult.detectedPIIList();
+        if (detectedPIIs != null) {
+            detectedPIIs = detectedPIIs.stream()
                     .map(e -> e.toBuilder()
                             .sensitiveValue(null)
                             .sensitiveContext(null)
@@ -32,25 +33,27 @@ public class ScanResultToScanEventMapper {
                     .toList();
         }
         
-        return ScanEventDto.builder()
-                .scanId(scanResult.scanId())
-                .spaceKey(scanResult.spaceKey())
-                .eventType(ScanEventType.from(scanResult.eventType()))
-                .isFinal(scanResult.isFinal())
-                .pagesTotal(scanResult.pagesTotal())
-                .pageIndex(scanResult.pageIndex())
-                .pageId(scanResult.pageId())
-                .pageTitle(scanResult.pageTitle())
-                .detectedPersonallyIdentifiableInformationList(entities)
-                .summary(scanResult.summary())
-                .message(scanResult.message())
-                .pageUrl(scanResult.pageUrl())
-                .emittedAt(scanResult.emittedAt())
-                .attachmentName(scanResult.attachmentName())
-                .attachmentType(scanResult.attachmentType())
-                .attachmentUrl(scanResult.attachmentUrl())
-                .analysisProgressPercentage(scanResult.analysisProgressPercentage())
-                .status(scanResult.scanStatus() != null ? scanResult.scanStatus().name() : null)
+        return ConfluenceContentScanResultEventDto.builder()
+                .scanId(confluenceContentScanResult.scanId())
+                .spaceKey(confluenceContentScanResult.spaceKey())
+                .eventType(ScanEventType.from(confluenceContentScanResult.eventType()))
+                .isFinal(confluenceContentScanResult.isFinal())
+                .pagesTotal(confluenceContentScanResult.pagesTotal())
+                .pageIndex(confluenceContentScanResult.pageIndex())
+                .pageId(confluenceContentScanResult.pageId())
+                .pageTitle(confluenceContentScanResult.pageTitle())
+                .detectedPIIList(detectedPIIs)
+                .nbOfDetectedPIIBySeverity(confluenceContentScanResult.nbOfDetectedPIIBySeverity())
+                .nbOfDetectedPIIByType(confluenceContentScanResult.nbOfDetectedPIIByType())
+                .message(confluenceContentScanResult.message())
+                .pageUrl(confluenceContentScanResult.pageUrl())
+                .emittedAt(confluenceContentScanResult.emittedAt())
+                .attachmentName(confluenceContentScanResult.attachmentName())
+                .attachmentType(confluenceContentScanResult.attachmentType())
+                .attachmentUrl(confluenceContentScanResult.attachmentUrl())
+                .analysisProgressPercentage(confluenceContentScanResult.analysisProgressPercentage())
+                .status(
+                    confluenceContentScanResult.scanStatus() != null ? confluenceContentScanResult.scanStatus().name() : null)
                 .build();
     }
 }

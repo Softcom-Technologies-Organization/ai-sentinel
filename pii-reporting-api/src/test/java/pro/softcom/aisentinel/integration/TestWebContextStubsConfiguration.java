@@ -5,9 +5,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.ScanReportingPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.StreamConfluenceScanPort;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.LastScanMeta;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanReportingSummary;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import pro.softcom.aisentinel.domain.pii.scan.ConfluenceSpaceScanState;
 import reactor.core.publisher.Flux;
 
@@ -22,12 +22,12 @@ public class TestWebContextStubsConfiguration {
     public StreamConfluenceScanPort streamConfluenceScanUseCaseStub() {
         return new StreamConfluenceScanPort() {
             @Override
-            public Flux<ScanResult> streamSpace(String spaceKey) {
+            public Flux<ConfluenceContentScanResult> streamSpace(String spaceKey) {
                 return Flux.empty();
             }
 
             @Override
-            public Flux<ScanResult> streamAllSpaces() {
+            public Flux<ConfluenceContentScanResult> streamAllSpaces() {
                 return Flux.empty();
             }
         };
@@ -49,7 +49,7 @@ public class TestWebContextStubsConfiguration {
             }
 
             @Override
-            public java.util.List<ScanResult> getLatestSpaceScanResultList() {
+            public java.util.List<ConfluenceContentScanResult> getLatestSpaceScanResultList() {
                 return java.util.List.of();
             }
 

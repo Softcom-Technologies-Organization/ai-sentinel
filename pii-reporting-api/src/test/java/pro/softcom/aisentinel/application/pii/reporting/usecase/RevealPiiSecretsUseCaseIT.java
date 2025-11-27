@@ -26,9 +26,9 @@ import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery
 import pro.softcom.aisentinel.application.pii.security.PiiAccessAuditService;
 import pro.softcom.aisentinel.application.pii.security.ScanResultEncryptor;
 import pro.softcom.aisentinel.application.pii.security.port.out.SavePiiAuditPort;
-import pro.softcom.aisentinel.domain.pii.reporting.PageSecretsResponse;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
+import pro.softcom.aisentinel.domain.pii.reporting.PageSecretsResponse;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionMetadata;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionService;
 import pro.softcom.aisentinel.domain.pii.security.PiiAuditRecord;
@@ -164,16 +164,16 @@ class RevealPiiSecretsUseCaseIT {
 
         DetectedPersonallyIdentifiableInformation entity = new DetectedPersonallyIdentifiableInformation(0, 5, "EMAIL", "Email", 0.99,
                                                                                                          "secret@example.com", "context", "masked");
-        ScanResult scanResult = ScanResult.builder()
+        ConfluenceContentScanResult confluenceContentScanResult = ConfluenceContentScanResult.builder()
             .scanId(scanId)
             .spaceKey("SPACE-1")
             .eventType("item")
             .pageId(pageId)
             .pageTitle("Page 1")
-            .detectedPersonallyIdentifiableInformationList(List.of(entity))
+            .detectedPIIList(List.of(entity))
             .build();
 
-        ObjectNode payload = objectMapper.valueToTree(scanResult);
+        ObjectNode payload = objectMapper.valueToTree(confluenceContentScanResult);
 
         ScanEventEntity event = ScanEventEntity.builder()
             .scanId(scanId)

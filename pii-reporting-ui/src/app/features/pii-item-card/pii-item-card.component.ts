@@ -10,7 +10,9 @@ import {
   SimpleChanges
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {PersonallyIdentifiableInformationScanResult} from '../../core/models/personally-identifiable-information-scan-result';
+import {
+  PersonallyIdentifiableInformationScanResult
+} from '../../core/models/personally-identifiable-information-scan-result';
 import {ButtonModule} from 'primeng/button';
 import {CardModule} from 'primeng/card';
 import {TagModule} from 'primeng/tag';
@@ -189,7 +191,9 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
     try { return new Date(ts).toLocaleString(); } catch { return ts; }
   }
 
-  objectKeys(obj: Record<string, number>): string[] { return Object.keys(obj || {}); }
+  objectKeys(obj?: Record<string, number> | null): string[] {
+    return Object.keys(obj || {});
+  }
 
   /**
    * Translate PII type key to user-friendly label.

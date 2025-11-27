@@ -11,10 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.ScanReportingPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery;
 import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.LastScanMeta;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanReportingSummary;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.SpaceSummary;
 import pro.softcom.aisentinel.domain.pii.scan.ConfluenceSpaceScanState;
 
@@ -71,7 +71,7 @@ public class ScanReportingUseCase implements ScanReportingPort {
     }
 
     @Override
-    public List<ScanResult> getLatestSpaceScanResultList() {
+    public List<ConfluenceContentScanResult> getLatestSpaceScanResultList() {
         try {
             Optional<LastScanMeta> meta = scanResultQuery.findLatestScan();
             if (meta.isEmpty()) return List.of();
@@ -115,7 +115,7 @@ public class ScanReportingUseCase implements ScanReportingPort {
                 .max(Instant::compareTo)
                 .orElse(Instant.now());
 
-            // 4) Build summary
+            // 4) Build nbOfDetectedPIIBySeverity
             return Optional.of(new ScanReportingSummary(
                 scanId,
                 lastUpdated,
@@ -123,7 +123,7 @@ public class ScanReportingUseCase implements ScanReportingPort {
                 spaces
             ));
         } catch (Exception ex) {
-            log.warn("[DASHBOARD] Failed to get dashboard summary for {}: {}", scanId, ex.getMessage());
+            log.warn("[DASHBOARD] Failed to get dashboard nbOfDetectedPIIBySeverity for {}: {}", scanId, ex.getMessage());
             return Optional.empty();
         }
     }

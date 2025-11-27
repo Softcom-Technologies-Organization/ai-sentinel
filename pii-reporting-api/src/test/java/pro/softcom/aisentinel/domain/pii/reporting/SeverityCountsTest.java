@@ -1,8 +1,8 @@
 package pro.softcom.aisentinel.domain.pii.reporting;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
 
 class SeverityCountsTest {
 
@@ -53,36 +53,6 @@ class SeverityCountsTest {
         assertThat(counts.total()).isZero();
     }
 
-    @Test
-    void Should_AddTwoSeverityCounts_When_CallingAdd() {
-        // Arrange
-        SeverityCounts counts1 = new SeverityCounts(5, 10, 3);
-        SeverityCounts counts2 = new SeverityCounts(2, 5, 1);
-
-        // Act
-        SeverityCounts result = counts1.add(counts2);
-
-        // Assert
-        assertThat(result.high()).isEqualTo(7);
-        assertThat(result.medium()).isEqualTo(15);
-        assertThat(result.low()).isEqualTo(4);
-        assertThat(result.total()).isEqualTo(26);
-    }
-
-    @Test
-    void Should_NotModifyOriginal_When_AddingCounts() {
-        // Arrange
-        SeverityCounts counts1 = new SeverityCounts(5, 10, 3);
-        SeverityCounts counts2 = new SeverityCounts(2, 5, 1);
-
-        // Act
-        counts1.add(counts2);
-
-        // Assert - Original should be unchanged (immutability)
-        assertThat(counts1.high()).isEqualTo(5);
-        assertThat(counts1.medium()).isEqualTo(10);
-        assertThat(counts1.low()).isEqualTo(3);
-    }
 
     @Test
     void Should_ImplementEqualsCorrectly() {

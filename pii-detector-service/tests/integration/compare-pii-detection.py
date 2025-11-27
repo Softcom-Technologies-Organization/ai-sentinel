@@ -6,13 +6,14 @@ This script runs both regex-based detection and Piiranha model-based detection
 on the same text and compares the results to evaluate the effectiveness of each approach.
 """
 
-import os
-import sys
-import subprocess
-import re
-from pathlib import Path
-import time
 import importlib.util
+import os
+import re
+import subprocess
+import sys
+import time
+from pathlib import Path
+
 
 def run_regex_detection(test_text):
     """Run PII detection using regex patterns and return the results."""
@@ -126,7 +127,7 @@ def run_piiranha_detection(test_text):
                 print("Imported PIIDetector from service.detector.pii_detector")
             except ImportError:
                 print("Error: Could not import PIIDetector class.")
-                return {"entities": [], "summary": {}}
+                return {"entities": [], "nbOfDetectedPIIBySeverity": {}}
 
         # Initialize the detector
         detector = PIIDetector()
@@ -142,7 +143,7 @@ def run_piiranha_detection(test_text):
         entities = detector.detect_pii(test_text, threshold)
         print(f"Piiranha detected {len(entities)} entities")
 
-        # Get summary
+        # Get nbOfDetectedPIIBySeverity
         summary = detector.get_summary(test_text, threshold)
         print(f"Summary: {summary}")
 
@@ -156,7 +157,7 @@ def run_piiranha_detection(test_text):
 
         return {
             "entities": formatted_entities,
-            "summary": summary
+            "nbOfDetectedPIIBySeverity": summary
         }
 
     except Exception as e:
@@ -164,10 +165,10 @@ def run_piiranha_detection(test_text):
         import traceback
         traceback.print_exc()
 
-        return {"entities": [], "summary": {}}
+        return {"entities": [], "nbOfDetectedPIIBySeverity": {}}
 
 def parse_piiranha_output(output):
-    """Parse the output from the Piiranha detection to extract entities and summary."""
+    """Parse the output from the Piiranha detection to extract entities and nbOfDetectedPIIBySeverity."""
     entities = []
     summary = {}
 
@@ -187,7 +188,7 @@ def parse_piiranha_output(output):
         elif entity_section and (line.strip().startswith('🔐') or line.strip() == ''):
             entity_section = False
 
-    # Extract summary
+    # Extract nbOfDetectedPIIBySeverity
     summary_line = None
     for line in output.split('\n'):
         if '📊 Summary:' in line:
@@ -202,7 +203,7 @@ def parse_piiranha_output(output):
 
     return {
         "entities": entities,
-        "summary": summary
+        "nbOfDetectedPIIBySeverity": summary
     }
 
 def compare_results(regex_results, piiranha_results):
@@ -223,7 +224,7 @@ def compare_results(regex_results, piiranha_results):
         all_types.add(label)
     for label in regex_results["improved"].keys():
         all_types.add(label.replace(" (Improved)", ""))
-    for entity_type in piiranha_results["summary"].keys():
+    for entity_type in piiranha_results["nbOfDetectedPIIBySeverity"].keys():
         all_types.add(entity_type)
 
     # Map Piiranha types to regex types for comparison
@@ -250,15 +251,15 @@ def compare_results(regex_results, piiranha_results):
         piiranha_count = 0
         if pii_type in type_mapping:
             for mapped_type in type_mapping[pii_type]:
-                piiranha_count += piiranha_results["summary"].get(mapped_type, 0)
+                piiranha_count += piiranha_results["nbOfDetectedPIIBySeverity"].get(mapped_type, 0)
         else:
-            piiranha_count = piiranha_results["summary"].get(pii_type, 0)
+            piiranha_count = piiranha_results["nbOfDetectedPIIBySeverity"].get(pii_type, 0)
 
         print(f"{pii_type:<25} {original_count:<15} {improved_count:<15} {piiranha_count:<15}")
 
     # Print additional types detected by Piiranha but not by regex
     print("\nAdditional PII Types Detected by Piiranha:")
-    for pii_type, count in piiranha_results["summary"].items():
+    for pii_type, count in piiranha_results["nbOfDetectedPIIBySeverity"].items():
         is_mapped = False
         for regex_type, mapped_types in type_mapping.items():
             if pii_type in mapped_types:
@@ -330,7 +331,7 @@ def compare_results(regex_results, piiranha_results):
 
     # Final recommendation
     print("\nFinal Recommendation:")
-    if len(piiranha_results["summary"]) > len(type_mapping):
+    if len(piiranha_results["nbOfDetectedPIIBySeverity"]) > len(type_mapping):
         print("Piiranha is recommended as the primary PII detection method because it detects more types of PII.")
         print("Consider using improved regex patterns as a fallback or for specific PII types where they perform better.")
     else:

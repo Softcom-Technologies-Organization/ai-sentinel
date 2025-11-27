@@ -47,7 +47,17 @@ class PIIEntity:
         return key in ['text', 'type', 'type_label', 'type_fr', 'start', 'end', 'score']
 
     def get(self, key, default=None):
-        """Support dictionary-style get method for backward compatibility."""
+        """Support dictionary-style get method for backward compatibility.
+
+        This method first looks for a dynamically attached attribute with the
+        requested key name (for example ``source`` set by specific detectors),
+        then falls back to the standard mapping implemented in ``__getitem__``.
+        """
+        # Allow detectors to attach additional attributes (e.g. ``source``)
+        # while keeping dict-style access consistent for existing callers.
+        if hasattr(self, key):
+            return getattr(self, key)
+
         try:
             return self[key]
         except KeyError:

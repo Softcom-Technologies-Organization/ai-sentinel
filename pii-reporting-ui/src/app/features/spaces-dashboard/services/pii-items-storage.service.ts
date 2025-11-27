@@ -3,7 +3,9 @@ import {ItemsBySpace} from '../../../core/models/item-by-space';
 import {
   PersonallyIdentifiableInformationScanResult
 } from '../../../core/models/personally-identifiable-information-scan-result';
-import {RawStreamPayload} from '../../../core/models/stream-event-type';
+import {
+  ConfluenceContentPersonallyIdentifiableInformationScanResult
+} from '../../../core/models/stream-event-type';
 import {Severity} from '../../../core/models/severity';
 import {SpacesDashboardUtils} from '../spaces-dashboard.utils';
 
@@ -46,8 +48,8 @@ export class PiiItemsStorageService {
    *
    * @returns true if item was added (not a duplicate), false otherwise
    */
-  addPiiItemToSpace(spaceKey: string, payload: RawStreamPayload): boolean {
-    const entities = Array.isArray(payload.detectedPersonallyIdentifiableInformationList) ? payload.detectedPersonallyIdentifiableInformationList : [];
+  addPiiItemToSpace(spaceKey: string, payload: ConfluenceContentPersonallyIdentifiableInformationScanResult): boolean {
+    const entities = Array.isArray(payload.detectedPIIList) ? payload.detectedPIIList : [];
 
     // Skip creating a card when no PII entities were detected
     if (!entities.length) {
@@ -69,7 +71,8 @@ export class PiiItemsStorageService {
       emittedAt: payload.emittedAt,
       isFinal: !!payload.isFinal,
       severity,
-      summary: (payload.summary && typeof payload.summary === 'object') ? payload.summary : undefined,
+      summary: (payload.nbOfDetectedPIIBySeverity && typeof payload.nbOfDetectedPIIBySeverity === 'object') ? payload.nbOfDetectedPIIBySeverity : undefined,
+      piiTypeSummary: (payload.nbOfDetectedPIIByType && typeof payload.nbOfDetectedPIIByType === 'object') ? payload.nbOfDetectedPIIByType : undefined,
       detectedPersonallyIdentifiableInformationList: entities.map((e: any) => {
         return {
           startPosition: e?.startPosition,

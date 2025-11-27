@@ -15,16 +15,13 @@ Business value:
 from __future__ import annotations
 
 import logging
-from pathlib import Path
-from typing import Dict, List, Optional, Set
-
 import toml
-from presidio_analyzer import AnalyzerEngine, RecognizerRegistry
-from presidio_analyzer.nlp_engine import NlpEngineProvider
-
+from pathlib import Path
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.entity.pii_type import PIIType
-
+from presidio_analyzer import AnalyzerEngine, RecognizerRegistry
+from presidio_analyzer.nlp_engine import NlpEngineProvider
+from typing import Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
 
@@ -601,6 +598,8 @@ class PresidioDetector:
                 end=result.end,
                 score=score
             )
+            # Tag provenance for downstream logging (e.g. gRPC async PII logs)
+            entity.source = "PRESIDIO"
             
             entities.append(entity)
         

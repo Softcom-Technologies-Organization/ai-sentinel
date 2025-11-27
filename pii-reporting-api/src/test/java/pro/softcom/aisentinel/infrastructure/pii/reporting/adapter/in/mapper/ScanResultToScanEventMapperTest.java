@@ -8,9 +8,9 @@ import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
-import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventDto;
+import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ConfluenceContentScanResultEventDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,7 +28,7 @@ class ScanResultToScanEventMapperTest {
         // Arrange
         Map<String, Integer> summary = Map.of("EMAIL", 2, "PHONE", 1);
         List<DetectedPersonallyIdentifiableInformation> entities = List.of(entity());
-        ScanResult sr = ScanResult.builder()
+        ConfluenceContentScanResult sr = ConfluenceContentScanResult.builder()
                 .scanId("sid")
                 .spaceKey("space")
                 .eventType(ScanEventType.START.toJson())
@@ -37,8 +37,8 @@ class ScanResultToScanEventMapperTest {
                 .pageIndex(3)
                 .pageId("pid")
                 .pageTitle("Title")
-                .detectedPersonallyIdentifiableInformationList(entities)
-                .summary(summary)
+                .detectedPIIList(entities)
+                .nbOfDetectedPIIBySeverity(summary)
                 .sourceContent("abc")
                 .message("msg")
                 .pageUrl("url")
@@ -50,7 +50,7 @@ class ScanResultToScanEventMapperTest {
                 .build();
 
         // Act
-        ScanEventDto dto = mapper.toDto(sr);
+        ConfluenceContentScanResultEventDto dto = mapper.toDto(sr);
 
         // Assert (soft)
         SoftAssertions softly = new SoftAssertions();
@@ -62,8 +62,8 @@ class ScanResultToScanEventMapperTest {
         softly.assertThat(dto.pageIndex()).isEqualTo(3);
         softly.assertThat(dto.pageId()).isEqualTo("pid");
         softly.assertThat(dto.pageTitle()).isEqualTo("Title");
-        softly.assertThat(dto.detectedPersonallyIdentifiableInformationList()).isEqualTo(entities);
-        softly.assertThat(dto.summary()).isEqualTo(summary);
+        softly.assertThat(dto.detectedPIIList()).isEqualTo(entities);
+        softly.assertThat(dto.nbOfDetectedPIIBySeverity()).isEqualTo(summary);
         softly.assertThat(dto.message()).isEqualTo("msg");
         softly.assertThat(dto.pageUrl()).isEqualTo("url");
         softly.assertThat(dto.emittedAt()).isEqualTo("emittedAt");

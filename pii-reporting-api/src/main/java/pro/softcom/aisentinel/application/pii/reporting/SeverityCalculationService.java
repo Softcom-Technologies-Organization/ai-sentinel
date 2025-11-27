@@ -1,13 +1,15 @@
 package pro.softcom.aisentinel.application.pii.reporting;
 
-import pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity;
-import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
+import static java.util.Map.entry;
+import static pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity.HIGH;
+import static pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity.LOW;
+import static pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity.MEDIUM;
 
 import java.util.List;
 import java.util.Map;
-
-import static java.util.Map.entry;
-import static pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity.*;
+import lombok.extern.slf4j.Slf4j;
+import pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity;
+import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 
 /**
  * Application service responsible for calculating PII severity levels and aggregating counts.
@@ -30,6 +32,7 @@ import static pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity.*;
  * @see PiiSeverity
  * @see SeverityCounts
  */
+@Slf4j
 public class SeverityCalculationService {
 
     /**
@@ -37,17 +40,24 @@ public class SeverityCalculationService {
      * This map defines the business rules for severity classification.
      */
     private static final Map<String, PiiSeverity> SEVERITY_RULES = Map.<String, PiiSeverity>ofEntries(
-            // HIGH SEVERITY (14 types) - Financial, authentication, highly sensitive government IDs
+            // HIGH SEVERITY - Financial, authentication, highly sensitive government IDs
             entry("PASSWORD", HIGH),
             entry("API_KEY", HIGH),
             entry("GITHUB_TOKEN", HIGH),
             entry("AWS_ACCESS_KEY", HIGH),
             entry("JWT_TOKEN", HIGH),
+            // Credit cards (ML detector and Presidio)
             entry("CREDITCARDNUMBER", HIGH),
+            entry("CREDIT_CARD", HIGH),
+            // Bank accounts (ML detector and Presidio)
+            entry("ACCOUNTNUM", HIGH),
+            entry("BANK_ACCOUNT", HIGH),
             entry("IBAN", HIGH),
-            entry("CRYPTO", HIGH),
+            entry("CRYPTO_WALLET", HIGH),
             entry("US_BANK_NUMBER", HIGH),
+            // Social Security Numbers (ML detector and Presidio)
             entry("SOCIALNUM", HIGH),
+            entry("SSN", HIGH),
             entry("US_SSN", HIGH),
             entry("MEDICAL_LICENSE", HIGH),
             entry("AU_MEDICARE", HIGH),
@@ -56,6 +66,7 @@ public class SeverityCalculationService {
             // MEDIUM SEVERITY (28 types) - Official documents, IDs, personal details
             entry("DRIVERLICENSENUM", MEDIUM),
             entry("IDCARDNUM", MEDIUM),
+            entry("ID_CARD", MEDIUM),
             entry("TAXNUM", MEDIUM),
             entry("US_PASSPORT", MEDIUM),
             entry("US_DRIVER_LICENSE", MEDIUM),
@@ -83,14 +94,15 @@ public class SeverityCalculationService {
             entry("DATEOFBIRTH", MEDIUM),
             entry("AGE", MEDIUM),
 
-            // LOW SEVERITY (13 types) - Contact info, location, names
+            // LOW SEVERITY - Contact info, location, names
             entry("EMAIL", LOW),
             entry("TELEPHONENUM", LOW),
+            entry("PHONE", LOW),
             entry("PHONE_NUMBER", LOW),
+            entry("NAME", LOW),
             entry("GIVENNAME", LOW),
             entry("SURNAME", LOW),
             entry("USERNAME", LOW),
-            entry("ACCOUNTNUM", LOW),
             entry("IP_ADDRESS", LOW),
             entry("MAC_ADDRESS", LOW),
             entry("CITY", LOW),
@@ -114,7 +126,16 @@ public class SeverityCalculationService {
      */
     public PiiSeverity calculateSeverity(String piiType) {
         String normalizedType = normalizeType(piiType);
-        return SEVERITY_RULES.getOrDefault(normalizedType, LOW);
+        log.info("Calculating severity for PII type '{}' normalized to '{}'", piiType, normalizedType);
+
+        PiiSeverity severity = SEVERITY_RULES.get(normalizedType);
+        if (severity != null) {
+            log.info("Found severity mapping for normalized PII type '{}': {}", normalizedType, severity);
+            return severity;
+        }
+
+        log.info("No severity mapping found for normalized PII type '{}', using default severity: {}", normalizedType, LOW);
+        return LOW;
     }
 
     /**

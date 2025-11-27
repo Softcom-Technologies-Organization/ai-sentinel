@@ -19,7 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pii_detection.PIIDetectionServiceGrpc;
 import pii_detection.PiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
-import pro.softcom.aisentinel.domain.pii.scan.PiiType;
+import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIdentifiableInformationType;
 import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.GrpcPiiDetectorAmariaClientAdapter;
 import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.PiiDetectionException;
 import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.config.PiiDetectorConfig;
@@ -48,11 +48,12 @@ class GrpcPiiDetectorAmariaClientAdapterTest {
     }
 
     @Test
-    @DisplayName("analyzePageContent: maps entities and summary, uses deadline and returns ContentAnalysis")
+    @DisplayName("analyzePageContent: maps entities and nbOfDetectedPIIBySeverity, uses deadline and returns ContentAnalysis")
     void analyzePageContent_success() {
         // Given
         PiiDetection.PIIEntity emailEntity = PiiDetection.PIIEntity.newBuilder()
-                .setType(PiiType.EMAIL.name())
+                .setType(
+                    pro.softcom.aisentinel.infrastructure.confluence.adapter.out.PersonallyIdentifiableInformationType.EMAIL.name())
                 .setText("john.doe@example.com")
                 .setStart(5)
                 .setEnd(25)
@@ -99,14 +100,14 @@ class GrpcPiiDetectorAmariaClientAdapterTest {
         assertThat(result.sensitiveDataFound()).hasSize(2);
 
         ContentPiiDetection.SensitiveData sd1 = result.sensitiveDataFound().get(0);
-        assertThat(sd1.type()).isEqualTo(ContentPiiDetection.DataType.EMAIL);
+        assertThat(sd1.type()).isEqualTo(PersonallyIdentifiableInformationType.EMAIL);
         assertThat(sd1.value()).isEqualTo("john.doe@example.com");
         assertThat(sd1.context()).contains("5-25").contains("0.95");
         assertThat(sd1.position()).isEqualTo(5);
-        assertThat(sd1.selector()).isEqualTo("pii-entity-" + PiiType.EMAIL.name().toLowerCase());
+        assertThat(sd1.selector()).isEqualTo("pii-entity-" + pro.softcom.aisentinel.infrastructure.confluence.adapter.out.PersonallyIdentifiableInformationType.EMAIL.name().toLowerCase());
 
         ContentPiiDetection.SensitiveData sd2 = result.sensitiveDataFound().get(1);
-        assertThat(sd2.type()).isEqualTo(ContentPiiDetection.DataType.UNKNOWN);
+        assertThat(sd2.type()).isEqualTo(PersonallyIdentifiableInformationType.UNKNOWN);
         assertThat(sd2.selector()).isEqualTo("pii-entity-mystery");
 
         assertThat(result.statistics()).containsEntry("EMAIL", 1);

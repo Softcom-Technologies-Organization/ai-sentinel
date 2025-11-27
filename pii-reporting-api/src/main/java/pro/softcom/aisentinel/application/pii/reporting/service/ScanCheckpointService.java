@@ -5,8 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -24,11 +24,12 @@ public class ScanCheckpointService {
      * Persists checkpoint based on scan event reactively.
      * Uses boundedElastic scheduler to avoid blocking the event loop.
      *
-     * @param scanResult the scan event to persist
+     * @param confluenceContentScanResult the scan event to persist
      * @return Mono that completes when checkpoint is persisted
      */
-    public Mono<Void> persistCheckpointReactive(ScanResult scanResult) {
-        return Mono.fromRunnable(() -> persistCheckpoint(scanResult))
+    public Mono<Void> persistCheckpointReactive(
+        ConfluenceContentScanResult confluenceContentScanResult) {
+        return Mono.fromRunnable(() -> persistCheckpoint(confluenceContentScanResult))
                 .subscribeOn(Schedulers.boundedElastic())
                 .then();
     }
@@ -38,10 +39,10 @@ public class ScanCheckpointService {
      * Protected against thread interruptions to ensure checkpoint persistence
      * even when SSE client disconnects.
      *
-     * @param scanResult the scan event to persist
+     * @param confluenceContentScanResult the scan event to persist
      */
-    public void persistCheckpoint(ScanResult scanResult) {
-        if (!isValidForCheckpoint(scanResult)) {
+    public void persistCheckpoint(ConfluenceContentScanResult confluenceContentScanResult) {
+        if (!isValidForCheckpoint(confluenceContentScanResult)) {
             return;
         }
 
@@ -53,10 +54,10 @@ public class ScanCheckpointService {
                 log.debug("[CHECKPOINT] Thread interrupted, clearing flag to persist checkpoint");
             }
             
-            ScanCheckpoint checkpoint = buildCheckpoint(scanResult);
+            ScanCheckpoint checkpoint = buildCheckpoint(confluenceContentScanResult);
             if (checkpoint != null) {
                 scanCheckpointRepository.save(checkpoint);
-                log.debug("[CHECKPOINT] Saved checkpoint for scan {}", scanResult.scanId());
+                log.debug("[CHECKPOINT] Saved checkpoint for scan {}", confluenceContentScanResult.scanId());
             }
         } catch (Exception exception) {
             log.warn("[CHECKPOINT] Unable to persist checkpoint: {}", exception.getMessage());
@@ -69,37 +70,37 @@ public class ScanCheckpointService {
         }
     }
 
-    private boolean isValidForCheckpoint(ScanResult scanResult) {
-        if (scanResult == null) {
+    private boolean isValidForCheckpoint(ConfluenceContentScanResult confluenceContentScanResult) {
+        if (confluenceContentScanResult == null) {
             return false;
         }
-        String scanId = scanResult.scanId();
-        String spaceKey = scanResult.spaceKey();
+        String scanId = confluenceContentScanResult.scanId();
+        String spaceKey = confluenceContentScanResult.spaceKey();
         return !StringUtils.isBlank(scanId) && !StringUtils.isBlank(spaceKey);
     }
 
-    private ScanCheckpoint buildCheckpoint(ScanResult scanResult) {
-        String eventType = scanResult.eventType();
+    private ScanCheckpoint buildCheckpoint(ConfluenceContentScanResult confluenceContentScanResult) {
+        String eventType = confluenceContentScanResult.eventType();
         if (eventType == null) {
             return null;
         }
 
-        CheckpointData data = extractCheckpointData(eventType, scanResult);
+        CheckpointData data = extractCheckpointData(eventType, confluenceContentScanResult);
         if (data == null) {
             return null;
         }
 
         return ScanCheckpoint.builder()
-            .scanId(scanResult.scanId())
-            .spaceKey(scanResult.spaceKey())
+            .scanId(confluenceContentScanResult.scanId())
+            .spaceKey(confluenceContentScanResult.spaceKey())
             .lastProcessedPageId(data.lastPage())
             .lastProcessedAttachmentName(data.lastAttachment())
             .scanStatus(data.status())
-            .progressPercentage(scanResult.analysisProgressPercentage())
+            .progressPercentage(confluenceContentScanResult.analysisProgressPercentage())
             .build();
     }
 
-    private CheckpointData extractCheckpointData(String eventType, ScanResult scanResult) {
+    private CheckpointData extractCheckpointData(String eventType, ConfluenceContentScanResult confluenceContentScanResult) {
         return switch (eventType) {
             case "item" ->
                 // Interim page item: persist checkpoint with RUNNING status
@@ -108,10 +109,10 @@ public class ScanCheckpointService {
             case "attachmentItem" -> 
                 // Persist attachment progress but do NOT advance lastProcessedPageId
                 // Repository merge strategy preserves existing lastProcessedPageId
-                new CheckpointData(null, scanResult.attachmentName(), ScanStatus.RUNNING);
+                new CheckpointData(null, confluenceContentScanResult.attachmentName(), ScanStatus.RUNNING);
             case "pageComplete" -> 
                 // Persist progress at end of page - advance lastProcessedPageId
-                new CheckpointData(scanResult.pageId(), null, ScanStatus.RUNNING);
+                new CheckpointData(confluenceContentScanResult.pageId(), null, ScanStatus.RUNNING);
             case "complete" -> 
                 // Space-level completion - reset lastProcessedPageId
                 new CheckpointData(null, null, ScanStatus.COMPLETED);

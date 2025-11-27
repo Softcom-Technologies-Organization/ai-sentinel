@@ -50,12 +50,11 @@
       }
     </div>
 
-
-    @if (item?.summary; as summary) {
+    @if (item?.piiTypeSummary; as piiTypeSummary) {
       <div class="row chips-row">
         <div class="chips">
-          @for (k of objectKeys(summary); track k) {
-            <p-chip [label]="translatePiiType(k) + ' × ' + summary[k]"></p-chip>
+          @for (piiType of objectKeys(piiTypeSummary); track piiType) {
+            <p-chip [label]="translatePiiType(piiType) + ' × ' + piiTypeSummary[piiType]"></p-chip>
           }
         </div>
         <p-button (click)="toggleDetails()"
@@ -86,17 +85,20 @@
         <br>
 
         <div class="chips mt-2">
-          @for (e of item?.detectedPersonallyIdentifiableInformationList; track e.startPosition) {
+          @for (
+            detectedPII of item?.detectedPersonallyIdentifiableInformationList;
+            track detectedPII.startPosition + '-' + detectedPII.endPosition + '-' + detectedPII.maskedContext
+          ) {
             <div class="col-12 md:col-6 lg:col-4">
               <p-card>
                 <p>
-                  @if (revealed) { {{ e.sensitiveContext || '—' }} }
-                  @else { {{ e.maskedContext || '—' }} }
+                  @if (revealed) { {{ detectedPII.sensitiveContext || '—' }} }
+                  @else { {{ detectedPII.maskedContext || '—' }} }
                 </p>
                 <p-divider />
                 <div class="flex gap-2 flex-wrap">
-                  @if (e.confidence !== undefined) {
-                  <p-tag severity="secondary" [value]="'piiItem.entity.score' | transloco:{ value: formatScore(e.confidence) }" />
+                  @if (detectedPII.confidence !== undefined) {
+                  <p-tag severity="secondary" [value]="'piiItem.entity.score' | transloco:{ value: formatScore(detectedPII.confidence) }" />
                   }
                 </div>
               </p-card>

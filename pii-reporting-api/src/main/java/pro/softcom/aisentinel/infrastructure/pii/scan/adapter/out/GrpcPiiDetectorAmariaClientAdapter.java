@@ -12,7 +12,7 @@ import pii_detection.PIIDetectionServiceGrpc;
 import pii_detection.PiiDetection;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
-import pro.softcom.aisentinel.domain.pii.scan.PiiType;
+import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIdentifiableInformationType;
 import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.config.PiiDetectorConfig;
 
 /**
@@ -92,12 +92,12 @@ public class GrpcPiiDetectorAmariaClientAdapter implements PiiDetectorClient {
     }
 
     private ContentPiiDetection.SensitiveData convertToSensitiveData(PiiDetection.PIIEntity entity) {
-        ContentPiiDetection.DataType dataType;
+        PersonallyIdentifiableInformationType dataType;
         try {
-            PiiType piiType = PiiType.valueOf(entity.getType().trim().toUpperCase());
+            pro.softcom.aisentinel.infrastructure.confluence.adapter.out.PersonallyIdentifiableInformationType piiType = pro.softcom.aisentinel.infrastructure.confluence.adapter.out.PersonallyIdentifiableInformationType.valueOf(entity.getType().trim().toUpperCase());
             dataType = piiType.dataType();
         } catch (Exception _) {
-            dataType = ContentPiiDetection.DataType.UNKNOWN;
+            dataType = PersonallyIdentifiableInformationType.UNKNOWN;
             log.warn("[Armeria] Unknown PII type: {}, mapping to UNKNOWN", entity.getType());
         }
         final String context = String.format(Locale.ROOT, "Detected at position %d-%d (confidence: %.2f)",

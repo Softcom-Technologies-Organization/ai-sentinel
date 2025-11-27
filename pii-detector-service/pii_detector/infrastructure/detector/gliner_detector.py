@@ -8,14 +8,15 @@ as PIIDetector but uses GLiNER model for entity detection.
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Dict, List, Optional, Tuple, Any
-
-from pii_detector.infrastructure.model_management.gliner_model_manager import GLiNERModelManager
-from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.exception.exceptions import ModelNotLoadedError
-# FIXME: from service.detector.models import 
-from pii_detector.infrastructure.text_processing.semantic_chunker import create_chunker
+from pii_detector.infrastructure.model_management.gliner_model_manager import \
+  GLiNERModelManager
+# FIXME: from service.detector.models import
+from pii_detector.infrastructure.text_processing.semantic_chunker import \
+  create_chunker
+from typing import Dict, List, Optional, Tuple, Any
 
 
 class GLiNERDetector:
@@ -339,6 +340,8 @@ class GLiNERDetector:
                 end=entity.get("end", 0),
                 score=entity.get("score", 0.0)
             )
+            # Tag provenance for downstream logging (e.g. gRPC async PII logs)
+            pii_entity.source = "GLINER"
             entities.append(pii_entity)
         
         return entities

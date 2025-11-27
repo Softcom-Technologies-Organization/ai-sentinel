@@ -9,9 +9,9 @@ import pro.softcom.aisentinel.application.pii.reporting.port.in.RevealPiiSecrets
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ReadPiiConfigPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery;
 import pro.softcom.aisentinel.domain.pii.reporting.AccessPurpose;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.PageSecretsResponse;
 import pro.softcom.aisentinel.domain.pii.reporting.RevealedSecret;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 
 /**
  * Use case for revealing PII secrets from scan results.
@@ -49,7 +49,7 @@ public class RevealPiiSecretsUseCase implements
         log.info("[PII_ACCESS] Reveal request for pageId={}", pageId);
 
         // Query with automatic decryption (AccessPurpose.USER_DISPLAY)
-        List<ScanResult> results = scanResultQuery.listItemEventsDecrypted(
+        List<ConfluenceContentScanResult> results = scanResultQuery.listItemEventsDecrypted(
                 scanId,
                 pageId,
                 AccessPurpose.USER_DISPLAY
@@ -63,7 +63,7 @@ public class RevealPiiSecretsUseCase implements
         // Extract decrypted secrets
         List<RevealedSecret> secrets = results.stream()
                 .filter(Objects::nonNull)
-                .flatMap(sr -> Optional.ofNullable(sr.detectedPersonallyIdentifiableInformationList())
+                .flatMap(sr -> Optional.ofNullable(sr.detectedPIIList())
                         .orElseGet(List::of)
                         .stream())
                 .filter(Objects::nonNull)
@@ -77,7 +77,7 @@ public class RevealPiiSecretsUseCase implements
                 .toList();
 
         // Take the first result (should be unique per pageId)
-        ScanResult result = results.getFirst();
+        ConfluenceContentScanResult result = results.getFirst();
         log.info("[PII_ACCESS] Revealed {} secrets for pageId={} (scanId={})",
                 secrets.size(), result.pageId(), result.scanId());
 

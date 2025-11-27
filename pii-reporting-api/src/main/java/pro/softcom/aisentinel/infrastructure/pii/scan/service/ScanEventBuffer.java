@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 
 /**
  * Service responsible for buffering scan events in memory for replay on reconnection.
@@ -44,7 +44,7 @@ public class ScanEventBuffer {
      * @param eventId The monotonic event ID
      * @param event The scan result event to buffer
      */
-    public void addEvent(String scanId, long eventId, ScanResult event) {
+    public void addEvent(String scanId, long eventId, ConfluenceContentScanResult event) {
         RingBuffer<BufferedEvent> buffer = buffers.computeIfAbsent(
             scanId,
             k -> new RingBuffer<>(bufferCapacity)
@@ -95,7 +95,7 @@ public class ScanEventBuffer {
     /**
      * Represents a buffered scan event with metadata.
      */
-    public record BufferedEvent(long eventId, ScanResult event, Instant timestamp) {}
+    public record BufferedEvent(long eventId, ConfluenceContentScanResult event, Instant timestamp) {}
 
     /**
      * Thread-safe circular buffer implementation.

@@ -20,8 +20,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.application.pii.reporting.ScanSeverityCountService;
 import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanEventStore;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 
 @ExtendWith(MockitoExtension.class)
@@ -80,13 +80,13 @@ class ContentScanOrchestratorTest {
                     new DetectedPersonallyIdentifiableInformation(50, 68, "credit_card", "Credit Card", 0.99, "4111-1111-1111-1111", "context", "masked")
             );
 
-            ScanResult event = ScanResult.builder()
+            ConfluenceContentScanResult event = ConfluenceContentScanResult.builder()
                     .scanId(scanId)
                     .spaceKey(spaceKey)
                     .eventType("ITEM")
                     .pageId("page-1")
                     .pageTitle("Page Title")
-                    .detectedPersonallyIdentifiableInformationList(detectedEntities)
+                    .detectedPIIList(detectedEntities)
                     .analysisProgressPercentage(50.0)
                     .build();
 
@@ -111,13 +111,13 @@ class ContentScanOrchestratorTest {
             String scanId = "scan-123";
             String spaceKey = "PROJ";
 
-            ScanResult event = ScanResult.builder()
+            ConfluenceContentScanResult event = ConfluenceContentScanResult.builder()
                     .scanId(scanId)
                     .spaceKey(spaceKey)
                     .eventType("ITEM")
                     .pageId("page-1")
                     .pageTitle("Page Title")
-                    .detectedPersonallyIdentifiableInformationList(Collections.emptyList())
+                    .detectedPIIList(Collections.emptyList())
                     .analysisProgressPercentage(50.0)
                     .build();
 
@@ -138,7 +138,7 @@ class ContentScanOrchestratorTest {
             String scanId = "scan-123";
             String spaceKey = "PROJ";
 
-            ScanResult event = ScanResult.builder()
+            ConfluenceContentScanResult event = ConfluenceContentScanResult.builder()
                     .scanId(scanId)
                     .spaceKey(spaceKey)
                     .eventType("START")
@@ -165,13 +165,13 @@ class ContentScanOrchestratorTest {
                     new DetectedPersonallyIdentifiableInformation(10, 27, "email", "Email", 0.98, "test@example.com", "context", "masked")
             );
 
-            ScanResult event = ScanResult.builder()
+            ConfluenceContentScanResult event = ConfluenceContentScanResult.builder()
                     .scanId(scanId)
                     .spaceKey(spaceKey)
                     .eventType("ITEM")
                     .pageId("page-1")
                     .pageTitle("Page Title")
-                    .detectedPersonallyIdentifiableInformationList(detectedEntities)
+                    .detectedPIIList(detectedEntities)
                     .analysisProgressPercentage(50.0)
                     .build();
 
@@ -205,13 +205,13 @@ class ContentScanOrchestratorTest {
                     new DetectedPersonallyIdentifiableInformation(0, 11, "ssn", "SSN", 0.99, "123-45-6789", "context", "masked")
             );
 
-            ScanResult event = ScanResult.builder()
+            ConfluenceContentScanResult event = ConfluenceContentScanResult.builder()
                     .scanId(scanId)
                     .spaceKey(spaceKey)
                     .eventType("ITEM")
                     .pageId("page-2")
                     .pageTitle("Test Page")
-                    .detectedPersonallyIdentifiableInformationList(detectedEntities)
+                    .detectedPIIList(detectedEntities)
                     .analysisProgressPercentage(75.0)
                     .build();
 
@@ -261,13 +261,13 @@ class ContentScanOrchestratorTest {
                     new DetectedPersonallyIdentifiableInformation(100, 114, "phone", "Phone", 0.94, "(555) 123-4567", "context", "masked")
             );
 
-            ScanResult event = ScanResult.builder()
+            ConfluenceContentScanResult event = ConfluenceContentScanResult.builder()
                     .scanId(scanId)
                     .spaceKey(spaceKey)
                     .eventType("ITEM")
                     .pageId("page-3")
                     .pageTitle("Multi PII Page")
-                    .detectedPersonallyIdentifiableInformationList(detectedEntities)
+                    .detectedPIIList(detectedEntities)
                     .analysisProgressPercentage(90.0)
                     .build();
 
@@ -293,13 +293,13 @@ class ContentScanOrchestratorTest {
                     new DetectedPersonallyIdentifiableInformation(0, 17, "email", "Email", 0.98, "test@example.com", "context", "masked")
             );
 
-            ScanResult event = ScanResult.builder()
+            ConfluenceContentScanResult event = ConfluenceContentScanResult.builder()
                     .scanId(scanId)
                     .spaceKey(spaceKey)
                     .eventType("ITEM")
                     .pageId("page-1")
                     .pageTitle("Test")
-                    .detectedPersonallyIdentifiableInformationList(detectedEntities)
+                    .detectedPIIList(detectedEntities)
                     .analysisProgressPercentage(50.0)
                     .build();
 
@@ -321,7 +321,7 @@ class ContentScanOrchestratorTest {
             String scanId = "scan-complete";
             String spaceKey = "COMP";
 
-            ScanResult event = ScanResult.builder()
+            ConfluenceContentScanResult event = ConfluenceContentScanResult.builder()
                     .scanId(scanId)
                     .spaceKey(spaceKey)
                     .eventType("complete")  // Must match ScanEventType.COMPLETE.getValue()
@@ -360,11 +360,11 @@ class ContentScanOrchestratorTest {
                     new DetectedPersonallyIdentifiableInformation(0, 17, "email", "Email", 0.98, "test@example.com", "context", "masked")
             );
 
-            ScanResult event = ScanResult.builder()
+            ConfluenceContentScanResult event = ConfluenceContentScanResult.builder()
                     .scanId(scanId)
                     .spaceKey(spaceKey)
                     .eventType("complete")  // Must match ScanEventType.COMPLETE.getValue()
-                    .detectedPersonallyIdentifiableInformationList(detectedEntities)
+                    .detectedPIIList(detectedEntities)
                     .analysisProgressPercentage(100.0)
                     .build();
 
@@ -402,13 +402,13 @@ class ContentScanOrchestratorTest {
                     new DetectedPersonallyIdentifiableInformation(0, 11, "ssn", "SSN", 0.99, "123-45-6789", "context", "masked")
             );
 
-            ScanResult event = ScanResult.builder()
+            ConfluenceContentScanResult event = ConfluenceContentScanResult.builder()
                     .scanId(scanId)
                     .spaceKey(spaceKey)
                     .eventType("ITEM")
                     .pageId("page-1")
                     .pageTitle("Test")
-                    .detectedPersonallyIdentifiableInformationList(detectedEntities)
+                    .detectedPIIList(detectedEntities)
                     .analysisProgressPercentage(50.0)
                     .build();
 

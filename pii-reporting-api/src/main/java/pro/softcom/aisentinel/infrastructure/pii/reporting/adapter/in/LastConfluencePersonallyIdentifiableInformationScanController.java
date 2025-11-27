@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.ScanReportingPort;
 import pro.softcom.aisentinel.domain.pii.scan.ConfluenceSpaceScanState;
+import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ConfluenceContentScanResultEventDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.LastScanDto;
-import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanReportingSummaryDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.SpaceScanStateDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.LastScanMapper;
@@ -21,7 +21,7 @@ import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.Spa
 @RestController
 @RequestMapping("/api/v1/scans")
 @RequiredArgsConstructor
-public class LastScanController {
+public class LastConfluencePersonallyIdentifiableInformationScanController {
 
     private final ScanReportingPort scanReportingPort;
     private final LastScanMapper lastScanMapper;
@@ -49,8 +49,8 @@ public class LastScanController {
     }
 
     @GetMapping("/last/items")
-    public ResponseEntity<@NonNull List<ScanEventDto>> getLastScanItems() {
-        List<ScanEventDto> items = scanReportingPort.getLatestSpaceScanResultList().stream()
+    public ResponseEntity<@NonNull List<ConfluenceContentScanResultEventDto>> getLastScanItems() {
+        List<ConfluenceContentScanResultEventDto> items = scanReportingPort.getLatestSpaceScanResultList().stream()
                 .map(scanResultToScanEventMapper::toDto)
                 .toList();
         if (items.isEmpty()) {
@@ -62,7 +62,6 @@ public class LastScanController {
     /**
      * Unified endpoint combining authoritative status/progress from scan_checkpoints
      * with aggregated counters from scan_events.
-     * 
      * Provides single source of truth for dashboard to eliminate race conditions
      * and incorrect progress displays.
      */

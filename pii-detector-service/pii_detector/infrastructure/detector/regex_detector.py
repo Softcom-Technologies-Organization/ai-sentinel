@@ -7,14 +7,12 @@ complementing ML-based detectors with rule-based patterns.
 
 import logging
 import re
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-
 import toml
-
-from pii_detector.domain.entity.pii_entity import PIIEntity
+from pathlib import Path
 from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.exception.exceptions import PIIDetectionError
+from typing import Dict, List, Optional, Tuple
 
 
 class RegexPattern:
@@ -309,6 +307,8 @@ class RegexDetector:
                     end=match.end(),
                     score=pattern.score
                 )
+                # Tag provenance for downstream logging (e.g. gRPC async PII logs)
+                entity.source = "REGEX"
                 # Store pattern metadata for validation
                 entity._pattern_name = pattern.name
                 entity._requires_validation = pattern.requires_validation

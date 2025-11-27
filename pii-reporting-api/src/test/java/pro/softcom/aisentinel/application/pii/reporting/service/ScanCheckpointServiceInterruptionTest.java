@@ -12,8 +12,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 
 /**
  * Tests that ScanCheckpointService handles thread interruptions gracefully
@@ -31,7 +31,7 @@ class ScanCheckpointServiceInterruptionTest {
     @Test
     void Should_PersistCheckpoint_When_ThreadIsInterrupted() {
         // Given: A valid scan result with pageComplete event
-        ScanResult scanResult = ScanResult.builder()
+        ConfluenceContentScanResult confluenceContentScanResult = ConfluenceContentScanResult.builder()
                 .scanId("scan-123")
                 .spaceKey("TEST")
                 .eventType("pageComplete")
@@ -53,7 +53,7 @@ class ScanCheckpointServiceInterruptionTest {
         Thread.currentThread().interrupt(); // Set it again for the test
 
         // When: Persisting checkpoint with thread interrupted
-        scanCheckpointService.persistCheckpoint(scanResult);
+        scanCheckpointService.persistCheckpoint(confluenceContentScanResult);
 
         // Then: Checkpoint should be saved despite interruption
         verify(scanCheckpointRepository).save(any(ScanCheckpoint.class));
@@ -65,7 +65,7 @@ class ScanCheckpointServiceInterruptionTest {
     @Test
     void Should_RestoreInterruptionFlag_When_PersistenceThrowsException() {
         // Given: A valid scan result
-        ScanResult scanResult = ScanResult.builder()
+        ConfluenceContentScanResult confluenceContentScanResult = ConfluenceContentScanResult.builder()
                 .scanId("scan-123")
                 .spaceKey("TEST")
                 .eventType("pageComplete")
@@ -81,7 +81,7 @@ class ScanCheckpointServiceInterruptionTest {
         Thread.currentThread().interrupt();
 
         // When: Persisting checkpoint that throws exception
-        scanCheckpointService.persistCheckpoint(scanResult);
+        scanCheckpointService.persistCheckpoint(confluenceContentScanResult);
 
         // Then: Thread interruption flag should still be restored
         assertThat(Thread.interrupted()).isTrue();
@@ -105,7 +105,7 @@ class ScanCheckpointServiceInterruptionTest {
     @Test
     void Should_HandleNonInterruptedThread_Normally() {
         // Given: A valid scan result and non-interrupted thread
-        ScanResult scanResult = ScanResult.builder()
+        ConfluenceContentScanResult confluenceContentScanResult = ConfluenceContentScanResult.builder()
                 .scanId("scan-123")
                 .spaceKey("TEST")
                 .eventType("pageComplete")
@@ -116,7 +116,7 @@ class ScanCheckpointServiceInterruptionTest {
         Thread.interrupted(); // Clear any existing flag
 
         // When: Persisting checkpoint without interruption
-        scanCheckpointService.persistCheckpoint(scanResult);
+        scanCheckpointService.persistCheckpoint(confluenceContentScanResult);
 
         // Then: Checkpoint should be saved normally
         verify(scanCheckpointRepository).save(any(ScanCheckpoint.class));

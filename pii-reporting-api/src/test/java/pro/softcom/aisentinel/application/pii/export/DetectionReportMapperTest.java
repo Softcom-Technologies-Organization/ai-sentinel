@@ -11,8 +11,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import pro.softcom.aisentinel.application.pii.export.dto.DetectionReportEntry;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 
 @DisplayName("Detection report mapper tests")
 class DetectionReportMapperTest {
@@ -27,11 +27,13 @@ class DetectionReportMapperTest {
     @ParameterizedTest
     @MethodSource("provideEmptyScenarios")
     @DisplayName("Should_ReturnEmptyList_When_NoEntitiesToMap")
-    void Should_ReturnEmptyList_When_NoEntitiesToMap(ScanResult scanResult) {
+    void Should_ReturnEmptyList_When_NoEntitiesToMap(
+        ConfluenceContentScanResult confluenceContentScanResult) {
         // Given (provided by parameter)
 
         // When
-        List<DetectionReportEntry> result = mapper.toDetectionReportEntries(scanResult);
+        List<DetectionReportEntry> result = mapper.toDetectionReportEntries(
+            confluenceContentScanResult);
 
         // Then
         assertThat(result).isEmpty();
@@ -42,10 +44,11 @@ class DetectionReportMapperTest {
     void Should_MapSingleEntity_When_OneEntityDetected() {
         // Given
         DetectedPersonallyIdentifiableInformation entity = createPiiEntity("EMAIL", "Email", "john@example.com", 0.95);
-        ScanResult scanResult = createScanResult(List.of(entity));
+        ConfluenceContentScanResult confluenceContentScanResult = createScanResult(List.of(entity));
 
         // When
-        List<DetectionReportEntry> result = mapper.toDetectionReportEntries(scanResult);
+        List<DetectionReportEntry> result = mapper.toDetectionReportEntries(
+            confluenceContentScanResult);
 
         // Then
         assertThat(result).hasSize(1);
@@ -58,10 +61,11 @@ class DetectionReportMapperTest {
     @DisplayName("Should_MapAllEntities_When_MultipleEntitiesDetected")
     void Should_MapAllEntities_When_MultipleEntitiesDetected(List<DetectedPersonallyIdentifiableInformation> entities, int expectedCount) {
         // Given
-        ScanResult scanResult = createScanResult(entities);
+        ConfluenceContentScanResult confluenceContentScanResult = createScanResult(entities);
 
         // When
-        List<DetectionReportEntry> result = mapper.toDetectionReportEntries(scanResult);
+        List<DetectionReportEntry> result = mapper.toDetectionReportEntries(
+            confluenceContentScanResult);
 
         // Then
         assertThat(result).hasSize(expectedCount);
@@ -72,10 +76,11 @@ class DetectionReportMapperTest {
     void Should_MapEntityFields_When_Mapping() {
         // Given
         DetectedPersonallyIdentifiableInformation entity = createPiiEntity("EMAIL", "Email Label", "masked@example.com", 0.92);
-        ScanResult scanResult = createScanResult(List.of(entity));
+        ConfluenceContentScanResult confluenceContentScanResult = createScanResult(List.of(entity));
 
         // When
-        List<DetectionReportEntry> result = mapper.toDetectionReportEntries(scanResult);
+        List<DetectionReportEntry> result = mapper.toDetectionReportEntries(
+            confluenceContentScanResult);
 
         // Then
         assertThat(result).hasSize(1);
@@ -90,7 +95,7 @@ class DetectionReportMapperTest {
     @DisplayName("Should_MapScanResultMetadata_When_Mapping")
     void Should_MapScanResultMetadata_When_Mapping() {
         // Given
-        ScanResult scanResult = ScanResult.builder()
+        ConfluenceContentScanResult confluenceContentScanResult = ConfluenceContentScanResult.builder()
                 .scanId("custom-scan-id")
                 .spaceKey("CUSTOM-KEY")
                 .emittedAt("2024-12-31T23:59:59Z")
@@ -98,11 +103,12 @@ class DetectionReportMapperTest {
                 .pageUrl("https://custom.com/page")
                 .attachmentName("custom.doc")
                 .attachmentUrl("https://custom.com/att")
-                .detectedPersonallyIdentifiableInformationList(List.of(createPiiEntity("EMAIL", "Email", "test@test.com", 0.9)))
+                .detectedPIIList(List.of(createPiiEntity("EMAIL", "Email", "test@test.com", 0.9)))
                 .build();
 
         // When
-        List<DetectionReportEntry> result = mapper.toDetectionReportEntries(scanResult);
+        List<DetectionReportEntry> result = mapper.toDetectionReportEntries(
+            confluenceContentScanResult);
 
         // Then
         assertThat(result).hasSize(1);
@@ -114,9 +120,11 @@ class DetectionReportMapperTest {
 
     private static Stream<Arguments> provideEmptyScenarios() {
         return Stream.of(
-                Arguments.of((ScanResult) null),
-                Arguments.of(ScanResult.builder().scanId("scan-123").spaceKey("TEST").detectedPersonallyIdentifiableInformationList(null).build()),
-                Arguments.of(ScanResult.builder().scanId("scan-123").spaceKey("TEST").detectedPersonallyIdentifiableInformationList(List.of()).build())
+                Arguments.of((ConfluenceContentScanResult) null),
+                Arguments.of(
+                    ConfluenceContentScanResult.builder().scanId("scan-123").spaceKey("TEST").detectedPIIList(null).build()),
+                Arguments.of(
+                    ConfluenceContentScanResult.builder().scanId("scan-123").spaceKey("TEST").detectedPIIList(List.of()).build())
         );
     }
 
@@ -150,8 +158,8 @@ class DetectionReportMapperTest {
                 .build();
     }
 
-    private ScanResult createScanResult(List<DetectedPersonallyIdentifiableInformation> entities) {
-        return ScanResult.builder()
+    private ConfluenceContentScanResult createScanResult(List<DetectedPersonallyIdentifiableInformation> entities) {
+        return ConfluenceContentScanResult.builder()
                 .scanId("scan-123")
                 .spaceKey("TEST")
                 .emittedAt("2024-01-15T10:00:00Z")
@@ -159,7 +167,7 @@ class DetectionReportMapperTest {
                 .pageUrl("https://example.com/page")
                 .attachmentName("doc.pdf")
                 .attachmentUrl("https://example.com/attachment")
-                .detectedPersonallyIdentifiableInformationList(entities)
+                .detectedPIIList(entities)
                 .build();
     }
 }

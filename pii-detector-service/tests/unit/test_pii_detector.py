@@ -8,14 +8,14 @@ Test Naming Convention: Should_ExpectedBehavior_When_StateUnderTest
 """
 
 import logging
-import unicodedata
-
 import pytest
-
-from pii_detector.infrastructure.detector.pii_detector import PIIDetector, setup_logging
-from pii_detector.domain.entity.pii_entity import PIIEntity
+import unicodedata
 from pii_detector.application.config.detection_policy import DetectionConfig
-from pii_detector.domain.exception.exceptions import PIIDetectionError, ModelNotLoadedError
+from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.domain.exception.exceptions import PIIDetectionError, \
+  ModelNotLoadedError
+from pii_detector.infrastructure.detector.pii_detector import PIIDetector, \
+  setup_logging
 
 
 # ============================================================================
@@ -367,10 +367,10 @@ class TestPIIMasking:
 # ============================================================================
 
 class TestPIISummary:
-    """Test suite for PII summary generation."""
+    """Test suite for PII nbOfDetectedPIIBySeverity generation."""
 
     def test_should_generate_summary(self, detector_with_mocks, mocker):
-        """Should generate summary of detected PII types."""
+        """Should generate nbOfDetectedPIIBySeverity of detected PII types."""
         entities = [
             PIIEntity("John", "PERSON", "Nom", 0, 4, 0.9),
             PIIEntity("Jane", "PERSON", "Nom", 5, 9, 0.9),

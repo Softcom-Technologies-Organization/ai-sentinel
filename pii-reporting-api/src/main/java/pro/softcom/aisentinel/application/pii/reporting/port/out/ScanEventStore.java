@@ -1,6 +1,6 @@
 package pro.softcom.aisentinel.application.pii.reporting.port.out;
 
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 
 /**
  * Out-port for appending scan events to the event store.
@@ -8,6 +8,6 @@ import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
  */
 public interface ScanEventStore {
     /** Append one event to the event store. */
-    void append(ScanResult event);
+    void append(ConfluenceContentScanResult event);
     void deleteAll();
 }

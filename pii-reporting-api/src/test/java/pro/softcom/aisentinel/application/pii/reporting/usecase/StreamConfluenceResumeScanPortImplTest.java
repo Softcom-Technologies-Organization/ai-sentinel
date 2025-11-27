@@ -43,8 +43,8 @@ import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 import pro.softcom.aisentinel.domain.confluence.DataOwners;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.JpaScanEventStoreAdapter;
@@ -161,7 +161,7 @@ class StreamConfluenceResumeScanPortImplTest {
             ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
         );
 
-        Flux<ScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId)
+        Flux<ConfluenceContentScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId)
             .filter(ev -> "start".equals(ev.eventType()))
             .timeout(Duration.ofSeconds(5));
 
@@ -184,7 +184,7 @@ class StreamConfluenceResumeScanPortImplTest {
         failing.completeExceptionally(new RuntimeException("resume-pages-fail"));
         when(confluenceService.getAllPagesInSpace(spaceKey)).thenReturn(failing);
 
-        Flux<ScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId).timeout(Duration.ofSeconds(5));
+        Flux<ConfluenceContentScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId).timeout(Duration.ofSeconds(5));
 
         StepVerifier.create(flux)
             .assertNext(ev -> {
@@ -205,7 +205,7 @@ class StreamConfluenceResumeScanPortImplTest {
 
         when(scanCheckpointRepository.findByScanAndSpace(anyString(), anyString())).thenThrow(new RuntimeException("prep-fail"));
 
-        Flux<ScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId).timeout(Duration.ofSeconds(5));
+        Flux<ConfluenceContentScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId).timeout(Duration.ofSeconds(5));
 
         StepVerifier.create(flux)
             .assertNext(ev -> {
@@ -223,7 +223,7 @@ class StreamConfluenceResumeScanPortImplTest {
         failing.completeExceptionally(new RuntimeException("resume-allspaces-fail"));
         when(confluenceService.getAllSpaces()).thenReturn(failing);
 
-        Flux<ScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId).timeout(Duration.ofSeconds(5));
+        Flux<ConfluenceContentScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId).timeout(Duration.ofSeconds(5));
 
         StepVerifier.create(flux)
             .assertNext(ev -> assertThat(ev.eventType()).isEqualTo("scanError"))
@@ -257,7 +257,7 @@ class StreamConfluenceResumeScanPortImplTest {
             ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
         );
 
-        Flux<ScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId)
+        Flux<ConfluenceContentScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId)
             .filter(ev -> ScanEventType.PAGE_START.toJson().equals(ev.eventType()))
             .take(2)
             .timeout(Duration.ofSeconds(5));

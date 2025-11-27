@@ -1,7 +1,9 @@
-import { RawStreamPayload, StreamEventType } from './stream-event-type';
+import {
+  ConfluenceContentPersonallyIdentifiableInformationScanResult,
+  StreamEventType
+} from './stream-event-type';
 
 export interface StreamEvent {
   type: StreamEventType;
-  dataRaw: string;
-  data?: RawStreamPayload;
+  data?: ConfluenceContentPersonallyIdentifiableInformationScanResult;
 }

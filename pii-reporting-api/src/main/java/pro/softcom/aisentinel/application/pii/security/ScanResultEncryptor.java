@@ -3,14 +3,14 @@ package pro.softcom.aisentinel.application.pii.security;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionException;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionMetadata;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionService;
 
 /**
- * Processor for encrypting/decrypting detectedPersonallyIdentifiableInformationList in ScanResult.
+ * Processor for encrypting/decrypting detectedPIIList in ScanResult.
  * Business intent: orchestrate PII encryption in the business flow.
  */
 @RequiredArgsConstructor
@@ -24,24 +24,25 @@ public class ScanResultEncryptor {
      * Encrypts all detected PII entities in the scan result.
      * Business purpose: Secure sensitive data before storage or transmission.
      *
-     * @param scanResult the scan result with plaintext PII values
+     * @param confluenceContentScanResult the scan result with plaintext PII values
      * @return scan result with encrypted PII values
      * @throws EncryptionException if encryption fails for any entity
      */
-    public ScanResult encrypt(ScanResult scanResult) {
-        var entities = scanResult.detectedPersonallyIdentifiableInformationList();
+    public ConfluenceContentScanResult encrypt(
+        ConfluenceContentScanResult confluenceContentScanResult) {
+        var entities = confluenceContentScanResult.detectedPIIList();
         if (entities == null) {
-            return scanResult;
+            return confluenceContentScanResult;
         }
 
         try {
             var encryptedEntities = encryptEntities(entities);
-            return scanResult.toBuilder()
-                    .detectedPersonallyIdentifiableInformationList(encryptedEntities)
+            return confluenceContentScanResult.toBuilder()
+                    .detectedPIIList(encryptedEntities)
                     .build();
         } catch (EncryptionException e) {
             log.error("Failed to encrypt PII entities for scanId={}, entityCount={}",
-                    scanResult.scanId(), entities.size(), e);
+                      confluenceContentScanResult.scanId(), entities.size(), e);
             throw e;
         }
     }
@@ -50,14 +51,15 @@ public class ScanResultEncryptor {
      * Decrypts encrypted PII entities in the scan result.
      * Business purpose: Restore original values for authorized access and display.
      *
-     * @param scanResult the scan result with encrypted PII values
+     * @param confluenceContentScanResult the scan result with encrypted PII values
      * @return scan result with decrypted PII values
      * @throws EncryptionException if decryption fails for any entity
      */
-    public ScanResult decrypt(ScanResult scanResult) {
-        var entities = scanResult.detectedPersonallyIdentifiableInformationList();
+    public ConfluenceContentScanResult decrypt(
+        ConfluenceContentScanResult confluenceContentScanResult) {
+        var entities = confluenceContentScanResult.detectedPIIList();
         if (entities == null) {
-            return scanResult;
+            return confluenceContentScanResult;
         }
 
         try {
@@ -65,12 +67,12 @@ public class ScanResultEncryptor {
                     .map(this::decryptEntity)
                     .toList();
 
-            return scanResult.toBuilder()
-                    .detectedPersonallyIdentifiableInformationList(decryptedEntities)
+            return confluenceContentScanResult.toBuilder()
+                    .detectedPIIList(decryptedEntities)
                     .build();
         } catch (EncryptionException e) {
             log.error("Failed to decrypt PII entities for scanId={}, entityCount={}",
-                    scanResult.scanId(), entities.size(), e);
+                      confluenceContentScanResult.scanId(), entities.size(), e);
             throw e;
         }
     }

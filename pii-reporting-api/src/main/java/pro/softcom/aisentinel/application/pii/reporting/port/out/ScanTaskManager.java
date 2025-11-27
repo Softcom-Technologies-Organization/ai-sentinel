@@ -1,6 +1,6 @@
 package pro.softcom.aisentinel.application.pii.reporting.port.out;
 
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.ScanTaskManagerAdapter;
 import reactor.core.publisher.Flux;
 
@@ -43,7 +43,7 @@ public interface ScanTaskManager {
      * @param scanDataStream the reactive stream of scan results to manage (non-null)
      * @throws IllegalArgumentException if scanId or scanDataStream is null
      */
-    void startScan(String scanId, Flux<ScanResult> scanDataStream);
+    void startScan(String scanId, Flux<ConfluenceContentScanResult> scanDataStream);
     
     /**
      * Subscribes to an existing scan to receive its events.
@@ -57,7 +57,7 @@ public interface ScanTaskManager {
      * @throws ScanTaskManagerAdapter.ScanNotFoundException
      *         if the scan does not exist or has been cleaned up
      */
-    Flux<ScanResult> subscribeScan(String scanId);
+    Flux<ConfluenceContentScanResult> subscribeScan(String scanId);
     
     /**
      * Pauses an active scan.

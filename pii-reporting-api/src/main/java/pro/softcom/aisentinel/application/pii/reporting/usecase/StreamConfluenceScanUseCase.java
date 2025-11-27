@@ -13,7 +13,7 @@ import pro.softcom.aisentinel.application.pii.reporting.service.AttachmentProces
 import pro.softcom.aisentinel.application.pii.reporting.service.ContentScanOrchestrator;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -55,17 +55,17 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
      *   safe for sequential processing without memory pressure.
      */
     @Override
-    public Flux<ScanResult> streamSpace(String spaceKey) {
+    public Flux<ConfluenceContentScanResult> streamSpace(String spaceKey) {
         // Unique identifier to trace and group all events of the same scan
         String scanId = UUID.randomUUID().toString();
 
         // Build the scan flux
-        Flux<ScanResult> scanFlux = Mono.fromFuture(confluenceAccessor.getSpace(spaceKey))
+        Flux<ConfluenceContentScanResult> scanFlux = Mono.fromFuture(confluenceAccessor.getSpace(spaceKey))
             // Transform Mono<Optional<ConfluenceSpace>> into Flux<ScanResult>
             .flatMapMany(confluenceSpaceOpt -> {
                 // Case 1: space not found → return a small Flux with a single error event
                 if (confluenceSpaceOpt.isEmpty()) {
-                    return Flux.just(ScanResult.builder()
+                    return Flux.just(ConfluenceContentScanResult.builder()
                                          .scanId(scanId)
                                          .spaceKey(spaceKey)
                                          .eventType(DetectionReportingEventType.ERROR.getLabel())
@@ -81,7 +81,7 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
             // Global safety net: transform any exception into a UI-consumable error event
             .onErrorResume(exception -> {
                 log.error("[USECASE] Erreur dans le flux: {}", exception.getMessage(), exception);
-                return Flux.just(ScanResult.builder()
+                return Flux.just(ConfluenceContentScanResult.builder()
                                      .scanId(scanId)
                                      .spaceKey(spaceKey)
                                      .eventType(DetectionReportingEventType.ERROR.getLabel())
@@ -103,35 +103,35 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
      * - Each segment is a lazy Flux; nothing starts until there is a subscriber.
      */
     @Override
-    public Flux<ScanResult> streamAllSpaces() {
+    public Flux<ConfluenceContentScanResult> streamAllSpaces() {
         String scanCorrelationId = UUID.randomUUID().toString();
 
         // Opening segment: a single "MULTI_START" event
-        Flux<ScanResult> header = buildAllSpaceScanFluxHeader(scanCorrelationId);
+        Flux<ConfluenceContentScanResult> header = buildAllSpaceScanFluxHeader(scanCorrelationId);
 
         // Main segment: iterate over spaces and perform scans sequentially
-        Flux<ScanResult> body = buildAllSpaceScanFluxBody(scanCorrelationId);
+        Flux<ConfluenceContentScanResult> body = buildAllSpaceScanFluxBody(scanCorrelationId);
 
         // Closing segment: a single "MULTI_COMPLETE" event
-        Flux<ScanResult> footer = buildAllSpaceScanFluxFooter(scanCorrelationId);
+        Flux<ConfluenceContentScanResult> footer = buildAllSpaceScanFluxFooter(scanCorrelationId);
 
         // Sequential and ordered concatenation of segments
-        Flux<ScanResult> scanFlux = Flux.concat(header, body, footer);
+        Flux<ConfluenceContentScanResult> scanFlux = Flux.concat(header, body, footer);
 
         // Start independent scan task and return subscription flux
         scanTaskManager.startScan(scanCorrelationId, scanFlux);
         return scanTaskManager.subscribeScan(scanCorrelationId);
     }
 
-    private static Flux<ScanResult> buildAllSpaceScanFluxFooter(String scanId) {
-        return Flux.just(ScanResult.builder()
+    private static Flux<ConfluenceContentScanResult> buildAllSpaceScanFluxFooter(String scanId) {
+        return Flux.just(ConfluenceContentScanResult.builder()
                              .scanId(scanId)
                              .eventType(DetectionReportingEventType.MULTI_COMPLETE.getLabel())
                              .emittedAt(Instant.now().toString())
                              .build());
     }
 
-    private Flux<ScanResult> buildAllSpaceScanFluxBody(String scanId) {
+    private Flux<ConfluenceContentScanResult> buildAllSpaceScanFluxBody(String scanId) {
         // Asynchronous retrieval of all spaces (Future -> Mono)
         return Mono.fromFuture(confluenceAccessor.getAllSpaces())
             // Then unfold into Flux<ScanResult>
@@ -139,7 +139,7 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
                 // If the list is empty, generate a small error Flux. Otherwise, create the scan Flux.
                 // Note: createErrorScanResultIfNoSpace(...) returns null when everything is fine, which allows us
                 // to use Objects.requireNonNullElseGet(...) to fall back to the processing Flux.
-                Flux<ScanResult> errrorScanResultsFlux = createErrorScanResultIfNoSpace(scanId, spaces);
+                Flux<ConfluenceContentScanResult> errrorScanResultsFlux = createErrorScanResultIfNoSpace(scanId, spaces);
                 return Objects.requireNonNullElseGet(errrorScanResultsFlux, () -> createScanResultFlux(scanId, spaces));
             })
             // Global error handling: map any exception to a readable business event
@@ -147,7 +147,7 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
                 log.error("[USECASE] Erreur globale du flux multi-espaces: {}",
                           exception.getMessage(),
                           exception);
-                return Flux.just(ScanResult.builder()
+                return Flux.just(ConfluenceContentScanResult.builder()
                                      .scanId(scanId)
                                      .eventType(DetectionReportingEventType.ERROR.getLabel())
                                      .message(exception.getMessage())
@@ -156,7 +156,7 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
             });
     }
 
-    private Flux<ScanResult> createScanResultFlux(String scanId, List<ConfluenceSpace> spaces) {
+    private Flux<ConfluenceContentScanResult> createScanResultFlux(String scanId, List<ConfluenceSpace> spaces) {
         // Flux over the list of spaces to process
         return Flux.fromIterable(spaces)
             // concatMap => sequential processing (important to keep a predictable order and limit memory pressure).
@@ -178,7 +178,7 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
                             exception.getMessage(),
                             exception);
                         return Flux.just(
-                            ScanResult.builder()
+                            ConfluenceContentScanResult.builder()
                                 .scanId(scanId)
                                 .spaceKey(space.key())
                                 .eventType(DetectionReportingEventType.ERROR.getLabel())
@@ -188,9 +188,9 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
                     }));
     }
 
-    private static Flux<ScanResult> createErrorScanResultIfNoSpace(String scanId, List<ConfluenceSpace> spaces) {
+    private static Flux<ConfluenceContentScanResult> createErrorScanResultIfNoSpace(String scanId, List<ConfluenceSpace> spaces) {
         if (spaces == null || spaces.isEmpty()) {
-            return Flux.just(ScanResult.builder()
+            return Flux.just(ConfluenceContentScanResult.builder()
                                  .scanId(scanId)
                                  .eventType(DetectionReportingEventType.ERROR.getLabel())
                                  .message("Aucun espace trouvé")
@@ -200,8 +200,8 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
         return null;
     }
 
-    private static Flux<ScanResult> buildAllSpaceScanFluxHeader(String scanId) {
-        return Flux.just(ScanResult.builder()
+    private static Flux<ConfluenceContentScanResult> buildAllSpaceScanFluxHeader(String scanId) {
+        return Flux.just(ConfluenceContentScanResult.builder()
                              .scanId(scanId)
                              .eventType(DetectionReportingEventType.MULTI_START.getLabel())
                              .emittedAt(Instant.now().toString())

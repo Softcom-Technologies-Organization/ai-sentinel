@@ -3,8 +3,10 @@ import {HttpClient} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {Space} from '../models/space';
 import {StreamEvent} from '../models/stream-event';
-import {RawStreamPayload, StreamEventType} from '../models/stream-event-type';
-import {Severity} from '../models/severity';
+import {
+  ConfluenceContentPersonallyIdentifiableInformationScanResult,
+  StreamEventType
+} from '../models/stream-event-type';
 import {SpaceUpdateInfo} from '../models/space-update-info.model';
 
 export interface LastScanMeta {
@@ -115,9 +117,9 @@ export class SentinelleApiService {
   }
 
   /** Fetch persisted item events for the last scan (page and attachment items). */
-  getLastScanItems(): Observable<RawStreamPayload[]> {
-    return new Observable<RawStreamPayload[]>((observer) => {
-      const sub = this.http.get<RawStreamPayload[]>('/api/v1/scans/last/items').subscribe({
+  getLastScanItems(): Observable<ConfluenceContentPersonallyIdentifiableInformationScanResult[]> {
+    return new Observable<ConfluenceContentPersonallyIdentifiableInformationScanResult[]>((observer) => {
+      const sub = this.http.get<ConfluenceContentPersonallyIdentifiableInformationScanResult[]>('/api/v1/scans/last/items').subscribe({
         next: (list) => {
           observer.next(Array.isArray(list) ? list : []);
           observer.complete();
@@ -226,10 +228,10 @@ export class SentinelleApiService {
 
   private emitStreamEvent(observer: { next: (ev: StreamEvent) => void }, type: StreamEventType, raw: string): void {
     const parsed = this.parseRawPayload(raw);
-    observer.next({ type, dataRaw: raw, data: parsed });
+    observer.next({ type, data: parsed });
   }
 
-  private parseRawPayload(raw: string): RawStreamPayload | undefined {
+  private parseRawPayload(raw: string): ConfluenceContentPersonallyIdentifiableInformationScanResult | undefined {
     try {
       return JSON.parse(raw);
     } catch {

@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import pro.softcom.aisentinel.application.pii.export.port.out.ReadScanEventsPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 
 @Component
 @RequiredArgsConstructor
@@ -15,7 +15,7 @@ public class ScanEventJpaAdapter implements ReadScanEventsPort {
     private final ScanResultQuery scanResultQuery;
 
     @Override
-    public Stream<ScanResult> streamByScanIdAndSpaceKey(String scanId, String spaceKey) {
+    public Stream<ConfluenceContentScanResult> streamByScanIdAndSpaceKey(String scanId, String spaceKey) {
         return scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey(scanId, spaceKey).stream();
     }
 }

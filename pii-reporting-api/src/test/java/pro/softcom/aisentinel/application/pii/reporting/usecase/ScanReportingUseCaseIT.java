@@ -27,9 +27,9 @@ import pro.softcom.aisentinel.application.pii.security.PiiAccessAuditService;
 import pro.softcom.aisentinel.application.pii.security.ScanResultEncryptor;
 import pro.softcom.aisentinel.application.pii.security.port.out.SavePiiAuditPort;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.LastScanMeta;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionMetadata;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionService;
 import pro.softcom.aisentinel.domain.pii.security.PiiAuditRecord;
@@ -167,9 +167,9 @@ class ScanReportingUseCaseIT {
         assertThat(meta.scanId()).isEqualTo(scanId);
         assertThat(meta.spacesCount()).isEqualTo(1);
 
-        List<ScanResult> results = scanReportingUseCase.getLatestSpaceScanResultList();
+        List<ConfluenceContentScanResult> results = scanReportingUseCase.getLatestSpaceScanResultList();
         assertThat(results).hasSize(1);
-        ScanResult result = results.getFirst();
+        ConfluenceContentScanResult result = results.getFirst();
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(result.scanId()).isEqualTo(scanId);
         softly.assertThat(result.spaceKey()).isEqualTo("SPACE-A");
@@ -320,7 +320,7 @@ class ScanReportingUseCaseIT {
 
         SoftAssertions softly = new SoftAssertions();
         
-        // Verify summary metadata
+        // Verify nbOfDetectedPIIBySeverity metadata
         softly.assertThat(scanSummary.scanId()).isEqualTo(scanId);
         softly.assertThat(scanSummary.spacesCount()).isEqualTo(2);
         softly.assertThat(scanSummary.lastUpdated()).isEqualTo(event2Ts);
@@ -328,7 +328,7 @@ class ScanReportingUseCaseIT {
         // Verify spaces list
         softly.assertThat(scanSummary.spaces()).hasSize(2);
         
-        // Find SPACE-A in summary
+        // Find SPACE-A in nbOfDetectedPIIBySeverity
         var spaceA = scanSummary.spaces().stream()
             .filter(s -> "SPACE-A".equals(s.spaceKey()))
             .findFirst()
@@ -349,7 +349,7 @@ class ScanReportingUseCaseIT {
             .as("SPACE-A attachments count from events")
             .isEqualTo(1);
         
-        // Find SPACE-B in summary
+        // Find SPACE-B in nbOfDetectedPIIBySeverity
         var spaceB = scanSummary.spaces().stream()
             .filter(s -> "SPACE-B".equals(s.spaceKey()))
             .findFirst()

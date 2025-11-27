@@ -6,7 +6,7 @@ import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationServi
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanEventStore;
 import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanResult;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ScanEventType;
@@ -28,44 +28,44 @@ public class ContentScanOrchestrator {
     private final SeverityCalculationService severityCalculationService;
     private final ScanSeverityCountService scanSeverityCountService;
 
-    public ScanResult createStartEvent(String scanId, String spaceKey, int total, double progress) {
+    public ConfluenceContentScanResult createStartEvent(String scanId, String spaceKey, int total, double progress) {
         return scanEventFactory.createStartEvent(scanId, spaceKey, total, progress);
     }
 
-    public ScanResult createCompleteEvent(String scanId, String spaceKey) {
+    public ConfluenceContentScanResult createCompleteEvent(String scanId, String spaceKey) {
         return scanEventFactory.createCompleteEvent(scanId, spaceKey);
     }
 
-    public ScanResult createPageStartEvent(String scanId, String spaceKey, ConfluencePage page,
-                                           int currentIndex, int total, double progress) {
+    public ConfluenceContentScanResult createPageStartEvent(String scanId, String spaceKey, ConfluencePage page,
+                                                            int currentIndex, int total, double progress) {
         return scanEventFactory.createPageStartEvent(scanId, spaceKey, page, currentIndex, total, progress);
     }
 
-    public ScanResult createPageCompleteEvent(String scanId, String spaceKey, ConfluencePage page,
-                                              double progress) {
+    public ConfluenceContentScanResult createPageCompleteEvent(String scanId, String spaceKey, ConfluencePage page,
+                                                               double progress) {
         return scanEventFactory.createPageCompleteEvent(scanId, spaceKey, page, progress);
     }
 
-    public ScanResult createPageItemEvent(String scanId, String spaceKey, ConfluencePage page,
-                                          String content, ContentPiiDetection detection, double progress) {
+    public ConfluenceContentScanResult createPageItemEvent(String scanId, String spaceKey, ConfluencePage page,
+                                                           String content, ContentPiiDetection detection, double progress) {
         return scanEventFactory.createPageItemEvent(scanId, spaceKey, page, content, detection, progress);
     }
 
-    public ScanResult createEmptyPageItemEvent(String scanId, String spaceKey, ConfluencePage page,
-                                               double progress) {
+    public ConfluenceContentScanResult createEmptyPageItemEvent(String scanId, String spaceKey, ConfluencePage page,
+                                                                double progress) {
         return scanEventFactory.createEmptyPageItemEvent(scanId, spaceKey, page, progress);
     }
 
-    public ScanResult createAttachmentItemEvent(String scanId, String spaceKey, ConfluencePage page,
-                                                AttachmentInfo attachment,
-                                                String content, ContentPiiDetection detection,
-                                                double progress) {
+    public ConfluenceContentScanResult createAttachmentItemEvent(String scanId, String spaceKey, ConfluencePage page,
+                                                                 AttachmentInfo attachment,
+                                                                 String content, ContentPiiDetection detection,
+                                                                 double progress) {
         return scanEventFactory.createAttachmentItemEvent(scanId, spaceKey, page, attachment, content,
                 detection, progress);
     }
 
-    public ScanResult createErrorEvent(String scanId, String spaceKey, String pageId,
-                                       String message, double progress) {
+    public ConfluenceContentScanResult createErrorEvent(String scanId, String spaceKey, String pageId,
+                                                        String message, double progress) {
         return scanEventFactory.createErrorEvent(scanId, spaceKey, pageId, message, progress);
     }
 
@@ -73,12 +73,12 @@ public class ContentScanOrchestrator {
         return scanProgressCalculator.calculateProgress(analyzed, total);
     }
 
-    public void persistEventAndCheckpoint(ScanResult event) {
+    public void persistEventAndCheckpoint(ConfluenceContentScanResult event) {
         scanCheckpointService.persistCheckpoint(event);
         
         // Calculate and persist severity counts if event contains PII detections
-        if (event.detectedPersonallyIdentifiableInformationList() != null && !event.detectedPersonallyIdentifiableInformationList().isEmpty()) {
-            SeverityCounts counts = severityCalculationService.aggregateCounts(event.detectedPersonallyIdentifiableInformationList());
+        if (event.detectedPIIList() != null && !event.detectedPIIList().isEmpty()) {
+            SeverityCounts counts = severityCalculationService.aggregateCounts(event.detectedPIIList());
             scanSeverityCountService.incrementCounts(event.scanId(), event.spaceKey(), counts);
         }
         
@@ -93,7 +93,7 @@ public class ContentScanOrchestrator {
         }
     }
 
-    private static boolean shouldPublishEvent(ScanResult event) {
+    private static boolean shouldPublishEvent(ConfluenceContentScanResult event) {
         return ScanEventType.COMPLETE.getValue().equals(event.eventType());
     }
 }

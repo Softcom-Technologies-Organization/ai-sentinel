@@ -13,7 +13,7 @@ import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiabl
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Builder
-public record ScanEventDto(
+public record ConfluenceContentScanResultEventDto(
         String scanId,
         String spaceKey,
         ScanEventType eventType,
@@ -22,8 +22,9 @@ public record ScanEventDto(
         Integer pageIndex,
         String pageId,
         String pageTitle,
-        List<DetectedPersonallyIdentifiableInformation> detectedPersonallyIdentifiableInformationList,
-        Map<String, Integer> summary,
+        List<DetectedPersonallyIdentifiableInformation> detectedPIIList,
+        Map<String, Integer> nbOfDetectedPIIBySeverity,
+        Map<String, Integer> nbOfDetectedPIIByType,
         String message,
         String pageUrl,
         String emittedAt,

@@ -12,7 +12,7 @@ export type StreamEventType =
   | 'multiComplete'
   | 'keepalive';
 
-export interface RawStreamPayload {
+export interface ConfluenceContentPersonallyIdentifiableInformationScanResult {
   scanId?: string;
   spaceKey?: string;
   pageId?: string | number;
@@ -22,7 +22,7 @@ export interface RawStreamPayload {
   isFinal?: boolean;
   pagesTotal?: number;
   pageIndex?: number;
-  detectedPersonallyIdentifiableInformationList?: Array<{
+  detectedPIIList?: Array<{
     piiTypeLabel?: string;
     piiType?: string;
     sensitiveValue?: string;
@@ -30,7 +30,8 @@ export interface RawStreamPayload {
     maskedContext?: string;
     confidence?: number;
   }>;
-  summary?: Record<string, number>;
+  nbOfDetectedPIIBySeverity?: Record<string, number>;  // Severity-based counts (high, medium, low) for badges
+  nbOfDetectedPIIByType?: Record<string, number>;  // PII type-based counts (EMAIL, CREDIT_CARD, etc.) for item details
   maskedContent?: string;
   // Attachment context for 'attachment_item' events
   attachmentName?: string;

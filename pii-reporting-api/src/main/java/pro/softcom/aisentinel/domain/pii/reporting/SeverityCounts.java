@@ -32,20 +32,4 @@ public record SeverityCounts(
     public static SeverityCounts zero() {
         return new SeverityCounts(0, 0, 0);
     }
-    
-    /**
-     * Adds another SeverityCounts to this one, returning a new instance.
-     * 
-     * <p>This operation is immutable - original instances are not modified.
-     * 
-     * @param other The SeverityCounts to add
-     * @return New SeverityCounts with summed values
-     */
-    public SeverityCounts add(SeverityCounts other) {
-        return new SeverityCounts(
-            this.high + other.high,
-            this.medium + other.medium,
-            this.low + other.low
-        );
-    }
 }

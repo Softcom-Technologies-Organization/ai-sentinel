@@ -5,26 +5,30 @@ This module implements the gRPC service for PII detection with optimizations
 for memory usage when processing large volumes of data.
 """
 
+import atexit
 import gc
+import grpc
 import logging
 import os
+import psutil
 import threading
 import time
 from concurrent import futures
-from typing import Dict, List, Optional
-
-import grpc
-import psutil
 # Import gRPC reflection for service discovery
 from grpc_reflection.v1alpha import reflection
-
-# Import the generated gRPC code
-from pii_detector.proto.generated import pii_detection_pb2, \
-  pii_detection_pb2_grpc
+from logging.handlers import QueueHandler, QueueListener
+# Import PIIType for proper normalization
+from pii_detector.domain.entity.pii_type import PIIType
 # Import the PII detector
 from pii_detector.infrastructure.detector.pii_detector import PIIDetector
 from pii_detector.infrastructure.detector.pii_detector import \
   PIIEntity as DetectedPIIEntity
+from queue import Queue
+from typing import Dict, List, Optional
+
+# Import the generated gRPC code
+from pii_detector.proto.generated import pii_detection_pb2, \
+  pii_detection_pb2_grpc
 
 # Import GLiNER detector for GLiNER models
 try:
@@ -68,6 +72,41 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Asynchronous PII logging infrastructure
+_pii_log_queue: Queue = Queue(maxsize=10_000)
+_pii_queue_handler = QueueHandler(_pii_log_queue)
+_pii_logger = logging.getLogger("pii_detector.pii_log")
+_pii_logger.setLevel(logging.INFO)
+_pii_logger.addHandler(logging.StreamHandler())
+_pii_log_listener = QueueListener(_pii_log_queue, _pii_logger.handlers[0])
+_pii_log_listener.start()
+
+
+def _shutdown_pii_log_listener():
+    """
+    Safely stop the PII log listener and flush remaining records.
+    
+    This function is idempotent and safe to call multiple times.
+    It ensures that any queued log records are properly flushed before
+    the process exits, preventing loss of PII detection logs.
+    
+    Business rule: All detected PII must be logged for audit purposes.
+    This shutdown hook ensures logs are not lost during process termination.
+    """
+    global _pii_log_listener
+    if _pii_log_listener is not None:
+        try:
+            _pii_log_listener.stop()
+            logger.debug("PII log listener stopped successfully")
+        except Exception as e:
+            logger.warning(f"Error stopping PII log listener: {e}")
+        finally:
+            _pii_log_listener = None
+
+
+# Register shutdown hook to flush PII logs on process exit
+atexit.register(_shutdown_pii_log_listener)
 
 # Singleton instance for the PII detector
 _detector_instance = None
@@ -370,7 +409,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         Business process:
         1. Validate and extract request parameters
         2. Execute PII detection on content
-        3. Build response with entities, summary, and masked content
+        3. Build response with entities, nbOfDetectedPIIBySeverity, and masked content
         4. Handle errors and cleanup
         
         Args:
@@ -378,7 +417,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             context: gRPC context for setting response codes
             
         Returns:
-            PIIDetectionResponse with detected entities and summary
+            PIIDetectionResponse with detected entities and nbOfDetectedPIIBySeverity
         """
         start_time = time.time()
         request_id = self._generate_request_id(start_time)
@@ -544,8 +583,12 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 len(entities),
             )
 
+        # Always enqueue detailed PII logs asynchronously to avoid
+        # impacting request latency.
+        self._log_pii_entities_async(request_id, entities)
+
     def _log_detected_entities(self, request_id: str, entities: List) -> None:
-        """Log summary and sample of detected entities for debugging.
+        """Log nbOfDetectedPIIBySeverity and sample of detected entities for debugging.
         
         Args:
             request_id: Request identifier
@@ -567,10 +610,51 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 f"'{entity['text']}' (score: {entity['score']:.3f})"
             )
 
+    def _log_pii_entities_async(self, request_id: str, entities: List) -> None:
+        """Log each detected PII entity asynchronously.
+
+        Business rule: every PII detected must be logged with:
+        - raw value (text)
+        - normalized PII type
+        - confidence score when available
+        - detection source: GLINER, PRESIDIO, REGEX or UNKNOWN
+
+        Logging is enqueued in a background Queue handled by a QueueListener
+        to avoid slowing down the gRPC request flow.
+        """
+        if not entities:
+            return
+
+        for entity in entities:
+            try:
+                text = str(entity.get("text", ""))
+                pii_type = _normalize_pii_type_for_grpc(entity.get("type"))
+                score = entity.get("score")
+                source = entity.get("source") or entity.get("detector") or "UNKNOWN"
+
+                # Best-effort non-blocking enqueue: drop if queue is full
+                if not _pii_log_queue.full():
+                    record = _pii_logger.makeRecord(
+                        _pii_logger.name,
+                        logging.INFO,
+                        fn="pii_service.py",
+                        lno=0,
+                        msg=(
+                            "[PII-DETECTED] request_id=%s source=%s "
+                            "type=%s score=%s value=%s"
+                        ),
+                        args=(request_id, source, pii_type, score, text),
+                        exc_info=None,
+                    )
+                    _pii_queue_handler.enqueue(record)
+            except Exception:
+                # Never impact detection flow due to logging issues
+                logger.debug("[%s] Failed to enqueue PII log", request_id, exc_info=True)
+
     def _build_detection_response(
         self, content: str, entities: List, request_id: str
     ) -> pii_detection_pb2.PIIDetectionResponse:
-        """Build complete detection response with entities, summary, and masked content.
+        """Build complete detection response with entities, nbOfDetectedPIIBySeverity, and masked content.
         
         Args:
             content: Original content
@@ -595,7 +679,8 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         """Add detected entities to response, limiting to 1000 to avoid huge responses.
         
         Business rule: Convert all numeric values to native Python types to ensure
-        Protobuf compatibility (numpy types cause serialization errors)
+        Protobuf compatibility (numpy types cause serialization errors).
+        PII types are normalized to match Java PiiType enum expectations.
         
         Args:
             response: Response object to populate
@@ -609,7 +694,8 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             try:
                 pii_entity = response.entities.add()
                 pii_entity.text = str(entity['text'])
-                pii_entity.type = str(entity['type'])
+                # Normalize PII type to match Java enum (EMAIL not PIIType.EMAIL)
+                pii_entity.type = _normalize_pii_type_for_grpc(entity.get('type'))
                 pii_entity.type_label = str(entity['type_label'])
                 # Convert to native Python types for Protobuf compatibility
                 # (numpy.int64/float64 from Presidio/other detectors cause errors)
@@ -629,26 +715,24 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
     def _add_summary_to_response(
         self, response: pii_detection_pb2.PIIDetectionResponse, entities: List, request_id: str
     ) -> None:
-        """Add entity type summary to response.
+        """Add entity type nbOfDetectedPIIBySeverity to response.
         
-        Business rule: Summary keys are normalized to UPPERCASE for consistency across all detectors.
-        This ensures uniform display in the UI and alignment with Java PiiType enum.
+        Business rule: Summary keys are normalized to match Java PiiType enum.
+        Uses the same normalization as entities to ensure consistency.
         
         Args:
             response: Response object to populate
             entities: Detected entities
             request_id: Request identifier for logging
         """
-        logger.debug(f"[{request_id}] Creating response summary...")
+        logger.debug(f"[{request_id}] Creating response nbOfDetectedPIIBySeverity...")
         summary = {}
         for entity in entities:
-            # Normalize to UPPERCASE for uniformity across all detectors
-            # Convert to string first (entity['type'] may be PIIType enum object)
-            pii_type_raw = entity.get('type', 'UNKNOWN')
-            pii_type = str(pii_type_raw).upper() if pii_type_raw else 'UNKNOWN'
+            # Use same normalization function as entities (EMAIL not PIIType.EMAIL)
+            pii_type = _normalize_pii_type_for_grpc(entity.get('type'))
             summary[pii_type] = summary.get(pii_type, 0) + 1
         
-        logger.debug(f"[{request_id}] Adding summary to response: {dict(summary)}")
+        logger.debug(f"[{request_id}] Adding nbOfDetectedPIIBySeverity to response: {dict(summary)}")
         for pii_type, count in summary.items():
             response.summary[pii_type] = count
 
@@ -740,7 +824,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
 
     def StreamDetectPII(self, request, context):
         """
-        Stream progressive PII detection updates per chunk and a final summary.
+        Stream progressive PII detection updates per chunk and a final nbOfDetectedPIIBySeverity.
         """
         start_time = time.time()
         request_id = self._generate_stream_request_id(start_time)
@@ -858,7 +942,8 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         """Create update message for processed chunk.
         
         Business rule: Convert all numeric values to native Python types to ensure
-        Protobuf compatibility (numpy types cause serialization errors)
+        Protobuf compatibility (numpy types cause serialization errors).
+        PII types are normalized to match Java PiiType enum expectations.
         """
         progress = int(((chunk_index + 1) * 100) / total_chunks)
         update = pii_detection_pb2.PIIDetectionUpdate(
@@ -872,7 +957,8 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             update.entities.append(
                 pii_detection_pb2.PIIEntity(
                     text=str(ae.text),
-                    type=str(ae.pii_type),
+                    # Normalize PII type to match Java enum (EMAIL not PIIType.EMAIL)
+                    type=_normalize_pii_type_for_grpc(ae.pii_type),
                     type_label=str(ae.type_label),
                     # Convert to native Python types for Protobuf compatibility
                     start=int(ae.start),
@@ -889,7 +975,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         gc.collect(0)
     
     def _build_final_stream_update(self, content: str, threshold: float, request_id: str):
-        """Build final update with masked content and summary."""
+        """Build final update with masked content and nbOfDetectedPIIBySeverity."""
         all_entities = getattr(self, '_stream_all_entities', [])
         
         masked_content = self.detector._apply_masks(content, all_entities)
@@ -913,7 +999,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         return final_update
     
     def _build_entity_summary(self, all_entities: List) -> Dict[str, int]:
-        """Build summary dictionary of entity types and counts."""
+        """Build nbOfDetectedPIIBySeverity dictionary of entity types and counts."""
         summary: dict[str, int] = {}
         for e in all_entities:
             key = e.type_label
@@ -966,7 +1052,10 @@ class MemoryLimitedServer:
     
     def stop(self, grace: int = 5):
         """
-        Stop the gRPC server gracefully.
+        Stop the gRPC server gracefully and flush PII logs.
+        
+        Ensures that all queued PII detection logs are flushed before
+        the server fully shuts down, preventing loss of audit records.
         
         Args:
             grace: Grace period in seconds for pending requests to complete.
@@ -979,6 +1068,9 @@ class MemoryLimitedServer:
             logger.info("Shutting down thread pool executor...")
             self.executor.shutdown(wait=True)
             logger.info("Thread pool executor shut down")
+        
+        # Flush remaining PII logs before final shutdown
+        _shutdown_pii_log_listener()
     
     def serve(self):
         """Start the gRPC server with memory limits."""
@@ -1038,6 +1130,31 @@ class MemoryLimitedServer:
                    f"memory_limit={self.memory_limit_percent}%")
         
         return self.server
+
+
+def _normalize_pii_type_for_grpc(pii_type) -> str:
+    """
+    Normalize PII type to string format expected by Java PiiType enum.
+    
+    Business rule: Java expects enum name only (e.g., 'EMAIL'), not the full
+    Python repr (e.g., 'PIIType.EMAIL'). This function handles both PIIType
+    enum objects and string values.
+    
+    Args:
+        pii_type: PIIType enum object or string
+        
+    Returns:
+        Normalized PII type name in UPPERCASE (e.g., 'EMAIL', 'CREDIT_CARD', 'SSN')
+    """
+    if pii_type is None or pii_type == "":
+        return "UNKNOWN"
+    
+    # If it's a PIIType enum, extract just the name (EMAIL, not PIIType.EMAIL)
+    if isinstance(pii_type, PIIType):
+        return pii_type.name
+    
+    # If it's already a string, ensure it's uppercase
+    return str(pii_type).upper()
 
 
 def serve(port: int = 50051, max_workers: int = 5):

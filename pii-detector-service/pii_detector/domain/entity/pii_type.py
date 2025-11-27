@@ -11,7 +11,7 @@ from enum import Enum
 class PIIType(Enum):
     """Enumeration of supported PII types with French labels."""
 
-    # Existing types
+    # Existing types (from original ML detector)
     ACCOUNTNUM = "Numéro de compte"
     BUILDINGNUM = "Numéro de bâtiment"
     CITY = "Ville"
@@ -22,21 +22,21 @@ class PIIType(Enum):
     GIVENNAME = "Prénom"
     IDCARDNUM = "Numéro de carte d'identité"
     PASSWORD = "Mot de passe"
-    SOCIALNUM = "Numéro de sécurité sociale"
+    SOCIALNUM = "Numéro de sécurité sociale (format générique)"
     STREET = "Rue"
     SURNAME = "Nom de famille"
     TAXNUM = "Numéro fiscal"
-    TELEPHONENUM = "Numéro de téléphone"
+    TELEPHONENUM = "Numéro de téléphone (format générique)"
     USERNAME = "Nom d'utilisateur"
     ZIPCODE = "Code postal"
     
     # Additional types for Presidio and Regex detectors
-    PHONE = "Téléphone"
+    PHONE = "Téléphone (format international)"
     URL = "URL"
-    CREDIT_CARD = "Carte bancaire"
+    CREDIT_CARD = "Carte bancaire (format court)"
     IBAN = "IBAN"
     CRYPTO_WALLET = "Portefeuille crypto"
-    SSN = "Numéro de sécurité sociale"
+    SSN = "Social Security Number (SSN standard)"
     NHS_NUMBER = "Numéro NHS"
     NRIC = "NRIC"
     ABN = "ABN"

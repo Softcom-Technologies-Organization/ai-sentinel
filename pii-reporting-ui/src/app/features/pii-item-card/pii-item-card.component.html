@@ -87,7 +87,7 @@
         <div class="chips mt-2">
           @for (
             detectedPII of item?.detectedPersonallyIdentifiableInformationList;
-            track detectedPII.startPosition + '-' + detectedPII.endPosition + '-' + detectedPII.maskedContext
+            track $index
           ) {
             <div class="col-12 md:col-6 lg:col-4">
               <p-card>

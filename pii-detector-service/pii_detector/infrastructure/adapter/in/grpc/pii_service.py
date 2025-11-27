@@ -5,6 +5,7 @@ This module implements the gRPC service for PII detection with optimizations
 for memory usage when processing large volumes of data.
 """
 
+import atexit
 import gc
 import grpc
 import logging
@@ -80,6 +81,32 @@ _pii_logger.setLevel(logging.INFO)
 _pii_logger.addHandler(logging.StreamHandler())
 _pii_log_listener = QueueListener(_pii_log_queue, _pii_logger.handlers[0])
 _pii_log_listener.start()
+
+
+def _shutdown_pii_log_listener():
+    """
+    Safely stop the PII log listener and flush remaining records.
+    
+    This function is idempotent and safe to call multiple times.
+    It ensures that any queued log records are properly flushed before
+    the process exits, preventing loss of PII detection logs.
+    
+    Business rule: All detected PII must be logged for audit purposes.
+    This shutdown hook ensures logs are not lost during process termination.
+    """
+    global _pii_log_listener
+    if _pii_log_listener is not None:
+        try:
+            _pii_log_listener.stop()
+            logger.debug("PII log listener stopped successfully")
+        except Exception as e:
+            logger.warning(f"Error stopping PII log listener: {e}")
+        finally:
+            _pii_log_listener = None
+
+
+# Register shutdown hook to flush PII logs on process exit
+atexit.register(_shutdown_pii_log_listener)
 
 # Singleton instance for the PII detector
 _detector_instance = None
@@ -1025,7 +1052,10 @@ class MemoryLimitedServer:
     
     def stop(self, grace: int = 5):
         """
-        Stop the gRPC server gracefully.
+        Stop the gRPC server gracefully and flush PII logs.
+        
+        Ensures that all queued PII detection logs are flushed before
+        the server fully shuts down, preventing loss of audit records.
         
         Args:
             grace: Grace period in seconds for pending requests to complete.
@@ -1038,6 +1068,9 @@ class MemoryLimitedServer:
             logger.info("Shutting down thread pool executor...")
             self.executor.shutdown(wait=True)
             logger.info("Thread pool executor shut down")
+        
+        # Flush remaining PII logs before final shutdown
+        _shutdown_pii_log_listener()
     
     def serve(self):
         """Start the gRPC server with memory limits."""

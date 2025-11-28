@@ -140,7 +140,8 @@ class StreamConfluenceScanUseCaseTest {
                 contentScanOrchestrator,
                 attachmentProcessor,
                 scanTimeoutConfig,
-                scanTaskManager
+                scanTaskManager,
+                scanCheckpointRepository
         );
 
         // Configure severity calculation mock to return a default severity for any PII type
@@ -601,7 +602,8 @@ class StreamConfluenceScanUseCaseTest {
             contentScanOrchestrator,
             attachmentProcessor,
             scanTimeoutConfig,
-            scanTaskManager
+            scanTaskManager,
+            scanCheckpointRepository
         );
 
         String spaceKey = "S-BLANK";
@@ -676,7 +678,8 @@ class StreamConfluenceScanUseCaseTest {
             contentScanOrchestrator,
             attachmentProcessor,
             scanTimeoutConfig,
-            scanTaskManager
+            scanTaskManager,
+            scanCheckpointRepository
         );
 
         String spaceKey = "S-TRIM2";
@@ -836,5 +839,41 @@ class StreamConfluenceScanUseCaseTest {
         // Verify both spaces were scanned
         verify(confluenceService, atLeastOnce()).getAllPagesInSpace("AHVIV");
         verify(confluenceService, atLeastOnce()).getAllPagesInSpace("XYZ");
+    }
+
+    @Test
+    @DisplayName("streamAllSpaces - should generate new scanId when no active scan exists")
+    void Should_GenerateNewScanId_When_NoActiveScanExists() {
+        // Given: No active scan exists
+        when(scanCheckpointRepository.findMostRecentActiveScanId()).thenReturn(Optional.empty());
+        
+        ConfluenceSpace space = new ConfluenceSpace("id1", "TEST", "Test Space","http://test.com", "d",
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
+        when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
+
+        ConfluencePage page = ConfluencePage.builder()
+            .id("p-test")
+            .title("Test Page")
+            .spaceKey("TEST")
+            .content(new ConfluencePage.HtmlContent("content"))
+            .build();
+        when(confluenceService.getAllPagesInSpace("TEST")).thenReturn(CompletableFuture.completedFuture(List.of(page)));
+        when(confluenceAttachmentService.getPageAttachments("p-test")).thenReturn(CompletableFuture.completedFuture(List.of()));
+        when(piiDetectorClient.analyzeContent(any())).thenReturn(
+            ContentPiiDetection.builder().sensitiveDataFound(List.of()).statistics(Map.of()).build()
+        );
+
+        // When: streamAllSpaces is called
+        Flux<ConfluenceContentScanResult> flux = streamConfluenceScanUseCase.streamAllSpaces()
+            .filter(ev -> ScanEventType.MULTI_START.toJson().equals(ev.eventType()))
+            .timeout(Duration.ofSeconds(5));
+
+        // Then: A new scanId is generated (verified by MULTI_START event having a scanId)
+        StepVerifier.create(flux)
+            .assertNext(ev -> {
+                assertThat(ev.scanId()).isNotNull();
+                assertThat(ev.scanId()).matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+            })
+            .verifyComplete();
     }
 }

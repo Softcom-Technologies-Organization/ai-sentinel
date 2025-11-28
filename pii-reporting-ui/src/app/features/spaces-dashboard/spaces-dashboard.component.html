@@ -5,14 +5,13 @@
   <div class="header">
     <h2 class="m-0">
       {{ 'dashboard.title' | transloco }}
-      <span class="scan-status-badge"
-            [class.scanning]="isStreaming()"
-            [class.inactive]="!isStreaming()"
-            role="status"
-            [attr.aria-live]="isStreaming() ? 'polite' : 'off'"
-            [attr.aria-label]="(isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco">
+      <output class="scan-status-badge"
+              [class.scanning]="isStreaming()"
+              [class.inactive]="!isStreaming()"
+              [attr.aria-live]="isStreaming() ? 'polite' : 'off'"
+              [attr.aria-label]="(isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco">
         {{ (isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco }}
-      </span>
+      </output>
     </h2>
     <div class="spacer"></div>
     <app-language-selector></app-language-selector>
@@ -57,6 +56,8 @@
                     [text]="true"
                     [rounded]="true"
                     (click)="openPiiHelpDialog(); $event.stopPropagation()"
+                    (keydown.enter)="openPiiHelpDialog(); $event.stopPropagation()"
+                    (keydown.space)="$event.preventDefault(); openPiiHelpDialog(); $event.stopPropagation()"
                     [pTooltip]="'piiHelp.buttonTooltip' | transloco"
                     tooltipPosition="top"
                     [ariaLabel]="'piiHelp.buttonTooltip' | transloco"
@@ -122,9 +123,9 @@
           <p-button type="button"
                     icon="pi pi-pause"
                     styleClass="p-button-raised pause-button"
-                    (click)="stopCurrentScan()"
-                    (keydown.enter)="stopCurrentScan()"
-                    (keydown.space)="$event.preventDefault(); stopCurrentScan()"
+                    (click)="pauseScan()"
+                    (keydown.enter)="pauseScan()"
+                    (keydown.space)="$event.preventDefault(); pauseScan()"
                     [disabled]="!isStreaming()"
                     [pTooltip]="'dashboard.actions.pauseScan' | transloco"
                     tooltipPosition="bottom"

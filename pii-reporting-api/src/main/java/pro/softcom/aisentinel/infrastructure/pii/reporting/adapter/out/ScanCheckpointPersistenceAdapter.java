@@ -93,6 +93,19 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
         jpaRepository.deleteByScanId(scanId);
     }
 
+    @Override
+    public Optional<String> findMostRecentActiveScanId() {
+        return jpaRepository.findMostRecentActiveScanId();
+    }
+
+    @Override
+    @Transactional
+    public void deleteActiveScanCheckpoints() {
+        log.info("[PURGE] Deleting all active scan checkpoints (RUNNING/PAUSED status)");
+        jpaRepository.deleteActiveScanCheckpoints();
+        log.info("[PURGE] Active scan checkpoints deleted successfully");
+    }
+
     public static ScanCheckpoint toDomain(ScanCheckpointEntity e) {
         return ScanCheckpoint.builder()
             .scanId(e.getScanId())

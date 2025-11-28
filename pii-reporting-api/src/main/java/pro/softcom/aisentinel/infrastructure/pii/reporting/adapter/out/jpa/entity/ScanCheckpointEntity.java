@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,6 +30,9 @@ public class ScanCheckpointEntity {
     @Id
     @Column(name = "scan_id", nullable = false)
     private String scanId;
+
+    @Version
+    private Long version;
 
     @Id
     @Column(name = "space_key", nullable = false)

@@ -1,5 +1,6 @@
 package pro.softcom.aisentinel.application.pii.reporting.service;
 
+import jakarta.persistence.OptimisticLockException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -7,8 +8,8 @@ import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointReposi
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
+import pro.softcom.aisentinel.domain.pii.scan.Initiator;
+import pro.softcom.aisentinel.domain.pii.scan.ScanCheckpointStatusTransition;
 
 /**
  * Manages scan checkpoint persistence for resume capability.
@@ -19,20 +20,6 @@ import reactor.core.scheduler.Schedulers;
 public class ScanCheckpointService {
 
     private final ScanCheckpointRepository scanCheckpointRepository;
-
-    /**
-     * Persists checkpoint based on scan event reactively.
-     * Uses boundedElastic scheduler to avoid blocking the event loop.
-     *
-     * @param confluenceContentScanResult the scan event to persist
-     * @return Mono that completes when checkpoint is persisted
-     */
-    public Mono<Void> persistCheckpointReactive(
-        ConfluenceContentScanResult confluenceContentScanResult) {
-        return Mono.fromRunnable(() -> persistCheckpoint(confluenceContentScanResult))
-                .subscribeOn(Schedulers.boundedElastic())
-                .then();
-    }
 
     /**
      * Persists checkpoint based on scan event.
@@ -59,6 +46,11 @@ public class ScanCheckpointService {
                 scanCheckpointRepository.save(checkpoint);
                 log.debug("[CHECKPOINT] Saved checkpoint for scan {}", confluenceContentScanResult.scanId());
             }
+        } catch (OptimisticLockException _) {
+            // Concurrent modification detected - another thread updated this checkpoint first
+            // This is expected behavior with optimistic locking, not an error
+            log.info("[CHECKPOINT] Concurrent update detected for scan {} space {}, skipping (another process already updated)",
+                confluenceContentScanResult.scanId(), confluenceContentScanResult.spaceKey());
         } catch (Exception exception) {
             log.warn("[CHECKPOINT] Unable to persist checkpoint: {}", exception.getMessage());
         } finally {
@@ -86,6 +78,24 @@ public class ScanCheckpointService {
         }
 
         CheckpointData data = extractCheckpointData(eventType, confluenceContentScanResult);
+        ScanCheckpoint existingCheckpoint = scanCheckpointRepository
+            .findByScanAndSpace(confluenceContentScanResult.scanId(), confluenceContentScanResult.spaceKey())
+            .orElse(null);
+
+        if (existingCheckpoint != null) {
+            ScanCheckpointStatusTransition transition = new ScanCheckpointStatusTransition(
+                existingCheckpoint.scanStatus(),
+                Initiator.SYSTEM
+            );
+
+            boolean isTransitionForbidden = data != null && !transition.isTransitionAllowed(data.status());
+            if (isTransitionForbidden) {
+                log.warn("[CHECKPOINT] Transition {} → {} not allowed, skipping",
+                         existingCheckpoint.scanStatus(), data.status());
+                return null;
+            }
+        }
+
         if (data == null) {
             return null;
         }

@@ -142,14 +142,16 @@ public class ApplicationUseCasesConfig {
             ContentScanOrchestrator contentScanOrchestrator,
             AttachmentProcessor attachmentProcessor,
             ScanTimeOutConfig scanTimeoutConfig,
-            ScanTaskManager scanTaskManager) {
+            ScanTaskManager scanTaskManager,
+            ScanCheckpointRepository scanCheckpointRepository) {
         return new StreamConfluenceScanUseCase(
                 confluenceAccessor,
                 piiDetectorClient,
                 contentScanOrchestrator,
                 attachmentProcessor,
                 scanTimeoutConfig,
-                scanTaskManager
+                scanTaskManager,
+                scanCheckpointRepository
         );
     }
 

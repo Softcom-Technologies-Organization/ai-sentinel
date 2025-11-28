@@ -37,7 +37,7 @@ class ScanCheckpointStatusTransitionTest {
     class FailedStatusTransitions {
 
         @Test
-        @DisplayName("Should_AllowRestartToRunning_When_FailedInitiatedByUser")
+        @DisplayName("Should allow ")
         void Should_AllowRestartToRunning_When_FailedInitiatedByUser() {
             ScanCheckpointStatusTransition underTest =
                     new ScanCheckpointStatusTransition(ScanStatus.FAILED, Initiator.USER);

@@ -117,7 +117,7 @@ export class ScanControlService {
    * 5. Subscribe to stream events (delegated to callback)
    */
   private executeStartAll(): void {
-    this.stopCurrentScan();
+    this.disconnectSse();
 
     // Clear previous dashboard results before starting a brand-new scan
     this.resetDashboardForNewScan();
@@ -194,26 +194,21 @@ export class ScanControlService {
   }
 
   /**
-   * Stops the current scan and marks it as PAUSED in backend.
-   * Business purpose: allows user to interrupt scan for later resume.
+   * Pauses the current scan by disconnecting SSE and marking backend as PAUSED.
+   * Business purpose: User explicitly wants to interrupt scan for later resume.
    *
    * Flow:
-   * 1. Unsubscribe from SSE stream
-   * 2. Set streaming state to false
-   * 3. Call backend to mark scan as PAUSED (if scanId exists)
-   * 4. Reload statuses and scan metadata
+   * 1. Disconnect SSE stream
+   * 2. Mark backend as PAUSED for resume capability
+   * 3. Reload statuses and scan metadata
    */
-  stopCurrentScan(): void {
+  pauseScan(): void {
     const scanId = this.dataManagement.lastScanMeta()?.scanId;
 
-    // Unsubscribe from SSE stream
-    if (this.sseSubscription) {
-      this.sseSubscription.unsubscribe();
-      this.sseSubscription = undefined;
-    }
-    this.isStreaming.set(false);
+    // Disconnect SSE stream
+    this.disconnectSse();
 
-    // Call backend to mark scan as PAUSED if we have a scanId
+    // Mark backend as PAUSED for resume capability
     if (scanId) {
       this.sentinelleApiService.pauseScan(scanId).subscribe({
         next: () => {
@@ -239,6 +234,21 @@ export class ScanControlService {
       this.dataManagement.loadLastSpaceStatuses(false, false).subscribe();
       this.dataManagement.loadLastScan().subscribe();
     }
+  }
+
+  /**
+   * Disconnects SSE stream without marking backend as PAUSED.
+   * Business purpose: Clean SSE teardown during browser close or component destruction.
+   * Backend scan continues running independently.
+   *
+   * CRITICAL: Does NOT call backend pauseScan() - scan continues in background.
+   */
+  private disconnectSse(): void {
+    if (this.sseSubscription) {
+      this.sseSubscription.unsubscribe();
+      this.sseSubscription = undefined;
+    }
+    this.isStreaming.set(false);
   }
 
   /**
@@ -382,10 +392,12 @@ export class ScanControlService {
   /**
    * Resets all scan control state to initial values.
    * Business purpose: cleanup for component destruction or full reset.
+   *
+   * CRITICAL: Only disconnects SSE, does NOT pause backend scan.
+   * Scan continues running in background after component destruction.
    */
   reset(): void {
-    this.stopCurrentScan();
-    this.isStreaming.set(false);
+    this.disconnectSse();
     this.isResuming.set(false);
     this.uiStateService.activeSpaceKey.set(null);
   }

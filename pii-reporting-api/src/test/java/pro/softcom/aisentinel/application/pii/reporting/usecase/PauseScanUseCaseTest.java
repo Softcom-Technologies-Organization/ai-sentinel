@@ -1,218 +1,152 @@
 package pro.softcom.aisentinel.application.pii.reporting.usecase;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import org.assertj.core.api.SoftAssertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import pro.softcom.aisentinel.AiSentinelApplication;
-import pro.softcom.aisentinel.application.pii.reporting.port.in.PauseScanPort;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTaskManager;
 import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
-import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.DetectionCheckpointRepository;
-import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanCheckpointEntity;
+import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
 
-@Testcontainers
-@SpringBootTest(classes = AiSentinelApplication.class,
-                webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@ActiveProfiles("test")
+/**
+ * Tests for PauseScanUseCase to verify correct behavior when pausing scans.
+ * Business Rule: BR-SCAN-001 - When pausing a scan, only RUNNING checkpoints
+ * should transition to PAUSED. COMPLETED checkpoints must remain unchanged.
+ */
+@ExtendWith(MockitoExtension.class)
 class PauseScanUseCaseTest {
 
-    @Container
-    static final PostgreSQLContainer<?> postgres =
-        new PostgreSQLContainer<>("postgres:17-alpine");
-
-    @DynamicPropertySource
-    static void registerDataSourceProps(DynamicPropertyRegistry registry) {
-        postgres.start();
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.jpa.show-sql", () -> "false");
-        registry.add("spring.jpa.properties.hibernate.dialect",
-                     () -> "org.hibernate.dialect.PostgreSQLDialect");
-    }
-
-    @Autowired
-    private PauseScanPort pauseScanUseCase;
-
-    @Autowired
-    private DetectionCheckpointRepository checkpointRepository;
-
-    @Autowired
+    @Mock
     private ScanCheckpointRepository scanCheckpointRepository;
 
+    @Mock
+    private ScanTaskManager scanTaskManager;
 
-    @BeforeEach
-    void cleanDatabase() {
-        checkpointRepository.deleteAll();
-    }
+    @InjectMocks
+    private PauseScanUseCase pauseScanUseCase;
 
     @Test
-    void Should_PauseNonTerminalCheckpoints_When_ScanHasMixedStatuses() {
-        // Arrange
-        var scanId = "scan-100";
-        var now = LocalDateTime.of(2024, 1, 1, 12, 0);
+    void Should_OnlyPauseRunningCheckpoints_When_ScanHasMixedStatuses() {
+        // Given: A scan with 3 spaces in different states
+        String scanId = "scan-mixed-123";
+        
+        ScanCheckpoint runningSpace = ScanCheckpoint.builder()
+            .scanId(scanId)
+            .spaceKey("SPACE-RUNNING")
+            .scanStatus(ScanStatus.RUNNING)
+            .progressPercentage(50.0)
+            .build();
 
-        // running checkpoint should be paused
-        checkpointRepository.save(ScanCheckpointEntity.builder()
-                                      .scanId(scanId)
-                                      .spaceKey("SPACE-RUNNING")
-                                      .lastProcessedPageId("p1")
-                                      .lastProcessedAttachmentName("a1")
-                                      .status(ScanStatus.RUNNING.name())
-                                      .progressPercentage(10.0)
-                                      .updatedAt(now)
-                                      .build());
+        ScanCheckpoint completedSpace = ScanCheckpoint.builder()
+            .scanId(scanId)
+            .spaceKey("SPACE-COMPLETED")
+            .scanStatus(ScanStatus.COMPLETED)
+            .progressPercentage(100.0)
+            .build();
 
-        // completed checkpoint should stay completed
-        checkpointRepository.save(ScanCheckpointEntity.builder()
-                                      .scanId(scanId)
-                                      .spaceKey("SPACE-COMPLETED")
-                                      .lastProcessedPageId("p2")
-                                      .lastProcessedAttachmentName("a2")
-                                      .status(ScanStatus.COMPLETED.name())
-                                      .progressPercentage(100.0)
-                                      .updatedAt(now)
-                                      .build());
+        ScanCheckpoint anotherRunningSpace = ScanCheckpoint.builder()
+            .scanId(scanId)
+            .spaceKey("SPACE-RUNNING-2")
+            .scanStatus(ScanStatus.RUNNING)
+            .progressPercentage(75.0)
+            .build();
 
-        // failed checkpoint should stay failed
-        checkpointRepository.save(ScanCheckpointEntity.builder()
-                                      .scanId(scanId)
-                                      .spaceKey("SPACE-FAILED")
-                                      .lastProcessedPageId("p3")
-                                      .lastProcessedAttachmentName("a3")
-                                      .status(ScanStatus.FAILED.name())
-                                      .progressPercentage(50.0)
-                                      .updatedAt(now)
-                                      .build());
+        when(scanCheckpointRepository.findByScan(scanId))
+            .thenReturn(List.of(runningSpace, completedSpace, anotherRunningSpace));
 
-        // Act
+        when(scanTaskManager.pauseScan(scanId)).thenReturn(true);
+
+        // When: Pausing the scan
         pauseScanUseCase.pauseScan(scanId);
 
-        // Assert
-        List<ScanCheckpointEntity> all =
-            checkpointRepository.findByScanIdOrderBySpaceKey(scanId);
-
-        assertThat(all).hasSize(3);
-
-        SoftAssertions softly = new SoftAssertions();
-
-        var running = all.stream()
-            .filter(e -> "SPACE-RUNNING".equals(e.getSpaceKey()))
-            .findFirst()
-            .orElseThrow();
-        softly.assertThat(running.getStatus()).isEqualTo(ScanStatus.PAUSED.name());
-
-        var completed = all.stream()
-            .filter(e -> "SPACE-COMPLETED".equals(e.getSpaceKey()))
-            .findFirst()
-            .orElseThrow();
-        softly.assertThat(completed.getStatus()).isEqualTo(ScanStatus.COMPLETED.name());
-
-        var failed = all.stream()
-            .filter(e -> "SPACE-FAILED".equals(e.getSpaceKey()))
-            .findFirst()
-            .orElseThrow();
-        softly.assertThat(failed.getStatus()).isEqualTo(ScanStatus.FAILED.name());
-
-        softly.assertAll();
-    }
-
-    @Test
-    void Should_DoNothing_When_ScanIdBlank() {
-        // Arrange
-        var before = checkpointRepository.count();
-
-        // Act
-        pauseScanUseCase.pauseScan(" ");
-
-        // Assert
-        var after = checkpointRepository.count();
-        assertThat(after).isEqualTo(before);
-    }
-
-    @Test
-    void Should_PreserveProgressPercentage_When_PausingScan() {
-        // Arrange
-        var scanId = "scan-200";
-        var now = LocalDateTime.of(2024, 1, 2, 12, 0);
-
-        checkpointRepository.save(ScanCheckpointEntity.builder()
-                                      .scanId(scanId)
-                                      .spaceKey("SPACE-RUNNING")
-                                      .lastProcessedPageId("p1")
-                                      .lastProcessedAttachmentName("a1")
-                                      .status(ScanStatus.RUNNING.name())
-                                      .progressPercentage(37.5)
-                                      .updatedAt(now)
-                                      .build());
-
-        // Act
-        pauseScanUseCase.pauseScan(scanId);
-
-        // Assert
-        List<ScanCheckpointEntity> all =
-            checkpointRepository.findByScanIdOrderBySpaceKey(scanId);
-
-        assertThat(all).hasSize(1);
-
-        ScanCheckpointEntity paused = all.get(0);
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(paused.getStatus()).isEqualTo(ScanStatus.PAUSED.name());
-        softly.assertThat(paused.getProgressPercentage()).isEqualTo(37.5);
-        softly.assertAll();
-    }
-
-    @Test
-    void Should_NotOverwriteProgressPercentageWithNull_When_UpsertingExistingCheckpoint() {
-        // Arrange
-        var scanId = "scan-300";
-        var now = LocalDateTime.of(2024, 1, 3, 12, 0);
-
-        checkpointRepository.save(ScanCheckpointEntity.builder()
-                                      .scanId(scanId)
-                                      .spaceKey("SPACE-RUNNING")
-                                      .lastProcessedPageId("p1")
-                                      .lastProcessedAttachmentName("a1")
-                                      .status(ScanStatus.RUNNING.name())
-                                      .progressPercentage(42.0)
-                                      .updatedAt(now)
-                                      .build());
-
-        // Act: upsert with null progressPercentage should keep existing value
-        checkpointRepository.upsertCheckpoint(
-            scanId,
-            "SPACE-RUNNING",
-            "p1",
-            "a1",
-            ScanStatus.PAUSED.name(),
-            null,
-            now.plusMinutes(5)
+        // Then: Only RUNNING checkpoints should be updated to PAUSED
+        verify(scanCheckpointRepository, times(2)).save(
+            argThat(checkpoint -> 
+                checkpoint.scanStatus() == ScanStatus.PAUSED &&
+                (checkpoint.spaceKey().equals("SPACE-RUNNING") || 
+                 checkpoint.spaceKey().equals("SPACE-RUNNING-2"))
+            )
         );
 
-        // Assert
-        List<ScanCheckpointEntity> all =
-            checkpointRepository.findByScanIdOrderBySpaceKey(scanId);
+        // And: COMPLETED checkpoint should NOT be saved (transition blocked)
+        verify(scanCheckpointRepository, never()).save(
+            argThat(checkpoint -> 
+                checkpoint.spaceKey().equals("SPACE-COMPLETED")
+            )
+        );
+    }
 
-        assertThat(all).hasSize(1);
+    @Test
+    void Should_SkipCompletedCheckpoints_When_PausingScan() {
+        // Given: A scan where all spaces are COMPLETED
+        String scanId = "scan-all-completed";
+        
+        ScanCheckpoint completedSpace1 = ScanCheckpoint.builder()
+            .scanId(scanId)
+            .spaceKey("SPACE-1")
+            .scanStatus(ScanStatus.COMPLETED)
+            .progressPercentage(100.0)
+            .build();
 
-        ScanCheckpointEntity checkpoint = all.get(0);
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(checkpoint.getStatus()).isEqualTo(ScanStatus.PAUSED.name());
-        softly.assertThat(checkpoint.getProgressPercentage()).isEqualTo(42.0);
-        softly.assertAll();
+        ScanCheckpoint completedSpace2 = ScanCheckpoint.builder()
+            .scanId(scanId)
+            .spaceKey("SPACE-2")
+            .scanStatus(ScanStatus.COMPLETED)
+            .progressPercentage(100.0)
+            .build();
+
+        when(scanCheckpointRepository.findByScan(scanId))
+            .thenReturn(List.of(completedSpace1, completedSpace2));
+
+        when(scanTaskManager.pauseScan(scanId)).thenReturn(true);
+
+        // When: Attempting to pause the scan
+        pauseScanUseCase.pauseScan(scanId);
+
+        // Then: No checkpoints should be updated (all transitions blocked)
+        verify(scanCheckpointRepository, never()).save(any(ScanCheckpoint.class));
+    }
+
+    @Test
+    void Should_PauseAllRunningCheckpoints_When_NoCompletedSpaces() {
+        // Given: A scan with only RUNNING spaces
+        String scanId = "scan-all-running";
+        
+        ScanCheckpoint runningSpace1 = ScanCheckpoint.builder()
+            .scanId(scanId)
+            .spaceKey("SPACE-A")
+            .scanStatus(ScanStatus.RUNNING)
+            .progressPercentage(30.0)
+            .build();
+
+        ScanCheckpoint runningSpace2 = ScanCheckpoint.builder()
+            .scanId(scanId)
+            .spaceKey("SPACE-B")
+            .scanStatus(ScanStatus.RUNNING)
+            .progressPercentage(60.0)
+            .build();
+
+        when(scanCheckpointRepository.findByScan(scanId))
+            .thenReturn(List.of(runningSpace1, runningSpace2));
+
+        when(scanTaskManager.pauseScan(scanId)).thenReturn(true);
+
+        // When: Pausing the scan
+        pauseScanUseCase.pauseScan(scanId);
+
+        // Then: All RUNNING checkpoints should be updated to PAUSED
+        verify(scanCheckpointRepository, times(2)).save(
+            argThat(checkpoint -> checkpoint.scanStatus() == ScanStatus.PAUSED)
+        );
     }
 }

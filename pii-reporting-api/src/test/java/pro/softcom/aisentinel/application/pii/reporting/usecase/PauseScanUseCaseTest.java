@@ -3,11 +3,10 @@ package pro.softcom.aisentinel.application.pii.reporting.usecase;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,7 +19,7 @@ import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
 
 /**
  * Tests for PauseScanUseCase to verify correct behavior when pausing scans.
- * Business Rule: BR-SCAN-001 - When pausing a scan, only RUNNING checkpoints
+ * Business Rule: BR-SCAN-001 - When pausing a scan, only the RUNNING checkpoint
  * should transition to PAUSED. COMPLETED checkpoints must remain unchanged.
  */
 @ExtendWith(MockitoExtension.class)
@@ -36,9 +35,9 @@ class PauseScanUseCaseTest {
     private PauseScanUseCase pauseScanUseCase;
 
     @Test
-    void Should_OnlyPauseRunningCheckpoints_When_ScanHasMixedStatuses() {
-        // Given: A scan with 3 spaces in different states
-        String scanId = "scan-mixed-123";
+    void Should_PauseRunningCheckpoint_When_ScanHasOneRunningSpace() {
+        // Given: A scan with one RUNNING space
+        String scanId = "scan-running-123";
         
         ScanCheckpoint runningSpace = ScanCheckpoint.builder()
             .scanId(scanId)
@@ -47,105 +46,105 @@ class PauseScanUseCaseTest {
             .progressPercentage(50.0)
             .build();
 
-        ScanCheckpoint completedSpace = ScanCheckpoint.builder()
-            .scanId(scanId)
-            .spaceKey("SPACE-COMPLETED")
-            .scanStatus(ScanStatus.COMPLETED)
-            .progressPercentage(100.0)
-            .build();
-
-        ScanCheckpoint anotherRunningSpace = ScanCheckpoint.builder()
-            .scanId(scanId)
-            .spaceKey("SPACE-RUNNING-2")
-            .scanStatus(ScanStatus.RUNNING)
-            .progressPercentage(75.0)
-            .build();
-
-        when(scanCheckpointRepository.findByScan(scanId))
-            .thenReturn(List.of(runningSpace, completedSpace, anotherRunningSpace));
-
+        when(scanCheckpointRepository.findRunningScanCheckpoint(scanId))
+            .thenReturn(Optional.of(runningSpace));
         when(scanTaskManager.pauseScan(scanId)).thenReturn(true);
 
         // When: Pausing the scan
         pauseScanUseCase.pauseScan(scanId);
 
-        // Then: Only RUNNING checkpoints should be updated to PAUSED
-        verify(scanCheckpointRepository, times(2)).save(
+        // Then: The RUNNING checkpoint should be updated to PAUSED
+        verify(scanCheckpointRepository).save(
             argThat(checkpoint -> 
                 checkpoint.scanStatus() == ScanStatus.PAUSED &&
-                (checkpoint.spaceKey().equals("SPACE-RUNNING") || 
-                 checkpoint.spaceKey().equals("SPACE-RUNNING-2"))
-            )
-        );
-
-        // And: COMPLETED checkpoint should NOT be saved (transition blocked)
-        verify(scanCheckpointRepository, never()).save(
-            argThat(checkpoint -> 
-                checkpoint.spaceKey().equals("SPACE-COMPLETED")
+                checkpoint.spaceKey().equals("SPACE-RUNNING")
             )
         );
     }
 
     @Test
-    void Should_SkipCompletedCheckpoints_When_PausingScan() {
-        // Given: A scan where all spaces are COMPLETED
+    void Should_NotSaveAnything_When_NoRunningCheckpointExists() {
+        // Given: A scan where all spaces are COMPLETED (no RUNNING checkpoint)
         String scanId = "scan-all-completed";
         
-        ScanCheckpoint completedSpace1 = ScanCheckpoint.builder()
-            .scanId(scanId)
-            .spaceKey("SPACE-1")
-            .scanStatus(ScanStatus.COMPLETED)
-            .progressPercentage(100.0)
-            .build();
-
-        ScanCheckpoint completedSpace2 = ScanCheckpoint.builder()
-            .scanId(scanId)
-            .spaceKey("SPACE-2")
-            .scanStatus(ScanStatus.COMPLETED)
-            .progressPercentage(100.0)
-            .build();
-
-        when(scanCheckpointRepository.findByScan(scanId))
-            .thenReturn(List.of(completedSpace1, completedSpace2));
-
+        when(scanCheckpointRepository.findRunningScanCheckpoint(scanId))
+            .thenReturn(Optional.empty());
         when(scanTaskManager.pauseScan(scanId)).thenReturn(true);
 
         // When: Attempting to pause the scan
         pauseScanUseCase.pauseScan(scanId);
 
-        // Then: No checkpoints should be updated (all transitions blocked)
+        // Then: No checkpoints should be saved
         verify(scanCheckpointRepository, never()).save(any(ScanCheckpoint.class));
     }
 
     @Test
-    void Should_PauseAllRunningCheckpoints_When_NoCompletedSpaces() {
-        // Given: A scan with only RUNNING spaces
-        String scanId = "scan-all-running";
+    void Should_PreserveCheckpointData_When_PausingRunningSpace() {
+        // Given: A scan with one RUNNING space with specific progress
+        String scanId = "scan-with-progress";
         
-        ScanCheckpoint runningSpace1 = ScanCheckpoint.builder()
+        ScanCheckpoint runningSpace = ScanCheckpoint.builder()
             .scanId(scanId)
             .spaceKey("SPACE-A")
+            .lastProcessedPageId("page-123")
+            .lastProcessedAttachmentName("attachment.pdf")
             .scanStatus(ScanStatus.RUNNING)
-            .progressPercentage(30.0)
+            .progressPercentage(75.5)
             .build();
 
-        ScanCheckpoint runningSpace2 = ScanCheckpoint.builder()
-            .scanId(scanId)
-            .spaceKey("SPACE-B")
-            .scanStatus(ScanStatus.RUNNING)
-            .progressPercentage(60.0)
-            .build();
-
-        when(scanCheckpointRepository.findByScan(scanId))
-            .thenReturn(List.of(runningSpace1, runningSpace2));
-
+        when(scanCheckpointRepository.findRunningScanCheckpoint(scanId))
+            .thenReturn(Optional.of(runningSpace));
         when(scanTaskManager.pauseScan(scanId)).thenReturn(true);
 
         // When: Pausing the scan
         pauseScanUseCase.pauseScan(scanId);
 
-        // Then: All RUNNING checkpoints should be updated to PAUSED
-        verify(scanCheckpointRepository, times(2)).save(
+        // Then: The checkpoint should be saved with PAUSED status but preserve all other data
+        verify(scanCheckpointRepository).save(
+            argThat(checkpoint -> 
+                checkpoint.scanStatus() == ScanStatus.PAUSED &&
+                checkpoint.spaceKey().equals("SPACE-A") &&
+                checkpoint.lastProcessedPageId().equals("page-123") &&
+                checkpoint.lastProcessedAttachmentName().equals("attachment.pdf") &&
+                checkpoint.progressPercentage() == 75.5
+            )
+        );
+    }
+
+    @Test
+    void Should_DoNothing_When_ScanIdIsBlank() {
+        // When: Trying to pause with blank scanId
+        pauseScanUseCase.pauseScan("");
+        pauseScanUseCase.pauseScan(null);
+        pauseScanUseCase.pauseScan("   ");
+
+        // Then: No repository calls should be made
+        verify(scanCheckpointRepository, never()).findRunningScanCheckpoint(any());
+        verify(scanCheckpointRepository, never()).save(any());
+        verify(scanTaskManager, never()).pauseScan(any());
+    }
+
+    @Test
+    void Should_StillUpdateCheckpoint_When_ScanTaskNotFound() {
+        // Given: A scan with a RUNNING checkpoint but task already gone
+        String scanId = "scan-task-gone";
+        
+        ScanCheckpoint runningSpace = ScanCheckpoint.builder()
+            .scanId(scanId)
+            .spaceKey("SPACE-X")
+            .scanStatus(ScanStatus.RUNNING)
+            .progressPercentage(30.0)
+            .build();
+
+        when(scanCheckpointRepository.findRunningScanCheckpoint(scanId))
+            .thenReturn(Optional.of(runningSpace));
+        when(scanTaskManager.pauseScan(scanId)).thenReturn(false); // Task not found
+
+        // When: Pausing the scan
+        pauseScanUseCase.pauseScan(scanId);
+
+        // Then: The checkpoint should still be updated to PAUSED (persist state)
+        verify(scanCheckpointRepository).save(
             argThat(checkpoint -> checkpoint.scanStatus() == ScanStatus.PAUSED)
         );
     }

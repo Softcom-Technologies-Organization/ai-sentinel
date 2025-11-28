@@ -1,6 +1,5 @@
 package pro.softcom.aisentinel.application.pii.reporting.usecase;
 
-import jakarta.persistence.OptimisticLockException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.PauseScanPort;
@@ -8,10 +7,12 @@ import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTaskManager
 import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
-import pro.softcom.aisentinel.domain.pii.scan.IllegalScanStatusTransitionException;
-import pro.softcom.aisentinel.domain.pii.scan.Initiator;
-import pro.softcom.aisentinel.domain.pii.scan.ScanCheckpointStatusTransition;
 
+/**
+ * Use case for pausing a running scan.
+ * Business purpose: Allow users to pause an ongoing scan, saving the current progress
+ * so it can be resumed later.
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class PauseScanUseCase implements PauseScanPort {
@@ -34,47 +35,27 @@ public class PauseScanUseCase implements PauseScanPort {
             log.warn("[PAUSE] Scan {} not found or already completed", scanId);
         }
         
-        // Update checkpoints in database to persist PAUSED status
-        var checkpoints = scanCheckpointRepository.findByScan(scanId);
-        int pausedCount = 0;
-        int skippedCount = 0;
-        int conflictCount = 0;
+        // Find the RUNNING checkpoint and update it to PAUSED
+        var runningCheckpoint = scanCheckpointRepository.findRunningScanCheckpoint(scanId);
         
-        for (ScanCheckpoint checkpoint : checkpoints) {
-            try {
-                ScanCheckpointStatusTransition transition =
-                    new ScanCheckpointStatusTransition(checkpoint.scanStatus(), Initiator.USER);
-                
-                ScanStatus newStatus = transition.transition(ScanStatus.PAUSED);
-                
-                ScanCheckpoint pausedCheckpoint = ScanCheckpoint.builder()
-                    .scanId(checkpoint.scanId())
-                    .spaceKey(checkpoint.spaceKey())
-                    .lastProcessedPageId(checkpoint.lastProcessedPageId())
-                    .lastProcessedAttachmentName(checkpoint.lastProcessedAttachmentName())
-                    .scanStatus(newStatus)
-                    .progressPercentage(checkpoint.progressPercentage())
-                    .build();
-                
-                scanCheckpointRepository.save(pausedCheckpoint);
-                pausedCount++;
-                log.debug("[PAUSE] Updated checkpoint for space {} to PAUSED", checkpoint.spaceKey());
-                
-            } catch (OptimisticLockException _) {
-                // Concurrent modification detected - another thread updated this checkpoint first
-                // This is expected when SYSTEM completes a space while USER pauses the scan
-                conflictCount++;
-                log.info("[PAUSE] Concurrent update detected for space {}, skipping (likely already COMPLETED)", 
-                    checkpoint.spaceKey());
-            } catch (IllegalScanStatusTransitionException e) {
-                skippedCount++;
-                log.debug("[PAUSE] Skipped checkpoint for space {} ({})", 
-                    checkpoint.spaceKey(), e.getMessage());
-            }
+        if (runningCheckpoint.isEmpty()) {
+            log.info("[PAUSE] No RUNNING checkpoint found for scan {} - scan may already be completed or paused", scanId);
+            return;
         }
         
-        log.info("[PAUSE] Scan {} paused: {} spaces updated, {} skipped (invalid transition), {} conflicts (concurrent update)", 
-            scanId, pausedCount, skippedCount, conflictCount);
+        ScanCheckpoint checkpoint = runningCheckpoint.get();
+        ScanCheckpoint pausedCheckpoint = ScanCheckpoint.builder()
+            .scanId(checkpoint.scanId())
+            .spaceKey(checkpoint.spaceKey())
+            .lastProcessedPageId(checkpoint.lastProcessedPageId())
+            .lastProcessedAttachmentName(checkpoint.lastProcessedAttachmentName())
+            .scanStatus(ScanStatus.PAUSED)
+            .progressPercentage(checkpoint.progressPercentage())
+            .build();
+        
+        scanCheckpointRepository.save(pausedCheckpoint);
+        log.info("[PAUSE] Scan {} paused: space {} updated from RUNNING to PAUSED", 
+            scanId, checkpoint.spaceKey());
     }
 
     private boolean isBlank(String value) {

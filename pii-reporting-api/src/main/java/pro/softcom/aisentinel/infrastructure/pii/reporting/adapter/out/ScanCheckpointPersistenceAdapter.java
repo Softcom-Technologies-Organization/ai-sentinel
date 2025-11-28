@@ -101,6 +101,15 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
         log.info("[PURGE] Active scan checkpoints deleted successfully");
     }
 
+    @Override
+    public Optional<ScanCheckpoint> findRunningScanCheckpoint(String scanId) {
+        if (isBlank(scanId)) {
+            return Optional.empty();
+        }
+        return jpaRepository.findRunningScanCheckpoint(scanId)
+            .map(ScanCheckpointPersistenceAdapter::toDomain);
+    }
+
     public static ScanCheckpoint toDomain(ScanCheckpointEntity e) {
         return ScanCheckpoint.builder()
             .scanId(e.getScanId())

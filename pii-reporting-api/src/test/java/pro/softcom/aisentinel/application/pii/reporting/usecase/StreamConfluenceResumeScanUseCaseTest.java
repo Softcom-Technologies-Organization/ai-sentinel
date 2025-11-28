@@ -53,7 +53,7 @@ import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 @ExtendWith(MockitoExtension.class)
-class StreamConfluenceResumeScanPortImplTest {
+class StreamConfluenceResumeScanUseCaseTest {
 
     @Mock
     private ConfluenceClient confluenceService;

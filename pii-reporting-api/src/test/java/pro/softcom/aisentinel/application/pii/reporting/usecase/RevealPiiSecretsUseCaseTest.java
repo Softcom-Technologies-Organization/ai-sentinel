@@ -42,9 +42,9 @@ import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entit
 @Import({
     JpaScanResultQueryAdapter.class,
     RevealPiiSecretsUseCase.class,
-    RevealPiiSecretsUseCaseIT.TestConfig.class
+    RevealPiiSecretsUseCaseTest.TestConfig.class
 })
-class RevealPiiSecretsUseCaseIT {
+class RevealPiiSecretsUseCaseTest {
 
     @Container
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine");

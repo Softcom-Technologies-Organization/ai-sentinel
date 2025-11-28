@@ -4,8 +4,10 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import jakarta.annotation.PostConstruct;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
+import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.PiiDetectionException;
 import reactor.core.publisher.Hooks;
 
 /**
@@ -22,14 +24,14 @@ public class ReactorErrorHandlerConfig {
         Hooks.onErrorDropped(throwable -> {
             // Cancellation errors are normal behavior when SSE connections are closed
             if (throwable instanceof CancellationException) {
-                log.debug("Scan cancelled (CancellationException): {}", throwable.getMessage());
+                log.info("Scan cancelled (CancellationException): {}", throwable.getMessage());
                 return;
             }
             
             // Handle CompletionException wrapping CancellationException (HTTP client cancellations)
-            if (throwable instanceof java.util.concurrent.CompletionException ce && 
+            if (throwable instanceof CompletionException ce &&
                 ce.getCause() instanceof CancellationException) {
-                log.debug("HTTP request cancelled (CompletionException wrapping CancellationException): {}", 
+                log.info("HTTP request cancelled (CompletionException wrapping CancellationException): {}",
                           throwable.getMessage());
                 return;
             }
@@ -37,8 +39,19 @@ public class ReactorErrorHandlerConfig {
             // gRPC CANCELLED errors are normal when threads are interrupted during shutdown
             if (throwable instanceof StatusRuntimeException sre && 
                 sre.getStatus().getCode() == Status.Code.CANCELLED) {
-                log.debug("gRPC call cancelled: {}", throwable.getMessage());
+                log.info("gRPC call cancelled: {}", throwable.getMessage());
                 return;
+            }
+            
+            // Handle PiiDetectionServiceException wrapping gRPC CANCELLED
+            // This occurs when SSE client disconnects while PII detection is in progress
+            if (throwable instanceof PiiDetectionException.PiiDetectionServiceException pse) {
+                Throwable cause = pse.getCause();
+                if (cause instanceof StatusRuntimeException sre && 
+                    sre.getStatus().getCode() == Status.Code.CANCELLED) {
+                    log.info("PII detection cancelled (SSE disconnection): {}", pse.getMessage());
+                    return;
+                }
             }
             
             // gRPC DEADLINE_EXCEEDED should be caught by the reactive chain, not dropped here

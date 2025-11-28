@@ -197,6 +197,8 @@ export class DashboardUiStateService {
         return 'dashboard.status.pending';
       case 'PAUSED':
         return 'dashboard.status.paused';
+      case 'COMPLETED' :
+        return 'dashboard.status.completed';
       default:
         return 'dashboard.status.pending';
     }

@@ -58,4 +58,13 @@ public interface ScanCheckpointRepository {
      * @param scanId the business identifier of the scan
      */
     void deleteByScan(String scanId);
+
+    /**
+     * Deletes all active scan checkpoints (RUNNING or PAUSED status).
+     * Business purpose: Clean up previous active scans when starting a fresh scan with the "Start" button.
+     * This prevents accumulation of stale scan data and ensures severity counts don't get inflated
+     * by mixing data from old and new scans.
+     * Note: Completed scans (COMPLETED, FAILED status) are preserved as historical data.
+     */
+    void deleteActiveScanCheckpoints();
 }

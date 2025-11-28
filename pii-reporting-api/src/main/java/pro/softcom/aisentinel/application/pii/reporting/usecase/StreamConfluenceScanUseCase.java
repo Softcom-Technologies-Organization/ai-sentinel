@@ -12,6 +12,7 @@ import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTimeOutConf
 import pro.softcom.aisentinel.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.aisentinel.application.pii.reporting.service.ContentScanOrchestrator;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
+import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import reactor.core.publisher.Flux;
@@ -27,6 +28,7 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
     StreamConfluenceScanPort {
 
     private final ScanTaskManager scanTaskManager;
+    private final ScanCheckpointRepository scanCheckpointRepository;
 
     public StreamConfluenceScanUseCase(
         ConfluenceAccessor confluenceAccessor,
@@ -34,9 +36,11 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
         ContentScanOrchestrator contentScanOrchestrator,
         AttachmentProcessor attachmentProcessor,
         ScanTimeOutConfig scanTimeoutConfig,
-        ScanTaskManager scanTaskManager) {
+        ScanTaskManager scanTaskManager,
+        ScanCheckpointRepository scanCheckpointRepository) {
         super(confluenceAccessor, piiDetectorClient, contentScanOrchestrator, attachmentProcessor, scanTimeoutConfig);
         this.scanTaskManager = scanTaskManager;
+        this.scanCheckpointRepository = scanCheckpointRepository;
     }
 
     /**
@@ -97,6 +101,17 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
 
     /**
      * Streams scan events for all spaces sequentially.
+     * 
+     * <p><strong>Business Rule:</strong> Always creates a new scan with a fresh scanId and purges
+     * previous scan data. This is the behavior triggered by the "Start" button.</p>
+     * 
+     * <p><strong>Logic:</strong></p>
+     * <ul>
+     *   <li>Generates a new UUID for each fresh scan</li>
+     *   <li>Purges previous scan checkpoints to ensure clean state</li>
+     *   <li>For resuming a paused scan, use resumeAllSpaces(scanId) instead</li>
+     * </ul>
+     * 
      * WebFlux pedagogy (technical):
      * - The overall stream is split into three segments: header (MULTI_START), body (space processing), footer (MULTI_COMPLETE).
      * - Flux.concat(header, body, footer) guarantees strict sequential execution of these segments in order.
@@ -104,7 +119,12 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
      */
     @Override
     public Flux<ConfluenceContentScanResult> streamAllSpaces() {
+        // Always create a new scanId for a fresh scan (Start button behavior)
         String scanCorrelationId = UUID.randomUUID().toString();
+        log.info("[SCAN] Creating new scan with scanId: {}", scanCorrelationId);
+        
+        // Purge previous scan data to ensure clean state
+        purgePreviousScanData();
 
         // Opening segment: a single "MULTI_START" event
         Flux<ConfluenceContentScanResult> header = buildAllSpaceScanFluxHeader(scanCorrelationId);
@@ -206,6 +226,20 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
                              .eventType(DetectionReportingEventType.MULTI_START.getLabel())
                              .emittedAt(Instant.now().toString())
                              .build());
+    }
+
+    /**
+     * Purges previous scan data to ensure a clean state before starting a new scan.
+     */
+    private void purgePreviousScanData() {
+        try {
+            log.info("[SCAN] Purging previous active scan data before starting new scan");
+            scanCheckpointRepository.deleteActiveScanCheckpoints();
+            log.info("[SCAN] Previous scan data purged successfully");
+        } catch (Exception e) {
+            log.error("[SCAN] Failed to purge previous scan data: {}", e.getMessage(), e);
+            // Don't fail the scan if purge fails - log and continue
+        }
     }
 
 }

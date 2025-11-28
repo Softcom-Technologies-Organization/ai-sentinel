@@ -173,7 +173,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.scanControl.stopCurrentScan();
+    this.scanControl.reset();
     this.dataManagement.stopBackgroundPolling();
   }
 
@@ -188,11 +188,11 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Stops current scan and marks as PAUSED.
+   * Pauses current scan and marks as PAUSED for later resume.
    * Delegates to ScanControlService.
    */
-  stopCurrentScan(): void {
-    this.scanControl.stopCurrentScan();
+  pauseScan(): void {
+    this.scanControl.pauseScan();
   }
 
   /**

@@ -1,5 +1,6 @@
 package pro.softcom.aisentinel.application.pii.reporting.usecase;
 
+import jakarta.persistence.OptimisticLockException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.PauseScanPort;
@@ -37,6 +38,7 @@ public class PauseScanUseCase implements PauseScanPort {
         var checkpoints = scanCheckpointRepository.findByScan(scanId);
         int pausedCount = 0;
         int skippedCount = 0;
+        int conflictCount = 0;
         
         for (ScanCheckpoint checkpoint : checkpoints) {
             try {
@@ -58,6 +60,12 @@ public class PauseScanUseCase implements PauseScanPort {
                 pausedCount++;
                 log.debug("[PAUSE] Updated checkpoint for space {} to PAUSED", checkpoint.spaceKey());
                 
+            } catch (OptimisticLockException _) {
+                // Concurrent modification detected - another thread updated this checkpoint first
+                // This is expected when SYSTEM completes a space while USER pauses the scan
+                conflictCount++;
+                log.info("[PAUSE] Concurrent update detected for space {}, skipping (likely already COMPLETED)", 
+                    checkpoint.spaceKey());
             } catch (IllegalScanStatusTransitionException e) {
                 skippedCount++;
                 log.debug("[PAUSE] Skipped checkpoint for space {} ({})", 
@@ -65,8 +73,8 @@ public class PauseScanUseCase implements PauseScanPort {
             }
         }
         
-        log.info("[PAUSE] Scan {} paused: {} spaces updated, {} spaces skipped (already completed/failed)", 
-            scanId, pausedCount, skippedCount);
+        log.info("[PAUSE] Scan {} paused: {} spaces updated, {} skipped (invalid transition), {} conflicts (concurrent update)", 
+            scanId, pausedCount, skippedCount, conflictCount);
     }
 
     private boolean isBlank(String value) {

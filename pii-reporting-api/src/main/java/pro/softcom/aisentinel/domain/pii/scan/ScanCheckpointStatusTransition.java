@@ -24,14 +24,8 @@ public class ScanCheckpointStatusTransition {
     /**
      * Represents a valid transition with allowed initiators.
      */
-    private static class Transition {
-        private final ScanStatus toStatus;
-        private final Set<Initiator> allowedInitiators;
+    private record Transition(ScanStatus toStatus, Set<Initiator> allowedInitiators) {
 
-        private Transition(ScanStatus toStatus, Set<Initiator> allowedInitiators) {
-            this.toStatus = toStatus;
-            this.allowedInitiators = allowedInitiators;
-        }
     }
 
     /**
@@ -78,6 +72,14 @@ public class ScanCheckpointStatusTransition {
     }
 
     /**
+     * Final states that cannot be modified once reached.
+     * Business Rule: Once a scan is COMPLETED or FAILED, its status is immutable.
+     */
+    private static final Set<ScanStatus> FINAL_STATES = Set.of(
+        ScanStatus.COMPLETED
+    );
+
+    /**
      * Checks if a transition to the target status is allowed.
      *
      * @param toStatus The target status of the transition
@@ -87,6 +89,11 @@ public class ScanCheckpointStatusTransition {
         // Transition to the same status always allowed (idempotence)
         if (currentStatus == toStatus) {
             return true;
+        }
+
+        // CRITICAL: Final states are immutable - no transitions allowed
+        if (FINAL_STATES.contains(currentStatus)) {
+            return false;
         }
 
         Set<Transition> transitions = ALLOWED_TRANSITIONS.get(currentStatus);

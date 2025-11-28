@@ -72,16 +72,16 @@ PASSWORD = 0.85            # No standardization, high overlap with other text
 TELEPHONENUM = 0.80        # Increased to 0.80 to avoid detecting dates/amounts/codes as phones
 
 # Medium risk / Structured formats (0.5-0.7)
-ACCOUNTNUM = 0.55          # Structured but variable
-CREDITCARDNUMBER = 0.55    # Standardized format
-DATEOFBIRTH = 0.55         # Standard formats
-DRIVERLICENSENUM = 0.55    # Standardized per country
-IDCARDNUM = 0.55           # Standardized per country
-SOCIALNUM = 0.55           # Standardized format (SSN, etc.)
-TAXNUM = 0.55              # Standardized per country
-STREET = 0.65              # Addresses can be ambiguous
+ACCOUNTNUM = 0.70          # Structured but variable
+CREDITCARDNUMBER = 0.70    # Standardized format
+DATEOFBIRTH = 0.80         # Standard formats
+DRIVERLICENSENUM = 0.80    # Standardized per country
+IDCARDNUM = 0.80           # Standardized per country
+SOCIALNUM = 0.80           # Standardized format (SSN, etc.)
+TAXNUM = 0.80              # Standardized per country
+STREET = 0.80              # Addresses can be ambiguous
 
 # Low risk / Well-structured (0.3-0.5)
-BUILDINGNUM = 0.35         # Simple numeric patterns
-CITY = 0.35                # Location names
-ZIPCODE = 0.35             # Highly standardized format
+BUILDINGNUM = 0.80         # Simple numeric patterns
+CITY = 0.80                # Location names
+ZIPCODE = 0.80             # Highly standardized format

@@ -14,6 +14,7 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * Infrastructure adapter that implements the management of scan tasks decoupled from SSE.
@@ -78,7 +79,10 @@ public class ScanTaskManagerAdapter implements ScanTaskManager {
         
         // KEY: independent subscribe() — decouples scan execution from SSE subscribers' lifecycle
         // When the SSE client disconnects, this subscription keeps running
+        // subscribeOn(boundedElastic) ensures the scan executes on a dedicated thread pool,
+        // isolated from Virtual Thread interruptions when HTTP clients disconnect
         Disposable subscription = scanDataStream
+                .subscribeOn(Schedulers.boundedElastic())
                 .doOnNext(event -> {
                     log.debug("[ScanTaskManager] Emitting event for scanId={}, eventType={}", 
                             scanId, event.eventType());
@@ -98,7 +102,7 @@ public class ScanTaskManagerAdapter implements ScanTaskManager {
                     log.info("[ScanTaskManager] Scan cancelled for scanId={}", scanId);
                     markCompleted(scanId);
                 })
-                .subscribe(); // ← KEY part — independent subscription
+                .subscribe(); // ← KEY part — independent subscription on boundedElastic scheduler
         
         ManagedScan managedScan = new ManagedScan(
                 sink,

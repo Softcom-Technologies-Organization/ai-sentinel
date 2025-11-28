@@ -28,6 +28,32 @@ public interface DetectionCheckpointRepository extends
     void deleteByScanId(String scanId);
 
     /**
+     * Finds the most recent scan that is in RUNNING or PAUSED status.
+     * Business purpose: Detect if there's an active multi-space scan that should be resumed
+     * instead of starting a new one, preventing duplicate scanId generation.
+     * 
+     * @return Optional containing the scanId of the most recent RUNNING or PAUSED scan
+     */
+    @Query("""
+        SELECT s.scanId
+        FROM ScanCheckpointEntity s
+        WHERE s.status IN ('RUNNING', 'PAUSED')
+        ORDER BY s.updatedAt DESC
+        LIMIT 1
+        """)
+    Optional<String> findMostRecentActiveScanId();
+
+    /**
+     * Deletes all scan checkpoints with RUNNING or PAUSED status.
+     * Business purpose: Clean up active scans when starting a fresh scan to prevent
+     * data accumulation and ensure severity counts are accurate.
+     */
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM ScanCheckpointEntity s WHERE s.status IN ('RUNNING', 'PAUSED')")
+    void deleteActiveScanCheckpoints();
+
+    /**
      * Persists or updates a scan checkpoint using PostgreSQL's UPSERT mechanism.
      * 
      * <p>This method implements atomic checkpoint persistence for scan resume functionality.

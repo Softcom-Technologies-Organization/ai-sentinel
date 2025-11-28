@@ -17,7 +17,7 @@ import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEv
  */
 @Component
 @RequiredArgsConstructor
-public class ScanResultToScanEventMapper {
+public class ConfluenceContentScanResultToScanEventMapper {
 
     public ConfluenceContentScanResultEventDto toDto(
         ConfluenceContentScanResult confluenceContentScanResult) {
@@ -54,6 +54,7 @@ public class ScanResultToScanEventMapper {
                 .analysisProgressPercentage(confluenceContentScanResult.analysisProgressPercentage())
                 .status(
                     confluenceContentScanResult.scanStatus() != null ? confluenceContentScanResult.scanStatus().name() : null)
+                .severity(confluenceContentScanResult.severity())
                 .build();
     }
 }

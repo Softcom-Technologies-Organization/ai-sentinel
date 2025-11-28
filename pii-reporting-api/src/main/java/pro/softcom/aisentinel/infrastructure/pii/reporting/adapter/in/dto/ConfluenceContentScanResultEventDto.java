@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Builder;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
+import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
 
 /**
  * Payload for Server-Sent Events emitted during a Confluence space scan.
@@ -32,5 +33,6 @@ public record ConfluenceContentScanResultEventDto(
         String attachmentType,
         String attachmentUrl,
         Double analysisProgressPercentage,
-        String status
+        String status,
+        PersonallyIdentifiableInformationSeverity severity
 ) { }

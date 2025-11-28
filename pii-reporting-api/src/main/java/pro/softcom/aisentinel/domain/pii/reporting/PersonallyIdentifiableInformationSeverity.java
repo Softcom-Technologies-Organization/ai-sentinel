@@ -22,7 +22,7 @@ package pro.softcom.aisentinel.domain.pii.reporting;
  * 
  * @see SeverityCounts
  */
-public enum PiiSeverity {
+public enum PersonallyIdentifiableInformationSeverity {
     /**
      * Highest severity level for highly sensitive PII.
      * Examples: Credit card numbers, passwords, social security numbers.

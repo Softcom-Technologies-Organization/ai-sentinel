@@ -1,14 +1,14 @@
 package pro.softcom.aisentinel.application.pii.reporting;
 
 import static java.util.Map.entry;
-import static pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity.HIGH;
-import static pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity.LOW;
-import static pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity.MEDIUM;
+import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.HIGH;
+import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.LOW;
+import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.MEDIUM;
 
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity;
+import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 
 /**
@@ -29,7 +29,7 @@ import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
  * 
  * <p><b>Note:</b> Unknown PII types default to LOW severity as a safe fallback.
  * 
- * @see PiiSeverity
+ * @see PersonallyIdentifiableInformationSeverity
  * @see SeverityCounts
  */
 @Slf4j
@@ -39,7 +39,7 @@ public class SeverityCalculationService {
      * Static mapping of PII type names to their severity levels.
      * This map defines the business rules for severity classification.
      */
-    private static final Map<String, PiiSeverity> SEVERITY_RULES = Map.<String, PiiSeverity>ofEntries(
+    private static final Map<String, PersonallyIdentifiableInformationSeverity> SEVERITY_RULES = Map.<String, PersonallyIdentifiableInformationSeverity>ofEntries(
             // HIGH SEVERITY - Financial, authentication, highly sensitive government IDs
             entry("PASSWORD", HIGH),
             entry("API_KEY", HIGH),
@@ -118,17 +118,17 @@ public class SeverityCalculationService {
      * to their corresponding severity levels. The lookup is case-insensitive and handles
      * leading/trailing whitespace.
      * 
-     * <p><b>Default Behavior:</b> Unknown PII types default to {@link PiiSeverity#LOW} as a
+     * <p><b>Default Behavior:</b> Unknown PII types default to {@link PersonallyIdentifiableInformationSeverity#LOW} as a
      * safe fallback to ensure all detected PIIs are counted.
      * 
      * @param piiType The PII type name to classify (case-insensitive, whitespace-trimmed)
      * @return The severity level (HIGH, MEDIUM, or LOW). Never null.
      */
-    public PiiSeverity calculateSeverity(String piiType) {
+    public PersonallyIdentifiableInformationSeverity calculateSeverity(String piiType) {
         String normalizedType = normalizeType(piiType);
         log.info("Calculating severity for PII type '{}' normalized to '{}'", piiType, normalizedType);
 
-        PiiSeverity severity = SEVERITY_RULES.get(normalizedType);
+        PersonallyIdentifiableInformationSeverity severity = SEVERITY_RULES.get(normalizedType);
         if (severity != null) {
             log.info("Found severity mapping for normalized PII type '{}': {}", normalizedType, severity);
             return severity;
@@ -167,7 +167,7 @@ public class SeverityCalculationService {
             // Use reflection-free approach - assumes entity has piiType() method
             // This works with records and any class with a piiType() getter
             String piiType = extractPiiType(entity);
-            PiiSeverity severity = calculateSeverity(piiType);
+            PersonallyIdentifiableInformationSeverity severity = calculateSeverity(piiType);
 
             switch (severity) {
                 case HIGH -> highCount++;
@@ -210,7 +210,6 @@ public class SeverityCalculationService {
      * @param <T> Entity type
      * @return The PII type string, or empty string if extraction fails
      */
-    @SuppressWarnings("unchecked")
     private <T> String extractPiiType(T entity) {
         try {
             // Use reflection to call piiType() method

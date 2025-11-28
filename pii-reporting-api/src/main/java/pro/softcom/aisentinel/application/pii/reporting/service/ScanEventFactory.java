@@ -3,6 +3,7 @@ package pro.softcom.aisentinel.application.pii.reporting.service;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
@@ -12,7 +13,7 @@ import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity;
+import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 
 /**
@@ -129,7 +130,7 @@ public class ScanEventFactory {
                                                                                    content);
         Map<String, Integer> summary = calculateSeveritySummary(entities);
         Map<String, Integer> piiTypeSummary = calculatePiiTypeSummary(entities);
-        String severity = calculateHighestSeverity(entities);
+        PersonallyIdentifiableInformationSeverity severity = calculateHighestSeverity(entities);
 
         return ConfluenceContentScanResult.builder()
             .scanId(scanId)
@@ -160,7 +161,7 @@ public class ScanEventFactory {
                                                                                    content);
         Map<String, Integer> summary = calculateSeveritySummary(entities);
         Map<String, Integer> piiTypeSummary = calculatePiiTypeSummary(entities);
-        String severity = calculateHighestSeverity(entities);
+        PersonallyIdentifiableInformationSeverity severity = calculateHighestSeverity(entities);
 
         return ConfluenceContentScanResult.builder()
             .scanId(scanId)
@@ -301,9 +302,9 @@ public class ScanEventFactory {
         return entities.stream()
             .filter(entity -> entity.piiType() != null)
             .collect(
-                java.util.stream.Collectors.groupingBy(
+                Collectors.groupingBy(
                     DetectedPersonallyIdentifiableInformation::piiType,
-                    java.util.stream.Collectors.summingInt(e -> 1)
+                    Collectors.summingInt(_ -> 1)
                 )
             );
     }
@@ -315,21 +316,21 @@ public class ScanEventFactory {
      * @param entities List of detected PII entities
      * @return Severity as string (HIGH, MEDIUM, LOW) or null if no entities
      */
-    private String calculateHighestSeverity(
+    private PersonallyIdentifiableInformationSeverity calculateHighestSeverity(
         List<DetectedPersonallyIdentifiableInformation> entities) {
         if (entities == null || entities.isEmpty()) {
             return null;
         }
 
-        PiiSeverity highest = PiiSeverity.LOW;
+        PersonallyIdentifiableInformationSeverity highest = PersonallyIdentifiableInformationSeverity.LOW;
         for (DetectedPersonallyIdentifiableInformation entity : entities) {
-            PiiSeverity severity = severityCalculationService.calculateSeverity(entity.piiType());
+            PersonallyIdentifiableInformationSeverity severity = severityCalculationService.calculateSeverity(entity.piiType());
             if (severity.compareTo(highest)
                 < 0) {  // Lower ordinal = higher severity (HIGH=0, MEDIUM=1, LOW=2)
                 highest = severity;
             }
         }
-        return highest.name(); // Returns "HIGH", "MEDIUM", or "LOW"
+        return highest; // Returns "HIGH", "MEDIUM", or "LOW"
     }
 
     private String buildPageUrl(String pageId) {

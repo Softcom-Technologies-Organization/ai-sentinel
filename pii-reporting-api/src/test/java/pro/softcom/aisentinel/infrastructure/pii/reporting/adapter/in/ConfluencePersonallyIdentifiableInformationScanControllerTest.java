@@ -20,7 +20,7 @@ import pro.softcom.aisentinel.application.pii.reporting.usecase.StreamConfluence
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ConfluenceContentScanResultEventDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
-import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.ScanResultToScanEventMapper;
+import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.ConfluenceContentScanResultToScanEventMapper;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
@@ -38,7 +38,7 @@ class ConfluencePersonallyIdentifiableInformationScanControllerTest {
     void setUp() {
         streamConfluenceScanUseCase = mock(StreamConfluenceScanUseCase.class);
         controller = new ConfluencePersonallyIdentifiableInformationScanController(streamConfluenceScanUseCase, mock(
-            StreamConfluenceResumeScanPort.class), mock(PauseScanPort.class), new ScanResultToScanEventMapper());
+            StreamConfluenceResumeScanPort.class), mock(PauseScanPort.class), new ConfluenceContentScanResultToScanEventMapper());
     }
 
     @Test

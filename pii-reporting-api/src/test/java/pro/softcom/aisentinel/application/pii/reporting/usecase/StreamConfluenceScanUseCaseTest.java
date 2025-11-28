@@ -48,7 +48,7 @@ import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 import pro.softcom.aisentinel.domain.confluence.DataOwners;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity;
+import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIdentifiableInformationType;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
@@ -146,7 +146,7 @@ class StreamConfluenceScanUseCaseTest {
 
         // Configure severity calculation mock to return a default severity for any PII type
         Mockito.lenient().when(severityCalculationService.calculateSeverity(any()))
-                .thenReturn(PiiSeverity.LOW);
+                .thenReturn(PersonallyIdentifiableInformationSeverity.LOW);
 
         // Le use case délègue la gestion du flux au ScanTaskManager.
         // Dans les tests unitaires, on souhaite observer directement le Flux construit par le use case

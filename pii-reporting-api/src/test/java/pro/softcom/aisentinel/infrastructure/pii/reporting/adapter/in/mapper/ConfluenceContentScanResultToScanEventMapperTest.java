@@ -14,9 +14,9 @@ import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.Conflu
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 
 @ExtendWith(MockitoExtension.class)
-class ScanResultToScanEventMapperTest {
+class ConfluenceContentScanResultToScanEventMapperTest {
 
-    private final ScanResultToScanEventMapper mapper = new ScanResultToScanEventMapper();
+    private final ConfluenceContentScanResultToScanEventMapper mapper = new ConfluenceContentScanResultToScanEventMapper();
 
     @Test
     void Should_ReturnNull_When_InputIsNull() {

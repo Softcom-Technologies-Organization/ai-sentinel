@@ -23,9 +23,9 @@ import pro.softcom.aisentinel.domain.pii.reporting.SpaceSummary;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanReportingSummaryDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.SeverityCountsDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.SpaceSummaryDto;
+import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.ConfluenceContentScanResultToScanEventMapper;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.LastScanMapper;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.ScanReportingSummaryMapper;
-import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.ScanResultToScanEventMapper;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.SpaceStatusMapper;
 
 @WebMvcTest(LastConfluencePersonallyIdentifiableInformationScanController.class)
@@ -44,7 +44,7 @@ class LastConfluencePersonallyIdentifiableInformationScanControllerTest {
     private SpaceStatusMapper spaceStatusMapper;
 
     @MockitoBean
-    private ScanResultToScanEventMapper scanResultToScanEventMapper;
+    private ConfluenceContentScanResultToScanEventMapper confluenceContentScanResultToScanEventMapper;
 
     @MockitoBean
     private ScanReportingSummaryMapper scanReportingSummaryMapper;

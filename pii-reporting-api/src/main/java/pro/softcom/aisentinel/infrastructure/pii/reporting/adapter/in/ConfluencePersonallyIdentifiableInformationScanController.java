@@ -22,7 +22,7 @@ import pro.softcom.aisentinel.application.pii.reporting.port.in.StreamConfluence
 import pro.softcom.aisentinel.application.pii.reporting.port.in.StreamConfluenceScanPort;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ConfluenceContentScanResultEventDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
-import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.ScanResultToScanEventMapper;
+import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.ConfluenceContentScanResultToScanEventMapper;
 import reactor.core.publisher.Flux;
 
 /**
@@ -40,7 +40,7 @@ public class ConfluencePersonallyIdentifiableInformationScanController {
     private final StreamConfluenceScanPort streamConfluenceScanPort;
     private final StreamConfluenceResumeScanPort streamConfluenceResumeScanPort;
     private final PauseScanPort pauseScanPort;
-    private final ScanResultToScanEventMapper scanResultToScanEventMapper;
+    private final ConfluenceContentScanResultToScanEventMapper confluenceContentScanResultToScanEventMapper;
 
     @GetMapping(value = "/confluence/space/{spaceKey}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "Stream Confluence space scan (SSE)")
@@ -52,7 +52,7 @@ public class ConfluencePersonallyIdentifiableInformationScanController {
         log.info("[SSE] Starting stream for space {}", spaceKey);
 
         Flux<ServerSentEvent<@NonNull ConfluenceContentScanResultEventDto>> keepalive = Flux.interval(Duration.ofSeconds(15))
-                .map(i -> ServerSentEvent.<ConfluenceContentScanResultEventDto>builder()
+                .map(_ -> ServerSentEvent.<ConfluenceContentScanResultEventDto>builder()
                         .event(ScanEventType.KEEPALIVE.toJson())
                         .comment("ping")
                         .build());
@@ -60,7 +60,7 @@ public class ConfluencePersonallyIdentifiableInformationScanController {
         Flux<ServerSentEvent<@NonNull ConfluenceContentScanResultEventDto>> data = streamConfluenceScanPort.streamSpace(spaceKey)
                 .map(ev -> ServerSentEvent.<ConfluenceContentScanResultEventDto>builder()
                         .event(ev.eventType())
-                        .data(scanResultToScanEventMapper.toDto(ev))
+                        .data(confluenceContentScanResultToScanEventMapper.toDto(ev))
                         .build());
 
         return Flux.merge(data, keepalive)
@@ -83,7 +83,7 @@ public class ConfluencePersonallyIdentifiableInformationScanController {
         log.info("[SSE] Starting multi-space stream{}", resume ? " (resume scanId=" + scanId + ")" : "");
 
         Flux<ServerSentEvent<@NonNull ConfluenceContentScanResultEventDto>> keepalive = Flux.interval(Duration.ofSeconds(15))
-                .map(i -> ServerSentEvent.<ConfluenceContentScanResultEventDto>builder()
+                .map(_ -> ServerSentEvent.<ConfluenceContentScanResultEventDto>builder()
                         .event(ScanEventType.KEEPALIVE.toJson())
                         .comment("ping")
                         .build());
@@ -103,7 +103,7 @@ public class ConfluencePersonallyIdentifiableInformationScanController {
             Flux<ServerSentEvent<@NonNull ConfluenceContentScanResultEventDto>> body = streamConfluenceResumeScanPort.resumeAllSpaces(scanId)
                     .map(ev -> ServerSentEvent.<ConfluenceContentScanResultEventDto>builder()
                             .event(ev.eventType())
-                            .data(scanResultToScanEventMapper.toDto(ev))
+                            .data(confluenceContentScanResultToScanEventMapper.toDto(ev))
                             .build());
             Flux<ServerSentEvent<@NonNull ConfluenceContentScanResultEventDto>> footer = Flux.just(
                     ServerSentEvent.<ConfluenceContentScanResultEventDto>builder().event(ScanEventType.MULTI_COMPLETE.toJson()).build()
@@ -116,7 +116,7 @@ public class ConfluencePersonallyIdentifiableInformationScanController {
                 .delaySubscription(Duration.ofMillis(50))
                 .map(ev -> ServerSentEvent.<ConfluenceContentScanResultEventDto>builder()
                     .event(ev.eventType())
-                    .data(scanResultToScanEventMapper.toDto(ev))
+                    .data(confluenceContentScanResultToScanEventMapper.toDto(ev))
                     .build());
         }
 

@@ -1,9 +1,9 @@
 package pro.softcom.aisentinel.application.pii.reporting;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity.HIGH;
-import static pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity.LOW;
-import static pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity.MEDIUM;
+import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.HIGH;
+import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.LOW;
+import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.MEDIUM;
 
 import java.util.List;
 import org.assertj.core.api.SoftAssertions;
@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import pro.softcom.aisentinel.domain.pii.reporting.PiiSeverity;
+import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 
 /**
@@ -53,7 +53,7 @@ class SeverityCalculationServiceTest {
             "IN_AADHAAR"
         })
         void should_ReturnHighSeverity_When_CriticalPiiType(String piiType) {
-            PiiSeverity result = service.calculateSeverity(piiType);
+            PersonallyIdentifiableInformationSeverity result = service.calculateSeverity(piiType);
 
             assertThat(result)
                 .as("Type %s should be classified as HIGH severity", piiType)
@@ -97,7 +97,7 @@ class SeverityCalculationServiceTest {
             "AGE"
         })
         void should_ReturnMediumSeverity_When_OfficialDocumentPiiType(String piiType) {
-            PiiSeverity result = service.calculateSeverity(piiType);
+            PersonallyIdentifiableInformationSeverity result = service.calculateSeverity(piiType);
 
             assertThat(result)
                 .as("Type %s should be classified as MEDIUM severity", piiType)
@@ -125,7 +125,7 @@ class SeverityCalculationServiceTest {
             "ZIPCODE"
         })
         void should_ReturnLowSeverity_When_ContactOrLocationPiiType(String piiType) {
-            PiiSeverity result = service.calculateSeverity(piiType);
+            PersonallyIdentifiableInformationSeverity result = service.calculateSeverity(piiType);
 
             assertThat(result)
                 .as("Type %s should be classified as LOW severity", piiType)
@@ -140,7 +140,7 @@ class SeverityCalculationServiceTest {
         @Test
         @DisplayName("Should return LOW for unknown PII type (default)")
         void should_ReturnLowSeverity_When_UnknownPiiType() {
-            PiiSeverity result = service.calculateSeverity("UNKNOWN_TYPE");
+            PersonallyIdentifiableInformationSeverity result = service.calculateSeverity("UNKNOWN_TYPE");
 
             assertThat(result)
                 .as("Unknown PII types should default to LOW severity")
@@ -186,7 +186,7 @@ class SeverityCalculationServiceTest {
         @Test
         @DisplayName("Should handle null type gracefully")
         void should_ReturnLowSeverity_When_NullPiiType() {
-            PiiSeverity result = service.calculateSeverity(null);
+            PersonallyIdentifiableInformationSeverity result = service.calculateSeverity(null);
 
             assertThat(result)
                 .as("Null PII type should default to LOW severity")
@@ -196,7 +196,7 @@ class SeverityCalculationServiceTest {
         @Test
         @DisplayName("Should handle empty string gracefully")
         void should_ReturnLowSeverity_When_EmptyPiiType() {
-            PiiSeverity result = service.calculateSeverity("");
+            PersonallyIdentifiableInformationSeverity result = service.calculateSeverity("");
 
             assertThat(result)
                 .as("Empty PII type should default to LOW severity")

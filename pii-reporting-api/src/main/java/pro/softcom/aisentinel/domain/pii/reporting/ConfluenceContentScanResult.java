@@ -29,5 +29,5 @@ public record ConfluenceContentScanResult(
     String attachmentUrl,
     Double analysisProgressPercentage,
     ScanStatus scanStatus,
-    String severity  // Pre-calculated severity from backend (HIGH/MEDIUM/LOW)
+    PersonallyIdentifiableInformationSeverity severity  // Pre-calculated severity from backend (HIGH/MEDIUM/LOW)
 ) { }

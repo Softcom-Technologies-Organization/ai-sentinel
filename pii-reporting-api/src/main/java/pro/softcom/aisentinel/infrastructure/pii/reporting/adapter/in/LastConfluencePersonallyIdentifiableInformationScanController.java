@@ -13,9 +13,9 @@ import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.Conflu
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.LastScanDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanReportingSummaryDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.SpaceScanStateDto;
+import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.ConfluenceContentScanResultToScanEventMapper;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.LastScanMapper;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.ScanReportingSummaryMapper;
-import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.ScanResultToScanEventMapper;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.SpaceStatusMapper;
 
 @RestController
@@ -26,7 +26,7 @@ public class LastConfluencePersonallyIdentifiableInformationScanController {
     private final ScanReportingPort scanReportingPort;
     private final LastScanMapper lastScanMapper;
     private final SpaceStatusMapper spaceStatusMapper;
-    private final ScanResultToScanEventMapper scanResultToScanEventMapper;
+    private final ConfluenceContentScanResultToScanEventMapper confluenceContentScanResultToScanEventMapper;
     private final ScanReportingSummaryMapper scanReportingSummaryMapper;
 
     @GetMapping("/last")
@@ -51,7 +51,7 @@ public class LastConfluencePersonallyIdentifiableInformationScanController {
     @GetMapping("/last/items")
     public ResponseEntity<@NonNull List<ConfluenceContentScanResultEventDto>> getLastScanItems() {
         List<ConfluenceContentScanResultEventDto> items = scanReportingPort.getLatestSpaceScanResultList().stream()
-                .map(scanResultToScanEventMapper::toDto)
+                .map(confluenceContentScanResultToScanEventMapper::toDto)
                 .toList();
         if (items.isEmpty()) {
             return ResponseEntity.noContent().build();

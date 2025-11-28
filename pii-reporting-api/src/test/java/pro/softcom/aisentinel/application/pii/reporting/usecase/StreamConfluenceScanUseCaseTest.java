@@ -845,8 +845,6 @@ class StreamConfluenceScanUseCaseTest {
     @DisplayName("streamAllSpaces - should generate new scanId when no active scan exists")
     void Should_GenerateNewScanId_When_NoActiveScanExists() {
         // Given: No active scan exists
-        when(scanCheckpointRepository.findMostRecentActiveScanId()).thenReturn(Optional.empty());
-        
         ConfluenceSpace space = new ConfluenceSpace("id1", "TEST", "Test Space","http://test.com", "d",
             ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
         when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));

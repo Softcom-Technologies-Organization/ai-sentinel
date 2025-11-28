@@ -63,12 +63,21 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         return Flux.concat(startEvent, pageEvents, completeEvent)
             .doOnEach(signal -> {
                 if (signal.isOnNext() && signal.get() != null) {
-                    // Persist in a non-cancellable way to survive SSE disconnections
-                    Mono.fromRunnable(() -> contentScanOrchestrator.persistEventAndCheckpoint(signal.get()))
+                    ConfluenceContentScanResult event = signal.get();
+                    
+                    // CRITICAL: Persist checkpoint SYNCHRONOUSLY to avoid race conditions
+                    // When user refreshes the page, the resume scan must read the latest checkpoint.
+                    // If checkpoint persistence were async, stale data could cause pages to be re-scanned,
+                    // leading to duplicated severity counts (bug fix for severity counts doubled on refresh).
+                    contentScanOrchestrator.persistCheckpointSynchronously(event);
+                    
+                    // Async operations (severity counts, event store) can safely continue in background
+                    // These are additive operations that won't cause issues if the SSE disconnects
+                    Mono.fromRunnable(() -> contentScanOrchestrator.persistEventAsyncOperations(event))
                         .subscribeOn(Schedulers.boundedElastic())
                         .retryWhen(Retry.backoff(3, Duration.ofMillis(100)))
                         .onErrorResume(e -> {
-                            log.warn("[PERSISTENCE] Failed to persist event: {}", e.getMessage());
+                            log.warn("[PERSISTENCE] Failed to persist async operations: {}", e.getMessage());
                             return Mono.empty();
                         })
                         .subscribe();

@@ -12,8 +12,12 @@ import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEv
  * Maps domain ScanResult (clean architecture) to presentation ScanEvent (DTO for SSE/JSON).
  * This keeps the domain independent from the web layer while preserving API contract.
  * 
- * <p>Security: if pii.reporting.allow-secret-reveal is false, sensitiveValue is masked
- * before sending to frontend via SSE.</p>
+ * <p>Security: sensitive values are ALWAYS masked in SSE events by delegating to the
+ * domain method {@link DetectedPersonallyIdentifiableInformation#withMaskedSensitiveData()}.
+ * This prevents accidental leaks via logs, monitoring, or network capture.</p>
+ * 
+ * <p>To reveal actual PII values, clients must use the dedicated /reveal endpoint
+ * which respects the pii.reporting.allow-secret-reveal configuration.</p>
  */
 @Component
 @RequiredArgsConstructor
@@ -22,14 +26,12 @@ public class ConfluenceContentScanResultToScanEventMapper {
     public ConfluenceContentScanResultEventDto toDto(
         ConfluenceContentScanResult confluenceContentScanResult) {
         if (confluenceContentScanResult == null) return null;
-        // Mask sensitiveValue if reveal is not allowed
+        
+        // Delegate masking to domain business rule
         List<DetectedPersonallyIdentifiableInformation> detectedPIIs = confluenceContentScanResult.detectedPIIList();
         if (detectedPIIs != null) {
             detectedPIIs = detectedPIIs.stream()
-                    .map(e -> e.toBuilder()
-                            .sensitiveValue(null)
-                            .sensitiveContext(null)
-                            .build())
+                    .map(DetectedPersonallyIdentifiableInformation::withMaskedSensitiveData)
                     .toList();
         }
         

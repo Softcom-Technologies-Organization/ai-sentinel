@@ -1,6 +1,7 @@
 package pro.softcom.aisentinel.application.pii.reporting.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.pii.reporting.ScanSeverityCountService;
 import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanEventStore;
@@ -18,6 +19,7 @@ import pro.softcom.aisentinel.domain.pii.scan.ScanEventType;
  * Additionally calculates and persists severity counts for PII detections.
  */
 @RequiredArgsConstructor
+@Slf4j
 public class ContentScanOrchestrator {
 
     private final ScanEventFactory scanEventFactory;
@@ -73,9 +75,34 @@ public class ContentScanOrchestrator {
         return scanProgressCalculator.calculateProgress(analyzed, total);
     }
 
-    public void persistEventAndCheckpoint(ConfluenceContentScanResult event) {
-        scanCheckpointService.persistCheckpoint(event);
-        
+    /**
+     * Persists checkpoint synchronously to ensure consistent state for scan resume.
+     * 
+     * <p>Business purpose: The checkpoint MUST be persisted synchronously to avoid race conditions
+     * when the user refreshes the page during an active scan. If checkpoint persistence were async,
+     * a refresh could read stale checkpoint data and re-scan pages that were already processed,
+     * leading to duplicated severity counts.
+     * 
+     * @param event the scan event containing checkpoint data
+     */
+    public void persistCheckpointSynchronously(ConfluenceContentScanResult event) {
+        try {
+            scanCheckpointService.persistCheckpoint(event);
+        } catch (Exception e) {
+            log.warn("[CHECKPOINT] Failed to persist checkpoint synchronously: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Persists severity counts, event store, and dispatches notifications.
+     * 
+     * <p>Business purpose: These operations can be executed asynchronously as they are
+     * additive (severity counts increment) or non-critical for scan resume (event store).
+     * This allows the SSE stream to remain responsive while background persistence occurs.
+     * 
+     * @param event the scan event to process
+     */
+    public void persistEventAsyncOperations(ConfluenceContentScanResult event) {
         // Calculate and persist severity counts if event contains PII detections
         if (event.detectedPIIList() != null && !event.detectedPIIList().isEmpty()) {
             SeverityCounts counts = severityCalculationService.aggregateCounts(event.detectedPIIList());
@@ -91,6 +118,18 @@ public class ContentScanOrchestrator {
                 scanEventDispatcher.publishAfterCommit(event.scanId(), event.spaceKey());
             }
         }
+    }
+
+    /**
+     * @deprecated Use {@link #persistCheckpointSynchronously(ConfluenceContentScanResult)} 
+     * followed by {@link #persistEventAsyncOperations(ConfluenceContentScanResult)} instead.
+     * This method is kept for backward compatibility but may cause race conditions 
+     * when called asynchronously.
+     */
+    @Deprecated(since = "1.0", forRemoval = true)
+    public void persistEventAndCheckpoint(ConfluenceContentScanResult event) {
+        persistCheckpointSynchronously(event);
+        persistEventAsyncOperations(event);
     }
 
     private static boolean shouldPublishEvent(ConfluenceContentScanResult event) {

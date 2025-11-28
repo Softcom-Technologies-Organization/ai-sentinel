@@ -94,11 +94,6 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
     }
 
     @Override
-    public Optional<String> findMostRecentActiveScanId() {
-        return jpaRepository.findMostRecentActiveScanId();
-    }
-
-    @Override
     @Transactional
     public void deleteActiveScanCheckpoints() {
         log.info("[PURGE] Deleting all active scan checkpoints (RUNNING/PAUSED status)");

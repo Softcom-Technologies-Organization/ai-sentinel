@@ -60,18 +60,6 @@ public interface ScanCheckpointRepository {
     void deleteByScan(String scanId);
 
     /**
-     * Finds the most recent active scan (RUNNING or PAUSED status).
-     * Business purpose: Prevents duplicate scanId generation by detecting if an active
-     * multi-space scan already exists that should be resumed instead of starting a new one.
-     * This is critical for maintaining scan consistency - when a user restarts a scan,
-     * the system should resume the existing scan session rather than creating a new
-     * scanId with conflicting checkpoints.
-     *
-     * @return Optional containing the scanId of the most recent active scan, or empty if none found
-     */
-    Optional<String> findMostRecentActiveScanId();
-
-    /**
      * Deletes all active scan checkpoints (RUNNING or PAUSED status).
      * Business purpose: Clean up previous active scans when starting a fresh scan with the "Start" button.
      * This prevents accumulation of stale scan data and ensures severity counts don't get inflated

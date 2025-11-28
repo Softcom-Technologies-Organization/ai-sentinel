@@ -45,9 +45,9 @@ import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entit
 @Import({
     JpaScanResultQueryAdapter.class,
     ScanCheckpointPersistenceAdapter.class,
-    ScanReportingUseCaseIT.TestEncryptionConfig.class
+    ScanReportingUseCaseTest.TestEncryptionConfig.class
 })
-class ScanReportingUseCaseIT {
+class ScanReportingUseCaseTest {
 
     @Container
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine");

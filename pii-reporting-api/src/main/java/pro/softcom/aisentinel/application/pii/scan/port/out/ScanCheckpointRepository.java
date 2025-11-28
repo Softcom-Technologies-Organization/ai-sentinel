@@ -67,4 +67,14 @@ public interface ScanCheckpointRepository {
      * Note: Completed scans (COMPLETED, FAILED status) are preserved as historical data.
      */
     void deleteActiveScanCheckpoints();
+
+    /**
+     * Finds the checkpoint with RUNNING status for a given scan.
+     * Business purpose: When pausing a scan, only the RUNNING checkpoint should be paused,
+     * not COMPLETED or other status checkpoints.
+     *
+     * @param scanId the business identifier of the scan
+     * @return the RUNNING checkpoint if found, otherwise empty
+     */
+    Optional<ScanCheckpoint> findRunningScanCheckpoint(String scanId);
 }

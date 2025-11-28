@@ -44,6 +44,23 @@ public interface DetectionCheckpointRepository extends
     Optional<String> findMostRecentActiveScanId();
 
     /**
+     * Finds the checkpoint with RUNNING status for a given scan.
+     * Business purpose: When pausing a scan, only the RUNNING checkpoint should be paused,
+     * not COMPLETED or other status checkpoints.
+     * 
+     * @param scanId the scan identifier
+     * @return Optional containing the RUNNING checkpoint if found
+     */
+    @Query("""
+        SELECT s
+        FROM ScanCheckpointEntity s
+        WHERE s.scanId = :scanId AND s.status = 'RUNNING'
+        ORDER BY s.updatedAt DESC
+        LIMIT 1
+        """)
+    Optional<ScanCheckpointEntity> findRunningScanCheckpoint(@Param("scanId") String scanId);
+
+    /**
      * Deletes all scan checkpoints with RUNNING or PAUSED status.
      * Business purpose: Clean up active scans when starting a fresh scan to prevent
      * data accumulation and ensure severity counts are accurate.

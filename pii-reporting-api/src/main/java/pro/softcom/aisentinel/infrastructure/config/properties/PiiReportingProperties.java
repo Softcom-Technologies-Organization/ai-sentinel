@@ -14,10 +14,20 @@ import org.springframework.context.annotation.Configuration;
 public class PiiReportingProperties {
     
     /**
-     * Allow revealing decrypted PII values to users.
-     * When false, sensitiveValue is never sent to frontend via SSE
-     * and the reveal endpoint returns 403 Forbidden.
-     * Default: true
+     * Controls access to the PII reveal endpoint (/reveal).
+     * 
+     * <p>Security model (defense in depth):</p>
+     * <ul>
+     *   <li><b>SSE streams:</b> Sensitive values are ALWAYS masked (null), regardless of this setting.
+     *       This prevents accidental leaks via logs, network monitoring, or browser dev tools.</li>
+     *   <li><b>/reveal endpoint:</b> When this property is true, authenticated users can explicitly
+     *       request decrypted PII values. When false, the endpoint returns 403 Forbidden.</li>
+     * </ul>
+     * 
+     * <p>Default: false (security by default - revealing PII requires explicit opt-in)</p>
+     * 
+     * <p>Business rule: Revealing PII values should be an intentional, auditable action,
+     * never an automatic side effect of scan operations.</p>
      */
-    private boolean allowSecretReveal = true;
+    private boolean allowSecretReveal = false;
 }

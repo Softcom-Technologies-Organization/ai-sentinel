@@ -74,13 +74,15 @@
         @if (item?.maskedHtml) {
           <div class="masked" [innerHTML]="maskedHtmlSafe"></div>
         }
-        <div class="controls mt-2">
-          <button pButton pButtonIcon="revealed ? 'pi pi-eye-slash' : 'pi pi-eye'"
-                  class="p-button-outlined" (click)="toggleReveal()"
-                  [attr.aria-label]="revealed ? ('piiItem.actions.maskAriaLabel' | transloco) : ('piiItem.actions.revealAriaLabel' | transloco)">
-            {{ revealed ? ('piiItem.actions.mask' | transloco) : ('piiItem.actions.reveal' | transloco) }}
-          </button>
-        </div>
+        @if (canRevealSecrets()) {
+          <div class="controls mt-2">
+            <button pButton pButtonIcon="revealed ? 'pi pi-eye-slash' : 'pi pi-eye'"
+                    class="p-button-outlined" (click)="toggleReveal()"
+                    [attr.aria-label]="revealed ? ('piiItem.actions.maskAriaLabel' | transloco) : ('piiItem.actions.revealAriaLabel' | transloco)">
+              {{ revealed ? ('piiItem.actions.mask' | transloco) : ('piiItem.actions.reveal' | transloco) }}
+            </button>
+          </div>
+        }
 
         <br>
 

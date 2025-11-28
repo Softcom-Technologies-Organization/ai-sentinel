@@ -52,7 +52,13 @@ public class ScanCheckpointService {
             log.info("[CHECKPOINT] Concurrent update detected for scan {} space {}, skipping (another process already updated)",
                 confluenceContentScanResult.scanId(), confluenceContentScanResult.spaceKey());
         } catch (Exception exception) {
-            log.warn("[CHECKPOINT] Unable to persist checkpoint: {}", exception.getMessage());
+            // Check if this is a DB error caused by thread interruption (normal on SSE disconnect)
+            if (isInterruptionCausedError(exception)) {
+                log.info("[CHECKPOINT] Checkpoint persistence interrupted (SSE disconnection): {}", 
+                         exception.getMessage());
+            } else {
+                log.warn("[CHECKPOINT] Unable to persist checkpoint: {}", exception.getMessage());
+            }
         } finally {
             // Restore interruption flag if it was set
             if (wasInterrupted) {
@@ -128,6 +134,46 @@ public class ScanCheckpointService {
                 new CheckpointData(null, null, ScanStatus.COMPLETED);
             default -> null; // Ignore other events
         };
+    }
+
+    /**
+     * Checks if an exception was caused by thread interruption.
+     * This is normal when SSE client disconnects during a scan.
+     * 
+     * @param exception The exception to check
+     * @return true if the exception was caused by thread interruption
+     */
+    private boolean isInterruptionCausedError(Exception exception) {
+        // Check exception message for interrupt-related keywords
+        if (exception.getMessage() != null && 
+            exception.getMessage().toLowerCase().contains("interrupt")) {
+            return true;
+        }
+        
+        // Walk through the cause chain looking for interruption-related exceptions
+        Throwable cause = exception.getCause();
+        while (cause != null) {
+            // Check for SocketException with interrupt message (PostgreSQL connection interrupted)
+            if (cause instanceof java.net.SocketException && 
+                cause.getMessage() != null && 
+                cause.getMessage().toLowerCase().contains("interrupt")) {
+                return true;
+            }
+            
+            // Check for direct InterruptedException
+            if (cause instanceof InterruptedException) {
+                return true;
+            }
+            
+            // Avoid infinite loops in circular cause chains
+            if (cause.getCause() == cause) {
+                break;
+            }
+            
+            cause = cause.getCause();
+        }
+        
+        return false;
     }
 
     /**

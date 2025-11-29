@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
+import {RouterLink} from '@angular/router';
 import {ButtonModule} from 'primeng/button';
 import {TranslocoModule} from '@jsverse/transloco';
 import {
@@ -75,6 +76,7 @@ import {ScanControlService} from './services/scan-control.service';
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     ButtonModule,
     ToggleSwitchModule,
     PiiItemCardComponent,

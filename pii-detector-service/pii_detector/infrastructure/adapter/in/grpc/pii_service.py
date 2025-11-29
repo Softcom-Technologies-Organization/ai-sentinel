@@ -408,12 +408,13 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         
         Business process:
         1. Validate and extract request parameters
-        2. Execute PII detection on content
-        3. Build response with entities, nbOfDetectedPIIBySeverity, and masked content
-        4. Handle errors and cleanup
+        2. Fetch dynamic configuration from database if requested
+        3. Execute PII detection on content
+        4. Build response with entities, nbOfDetectedPIIBySeverity, and masked content
+        5. Handle errors and cleanup
         
         Args:
-            request: gRPC request containing content and threshold
+            request: gRPC request containing content, threshold, and fetch_config_from_db flag
             context: gRPC context for setting response codes
             
         Returns:
@@ -428,6 +429,10 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             
             if content is None:
                 return pii_detection_pb2.PIIDetectionResponse()
+            
+            # Fetch dynamic configuration from database if requested
+            if request.fetch_config_from_db:
+                threshold = self._fetch_and_apply_config(threshold, request_id)
             
             entities = self._execute_detection(content, threshold, request_id)
             response = self._build_detection_response(content, entities, request_id)
@@ -500,6 +505,62 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             logger.debug(f"[{request_id}] Content preview: {content[:100]}...")
         else:
             logger.debug(f"[{request_id}] Content: {content}")
+
+    def _fetch_and_apply_config(self, default_threshold: float, request_id: str) -> float:
+        """
+        Fetch configuration from database and apply to current detection.
+        
+        Business rule: Configuration is fetched at scan start to ensure
+        consistency throughout the entire scan.
+        
+        Args:
+            default_threshold: Default threshold to use if fetch fails
+            request_id: Request identifier for logging
+            
+        Returns:
+            Threshold value to use for detection
+        """
+        try:
+            from pii_detector.infrastructure.adapter.out.database_config_adapter import (
+                get_database_config_adapter,
+            )
+            
+            logger.info(f"[{request_id}] Fetching config from database...")
+            adapter = get_database_config_adapter()
+            db_config = adapter.fetch_config()
+            
+            if db_config is None:
+                logger.info(
+                    f"[{request_id}] Using default threshold {default_threshold} "
+                    "(database config not available)"
+                )
+                return default_threshold
+            
+            # Extract threshold from database config
+            threshold = float(db_config.get('default_threshold', default_threshold))
+            
+            logger.info(
+                f"[{request_id}] Applied database config: threshold={threshold}, "
+                f"gliner={db_config.get('gliner_enabled')}, "
+                f"presidio={db_config.get('presidio_enabled')}, "
+                f"regex={db_config.get('regex_enabled')}"
+            )
+            
+            # Note: Detector enable/disable flags (gliner, presidio, regex) are
+            # currently read from TOML config at detector initialization.
+            # Dynamic runtime reconfiguration would require detector reinitialization,
+            # which is complex and may impact performance. For now, only threshold
+            # is applied dynamically. Detector flags should be configured via TOML
+            # and remain consistent for the service lifetime.
+            
+            return threshold
+            
+        except Exception as e:
+            logger.warning(
+                f"[{request_id}] Failed to fetch database config: {e}. "
+                f"Using default threshold {default_threshold}"
+            )
+            return default_threshold
 
     def _validate_content(self, content: str, request_id: str) -> Optional[str]:
         """Validate content against business rules.

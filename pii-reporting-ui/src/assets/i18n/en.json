@@ -49,7 +49,8 @@
       "pauseScan": "Pause scan",
       "resumeScan": "Resume last scan",
       "openInConfluence": "Open in Confluence",
-      "confluenceUnavailable": "URL unavailable (not provided by backend)"
+      "confluenceUnavailable": "URL unavailable (not provided by backend)",
+      "settings": "Settings"
     },
     "notifications": {
       "newSpaces": {
@@ -116,6 +117,50 @@
       "title": "Low Severity (Blue)",
       "description": "Contact information, location data, and names.",
       "types": "Email, Phone Number, First Name, Last Name, Username, Account Number, IP Address, MAC Address, City, Street, Building Number, Zip Code"
+    }
+  },
+  "settings": {
+    "title": "PII Detection Settings",
+    "back": "Back to dashboard",
+    "sections": {
+      "detectors": "Detection Engines",
+      "threshold": "Detection Threshold"
+    },
+    "detectors": {
+      "gliner": {
+        "label": "GLiNER Detector",
+        "description": "AI-based entity recognition using the Piiranha model for detecting personal information"
+      },
+      "presidio": {
+        "label": "Presidio Detector",
+        "description": "Microsoft's PII detection framework with pattern matching and NLP"
+      },
+      "regex": {
+        "label": "Regex Detector",
+        "description": "Pattern-based detection using regular expressions for structured data"
+      }
+    },
+    "threshold": {
+      "label": "Default Confidence Threshold",
+      "description": "Minimum confidence score (0.0-1.0) required for a detection to be reported. Lower values = more detections but potentially more false positives"
+    },
+    "validation": {
+      "atLeastOneDetector": "At least one detector must be enabled"
+    },
+    "actions": {
+      "save": "Save Configuration",
+      "reset": "Reset",
+      "cancel": "Cancel"
+    },
+    "info": {
+      "title": "Current Configuration",
+      "lastUpdated": "Last updated:",
+      "updatedBy": "Updated by:"
+    },
+    "messages": {
+      "saveSuccess": "Configuration saved successfully",
+      "saveError": "Error saving configuration: {{error}}",
+      "loadError": "Error loading configuration: {{error}}"
     }
   },
   "piiItem": {

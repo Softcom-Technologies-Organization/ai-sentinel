@@ -49,6 +49,7 @@ public class NettyGrpcPiiTransport implements PiiGrpcTransport {
         PiiDetection.PIIDetectionRequest req = PiiDetection.PIIDetectionRequest.newBuilder()
                 .setContent(content)
                 .setThreshold(threshold)
+                .setFetchConfigFromDb(true)
                 .build();
         try {
             synchronized (lock) {
@@ -101,6 +102,7 @@ public class NettyGrpcPiiTransport implements PiiGrpcTransport {
             PiiDetection.PIIDetectionRequest req = PiiDetection.PIIDetectionRequest.newBuilder()
                     .setContent(content == null ? "" : content)
                     .setThreshold(threshold)
+                    .setFetchConfigFromDb(true)
                     .build();
             return s.withDeadlineAfter(timeoutMs, TimeUnit.MILLISECONDS).detectPII(req);
         } catch (InterruptedException _) {

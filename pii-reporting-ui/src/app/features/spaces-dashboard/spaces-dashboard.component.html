@@ -14,6 +14,16 @@
       </output>
     </h2>
     <div class="spacer"></div>
+    <p-button type="button"
+              icon="pi pi-cog"
+              [text]="true"
+              [rounded]="true"
+              routerLink="/settings"
+              [pTooltip]="'dashboard.actions.settings' | transloco"
+              tooltipPosition="bottom"
+              [ariaLabel]="'dashboard.actions.settings' | transloco"
+              styleClass="settings-button">
+    </p-button>
     <app-language-selector></app-language-selector>
   </div>
 

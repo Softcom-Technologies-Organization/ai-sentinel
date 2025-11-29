@@ -1,0 +1,145 @@
+<p-toast></p-toast>
+
+<div class="settings-page">
+  <div class="settings-header">
+    <h2>
+      <i class="pi pi-cog"></i>
+      {{ 'settings.title' | transloco }}
+    </h2>
+    <div class="spacer"></div>
+    <p-button
+      type="button"
+      icon="pi pi-arrow-left"
+      [text]="true"
+      [label]="'settings.back' | transloco"
+      routerLink="/">
+    </p-button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <p-progressSpinner></p-progressSpinner>
+    </div>
+  } @else {
+    <div class="settings-card">
+      <form [formGroup]="configForm" (ngSubmit)="onSave()">
+        <!-- Detectors Section -->
+        <div class="form-section">
+          <h3 class="section-title">{{ 'settings.sections.detectors' | transloco }}</h3>
+
+          <div class="form-field">
+            <label>
+              <span class="field-label">{{ 'settings.detectors.gliner.label' | transloco }}</span>
+              <p-toggleSwitch
+                formControlName="glinerEnabled"
+                [ariaLabel]="'settings.detectors.gliner.label' | transloco">
+              </p-toggleSwitch>
+            </label>
+            <p class="field-description">{{ 'settings.detectors.gliner.description' | transloco }}</p>
+          </div>
+
+          <div class="form-field">
+            <label>
+              <span class="field-label">{{ 'settings.detectors.presidio.label' | transloco }}</span>
+              <p-toggleSwitch
+                formControlName="presidioEnabled"
+                [ariaLabel]="'settings.detectors.presidio.label' | transloco">
+              </p-toggleSwitch>
+            </label>
+            <p class="field-description">{{ 'settings.detectors.presidio.description' | transloco }}</p>
+          </div>
+
+          <div class="form-field">
+            <label>
+              <span class="field-label">{{ 'settings.detectors.regex.label' | transloco }}</span>
+              <p-toggleSwitch
+                formControlName="regexEnabled"
+                [ariaLabel]="'settings.detectors.regex.label' | transloco">
+              </p-toggleSwitch>
+            </label>
+            <p class="field-description">{{ 'settings.detectors.regex.description' | transloco }}</p>
+          </div>
+
+          @if (atLeastOneDetectorError) {
+            <div class="validation-error">
+              <i class="pi pi-exclamation-circle"></i>
+              {{ 'settings.validation.atLeastOneDetector' | transloco }}
+            </div>
+          }
+        </div>
+
+        <!-- Threshold Section -->
+        <div class="form-section">
+          <h3 class="section-title">{{ 'settings.sections.threshold' | transloco }}</h3>
+
+          <div class="form-field threshold-field">
+            <label>
+              <span class="field-label">{{ 'settings.threshold.label' | transloco }}</span>
+            </label>
+            <p class="field-description">{{ 'settings.threshold.description' | transloco }}</p>
+
+            <div class="threshold-input-group">
+              <p-inputNumber
+                formControlName="defaultThreshold"
+                [min]="0"
+                [max]="1"
+                [step]="0.05"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                [showButtons]="true"
+                buttonLayout="horizontal"
+                incrementButtonIcon="pi pi-plus"
+                decrementButtonIcon="pi pi-minus">
+              </p-inputNumber>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info Card -->
+        @if (currentConfig()) {
+          <div class="info-card">
+            <div class="info-title">{{ 'settings.info.title' | transloco }}</div>
+            <div class="info-content">
+              <div class="info-item">
+                <strong>{{ 'settings.info.lastUpdated' | transloco }}</strong>
+                {{ currentConfig()!.updatedAt | date:'medium' }}
+              </div>
+              <div class="info-item">
+                <strong>{{ 'settings.info.updatedBy' | transloco }}</strong>
+                {{ currentConfig()!.updatedBy }}
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <p-button
+            type="submit"
+            [label]="'settings.actions.save' | transloco"
+            icon="pi pi-check"
+            [disabled]="saving() || !hasUnsavedChanges"
+            [loading]="saving()"
+            styleClass="p-button-success">
+          </p-button>
+
+          <p-button
+            type="button"
+            [label]="'settings.actions.reset' | transloco"
+            icon="pi pi-refresh"
+            [disabled]="!hasUnsavedChanges"
+            (click)="onReset()">
+          </p-button>
+
+          <p-button
+            type="button"
+            [label]="'settings.actions.cancel' | transloco"
+            icon="pi pi-times"
+            (click)="onCancel()"
+            styleClass="p-button-outlined">
+          </p-button>
+        </div>
+      </form>
+    </div>
+  }
+</div>

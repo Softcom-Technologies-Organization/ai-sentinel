@@ -162,7 +162,7 @@
         }
 
         <!-- Nested Accordions -->
-        <p-accordion [multiple]="true" styleClass="pii-types-accordion">
+        <p-accordion [multiple]="true" class="pii-types-accordion">
           @for (detectorGroup of groupedPiiTypes(); track detectorGroup.detector) {
             <p-accordionTab>
               <ng-template pTemplate="header">
@@ -178,7 +178,7 @@
               </ng-template>
 
               <!-- Category Sub-Accordions -->
-              <p-accordion [multiple]="true" styleClass="category-accordion">
+              <p-accordion [multiple]="true" class="category-accordion">
                 @for (categoryGroup of detectorGroup.categories; track categoryGroup.category) {
                   <p-accordionTab>
                     <ng-template pTemplate="header">
@@ -197,8 +197,8 @@
                     <div class="pii-types-list">
                       @for (type of categoryGroup.types; track type.piiType) {
                         <div class="pii-type-item">
-                          <div class="type-header">
-                            <div class="type-info">
+                          <div class="row align-items-center">
+                            <div class="col-6 col-md-8">
                               <span class="type-name">
                                 {{ 'settings.piiTypes.typeNames.' + type.piiType | transloco }}
                               </span>
@@ -207,41 +207,41 @@
                                   ({{ type.countryCode }})
                                 </span>
                               }
-                              <p class="type-description">
-                                {{ 'settings.piiTypes.typeDescriptions.' + type.piiType | transloco }}
-                              </p>
                             </div>
-                            <div class="type-controls">
+                            <div class="col-2 col-md-2 text-center">
                               <p-toggleSwitch
                                 [(ngModel)]="type.enabled"
                                 (ngModelChange)="onPiiTypeToggleChange(type, $event)"
                                 [ariaLabel]="'settings.piiTypes.toggle' | transloco: {type: type.displayName}">
                               </p-toggleSwitch>
                             </div>
+                            @if (type.enabled) {
+                              <div class="col-4 col-md-2">
+                                <div class="threshold-input-group">
+                                  <p-inputNumber
+                                    [(ngModel)]="type.threshold"
+                                    (ngModelChange)="onPiiTypeThresholdChange(type, $event)"
+                                    [min]="0"
+                                    [max]="1"
+                                    [step]="0.05"
+                                    [minFractionDigits]="2"
+                                    [maxFractionDigits]="2"
+                                    [showButtons]="true"
+                                    buttonLayout="horizontal"
+                                    incrementButtonIcon="pi pi-plus"
+                                    decrementButtonIcon="pi pi-minus">
+                                  </p-inputNumber>
+                                </div>
+                              </div>
+                            }
                           </div>
-
-                          <!-- Threshold Input (only if enabled) -->
-                          @if (type.enabled) {
-                            <div class="type-threshold">
-                              <label class="threshold-label">
-                                {{ 'settings.piiTypes.threshold' | transloco }}
-                              </label>
-                              <p-inputNumber
-                                [(ngModel)]="type.threshold"
-                                (ngModelChange)="onPiiTypeThresholdChange(type, $event)"
-                                [min]="0"
-                                [max]="1"
-                                [step]="0.05"
-                                [minFractionDigits]="2"
-                                [maxFractionDigits]="2"
-                                [showButtons]="true"
-                                buttonLayout="horizontal"
-                                incrementButtonIcon="pi pi-plus"
-                                decrementButtonIcon="pi pi-minus"
-                                styleClass="threshold-input">
-                              </p-inputNumber>
+                          <div class="row">
+                            <div class="col-12">
+                              <p class="type-description">
+                                {{ 'settings.piiTypes.typeDescriptions.' + type.piiType | transloco }}
+                              </p>
                             </div>
-                          }
+                          </div>
                         </div>
                       }
                     </div>

@@ -122,7 +122,6 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      max-width: 300px;
 
       ::ng-deep {
         .p-inputnumber {
@@ -131,6 +130,7 @@
           .p-inputnumber-input {
             text-align: center;
             font-weight: 600;
+            max-width: 5rem;
           }
 
           .p-inputnumber-button-group {
@@ -336,6 +336,43 @@
   background: var(--surface-0);
 }
 
+// Grid System (Bootstrap-like)
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -0.25rem;
+  margin-left: -0.25rem;
+
+  > [class*='col-'] {
+    padding-right: 0.25rem;
+    padding-left: 0.25rem;
+  }
+
+  &.align-items-center {
+    align-items: center;
+  }
+}
+
+// Column classes - ajustées pour éviter débordement
+.col-2 { flex: 0 0 16.6667%; max-width: 16.6667%; }
+.col-3 { flex: 0 0 25%; max-width: 25%; }
+.col-4 { flex: 0 0 33.3333%; max-width: 33.3333%; }
+.col-6 { flex: 0 0 50%; max-width: 50%; }
+.col-7 { flex: 0 0 58.3333%; max-width: 58.3333%; }
+.col-12 { flex: 0 0 100%; max-width: 100%; }
+
+// Medium breakpoint (768px and up)
+@media (min-width: 768px) {
+  .col-md-2 { flex: 0 0 16.6667%; max-width: 16.6667%; }
+  .col-md-3 { flex: 0 0 25%; max-width: 25%; }
+  .col-md-7 { flex: 0 0 58.3333%; max-width: 58.3333%; }
+}
+
+// Text utilities
+.text-center {
+  text-align: center;
+}
+
 .pii-type-item {
   padding: 1rem;
   background: var(--surface-card);
@@ -353,71 +390,55 @@
     border-color: var(--primary-300);
   }
 
-  .type-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-  }
+  .row {
+    margin-bottom: 0.5rem;
 
-  .type-info {
-    flex: 1;
-    min-width: 0;
-
-    .type-name {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--text-color);
-      display: inline-block;
-      margin-bottom: 0.25rem;
-    }
-
-    .type-country {
-      font-size: 0.85rem;
-      color: var(--text-color-secondary);
-      margin-left: 0.5rem;
-      font-weight: 500;
-    }
-
-    .type-description {
-      font-size: 0.85rem;
-      color: var(--text-color-secondary);
-      line-height: 1.4;
-      margin: 0.25rem 0 0 0;
+    &:last-child {
+      margin-bottom: 0;
     }
   }
 
-  .type-controls {
-    flex-shrink: 0;
+  .type-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-color);
+    display: inline-block;
   }
 
-  .type-threshold {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--surface-border);
+  .type-country {
+    font-size: 0.85rem;
+    color: var(--text-color-secondary);
+    margin-left: 0.5rem;
+    font-weight: 500;
+  }
+
+  .type-description {
+    font-size: 0.85rem;
+    color: var(--text-color-secondary);
+    line-height: 1.4;
+    margin: 0.25rem 0 0 0;
+  }
+
+  .threshold-input-group {
     display: flex;
     align-items: center;
-    gap: 1rem;
-
-    .threshold-label {
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--text-color);
-      min-width: 80px;
-    }
+    gap: 0.5rem;
 
     ::ng-deep {
-      .threshold-input {
-        .p-inputnumber {
-          max-width: 200px;
+      .p-inputnumber {
+        flex: 1;
 
-          .p-inputnumber-input {
-            text-align: center;
-            font-weight: 600;
-          }
+        .p-inputnumber-input {
+          text-align: center;
+          font-weight: 600;
+          max-width: 5rem;
+        }
 
-          .p-inputnumber-button {
-            width: 2rem;
+        .p-inputnumber-button-group {
+          display: flex;
+
+          button {
+            width: 2.5rem;
           }
         }
       }
@@ -451,12 +472,6 @@
   position: sticky;
   bottom: 1rem;
   z-index: 10;
-
-  ::ng-deep {
-    .p-button {
-      min-width: 140px;
-    }
-  }
 }
 
 // Responsive design
@@ -484,23 +499,6 @@
 
   .pii-type-item {
     padding: 0.875rem;
-
-    .type-threshold {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.75rem;
-
-      .threshold-label {
-        min-width: auto;
-      }
-
-      ::ng-deep {
-        .threshold-input .p-inputnumber {
-          max-width: 100%;
-          width: 100%;
-        }
-      }
-    }
   }
 }
 
@@ -548,19 +546,6 @@
     .type-count {
       font-size: 0.75rem;
       padding: 0.2rem 0.5rem;
-    }
-  }
-
-  .pii-type-item {
-    .type-header {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .type-controls {
-      width: 100%;
-      display: flex;
-      justify-content: flex-end;
     }
   }
 

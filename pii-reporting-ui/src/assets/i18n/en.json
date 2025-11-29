@@ -323,6 +323,11 @@
       "messages": {
         "bulkSaveSuccess": "Successfully saved {{count}} PII type configuration(s)",
         "bulkSaveError": "Error saving PII types: {{error}}"
+      },
+      "search": {
+        "placeholder": "Search by name, description or country code...",
+        "clear": "Clear search",
+        "noResults": "No results found for \"{{term}}\""
       }
     },
     "actions": {

@@ -1,5 +1,6 @@
 import {Component, computed, OnInit, signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
+import {DomSanitizer, SafeHtml} from '@angular/platform-browser';
 import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router, RouterLink} from '@angular/router';
 import {TranslocoModule, TranslocoService} from '@jsverse/transloco';
@@ -11,6 +12,9 @@ import {InputNumberModule} from 'primeng/inputnumber';
 import {MessageModule} from 'primeng/message';
 import {ProgressSpinnerModule} from 'primeng/progressspinner';
 import {ToastModule} from 'primeng/toast';
+import {IconFieldModule} from 'primeng/iconfield';
+import {InputIconModule} from 'primeng/inputicon';
+import {InputTextModule} from 'primeng/inputtext';
 import {MessageService} from 'primeng/api';
 import {PiiDetectionConfigService} from '../../core/services/pii-detection-config.service';
 import {
@@ -42,7 +46,10 @@ import {forkJoin} from 'rxjs';
     InputNumberModule,
     MessageModule,
     ProgressSpinnerModule,
-    ToastModule
+    ToastModule,
+    IconFieldModule,
+    InputIconModule,
+    InputTextModule
   ],
   providers: [MessageService]
 })
@@ -57,6 +64,60 @@ export class PiiSettingsComponent implements OnInit {
   originalPiiTypes = signal<Map<string, PiiTypeConfig>>(new Map());
   modifiedPiiTypes = signal<Map<string, PiiTypeConfig>>(new Map());
 
+  // Search functionality
+  searchTerm = signal<string>('');
+
+  // Computed signal for filtered PII types based on search
+  filteredPiiTypes = computed(() => {
+    const term = this.searchTerm().toLowerCase().trim();
+    if (!term) {
+      return this.groupedPiiTypes();
+    }
+
+    const filtered = this.groupedPiiTypes()
+      .map(detectorGroup => {
+        const filteredCategories = detectorGroup.categories
+          .map(categoryGroup => {
+            const filteredTypes = categoryGroup.types.filter(type => {
+              // Get translated name and description
+              const typeName = this.translocoService.translate(`settings.piiTypes.typeNames.${type.piiType}`).toLowerCase();
+              const typeDescription = this.translocoService.translate(`settings.piiTypes.typeDescriptions.${type.piiType}`).toLowerCase();
+              const countryCode = (type.countryCode || '').toLowerCase();
+
+              // Search in name, description, and country code
+              return typeName.includes(term) ||
+                     typeDescription.includes(term) ||
+                     countryCode.includes(term);
+            });
+
+            return filteredTypes.length > 0 ? {
+              ...categoryGroup,
+              types: filteredTypes
+            } : null;
+          })
+          .filter(cat => cat !== null) as typeof detectorGroup.categories;
+
+        return filteredCategories.length > 0 ? {
+          ...detectorGroup,
+          categories: filteredCategories
+        } : null;
+      })
+      .filter(det => det !== null) as GroupedPiiTypes[];
+
+    return filtered;
+  });
+
+  // Computed signal for checking if there are no results
+  hasNoSearchResults = computed(() => {
+    const term = this.searchTerm().trim();
+    if (!term) return false;
+
+    const filtered = this.filteredPiiTypes();
+    return filtered.length === 0 ||
+           filtered.every(det => det.categories.length === 0 ||
+                                 det.categories.every(cat => cat.types.length === 0));
+  });
+
   // Computed signal for unsaved changes
   hasUnsavedTypeChanges = computed(() => this.modifiedPiiTypes().size > 0);
 
@@ -65,7 +126,8 @@ export class PiiSettingsComponent implements OnInit {
     private readonly configService: PiiDetectionConfigService,
     private readonly messageService: MessageService,
     private readonly translocoService: TranslocoService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly sanitizer: DomSanitizer
   ) {
     this.initForm();
   }
@@ -479,5 +541,42 @@ export class PiiSettingsComponent implements OnInit {
    */
   get modifiedTypesCount(): number {
     return this.modifiedPiiTypes().size;
+  }
+
+  /**
+   * Handle search term change.
+   */
+  onSearchChange(term: string): void {
+    this.searchTerm.set(term);
+  }
+
+  /**
+   * Clear search term.
+   */
+  clearSearch(): void {
+    this.searchTerm.set('');
+  }
+
+  /**
+   * Highlight search term in text.
+   */
+  highlightText(text: string, originalKey: string): SafeHtml {
+    // Get translated text first
+    const translatedText = this.translocoService.translate(originalKey);
+
+    const term = this.searchTerm().trim();
+    if (!term) {
+      // No search term, return plain translated text
+      return this.sanitizer.sanitize(1, translatedText) || translatedText;
+    }
+
+    // Escape special regex characters
+    const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedTerm})`, 'gi');
+
+    // Replace matches with highlighted version
+    const highlighted = translatedText.replace(regex, '<mark class="search-highlight">$1</mark>');
+
+    return this.sanitizer.bypassSecurityTrustHtml(highlighted);
   }
 }

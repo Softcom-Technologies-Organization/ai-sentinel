@@ -42,21 +42,18 @@
                   [ariaLabel]="'settings.detectors.gliner.label' | transloco">
                 </p-toggleSwitch>
               </label>
-              <p
-                class="field-description">{{ 'settings.detectors.gliner.description' | transloco }}</p>
+              <p class="field-description">{{ 'settings.detectors.gliner.description' | transloco }}</p>
             </div>
 
             <div class="form-field">
               <label>
-                <span
-                  class="field-label">{{ 'settings.detectors.presidio.label' | transloco }}</span>
+                <span class="field-label">{{ 'settings.detectors.presidio.label' | transloco }}</span>
                 <p-toggleSwitch
                   formControlName="presidioEnabled"
                   [ariaLabel]="'settings.detectors.presidio.label' | transloco">
                 </p-toggleSwitch>
               </label>
-              <p
-                class="field-description">{{ 'settings.detectors.presidio.description' | transloco }}</p>
+              <p class="field-description">{{ 'settings.detectors.presidio.description' | transloco }}</p>
             </div>
 
             <div class="form-field">
@@ -67,8 +64,7 @@
                   [ariaLabel]="'settings.detectors.regex.label' | transloco">
                 </p-toggleSwitch>
               </label>
-              <p
-                class="field-description">{{ 'settings.detectors.regex.description' | transloco }}</p>
+              <p class="field-description">{{ 'settings.detectors.regex.description' | transloco }}</p>
             </div>
 
             @if (atLeastOneDetectorError) {
@@ -108,7 +104,6 @@
 
           <!-- Detector Config Action Buttons -->
           <div class="section-actions">
-
             <p-button
               type="button"
               [label]="'settings.detectorConfig.actions.reset' | transloco"
@@ -156,185 +151,205 @@
           </div>
         }
 
-
-        <!-- PII TYPE CONFIGURATIONS - GLINER SECTION -->
-        @for (detectorGroup of groupedPiiTypes(); track detectorGroup.detector) {
-          @if (detectorGroup.detector === 'GLINER') {
-            <div class="settings-card detector-section gliner-section">
-              <div class="detector-section-header">
-                <div class="detector-badge gliner-badge">
-                  <i class="pi pi-shield"></i>
-                  <span class="detector-label">
-                  {{ 'settings.piiTypes.detectors.gliner' | transloco }}
-                </span>
-                </div>
-              </div>
-
-              <!-- Category Accordions for GLiNER -->
-              <p-accordion [multiple]="true" class="category-accordion">
-                @for (categoryGroup of detectorGroup.categories; track categoryGroup.category) {
-                  <p-accordionTab>
-                    <ng-template pTemplate="header">
-                      <div class="category-header">
-                        <i class="pi pi-folder-open"></i>
-                        <span class="category-name">
-                        {{
-                            'settings.piiTypes.categoryNames.' + categoryGroup.category | transloco
-                          }}
-                      </span>
-                        <span class="type-count">
-                        ({{ categoryGroup.types.length }} {{ 'settings.piiTypes.types' | transloco }}
-                          )
-                      </span>
-                      </div>
-                    </ng-template>
-
-                    <!-- PII Types List -->
-                    <div class="pii-types-list">
-                      @for (type of categoryGroup.types; track type.piiType) {
-                        <div class="pii-type-item">
-                          <div class="row align-items-center">
-                            <div class="col-7 col-md-8">
-                            <span class="type-name">
-                              {{ 'settings.piiTypes.typeNames.' + type.piiType | transloco }}
-                              @if (type.countryCode) {
-                                ({{ type.countryCode }})
-                              }
-                            </span>
-
-                              <p class="type-description">
-                                {{
-                                  'settings.piiTypes.typeDescriptions.' + type.piiType | transloco
-                                }}
-                              </p>
-                            </div>
-                            <div class="col-2 text-center">
-                              <p-toggleSwitch
-                                [(ngModel)]="type.enabled"
-                                (ngModelChange)="onPiiTypeToggleChange(type, $event)"
-                                [ariaLabel]="'settings.piiTypes.toggle' | transloco: {type: type.displayName}">
-                              </p-toggleSwitch>
-                            </div>
-                            <div class="col-3 col-md-2">
-                              @if (type.enabled) {
-                                <div class="threshold-input-group">
-                                  <p-inputNumber
-                                    [(ngModel)]="type.threshold"
-                                    (ngModelChange)="onPiiTypeThresholdChange(type, $event)"
-                                    [min]="0"
-                                    [max]="1"
-                                    [step]="0.05"
-                                    [minFractionDigits]="2"
-                                    [maxFractionDigits]="2"
-                                    [showButtons]="true"
-                                    buttonLayout="horizontal"
-                                    incrementButtonIcon="pi pi-plus"
-                                    decrementButtonIcon="pi pi-minus">
-                                  </p-inputNumber>
-                                </div>
-                              }
-                            </div>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  </p-accordionTab>
-                }
-              </p-accordion>
-            </div>
+        <!-- SEARCH BAR -->
+        <div class="pii-search-container">
+          <p-iconfield iconPosition="left">
+            <p-inputicon styleClass="pi pi-search"></p-inputicon>
+            <input
+              type="text"
+              pInputText
+              [placeholder]="'settings.piiTypes.search.placeholder' | transloco"
+              [(ngModel)]="searchTerm"
+              (ngModelChange)="onSearchChange($event)"
+              class="pii-search-input" />
+          </p-iconfield>
+          @if (searchTerm()) {
+            <p-button
+              type="button"
+              icon="pi pi-times"
+              [text]="true"
+              [rounded]="true"
+              (click)="clearSearch()"
+              [ariaLabel]="'settings.piiTypes.search.clear' | transloco"
+              styleClass="p-button-sm search-clear-btn">
+            </p-button>
           }
+        </div>
+
+        <!-- NO RESULTS MESSAGE -->
+        @if (hasNoSearchResults()) {
+          <div class="no-results-message">
+            <i class="pi pi-search"></i>
+            <p>{{ 'settings.piiTypes.search.noResults' | transloco: {term: searchTerm()} }}</p>
+          </div>
         }
-
-        <!-- PII TYPE CONFIGURATIONS - PRESIDIO SECTION -->
-        @for (detectorGroup of groupedPiiTypes(); track detectorGroup.detector) {
-          @if (detectorGroup.detector === 'PRESIDIO') {
-            <div class="settings-card detector-section presidio-section">
-              <div class="detector-section-header">
-                <div class="detector-badge presidio-badge">
-                  <i class="pi pi-shield"></i>
-                  <span class="detector-label">
-                  {{ 'settings.piiTypes.detectors.presidio' | transloco }}
-                </span>
-                </div>
-              </div>
-
-              <!-- Category Accordions for Presidio -->
-              <p-accordion [multiple]="true" class="category-accordion">
-                @for (categoryGroup of detectorGroup.categories; track categoryGroup.category) {
-                  <p-accordionTab>
-                    <ng-template pTemplate="header">
-                      <div class="category-header">
-                        <i class="pi pi-folder-open"></i>
-                        <span class="category-name">
-                        {{
-                            'settings.piiTypes.categoryNames.' + categoryGroup.category | transloco
-                          }}
-                      </span>
-                        <span class="type-count">
-                        ({{ categoryGroup.types.length }} {{ 'settings.piiTypes.types' | transloco }}
-                          )
-                      </span>
-                      </div>
-                    </ng-template>
-
-                    <!-- PII Types List -->
-                    <div class="pii-types-list">
-                      @for (type of categoryGroup.types; track type.piiType) {
-                        <div class="pii-type-item">
-                          <div class="row align-items-center">
-                            <div class="col-7 col-md-8">
-                            <span class="type-name">
-                              {{ 'settings.piiTypes.typeNames.' + type.piiType | transloco }}
-                              @if (type.countryCode) {
-                                ({{ type.countryCode }})
-                              }
-                            </span>
-
-                              <p class="type-description">
-                                {{
-                                  'settings.piiTypes.typeDescriptions.' + type.piiType | transloco
-                                }}
-                              </p>
-                            </div>
-                            <div class="col-2 text-center">
-                              <p-toggleSwitch
-                                [(ngModel)]="type.enabled"
-                                (ngModelChange)="onPiiTypeToggleChange(type, $event)"
-                                [ariaLabel]="'settings.piiTypes.toggle' | transloco: {type: type.displayName}">
-                              </p-toggleSwitch>
-                            </div>
-                            <div class="col-3 col-md-2">
-                              @if (type.enabled) {
-                                <div class="threshold-input-group">
-                                  <p-inputNumber
-                                    [(ngModel)]="type.threshold"
-                                    (ngModelChange)="onPiiTypeThresholdChange(type, $event)"
-                                    [min]="0"
-                                    [max]="1"
-                                    [step]="0.05"
-                                    [minFractionDigits]="2"
-                                    [maxFractionDigits]="2"
-                                    [showButtons]="true"
-                                    buttonLayout="horizontal"
-                                    incrementButtonIcon="pi pi-plus"
-                                    decrementButtonIcon="pi pi-minus">
-                                  </p-inputNumber>
-                                </div>
-                              }
-                            </div>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  </p-accordionTab>
-                }
-              </p-accordion>
-            </div>
-          }
-        }
-
       </div>
 
+      <!-- PII TYPE CONFIGURATIONS - GLINER SECTION -->
+      @for (detectorGroup of filteredPiiTypes(); track detectorGroup.detector) {
+        @if (detectorGroup.detector === 'GLINER') {
+          <div class="settings-card detector-section gliner-section">
+            <div class="detector-section-header">
+              <div class="detector-badge gliner-badge">
+                <i class="pi pi-shield"></i>
+                <span class="detector-label">
+                  {{ 'settings.piiTypes.detectors.gliner' | transloco }}
+                </span>
+              </div>
+              <span class="detector-meta">
+                {{ detectorGroup.categories.length }} {{ 'settings.piiTypes.categories' | transloco }}
+              </span>
+            </div>
+
+            <!-- Category Accordions for GLiNER -->
+            <p-accordion [multiple]="true" class="category-accordion">
+              @for (categoryGroup of detectorGroup.categories; track categoryGroup.category) {
+                <p-accordionTab>
+                  <ng-template pTemplate="header">
+                    <div class="category-header">
+                      <i class="pi pi-folder-open"></i>
+                      <span class="category-name">
+                        {{ 'settings.piiTypes.categoryNames.' + categoryGroup.category | transloco }}
+                      </span>
+                      <span class="type-count">
+                        ({{ categoryGroup.types.length }} {{ 'settings.piiTypes.types' | transloco }})
+                      </span>
+                    </div>
+                  </ng-template>
+
+                  <!-- PII Types List -->
+                  <div class="pii-types-list">
+                    @for (type of categoryGroup.types; track type.piiType) {
+                      <div class="pii-type-item">
+                        <div class="row align-items-center">
+                          <div class="col-7 col-md-8">
+                            <span class="type-name" [innerHTML]="highlightText(type.displayName, 'settings.piiTypes.typeNames.' + type.piiType)"></span>
+                            @if (type.countryCode) {
+                              <span class="type-country">
+                                ({{ type.countryCode }})
+                              </span>
+                            }
+                            <p class="type-description" [innerHTML]="highlightText('', 'settings.piiTypes.typeDescriptions.' + type.piiType)"></p>
+                          </div>
+                          <div class="col-2 text-center">
+                            <p-toggleSwitch
+                              [(ngModel)]="type.enabled"
+                              (ngModelChange)="onPiiTypeToggleChange(type, $event)"
+                              [ariaLabel]="'settings.piiTypes.toggle' | transloco: {type: type.displayName}">
+                            </p-toggleSwitch>
+                          </div>
+                          <div class="col-3 col-md-2">
+                            @if (type.enabled) {
+                              <div class="threshold-input-group">
+                                <p-inputNumber
+                                  [(ngModel)]="type.threshold"
+                                  (ngModelChange)="onPiiTypeThresholdChange(type, $event)"
+                                  [min]="0"
+                                  [max]="1"
+                                  [step]="0.05"
+                                  [minFractionDigits]="2"
+                                  [maxFractionDigits]="2"
+                                  [showButtons]="true"
+                                  buttonLayout="horizontal"
+                                  incrementButtonIcon="pi pi-plus"
+                                  decrementButtonIcon="pi pi-minus">
+                                </p-inputNumber>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </p-accordionTab>
+              }
+            </p-accordion>
+          </div>
+        }
+      }
+
+      <!-- PII TYPE CONFIGURATIONS - PRESIDIO SECTION -->
+      @for (detectorGroup of filteredPiiTypes(); track detectorGroup.detector) {
+        @if (detectorGroup.detector === 'PRESIDIO') {
+          <div class="settings-card detector-section presidio-section">
+            <div class="detector-section-header">
+              <div class="detector-badge presidio-badge">
+                <i class="pi pi-shield"></i>
+                <span class="detector-label">
+                  {{ 'settings.piiTypes.detectors.presidio' | transloco }}
+                </span>
+              </div>
+              <span class="detector-meta">
+                {{ detectorGroup.categories.length }} {{ 'settings.piiTypes.categories' | transloco }}
+              </span>
+            </div>
+
+            <!-- Category Accordions for Presidio -->
+            <p-accordion [multiple]="true" class="category-accordion">
+              @for (categoryGroup of detectorGroup.categories; track categoryGroup.category) {
+                <p-accordionTab>
+                  <ng-template pTemplate="header">
+                    <div class="category-header">
+                      <i class="pi pi-folder-open"></i>
+                      <span class="category-name">
+                        {{ 'settings.piiTypes.categoryNames.' + categoryGroup.category | transloco }}
+                      </span>
+                      <span class="type-count">
+                        ({{ categoryGroup.types.length }} {{ 'settings.piiTypes.types' | transloco }})
+                      </span>
+                    </div>
+                  </ng-template>
+
+                  <!-- PII Types List -->
+                  <div class="pii-types-list">
+                    @for (type of categoryGroup.types; track type.piiType) {
+                      <div class="pii-type-item">
+                        <div class="row align-items-center">
+                          <div class="col-7 col-md-8">
+                            <span class="type-name" [innerHTML]="highlightText(type.displayName, 'settings.piiTypes.typeNames.' + type.piiType)"></span>
+                            @if (type.countryCode) {
+                              <span class="type-country">
+                                ({{ type.countryCode }})
+                              </span>
+                            }
+                            <p class="type-description" [innerHTML]="highlightText('', 'settings.piiTypes.typeDescriptions.' + type.piiType)"></p>
+                          </div>
+                          <div class="col-2 text-center">
+                            <p-toggleSwitch
+                              [(ngModel)]="type.enabled"
+                              (ngModelChange)="onPiiTypeToggleChange(type, $event)"
+                              [ariaLabel]="'settings.piiTypes.toggle' | transloco: {type: type.displayName}">
+                            </p-toggleSwitch>
+                          </div>
+                          <div class="col-3 col-md-2">
+                            @if (type.enabled) {
+                              <div class="threshold-input-group">
+                                <p-inputNumber
+                                  [(ngModel)]="type.threshold"
+                                  (ngModelChange)="onPiiTypeThresholdChange(type, $event)"
+                                  [min]="0"
+                                  [max]="1"
+                                  [step]="0.05"
+                                  [minFractionDigits]="2"
+                                  [maxFractionDigits]="2"
+                                  [showButtons]="true"
+                                  buttonLayout="horizontal"
+                                  incrementButtonIcon="pi pi-plus"
+                                  decrementButtonIcon="pi pi-minus">
+                                </p-inputNumber>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </p-accordionTab>
+              }
+            </p-accordion>
+          </div>
+        }
+      }
 
       <!-- PII Types Action Buttons -->
       <div class="settings-card pii-types-actions-card">

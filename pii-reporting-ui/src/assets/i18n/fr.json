@@ -330,6 +330,11 @@
       "messages": {
         "bulkSaveSuccess": "{{count}} configuration(s) de type d'IPI enregistrée(s) avec succès",
         "bulkSaveError": "Erreur lors de l'enregistrement des types d'IPI : {{error}}"
+      },
+      "search": {
+        "placeholder": "Rechercher par nom, description ou code pays...",
+        "clear": "Effacer la recherche",
+        "noResults": "Aucun résultat trouvé pour \"{{term}}\""
       }
     },
     "actions": {

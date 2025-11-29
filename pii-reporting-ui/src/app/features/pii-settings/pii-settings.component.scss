@@ -211,6 +211,70 @@
   }
 }
 
+// Search Container
+.pii-search-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+
+  ::ng-deep {
+    p-iconfield {
+      flex: 1;
+      max-width: 600px;
+    }
+
+    .pii-search-input {
+      width: 100%;
+      padding: 0.625rem 1rem 0.625rem 2.5rem;
+      font-size: 0.95rem;
+    }
+  }
+
+  .search-clear-btn {
+    flex-shrink: 0;
+  }
+}
+
+// No Results Message
+.no-results-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+  color: var(--text-color-secondary);
+  background: var(--surface-50);
+  border-radius: 8px;
+  margin-top: 1.5rem;
+
+  i {
+    font-size: 3rem;
+    color: var(--text-color-secondary);
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  p {
+    font-size: 1rem;
+    margin: 0;
+    font-weight: 500;
+  }
+}
+
+// Search Highlight Styling
+::ng-deep {
+  mark.search-highlight,
+  .search-highlight {
+    background-color: var(--yellow-100);
+    color: var(--yellow-900);
+    padding: 0.125rem 0.25rem;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+}
+
 // Detector Section Cards
 .pii-types-header-card {
   margin-bottom: 0 !important;

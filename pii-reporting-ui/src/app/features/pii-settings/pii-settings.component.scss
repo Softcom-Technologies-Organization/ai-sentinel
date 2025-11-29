@@ -1,7 +1,7 @@
 // PII Detection Settings Page Styles
 
 .settings-page {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
 }
@@ -31,11 +31,21 @@
   }
 }
 
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
 .settings-card {
   background: var(--surface-card);
   border-radius: 8px;
   padding: 2rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  &.pii-types-card {
+    padding: 1.5rem;
+  }
 }
 
 .loading-container {
@@ -45,6 +55,30 @@
   min-height: 400px;
 }
 
+// Card Titles
+.card-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-color);
+
+  i {
+    color: var(--primary-color);
+    font-size: 1.25rem;
+  }
+}
+
+.card-description {
+  font-size: 0.95rem;
+  color: var(--text-color-secondary);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+// Form Sections
 .form-section {
   margin-bottom: 2rem;
 
@@ -53,8 +87,8 @@
   }
 }
 
-.section-title {
-  font-size: 1.25rem;
+.section-subtitle {
+  font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 1rem;
   color: var(--text-color);
@@ -88,6 +122,7 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      max-width: 300px;
 
       ::ng-deep {
         .p-inputnumber {
@@ -156,43 +191,440 @@
   }
 }
 
-.action-buttons {
+// Unsaved Changes Banner
+.unsaved-changes-banner {
+  margin-bottom: 1.5rem;
+  padding: 0.875rem 1rem;
+  background: var(--blue-50);
+  border-left: 4px solid var(--blue-500);
+  border-radius: 6px;
+  color: var(--blue-900);
+  font-size: 0.9rem;
+  font-weight: 500;
   display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 2rem;
+  align-items: center;
+  gap: 0.75rem;
+
+  i {
+    color: var(--blue-500);
+    font-size: 1.1rem;
+  }
+}
+
+// Nested Accordions Styling
+::ng-deep {
+  .pii-types-accordion {
+    .p-accordion-header {
+      margin-bottom: 0;
+
+      .p-accordion-header-link {
+        background: var(--surface-100);
+        border: 1px solid var(--surface-border);
+        padding: 1rem 1.25rem;
+        font-weight: 600;
+        color: var(--text-color);
+        transition: all 0.2s;
+
+        &:hover {
+          background: var(--surface-200);
+        }
+
+        &:focus {
+          box-shadow: 0 0 0 0.2rem var(--primary-200);
+        }
+      }
+    }
+
+    .p-accordion-content {
+      padding: 0;
+      border: 1px solid var(--surface-border);
+      border-top: none;
+      background: var(--surface-0);
+    }
+  }
+
+  .category-accordion {
+    .p-accordion-header {
+      .p-accordion-header-link {
+        background: var(--surface-50);
+        border: none;
+        border-bottom: 1px solid var(--surface-border);
+        padding: 0.875rem 1.25rem;
+        font-weight: 500;
+        font-size: 0.95rem;
+
+        &:hover {
+          background: var(--surface-100);
+        }
+      }
+    }
+
+    .p-accordion-content {
+      padding: 0;
+      border: none;
+      background: var(--surface-0);
+    }
+
+    .p-accordion-tab:last-child {
+      .p-accordion-header .p-accordion-header-link {
+        border-bottom: none;
+      }
+    }
+  }
+}
+
+// Detector Header (Main Accordion)
+.detector-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+
+  i {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+  }
+
+  .detector-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
+  .detector-count {
+    margin-left: auto;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-color-secondary);
+    background: var(--surface-200);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+  }
+}
+
+// Category Header (Sub-Accordion)
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+
+  i {
+    color: var(--text-color-secondary);
+    font-size: 0.95rem;
+  }
+
+  .category-name {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-color);
+  }
+
+  .type-count {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--text-color-secondary);
+    background: var(--surface-100);
+    padding: 0.2rem 0.6rem;
+    border-radius: 10px;
+  }
+}
+
+// PII Types List
+.pii-types-list {
+  padding: 1rem;
+  background: var(--surface-0);
+}
+
+.pii-type-item {
+  padding: 1rem;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  transition: all 0.2s;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-color: var(--primary-300);
+  }
+
+  .type-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .type-info {
+    flex: 1;
+    min-width: 0;
+
+    .type-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-color);
+      display: inline-block;
+      margin-bottom: 0.25rem;
+    }
+
+    .type-country {
+      font-size: 0.85rem;
+      color: var(--text-color-secondary);
+      margin-left: 0.5rem;
+      font-weight: 500;
+    }
+
+    .type-description {
+      font-size: 0.85rem;
+      color: var(--text-color-secondary);
+      line-height: 1.4;
+      margin: 0.25rem 0 0 0;
+    }
+  }
+
+  .type-controls {
+    flex-shrink: 0;
+  }
+
+  .type-threshold {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--surface-border);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .threshold-label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-color);
+      min-width: 80px;
+    }
+
+    ::ng-deep {
+      .threshold-input {
+        .p-inputnumber {
+          max-width: 200px;
+
+          .p-inputnumber-input {
+            text-align: center;
+            font-weight: 600;
+          }
+
+          .p-inputnumber-button {
+            width: 2rem;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Action Buttons
+.section-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
   border-top: 1px solid var(--surface-border);
 
   ::ng-deep {
+    .p-button-sm {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+    }
+  }
+}
+
+.global-actions {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--surface-card);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  bottom: 1rem;
+  z-index: 10;
+
+  ::ng-deep {
     .p-button {
-      min-width: 120px;
+      min-width: 140px;
     }
   }
 }
 
 // Responsive design
+@media (max-width: 1024px) {
+  .settings-page {
+    max-width: 100%;
+    padding: 1.5rem;
+  }
+
+  .settings-card {
+    padding: 1.5rem;
+
+    &.pii-types-card {
+      padding: 1.25rem;
+    }
+  }
+
+  .card-title {
+    font-size: 1.35rem;
+  }
+
+  .pii-types-list {
+    padding: 0.75rem;
+  }
+
+  .pii-type-item {
+    padding: 0.875rem;
+
+    .type-threshold {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+
+      .threshold-label {
+        min-width: auto;
+      }
+
+      ::ng-deep {
+        .threshold-input .p-inputnumber {
+          max-width: 100%;
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+
 @media (max-width: 768px) {
   .settings-page {
     padding: 1rem;
   }
 
   .settings-header {
+    flex-direction: column;
+    align-items: flex-start;
+
     h2 {
       font-size: 1.5rem;
+    }
+
+    .spacer {
+      display: none;
     }
   }
 
   .settings-card {
-    padding: 1.5rem;
+    padding: 1.25rem;
+
+    &.pii-types-card {
+      padding: 1rem;
+    }
   }
 
-  .action-buttons {
+  .card-title {
+    font-size: 1.25rem;
+  }
+
+  .form-field {
+    label {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+  }
+
+  .detector-header,
+  .category-header {
+    .detector-count,
+    .type-count {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+    }
+  }
+
+  .pii-type-item {
+    .type-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .type-controls {
+      width: 100%;
+      display: flex;
+      justify-content: flex-end;
+    }
+  }
+
+  .section-actions,
+  .global-actions {
     flex-direction: column;
 
     ::ng-deep {
       .p-button {
         width: 100%;
       }
+    }
+  }
+
+  .global-actions {
+    position: static;
+    margin-top: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-page {
+    padding: 0.75rem;
+  }
+
+  .settings-header {
+    margin-bottom: 1.5rem;
+
+    h2 {
+      font-size: 1.35rem;
+    }
+  }
+
+  .settings-card {
+    padding: 1rem;
+    border-radius: 6px;
+
+    &.pii-types-card {
+      padding: 0.875rem;
+    }
+  }
+
+  .card-title {
+    font-size: 1.15rem;
+    margin-bottom: 1rem;
+
+    i {
+      font-size: 1rem;
+    }
+  }
+
+  .pii-types-list {
+    padding: 0.5rem;
+  }
+
+  .pii-type-item {
+    padding: 0.75rem;
+  }
+
+  ::ng-deep {
+    .pii-types-accordion .p-accordion-header .p-accordion-header-link,
+    .category-accordion .p-accordion-header .p-accordion-header-link {
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
     }
   }
 }

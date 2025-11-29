@@ -21,125 +21,288 @@
       <p-progressSpinner></p-progressSpinner>
     </div>
   } @else {
-    <div class="settings-card">
-      <form [formGroup]="configForm" (ngSubmit)="onSave()">
-        <!-- Detectors Section -->
-        <div class="form-section">
-          <h3 class="section-title">{{ 'settings.sections.detectors' | transloco }}</h3>
+    <div class="settings-content">
+      <!-- DETECTOR LEVEL CONFIGURATION -->
+      <div class="settings-card">
+        <form [formGroup]="configForm">
+          <h3 class="card-title">
+            <i class="pi pi-sliders-h"></i>
+            {{ 'settings.detectorConfig.title' | transloco }}
+          </h3>
 
-          <div class="form-field">
-            <label>
-              <span class="field-label">{{ 'settings.detectors.gliner.label' | transloco }}</span>
-              <p-toggleSwitch
-                formControlName="glinerEnabled"
-                [ariaLabel]="'settings.detectors.gliner.label' | transloco">
-              </p-toggleSwitch>
-            </label>
-            <p class="field-description">{{ 'settings.detectors.gliner.description' | transloco }}</p>
+          <!-- Detectors Section -->
+          <div class="form-section">
+            <h4 class="section-subtitle">{{ 'settings.sections.detectors' | transloco }}</h4>
+
+            <div class="form-field">
+              <label>
+                <span class="field-label">{{ 'settings.detectors.gliner.label' | transloco }}</span>
+                <p-toggleSwitch
+                  formControlName="glinerEnabled"
+                  [ariaLabel]="'settings.detectors.gliner.label' | transloco">
+                </p-toggleSwitch>
+              </label>
+              <p class="field-description">{{ 'settings.detectors.gliner.description' | transloco }}</p>
+            </div>
+
+            <div class="form-field">
+              <label>
+                <span class="field-label">{{ 'settings.detectors.presidio.label' | transloco }}</span>
+                <p-toggleSwitch
+                  formControlName="presidioEnabled"
+                  [ariaLabel]="'settings.detectors.presidio.label' | transloco">
+                </p-toggleSwitch>
+              </label>
+              <p class="field-description">{{ 'settings.detectors.presidio.description' | transloco }}</p>
+            </div>
+
+            <div class="form-field">
+              <label>
+                <span class="field-label">{{ 'settings.detectors.regex.label' | transloco }}</span>
+                <p-toggleSwitch
+                  formControlName="regexEnabled"
+                  [ariaLabel]="'settings.detectors.regex.label' | transloco">
+                </p-toggleSwitch>
+              </label>
+              <p class="field-description">{{ 'settings.detectors.regex.description' | transloco }}</p>
+            </div>
+
+            @if (atLeastOneDetectorError) {
+              <div class="validation-error">
+                <i class="pi pi-exclamation-circle"></i>
+                {{ 'settings.validation.atLeastOneDetector' | transloco }}
+              </div>
+            }
           </div>
 
-          <div class="form-field">
-            <label>
-              <span class="field-label">{{ 'settings.detectors.presidio.label' | transloco }}</span>
-              <p-toggleSwitch
-                formControlName="presidioEnabled"
-                [ariaLabel]="'settings.detectors.presidio.label' | transloco">
-              </p-toggleSwitch>
-            </label>
-            <p class="field-description">{{ 'settings.detectors.presidio.description' | transloco }}</p>
+          <!-- Threshold Section -->
+          <div class="form-section">
+            <h4 class="section-subtitle">{{ 'settings.sections.threshold' | transloco }}</h4>
+
+            <div class="form-field threshold-field">
+              <label>
+                <span class="field-label">{{ 'settings.threshold.label' | transloco }}</span>
+              </label>
+              <p class="field-description">{{ 'settings.threshold.description' | transloco }}</p>
+
+              <div class="threshold-input-group">
+                <p-inputNumber
+                  formControlName="defaultThreshold"
+                  [min]="0"
+                  [max]="1"
+                  [step]="0.05"
+                  [minFractionDigits]="2"
+                  [maxFractionDigits]="2"
+                  [showButtons]="true"
+                  buttonLayout="horizontal"
+                  incrementButtonIcon="pi pi-plus"
+                  decrementButtonIcon="pi pi-minus">
+                </p-inputNumber>
+              </div>
+            </div>
           </div>
 
-          <div class="form-field">
-            <label>
-              <span class="field-label">{{ 'settings.detectors.regex.label' | transloco }}</span>
-              <p-toggleSwitch
-                formControlName="regexEnabled"
-                [ariaLabel]="'settings.detectors.regex.label' | transloco">
-              </p-toggleSwitch>
-            </label>
-            <p class="field-description">{{ 'settings.detectors.regex.description' | transloco }}</p>
+          <!-- Detector Config Action Buttons -->
+          <div class="section-actions">
+            <p-button
+              type="button"
+              [label]="'settings.detectorConfig.actions.save' | transloco"
+              icon="pi pi-check"
+              [disabled]="saving() || !hasDetectorChanges"
+              [loading]="saving()"
+              (click)="onSaveDetectorConfig()"
+              styleClass="p-button-success p-button-sm">
+            </p-button>
+
+            <p-button
+              type="button"
+              [label]="'settings.detectorConfig.actions.reset' | transloco"
+              icon="pi pi-refresh"
+              [disabled]="!hasDetectorChanges"
+              (click)="onResetDetectorConfig()"
+              styleClass="p-button-sm">
+            </p-button>
           </div>
 
-          @if (atLeastOneDetectorError) {
-            <div class="validation-error">
-              <i class="pi pi-exclamation-circle"></i>
-              {{ 'settings.validation.atLeastOneDetector' | transloco }}
+          <!-- Info Card -->
+          @if (currentConfig()) {
+            <div class="info-card">
+              <div class="info-title">{{ 'settings.info.title' | transloco }}</div>
+              <div class="info-content">
+                <div class="info-item">
+                  <strong>{{ 'settings.info.lastUpdated' | transloco }}</strong>
+                  {{ currentConfig()!.updatedAt | date:'medium' }}
+                </div>
+                <div class="info-item">
+                  <strong>{{ 'settings.info.updatedBy' | transloco }}</strong>
+                  {{ currentConfig()!.updatedBy }}
+                </div>
+              </div>
             </div>
           }
-        </div>
+        </form>
+      </div>
 
-        <!-- Threshold Section -->
-        <div class="form-section">
-          <h3 class="section-title">{{ 'settings.sections.threshold' | transloco }}</h3>
+      <!-- PII TYPE CONFIGURATIONS -->
+      <div class="settings-card pii-types-card">
+        <h3 class="card-title">
+          <i class="pi pi-list"></i>
+          {{ 'settings.piiTypes.title' | transloco }}
+        </h3>
 
-          <div class="form-field threshold-field">
-            <label>
-              <span class="field-label">{{ 'settings.threshold.label' | transloco }}</span>
-            </label>
-            <p class="field-description">{{ 'settings.threshold.description' | transloco }}</p>
+        <p class="card-description">
+          {{ 'settings.piiTypes.description' | transloco }}
+        </p>
 
-            <div class="threshold-input-group">
-              <p-inputNumber
-                formControlName="defaultThreshold"
-                [min]="0"
-                [max]="1"
-                [step]="0.05"
-                [minFractionDigits]="2"
-                [maxFractionDigits]="2"
-                [showButtons]="true"
-                buttonLayout="horizontal"
-                incrementButtonIcon="pi pi-plus"
-                decrementButtonIcon="pi pi-minus">
-              </p-inputNumber>
-            </div>
-          </div>
-        </div>
-
-        <!-- Info Card -->
-        @if (currentConfig()) {
-          <div class="info-card">
-            <div class="info-title">{{ 'settings.info.title' | transloco }}</div>
-            <div class="info-content">
-              <div class="info-item">
-                <strong>{{ 'settings.info.lastUpdated' | transloco }}</strong>
-                {{ currentConfig()!.updatedAt | date:'medium' }}
-              </div>
-              <div class="info-item">
-                <strong>{{ 'settings.info.updatedBy' | transloco }}</strong>
-                {{ currentConfig()!.updatedBy }}
-              </div>
-            </div>
+        @if (hasUnsavedTypeChanges()) {
+          <div class="unsaved-changes-banner">
+            <i class="pi pi-info-circle"></i>
+            {{ 'settings.piiTypes.unsavedChanges' | transloco: {count: modifiedTypesCount} }}
           </div>
         }
 
-        <!-- Action Buttons -->
-        <div class="action-buttons">
+        <!-- Nested Accordions -->
+        <p-accordion [multiple]="true" styleClass="pii-types-accordion">
+          @for (detectorGroup of groupedPiiTypes(); track detectorGroup.detector) {
+            <p-accordionTab>
+              <ng-template pTemplate="header">
+                <div class="detector-header">
+                  <i class="pi pi-shield"></i>
+                  <span class="detector-name">
+                    {{ 'settings.piiTypes.detectors.' + detectorGroup.detector.toLowerCase() | transloco }}
+                  </span>
+                  <span class="detector-count">
+                    ({{ detectorGroup.categories.length }} {{ 'settings.piiTypes.categories' | transloco }})
+                  </span>
+                </div>
+              </ng-template>
+
+              <!-- Category Sub-Accordions -->
+              <p-accordion [multiple]="true" styleClass="category-accordion">
+                @for (categoryGroup of detectorGroup.categories; track categoryGroup.category) {
+                  <p-accordionTab>
+                    <ng-template pTemplate="header">
+                      <div class="category-header">
+                        <i class="pi pi-folder-open"></i>
+                        <span class="category-name">
+                          {{ 'settings.piiTypes.categoryNames.' + categoryGroup.category | transloco }}
+                        </span>
+                        <span class="type-count">
+                          ({{ categoryGroup.types.length }} {{ 'settings.piiTypes.types' | transloco }})
+                        </span>
+                      </div>
+                    </ng-template>
+
+                    <!-- PII Types List -->
+                    <div class="pii-types-list">
+                      @for (type of categoryGroup.types; track type.piiType) {
+                        <div class="pii-type-item">
+                          <div class="type-header">
+                            <div class="type-info">
+                              <span class="type-name">
+                                {{ 'settings.piiTypes.typeNames.' + type.piiType | transloco }}
+                              </span>
+                              @if (type.countryCode) {
+                                <span class="type-country">
+                                  ({{ type.countryCode }})
+                                </span>
+                              }
+                              <p class="type-description">
+                                {{ 'settings.piiTypes.typeDescriptions.' + type.piiType | transloco }}
+                              </p>
+                            </div>
+                            <div class="type-controls">
+                              <p-toggleSwitch
+                                [(ngModel)]="type.enabled"
+                                (ngModelChange)="onPiiTypeToggleChange(type, $event)"
+                                [ariaLabel]="'settings.piiTypes.toggle' | transloco: {type: type.displayName}">
+                              </p-toggleSwitch>
+                            </div>
+                          </div>
+
+                          <!-- Threshold Input (only if enabled) -->
+                          @if (type.enabled) {
+                            <div class="type-threshold">
+                              <label class="threshold-label">
+                                {{ 'settings.piiTypes.threshold' | transloco }}
+                              </label>
+                              <p-inputNumber
+                                [(ngModel)]="type.threshold"
+                                (ngModelChange)="onPiiTypeThresholdChange(type, $event)"
+                                [min]="0"
+                                [max]="1"
+                                [step]="0.05"
+                                [minFractionDigits]="2"
+                                [maxFractionDigits]="2"
+                                [showButtons]="true"
+                                buttonLayout="horizontal"
+                                incrementButtonIcon="pi pi-plus"
+                                decrementButtonIcon="pi pi-minus"
+                                styleClass="threshold-input">
+                              </p-inputNumber>
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </p-accordionTab>
+                }
+              </p-accordion>
+            </p-accordionTab>
+          }
+        </p-accordion>
+
+        <!-- PII Types Action Buttons -->
+        <div class="section-actions">
           <p-button
-            type="submit"
-            [label]="'settings.actions.save' | transloco"
+            type="button"
+            [label]="'settings.piiTypes.actions.saveAll' | transloco"
             icon="pi pi-check"
-            [disabled]="saving() || !hasUnsavedChanges"
+            [disabled]="saving() || !hasUnsavedTypeChanges()"
             [loading]="saving()"
-            styleClass="p-button-success">
+            (click)="onSavePiiTypes()"
+            styleClass="p-button-success p-button-sm">
           </p-button>
 
           <p-button
             type="button"
-            [label]="'settings.actions.reset' | transloco"
+            [label]="'settings.piiTypes.actions.reset' | transloco"
             icon="pi pi-refresh"
-            [disabled]="!hasUnsavedChanges"
-            (click)="onReset()">
-          </p-button>
-
-          <p-button
-            type="button"
-            [label]="'settings.actions.cancel' | transloco"
-            icon="pi pi-times"
-            (click)="onCancel()"
-            styleClass="p-button-outlined">
+            [disabled]="!hasUnsavedTypeChanges()"
+            (click)="onResetPiiTypes()"
+            styleClass="p-button-sm">
           </p-button>
         </div>
-      </form>
+      </div>
+
+      <!-- GLOBAL ACTION BUTTONS -->
+      <div class="global-actions">
+        <p-button
+          type="button"
+          [label]="'settings.actions.saveAll' | transloco"
+          icon="pi pi-save"
+          [disabled]="saving() || !hasUnsavedChanges"
+          [loading]="saving()"
+          (click)="onSaveAll()"
+          styleClass="p-button-success">
+        </p-button>
+
+        <p-button
+          type="button"
+          [label]="'settings.actions.resetAll' | transloco"
+          icon="pi pi-replay"
+          [disabled]="!hasUnsavedChanges"
+          (click)="onResetAll()">
+        </p-button>
+
+        <p-button
+          type="button"
+          [label]="'settings.actions.cancel' | transloco"
+          icon="pi pi-times"
+          (click)="onCancel()"
+          styleClass="p-button-outlined">
+        </p-button>
+      </div>
     </div>
   }
 </div>

@@ -410,8 +410,9 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         1. Validate and extract request parameters
         2. Fetch dynamic configuration from database if requested
         3. Execute PII detection on content
-        4. Build response with entities, nbOfDetectedPIIBySeverity, and masked content
-        5. Handle errors and cleanup
+        4. Apply PII type-specific filtering and thresholds
+        5. Build response with entities, nbOfDetectedPIIBySeverity, and masked content
+        6. Handle errors and cleanup
         
         Args:
             request: gRPC request containing content, threshold, and fetch_config_from_db flag
@@ -422,6 +423,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         """
         start_time = time.time()
         request_id = self._generate_request_id(start_time)
+        pii_type_configs = None
         
         try:
             self.request_counter += 1
@@ -432,9 +434,14 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             
             # Fetch dynamic configuration from database if requested
             if request.fetch_config_from_db:
-                threshold = self._fetch_and_apply_config(threshold, request_id)
+                threshold, pii_type_configs = self._fetch_and_apply_config(threshold, request_id)
             
             entities = self._execute_detection(content, threshold, request_id)
+            
+            # Apply PII type-specific filtering if configs were fetched
+            if pii_type_configs:
+                entities = self._filter_entities_by_type_config(entities, pii_type_configs, request_id)
+            
             response = self._build_detection_response(content, entities, request_id)
             self._log_request_completion(request_id, start_time)
             self._perform_periodic_gc()
@@ -506,7 +513,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         else:
             logger.debug(f"[{request_id}] Content: {content}")
 
-    def _fetch_and_apply_config(self, default_threshold: float, request_id: str) -> float:
+    def _fetch_and_apply_config(self, default_threshold: float, request_id: str) -> tuple[float, Optional[dict]]:
         """
         Fetch configuration from database and apply to current detection.
         
@@ -518,7 +525,9 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             request_id: Request identifier for logging
             
         Returns:
-            Threshold value to use for detection
+            Tuple of (threshold, pii_type_configs) where:
+            - threshold: Default threshold value to use for detection
+            - pii_type_configs: Dictionary of PII type configs or None
         """
         try:
             from pii_detector.infrastructure.adapter.out.database_config_adapter import (
@@ -529,12 +538,15 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             adapter = get_database_config_adapter()
             db_config = adapter.fetch_config()
             
+            # Fetch PII type-specific configs
+            pii_type_configs = adapter.fetch_pii_type_configs()
+            
             if db_config is None:
                 logger.info(
                     f"[{request_id}] Using default threshold {default_threshold} "
                     "(database config not available)"
                 )
-                return default_threshold
+                return default_threshold, pii_type_configs
             
             # Extract threshold from database config
             threshold = float(db_config.get('default_threshold', default_threshold))
@@ -546,6 +558,11 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 f"regex={db_config.get('regex_enabled')}"
             )
             
+            if pii_type_configs:
+                logger.info(
+                    f"[{request_id}] Loaded {len(pii_type_configs)} PII type-specific configs"
+                )
+            
             # Note: Detector enable/disable flags (gliner, presidio, regex) are
             # currently read from TOML config at detector initialization.
             # Dynamic runtime reconfiguration would require detector reinitialization,
@@ -553,14 +570,14 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             # is applied dynamically. Detector flags should be configured via TOML
             # and remain consistent for the service lifetime.
             
-            return threshold
+            return threshold, pii_type_configs
             
         except Exception as e:
             logger.warning(
                 f"[{request_id}] Failed to fetch database config: {e}. "
                 f"Using default threshold {default_threshold}"
             )
-            return default_threshold
+            return default_threshold, None
 
     def _validate_content(self, content: str, request_id: str) -> Optional[str]:
         """Validate content against business rules.
@@ -670,6 +687,89 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 f"[{request_id}] Entity {i+1}: {entity['type_label']} - "
                 f"'{entity['text']}' (score: {entity['score']:.3f})"
             )
+
+    def _filter_entities_by_type_config(
+        self, entities: List, pii_type_configs: dict, request_id: str
+    ) -> List:
+        """
+        Filter detected entities based on PII type-specific configurations.
+        
+        Business rules:
+        1. If a PII type is disabled in config, filter out all entities of that type
+        2. If entity score is below type-specific threshold, filter it out
+        3. If no config exists for a type, keep the entity (allow by default)
+        
+        Args:
+            entities: List of detected PII entities
+            pii_type_configs: Dictionary mapping PII type to config
+            request_id: Request identifier for logging
+            
+        Returns:
+            Filtered list of entities
+        """
+        if not entities or not pii_type_configs:
+            return entities
+        
+        filtered_entities = []
+        filtered_count = 0
+        filter_reasons = {}
+        
+        for entity in entities:
+            # Normalize entity type to uppercase for matching
+            entity_type = _normalize_pii_type_for_grpc(entity.get('type'))
+            entity_type_upper = entity_type.upper()
+            
+            # Get config for this PII type (case-insensitive lookup)
+            type_config = pii_type_configs.get(entity_type_upper)
+            
+            # If no config exists for this type, keep it (allow by default)
+            if not type_config:
+                filtered_entities.append(entity)
+                continue
+            
+            # Check if type is enabled
+            if not type_config.get('enabled', True):
+                filtered_count += 1
+                reason = f"{entity_type_upper}:disabled"
+                filter_reasons[reason] = filter_reasons.get(reason, 0) + 1
+                logger.debug(
+                    f"[{request_id}] Filtered {entity_type_upper} entity "
+                    f"(disabled in config): '{entity.get('text', '')[:50]}'"
+                )
+                continue
+            
+            # Apply type-specific threshold
+            type_threshold = float(type_config.get('threshold', 0.5))
+            entity_score = float(entity.get('score', 0.0))
+            
+            if entity_score < type_threshold:
+                filtered_count += 1
+                reason = f"{entity_type_upper}:below_threshold"
+                filter_reasons[reason] = filter_reasons.get(reason, 0) + 1
+                logger.debug(
+                    f"[{request_id}] Filtered {entity_type_upper} entity "
+                    f"(score {entity_score:.3f} < threshold {type_threshold:.3f}): "
+                    f"'{entity.get('text', '')[:50]}'"
+                )
+                continue
+            
+            # Entity passed all filters
+            filtered_entities.append(entity)
+        
+        # Log filtering summary
+        if filtered_count > 0:
+            logger.info(
+                f"[{request_id}] Filtered {filtered_count} of {len(entities)} entities "
+                f"based on PII type configs. Kept: {len(filtered_entities)}"
+            )
+            logger.debug(f"[{request_id}] Filter reasons: {dict(filter_reasons)}")
+        else:
+            logger.debug(
+                f"[{request_id}] No entities filtered. "
+                f"All {len(entities)} entities passed type-specific checks."
+            )
+        
+        return filtered_entities
 
     def _log_pii_entities_async(self, request_id: str, entities: List) -> None:
         """Log each detected PII entity asynchronously.

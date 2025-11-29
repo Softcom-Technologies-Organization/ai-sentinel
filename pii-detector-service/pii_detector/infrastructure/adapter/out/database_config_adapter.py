@@ -113,6 +113,140 @@ class DatabaseConfigAdapter:
             if connection:
                 connection.close()
 
+    def fetch_pii_type_configs(self, detector: str = None) -> Optional[dict]:
+        """
+        Fetch PII type-specific configurations from database.
+
+        Args:
+            detector: Optional detector filter ('GLINER', 'PRESIDIO', 'REGEX').
+                     If None, fetches all PII type configs.
+
+        Returns:
+            Dictionary mapping PII type to config dict with keys:
+            - enabled (bool): Whether this PII type is enabled
+            - threshold (float): Detection threshold for this type (0.0-1.0)
+            - detector (str): Detector name (GLINER, PRESIDIO, REGEX)
+            - display_name (str): Human-readable name
+            - category (str): PII category
+            
+            Example: {
+                'EMAIL': {'enabled': True, 'threshold': 0.5, 'detector': 'GLINER', ...},
+                'CREDIT_CARD': {'enabled': False, 'threshold': 0.7, 'detector': 'PRESIDIO', ...}
+            }
+            
+            Returns None if fetch fails.
+
+        Business Rule: PII type configs control which types are detected and
+        their confidence thresholds on a per-type basis.
+        """
+        connection = None
+        cursor = None
+
+        try:
+            connection = self._get_connection()
+            cursor = connection.cursor(cursor_factory=RealDictCursor)
+
+            # Build query with optional detector filter
+            if detector:
+                query = """
+                    SELECT 
+                        pii_type,
+                        detector,
+                        enabled,
+                        threshold,
+                        display_name,
+                        description,
+                        category,
+                        country_code
+                    FROM pii_type_config
+                    WHERE detector = %s
+                    ORDER BY category, pii_type
+                """
+                cursor.execute(query, (detector,))
+            else:
+                query = """
+                    SELECT 
+                        pii_type,
+                        detector,
+                        enabled,
+                        threshold,
+                        display_name,
+                        description,
+                        category,
+                        country_code
+                    FROM pii_type_config
+                    ORDER BY category, pii_type
+                """
+                cursor.execute(query)
+
+            results = cursor.fetchall()
+
+            if not results:
+                logger.warning(
+                    f"No PII type configurations found in database "
+                    f"(detector={detector or 'ALL'}). "
+                    "Will use default TOML configuration."
+                )
+                return None
+
+            # Build dictionary keyed by PII type
+            configs = {}
+            for row in results:
+                pii_type = row['pii_type']
+                configs[pii_type] = {
+                    'enabled': row['enabled'],
+                    'threshold': float(row['threshold']),
+                    'detector': row['detector'],
+                    'display_name': row['display_name'],
+                    'description': row['description'],
+                    'category': row['category'],
+                    'country_code': row['country_code']
+                }
+
+            logger.info(
+                f"Successfully fetched {len(configs)} PII type configs from database "
+                f"(detector={detector or 'ALL'})"
+            )
+            
+            # Log sample of configs for debugging
+            sample_types = list(configs.keys())[:3]
+            for pii_type in sample_types:
+                cfg = configs[pii_type]
+                logger.debug(
+                    f"  {pii_type}: enabled={cfg['enabled']}, "
+                    f"threshold={cfg['threshold']}, detector={cfg['detector']}"
+                )
+            
+            return configs
+
+        except psycopg2.OperationalError as e:
+            logger.error(
+                f"Database connection failed fetching PII type configs: {e}. "
+                "Check DB_HOST, DB_PORT, DB_USER, DB_PASSWORD environment variables. "
+                "Will use default TOML configuration."
+            )
+            return None
+
+        except psycopg2.Error as e:
+            logger.error(
+                f"Database query failed fetching PII type configs: {e}. "
+                "Will use default TOML configuration."
+            )
+            return None
+
+        except Exception as e:
+            logger.error(
+                f"Unexpected error fetching PII type configs: {e}. "
+                "Will use default TOML configuration."
+            )
+            return None
+
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+
 
 # Global singleton instance for reuse
 _config_adapter = None

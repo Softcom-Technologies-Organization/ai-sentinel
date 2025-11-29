@@ -19,11 +19,11 @@ import java.time.LocalDateTime;
  * @param updatedBy        User who last updated the configuration
  */
 public record PiiDetectionConfigResponseDto(
-    @JsonProperty("glinerEnabled") boolean glinerEnabled,
-    @JsonProperty("presidioEnabled") boolean presidioEnabled,
-    @JsonProperty("regexEnabled") boolean regexEnabled,
-    @JsonProperty("defaultThreshold") BigDecimal defaultThreshold,
-    @JsonProperty("updatedAt") LocalDateTime updatedAt,
-    @JsonProperty("updatedBy") String updatedBy
+    boolean glinerEnabled,
+    boolean presidioEnabled,
+    boolean regexEnabled,
+    BigDecimal defaultThreshold,
+    LocalDateTime updatedAt,
+    String updatedBy
 ) {
 }

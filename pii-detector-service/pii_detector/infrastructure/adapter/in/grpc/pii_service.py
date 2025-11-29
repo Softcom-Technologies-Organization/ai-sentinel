@@ -710,6 +710,11 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         if not entities or not pii_type_configs:
             return entities
         
+        # DEBUG: Log available config keys
+        logger.info(
+            f"[{request_id}] PII type configs from DB - Available keys: {sorted(pii_type_configs.keys())}"
+        )
+        
         filtered_entities = []
         filtered_count = 0
         filter_reasons = {}
@@ -719,8 +724,26 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             entity_type = _normalize_pii_type_for_grpc(entity.get('type'))
             entity_type_upper = entity_type.upper()
             
+            # DEBUG: Log entity type before lookup
+            logger.debug(
+                f"[{request_id}] Entity detected: type='{entity.get('type')}' → "
+                f"normalized='{entity_type}' → uppercase='{entity_type_upper}' "
+                f"text='{entity.get('text', '')[:50]}'"
+            )
+            
             # Get config for this PII type (case-insensitive lookup)
             type_config = pii_type_configs.get(entity_type_upper)
+            
+            # DEBUG: Log config lookup result
+            if type_config:
+                logger.debug(
+                    f"[{request_id}] Config found for {entity_type_upper}: "
+                    f"enabled={type_config.get('enabled')}, threshold={type_config.get('threshold')}"
+                )
+            else:
+                logger.debug(
+                    f"[{request_id}] No config found for {entity_type_upper} - will keep entity by default"
+                )
             
             # If no config exists for this type, keep it (allow by default)
             if not type_config:

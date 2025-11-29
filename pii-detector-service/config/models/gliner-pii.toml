@@ -56,32 +56,4 @@ resume_download = true
 "username" = "USERNAME"
 "zip code" = "ZIPCODE"
 
-# Per-entity-type confidence thresholds (post-filter)
-# These thresholds are applied AFTER GLiNER detection to filter out low-confidence results
-# Entities below these thresholds are discarded to minimize false positives
-# Based on Perplexity recommendations for GLiNER PII model reliability
-[scoring]
-# High variability / High false positive risk (0.7-0.9)
-GIVENNAME = 0.75           # Names can be ambiguous
-SURNAME = 0.75             # Last names can be ambiguous
-USERNAME = 0.75            # Usernames lack standardization
-EMAIL = 0.80               # Variable formats
-PASSWORD = 0.85            # No standardization, high overlap with other text
-
-# Very high false positive risk for phone numbers in documents with many numbers
-TELEPHONENUM = 0.80        # Increased to 0.80 to avoid detecting dates/amounts/codes as phones
-
-# Medium risk / Structured formats (0.5-0.7)
-ACCOUNTNUM = 0.70          # Structured but variable
-CREDITCARDNUMBER = 0.70    # Standardized format
-DATEOFBIRTH = 0.80         # Standard formats
-DRIVERLICENSENUM = 0.80    # Standardized per country
-IDCARDNUM = 0.80           # Standardized per country
-SOCIALNUM = 0.80           # Standardized format (SSN, etc.)
-TAXNUM = 0.80              # Standardized per country
-STREET = 0.80              # Addresses can be ambiguous
-
-# Low risk / Well-structured (0.3-0.5)
-BUILDINGNUM = 0.80         # Simple numeric patterns
-CITY = 0.80                # Location names
-ZIPCODE = 0.80             # Highly standardized format
+# Note: Per-entity-type confidence thresholds are now managed in database (pii_type_config.threshold column)

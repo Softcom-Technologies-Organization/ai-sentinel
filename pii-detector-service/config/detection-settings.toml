@@ -5,8 +5,7 @@
 # DETECTION SETTINGS
 # ============================================================================
 [detection]
-# Confidence threshold for entity detection (0.0 to 1.0)
-default_threshold = 0.7
+# Note: default_threshold is now managed in database (pii_detection_config table)
 
 # Enable multi-model aggregation (true/false)
 multi_detector_enabled = false

@@ -151,7 +151,12 @@ class CompositePIIDetector:
             pass
     
     def detect_pii(
-        self, text: str, threshold: Optional[float] = None
+        self, 
+        text: str, 
+        threshold: Optional[float] = None,
+        enable_ml: Optional[bool] = None,
+        enable_regex: Optional[bool] = None,
+        enable_presidio: Optional[bool] = None
     ) -> List[PIIEntity]:
         """
         Detect PII using both ML and regex detectors.
@@ -159,12 +164,20 @@ class CompositePIIDetector:
         Business process:
         1. Execute ML detection (if enabled)
         2. Execute regex detection (if enabled)
-        3. Merge results with priority-based fusion
-        4. Return deduplicated entities
+        3. Execute Presidio detection (if enabled)
+        4. Merge results with priority-based fusion
+        5. Return deduplicated entities
+        
+        Business rule: Dynamic configuration allows runtime control of detectors
+        based on database configuration without service restart. Detectors remain
+        loaded in memory for performance but can be selectively activated per request.
         
         Args:
             text: Text to analyze
             threshold: Optional confidence threshold
+            enable_ml: Override ML detector activation (None=use default, True/False=force)
+            enable_regex: Override regex detector activation (None=use default, True/False=force)
+            enable_presidio: Override Presidio detector activation (None=use default, True/False=force)
             
         Returns:
             Merged list of PII entities
@@ -172,21 +185,39 @@ class CompositePIIDetector:
         if not text:
             return []
         
+        # Determine which detectors to use (runtime override or default config)
+        use_ml = enable_ml if enable_ml is not None else (self.ml_detector is not None)
+        use_regex = enable_regex if enable_regex is not None else self.enable_regex
+        use_presidio = enable_presidio if enable_presidio is not None else self.enable_presidio
+        
+        # Log active detector configuration for debugging
+        active_detectors = []
+        if use_ml:
+            active_detectors.append("ML")
+        if use_regex:
+            active_detectors.append("Regex")
+        if use_presidio:
+            active_detectors.append("Presidio")
+        
+        self.logger.debug(
+            f"Detecting PII with active detectors: {', '.join(active_detectors) if active_detectors else 'NONE'}"
+        )
+        
         # Collect results from all detectors
         results_per_detector: List[Tuple[PIIDetectorProtocol, List[PIIEntity]]] = []
         
         # Execute ML detection
-        if self.ml_detector:
+        if use_ml and self.ml_detector:
             ml_entities = self._run_ml_detection(text, threshold)
             results_per_detector.append((self.ml_detector, ml_entities))
         
         # Execute regex detection
-        if self.enable_regex and self.regex_detector:
+        if use_regex and self.regex_detector:
             regex_entities = self._run_regex_detection(text, threshold)
             results_per_detector.append((self.regex_detector, regex_entities))
         
         # Execute Presidio detection
-        if self.enable_presidio and self.presidio_detector:
+        if use_presidio and self.presidio_detector:
             presidio_entities = self._run_presidio_detection(text, threshold)
             results_per_detector.append((self.presidio_detector, presidio_entities))
         

@@ -237,7 +237,18 @@
         "MAC_ADDRESS": "Adresse MAC",
         "MEDICAL_LICENSE": "Licence médicale",
         "DATEOFBIRTH": "Date de naissance",
-        "AGE": "Âge"
+        "AGE": "Âge",
+        "PERSON": "Nom de personne",
+        "DATE_TIME": "Date et heure",
+        "NRP": "Groupe nationalité/religion/politique",
+        "LOCATION": "Lieu",
+        "UK_NHS": "Numéro NHS britannique",
+        "UK_NINO": "NINO britannique",
+        "IBAN_CODE": "Code IBAN",
+        "CRYPTO": "Portefeuille crypto",
+        "EMAIL_ADDRESS": "Adresse email",
+        "PHONE_NUMBER": "Numéro de téléphone",
+        "URL": "URL"
       },
       "typeDescriptions": {
         "EMAIL": "Adresses email au format standard (ex: utilisateur@domaine.com)",
@@ -299,7 +310,18 @@
         "MAC_ADDRESS": "Adresses matérielles Media Access Control",
         "MEDICAL_LICENSE": "Numéros de licence de praticien médical",
         "DATEOFBIRTH": "Dates de naissance dans différents formats",
-        "AGE": "Âge d'une personne en années"
+        "AGE": "Âge d'une personne en années",
+        "PERSON": "Noms complets de personnes identifiées dans le texte",
+        "DATE_TIME": "Dates et heures dans différents formats (ISO 8601, formats locaux, etc.)",
+        "NRP": "Informations sur la nationalité, religion ou affiliation politique d'une personne",
+        "LOCATION": "Lieux géographiques, villes, régions ou points d'intérêt",
+        "PHONE_NUMBER": "Numéros de téléphone dans divers formats internationaux avec indicatifs pays",
+        "URL": "Adresses web et URLs (Uniform Resource Locators) incluant les liens HTTP/HTTPS",
+        "EMAIL_ADDRESS": "Adresses email au format standard (ex: utilisateur@domaine.com)",
+        "IBAN_CODE": "Numéro de compte bancaire international (IBAN) pour les opérations bancaires européennes et internationales",
+        "CRYPTO": "Adresses de portefeuille de cryptomonnaie pour diverses blockchains (Bitcoin, Ethereum, etc.)",
+        "UK_NHS": "Numéros d'identification patient du Service National de Santé britannique (NHS)",
+        "UK_NINO": "Numéro d'assurance nationale britannique utilisé pour la fiscalité et la sécurité sociale"
       },
       "actions": {
         "saveAll": "Enregistrer tous les types",

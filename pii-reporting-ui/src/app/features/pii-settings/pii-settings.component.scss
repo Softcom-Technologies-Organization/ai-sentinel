@@ -211,6 +211,87 @@
   }
 }
 
+// Detector Section Cards
+.pii-types-header-card {
+  margin-bottom: 0 !important;
+}
+
+.pii-types-actions-card {
+  padding: 1.5rem !important;
+
+  .section-actions {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+}
+
+.detector-section {
+  position: relative;
+  border-left: 4px solid;
+
+  &.gliner-section {
+    border-left-color: var(--teal-500);
+    background: linear-gradient(to right, var(--teal-50) 0%, var(--surface-card) 10%);
+  }
+
+  &.presidio-section {
+    border-left-color: var(--purple-500);
+    background: linear-gradient(to right, var(--purple-50) 0%, var(--surface-card) 10%);
+  }
+}
+
+.detector-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--surface-border);
+}
+
+.detector-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 1rem;
+
+  i {
+    font-size: 1.1rem;
+  }
+
+  &.gliner-badge {
+    background: var(--teal-100);
+    color: var(--teal-900);
+
+    i {
+      color: var(--teal-600);
+    }
+  }
+
+  &.presidio-badge {
+    background: var(--purple-100);
+    color: var(--purple-900);
+
+    i {
+      color: var(--purple-600);
+    }
+  }
+}
+
+.detector-label {
+  font-weight: 600;
+}
+
+.detector-meta {
+  font-size: 0.875rem;
+  color: var(--text-color-secondary);
+  font-weight: 500;
+}
+
 // Nested Accordions Styling
 ::ng-deep {
   .pii-types-accordion {
@@ -390,19 +471,12 @@
     border-color: var(--primary-300);
   }
 
-  .row {
-    margin-bottom: 0.5rem;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-
   .type-name {
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-color);
-    display: inline-block;
+    display: block;
+    margin-bottom: 0.25rem;
   }
 
   .type-country {
@@ -417,12 +491,13 @@
     color: var(--text-color-secondary);
     line-height: 1.4;
     margin: 0.25rem 0 0 0;
+    display: block;
   }
 
   .threshold-input-group {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
 
     ::ng-deep {
       .p-inputnumber {
@@ -432,13 +507,20 @@
           text-align: center;
           font-weight: 600;
           max-width: 5rem;
+          font-size: 0.875rem;
+          padding: 0.4rem 0.25rem;
         }
 
         .p-inputnumber-button-group {
           display: flex;
 
           button {
-            width: 2.5rem;
+            width: 2rem;
+            padding: 0.4rem 0.25rem;
+
+            .pi {
+              font-size: 0.75rem;
+            }
           }
         }
       }
@@ -466,12 +548,21 @@
   display: flex;
   gap: 1rem;
   padding: 1.5rem;
-  background: var(--surface-card);
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
   position: sticky;
-  bottom: 1rem;
-  z-index: 10;
+  bottom: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+
+  // Force opaque white background
+  background-color: rgba(255, 255, 255, 1) !important;
+
+  @media (prefers-color-scheme: dark) {
+    background: #1e1e1e;
+    background-color: rgba(30, 30, 30, 1) !important;
+  }
 }
 
 // Responsive design

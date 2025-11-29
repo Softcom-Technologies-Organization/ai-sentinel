@@ -237,7 +237,18 @@
         "MAC_ADDRESS": "MAC Address",
         "MEDICAL_LICENSE": "Medical License",
         "DATEOFBIRTH": "Date of Birth",
-        "AGE": "Age"
+        "AGE": "Age",
+        "PERSON": "Person Name",
+        "DATE_TIME": "Date and Time",
+        "NRP": "Nationality/Religion/Politics Group",
+        "LOCATION": "Location",
+        "UK_NHS": "UK NHS Number",
+        "UK_NINO": "UK NINO",
+        "IBAN_CODE": "IBAN Code",
+        "CRYPTO": "Crypto Wallet",
+        "EMAIL_ADDRESS": "Email Address",
+        "PHONE_NUMBER": "Phone Number",
+        "URL": "URL"
       },
       "typeDescriptions": {
         "EMAIL": "Email addresses in standard format (e.g., user@domain.com)",
@@ -299,7 +310,11 @@
         "MAC_ADDRESS": "Media Access Control hardware addresses",
         "MEDICAL_LICENSE": "Medical practitioner license numbers",
         "DATEOFBIRTH": "Birth dates in various formats",
-        "AGE": "Person's age in years"
+        "AGE": "Person's age in years",
+        "PERSON": "Full names of people identified in text",
+        "DATE_TIME": "Dates and times in various formats (ISO 8601, local formats, etc.)",
+        "NRP": "Information about a person's nationality, religion, or political affiliation",
+        "LOCATION": "Geographic locations, cities, regions, or points of interest"
       },
       "actions": {
         "saveAll": "Save All Types",

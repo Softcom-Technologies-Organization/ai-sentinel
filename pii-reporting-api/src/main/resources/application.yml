@@ -11,11 +11,21 @@ spring:
     show-sql: false
     hibernate:
       ddl-auto: update
+    # IMPORTANT: Execute data.sql AFTER Hibernate schema creation
+    defer-datasource-initialization: true
     properties:
       hibernate:
         jdbc:
           lob:
             non_contextual_creation: true
+  sql:
+    init:
+      # Always execute data.sql on startup (inserts PII type configs)
+      mode: always
+      # Encoding for SQL scripts
+      encoding: UTF-8
+      # Continue on error (already inserted data with ON CONFLICT DO NOTHING)
+      continue-on-error: false
   mvc:
     async:
       request-timeout: 300000  # 5 minutes for async requests

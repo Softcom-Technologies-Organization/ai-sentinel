@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
-
 import java.math.BigDecimal;
 
 /**
@@ -48,10 +47,17 @@ public record UpdatePiiDetectionConfigRequestDto(
      * @throws IllegalArgumentException if no detectors are enabled
      */
     public UpdatePiiDetectionConfigRequestDto {
-        if (glinerEnabled != null && presidioEnabled != null && regexEnabled != null) {
-            if (!glinerEnabled && !presidioEnabled && !regexEnabled) {
+        if (notAtLeastOneAnalyserEnabled()) {
                 throw new IllegalArgumentException("At least one detector must be enabled");
             }
-        }
+    }
+
+    private boolean notAtLeastOneAnalyserEnabled(){
+        return glinerEnabled != null
+            && presidioEnabled != null
+            && regexEnabled != null
+            && !glinerEnabled
+            && !presidioEnabled
+            && !regexEnabled;
     }
 }

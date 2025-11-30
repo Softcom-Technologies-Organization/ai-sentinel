@@ -1,7 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 

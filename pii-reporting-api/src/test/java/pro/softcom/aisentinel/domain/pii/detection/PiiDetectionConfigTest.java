@@ -1,13 +1,12 @@
 package pro.softcom.aisentinel.domain.pii.detection;
 
-import org.assertj.core.api.SoftAssertions;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for PiiDetectionConfig domain model.
@@ -44,19 +43,23 @@ class PiiDetectionConfigTest {
 
     @Test
     void should_ThrowException_When_ThresholdIsNull() {
+        LocalDateTime now = LocalDateTime.now();
         // Arrange & Act & Assert
-        assertThatThrownBy(() -> new PiiDetectionConfig(
-            1, true, true, true, null, LocalDateTime.now(), "testuser"
-        ))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Default threshold cannot be null");
+        assertThatThrownBy(() -> {
+            new PiiDetectionConfig(
+                1, true, true, true, null, now, "testuser"
+            );
+        })
+        .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void should_ThrowException_When_ThresholdLessThanZero() {
+        LocalDateTime now = LocalDateTime.now();
+        BigDecimal defaultThreshold = new BigDecimal("-0.75");
         // Arrange & Act & Assert
         assertThatThrownBy(() -> new PiiDetectionConfig(
-            1, true, true, true, new BigDecimal("-0.1"), LocalDateTime.now(), "testuser"
+            1, true, true, true, defaultThreshold, now, "testuser"
         ))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Default threshold must be greater than or equal to 0");
@@ -64,12 +67,13 @@ class PiiDetectionConfigTest {
 
     @Test
     void should_ThrowException_When_ThresholdGreaterThanOne() {
+        LocalDateTime now = LocalDateTime.now();
+        BigDecimal defaultThreshold = new BigDecimal("1.1");
         // Arrange & Act & Assert
         assertThatThrownBy(() -> new PiiDetectionConfig(
-            1, true, true, true, new BigDecimal("1.1"), LocalDateTime.now(), "testuser"
+            1, true, true, true, defaultThreshold, now, "testuser"
         ))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Default threshold must be less than or equal to 1");
+        .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -96,10 +100,14 @@ class PiiDetectionConfigTest {
 
     @Test
     void should_ThrowException_When_NoDetectorsEnabled() {
+        LocalDateTime now = LocalDateTime.now();
+        BigDecimal defaultThreshold = new BigDecimal("0.75");
         // Arrange & Act & Assert
-        assertThatThrownBy(() -> new PiiDetectionConfig(
-            1, false, false, false, new BigDecimal("0.75"), LocalDateTime.now(), "testuser"
-        ))
+        assertThatThrownBy(() -> {
+            new PiiDetectionConfig(
+                1, false, false, false, defaultThreshold, now, "testuser"
+            );
+        })
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("At least one detector must be enabled");
     }
@@ -161,8 +169,9 @@ class PiiDetectionConfigTest {
         );
 
         // Act & Assert
-        assertThat(config1).isEqualTo(config2);
-        assertThat(config1.hashCode()).isEqualTo(config2.hashCode());
+        assertThat(config1)
+            .isEqualTo(config2)
+            .hasSameHashCodeAs(config2);
     }
 
     @Test

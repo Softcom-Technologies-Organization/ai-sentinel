@@ -120,18 +120,6 @@ public class ContentScanOrchestrator {
         }
     }
 
-    /**
-     * @deprecated Use {@link #persistCheckpointSynchronously(ConfluenceContentScanResult)} 
-     * followed by {@link #persistEventAsyncOperations(ConfluenceContentScanResult)} instead.
-     * This method is kept for backward compatibility but may cause race conditions 
-     * when called asynchronously.
-     */
-    @Deprecated(since = "1.0", forRemoval = true)
-    public void persistEventAndCheckpoint(ConfluenceContentScanResult event) {
-        persistCheckpointSynchronously(event);
-        persistEventAsyncOperations(event);
-    }
-
     private static boolean shouldPublishEvent(ConfluenceContentScanResult event) {
         return ScanEventType.COMPLETE.getValue().equals(event.eventType());
     }

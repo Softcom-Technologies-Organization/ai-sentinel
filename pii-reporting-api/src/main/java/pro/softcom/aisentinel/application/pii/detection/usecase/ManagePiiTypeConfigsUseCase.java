@@ -1,14 +1,11 @@
 package pro.softcom.aisentinel.application.pii.detection.usecase;
 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiTypeConfigsPort;
-import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRepository;
-import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
-
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiTypeConfigsPort;
+import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRepository;
+import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
 
 /**
  * Use case implementation for managing PII type-specific configurations.

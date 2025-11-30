@@ -1,16 +1,29 @@
 package pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out.entity;
 
-import jakarta.persistence.*;
-import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
-
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 import java.util.Objects;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
 
 /**
  * JPA entity for PII type configuration.
  * <p>
  * Maps to the pii_type_config database table.
  */
+@Setter
+@Getter
 @Entity
 @Table(
         name = "pii_type_config",
@@ -24,8 +37,10 @@ import java.util.Objects;
                 @Index(name = "idx_pii_type_config_country", columnList = "country_code")
         }
 )
+@NoArgsConstructor
 public class PiiTypeConfigEntity {
 
+    // Getters and setters
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -77,10 +92,6 @@ public class PiiTypeConfigEntity {
         updatedAt = LocalDateTime.now();
     }
 
-    // Constructors
-    public PiiTypeConfigEntity() {
-    }
-
     // Factory method to create entity from domain model
     public static PiiTypeConfigEntity fromDomain(PiiTypeConfig domain) {
         PiiTypeConfigEntity entity = new PiiTypeConfigEntity();
@@ -113,103 +124,6 @@ public class PiiTypeConfigEntity {
                 .updatedAt(updatedAt)
                 .updatedBy(updatedBy)
                 .build();
-    }
-
-    // Getters and setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getPiiType() {
-        return piiType;
-    }
-
-    public void setPiiType(String piiType) {
-        this.piiType = piiType;
-    }
-
-    public String getDetector() {
-        return detector;
-    }
-
-    public void setDetector(String detector) {
-        this.detector = detector;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public double getThreshold() {
-        return threshold;
-    }
-
-    public void setThreshold(double threshold) {
-        this.threshold = threshold;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
-    }
-
-    public String getCountryCode() {
-        return countryCode;
-    }
-
-    public void setCountryCode(String countryCode) {
-        this.countryCode = countryCode;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public String getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
     }
 
     @Override

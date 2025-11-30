@@ -1,15 +1,15 @@
 package pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionConfigRepository;
 import pro.softcom.aisentinel.domain.pii.detection.PiiDetectionConfig;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out.jpa.PiiDetectionConfigEntity;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out.jpa.PiiDetectionConfigJpaRepository;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 /**
  * Persistence adapter for PII detection configuration.
@@ -20,11 +20,15 @@ import java.time.LocalDateTime;
 public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigRepository {
 
     private static final Integer CONFIG_ID = 1;
-    
+
     private final PiiDetectionConfigJpaRepository jpaRepository;
 
-    public PiiDetectionConfigPersistenceAdapter(PiiDetectionConfigJpaRepository jpaRepository) {
+    private final PiiDetectionConfigRepository self;
+
+    public PiiDetectionConfigPersistenceAdapter(PiiDetectionConfigJpaRepository jpaRepository,
+                                                @Lazy PiiDetectionConfigRepository self) {
         this.jpaRepository = jpaRepository;
+        this.self = self;
     }
 
     @Override
@@ -76,7 +80,7 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 "system"
         );
         
-        updateConfig(defaultConfig);
+        self.updateConfig(defaultConfig);
         return defaultConfig;
     }
 

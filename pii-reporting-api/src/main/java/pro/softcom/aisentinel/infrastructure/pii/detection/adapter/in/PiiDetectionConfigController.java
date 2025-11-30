@@ -32,6 +32,7 @@ import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.Update
 @Tag(name = "PII Detection Config", description = "Manage PII detection configuration")
 public class PiiDetectionConfigController {
 
+    public static final String ADMIN_USERNAME = "admin";
     private final ManagePiiDetectionConfigPort managePiiDetectionConfigPort;
 
     /**
@@ -77,7 +78,7 @@ public class PiiDetectionConfigController {
                 request.regexEnabled(), request.defaultThreshold());
         
         try {
-            String updatedBy = getCurrentUsername();
+            String updatedBy = ADMIN_USERNAME;
             
             UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
                 request.glinerEnabled(),
@@ -115,14 +116,5 @@ public class PiiDetectionConfigController {
             config.getUpdatedAt(),
             config.getUpdatedBy()
         );
-    }
-
-    /**
-     * Retrieves the current username.
-     * TODO: Integrate with authentication when Spring Security is added.
-     */
-    private String getCurrentUsername() {
-        // Placeholder until authentication is implemented
-        return "admin";
     }
 }

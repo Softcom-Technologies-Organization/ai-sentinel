@@ -18,6 +18,12 @@ import pro.softcom.aisentinel.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.aisentinel.application.confluence.service.ConfluenceSpaceCacheRefreshService;
 import pro.softcom.aisentinel.application.confluence.usecase.FetchConfluenceSpaceContentUseCase;
 import pro.softcom.aisentinel.application.confluence.usecase.FetchSpaceUpdateInfoUseCase;
+import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiDetectionConfigPort;
+import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiTypeConfigsPort;
+import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionConfigRepository;
+import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRepository;
+import pro.softcom.aisentinel.application.pii.detection.usecase.ManagePiiDetectionConfigUseCase;
+import pro.softcom.aisentinel.application.pii.detection.usecase.ManagePiiTypeConfigsUseCase;
 import pro.softcom.aisentinel.application.pii.export.DetectionReportMapper;
 import pro.softcom.aisentinel.application.pii.export.port.in.ExportDetectionReportPort;
 import pro.softcom.aisentinel.application.pii.export.port.out.ReadExportContextPort;
@@ -264,5 +270,16 @@ public class ApplicationUseCasesConfig {
             ReadPiiConfigPort readPiiConfigPort,
             ScanResultQuery scanResultQuery) {
         return new RevealPiiSecretsUseCase(readPiiConfigPort, scanResultQuery);
+    }
+
+    @Bean
+    public ManagePiiDetectionConfigPort managePiiDetectionConfigPort(PiiDetectionConfigRepository piiDetectionConfigRepository) {
+        return new ManagePiiDetectionConfigUseCase(piiDetectionConfigRepository);
+    }
+
+    @Bean
+    public ManagePiiTypeConfigsPort managePiiTypeConfigsPort(
+        PiiTypeConfigRepository piiTypeConfigRepository) {
+        return new ManagePiiTypeConfigsUseCase(piiTypeConfigRepository);
     }
 }

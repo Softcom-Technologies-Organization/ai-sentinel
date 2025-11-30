@@ -6,11 +6,6 @@ spring:
       - com.linecorp.armeria.spring.ArmeriaAutoConfiguration
   application:
     name: ai-sentinel
-  datasource:
-    url: jdbc:h2:mem:sentinelle;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: 
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     open-in-view: false
@@ -41,7 +36,7 @@ pii-detector:
   client: armeria
   host: 127.0.0.1
   port: 50051
-  default-threshold: 0.5
+  default-threshold: 0.75
   connection-timeout-ms: 2000
   request-timeout-ms: 5000
 

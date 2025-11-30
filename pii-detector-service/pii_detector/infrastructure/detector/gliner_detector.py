@@ -261,28 +261,42 @@ class GLiNERDetector:
 
     def _load_scoring_overrides(self) -> Dict[str, float]:
         """
-        Load per-entity-type scoring thresholds from configuration.
+        Load per-entity-type scoring thresholds from database.
+        
+        Scoring thresholds are now managed in the database (pii_type_config table)
+        for runtime configurability. This method fetches enabled PII type configs
+        for the GLINER detector and builds a threshold map.
         
         Returns:
-            Dictionary mapping PII types to minimum confidence thresholds
+            Dictionary mapping PII types to minimum confidence thresholds.
+            Empty dict if database is unavailable or no configs found.
         """
-        from pii_detector.application.config.detection_policy import _load_llm_config
-        
         try:
-            config = _load_llm_config()
-            models_config = config.get("models", {})
-            gliner_config = models_config.get("gliner-pii", {})
-            scoring = gliner_config.get("scoring", {})
+            from pii_detector.infrastructure.adapter.out.database_config_adapter import get_database_config_adapter
+            
+            adapter = get_database_config_adapter()
+            pii_type_configs = adapter.fetch_pii_type_configs(detector='GLINER')
+            
+            if not pii_type_configs:
+                self.logger.info("No PII type configs found in database for GLINER")
+                return {}
+            
+            # Transform DB format {pii_type: {enabled, threshold, ...}} 
+            # to scoring_overrides format {pii_type: threshold}
+            scoring = {}
+            for pii_type, config in pii_type_configs.items():
+                if config.get('enabled', False):
+                    scoring[pii_type] = config['threshold']
             
             if scoring:
-                self.logger.info(f"Loaded {len(scoring)} scoring overrides for entity types")
+                self.logger.info(f"Loaded {len(scoring)} scoring overrides from database")
             else:
-                self.logger.info("No scoring overrides found in configuration")
+                self.logger.info("No enabled PII types found in database for GLINER")
             
             return scoring
             
         except Exception as e:
-            self.logger.warning(f"Failed to load scoring overrides from config: {e}")
+            self.logger.warning(f"Failed to load scoring overrides from database: {e}")
             return {}
 
     def _load_parallel_config(self) -> Tuple[bool, int]:

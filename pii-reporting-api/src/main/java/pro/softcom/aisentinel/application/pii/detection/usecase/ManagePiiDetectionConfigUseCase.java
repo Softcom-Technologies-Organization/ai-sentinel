@@ -1,20 +1,16 @@
 package pro.softcom.aisentinel.application.pii.detection.usecase;
 
+import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiDetectionConfigPort;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionConfigRepository;
 import pro.softcom.aisentinel.domain.pii.detection.PiiDetectionConfig;
-
-import java.time.LocalDateTime;
 
 /**
  * Use case for managing PII detection configuration.
  * Handles retrieval and updates of detection configuration.
  */
-@Service
 public class ManagePiiDetectionConfigUseCase implements ManagePiiDetectionConfigPort {
 
     private static final Logger log = LoggerFactory.getLogger(ManagePiiDetectionConfigUseCase.class);
@@ -33,7 +29,6 @@ public class ManagePiiDetectionConfigUseCase implements ManagePiiDetectionConfig
     }
 
     @Override
-    @Transactional
     public PiiDetectionConfig updateConfig(UpdatePiiDetectionConfigCommand command) {
         log.info("Updating PII detection configuration: gliner={}, presidio={}, regex={}, threshold={}",
                 command.glinerEnabled(), command.presidioEnabled(), command.regexEnabled(),

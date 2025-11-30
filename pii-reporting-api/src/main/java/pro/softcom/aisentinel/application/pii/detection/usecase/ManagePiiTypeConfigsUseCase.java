@@ -19,8 +19,6 @@ import java.util.stream.Collectors;
  * - Detector must be GLINER, PRESIDIO, or REGEX
  * - Updates are transactional
  */
-@Service
-@Transactional
 public class ManagePiiTypeConfigsUseCase implements ManagePiiTypeConfigsPort {
 
     private final PiiTypeConfigRepository repository;
@@ -30,20 +28,17 @@ public class ManagePiiTypeConfigsUseCase implements ManagePiiTypeConfigsPort {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<PiiTypeConfig> getAllConfigs() {
         return repository.findAll();
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<PiiTypeConfig> getConfigsByDetector(String detector) {
         validateDetector(detector);
         return repository.findByDetector(detector);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Map<String, List<PiiTypeConfig>> getConfigsByCategory() {
         List<PiiTypeConfig> allConfigs = repository.findAll();
         return allConfigs.stream()

@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
     webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("test")
 @Transactional
-class PiiDetectionConfigIntegrationTest {
+class ManagePiiDetectionConfigUseCaseTest {
 
     @Container
     static final PostgreSQLContainer<?> postgres =
@@ -67,7 +67,7 @@ class PiiDetectionConfigIntegrationTest {
         softly.assertThat(config.isGlinerEnabled()).isTrue();
         softly.assertThat(config.isPresidioEnabled()).isTrue();
         softly.assertThat(config.isRegexEnabled()).isTrue();
-        softly.assertThat(config.getDefaultThreshold()).isEqualByComparingTo(new BigDecimal("0.75"));
+        softly.assertThat(config.getDefaultThreshold()).isEqualByComparingTo(new BigDecimal("0.80"));
         softly.assertThat(config.getUpdatedBy()).isEqualTo("system");
         softly.assertAll();
     }

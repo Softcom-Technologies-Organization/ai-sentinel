@@ -7,6 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import pro.softcom.aisentinel.AiSentinelApplication;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIdentifiableInformationType;
@@ -15,10 +21,31 @@ import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIden
  * Direct integration test for PII detection service with real gRPC calls.
  * This test bypasses the full scan complexity to focus on PII detection.
  */
-@SpringBootTest
+@Testcontainers
+@SpringBootTest(
+    classes = AiSentinelApplication.class,
+    webEnvironment = SpringBootTest.WebEnvironment.NONE
+)
 @ActiveProfiles("test")
 @Import(TestPiiDetectionClientConfiguration.class)
 class DirectPiiDetectionIntegrationTest {
+
+    @Container
+    static final PostgreSQLContainer<?> postgres =
+        new PostgreSQLContainer<>("postgres:17-alpine");
+
+    @DynamicPropertySource
+    static void registerDataSourceProps(DynamicPropertyRegistry registry) {
+        postgres.start();
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "update");
+        registry.add("spring.jpa.show-sql", () -> "false");
+        registry.add("spring.jpa.properties.hibernate.dialect",
+            () -> "org.hibernate.dialect.PostgreSQLDialect");
+    }
 
     @Autowired
     private PiiDetectorClient piiDetectionService;

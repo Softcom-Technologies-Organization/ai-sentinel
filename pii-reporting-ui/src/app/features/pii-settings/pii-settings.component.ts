@@ -1,4 +1,4 @@
-import {Component, computed, OnInit, signal} from '@angular/core';
+import {Component, computed, EventEmitter, Input, OnInit, Output, signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {DomSanitizer, SafeHtml} from '@angular/platform-browser';
 import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
@@ -54,6 +54,18 @@ import {forkJoin} from 'rxjs';
   providers: [MessageService]
 })
 export class PiiSettingsComponent implements OnInit {
+  /**
+   * Dialog mode flag.
+   * When true, component is displayed inside a modal dialog.
+   * When false, component is displayed as standalone page.
+   */
+  @Input() dialogMode: boolean = false;
+
+  /**
+   * Event emitted when user closes the dialog (only in dialog mode).
+   */
+  @Output() closeDialog = new EventEmitter<void>();
+
   configForm!: FormGroup;
   loading = signal(false);
   saving = signal(false);
@@ -473,8 +485,16 @@ export class PiiSettingsComponent implements OnInit {
     });
   }
 
+  /**
+   * Cancel and navigate back.
+   * In dialog mode, emits close event. In standalone mode, navigates to home.
+   */
   onCancel(): void {
-    this.router.navigate(['/']);
+    if (this.dialogMode) {
+      this.closeDialog.emit();
+    } else {
+      this.router.navigate(['/']);
+    }
   }
 
   /**

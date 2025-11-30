@@ -9,13 +9,13 @@ import {
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
-import {RouterLink} from '@angular/router';
 import {ButtonModule} from 'primeng/button';
 import {TranslocoModule} from '@jsverse/transloco';
 import {
   LanguageSelectorComponent
 } from '../../core/components/language-selector/language-selector.component';
 import {PiiItemCardComponent} from '../pii-item-card/pii-item-card.component';
+import {PiiSettingsComponent} from '../pii-settings/pii-settings.component';
 import {ToggleSwitchModule} from 'primeng/toggleswitch';
 import {BadgeModule} from 'primeng/badge';
 import {InputTextModule} from 'primeng/inputtext';
@@ -76,10 +76,10 @@ import {ScanControlService} from './services/scan-control.service';
   imports: [
     CommonModule,
     FormsModule,
-    RouterLink,
     ButtonModule,
     ToggleSwitchModule,
     PiiItemCardComponent,
+    PiiSettingsComponent,
     BadgeModule,
     InputTextModule,
     SelectModule,
@@ -120,6 +120,9 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
   // PII Help dialog visibility
   readonly showPiiHelpDialog = signal(false);
+
+  // Settings dialog visibility
+  readonly showSettingsDialog = signal(false);
 
   // ===== Computed signals exposing service state to template =====
 
@@ -308,5 +311,20 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
    */
   openPiiHelpDialog(): void {
     this.showPiiHelpDialog.set(true);
+  }
+
+  /**
+   * Opens the settings dialog in modal overlay.
+   * Preserves component lifecycle to maintain SSE connection.
+   */
+  openSettingsDialog(): void {
+    this.showSettingsDialog.set(true);
+  }
+
+  /**
+   * Closes the settings dialog.
+   */
+  closeSettingsDialog(): void {
+    this.showSettingsDialog.set(false);
   }
 }

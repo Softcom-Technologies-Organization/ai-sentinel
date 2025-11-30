@@ -360,3 +360,19 @@
   min-width: 1rem;
   border-radius: 50%;
 }
+
+/* Settings Fullscreen Dialog Styling */
+::ng-deep .settings-fullscreen-dialog .p-dialog-content {
+  padding: 0;
+  overflow-y: auto;
+  height: 100%;
+}
+
+::ng-deep .settings-fullscreen-dialog .p-dialog {
+  max-height: 95vh;
+}
+
+::ng-deep .settings-fullscreen-dialog .p-dialog-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}

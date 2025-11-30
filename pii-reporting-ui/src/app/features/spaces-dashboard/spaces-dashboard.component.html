@@ -18,7 +18,7 @@
               icon="pi pi-cog"
               [text]="true"
               [rounded]="true"
-              routerLink="/settings"
+              (click)="openSettingsDialog()"
               [pTooltip]="'dashboard.actions.settings' | transloco"
               tooltipPosition="bottom"
               [ariaLabel]="'dashboard.actions.settings' | transloco"
@@ -314,5 +314,21 @@
       <p class="pii-help-description">{{ 'piiHelp.low.description' | transloco }}</p>
       <p class="pii-help-types"><strong>{{ 'piiHelp.low.types' | transloco }}</strong></p>
     </div>
+  </p-dialog>
+
+  <!-- Settings Dialog - Fullscreen modal overlay to preserve SSE connection -->
+  <p-dialog [(visible)]="showSettingsDialog"
+            [modal]="true"
+            [closable]="true"
+            [dismissableMask]="true"
+            [maximizable]="true"
+            [draggable]="false"
+            [resizable]="false"
+            [style]="{width: '95vw', height: '95vh'}"
+            styleClass="settings-fullscreen-dialog"
+            [header]="'settings.title' | transloco">
+    <app-pii-settings [dialogMode]="true"
+                      (closeDialog)="closeSettingsDialog()">
+    </app-pii-settings>
   </p-dialog>
 </div>

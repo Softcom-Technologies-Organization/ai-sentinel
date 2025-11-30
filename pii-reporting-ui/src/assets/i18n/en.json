@@ -212,6 +212,11 @@
         "PL_PESEL": "Polish PESEL",
         "SG_NRIC_FIN": "Singapore NRIC/FIN",
         "SG_UEN": "Singapore UEN (Business)",
+        "ABN": "Australian ABN (Business Number)",
+        "ACN": "Australian ACN (Company Number)",
+        "ITIN": "US ITIN (Individual Taxpayer ID)",
+        "NRIC": "Singapore NRIC/FIN",
+        "TFN": "Australian TFN (Tax File Number)",
         "AU_ABN": "Australian ABN (Business)",
         "AU_ACN": "Australian ACN (Company)",
         "AU_TFN": "Australian TFN (Tax File)",
@@ -241,6 +246,8 @@
         "PERSON": "Person Name",
         "DATE_TIME": "Date and Time",
         "NRP": "Nationality/Religion/Politics Group",
+        "NHS_NUMBER": "NHS Number",
+        "MEDICARE": "Medicare Number",
         "LOCATION": "Location",
         "UK_NHS": "UK NHS Number",
         "UK_NINO": "UK NINO",
@@ -285,6 +292,11 @@
         "PL_PESEL": "Polish personal identification number",
         "SG_NRIC_FIN": "Singapore National Registration ID or Foreign ID",
         "SG_UEN": "Singapore Unique Entity Number for businesses",
+        "ABN": "Australian Business Number for registered businesses",
+        "ACN": "Australian Company Number for registered corporations",
+        "ITIN": "US Individual Taxpayer Identification Number for tax purposes",
+        "NRIC": "Singapore National Registration ID or Foreign ID",
+        "TFN": "Australian Tax File Number for taxation",
         "AU_ABN": "Australian Business Number for registered businesses",
         "AU_ACN": "Australian Company Number for corporations",
         "AU_TFN": "Australian Tax File Number",
@@ -312,13 +324,16 @@
         "DATEOFBIRTH": "Birth dates in various formats",
         "AGE": "Person's age in years",
         "PERSON": "Full names of people identified in text",
+        "DATE": "Date information in various formats",
         "DATE_TIME": "Dates and times in various formats (ISO 8601, local formats, etc.)",
         "NRP": "Information about a person's nationality, religion, or political affiliation",
-        "LOCATION": "Geographic locations, cities, regions, or points of interest"
+        "LOCATION": "Geographic locations, cities, regions, or points of interest",
+        "NHS_NUMBER": "National Health Service number (United Kingdom)",
+        "MEDICARE": "Medicare card number (Australia)"
       },
       "actions": {
-        "saveAll": "Save All Types",
-        "reset": "Reset Types"
+        "saveAll": "Save",
+        "reset": "Reset"
       },
       "messages": {
         "bulkSaveSuccess": "Successfully saved {{count}} PII type configuration(s)",
@@ -334,8 +349,8 @@
       "save": "Save Configuration",
       "reset": "Reset",
       "cancel": "Cancel",
-      "saveAll": "Save All Changes",
-      "resetAll": "Reset All"
+      "saveAll": "Save",
+      "resetAll": "Reset"
     },
     "info": {
       "title": "Current Configuration",

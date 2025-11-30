@@ -211,12 +211,23 @@
   }
 }
 
-// Search Container
+// Search Container - Sticky at top of modal
 .pii-search-container {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin-top: 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #ffffff;
+  padding: 1rem 0;
+  margin-left: -2rem;
+  margin-right: -2rem;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  border-bottom: 1px solid #dee2e6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 
   ::ng-deep {
     p-iconfield {
@@ -263,15 +274,15 @@
   }
 }
 
-// Search Highlight Styling
+// Search Highlight Styling - Background highlighting like a marker
 ::ng-deep {
   mark.search-highlight,
   .search-highlight {
-    background-color: var(--yellow-100);
-    color: var(--yellow-900);
-    padding: 0.125rem 0.25rem;
-    border-radius: 3px;
-    font-weight: 600;
+    background-color: #fef08a; // Explicit yellow highlight color (Tailwind yellow-100)
+    color: #713f12; // Dark text for contrast (Tailwind yellow-900)
+    padding: 0 0.125rem; // Minimal horizontal padding only - makes background visible without adding spacing
+    border-radius: 2px;
+    // No font-weight, no text-decoration - pure background highlighting
   }
 }
 
@@ -539,7 +550,7 @@
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-color);
-    display: block;
+    display: inline-block;
     margin-bottom: 0.25rem;
   }
 
@@ -548,6 +559,7 @@
     color: var(--text-color-secondary);
     margin-left: 0.5rem;
     font-weight: 500;
+    display: inline-block;
   }
 
   .type-description {
@@ -610,22 +622,24 @@
 
 .global-actions {
   display: flex;
-  gap: 1rem;
-  padding: 1.5rem;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
   background: #ffffff;
-  border-radius: 8px 8px 0 0;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
+  border-top: 1px solid #dee2e6;
   position: sticky;
   bottom: 0;
   z-index: 100;
-  backdrop-filter: blur(10px);
+  margin-top: 2rem;
+  box-shadow: none;
+  opacity: 1;
 
-  // Force opaque white background
-  background-color: rgba(255, 255, 255, 1) !important;
-
-  @media (prefers-color-scheme: dark) {
-    background: #1e1e1e;
-    background-color: rgba(30, 30, 30, 1) !important;
+  ::ng-deep {
+    .p-button {
+      min-height: 44px;
+      padding: 0.625rem 1.5rem;
+    }
   }
 }
 

@@ -30,7 +30,6 @@ class PiiDetectionConfigPersistenceAdapterTest {
     private static final int CONFIG_ID = 1;
 
     @Container
-    @SuppressWarnings("resource")
     static final PostgreSQLContainer<?> POSTGRES =
         new PostgreSQLContainer<>("postgres:17-alpine");
 
@@ -41,7 +40,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "update");
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
         registry.add("spring.jpa.show-sql", () -> "false");
         registry.add("spring.jpa.properties.hibernate.dialect",
             () -> "org.hibernate.dialect.PostgreSQLDialect");

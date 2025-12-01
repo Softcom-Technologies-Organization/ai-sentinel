@@ -406,18 +406,14 @@ services:
         echo "[infisical-config] ✓ Client credentials saved";
         echo "";
         
-        # Step 4: Create required secrets with placeholder values
+        # Step 4: Create required secrets with auto-generated values
         echo "[infisical-config] Step 4/5: Creating required secrets in project...";
         
-        # Use the current v4 API endpoint for creating secrets
-        for secret_name in "HUGGING_FACE_API_KEY" "CONFLUENCE_BASE_URL" "CONFLUENCE_USERNAME" "CONFLUENCE_API_TOKEN"; do
-          echo "[infisical-config]   Creating secret: $$secret_name";
-          curl -sf -X POST "$${INFISICAL_URL}/api/v4/secrets/$${secret_name}" \
-            -H "Authorization: Bearer $${ADMIN_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"CHANGEME_$${secret_name}\",\"secretComment\":\"Auto-generated placeholder - please update with real value\",\"type\":\"shared\"}" \
-            > /dev/null 2>&1 && echo "[infisical-config]   ✓ $$secret_name created" || echo "[infisical-config]   ⚠ $$secret_name may already exist";
-        done;
+        # Note: The following secrets must be created manually in Infisical UI:
+        # - HUGGING_FACE_API_KEY
+        # - CONFLUENCE_BASE_URL
+        # - CONFLUENCE_USERNAME
+        # - CONFLUENCE_API_TOKEN
         
         # Create DB_USER secret with generated value
         echo "[infisical-config]   Creating secret: DB_USER";
@@ -480,6 +476,17 @@ services:
           echo "[infisical-config]   ⚠ Failed to create PII_DATABASE_ENCRYPTION_KEY (HTTP $$HTTP_CODE); continuing";
         fi
 
+        # Create the 4 manually-configured secrets WITHOUT placeholder values
+        echo "[infisical-config]   Creating empty secrets (to be filled manually)...";
+        for secret_name in "HUGGING_FACE_API_KEY" "CONFLUENCE_BASE_URL" "CONFLUENCE_USERNAME" "CONFLUENCE_API_TOKEN"; do
+          echo "[infisical-config]   Creating secret: $$secret_name";
+          curl -sf -X POST "$${INFISICAL_URL}/api/v4/secrets/$$secret_name" \
+            -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"\",\"secretComment\":\"Created empty - must be filled manually with real value\",\"type\":\"shared\"}" \
+            > /dev/null 2>&1 && echo "[infisical-config]   ✓ $$secret_name created (empty)" || echo "[infisical-config]   ⚠ $$secret_name may already exist";
+        done;
+        
         echo "[infisical-config] ✓ Secrets created with placeholder or real values";
         echo "";
         
@@ -503,18 +510,18 @@ services:
         echo "[infisical-config] ✓ Machine Identity configured for \"$${ENV_NAME}\" environment";
         echo "[infisical-config] ✓ Credentials saved to ./secrets/ directory";
         echo "";
-        echo "[infisical-config] Required secrets created:";
-        echo "[infisical-config]   ✓ DB_USER (auto-generated)";
-        echo "[infisical-config]   ✓ DB_PASSWORD (auto-generated)";
-        echo "[infisical-config]   ✓ PGADMIN_DEFAULT_EMAIL (auto-generated)";
-        echo "[infisical-config]   ✓ PGADMIN_DEFAULT_PASSWORD (auto-generated)";
-        echo "[infisical-config]   ✓ PII_DATABASE_ENCRYPTION_KEY (auto-generated)";
+        echo "[infisical-config] Auto-generated secrets created:";
+        echo "[infisical-config]   ✓ DB_USER";
+        echo "[infisical-config]   ✓ DB_PASSWORD";
+        echo "[infisical-config]   ✓ PGADMIN_DEFAULT_EMAIL";
+        echo "[infisical-config]   ✓ PGADMIN_DEFAULT_PASSWORD";
+        echo "[infisical-config]   ✓ PII_DATABASE_ENCRYPTION_KEY";
         echo "[infisical-config] ";
-        echo "[infisical-config] Placeholder secrets (UPDATE THESE VALUES):";
-        echo "[infisical-config]   - HUGGING_FACE_API_KEY";
-        echo "[infisical-config]   - CONFLUENCE_BASE_URL";
-        echo "[infisical-config]   - CONFLUENCE_USERNAME";
-        echo "[infisical-config]   - CONFLUENCE_API_TOKEN";
+        echo "[infisical-config] IMPORTANT: Create these secrets manually in Infisical UI:";
+        echo "[infisical-config]   ⚠ HUGGING_FACE_API_KEY (required for PII detection)";
+        echo "[infisical-config]   ⚠ CONFLUENCE_BASE_URL (required for Confluence integration)";
+        echo "[infisical-config]   ⚠ CONFLUENCE_USERNAME (required for Confluence integration)";
+        echo "[infisical-config]   ⚠ CONFLUENCE_API_TOKEN (required for Confluence integration)";
         echo "";
         echo "[infisical-config] Access Infisical UI at: http://localhost:8082";
         echo "[infisical-config] ================================================";

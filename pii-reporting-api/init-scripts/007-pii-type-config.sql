@@ -22,5 +22,3 @@ CREATE TABLE IF NOT EXISTS pii_type_config
 );
 
 CREATE INDEX IF NOT EXISTS idx_pii_type_config_detector ON pii_type_config (detector);
-CREATE INDEX IF NOT EXISTS idx_pii_type_config_category ON pii_type_config (category);
-CREATE INDEX IF NOT EXISTS idx_pii_type_config_country ON pii_type_config (country_code);

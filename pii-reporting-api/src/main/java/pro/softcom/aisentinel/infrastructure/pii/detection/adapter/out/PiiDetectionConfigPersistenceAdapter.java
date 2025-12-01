@@ -32,6 +32,7 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
     }
 
     @Override
+    @Transactional
     public PiiDetectionConfig findConfig() {
         log.debug("Retrieving PII detection configuration");
         

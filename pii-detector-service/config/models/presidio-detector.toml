@@ -2,6 +2,32 @@
 # Production-ready rule-based PII detection powered by Microsoft Presidio
 # https://microsoft.github.io/presidio/
 
+# ============================================================================
+# IMPORTANT: PII Type Configuration Moved to Database
+# ============================================================================
+# 
+# Recognizer enabled/disabled states and confidence thresholds are now managed
+# in the database for runtime configurability without redeployment.
+#
+# Database Table: pii_type_config
+# - pii_type: Internal PII type code (e.g., "EMAIL_ADDRESS", "US_SSN")
+# - detector_label: Presidio entity type (e.g., "EMAIL_ADDRESS", "CREDIT_CARD")
+# - threshold: Per-type confidence threshold (0.0-1.0)
+# - enabled: Whether this recognizer is active
+# - detector: Detector name (must be "PRESIDIO")
+#
+# Configuration is loaded at runtime via database_config_adapter.py
+# Fallback to [recognizers] and [scoring] sections only if database is unavailable.
+#
+# To modify recognizer settings or thresholds:
+# 1. Use the Java API: PUT /api/pii-type-configs/{id}
+# 2. Or directly update pii_type_config table in PostgreSQL
+# 3. Changes take effect immediately without service restart
+#
+# Database population: pii-reporting-api/src/main/resources/data.sql
+# Schema definition: init-scripts/007-pii-detection-config.sql
+# ============================================================================
+
 [model]
 model_id = "presidio-detector"
 # Note: Enable/disable via detection-settings.toml [detection] presidio_detection_enabled
@@ -41,155 +67,6 @@ labels_to_ignore = [
 # Rationale: spaCy models for FR/ES/IT small are not Apache-2.0 compatible; we do not ship spaCy.
 # All other Presidio entities (EMAIL, PHONE, CREDIT_CARD, IP_ADDRESS, national IDs, etc.)
 # use regex-based recognizers and do NOT require spaCy.
-[recognizers]
-# Contact Information
-email = true
-phone = false
-url = false
-
-# Financial Data
-credit_card = true
-iban = true
-crypto = true
-
-# Network & Infrastructure
-ip_address = true
-mac_address = false    # Disabled by default (high false positive rate)
-
-# Personal Data
-person_name = false    # Disabled - SpacyRecognizer generates too many false positives
-location = false
-date = false
-age = true
-gender = false         # Disabled (often contextual)
-nrp = false            # Nationality, Religious or Political group
-
-# Medical
-medical_license = true
-
-# USA
-us_ssn = true              # US Social Security Number
-us_bank_number = true      # US Bank Account Number
-us_driver_license = true   # US Driver License
-us_itin = true            # US Individual Taxpayer Identification Number
-us_passport = true        # US Passport
-
-# UK
-uk_nhs = false             # UK NHS Number
-uk_nino = false            # UK National Insurance Number
-
-# Spain
-es_nif = true             # Spanish NIF (Personal tax ID)
-es_nie = true             # Spanish NIE (Foreigners ID card)
-
-# Italy
-it_fiscal_code = true     # Italian Fiscal Code
-it_driver_license = true  # Italian Driver License
-it_vat_code = true        # Italian VAT Code
-it_passport = true        # Italian Passport
-it_identity_card = true   # Italian Identity Card
-
-# Poland
-pl_pesel = true           # Polish PESEL number
-
-# Singapore
-sg_nric_fin = true        # Singapore NRIC/FIN
-sg_uen = true             # Singapore Unique Entity Number
-
-# Australia
-au_abn = true             # Australian Business Number
-au_acn = true             # Australian Company Number
-au_tfn = true             # Australian Tax File Number
-au_medicare = true        # Australian Medicare Number
-
-# India
-in_pan = true             # Indian Permanent Account Number
-in_aadhaar = true         # Indian Aadhaar Number
-in_vehicle_registration = true  # Indian Vehicle Registration
-in_voter = true           # Indian Voter ID
-in_passport = true        # Indian Passport
-
-# Finland
-fi_personal_identity_code = true  # Finnish Personal Identity Code
-
-# Korea
-kr_rrn = true             # Korean Resident Registration Number
-
-# Thailand
-th_tnin = true            # Thai National ID Number
-
-# Technical Tokens
-# Note: API keys detection requires custom recognizers
-
-[scoring]
-# Override default scores for specific entities
-# Format: entity_type = score (0.0 to 1.0)
-
-# Global
-EMAIL_ADDRESS = 0.95
-PHONE_NUMBER = 0.90
-CREDIT_CARD = 0.90
-IBAN_CODE = 0.95
-CRYPTO = 0.90
-IP_ADDRESS = 0.98
-URL = 0.85
-PERSON = 0.75
-LOCATION = 0.90
-DATE_TIME = 0.9
-NRP = 0.70
-MEDICAL_LICENSE = 0.90
-
-# USA
-US_SSN = 0.95
-US_BANK_NUMBER = 0.90
-US_DRIVER_LICENSE = 0.90
-US_ITIN = 0.95
-US_PASSPORT = 0.95
-
-# UK
-UK_NHS = 0.95
-UK_NINO = 0.95
-
-# Spain
-ES_NIF = 0.90
-ES_NIE = 0.90
-
-# Italy
-IT_FISCAL_CODE = 0.95
-IT_DRIVER_LICENSE = 0.90
-IT_VAT_CODE = 0.90
-IT_PASSPORT = 0.95
-IT_IDENTITY_CARD = 0.90
-
-# Poland
-PL_PESEL = 0.95
-
-# Singapore
-SG_NRIC_FIN = 0.95
-SG_UEN = 0.90
-
-# Australia
-AU_ABN = 0.90
-AU_ACN = 0.90
-AU_TFN = 0.95
-AU_MEDICARE = 0.95
-
-# India
-IN_PAN = 0.90
-IN_AADHAAR = 0.95
-IN_VEHICLE_REGISTRATION = 0.85
-IN_VOTER = 0.90
-IN_PASSPORT = 0.95
-
-# Finland
-FI_PERSONAL_IDENTITY_CODE = 0.95
-
-# Korea
-KR_RRN = 0.95
-
-# Thailand
-TH_TNIN = 0.95
-
 [anonymization]
 # Anonymization strategy for detected entities
 # Options: replace, mask, redact, encrypt, hash

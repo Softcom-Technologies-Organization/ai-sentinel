@@ -139,6 +139,15 @@ class PresidioDetector:
         """
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         
+        # Initialize database adapter (with graceful fallback)
+        try:
+            from pii_detector.infrastructure.adapter.out.database_config_adapter import get_database_config_adapter
+            self._db_adapter = get_database_config_adapter()
+            self.logger.info("Database adapter initialized for Presidio configuration")
+        except Exception as e:
+            self.logger.warning(f"Failed to initialize database adapter: {e}, will use TOML fallback")
+            self._db_adapter = None
+        
         # Load configuration
         self.config = self._load_config(config_path)
         self._analyzer: Optional[AnalyzerEngine] = None
@@ -157,7 +166,10 @@ class PresidioDetector:
             "QUANTITY", "PERCENT", "LANGUAGE", "EVENT", "LAW", "FAC"
         ])
         
-        # Recognizer configuration
+        # Load PII type configurations from database (with TOML fallback)
+        self._db_pii_type_configs = self._load_pii_type_configs_from_database()
+        
+        # Recognizer configuration (database-first, TOML fallback)
         self._recognizers_config = self.config.get("recognizers", {})
         self._scoring_overrides = self.config.get("scoring", {})
         
@@ -170,10 +182,11 @@ class PresidioDetector:
         # Validate configuration
         self._validate_configuration()
         
+        config_source = "database" if self._db_pii_type_configs else "TOML"
         self.logger.info(
             f"PresidioDetector initialized: enabled={self._enabled}, "
             f"languages={self._languages}, threshold={self._default_threshold}, "
-            f"recognizers_loaded={len(self._recognizers_config)}"
+            f"config_source={config_source}"
         )
     
     @property
@@ -242,6 +255,92 @@ class PresidioDetector:
         except Exception as e:
             self.logger.warning(f"Failed to load config from {config_path}: {e}")
             return {}
+    
+    def _load_pii_type_configs_from_database(self) -> Optional[Dict]:
+        """
+        Load PII type configurations from database for Presidio detector.
+        
+        Fetches enabled PRESIDIO PII type configurations from database including:
+        - enabled/disabled state
+        - confidence thresholds
+        - detector_label (Presidio entity types like "EMAIL_ADDRESS")
+        
+        Returns:
+            Dictionary mapping PII types to their configurations.
+            Returns None if database is unavailable or no configs found.
+        """
+        if not self._db_adapter:
+            self.logger.debug("Database adapter not available, will use TOML configuration")
+            return None
+        
+        try:
+            pii_type_configs = self._db_adapter.fetch_pii_type_configs(detector='PRESIDIO')
+            
+            if not pii_type_configs:
+                self.logger.warning("No PII type configs found in database for PRESIDIO, using TOML")
+                return None
+            
+            self.logger.info(f"Loaded {len(pii_type_configs)} PII type configs from database for PRESIDIO")
+            return pii_type_configs
+            
+        except Exception as e:
+            self.logger.warning(f"Failed to load PII type configs from database: {e}, using TOML")
+            return None
+    
+    def _build_allowed_entities_from_database(self, db_configs: Dict) -> List[str]:
+        """
+        Build whitelist of allowed Presidio entity types from database configurations.
+        
+        Uses detector_label field which contains Presidio entity types (e.g., "EMAIL_ADDRESS").
+        
+        Args:
+            db_configs: Database PII type configurations
+            
+        Returns:
+            List of allowed Presidio entity type strings from detector_label field
+        """
+        allowed_entities = []
+        
+        for pii_type, config in db_configs.items():
+            if config.get('enabled', False):
+                detector_label = config.get('detector_label')
+                if detector_label:
+                    allowed_entities.append(detector_label)
+                else:
+                    self.logger.warning(
+                        f"PII type {pii_type} enabled but has no detector_label, skipping"
+                    )
+        
+        self.logger.info(
+            f"Built whitelist from database with {len(allowed_entities)} entity types"
+        )
+        return allowed_entities
+    
+    def _build_scoring_overrides_from_database(self, db_configs: Dict) -> Dict[str, float]:
+        """
+        Build per-entity-type scoring thresholds from database configurations.
+        
+        Maps detector_label (Presidio entity type) to threshold value.
+        
+        Args:
+            db_configs: Database PII type configurations
+            
+        Returns:
+            Dictionary mapping Presidio entity types to minimum confidence thresholds
+        """
+        scoring = {}
+        
+        for pii_type, config in db_configs.items():
+            if config.get('enabled', False):
+                detector_label = config.get('detector_label')
+                threshold = config.get('threshold')
+                if detector_label and threshold is not None:
+                    scoring[detector_label] = float(threshold)
+        
+        self.logger.info(
+            f"Built scoring overrides from database with {len(scoring)} thresholds"
+        )
+        return scoring
     
     def download_model(self) -> None:
         """
@@ -337,7 +436,25 @@ class PresidioDetector:
     
     def _build_allowed_entities(self) -> List[str]:
         """
-        Build whitelist of allowed Presidio entity types from config.
+        Build whitelist of allowed Presidio entity types.
+        
+        Uses database configuration if available, otherwise falls back to TOML.
+        
+        Returns:
+            List of allowed Presidio entity type strings
+        """
+        # Try database first
+        if self._db_pii_type_configs:
+            self.logger.info("Using database configuration for allowed entities")
+            return self._build_allowed_entities_from_database(self._db_pii_type_configs)
+        
+        # Fallback to TOML
+        self.logger.info("Using TOML configuration for allowed entities")
+        return self._build_allowed_entities_from_toml()
+    
+    def _build_allowed_entities_from_toml(self) -> List[str]:
+        """
+        Build whitelist of allowed Presidio entity types from TOML config.
         
         Converts TOML keys to official Presidio entity names.
         Example: email -> EMAIL_ADDRESS, person_name -> PERSON
@@ -437,7 +554,7 @@ class PresidioDetector:
                         f"Unknown recognizer key '{config_key}' in config, skipping"
                     )
         
-        self.logger.info(f"Built whitelist with {len(allowed_entities)} entity types")
+        self.logger.info(f"Built whitelist from TOML with {len(allowed_entities)} entity types")
         return allowed_entities
     
     def detect_pii(
@@ -541,7 +658,8 @@ class PresidioDetector:
         """
         Convert Presidio results to PIIEntity and apply per-entity threshold filtering.
         
-        Post-filters results based on [scoring] configuration:
+        Uses database configuration if available, otherwise falls back to TOML.
+        Post-filters results based on scoring configuration:
         - If a score override exists, it's used as the minimum threshold
         - Results below the entity-specific threshold are discarded
         
@@ -552,6 +670,14 @@ class PresidioDetector:
         Returns:
             List of PIIEntity objects that pass threshold filtering
         """
+        # Get scoring thresholds (database-first, TOML fallback)
+        if self._db_pii_type_configs:
+            scoring_overrides = self._build_scoring_overrides_from_database(self._db_pii_type_configs)
+            self.logger.debug("Using database thresholds for post-filtering")
+        else:
+            scoring_overrides = self._scoring_overrides
+            self.logger.debug("Using TOML thresholds for post-filtering")
+        
         entities = []
         filtered_count = 0
         
@@ -570,8 +696,8 @@ class PresidioDetector:
                     f"PRESIDIO_TO_PII_TYPE_MAP or filtering in configuration."
                 )
             
-            # Get configured threshold for this entity type (from [scoring] section)
-            entity_threshold = self._scoring_overrides.get(result.entity_type)
+            # Get configured threshold for this entity type
+            entity_threshold = scoring_overrides.get(result.entity_type)
             
             # Post-filter: discard if below entity-specific threshold
             if entity_threshold is not None and result.score < entity_threshold:
@@ -586,7 +712,7 @@ class PresidioDetector:
             entity_text = text[result.start:result.end]
             
             # Use original Presidio score (no override)
-            # The [scoring] values are used as minimum thresholds, not score replacements
+            # The scoring values are used as minimum thresholds, not score replacements
             score = result.score
             
             # Create PIIEntity with type_label

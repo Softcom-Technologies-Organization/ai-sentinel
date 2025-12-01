@@ -55,13 +55,7 @@ public class ManagePiiTypeConfigsUseCase implements ManagePiiTypeConfigsPort {
         validateDetector(detector);
         validateThreshold(threshold);
 
-        PiiTypeConfig existing = repository.findByPiiTypeAndDetector(piiType, detector)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Configuration not found for PII type: " + piiType + " and detector: " + detector
-                ));
-
-        PiiTypeConfig updated = existing.withUpdate(enabled, threshold, updatedBy);
-        return repository.save(updated);
+        return repository.updateAtomically(piiType, detector, enabled, threshold, updatedBy);
     }
 
     @Override
@@ -76,26 +70,7 @@ public class ManagePiiTypeConfigsUseCase implements ManagePiiTypeConfigsPort {
             validateThreshold(update.threshold());
         }
 
-        // Apply all updates
-        List<PiiTypeConfig> updatedConfigs = updates.stream()
-                .map(update -> {
-                    PiiTypeConfig existing = repository.findByPiiTypeAndDetector(
-                            update.piiType(),
-                            update.detector()
-                    ).orElseThrow(() -> new IllegalArgumentException(
-                            "Configuration not found for PII type: " + update.piiType() +
-                                    " and detector: " + update.detector()
-                    ));
-
-                    return existing.withUpdate(
-                            update.enabled(),
-                            update.threshold(),
-                            updatedBy
-                    );
-                })
-                .toList();
-
-        return repository.saveAll(updatedConfigs);
+        return repository.bulkUpdateAtomically(updates, updatedBy);
     }
 
     private void validateDetector(String detector) {

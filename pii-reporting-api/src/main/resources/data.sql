@@ -5,7 +5,7 @@
 -- Tables are created by JPA/Hibernate (ddl-auto=update)
 -- This script runs after schema creation (spring.jpa.defer-datasource-initialization=true)
 --
--- Source: Migrated from init-scripts/007-pii-type-config.sql and 008-pii-detection-config.sql
+-- Source: Migrated from init-scripts/006-pii-type-config.sql and 007-pii-detection-config.sql
 -- ============================================================================
 
 -- ============================================================================
@@ -61,6 +61,45 @@ ON CONFLICT (pii_type, detector) DO NOTHING;
 -- Category: Security
 INSERT INTO pii_type_config (pii_type, detector, enabled, threshold, display_name, description, category, created_at, updated_at, updated_by)
 VALUES ('PASSWORD', 'GLINER', true, 0.85, 'Password', 'Passwords and secrets', 'Security', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+ON CONFLICT (pii_type, detector) DO NOTHING;
+
+-- ============================================================================
+-- Detector label mappings for GLiNER PII types
+-- Migrated from init-scripts/009-add-detector-label.sql
+-- ============================================================================
+
+UPDATE pii_type_config SET detector_label = 'account number' WHERE pii_type = 'ACCOUNTNUM' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'building number' WHERE pii_type = 'BUILDINGNUM' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'city' WHERE pii_type = 'CITY' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'credit card number' WHERE pii_type = 'CREDITCARDNUMBER' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'date of birth' WHERE pii_type = 'DATEOFBIRTH' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'driver license number' WHERE pii_type = 'DRIVERLICENSENUM' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'email' WHERE pii_type = 'EMAIL' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'first name' WHERE pii_type = 'GIVENNAME' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'ID card number' WHERE pii_type = 'IDCARDNUM' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'password' WHERE pii_type = 'PASSWORD' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'social security number' WHERE pii_type = 'SOCIALNUM' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'street' WHERE pii_type = 'STREET' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'last name' WHERE pii_type = 'SURNAME' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'tax number' WHERE pii_type = 'TAXNUM' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'phone number' WHERE pii_type = 'TELEPHONENUM' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'username' WHERE pii_type = 'USERNAME' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'zip code' WHERE pii_type = 'ZIPCODE' AND detector = 'GLINER';
+
+-- Insert additional GLiNER PII types with detector labels
+INSERT INTO pii_type_config 
+    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+VALUES 
+    ('PERSONNAME', 'GLINER', true, 0.7, 'Person Name', 'Generic person name (not split into first/last)', 'Identity', 'person name', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('FULLNAME', 'GLINER', true, 0.7, 'Full Name', 'Complete person name', 'Identity', 'full name', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('URL', 'GLINER', true, 0.7, 'URL', 'Web URL or hyperlink', 'Online', 'URL', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('IBAN', 'GLINER', true, 0.7, 'IBAN', 'International Bank Account Number', 'Financial', 'IBAN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('IPADDRESS', 'GLINER', true, 0.7, 'IP Address', 'IPv4 or IPv6 address', 'Technical', 'IP address', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('MACADDRESS', 'GLINER', true, 0.7, 'MAC Address', 'Network hardware address', 'Technical', 'MAC address', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('CRYPTOWALLET', 'GLINER', true, 0.7, 'Crypto Wallet', 'Cryptocurrency wallet address', 'Financial', 'crypto wallet', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('DATE', 'GLINER', true, 0.7, 'Date', 'Generic date (not birth date)', 'Temporal', 'date', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('VEHICLEREG', 'GLINER', true, 0.7, 'Vehicle Registration', 'Vehicle license plate or registration number', 'Identity', 'vehicle registration', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('VOTERID', 'GLINER', true, 0.7, 'Voter ID', 'Voter identification number', 'Identity', 'voter ID', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
 ON CONFLICT (pii_type, detector) DO NOTHING;
 
 -- ============================================================================
@@ -196,6 +235,86 @@ VALUES ('TH_TNIN', 'PRESIDIO', true, 0.95, 'Thai National ID', 'Thai National ID
 ON CONFLICT (pii_type, detector) DO NOTHING;
 
 -- ============================================================================
+-- Detector label mappings for Presidio PII types
+-- Presidio uses uppercase entity types as detector labels (e.g., EMAIL_ADDRESS, CREDIT_CARD)
+-- ============================================================================
+
+-- Contact Information
+UPDATE pii_type_config SET detector_label = 'EMAIL_ADDRESS' WHERE pii_type = 'EMAIL_ADDRESS' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'PHONE_NUMBER' WHERE pii_type = 'PHONE_NUMBER' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'URL' WHERE pii_type = 'URL' AND detector = 'PRESIDIO';
+
+-- Financial
+UPDATE pii_type_config SET detector_label = 'CREDIT_CARD' WHERE pii_type = 'CREDIT_CARD' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'IBAN_CODE' WHERE pii_type = 'IBAN_CODE' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'CRYPTO' WHERE pii_type = 'CRYPTO' AND detector = 'PRESIDIO';
+
+-- Network
+UPDATE pii_type_config SET detector_label = 'IP_ADDRESS' WHERE pii_type = 'IP_ADDRESS' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'MAC_ADDRESS' WHERE pii_type = 'MAC_ADDRESS' AND detector = 'PRESIDIO';
+
+-- Personal
+UPDATE pii_type_config SET detector_label = 'PERSON' WHERE pii_type = 'PERSON' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'LOCATION' WHERE pii_type = 'LOCATION' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'DATE_TIME' WHERE pii_type = 'DATE_TIME' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'AGE' WHERE pii_type = 'AGE' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'NRP' WHERE pii_type = 'NRP' AND detector = 'PRESIDIO';
+
+-- Medical
+UPDATE pii_type_config SET detector_label = 'MEDICAL_LICENSE' WHERE pii_type = 'MEDICAL_LICENSE' AND detector = 'PRESIDIO';
+
+-- USA
+UPDATE pii_type_config SET detector_label = 'US_SSN' WHERE pii_type = 'US_SSN' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'US_BANK_NUMBER' WHERE pii_type = 'US_BANK_NUMBER' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'US_DRIVER_LICENSE' WHERE pii_type = 'US_DRIVER_LICENSE' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'US_ITIN' WHERE pii_type = 'US_ITIN' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'US_PASSPORT' WHERE pii_type = 'US_PASSPORT' AND detector = 'PRESIDIO';
+
+-- UK
+UPDATE pii_type_config SET detector_label = 'UK_NHS' WHERE pii_type = 'UK_NHS' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'UK_NINO' WHERE pii_type = 'UK_NINO' AND detector = 'PRESIDIO';
+
+-- Spain
+UPDATE pii_type_config SET detector_label = 'ES_NIF' WHERE pii_type = 'ES_NIF' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'ES_NIE' WHERE pii_type = 'ES_NIE' AND detector = 'PRESIDIO';
+
+-- Italy
+UPDATE pii_type_config SET detector_label = 'IT_FISCAL_CODE' WHERE pii_type = 'IT_FISCAL_CODE' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'IT_DRIVER_LICENSE' WHERE pii_type = 'IT_DRIVER_LICENSE' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'IT_VAT_CODE' WHERE pii_type = 'IT_VAT_CODE' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'IT_PASSPORT' WHERE pii_type = 'IT_PASSPORT' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'IT_IDENTITY_CARD' WHERE pii_type = 'IT_IDENTITY_CARD' AND detector = 'PRESIDIO';
+
+-- Poland
+UPDATE pii_type_config SET detector_label = 'PL_PESEL' WHERE pii_type = 'PL_PESEL' AND detector = 'PRESIDIO';
+
+-- Singapore
+UPDATE pii_type_config SET detector_label = 'SG_NRIC_FIN' WHERE pii_type = 'SG_NRIC_FIN' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'SG_UEN' WHERE pii_type = 'SG_UEN' AND detector = 'PRESIDIO';
+
+-- Australia
+UPDATE pii_type_config SET detector_label = 'AU_ABN' WHERE pii_type = 'AU_ABN' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'AU_ACN' WHERE pii_type = 'AU_ACN' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'AU_TFN' WHERE pii_type = 'AU_TFN' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'AU_MEDICARE' WHERE pii_type = 'AU_MEDICARE' AND detector = 'PRESIDIO';
+
+-- India
+UPDATE pii_type_config SET detector_label = 'IN_PAN' WHERE pii_type = 'IN_PAN' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'IN_AADHAAR' WHERE pii_type = 'IN_AADHAAR' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'IN_VEHICLE_REGISTRATION' WHERE pii_type = 'IN_VEHICLE_REGISTRATION' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'IN_VOTER' WHERE pii_type = 'IN_VOTER' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'IN_PASSPORT' WHERE pii_type = 'IN_PASSPORT' AND detector = 'PRESIDIO';
+
+-- Finland
+UPDATE pii_type_config SET detector_label = 'FI_PERSONAL_IDENTITY_CODE' WHERE pii_type = 'FI_PERSONAL_IDENTITY_CODE' AND detector = 'PRESIDIO';
+
+-- Korea
+UPDATE pii_type_config SET detector_label = 'KR_RRN' WHERE pii_type = 'KR_RRN' AND detector = 'PRESIDIO';
+
+-- Thailand
+UPDATE pii_type_config SET detector_label = 'TH_TNIN' WHERE pii_type = 'TH_TNIN' AND detector = 'PRESIDIO';
+
+-- ============================================================================
 -- Generic/Alias PII Types (disabled by default to avoid conflicts)
 -- These complement country-specific types
 -- ============================================================================
@@ -230,6 +349,24 @@ INSERT INTO pii_type_config (pii_type, detector, enabled, threshold, display_nam
 VALUES ('PERSON_NAME', 'PRESIDIO', false, 0.75, 'Person Name (Generic)', 'Generic person name (alias for PERSON)', 'Identity', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
        ('DATE', 'PRESIDIO', false, 0.85, 'Date (Generic)', 'Generic date (simpler than DATE_TIME)', 'Identity', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
 ON CONFLICT (pii_type, detector) DO NOTHING;
+
+-- Detector label mappings for generic/alias Presidio types
+-- These map to the same Presidio entity types as their main counterparts
+UPDATE pii_type_config SET detector_label = 'PHONE_NUMBER' WHERE pii_type = 'PHONE' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'IBAN_CODE' WHERE pii_type = 'IBAN' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'CRYPTO' WHERE pii_type = 'CRYPTO_WALLET' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'US_SSN' WHERE pii_type = 'SSN' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'US_PASSPORT' WHERE pii_type = 'PASSPORT' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'US_DRIVER_LICENSE' WHERE pii_type = 'DRIVER_LICENSE' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'US_ITIN' WHERE pii_type = 'ITIN' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'UK_NHS' WHERE pii_type = 'NHS_NUMBER' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'SG_NRIC_FIN' WHERE pii_type = 'NRIC' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'AU_ABN' WHERE pii_type = 'ABN' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'AU_ACN' WHERE pii_type = 'ACN' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'AU_TFN' WHERE pii_type = 'TFN' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'AU_MEDICARE' WHERE pii_type = 'MEDICARE' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'PERSON' WHERE pii_type = 'PERSON_NAME' AND detector = 'PRESIDIO';
+UPDATE pii_type_config SET detector_label = 'DATE_TIME' WHERE pii_type = 'DATE' AND detector = 'PRESIDIO';
 
 -- ============================================================================
 -- Summary: 

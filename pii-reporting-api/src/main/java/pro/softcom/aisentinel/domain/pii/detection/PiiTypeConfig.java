@@ -22,6 +22,19 @@ public class PiiTypeConfig {
     private final String description;
     private final String category;
     private final String countryCode;
+    /**
+     * Natural language label used by the detector for PII identification.
+     * <p>
+     * Business purpose: Decouples internal PII type codes from detector-specific labels.
+     * For example, GLINER uses "email" while our system uses "EMAIL".
+     * This enables runtime configuration of detector behavior without code changes.
+     * <p>
+     * Examples:
+     * - "email" for EMAIL type
+     * - "credit card number" for CREDITCARDNUMBER type
+     * - "person name" for PERSONNAME type
+     */
+    private final String detectorLabel;
     private final LocalDateTime updatedAt;
     private final String updatedBy;
 
@@ -35,6 +48,7 @@ public class PiiTypeConfig {
         this.description = builder.description;
         this.category = builder.category;
         this.countryCode = builder.countryCode;
+        this.detectorLabel = builder.detectorLabel;
         this.updatedAt = builder.updatedAt != null ? builder.updatedAt : LocalDateTime.now();
         this.updatedBy = builder.updatedBy != null ? builder.updatedBy : "system";
     }
@@ -106,6 +120,10 @@ public class PiiTypeConfig {
         return countryCode;
     }
 
+    public String getDetectorLabel() {
+        return detectorLabel;
+    }
+
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
@@ -128,6 +146,7 @@ public class PiiTypeConfig {
                 .description(this.description)
                 .category(this.category)
                 .countryCode(this.countryCode)
+                .detectorLabel(this.detectorLabel)
                 .updatedAt(LocalDateTime.now())
                 .updatedBy(updatedBy)
                 .build();
@@ -173,6 +192,7 @@ public class PiiTypeConfig {
         private String description;
         private String category;
         private String countryCode;
+        private String detectorLabel;
         private LocalDateTime updatedAt;
         private String updatedBy;
 
@@ -218,6 +238,11 @@ public class PiiTypeConfig {
 
         public Builder countryCode(String countryCode) {
             this.countryCode = countryCode;
+            return this;
+        }
+
+        public Builder detectorLabel(String detectorLabel) {
+            this.detectorLabel = detectorLabel;
             return this;
         }
 

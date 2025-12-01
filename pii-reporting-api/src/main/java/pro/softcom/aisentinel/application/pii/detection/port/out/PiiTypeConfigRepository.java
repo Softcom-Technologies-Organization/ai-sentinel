@@ -1,5 +1,6 @@
 package pro.softcom.aisentinel.application.pii.detection.port.out;
 
+import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiTypeConfigsPort.PiiTypeConfigUpdate;
 import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
 
 import java.util.List;
@@ -11,6 +12,35 @@ import java.util.Optional;
  * Defines the contract for storing and retrieving PII type configurations.
  */
 public interface PiiTypeConfigRepository {
+
+    /**
+     * Updates a PII type configuration atomically.
+     * <p>
+     * This method performs the read-modify-write operation within a single transaction
+     * to prevent race conditions and lost updates.
+     *
+     * @param piiType   the PII type identifier
+     * @param detector  the detector name
+     * @param enabled   whether the configuration is enabled
+     * @param threshold the detection threshold
+     * @param updatedBy the user performing the update
+     * @return the updated configuration
+     * @throws IllegalArgumentException if configuration not found
+     */
+    PiiTypeConfig updateAtomically(String piiType, String detector, boolean enabled, double threshold, String updatedBy);
+
+    /**
+     * Updates multiple PII type configurations atomically.
+     * <p>
+     * All updates are performed within a single transaction to ensure consistency
+     * and prevent race conditions.
+     *
+     * @param updates   list of updates to apply
+     * @param updatedBy the user performing the updates
+     * @return list of updated configurations
+     * @throws IllegalArgumentException if any configuration not found
+     */
+    List<PiiTypeConfig> bulkUpdateAtomically(List<PiiTypeConfigUpdate> updates, String updatedBy);
 
     /**
      * Finds all PII type configurations.

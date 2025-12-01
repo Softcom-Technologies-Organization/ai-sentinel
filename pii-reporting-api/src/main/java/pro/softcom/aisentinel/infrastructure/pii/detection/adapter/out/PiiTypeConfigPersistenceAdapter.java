@@ -1,6 +1,8 @@
 package pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiTypeConfigsPort.PiiTypeConfigUpdate;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRepository;
 import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out.entity.PiiTypeConfigEntity;
@@ -64,5 +66,57 @@ public class PiiTypeConfigPersistenceAdapter implements PiiTypeConfigRepository 
     @Override
     public boolean exists() {
         return jpaRepository.count() > 0;
+    }
+
+    @Override
+    @Transactional
+    public PiiTypeConfig updateAtomically(
+            String piiType,
+            String detector,
+            boolean enabled,
+            double threshold,
+            String updatedBy
+    ) {
+        PiiTypeConfigEntity entity = jpaRepository.findByPiiTypeAndDetector(piiType, detector)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Configuration not found for PII type: " + piiType + " and detector: " + detector
+                ));
+
+        entity.setEnabled(enabled);
+        entity.setThreshold(threshold);
+        entity.setUpdatedBy(updatedBy);
+
+        PiiTypeConfigEntity saved = jpaRepository.save(entity);
+        return saved.toDomain();
+    }
+
+    @Override
+    @Transactional
+    public List<PiiTypeConfig> bulkUpdateAtomically(
+            List<PiiTypeConfigUpdate> updates,
+            String updatedBy
+    ) {
+        List<PiiTypeConfigEntity> entitiesToUpdate = updates.stream()
+                .map(update -> {
+                    PiiTypeConfigEntity entity = jpaRepository.findByPiiTypeAndDetector(
+                            update.piiType(),
+                            update.detector()
+                    ).orElseThrow(() -> new IllegalArgumentException(
+                            "Configuration not found for PII type: " + update.piiType() +
+                                    " and detector: " + update.detector()
+                    ));
+
+                    entity.setEnabled(update.enabled());
+                    entity.setThreshold(update.threshold());
+                    entity.setUpdatedBy(updatedBy);
+
+                    return entity;
+                })
+                .toList();
+
+        List<PiiTypeConfigEntity> saved = jpaRepository.saveAll(entitiesToUpdate);
+        return saved.stream()
+                .map(PiiTypeConfigEntity::toDomain)
+                .toList();
     }
 }

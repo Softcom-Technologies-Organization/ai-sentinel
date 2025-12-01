@@ -23,8 +23,12 @@ class DatabaseConfigAdapter:
         self.host = os.getenv("DB_HOST", "postgres")
         self.port = int(os.getenv("DB_PORT", "5432"))
         self.database = os.getenv("DB_NAME", "ai-sentinel")
-        self.user = os.getenv("DB_USER", "postgres")
-        self.password = os.getenv("DB_PASSWORD", "postgres")
+        self.user = os.getenv("DB_USER")
+        self.password = os.getenv("DB_PASSWORD")
+        if not self.user or not self.password:
+           logger.warning(
+               "DB_USER or DB_PASSWORD not set. Database connections will fail."
+           )
 
     def _get_connection(self):
         """Create and return a database connection."""
@@ -157,7 +161,8 @@ class DatabaseConfigAdapter:
                         display_name,
                         description,
                         category,
-                        country_code
+                        country_code,
+                        detector_label
                     FROM pii_type_config
                     WHERE detector = %s
                     ORDER BY category, pii_type
@@ -173,7 +178,8 @@ class DatabaseConfigAdapter:
                         display_name,
                         description,
                         category,
-                        country_code
+                        country_code,
+                        detector_label
                     FROM pii_type_config
                     ORDER BY category, pii_type
                 """
@@ -200,7 +206,8 @@ class DatabaseConfigAdapter:
                     'display_name': row['display_name'],
                     'description': row['description'],
                     'category': row['category'],
-                    'country_code': row['country_code']
+                    'country_code': row['country_code'],
+                    'detector_label': row['detector_label']
                 }
 
             logger.info(

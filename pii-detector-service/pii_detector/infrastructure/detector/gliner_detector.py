@@ -192,37 +192,54 @@ class GLiNERDetector:
 
     def _load_pii_type_mapping(self) -> Dict[str, str]:
         """
-        Load PII type mapping from configuration.
+        Load PII type mapping from database (detector_label → pii_type).
+        
+        Fetches enabled GLINER PII type configurations from database and builds
+        a reverse mapping from detector labels to normalized PII types.
         
         Returns:
-            Dictionary mapping GLiNER labels to PII types
+            Dictionary mapping detector labels to PII types.
+            Falls back to hardcoded defaults if database is unavailable.
         """
-        from pii_detector.application.config.detection_policy import _load_llm_config
-        
         try:
-            config = _load_llm_config()
-            models_config = config.get("models", {})
-            gliner_config = models_config.get("gliner-pii", {})
-            mapping = gliner_config.get("pii_type_mapping", {})
+            from pii_detector.infrastructure.adapter.out.database_config_adapter import get_database_config_adapter
+            
+            adapter = get_database_config_adapter()
+            pii_type_configs = adapter.fetch_pii_type_configs(detector='GLINER')
+            
+            if not pii_type_configs:
+                self.logger.warning("No PII type configs found in database for GLINER, using defaults")
+                return self._get_default_mapping()
+            
+            # Build reverse mapping: detector_label → pii_type
+            mapping = {}
+            for pii_type, config in pii_type_configs.items():
+                detector_label = config.get('detector_label')
+                if detector_label and config.get('enabled', False):
+                    mapping[detector_label] = pii_type
             
             if not mapping:
-                self.logger.warning("No PII type mapping found in config, using defaults")
+                self.logger.warning("No enabled PII types with detector labels in database, using defaults")
                 return self._get_default_mapping()
             
             return mapping
             
         except Exception as e:
-            self.logger.warning(f"Failed to load mapping from config: {e}, using defaults")
+            self.logger.warning(f"Failed to load mapping from database: {e}, using defaults")
             return self._get_default_mapping()
 
     def _get_default_mapping(self) -> Dict[str, str]:
         """
-        Get default PII type mapping.
+        Get default PII type mapping as fallback.
+        
+        This fallback mapping is used when database is unavailable.
+        In production, mappings should be managed via database (pii_type_config table).
         
         Returns:
-            Default mapping from GLiNER labels to PII types
+            Default mapping from detector labels to PII types (27 types)
         """
         return {
+            # Original 17 types
             "account number": "ACCOUNTNUM",
             "building number": "BUILDINGNUM",
             "city": "CITY",
@@ -239,7 +256,18 @@ class GLiNERDetector:
             "tax number": "TAXNUM",
             "phone number": "TELEPHONENUM",
             "username": "USERNAME",
-            "zip code": "ZIPCODE"
+            "zip code": "ZIPCODE",
+            # Additional 10 types
+            "person name": "PERSONNAME",
+            "full name": "FULLNAME",
+            "URL": "URL",
+            "IBAN": "IBAN",
+            "IP address": "IPADDRESS",
+            "MAC address": "MACADDRESS",
+            "crypto wallet": "CRYPTOWALLET",
+            "date": "DATE",
+            "vehicle registration": "VEHICLEREG",
+            "voter ID": "VOTERID"
         }
 
     def _load_log_throughput_config(self) -> bool:

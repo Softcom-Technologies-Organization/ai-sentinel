@@ -35,25 +35,27 @@ resume_download = true
 [download.custom_filenames]
 "config.json" = "gliner_config.json"
 
-# PII type mapping - Maps GLiNER labels to piiranha-v1 standard types
-# GLiNER uses natural language labels, mapped here to normalized PII types
-[pii_type_mapping]
-"account number" = "ACCOUNTNUM"
-"building number" = "BUILDINGNUM"
-"city" = "CITY"
-"credit card number" = "CREDITCARDNUMBER"
-"date of birth" = "DATEOFBIRTH"
-"driver license number" = "DRIVERLICENSENUM"
-"email" = "EMAIL"
-"first name" = "GIVENNAME"
-"ID card number" = "IDCARDNUM"
-"password" = "PASSWORD"
-"social security number" = "SOCIALNUM"
-"street" = "STREET"
-"last name" = "SURNAME"
-"tax number" = "TAXNUM"
-"phone number" = "TELEPHONENUM"
-"username" = "USERNAME"
-"zip code" = "ZIPCODE"
-
-# Note: Per-entity-type confidence thresholds are now managed in database (pii_type_config.threshold column)
+# ============================================================================
+# IMPORTANT: PII Type Configuration Moved to Database
+# ============================================================================
+# 
+# PII type mappings and thresholds are now managed in the database for
+# runtime configurability without redeployment.
+#
+# Database Table: pii_type_config
+# - pii_type: Internal PII type code (e.g., "EMAIL", "PERSONNAME")
+# - detector_label: Natural language label for detector (e.g., "email", "person name")
+# - threshold: Per-type confidence threshold (0.0-1.0)
+# - enabled: Whether this PII type is active
+# - detector: Detector name (GLINER, PRESIDIO, REGEX)
+#
+# Configuration is loaded at runtime via database_config_adapter.py
+# Fallback to hardcoded defaults only if database is unavailable.
+#
+# To add new PII types or modify mappings:
+# 1. Use the Java API: POST /api/pii-type-configs
+# 2. Or directly update pii_type_config table in PostgreSQL
+# 3. Changes take effect immediately without service restart
+#
+# Migration: init-scripts/009-add-detector-label.sql
+# ============================================================================

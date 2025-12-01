@@ -69,6 +69,9 @@ public class PiiTypeConfigEntity {
     @Column(name = "country_code", length = 10)
     private String countryCode;
 
+    @Column(name = "detector_label", length = 100)
+    private String detectorLabel;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -104,6 +107,7 @@ public class PiiTypeConfigEntity {
         entity.description = domain.getDescription();
         entity.category = domain.getCategory();
         entity.countryCode = domain.getCountryCode();
+        entity.detectorLabel = domain.getDetectorLabel();
         entity.updatedAt = domain.getUpdatedAt();
         entity.updatedBy = domain.getUpdatedBy();
         return entity;
@@ -121,6 +125,7 @@ public class PiiTypeConfigEntity {
                 .description(description)
                 .category(category)
                 .countryCode(countryCode)
+                .detectorLabel(detectorLabel)
                 .updatedAt(updatedAt)
                 .updatedBy(updatedBy)
                 .build();

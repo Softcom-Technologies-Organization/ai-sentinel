@@ -6,6 +6,7 @@ This module provides intelligent text chunking that respects semantic boundaries
 Critical for models like GLiNER that have internal sentence-level token limits.
 """
 
+import time
 import logging
 from dataclasses import dataclass
 from typing import Any, List, Optional
@@ -67,7 +68,7 @@ class SemanticTextChunker:
         
         if chunk_size <= overlap:
             raise ValueError(f"chunk_size ({chunk_size}) must be greater than overlap ({overlap})")
-        
+
         self.tokenizer = tokenizer
         self.chunk_size = chunk_size
         self.overlap = overlap
@@ -80,7 +81,7 @@ class SemanticTextChunker:
             tokenizer, 
             chunk_size
         )
-        
+
         self.logger.info(
             f"SemanticTextChunker initialized: chunk_size={chunk_size}, overlap={overlap}"
         )
@@ -98,6 +99,8 @@ class SemanticTextChunker:
         Raises:
             RuntimeError: If chunking fails
         """
+        start_time = time.time()
+
         if not text:
             return []
         
@@ -133,7 +136,8 @@ class SemanticTextChunker:
             self.logger.debug(
                 f"Chunked {len(text)} chars into {len(results)} semantic chunks"
             )
-            
+            elapsed_time = time.time() - start_time
+            print(f"[chunk_text] Chunking text completed in {elapsed_time:.2f}s")
             return results
             
         except Exception as e:

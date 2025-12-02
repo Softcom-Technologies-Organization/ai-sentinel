@@ -129,6 +129,20 @@ Before starting, make sure you have:
   - Create an account on [Hugging Face](https://huggingface.co/join)
   - Generate an API key in [Settings > Access Tokens](https://huggingface.co/settings/tokens) _(token type: read)_
 
+- **Download the ai-sentinel docker-compose file from Github**:
+
+  You can directly download the `docker-compose.yml` file from GitHub:
+
+  - Repository URL: https://github.com/Softcom-Technologies-Organization/ai-sentinel
+  - Direct `docker-compose.yml` file: https://github.com/Softcom-Technologies-Organization/ai-sentinel/blob/main/docker-compose.yml
+
+  On the `docker-compose.yml` file page:
+  1. Open the link above in your browser.
+  2. In the top-right area of the file header, click the **"Download raw file"** button (down arrow icon) to download the file to your machine.
+  3. Save the file as `docker-compose.yml` in a dedicated folder (for example: `ai-sentinel/`).
+
+  ![Download docker-compose from GitHub](docs/screenshots/dowload-docker-compose.png)
+
 **Optional but recommended:**
 - Git (to clone the repository in development mode)
 - 16 GB RAM minimum (for AI models)

@@ -202,10 +202,15 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
    * Business rule: All PII type keys are normalized to UPPERCASE at the source (Python gRPC service),
    * ensuring consistent translation lookup across all detectors.
    *
-   * @param key PII type key (e.g., "EMAIL", "CREDIT_CARD", "Piitype.email")
+   * @param key PII type key (e.g., "EMAIL", "CREDIT_CARD", "Piitype.email"), can be undefined
    * @returns Translated label or formatted fallback
    */
-  translatePiiType(key: string): string {
+  translatePiiType(key: string | undefined): string {
+    // Handle undefined or empty key
+    if (!key) {
+      return this.formatFallbackLabel('UNKNOWN');
+    }
+
     // Handle edge case where key itself contains "piiTypes." or "Piitype." prefix
     let cleanKey = key;
     if (key.toLowerCase().startsWith('piitype')) {

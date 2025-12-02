@@ -8,6 +8,8 @@ as PIIDetector but uses GLiNER model for entity detection.
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Dict, List, Optional, Tuple, Any
+
 from pii_detector.application.config.detection_policy import DetectionConfig
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.exception.exceptions import ModelNotLoadedError
@@ -16,7 +18,6 @@ from pii_detector.infrastructure.model_management.gliner_model_manager import \
 # FIXME: from service.detector.models import
 from pii_detector.infrastructure.text_processing.semantic_chunker import \
   create_chunker
-from typing import Dict, List, Optional, Tuple, Any
 
 
 class GLiNERDetector:
@@ -358,15 +359,16 @@ class GLiNERDetector:
         """
         return list(self.pii_type_mapping.keys())
 
-    def _convert_to_pii_entities(self, raw_entities: List[Dict]) -> List[PIIEntity]:
+    def _convert_to_pii_entities(self, raw_entities: List[Dict], chunk_text: str) -> List[PIIEntity]:
         """
         Convert GLiNER entities to PIIEntity format.
         
         Args:
             raw_entities: Raw entities from GLiNER
+            chunk_text: The chunk text to extract actual PII substrings from
             
         Returns:
-            List of PIIEntity objects
+            List of PIIEntity objects with correctly extracted PII text
         """
         entities = []
         
@@ -374,12 +376,17 @@ class GLiNERDetector:
             gliner_label = entity.get("label", "")
             pii_type = self.pii_type_mapping.get(gliner_label, gliner_label.upper())
             
+            # Extract actual PII text using start/end positions
+            start = entity.get("start", 0)
+            end = entity.get("end", 0)
+            actual_pii_text = chunk_text[start:end] if 0 <= start < end <= len(chunk_text) else ""
+            
             pii_entity = PIIEntity(
-                text=entity.get("text", ""),
+                text=actual_pii_text,
                 pii_type=pii_type,
                 type_label=pii_type,
-                start=entity.get("start", 0),
-                end=entity.get("end", 0),
+                start=start,
+                end=end,
                 score=entity.get("score", 0.0)
             )
             # Tag provenance for downstream logging (e.g. gRPC async PII logs)
@@ -487,17 +494,17 @@ class GLiNERDetector:
             f"[{detection_id}] Processing chunk {chunk_idx + 1} in parallel: "
             f"{len(chunk_result.text)} chars"
         )
-        
+
         # Process single chunk with GLiNER
         raw_entities = self.model.predict_entities(
             chunk_result.text,
             labels,
             threshold=threshold
         )
-        
-        # Convert raw entities to PIIEntity objects
-        chunk_entities = self._convert_to_pii_entities(raw_entities)
-        
+
+        # Convert raw entities to PIIEntity objects with chunk text for extraction
+        chunk_entities = self._convert_to_pii_entities(raw_entities, chunk_result.text)
+
         # Adjust entity positions relative to original text
         adjusted_entities = []
         for entity in chunk_entities:
@@ -615,8 +622,8 @@ class GLiNERDetector:
                 threshold=threshold
             )
             
-            # Convert raw entities to PIIEntity objects
-            chunk_entities = self._convert_to_pii_entities(raw_entities)
+            # Convert raw entities to PIIEntity objects with chunk text for extraction
+            chunk_entities = self._convert_to_pii_entities(raw_entities, chunk_result.text)
             
             # Adjust entity positions relative to original text and avoid duplicates
             for entity in chunk_entities:

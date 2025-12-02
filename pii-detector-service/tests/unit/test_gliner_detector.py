@@ -7,14 +7,15 @@ covering all methods and edge cases for 100% code coverage.
 
 import logging
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 from typing import List, Dict
+from unittest.mock import Mock, patch, MagicMock
 
-from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
-from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.application.config.detection_policy import DetectionConfig
-from pii_detector.domain.exception.exceptions import ModelNotLoadedError, PIIDetectionError
-from pii_detector.infrastructure.text_processing.semantic_chunker import ChunkResult
+from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.domain.exception.exceptions import ModelNotLoadedError
+from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
+from pii_detector.infrastructure.text_processing.semantic_chunker import \
+  ChunkResult
 
 
 class TestGLiNERDetectorInitialization:
@@ -241,16 +242,155 @@ class TestConfiguration:
         config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
         detector = GLiNERDetector(config=config)
         
+        chunk_text = "john@example.com"
         raw_entities = [
             {"text": "john@example.com", "label": "email", "start": 0, "end": 16, "score": 0.95}
         ]
         
-        result = detector._convert_to_pii_entities(raw_entities)
+        result = detector._convert_to_pii_entities(raw_entities, chunk_text)
         
         assert len(result) == 1
         assert isinstance(result[0], PIIEntity)
         assert result[0].text == "john@example.com"
         assert result[0].pii_type == "EMAIL"
+    
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
+    def test_should_extract_pii_substring_from_chunk_text(self, mock_manager_class):
+        """
+        Test Bug #4 fix: Verify that PII entities contain only the extracted substring,
+        not the full chunk text.
+        
+        This test ensures that when GLiNER detects PII in a chunk, the PIIEntity.text
+        field contains ONLY the specific PII value (e.g., "john@example.com") extracted
+        using start/end positions, NOT the entire chunk paragraph.
+        """
+        config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
+        detector = GLiNERDetector(config=config)
+        
+        # Simulate a chunk of text with PII at specific positions
+        chunk_text = "Contact john@example.com for more information about the project"
+        
+        # GLiNER raw entities with start/end positions
+        raw_entities = [
+            {
+                "text": chunk_text,  # GLiNER returns full chunk text here (bug source)
+                "label": "email",
+                "start": 8,  # Position of 'j' in john@example.com
+                "end": 24,   # Position after 'm' in john@example.com
+                "score": 0.95
+            }
+        ]
+        
+        # Convert entities - should extract substring using positions
+        result = detector._convert_to_pii_entities(raw_entities, chunk_text)
+        
+        # Verify: PIIEntity.text should contain ONLY the extracted email
+        assert len(result) == 1
+        assert isinstance(result[0], PIIEntity)
+        assert result[0].text == "john@example.com", \
+            f"Expected 'john@example.com' but got '{result[0].text}'"
+        assert result[0].text != chunk_text, \
+            "PIIEntity.text should NOT contain full chunk text"
+        assert result[0].pii_type == "EMAIL"
+        assert result[0].start == 8
+        assert result[0].end == 24
+        assert result[0].score == 0.95
+    
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
+    def test_should_extract_multiple_pii_substrings_from_chunk(self, mock_manager_class):
+        """
+        Test extraction of multiple PII entities from same chunk.
+        
+        Verifies that each entity gets its own correctly extracted substring
+        based on its start/end positions.
+        """
+        config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
+        detector = GLiNERDetector(config=config)
+        
+        chunk_text = "Contact John Doe at john@example.com or call 555-1234 for assistance"
+        
+        raw_entities = [
+            {
+                "text": chunk_text,
+                "label": "person name",
+                "start": 8,
+                "end": 16,  # "John Doe"
+                "score": 0.92
+            },
+            {
+                "text": chunk_text,
+                "label": "email",
+                "start": 20,
+                "end": 36,  # "john@example.com"
+                "score": 0.95
+            },
+            {
+                "text": chunk_text,
+                "label": "phone number",
+                "start": 45,
+                "end": 53,  # "555-1234"
+                "score": 0.88
+            }
+        ]
+        
+        result = detector._convert_to_pii_entities(raw_entities, chunk_text)
+        
+        assert len(result) == 3
+        
+        # Verify first entity: person name
+        assert result[0].text == "John Doe"
+        assert result[0].pii_type == "PERSONNAME"
+        assert result[0].start == 8
+        assert result[0].end == 16
+        
+        # Verify second entity: email
+        assert result[1].text == "john@example.com"
+        assert result[1].pii_type == "EMAIL"
+        assert result[1].start == 20
+        assert result[1].end == 36
+        
+        # Verify third entity: phone
+        assert result[2].text == "555-1234"
+        assert result[2].pii_type == "TELEPHONENUM"
+        assert result[2].start == 45
+        assert result[2].end == 53
+    
+    @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
+    def test_should_handle_invalid_positions_gracefully(self, mock_manager_class):
+        """
+        Test handling of invalid start/end positions.
+        
+        When positions are out of bounds or invalid, should return empty string
+        instead of crashing.
+        """
+        config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
+        detector = GLiNERDetector(config=config)
+        
+        chunk_text = "Contact john@example.com"
+        
+        raw_entities = [
+            {
+                "text": chunk_text,
+                "label": "email",
+                "start": 100,  # Out of bounds
+                "end": 200,
+                "score": 0.95
+            },
+            {
+                "text": chunk_text,
+                "label": "email",
+                "start": 10,
+                "end": 5,  # Invalid: end < start
+                "score": 0.95
+            }
+        ]
+        
+        result = detector._convert_to_pii_entities(raw_entities, chunk_text)
+        
+        # Should not crash, but return entities with empty text
+        assert len(result) == 2
+        assert result[0].text == ""
+        assert result[1].text == ""
     
     @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_apply_masks_correctly(self, mock_manager_class):

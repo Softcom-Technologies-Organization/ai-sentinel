@@ -22,7 +22,7 @@ device = "cpu"
 max_length = 720
 
 # Model-specific confidence threshold (optimized for GLiNER)
-threshold = 0.7
+threshold = 0.3
 
 # Download settings for this model
 [download]

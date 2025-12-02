@@ -98,6 +98,12 @@ public enum PersonallyIdentifiableInformationType {
     IN_VOTER(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
     IN_PASSPORT(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
     
+    // Additional mappings for labels without underscores (sent by Python gRPC service)
+    IPADDRESS(ContentPiiDetection.PersonallyIdentifiableInformationType.IP_ADDRESS),
+    MACADDRESS(ContentPiiDetection.PersonallyIdentifiableInformationType.IP_ADDRESS),
+    VEHICLEREG(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
+    VOTERID(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
+    
     // Finland specific
     FI_PERSONAL_IDENTITY_CODE(ContentPiiDetection.PersonallyIdentifiableInformationType.SSN),
     

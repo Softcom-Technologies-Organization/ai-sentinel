@@ -100,7 +100,7 @@ services:
         # PostgreSQL Main Database Credentials
         if [ ! -s /secrets/postgres_user.txt ]; then
           echo "[secrets-bootstrap] Generating postgres_user.txt...";
-          echo "aisentinel_admin" > /secrets/postgres_user.txt || { echo "[ERROR] Failed to create postgres user"; exit 1; };
+          echo "postgres" > /secrets/postgres_user.txt || { echo "[ERROR] Failed to create postgres user"; exit 1; };
           echo "[secrets-bootstrap] ✓ postgres_user.txt created";
         else
           echo "[secrets-bootstrap] ✓ postgres_user.txt already exists";

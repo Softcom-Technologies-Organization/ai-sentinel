@@ -29,7 +29,7 @@
         <springdoc.version>2.2.0</springdoc.version>
         <grpc.version>1.76.0</grpc.version>
         <protobuf.version>4.33.0</protobuf.version>
-        <armeria-bom.version>1.33.4</armeria-bom.version>
+        <armeria-bom.version>1.34.0</armeria-bom.version>
         <jsoup.version>1.17.2</jsoup.version>
         <archunit-junit5.version>1.4.1</archunit-junit5.version>
         <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
@@ -188,11 +188,6 @@
         </dependency>
 
         <!-- Test dependencies -->
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

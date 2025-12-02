@@ -148,7 +148,7 @@ AI Sentinel uses **Infisical** for secure secrets management. No `.env` files ar
 
 **Production mode:**
 ```bash
-docker compose -f docker-compose.prod.yml up -d
+docker compose up -d
 ```
 
 **Development mode:**
@@ -247,7 +247,7 @@ Navigate to the Secrets section and add the following 4 secrets:
 Once you've configured the secrets in Infisical, restart the application containers to load them:
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --force-recreate pii-detector pii-reporting-api pii-reporting-ui
+docker compose up -d --force-recreate pii-detector pii-reporting-api pii-reporting-ui
 ```
 
 **Or for development mode:**
@@ -262,7 +262,7 @@ The services will now:
 
 **Verify services are running:**
 ```bash
-docker compose -f docker-compose.prod.yml ps
+docker compose ps
 ```
 
 You should see all services in "Up" status.
@@ -464,7 +464,7 @@ Once the scan is complete:
 **Service management:**
 ```bash
 # Start application (production mode)
-docker compose -f docker-compose.prod.yml up -d
+docker compose up -d
 
 # Start application (development mode)
 docker compose -f docker-compose.dev.yml up -d

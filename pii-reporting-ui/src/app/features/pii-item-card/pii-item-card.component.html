@@ -94,11 +94,14 @@
             <div class="col-12 md:col-6 lg:col-4">
               <p-card>
                 <p>
-                  @if (revealed) { {{ detectedPII.sensitiveContext || '—' }} }
-                  @else { {{ detectedPII.maskedContext || '—' }} }
+                  @if (revealed) { {{ detectedPII.sensitiveValue || '—' }} }
+                  @else { ••••••••• }
                 </p>
                 <p-divider />
                 <div class="flex gap-2 flex-wrap">
+                  @if (detectedPII.piiTypeLabel || detectedPII.piiType) {
+                  <p-tag severity="info" [value]="translatePiiType(detectedPII.piiTypeLabel || detectedPII.piiType)" />
+                  }
                   @if (detectedPII.confidence !== undefined) {
                   <p-tag severity="secondary" [value]="'piiItem.entity.score' | transloco:{ value: formatScore(detectedPII.confidence) }" />
                   }

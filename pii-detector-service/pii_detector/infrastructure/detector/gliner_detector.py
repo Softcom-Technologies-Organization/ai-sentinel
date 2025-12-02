@@ -8,6 +8,8 @@ as PIIDetector but uses GLiNER model for entity detection.
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Dict, List, Optional, Tuple, Any
+
 from pii_detector.application.config.detection_policy import DetectionConfig
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.exception.exceptions import ModelNotLoadedError
@@ -16,7 +18,6 @@ from pii_detector.infrastructure.model_management.gliner_model_manager import \
 # FIXME: from service.detector.models import
 from pii_detector.infrastructure.text_processing.semantic_chunker import \
   create_chunker
-from typing import Dict, List, Optional, Tuple, Any
 
 
 class GLiNERDetector:
@@ -192,37 +193,54 @@ class GLiNERDetector:
 
     def _load_pii_type_mapping(self) -> Dict[str, str]:
         """
-        Load PII type mapping from configuration.
+        Load PII type mapping from database (detector_label → pii_type).
+        
+        Fetches enabled GLINER PII type configurations from database and builds
+        a reverse mapping from detector labels to normalized PII types.
         
         Returns:
-            Dictionary mapping GLiNER labels to PII types
+            Dictionary mapping detector labels to PII types.
+            Falls back to hardcoded defaults if database is unavailable.
         """
-        from pii_detector.application.config.detection_policy import _load_llm_config
-        
         try:
-            config = _load_llm_config()
-            models_config = config.get("models", {})
-            gliner_config = models_config.get("gliner-pii", {})
-            mapping = gliner_config.get("pii_type_mapping", {})
+            from pii_detector.infrastructure.adapter.out.database_config_adapter import get_database_config_adapter
+            
+            adapter = get_database_config_adapter()
+            pii_type_configs = adapter.fetch_pii_type_configs(detector='GLINER')
+            
+            if not pii_type_configs:
+                self.logger.warning("No PII type configs found in database for GLINER, using defaults")
+                return self._get_default_mapping()
+            
+            # Build reverse mapping: detector_label → pii_type
+            mapping = {}
+            for pii_type, config in pii_type_configs.items():
+                detector_label = config.get('detector_label')
+                if detector_label and config.get('enabled', False):
+                    mapping[detector_label] = pii_type
             
             if not mapping:
-                self.logger.warning("No PII type mapping found in config, using defaults")
+                self.logger.warning("No enabled PII types with detector labels in database, using defaults")
                 return self._get_default_mapping()
             
             return mapping
             
         except Exception as e:
-            self.logger.warning(f"Failed to load mapping from config: {e}, using defaults")
+            self.logger.warning(f"Failed to load mapping from database: {e}, using defaults")
             return self._get_default_mapping()
 
     def _get_default_mapping(self) -> Dict[str, str]:
         """
-        Get default PII type mapping.
+        Get default PII type mapping as fallback.
+        
+        This fallback mapping is used when database is unavailable.
+        In production, mappings should be managed via database (pii_type_config table).
         
         Returns:
-            Default mapping from GLiNER labels to PII types
+            Default mapping from detector labels to PII types (27 types)
         """
         return {
+            # Original 17 types
             "account number": "ACCOUNTNUM",
             "building number": "BUILDINGNUM",
             "city": "CITY",
@@ -239,7 +257,18 @@ class GLiNERDetector:
             "tax number": "TAXNUM",
             "phone number": "TELEPHONENUM",
             "username": "USERNAME",
-            "zip code": "ZIPCODE"
+            "zip code": "ZIPCODE",
+            # Additional 10 types
+            "person name": "PERSONNAME",
+            "full name": "FULLNAME",
+            "URL": "URL",
+            "IBAN": "IBAN",
+            "IP address": "IPADDRESS",
+            "MAC address": "MACADDRESS",
+            "crypto wallet": "CRYPTOWALLET",
+            "date": "DATE",
+            "vehicle registration": "VEHICLEREG",
+            "voter ID": "VOTERID"
         }
 
     def _load_log_throughput_config(self) -> bool:
@@ -261,28 +290,42 @@ class GLiNERDetector:
 
     def _load_scoring_overrides(self) -> Dict[str, float]:
         """
-        Load per-entity-type scoring thresholds from configuration.
+        Load per-entity-type scoring thresholds from database.
+        
+        Scoring thresholds are now managed in the database (pii_type_config table)
+        for runtime configurability. This method fetches enabled PII type configs
+        for the GLINER detector and builds a threshold map.
         
         Returns:
-            Dictionary mapping PII types to minimum confidence thresholds
+            Dictionary mapping PII types to minimum confidence thresholds.
+            Empty dict if database is unavailable or no configs found.
         """
-        from pii_detector.application.config.detection_policy import _load_llm_config
-        
         try:
-            config = _load_llm_config()
-            models_config = config.get("models", {})
-            gliner_config = models_config.get("gliner-pii", {})
-            scoring = gliner_config.get("scoring", {})
+            from pii_detector.infrastructure.adapter.out.database_config_adapter import get_database_config_adapter
+            
+            adapter = get_database_config_adapter()
+            pii_type_configs = adapter.fetch_pii_type_configs(detector='GLINER')
+            
+            if not pii_type_configs:
+                self.logger.info("No PII type configs found in database for GLINER")
+                return {}
+            
+            # Transform DB format {pii_type: {enabled, threshold, ...}} 
+            # to scoring_overrides format {pii_type: threshold}
+            scoring = {}
+            for pii_type, config in pii_type_configs.items():
+                if config.get('enabled', False):
+                    scoring[pii_type] = config['threshold']
             
             if scoring:
-                self.logger.info(f"Loaded {len(scoring)} scoring overrides for entity types")
+                self.logger.info(f"Loaded {len(scoring)} scoring overrides from database")
             else:
-                self.logger.info("No scoring overrides found in configuration")
+                self.logger.info("No enabled PII types found in database for GLINER")
             
             return scoring
             
         except Exception as e:
-            self.logger.warning(f"Failed to load scoring overrides from config: {e}")
+            self.logger.warning(f"Failed to load scoring overrides from database: {e}")
             return {}
 
     def _load_parallel_config(self) -> Tuple[bool, int]:
@@ -316,15 +359,16 @@ class GLiNERDetector:
         """
         return list(self.pii_type_mapping.keys())
 
-    def _convert_to_pii_entities(self, raw_entities: List[Dict]) -> List[PIIEntity]:
+    def _convert_to_pii_entities(self, raw_entities: List[Dict], chunk_text: str) -> List[PIIEntity]:
         """
         Convert GLiNER entities to PIIEntity format.
         
         Args:
             raw_entities: Raw entities from GLiNER
+            chunk_text: The chunk text to extract actual PII substrings from
             
         Returns:
-            List of PIIEntity objects
+            List of PIIEntity objects with correctly extracted PII text
         """
         entities = []
         
@@ -332,12 +376,17 @@ class GLiNERDetector:
             gliner_label = entity.get("label", "")
             pii_type = self.pii_type_mapping.get(gliner_label, gliner_label.upper())
             
+            # Extract actual PII text using start/end positions
+            start = entity.get("start", 0)
+            end = entity.get("end", 0)
+            actual_pii_text = chunk_text[start:end] if 0 <= start < end <= len(chunk_text) else ""
+            
             pii_entity = PIIEntity(
-                text=entity.get("text", ""),
+                text=actual_pii_text,
                 pii_type=pii_type,
                 type_label=pii_type,
-                start=entity.get("start", 0),
-                end=entity.get("end", 0),
+                start=start,
+                end=end,
                 score=entity.get("score", 0.0)
             )
             # Tag provenance for downstream logging (e.g. gRPC async PII logs)
@@ -445,17 +494,17 @@ class GLiNERDetector:
             f"[{detection_id}] Processing chunk {chunk_idx + 1} in parallel: "
             f"{len(chunk_result.text)} chars"
         )
-        
+
         # Process single chunk with GLiNER
         raw_entities = self.model.predict_entities(
             chunk_result.text,
             labels,
             threshold=threshold
         )
-        
-        # Convert raw entities to PIIEntity objects
-        chunk_entities = self._convert_to_pii_entities(raw_entities)
-        
+
+        # Convert raw entities to PIIEntity objects with chunk text for extraction
+        chunk_entities = self._convert_to_pii_entities(raw_entities, chunk_result.text)
+
         # Adjust entity positions relative to original text
         adjusted_entities = []
         for entity in chunk_entities:
@@ -573,8 +622,8 @@ class GLiNERDetector:
                 threshold=threshold
             )
             
-            # Convert raw entities to PIIEntity objects
-            chunk_entities = self._convert_to_pii_entities(raw_entities)
+            # Convert raw entities to PIIEntity objects with chunk text for extraction
+            chunk_entities = self._convert_to_pii_entities(raw_entities, chunk_result.text)
             
             # Adjust entity positions relative to original text and avoid duplicates
             for entity in chunk_entities:

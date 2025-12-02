@@ -527,12 +527,12 @@ def test_email_detection():
 
 2. **Start services**:
    ```bash
-   docker-compose -f docker-compose.prod.yml up -d pii-detector-service
+   docker-compose up -d pii-detector-service
    ```
 
 3. **Verify deployment**:
    ```bash
-   docker-compose -f docker-compose.prod.yml logs -f pii-detector-service
+   docker-compose logs -f pii-detector-service
    ```
 
 ### Health Checks

@@ -22,7 +22,7 @@ device = "cpu"
 max_length = 720
 
 # Model-specific confidence threshold (optimized for GLiNER)
-threshold = 0.7
+threshold = 0.3
 
 # Download settings for this model
 [download]
@@ -35,53 +35,27 @@ resume_download = true
 [download.custom_filenames]
 "config.json" = "gliner_config.json"
 
-# PII type mapping - Maps GLiNER labels to piiranha-v1 standard types
-# GLiNER uses natural language labels, mapped here to normalized PII types
-[pii_type_mapping]
-"account number" = "ACCOUNTNUM"
-"building number" = "BUILDINGNUM"
-"city" = "CITY"
-"credit card number" = "CREDITCARDNUMBER"
-"date of birth" = "DATEOFBIRTH"
-"driver license number" = "DRIVERLICENSENUM"
-"email" = "EMAIL"
-"first name" = "GIVENNAME"
-"ID card number" = "IDCARDNUM"
-"password" = "PASSWORD"
-"social security number" = "SOCIALNUM"
-"street" = "STREET"
-"last name" = "SURNAME"
-"tax number" = "TAXNUM"
-"phone number" = "TELEPHONENUM"
-"username" = "USERNAME"
-"zip code" = "ZIPCODE"
-
-# Per-entity-type confidence thresholds (post-filter)
-# These thresholds are applied AFTER GLiNER detection to filter out low-confidence results
-# Entities below these thresholds are discarded to minimize false positives
-# Based on Perplexity recommendations for GLiNER PII model reliability
-[scoring]
-# High variability / High false positive risk (0.7-0.9)
-GIVENNAME = 0.75           # Names can be ambiguous
-SURNAME = 0.75             # Last names can be ambiguous
-USERNAME = 0.75            # Usernames lack standardization
-EMAIL = 0.80               # Variable formats
-PASSWORD = 0.85            # No standardization, high overlap with other text
-
-# Very high false positive risk for phone numbers in documents with many numbers
-TELEPHONENUM = 0.80        # Increased to 0.80 to avoid detecting dates/amounts/codes as phones
-
-# Medium risk / Structured formats (0.5-0.7)
-ACCOUNTNUM = 0.70          # Structured but variable
-CREDITCARDNUMBER = 0.70    # Standardized format
-DATEOFBIRTH = 0.80         # Standard formats
-DRIVERLICENSENUM = 0.80    # Standardized per country
-IDCARDNUM = 0.80           # Standardized per country
-SOCIALNUM = 0.80           # Standardized format (SSN, etc.)
-TAXNUM = 0.80              # Standardized per country
-STREET = 0.80              # Addresses can be ambiguous
-
-# Low risk / Well-structured (0.3-0.5)
-BUILDINGNUM = 0.80         # Simple numeric patterns
-CITY = 0.80                # Location names
-ZIPCODE = 0.80             # Highly standardized format
+# ============================================================================
+# IMPORTANT: PII Type Configuration Moved to Database
+# ============================================================================
+# 
+# PII type mappings and thresholds are now managed in the database for
+# runtime configurability without redeployment.
+#
+# Database Table: pii_type_config
+# - pii_type: Internal PII type code (e.g., "EMAIL", "PERSONNAME")
+# - detector_label: Natural language label for detector (e.g., "email", "person name")
+# - threshold: Per-type confidence threshold (0.0-1.0)
+# - enabled: Whether this PII type is active
+# - detector: Detector name (GLINER, PRESIDIO, REGEX)
+#
+# Configuration is loaded at runtime via database_config_adapter.py
+# Fallback to hardcoded defaults only if database is unavailable.
+#
+# To add new PII types or modify mappings:
+# 1. Use the Java API: POST /api/pii-type-configs
+# 2. Or directly update pii_type_config table in PostgreSQL
+# 3. Changes take effect immediately without service restart
+#
+# Migration: init-scripts/009-add-detector-label.sql
+# ============================================================================

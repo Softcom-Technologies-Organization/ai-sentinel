@@ -58,6 +58,9 @@ dependencies = [
     # PII Detection libraries
     "presidio-analyzer>=2.2.0",
     
+    # Database connectivity for config fetch
+    "psycopg2-binary>=2.9.0",
+    
     # Configuration management (TOML support)
     "toml>=0.10.0",
     "tomli>=2.0.0; python_version < '3.11'"

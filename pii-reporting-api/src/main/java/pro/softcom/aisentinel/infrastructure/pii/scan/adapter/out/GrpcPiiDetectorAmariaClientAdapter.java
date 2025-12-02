@@ -56,6 +56,7 @@ public class GrpcPiiDetectorAmariaClientAdapter implements PiiDetectorClient {
             PiiDetection.PIIDetectionRequest request = PiiDetection.PIIDetectionRequest.newBuilder()
                     .setContent(content)
                     .setThreshold(threshold)
+                    .setFetchConfigFromDb(true)
                     .build();
 
             PiiDetection.PIIDetectionResponse response = blockingStub

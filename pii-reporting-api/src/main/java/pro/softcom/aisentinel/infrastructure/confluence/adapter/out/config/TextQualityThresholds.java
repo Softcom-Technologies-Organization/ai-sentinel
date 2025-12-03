@@ -1,4 +1,4 @@
-package pro.softcom.aisentinel.infrastructure.document.config;
+package pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config;
 
 import lombok.Getter;
 import lombok.Setter;

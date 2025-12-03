@@ -366,7 +366,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
 
         //TODO: remove the following log before first release
         Mono.fromRunnable(() -> {
-//            log.info("Content: {}", safeContent);
+            log.info("Content: {}", safeContent);
             log.info("Time to send and received content pii scan result: {}", duration);
             log.info("Pii content: {}", contentPiiDetection);
             double charsPerSecond = duration > 0 ? (charCount * 1000.0) / duration : 0;

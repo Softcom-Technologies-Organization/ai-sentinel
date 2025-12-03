@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
 import pro.softcom.aisentinel.domain.confluence.AttachmentTypeFilter;
-import pro.softcom.aisentinel.infrastructure.document.validator.TextQualityValidator;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.validator.TextQualityValidator;
 
 /**
  * WHAT: Attachment text extractor based on Apache Tika (programmatic API, no XML config).

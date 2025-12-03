@@ -1,4 +1,4 @@
-package pro.softcom.aisentinel.infrastructure.document.config;
+package pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;

@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import pii_detection.PIIDetectionServiceGrpc;
 import pii_detection.PiiDetection;
+import pro.softcom.aisentinel.application.pii.reporting.service.parser.HtmlContentParser;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIdentifiableInformationType;
@@ -27,6 +28,7 @@ public class GrpcPiiDetectorAmariaClientAdapter implements PiiDetectorClient {
 
     private final PiiDetectorConfig config;
     private final PIIDetectionServiceGrpc.PIIDetectionServiceBlockingStub blockingStub;
+    private final HtmlContentParser htmlParser = new HtmlContentParser();
 
     public GrpcPiiDetectorAmariaClientAdapter(PiiDetectorConfig config, PIIDetectionServiceGrpc.PIIDetectionServiceBlockingStub blockingStub) {
         this.config = config;
@@ -54,8 +56,9 @@ public class GrpcPiiDetectorAmariaClientAdapter implements PiiDetectorClient {
         log.debug("[Armeria] Analyzing content for PII - PageId: {}, Threshold: {}", pageId, threshold);
         log.info("[Armeria] PII Detection request for page with title {} and id {} with content: \n{}",pageTitle, pageId, content);
         try {
+            String cleanedContent = htmlParser.cleanText(content);
             PiiDetection.PIIDetectionRequest request = PiiDetection.PIIDetectionRequest.newBuilder()
-                    .setContent(content)
+                    .setContent(cleanedContent)
                     .setThreshold(threshold)
                     .setFetchConfigFromDb(true)
                     .build();

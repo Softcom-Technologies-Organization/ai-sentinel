@@ -590,4 +590,77 @@ class PiiContextExtractorTest {
         });
     }
 
+    @Test
+    @DisplayName("Should_ExtractLimitedContext_When_NoLineDelimitersExist")
+    void Should_ExtractLimitedContext_When_NoLineDelimitersExist() {
+        // Given: Long text without any \n or HTML tags - simulates Confluence content without delimiters
+        // Bug: Without delimiters, the entire content becomes the "line" context
+        String leftPadding = "A".repeat(200);
+        String pii = "john.doe@example.com";
+        String rightPadding = "B".repeat(200);
+        String longText = leftPadding + pii + rightPadding;
+        int start = 200;
+        int end = 220;
+        
+        // When
+        String context = piiContextExtractor.extractMaskedContext(longText, start, end, "EMAIL");
+        
+        // Then: Context should be LIMITED to ~300 chars, NOT the entire 420 chars
+        assertSoftly(softly -> {
+            softly.assertThat(context.length())
+                .as("Context should be limited, not entire content")
+                .isLessThan(350);
+            softly.assertThat(context).contains("[EMAIL]");
+            // Should not contain all the padding characters
+            softly.assertThat(context).doesNotContain("A".repeat(180));
+            softly.assertThat(context).doesNotContain("B".repeat(180));
+        });
+    }
+
+    @Test
+    @DisplayName("Should_ExtractLimitedSensitiveContext_When_NoLineDelimitersExist")
+    void Should_ExtractLimitedSensitiveContext_When_NoLineDelimitersExist() {
+        // Given: Long text without any \n or HTML tags
+        String leftPadding = "A".repeat(200);
+        String pii = "john.doe@example.com";
+        String rightPadding = "B".repeat(200);
+        String longText = leftPadding + pii + rightPadding;
+        int start = 200;
+        int end = 220;
+        
+        // When
+        String context = piiContextExtractor.extractSensitiveContext(longText, start, end);
+        
+        // Then: Context should be LIMITED, containing the PII value
+        assertSoftly(softly -> {
+            softly.assertThat(context.length())
+                .as("Sensitive context should be limited, not entire content")
+                .isLessThan(350);
+            softly.assertThat(context).contains(pii);
+        });
+    }
+
+    @Test
+    @DisplayName("Should_ExtractLimitedContext_When_HtmlWithoutBlockTags")
+    void Should_ExtractLimitedContext_When_HtmlWithoutBlockTags() {
+        // Given: HTML content with only inline tags (no block-level tags that create line breaks)
+        String leftPadding = "<span>X</span>".repeat(30);
+        String pii = "<strong>john.doe@example.com</strong>";
+        String rightPadding = "<em>Y</em>".repeat(30);
+        String htmlContent = leftPadding + pii + rightPadding;
+        int start = htmlContent.indexOf("john.doe@example.com");
+        int end = start + "john.doe@example.com".length();
+        
+        // When
+        String context = piiContextExtractor.extractMaskedContext(htmlContent, start, end, "EMAIL");
+        
+        // Then: Context should be limited even without block tags
+        assertSoftly(softly -> {
+            softly.assertThat(context.length())
+                .as("HTML context without block tags should be limited")
+                .isLessThan(400);
+            softly.assertThat(context).contains("[EMAIL]");
+        });
+    }
+
 }

@@ -8,8 +8,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
-import pro.softcom.aisentinel.infrastructure.document.config.TextQualityThresholds;
-import pro.softcom.aisentinel.infrastructure.document.validator.TextQualityValidator;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.TextQualityThresholds;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.validator.TextQualityValidator;
 
 /**
  * Integration tests for TikaAttachmentTextExtractorAdapter.

@@ -9,7 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
-import pro.softcom.aisentinel.infrastructure.document.config.TextQualityThresholds;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.TextQualityThresholds;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.validator.TextQualityValidator;
 
 @DisplayName("TextQualityValidator - Human-Readable Text Detection")
 class TextQualityValidatorTest {

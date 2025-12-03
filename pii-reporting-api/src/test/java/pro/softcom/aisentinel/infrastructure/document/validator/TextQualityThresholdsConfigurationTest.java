@@ -6,7 +6,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import pro.softcom.aisentinel.infrastructure.document.config.TextQualityThresholds;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.TextQualityThresholds;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.validator.TextQualityValidator;
 
 /**
  * Configuration tests for TextQualityThresholds.

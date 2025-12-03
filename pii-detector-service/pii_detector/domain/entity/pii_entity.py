@@ -24,7 +24,11 @@ class PIIEntity:
     score: float
 
     def __getitem__(self, key):
-        """Support dictionary-style access for backward compatibility."""
+        """Support dictionary-style access for backward compatibility.
+        
+        This method supports both standard fields and dynamically attached
+        attributes (e.g., 'source' set by specific detectors).
+        """
         if key == 'text':
             return self.text
         elif key == 'type':
@@ -39,12 +43,20 @@ class PIIEntity:
             return self.end
         elif key == 'score':
             return self.score
+        elif hasattr(self, key):
+            # Support dynamically attached attributes
+            return getattr(self, key)
         else:
             raise KeyError(f"'{key}' not found in PIIEntity")
     
     def __contains__(self, key):
-        """Support 'in' operator for backward compatibility."""
-        return key in ['text', 'type', 'type_label', 'type_fr', 'start', 'end', 'score']
+        """Support 'in' operator for backward compatibility.
+        
+        This method checks both standard fields and dynamically attached
+        attributes (e.g., 'source' set by specific detectors).
+        """
+        standard_keys = ['text', 'type', 'type_label', 'type_fr', 'start', 'end', 'score']
+        return key in standard_keys or hasattr(self, key)
 
     def get(self, key, default=None):
         """Support dictionary-style get method for backward compatibility.
@@ -64,13 +76,34 @@ class PIIEntity:
             return default
 
     def keys(self):
-        """Support dictionary-style keys method."""
-        return ['text', 'type', 'type_label', 'type_fr', 'start', 'end', 'score']
+        """Support dictionary-style keys method.
+        
+        Returns both standard fields and dynamically attached attributes
+        (e.g., 'source' set by specific detectors).
+        """
+        standard_keys = ['text', 'type', 'type_label', 'type_fr', 'start', 'end', 'score']
+        
+        # Get dynamically attached attributes (not dataclass fields or private)
+        dataclass_fields = {'text', 'pii_type', 'type_label', 'start', 'end', 'score'}
+        dynamic_keys = [
+            key for key in self.__dict__.keys()
+            if key not in dataclass_fields and not key.startswith('_')
+        ]
+        
+        return standard_keys + dynamic_keys
 
     def values(self):
-        """Support dictionary-style values method."""
-        return [self.text, self.pii_type, self.type_label, self.type_label, self.start, self.end, self.score]
+        """Support dictionary-style values method.
+        
+        Returns values for both standard fields and dynamically attached
+        attributes (e.g., 'source' set by specific detectors).
+        """
+        return [self[key] for key in self.keys()]
 
     def items(self):
-        """Support dictionary-style items method."""
+        """Support dictionary-style items method.
+        
+        Returns items for both standard fields and dynamically attached
+        attributes (e.g., 'source' set by specific detectors).
+        """
         return [(key, self[key]) for key in self.keys()]

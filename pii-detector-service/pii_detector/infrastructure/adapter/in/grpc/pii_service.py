@@ -13,6 +13,7 @@ import os
 import psutil
 import threading
 import time
+import traceback
 from concurrent import futures
 # Import gRPC reflection for service discovery
 from grpc_reflection.v1alpha import reflection
@@ -437,7 +438,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             if request.fetch_config_from_db:
                 threshold, pii_type_configs, detector_flags = self._fetch_and_apply_config(threshold, request_id)
             
-            entities = self._execute_detection(content, threshold, request_id, detector_flags)
+            entities = self._execute_detection(content, threshold, request_id, detector_flags, pii_type_configs)
             
             # Apply PII type-specific filtering if configs were fetched
             if pii_type_configs:
@@ -612,17 +613,28 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
         context.set_details(error_message)
 
-    def _execute_detection(self, content: str, threshold: float, request_id: str, detector_flags: Optional[dict] = None) -> List:
+    def _execute_detection(
+        self, 
+        content: str, 
+        threshold: float, 
+        request_id: str, 
+        detector_flags: Optional[dict] = None,
+        pii_type_configs: Optional[Dict] = None
+    ) -> List:
         """Execute PII detection with dynamic detector activation and log performance metrics.
         
         Business rule: Detector activation flags from database override default configuration
         to enable runtime reconfiguration without service restart.
+        
+        Phase 3 fix: Fresh PII type configs are passed to Presidio detector to avoid
+        stale config cache issues when database configurations change.
         
         Args:
             content: Text to analyze
             threshold: Detection confidence threshold
             request_id: Request identifier for logging
             detector_flags: Optional dict with gliner_enabled, presidio_enabled, regex_enabled
+            pii_type_configs: Optional fresh PII type configs from database for Presidio
             
         Returns:
             List of detected PII entities
@@ -630,12 +642,16 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         processing_start = time.time()
         logger.debug("[%s] Starting PII detection processing...", request_id)
         
+        # Pass fresh configs to Presidio detector if available
+        self._pass_fresh_configs_to_presidio(pii_type_configs, request_id)
+        
         # Apply detector flags if available (for CompositePIIDetector)
         if detector_flags and hasattr(self.detector, 'detect_pii'):
             # Check if detector supports dynamic configuration (CompositePIIDetector)
             import inspect
             sig = inspect.signature(self.detector.detect_pii)
             supports_dynamic_config = 'enable_ml' in sig.parameters
+            supports_pii_configs = 'pii_type_configs' in sig.parameters
             
             if supports_dynamic_config:
                 logger.debug(
@@ -644,19 +660,41 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                     f"Presidio={detector_flags.get('presidio_enabled')}, "
                     f"Regex={detector_flags.get('regex_enabled')}"
                 )
-                entities = self.detector.detect_pii(
-                    content, 
-                    threshold,
-                    enable_ml=detector_flags.get('gliner_enabled'),
-                    enable_presidio=detector_flags.get('presidio_enabled'),
-                    enable_regex=detector_flags.get('regex_enabled')
-                )
+                # Pass pii_type_configs if detector supports it
+                if supports_pii_configs:
+                    entities = self.detector.detect_pii(
+                        content, 
+                        threshold,
+                        enable_ml=detector_flags.get('gliner_enabled'),
+                        enable_presidio=detector_flags.get('presidio_enabled'),
+                        enable_regex=detector_flags.get('regex_enabled'),
+                        pii_type_configs=pii_type_configs
+                    )
+                else:
+                    entities = self.detector.detect_pii(
+                        content, 
+                        threshold,
+                        enable_ml=detector_flags.get('gliner_enabled'),
+                        enable_presidio=detector_flags.get('presidio_enabled'),
+                        enable_regex=detector_flags.get('regex_enabled')
+                    )
             else:
-                # Fallback for simple detectors without dynamic config support
-                entities = self.detector.detect_pii(content, threshold)
+                # Simple detector - check if it supports pii_type_configs
+                if supports_pii_configs:
+                    entities = self.detector.detect_pii(content, threshold, pii_type_configs=pii_type_configs)
+                else:
+                    entities = self.detector.detect_pii(content, threshold)
         else:
-            # No detector flags provided or detector doesn't support them
-            entities = self.detector.detect_pii(content, threshold)
+            # No detector flags - check if detector supports pii_type_configs
+            if hasattr(self.detector, 'detect_pii'):
+                import inspect
+                sig = inspect.signature(self.detector.detect_pii)
+                if 'pii_type_configs' in sig.parameters:
+                    entities = self.detector.detect_pii(content, threshold, pii_type_configs=pii_type_configs)
+                else:
+                    entities = self.detector.detect_pii(content, threshold)
+            else:
+                entities = self.detector.detect_pii(content, threshold)
         
         processing_time = time.time() - processing_start
         
@@ -664,6 +702,64 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         self._log_detected_entities(request_id, entities)
         
         return entities
+    
+    def _pass_fresh_configs_to_presidio(self, pii_type_configs: Optional[Dict], request_id: str) -> None:
+        """
+        Pass fresh PII type configs to Presidio detector to avoid stale cache.
+        
+        Handles both direct PresidioDetector and CompositePIIDetector cases.
+        
+        Business rule: When database configs change, we must use fresh configs
+        at request time instead of relying on cached configs from initialization.
+        
+        Args:
+            pii_type_configs: Fresh PII type configs from database
+            request_id: Request identifier for logging
+        """
+        if not pii_type_configs:
+            logger.debug(f"[{request_id}] No fresh configs to pass to Presidio")
+            return
+        
+        try:
+            # Import here to avoid circular dependencies
+            from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
+            
+            # Case 1: Direct PresidioDetector
+            if isinstance(self.detector, PresidioDetector):
+                logger.info(
+                    f"[{request_id}] Passing fresh configs to direct PresidioDetector "
+                    f"({len(pii_type_configs)} types)"
+                )
+                # Configs will be passed in detect_pii() call
+                return
+            
+            # Case 2: CompositePIIDetector containing Presidio
+            if CompositePIIDetector and isinstance(self.detector, CompositePIIDetector):
+                # Try to access Presidio detector from composite
+                presidio_detector = getattr(self.detector, 'presidio_detector', None)
+                
+                if presidio_detector and isinstance(presidio_detector, PresidioDetector):
+                    logger.info(
+                        f"[{request_id}] Passing fresh configs to Presidio inside CompositePIIDetector "
+                        f"({len(pii_type_configs)} types)"
+                    )
+                    # Configs will be passed through composite's detect_pii() call
+                    return
+                else:
+                    logger.debug(
+                        f"[{request_id}] CompositePIIDetector has no Presidio detector"
+                    )
+            
+            # Case 3: Other detector types (GLiNER, MultiModel, etc.)
+            logger.debug(
+                f"[{request_id}] Detector type {type(self.detector).__name__} "
+                "doesn't use Presidio configs"
+            )
+            
+        except Exception as e:
+            logger.warning(
+                f"[{request_id}] Failed to pass fresh configs to Presidio: {e}"
+            )
 
     def _log_detection_metrics(
         self, request_id: str, content: str, entities: List, processing_time: float
@@ -744,87 +840,111 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         if not entities or not pii_type_configs:
             return entities
         
-        # DEBUG: Log available config keys
+        # Log available config keys
         logger.info(
-            f"[{request_id}] PII type configs from DB - Available keys: {sorted(pii_type_configs.keys())}"
+            f"[{request_id}] POST-FILTER START: {len(entities)} entities to filter"
+        )
+        logger.info(
+            f"[{request_id}] Available PII type configs in DB: {sorted(pii_type_configs.keys())}"
         )
         
         filtered_entities = []
         filtered_count = 0
         filter_reasons = {}
         
-        for entity in entities:
+        for idx, entity in enumerate(entities):
             # Normalize entity type to uppercase for matching
-            entity_type = _normalize_pii_type_for_grpc(entity.get('type'))
+            entity_type_raw = entity.get('type')
+            entity_type = _normalize_pii_type_for_grpc(entity_type_raw)
             entity_type_upper = entity_type.upper()
+            entity_text_preview = entity.get('text', '')[:30]
+            entity_score = float(entity.get('score', 0.0))
             
-            # DEBUG: Log entity type before lookup
-            logger.debug(
-                f"[{request_id}] Entity detected: type='{entity.get('type')}' → "
-                f"normalized='{entity_type}' → uppercase='{entity_type_upper}' "
-                f"text='{entity.get('text', '')[:50]}'"
+            # Log each entity processing
+            logger.info(
+                f"[{request_id}] Entity #{idx+1}: raw_type='{entity_type_raw}' → "
+                f"normalized='{entity_type}' → uppercase='{entity_type_upper}' | "
+                f"text='{entity_text_preview}' | score={entity_score:.3f}"
             )
             
             # Get config for this PII type (case-insensitive lookup)
             type_config = pii_type_configs.get(entity_type_upper)
             
-            # DEBUG: Log config lookup result
+            # Log config lookup result
             if type_config:
-                logger.debug(
-                    f"[{request_id}] Config found for {entity_type_upper}: "
-                    f"enabled={type_config.get('enabled')}, threshold={type_config.get('threshold')}"
+                logger.info(
+                    f"[{request_id}] Entity #{idx+1} ({entity_type_upper}): Config FOUND → "
+                    f"enabled={type_config.get('enabled')}, "
+                    f"threshold={type_config.get('threshold')}, "
+                    f"detector={type_config.get('detector')}, "
+                    f"detector_label={type_config.get('detector_label')}"
                 )
             else:
-                logger.debug(
-                    f"[{request_id}] No config found for {entity_type_upper} - will keep entity by default"
+                logger.info(
+                    f"[{request_id}] Entity #{idx+1} ({entity_type_upper}): Config NOT FOUND → "
+                    f"KEEPING by default (allow-by-default policy)"
                 )
             
             # If no config exists for this type, keep it (allow by default)
             if not type_config:
                 filtered_entities.append(entity)
+                logger.info(
+                    f"[{request_id}] Entity #{idx+1} ({entity_type_upper}): ✅ KEPT (no config)"
+                )
                 continue
             
-            # Check if type is enabled
+            # DETECTOR-SPECIFIC FILTERING: Check if config applies to this entity's detector
+            config_detector = type_config.get('detector', 'ALL')
+            entity_source = entity.get('source', 'UNKNOWN')
+            
+            # If config is detector-specific and doesn't match entity's source, skip this config
+            if config_detector != 'ALL' and config_detector != entity_source:
+                filtered_entities.append(entity)
+                logger.info(
+                    f"[{request_id}] Entity #{idx+1} ({entity_type_upper}): ✅ KEPT "
+                    f"(config detector={config_detector} doesn't match entity source={entity_source})"
+                )
+                continue
+            
+            # Config applies to this detector - now check if type is enabled
             if not type_config.get('enabled', True):
                 filtered_count += 1
                 reason = f"{entity_type_upper}:disabled"
                 filter_reasons[reason] = filter_reasons.get(reason, 0) + 1
-                logger.debug(
-                    f"[{request_id}] Filtered {entity_type_upper} entity "
-                    f"(disabled in config): '{entity.get('text', '')[:50]}'"
+                logger.info(
+                    f"[{request_id}] Entity #{idx+1} ({entity_type_upper}): ❌ FILTERED OUT "
+                    f"(disabled in config for detector={config_detector}) | text='{entity_text_preview}'"
                 )
                 continue
             
             # Apply type-specific threshold
             type_threshold = float(type_config.get('threshold', 0.5))
-            entity_score = float(entity.get('score', 0.0))
             
             if entity_score < type_threshold:
                 filtered_count += 1
                 reason = f"{entity_type_upper}:below_threshold"
                 filter_reasons[reason] = filter_reasons.get(reason, 0) + 1
-                logger.debug(
-                    f"[{request_id}] Filtered {entity_type_upper} entity "
-                    f"(score {entity_score:.3f} < threshold {type_threshold:.3f}): "
-                    f"'{entity.get('text', '')[:50]}'"
+                logger.info(
+                    f"[{request_id}] Entity #{idx+1} ({entity_type_upper}): ❌ FILTERED OUT "
+                    f"(score {entity_score:.3f} < threshold {type_threshold:.3f}) | "
+                    f"text='{entity_text_preview}'"
                 )
                 continue
             
             # Entity passed all filters
             filtered_entities.append(entity)
+            logger.info(
+                f"[{request_id}] Entity #{idx+1} ({entity_type_upper}): ✅ KEPT "
+                f"(enabled=true, score {entity_score:.3f} >= threshold {type_threshold:.3f})"
+            )
         
         # Log filtering summary
-        if filtered_count > 0:
-            logger.info(
-                f"[{request_id}] Filtered {filtered_count} of {len(entities)} entities "
-                f"based on PII type configs. Kept: {len(filtered_entities)}"
-            )
-            logger.debug(f"[{request_id}] Filter reasons: {dict(filter_reasons)}")
-        else:
-            logger.debug(
-                f"[{request_id}] No entities filtered. "
-                f"All {len(entities)} entities passed type-specific checks."
-            )
+        logger.info(
+            f"[{request_id}] POST-FILTER COMPLETE: Filtered {filtered_count} of {len(entities)} entities. "
+            f"Kept: {len(filtered_entities)}"
+        )
+        if filter_reasons:
+            logger.info(f"[{request_id}] Filter reasons breakdown: {dict(filter_reasons)}")
         
         return filtered_entities
 

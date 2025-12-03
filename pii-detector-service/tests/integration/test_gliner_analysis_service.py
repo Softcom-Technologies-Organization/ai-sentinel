@@ -15,6 +15,7 @@ import sys
 import time
 from pathlib import Path
 from collections import defaultdict
+from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -24,6 +25,192 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
 from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
 from pii_detector.infrastructure.detector.regex_detector import RegexDetector
+
+
+# Configurable threshold map for Presidio PII types
+# Easily modify these values to adjust detection sensitivity per PII type
+PRESIDIO_PII_TYPE_THRESHOLDS = {
+    # Contact Information
+    "EMAIL": 0.6,
+    "PHONE": 0.6,
+    "URL": 0.6,
+    
+    # Financial
+    "CREDIT_CARD": 0.6,
+    "IBAN": 0.6,
+    "CRYPTO_WALLET": 0.6,
+    
+    # Network
+    "IP_ADDRESS": 0.6,
+    "MAC_ADDRESS": 0.6,
+    
+    # Personal Data
+    "PERSON_NAME": 0.6,
+    "LOCATION": 0.6,
+    "DATE": 0.6,
+    "AGE": 0.6,
+    "NRP": 0.6,
+    
+    # Medical
+    "MEDICAL_LICENSE": 0.6,
+    
+    # USA
+    "US_SSN": 0.6,
+    "US_BANK_NUMBER": 0.6,
+    "US_DRIVER_LICENSE": 0.6,
+    "US_ITIN": 0.6,
+    "US_PASSPORT": 0.6,
+    
+    # UK
+    "UK_NHS": 0.6,
+    "UK_NINO": 0.6,
+    
+    # Spain
+    "ES_NIF": 0.6,
+    "ES_NIE": 0.6,
+    
+    # Italy
+    "IT_FISCAL_CODE": 0.6,
+    "IT_DRIVER_LICENSE": 0.6,
+    "IT_VAT_CODE": 0.6,
+    "IT_PASSPORT": 0.6,
+    "IT_IDENTITY_CARD": 0.6,
+    
+    # Poland
+    "PL_PESEL": 0.6,
+    
+    # Singapore
+    "SG_NRIC_FIN": 0.6,
+    "SG_UEN": 0.6,
+    
+    # Australia
+    "AU_ABN": 0.6,
+    "AU_ACN": 0.6,
+    "AU_TFN": 0.6,
+    "AU_MEDICARE": 0.6,
+    
+    # India
+    "IN_PAN": 0.6,
+    "IN_AADHAAR": 0.6,
+    "IN_VEHICLE_REGISTRATION": 0.6,
+    "IN_VOTER": 0.6,
+    "IN_PASSPORT": 0.6,
+    
+    # Finland
+    "FI_PERSONAL_IDENTITY_CODE": 0.6,
+    
+    # Korea
+    "KR_RRN": 0.6,
+    
+    # Thailand
+    "TH_TNIN": 0.6,
+}
+
+# Mapping from internal PII type to Presidio detector_label (entity type)
+PII_TYPE_TO_PRESIDIO_LABEL = {
+    # Contact Information
+    "EMAIL": "EMAIL_ADDRESS",
+    "PHONE": "PHONE_NUMBER",
+    "URL": "URL",
+    
+    # Financial
+    "CREDIT_CARD": "CREDIT_CARD",
+    "IBAN": "IBAN_CODE",
+    "CRYPTO_WALLET": "CRYPTO",
+    
+    # Network
+    "IP_ADDRESS": "IP_ADDRESS",
+    "MAC_ADDRESS": "MAC_ADDRESS",
+    
+    # Personal Data
+    "PERSON_NAME": "PERSON",
+    "LOCATION": "LOCATION",
+    "DATE": "DATE_TIME",
+    "AGE": "AGE",
+    "NRP": "NRP",
+    
+    # Medical
+    "MEDICAL_LICENSE": "MEDICAL_LICENSE",
+    
+    # USA
+    "US_SSN": "US_SSN",
+    "US_BANK_NUMBER": "US_BANK_NUMBER",
+    "US_DRIVER_LICENSE": "US_DRIVER_LICENSE",
+    "US_ITIN": "US_ITIN",
+    "US_PASSPORT": "US_PASSPORT",
+    
+    # UK
+    "UK_NHS": "UK_NHS",
+    "UK_NINO": "UK_NINO",
+    
+    # Spain
+    "ES_NIF": "ES_NIF",
+    "ES_NIE": "ES_NIE",
+    
+    # Italy
+    "IT_FISCAL_CODE": "IT_FISCAL_CODE",
+    "IT_DRIVER_LICENSE": "IT_DRIVER_LICENSE",
+    "IT_VAT_CODE": "IT_VAT_CODE",
+    "IT_PASSPORT": "IT_PASSPORT",
+    "IT_IDENTITY_CARD": "IT_IDENTITY_CARD",
+    
+    # Poland
+    "PL_PESEL": "PL_PESEL",
+    
+    # Singapore
+    "SG_NRIC_FIN": "SG_NRIC_FIN",
+    "SG_UEN": "SG_UEN",
+    
+    # Australia
+    "AU_ABN": "AU_ABN",
+    "AU_ACN": "AU_ACN",
+    "AU_TFN": "AU_TFN",
+    "AU_MEDICARE": "AU_MEDICARE",
+    
+    # India
+    "IN_PAN": "IN_PAN",
+    "IN_AADHAAR": "IN_AADHAAR",
+    "IN_VEHICLE_REGISTRATION": "IN_VEHICLE_REGISTRATION",
+    "IN_VOTER": "IN_VOTER",
+    "IN_PASSPORT": "IN_PASSPORT",
+    
+    # Finland
+    "FI_PERSONAL_IDENTITY_CODE": "FI_PERSONAL_IDENTITY_CODE",
+    
+    # Korea
+    "KR_RRN": "KR_RRN",
+    
+    # Thailand
+    "TH_TNIN": "TH_TNIN",
+}
+
+
+def create_mock_presidio_db_configs():
+    """
+    Create mock database configuration for all Presidio PII types.
+    
+    Returns dictionary matching the structure returned by
+    DatabaseConfigAdapter.fetch_pii_type_configs(detector='PRESIDIO')
+    """
+    configs = {}
+    
+    for pii_type, threshold in PRESIDIO_PII_TYPE_THRESHOLDS.items():
+        detector_label = PII_TYPE_TO_PRESIDIO_LABEL.get(pii_type)
+        if not detector_label:
+            continue
+            
+        configs[pii_type] = {
+            'enabled': True,
+            'threshold': float(threshold),
+            'detector': 'PRESIDIO',
+            'display_name': pii_type.replace('_', ' ').title(),
+            'description': f'Detects {pii_type.replace("_", " ").lower()}',
+            'category': 'general',
+            'country_code': None,
+            'detector_label': detector_label
+        }
+    
+    return configs
 
 
 @pytest.mark.integration
@@ -148,7 +335,8 @@ def test_gliner_detector_with_text_file():
 
 @pytest.mark.integration
 @pytest.mark.slow
-def test_presidio_detector_with_text_file():
+@patch('pii_detector.infrastructure.adapter.out.database_config_adapter.get_database_config_adapter')
+def test_presidio_detector_with_text_file(mock_get_db_adapter):
     """
     Test Presidio detector with text file containing various PII examples.
     
@@ -158,21 +346,30 @@ def test_presidio_detector_with_text_file():
     3. Detects PII entities
     4. Logs comprehensive results grouped by PII type
     5. Asserts that results are not empty
+    
+    Note: Database calls are mocked to avoid dependency on PostgreSQL.
     """
     print("\n" + "=" * 80)
     print("PRESIDIO DETECTOR - INTEGRATION TEST")
     print("=" * 80)
     
+    # Mock database adapter to return all PII types as enabled
+    print("\n[1/4] Setting up database mock...")
+    mock_adapter = MagicMock()
+    mock_adapter.fetch_pii_type_configs.return_value = create_mock_presidio_db_configs()
+    mock_get_db_adapter.return_value = mock_adapter
+    print(f"[OK] Database mock configured with {len(PRESIDIO_PII_TYPE_THRESHOLDS)} PII types")
+    
     # Initialize detector and load model
-    print("\n[1/4] Initializing Presidio detector and loading model...")
+    print("\n[2/4] Initializing Presidio detector and loading model...")
     detector = PresidioDetector()
     detector.load_model()
     print("[OK] Model loaded successfully")
     
     # Read test file
-    print("\n[2/4] Reading text file...")
+    print("\n[3/4] Reading text file...")
     tests_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    text_file_path = os.path.join(tests_dir, 'resources', 'text-for-gliner.txt')
+    text_file_path = os.path.join(tests_dir, 'resources', 'text-for-gliner-as-extracted-from-confluence.txt')
     
     with open(text_file_path, 'r', encoding='utf-8') as f:
         content = f.read()
@@ -182,7 +379,7 @@ def test_presidio_detector_with_text_file():
     print(f"[OK] Content lines: {len(content.splitlines())} lines")
     
     # Detect PII entities
-    print("\n[3/4] Detecting PII entities with Presidio...")
+    print("\n[4/4] Detecting PII entities with Presidio...")
     threshold = 0.6
     start_time = time.time()
     entities = detector.detect_pii(content, threshold=threshold)
@@ -196,7 +393,7 @@ def test_presidio_detector_with_text_file():
     assert len(entities) > 0, "Expected to detect at least one PII entity"
     
     # Log comprehensive results
-    print("\n[4/4] DETAILED DETECTION RESULTS:")
+    print("\n[5/5] DETAILED DETECTION RESULTS:")
     print("=" * 80)
     
     # Group entities by PII type
@@ -390,7 +587,8 @@ def test_regex_detector_with_text_file():
 
 @pytest.mark.integration
 @pytest.mark.slow
-def test_full_pipeline_all_detectors_with_text_file():
+@patch('pii_detector.infrastructure.adapter.out.database_config_adapter.get_database_config_adapter')
+def test_full_pipeline_all_detectors_with_text_file(mock_get_db_adapter):
     """
     Test full detection pipeline with aggregation of 3 detectors.
     
@@ -401,10 +599,17 @@ def test_full_pipeline_all_detectors_with_text_file():
     4. Aggregates all results
     5. Logs comprehensive results showing contribution of each detector
     6. Asserts that results are not empty
+    
+    Note: Presidio database calls are mocked to avoid dependency on PostgreSQL.
     """
     print("\n" + "=" * 80)
     print("FULL PIPELINE - 3 DETECTORS AGGREGATION - INTEGRATION TEST")
     print("=" * 80)
+    
+    # Mock database adapter for Presidio
+    mock_adapter = MagicMock()
+    mock_adapter.fetch_pii_type_configs.return_value = create_mock_presidio_db_configs()
+    mock_get_db_adapter.return_value = mock_adapter
     
     # Read test file first
     print("\n[1/5] Reading text file...")

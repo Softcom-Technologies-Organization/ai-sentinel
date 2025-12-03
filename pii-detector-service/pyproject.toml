@@ -44,9 +44,9 @@ dependencies = [
     "onnxruntime>=1.16.0",
     
     # gRPC core dependencies
-    "grpcio>=1.60.0",
-    "grpcio-tools>=1.60.0",
-    "grpcio-reflection>=1.60.0",
+    "grpcio>=1.76.0",
+    "grpcio-tools>=1.76.0",
+    "grpcio-reflection>=1.76.0",
     "protobuf>=4.25.0",
     
     # Modern gRPC alternative (betterproto)

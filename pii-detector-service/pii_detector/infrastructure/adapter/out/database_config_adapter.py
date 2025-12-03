@@ -143,6 +143,8 @@ class DatabaseConfigAdapter:
         Business Rule: PII type configs control which types are detected and
         their confidence thresholds on a per-type basis.
         """
+        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+
         connection = None
         cursor = None
 
@@ -152,6 +154,7 @@ class DatabaseConfigAdapter:
 
             # Build query with optional detector filter
             if detector:
+                self.logger.info(f"Detector filter: {detector}")
                 query = """
                     SELECT 
                         pii_type,
@@ -169,6 +172,7 @@ class DatabaseConfigAdapter:
                 """
                 cursor.execute(query, (detector,))
             else:
+                self.logger.info("No Detector")
                 query = """
                     SELECT 
                         pii_type,

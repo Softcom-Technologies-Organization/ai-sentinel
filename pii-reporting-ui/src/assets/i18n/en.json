@@ -175,7 +175,11 @@
         "Security": "Security Credentials",
         "Network": "Network Identifiers",
         "Medical": "Medical Information",
-        "Business": "Business Identifiers"
+        "Business": "Business Identifiers",
+        "Personal": "Personal Data",
+        "Online": "Online Identifiers",
+        "Technical": "Technical Identifiers",
+        "Temporal": "Temporal Information"
       },
       "typeNames": {
         "EMAIL": "Email Address",

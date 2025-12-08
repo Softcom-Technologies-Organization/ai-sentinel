@@ -113,8 +113,10 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
       return;
     }
 
-    // Check if secrets are already loaded (detectedValue is present)
-    const hasSecrets = this.item?.detectedPersonallyIdentifiableInformationList?.some(e => e.sensitiveValue !== null);
+    // Check if secrets are already loaded (sensitiveValue or sensitiveContext is present)
+    const hasSecrets = this.item?.detectedPersonallyIdentifiableInformationList?.some(
+      e => e.sensitiveValue !== null || e.sensitiveContext !== null
+    );
     if (hasSecrets) {
       // Secrets already loaded, just reveal
       this.revealed = true;

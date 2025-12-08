@@ -94,8 +94,12 @@
             <div class="col-12 md:col-6 lg:col-4">
               <p-card>
                 <p>
-                  @if (revealed) { {{ detectedPII.sensitiveValue || '—' }} }
-                  @else { ••••••••• }
+                  @if (revealed) {
+                    {{ detectedPII.sensitiveContext || detectedPII.sensitiveValue || '—' }}
+                  }
+                  @else {
+                    {{ detectedPII.maskedContext || '•••••••••' }}
+                  }
                 </p>
                 <p-divider />
                 <div class="flex gap-2 flex-wrap">

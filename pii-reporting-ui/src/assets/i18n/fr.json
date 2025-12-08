@@ -175,7 +175,11 @@
         "Security": "Identifiants de sécurité",
         "Network": "Identifiants réseau",
         "Medical": "Informations médicales",
-        "Business": "Identifiants professionnels"
+        "Business": "Identifiants professionnels",
+        "Personal": "Données personnelles",
+        "Online": "Identifiants en ligne",
+        "Technical": "Identifiants techniques",
+        "Temporal": "Informations temporelles"
       },
       "typeNames": {
         "EMAIL": "Adresse email",

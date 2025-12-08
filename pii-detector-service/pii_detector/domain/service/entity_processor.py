@@ -37,9 +37,15 @@ class EntityProcessor:
         return []
 
     def _create_pii_entity(self, entity: Dict) -> PIIEntity:
-        """Create a PIIEntity from raw model output."""
+        """
+        Create a PIIEntity from raw model output.
+        
+        Returns the exact text value as detected by the model, including any
+        leading or trailing whitespace. This preserves the original document
+        content for accurate searchability and masking in downstream services.
+        """
         return PIIEntity(
-            text=entity['word'].strip(),
+            text=entity['word'],
             pii_type=entity['entity_group'],
             type_label=self.label_mapping.get(entity['entity_group'], entity['entity_group']),
             start=entity['start'],

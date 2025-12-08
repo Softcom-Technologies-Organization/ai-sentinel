@@ -46,6 +46,8 @@ public record ContentPiiDetection(
         PERSON("Personne"),
         NAME("Nom"),
         SURNAME("Nom de famille"),
+        DATE("Date"),
+        AGE("Age"),
         LOCATION("Localisation"),
         ADDRESS("Adresse"),
         STREET("Rue"),

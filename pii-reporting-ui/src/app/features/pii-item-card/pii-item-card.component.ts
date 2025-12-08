@@ -107,6 +107,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
   }
 
   toggleReveal(): void {
+    console.log('Class: PiiItemCardComponent, Function: toggleReveal, Param: item', this.item);
     if (this.revealed) {
       // Already revealed, just toggle back
       this.revealed = false;

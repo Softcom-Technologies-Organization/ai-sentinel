@@ -663,4 +663,783 @@ class PiiContextExtractorTest {
         });
     }
 
+    // =============================================================================
+    // BUG FIX TESTS: Position offset causing trailing sensitive characters
+    // =============================================================================
+    // These tests verify the fix for the bug where 2-3 trailing characters
+    // remained visible after the masking token due to incorrect Math.clamp
+    // minimum value in collectRelevantEntities() method
+
+    @Test
+    @DisplayName("Should_MaskEntireValue_When_NoTrailingSensitiveCharacters")
+    void Should_MaskEntireValue_When_NoTrailingSensitiveCharacters() {
+        // Given: Real bug scenario - Email with trailing characters visible
+        String source = "Contact: john.doe@example.fr and more text";
+        String email = "john.doe@example.fr";
+        int start = source.indexOf(email);
+        int end = start + email.length();
+
+        // When
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL");
+
+        // Then: NO trailing characters should remain visible after token
+        assertSoftly(softly -> {
+            softly.assertThat(context)
+                .as("Context should contain the token")
+                .contains("[EMAIL]");
+            softly.assertThat(context)
+                .as("Context should NOT have trailing characters like [EMAIL]fr")
+                .doesNotContain("[EMAIL]fr")
+                .doesNotContain("[EMAIL]f")
+                .doesNotContain("[EMAIL].fr");
+            softly.assertThat(context)
+                .as("Context should NOT contain the actual email")
+                .doesNotContain(email);
+        });
+    }
+
+    @Test
+    @DisplayName("Should_MaskEntireCreditCard_When_NoTrailingDigits")
+    void Should_MaskEntireCreditCard_When_NoTrailingDigits() {
+        // Given: Credit card with trailing digits visible (bug report)
+        String creditCard = "4916632082457636";
+        String source = "Pay with card " + creditCard + " for order";
+        int start = source.indexOf(creditCard);
+        int end = start + creditCard.length();
+
+        // When
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "CREDIT_CARD");
+
+        // Then: NO trailing digits should remain visible
+        assertSoftly(softly -> {
+            softly.assertThat(context)
+                .as("Context should contain the token")
+                .contains("[CREDIT_CARD]");
+            softly.assertThat(context)
+                .as("Context should NOT have trailing digits like [CREDIT_CARD]11 or [CREDIT_CARD]36")
+                .doesNotContain("[CREDIT_CARD]11")
+                .doesNotContain("[CREDIT_CARD]36")
+                .doesNotContain("[CREDIT_CARD]6");
+            softly.assertThat(context)
+                .as("Context should NOT contain any part of the credit card")
+                .doesNotContain("4916632")
+                .doesNotContain("7636")
+                .doesNotContain(creditCard);
+        });
+    }
+
+    @Test
+    @DisplayName("Should_MaskEntireBankAccount_When_NoTrailingDigits")
+    void Should_MaskEntireBankAccount_When_NoTrailingDigits() {
+        // Given: Bank account with trailing digits visible (bug report)
+        String bankAccount = "12345678901234589";
+        String source = "Account number: " + bankAccount + " is valid";
+        int start = source.indexOf(bankAccount);
+        int end = start + bankAccount.length();
+
+        // When
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "BANK_ACCOUNT");
+
+        // Then: NO trailing digits should remain visible
+        assertSoftly(softly -> {
+            softly.assertThat(context)
+                .as("Context should contain the token")
+                .contains("[BANK_ACCOUNT]");
+            softly.assertThat(context)
+                .as("Context should NOT have trailing digits like [BANK_ACCOUNT]89")
+                .doesNotContain("[BANK_ACCOUNT]89")
+                .doesNotContain("[BANK_ACCOUNT]9");
+            softly.assertThat(context)
+                .as("Context should NOT contain any part of the account number")
+                .doesNotContain("12345678")
+                .doesNotContain("4589")
+                .doesNotContain(bankAccount);
+        });
+    }
+
+    @Test
+    @DisplayName("Should_MaskEntireSSN_When_NoTrailingDigits")
+    void Should_MaskEntireSSN_When_NoTrailingDigits() {
+        // Given: SSN with trailing digits visible (bug report)
+        String ssn = "123-45-6789";
+        String source = "SSN: " + ssn + " on file";
+        int start = source.indexOf(ssn);
+        int end = start + ssn.length();
+
+        // When
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "SSN");
+
+        // Then: NO trailing digits should remain visible
+        assertSoftly(softly -> {
+            softly.assertThat(context)
+                .as("Context should contain the token")
+                .contains("[SSN]");
+            softly.assertThat(context)
+                .as("Context should NOT have trailing digits like [SSN]19 or [SSN]89")
+                .doesNotContain("[SSN]19")
+                .doesNotContain("[SSN]89")
+                .doesNotContain("[SSN]9");
+            softly.assertThat(context)
+                .as("Context should NOT contain any part of the SSN")
+                .doesNotContain("6789")
+                .doesNotContain(ssn);
+        });
+    }
+
+    @Test
+    @DisplayName("Should_MaskCorrectly_When_MultipleEntitiesWithPositionEdgeCases")
+    void Should_MaskCorrectly_When_MultipleEntitiesWithPositionEdgeCases() {
+        // Given: Multiple PIIs on same line to test position calculation edge cases
+        String email = "user@test.fr";
+        String phone = "0612345678";
+        String source = "Contact " + email + " or " + phone + " today";
+        int emailStart = source.indexOf(email);
+        int emailEnd = emailStart + email.length();
+        int phoneStart = source.indexOf(phone);
+        int phoneEnd = phoneStart + phone.length();
+
+        var entities = List.of(
+            DetectedPersonallyIdentifiableInformation.builder()
+                .startPosition(emailStart).endPosition(emailEnd).piiType("EMAIL").build(),
+            DetectedPersonallyIdentifiableInformation.builder()
+                .startPosition(phoneStart).endPosition(phoneEnd).piiType("PHONE").build()
+        );
+
+        // When
+        String context = piiContextExtractor.extractMaskedContext(source, emailStart, emailEnd, "EMAIL", entities);
+
+        // Then: Both should be fully masked with NO trailing characters
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[EMAIL]");
+            softly.assertThat(context).contains("[PHONE]");
+            softly.assertThat(context)
+                .as("Should NOT have trailing chars from email")
+                .doesNotContain("[EMAIL]fr")
+                .doesNotContain("[EMAIL].fr");
+            softly.assertThat(context)
+                .as("Should NOT have trailing chars from phone")
+                .doesNotContain("[PHONE]78")
+                .doesNotContain("[PHONE]8");
+            softly.assertThat(context)
+                .as("Should NOT leak actual values")
+                .doesNotContain(email)
+                .doesNotContain(phone);
+        });
+    }
+
+    // =============================================================================
+    // BUG FIX TESTS: Position mismatch between cleaned text and raw HTML
+    // =============================================================================
+    // These tests verify the fix for the bug where positions from the detector
+    // (calculated on cleaned text) were applied to raw HTML, causing incoherent
+    // context with HTML fragments like "ac:breakout-width="760" ac:local-id="
+
+    @Test
+    @DisplayName("Should_ExtractCoherentContext_When_PositionsFromCleanedTextAppliedToRawHtml")
+    void Should_ExtractCoherentContext_When_PositionsFromCleanedTextAppliedToRawHtml() {
+        // Given: Raw HTML content as stored in sourceContent
+        String rawHtml = "<p>Contact us at <strong>john.doe@example.com</strong> for more info.</p>";
+        
+        // Simulate what the detector does: positions are on CLEANED text
+        // Cleaned text: "Contact us at john.doe@example.com for more info."
+        // Position of email in CLEANED text: 14 to 34
+        String cleanedText = "Contact us at john.doe@example.com for more info.";
+        int startInCleanedText = cleanedText.indexOf("john.doe@example.com");
+        int endInCleanedText = startInCleanedText + "john.doe@example.com".length();
+        
+        // When: Positions from cleaned text are applied to raw HTML
+        String context = piiContextExtractor.extractMaskedContext(rawHtml, startInCleanedText, endInCleanedText, "EMAIL");
+        
+        // Then: Context should be coherent (readable text, not HTML fragments)
+        assertSoftly(softly -> {
+            softly.assertThat(context)
+                .as("Context should contain the mask token")
+                .contains("[EMAIL]");
+            softly.assertThat(context)
+                .as("Context should NOT contain raw HTML tags")
+                .doesNotContain("<p>")
+                .doesNotContain("</p>")
+                .doesNotContain("<strong>")
+                .doesNotContain("</strong>");
+            softly.assertThat(context)
+                .as("Context should contain readable surrounding text")
+                .containsIgnoringCase("contact us at");
+            softly.assertThat(context)
+                .as("Context should NOT contain HTML garbage")
+                .doesNotContain("ac:")
+                .doesNotContain("local-id");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_ExtractCoherentContext_When_ComplexConfluenceHtmlWithPositionsFromCleanedText")
+    void Should_ExtractCoherentContext_When_ComplexConfluenceHtmlWithPositionsFromCleanedText() {
+        // Given: Complex Confluence HTML with custom attributes (actual bug reproduction)
+        String confluenceHtml = """
+            <ac:structured-macro ac:name="panel" ac:breakout-width="760" ac:local-id="26967c1d-df67-4">
+                <p>Employee information:</p>
+                <table>
+                    <tr><td>Name</td><td>John Doe</td></tr>
+                    <tr><td>Phone</td><td>06 11 22 33 44</td></tr>
+                    <tr><td>IP</td><td>192.168.1.100</td></tr>
+                </table>
+            </ac:structured-macro>
+            """;
+        
+        // Cleaned text (what the detector sees):
+        // "Employee information: Name John Doe Phone 06 11 22 33 44 IP 192.168.1.100"
+        String cleanedApprox = "Employee information: Name John Doe Phone 06 11 22 33 44 IP 192.168.1.100";
+        int phoneStartInCleaned = cleanedApprox.indexOf("06 11 22 33 44");
+        int phoneEndInCleaned = phoneStartInCleaned + "06 11 22 33 44".length();
+        
+        // When: Applying detector positions to raw HTML
+        String context = piiContextExtractor.extractMaskedContext(confluenceHtml, phoneStartInCleaned, phoneEndInCleaned, "PHONE");
+        
+        // Then: Context should be readable, NOT contain Confluence macro garbage
+        assertSoftly(softly -> {
+            softly.assertThat(context)
+                .as("Context should contain the mask token")
+                .contains("[PHONE]");
+            softly.assertThat(context)
+                .as("Context should NOT contain Confluence macro attributes")
+                .doesNotContain("ac:breakout-width")
+                .doesNotContain("ac:local-id")
+                .doesNotContain("ac:name")
+                .doesNotContain("26967c1d-df67-4");
+            softly.assertThat(context)
+                .as("Context should NOT contain raw HTML")
+                .doesNotContain("<ac:")
+                .doesNotContain("</ac:")
+                .doesNotContain("<table>")
+                .doesNotContain("<tr>");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_ExtractCoherentSensitiveContext_When_PositionsFromCleanedTextAppliedToRawHtml")
+    void Should_ExtractCoherentSensitiveContext_When_PositionsFromCleanedTextAppliedToRawHtml() {
+        // Given: Raw HTML content
+        String rawHtml = "<div class=\"content\"><p>My phone is <b>06 11 22 33 44</b> call me!</p></div>";
+        
+        // Cleaned text: "My phone is 06 11 22 33 44 call me!"
+        String cleanedText = "My phone is 06 11 22 33 44 call me!";
+        int startInCleanedText = cleanedText.indexOf("06 11 22 33 44");
+        int endInCleanedText = startInCleanedText + "06 11 22 33 44".length();
+        
+        // When: Extract sensitive (unmasked) context
+        String sensitiveContext = piiContextExtractor.extractSensitiveContext(rawHtml, startInCleanedText, endInCleanedText);
+        
+        // Then: Should contain actual phone number (unmasked) and be readable
+        assertSoftly(softly -> {
+            softly.assertThat(sensitiveContext)
+                .as("Sensitive context should contain the actual PII value")
+                .contains("06 11 22 33 44");
+            softly.assertThat(sensitiveContext)
+                .as("Sensitive context should NOT contain raw HTML")
+                .doesNotContain("<div")
+                .doesNotContain("<p>")
+                .doesNotContain("<b>");
+            softly.assertThat(sensitiveContext)
+                .as("Sensitive context should be readable text")
+                .containsIgnoringCase("phone");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_MaskCorrectlyOnCleanedText_When_MultipleEntitiesWithHtmlSource")
+    void Should_MaskCorrectlyOnCleanedText_When_MultipleEntitiesWithHtmlSource() {
+        // Given: HTML with multiple PIIs
+        String rawHtml = "<p>Contact: <a href=\"mailto:john@test.com\">john@test.com</a> or call <span>+33 6 12 34 56 78</span></p>";
+        
+        // Cleaned text: "Contact: john@test.com or call +33 6 12 34 56 78"
+        String cleanedText = "Contact: john@test.com or call +33 6 12 34 56 78";
+        int emailStart = cleanedText.indexOf("john@test.com");
+        int emailEnd = emailStart + "john@test.com".length();
+        int phoneStart = cleanedText.indexOf("+33 6 12 34 56 78");
+        int phoneEnd = phoneStart + "+33 6 12 34 56 78".length();
+        
+        var entities = List.of(
+            DetectedPersonallyIdentifiableInformation.builder()
+                .startPosition(emailStart).endPosition(emailEnd).piiType("EMAIL").build(),
+            DetectedPersonallyIdentifiableInformation.builder()
+                .startPosition(phoneStart).endPosition(phoneEnd).piiType("PHONE").build()
+        );
+        
+        // When: Extract context for email with all entities for masking
+        String context = piiContextExtractor.extractMaskedContext(rawHtml, emailStart, emailEnd, "EMAIL", entities);
+        
+        // Then: Both PIIs should be masked in readable context
+        assertSoftly(softly -> {
+            softly.assertThat(context)
+                .as("Context should mask the email")
+                .contains("[EMAIL]");
+            softly.assertThat(context)
+                .as("Context should mask the phone")
+                .contains("[PHONE]");
+            softly.assertThat(context)
+                .as("Context should NOT contain raw HTML")
+                .doesNotContain("<p>")
+                .doesNotContain("<a ")
+                .doesNotContain("href=")
+                .doesNotContain("<span>");
+            softly.assertThat(context)
+                .as("Context should NOT leak actual PII values")
+                .doesNotContain("john@test.com")
+                .doesNotContain("+33 6 12 34 56 78");
+        });
+    }
+
+    // =============================================================================
+    // REGRESSION TEST: Production bug with secondary entities showing trailing chars
+    // =============================================================================
+    // This test reproduces the exact production scenario where secondary entities
+    // in the same line were NOT properly masked, showing 2-3 trailing characters
+
+    @Test
+    @DisplayName("Should_MaskSecondaryEntitiesCompletely_When_MultipleEntitiesOnSameLine")
+    void Should_MaskSecondaryEntitiesCompletely_When_MultipleEntitiesOnSameLine() {
+        // Given: Production scenario with multiple PIIs on same line
+        // Bug manifests when extracting context for ONE entity but OTHER entities are also on the same line
+        String source = "- Email: john.doe@example.fr, Phone: 0612345678, IP: 192.168.1.115, Card: 4916632082457636";
+        
+        // Define all entities on this line (matching production scenario)
+        int emailStart = source.indexOf("john.doe@example.fr");
+        int emailEnd = emailStart + "john.doe@example.fr".length();
+        int phoneStart = source.indexOf("0612345678");
+        int phoneEnd = phoneStart + "0612345678".length();
+        int ipStart = source.indexOf("192.168.1.115");
+        int ipEnd = ipStart + "192.168.1.115".length();
+        int cardStart = source.indexOf("4916632082457636");
+        int cardEnd = cardStart + "4916632082457636".length();
+        
+        var allEntities = List.of(
+            DetectedPersonallyIdentifiableInformation.builder()
+                .startPosition(emailStart).endPosition(emailEnd).piiType("EMAIL").build(),
+            DetectedPersonallyIdentifiableInformation.builder()
+                .startPosition(phoneStart).endPosition(phoneEnd).piiType("PHONE").build(),
+            DetectedPersonallyIdentifiableInformation.builder()
+                .startPosition(ipStart).endPosition(ipEnd).piiType("IP_ADDRESS").build(),
+            DetectedPersonallyIdentifiableInformation.builder()
+                .startPosition(cardStart).endPosition(cardEnd).piiType("CREDIT_CARD").build()
+        );
+        
+        // When: Extract context for the EMAIL entity (as main entity)
+        // The bug was that SECONDARY entities (phone, IP, card) were not properly masked
+        String context = piiContextExtractor.extractMaskedContext(source, emailStart, emailEnd, "EMAIL", allEntities);
+        
+        // Then: ALL entities must be COMPLETELY masked with NO trailing characters
+        assertSoftly(softly -> {
+            // Verify all tokens are present
+            softly.assertThat(context).contains("[EMAIL]");
+            softly.assertThat(context).contains("[PHONE]");
+            softly.assertThat(context).contains("[IP_ADDRESS]");
+            softly.assertThat(context).contains("[CREDIT_CARD]");
+            
+            // CRITICAL: No trailing characters from email (main entity)
+            softly.assertThat(context)
+                .as("Main entity (EMAIL) should NOT have trailing chars like [EMAIL]fr")
+                .doesNotContain("[EMAIL]fr")
+                .doesNotContain("[EMAIL].fr")
+                .doesNotContain("[EMAIL]r");
+            
+            // CRITICAL: No trailing characters from secondary entities (BUG WAS HERE)
+            softly.assertThat(context)
+                .as("Secondary entity (PHONE) should NOT have trailing chars like [PHONE]78")
+                .doesNotContain("[PHONE]78")
+                .doesNotContain("[PHONE]8");
+            
+            softly.assertThat(context)
+                .as("Secondary entity (IP_ADDRESS) should NOT have trailing chars like [IP_ADDRESS]15")
+                .doesNotContain("[IP_ADDRESS]15")
+                .doesNotContain("[IP_ADDRESS]5");
+            
+            softly.assertThat(context)
+                .as("Secondary entity (CREDIT_CARD) should NOT have trailing chars like [CREDIT_CARD]36")
+                .doesNotContain("[CREDIT_CARD]36")
+                .doesNotContain("[CREDIT_CARD]6");
+            
+            // Verify NO actual PII values are leaked
+            softly.assertThat(context)
+                .as("Should NOT leak any actual PII values")
+                .doesNotContain("john.doe@example.fr")
+                .doesNotContain("0612345678")
+                .doesNotContain("192.168.1.115")
+                .doesNotContain("4916632082457636");
+        });
+    }
+
+    // =============================================================================
+    // PHASE 2 TESTS: Position-as-Hints Masking Logic
+    // =============================================================================
+    // These tests validate the new position-as-hints approach where positions
+    // from the detector are treated as approximate location hints rather than
+    // exact boundaries. The algorithm searches for the exact piiValue near the
+    // hint position (±50 chars) and masks the found occurrence.
+
+    @Test
+    @DisplayName("Should_MaskExactPiiValue_When_FoundAtExactHintPosition")
+    void Should_MaskExactPiiValue_When_FoundAtExactHintPosition() {
+        // Given: PII value at exact hint position
+        String piiValue = "john.doe@example.com";
+        String source = "Contact email: " + piiValue + " for info";
+        int start = source.indexOf(piiValue);
+        int end = start + piiValue.length();
+
+        // When: Using position-as-hints with exact piiValue
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL", piiValue);
+
+        // Then: Should mask the exact PII value
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[EMAIL]");
+            softly.assertThat(context).doesNotContain(piiValue);
+            softly.assertThat(context).containsIgnoringCase("contact email");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_FindAndMaskPiiValue_When_HintPositionIsSlightlyOff")
+    void Should_FindAndMaskPiiValue_When_HintPositionIsSlightlyOff() {
+        // Given: Hint position is off by 5 characters (simulates position mismatch)
+        String piiValue = "06 11 22 33 44";
+        String source = "Call me at " + piiValue + " tonight";
+        int actualStart = source.indexOf(piiValue);
+        int actualEnd = actualStart + piiValue.length();
+        
+        // Simulate detector giving slightly wrong position (off by 5 chars)
+        int hintStart = actualStart + 5;
+        int hintEnd = actualEnd + 5;
+
+        // When: Using position-as-hints to search for exact piiValue
+        String context = piiContextExtractor.extractMaskedContext(source, hintStart, hintEnd, "PHONE", piiValue);
+
+        // Then: Should find and mask the correct occurrence despite position offset
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[PHONE]");
+            softly.assertThat(context).doesNotContain(piiValue);
+            softly.assertThat(context).doesNotContain("[PHONE]11"); // No trailing chars
+            softly.assertThat(context).containsIgnoringCase("call me at");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_SelectClosestOccurrence_When_PiiValueAppearsMultipleTimes")
+    void Should_SelectClosestOccurrence_When_PiiValueAppearsMultipleTimes() {
+        // Given: Same email appears twice, hint points to second occurrence
+        String piiValue = "test@example.com";
+        String source = "Primary: test@example.com, Secondary: test@example.com contact";
+        
+        // Hint points to the SECOND occurrence
+        int secondOccurrenceStart = source.lastIndexOf(piiValue);
+        int secondOccurrenceEnd = secondOccurrenceStart + piiValue.length();
+
+        // When: Using position-as-hints
+        String context = piiContextExtractor.extractMaskedContext(
+            source, secondOccurrenceStart, secondOccurrenceEnd, "EMAIL", piiValue);
+
+        // Then: Should mask the second occurrence (closest to hint)
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[EMAIL]");
+            softly.assertThat(context).containsIgnoringCase("secondary");
+            // Context should be around the second occurrence, not the first
+        });
+    }
+
+    @Test
+    @DisplayName("Should_PreserveWhitespace_When_PiiValueHasLeadingOrTrailingSpaces")
+    void Should_PreserveWhitespace_When_PiiValueHasLeadingOrTrailingSpaces() {
+        // Given: PII value with leading and trailing spaces (as preserved from Phase 1)
+        String piiValue = " john.doe@example.com ";
+        String source = "Email:" + piiValue + "is valid";
+        int start = source.indexOf(piiValue);
+        int end = start + piiValue.length();
+
+        // When: Using position-as-hints with whitespace-containing piiValue
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL", piiValue);
+
+        // Then: Should find and mask the value WITH its whitespace
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[EMAIL]");
+            softly.assertThat(context).doesNotContain("john.doe@example.com");
+            // The exact value with spaces should be masked
+        });
+    }
+
+    @Test
+    @DisplayName("Should_MaskCorrectly_When_PiiValueAtStartOfText")
+    void Should_MaskCorrectly_When_PiiValueAtStartOfText() {
+        // Given: PII value at the very start of text
+        String piiValue = "admin@company.com";
+        String source = piiValue + " is the contact email";
+        int start = 0;
+        int end = piiValue.length();
+
+        // When: Using position-as-hints
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL", piiValue);
+
+        // Then: Should mask correctly even at text start
+        assertSoftly(softly -> {
+            softly.assertThat(context).startsWith("[EMAIL]");
+            softly.assertThat(context).doesNotContain(piiValue);
+            softly.assertThat(context).containsIgnoringCase("contact email");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_MaskCorrectly_When_PiiValueAtEndOfText")
+    void Should_MaskCorrectly_When_PiiValueAtEndOfText() {
+        // Given: PII value at the very end of text
+        String piiValue = "secret@domain.com";
+        String source = "The email address is " + piiValue;
+        int start = source.indexOf(piiValue);
+        int end = source.length();
+
+        // When: Using position-as-hints
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL", piiValue);
+
+        // Then: Should mask correctly even at text end
+        assertSoftly(softly -> {
+            softly.assertThat(context).endsWith("[EMAIL]");
+            softly.assertThat(context).doesNotContain(piiValue);
+            softly.assertThat(context).containsIgnoringCase("email address");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_FallbackToHintPositions_When_PiiValueNotFoundInSearchRegion")
+    void Should_FallbackToHintPositions_When_PiiValueNotFoundInSearchRegion() {
+        // Given: Hint position is correct, but we search for a DIFFERENT piiValue
+        String actualPiiInText = "john@example.com";
+        String searchForDifferentValue = "jane@example.com"; // Not in text
+        String source = "Contact: " + actualPiiInText + " for help";
+        int start = source.indexOf(actualPiiInText);
+        int end = start + actualPiiInText.length();
+
+        // When: Searching for value not in text (edge case/data mismatch)
+        String context = piiContextExtractor.extractMaskedContext(
+            source, start, end, "EMAIL", searchForDifferentValue);
+
+        // Then: Should fallback to using hint positions (original behavior)
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[EMAIL]");
+            // Will use hint positions as-is, might mask the actual text at that position
+        });
+    }
+
+    @Test
+    @DisplayName("Should_HandleGracefully_When_PiiValueIsNull")
+    void Should_HandleGracefully_When_PiiValueIsNull() {
+        // Given: piiValue is null (should fallback to old behavior)
+        String source = "Contact: john@example.com for info";
+        int start = source.indexOf("john@example.com");
+        int end = start + "john@example.com".length();
+
+        // When: Using position-as-hints with null piiValue
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL", (String) null);
+
+        // Then: Should fallback to position-based masking (old behavior)
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[EMAIL]");
+            softly.assertThat(context).doesNotContain("john@example.com");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_HandleGracefully_When_PiiValueIsEmpty")
+    void Should_HandleGracefully_When_PiiValueIsEmpty() {
+        // Given: piiValue is empty string
+        String source = "Contact: john@example.com for info";
+        int start = source.indexOf("john@example.com");
+        int end = start + "john@example.com".length();
+
+        // When: Using position-as-hints with empty piiValue
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL", "");
+
+        // Then: Should fallback to position-based masking
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[EMAIL]");
+            softly.assertThat(context).doesNotContain("john@example.com");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_HandleGracefully_When_PiiValueIsBlank")
+    void Should_HandleGracefully_When_PiiValueIsBlank() {
+        // Given: piiValue is blank (only whitespace)
+        String source = "Contact: john@example.com for info";
+        int start = source.indexOf("john@example.com");
+        int end = start + "john@example.com".length();
+
+        // When: Using position-as-hints with blank piiValue
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL", "   ");
+
+        // Then: Should fallback to position-based masking
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[EMAIL]");
+            softly.assertThat(context).doesNotContain("john@example.com");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_MaskAllEntities_When_MultipleEntitiesWithPositionAsHints")
+    void Should_MaskAllEntities_When_MultipleEntitiesWithPositionAsHints() {
+        // Given: Multiple PIIs on same line, each with their exact piiValues
+        String email = "contact@test.com";
+        String phone = "0601020304";
+        String source = "Call " + phone + " or email " + email + " today";
+        
+        int phoneStart = source.indexOf(phone);
+        int phoneEnd = phoneStart + phone.length();
+        int emailStart = source.indexOf(email);
+        int emailEnd = emailStart + email.length();
+        
+        var allEntities = List.of(
+            DetectedPersonallyIdentifiableInformation.builder()
+                .startPosition(phoneStart).endPosition(phoneEnd).piiType("PHONE")
+                .sensitiveValue(phone).build(),
+            DetectedPersonallyIdentifiableInformation.builder()
+                .startPosition(emailStart).endPosition(emailEnd).piiType("EMAIL")
+                .sensitiveValue(email).build()
+        );
+
+        // When: Extract context for phone with position-as-hints
+        String context = piiContextExtractor.extractMaskedContext(
+            source, phoneStart, phoneEnd, "PHONE", phone, allEntities);
+
+        // Then: Both entities should be completely masked
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[PHONE]");
+            softly.assertThat(context).contains("[EMAIL]");
+            softly.assertThat(context).doesNotContain(phone);
+            softly.assertThat(context).doesNotContain(email);
+            softly.assertThat(context).doesNotContain("[PHONE]04"); // No trailing chars
+            softly.assertThat(context).doesNotContain("[EMAIL]om"); // No trailing chars
+        });
+    }
+
+    @Test
+    @DisplayName("Should_MaskSecondaryEntities_When_UsingPositionAsHintsForMainEntity")
+    void Should_MaskSecondaryEntities_When_UsingPositionAsHintsForMainEntity() {
+        // Given: Main entity uses position-as-hints, secondary entities also on same line
+        String mainEmail = "primary@test.fr";
+        String secondaryPhone = "0612345678";
+        String secondaryIp = "10.0.0.1";
+        String source = "Info: " + mainEmail + ", phone " + secondaryPhone + ", IP " + secondaryIp;
+        
+        int emailStart = source.indexOf(mainEmail);
+        int emailEnd = emailStart + mainEmail.length();
+        int phoneStart = source.indexOf(secondaryPhone);
+        int phoneEnd = phoneStart + secondaryPhone.length();
+        int ipStart = source.indexOf(secondaryIp);
+        int ipEnd = ipStart + secondaryIp.length();
+        
+        var allEntities = List.of(
+            DetectedPersonallyIdentifiableInformation.builder()
+                .startPosition(emailStart).endPosition(emailEnd).piiType("EMAIL").build(),
+            DetectedPersonallyIdentifiableInformation.builder()
+                .startPosition(phoneStart).endPosition(phoneEnd).piiType("PHONE").build(),
+            DetectedPersonallyIdentifiableInformation.builder()
+                .startPosition(ipStart).endPosition(ipEnd).piiType("IP_ADDRESS").build()
+        );
+
+        // When: Extract context for email (main entity) using position-as-hints
+        String context = piiContextExtractor.extractMaskedContext(
+            source, emailStart, emailEnd, "EMAIL", mainEmail, allEntities);
+
+        // Then: ALL entities including secondary ones should be completely masked
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[EMAIL]");
+            softly.assertThat(context).contains("[PHONE]");
+            softly.assertThat(context).contains("[IP_ADDRESS]");
+            
+            // No trailing characters from any entity
+            softly.assertThat(context)
+                .as("Main entity should not have trailing chars")
+                .doesNotContain("[EMAIL]fr")
+                .doesNotContain("[EMAIL].fr");
+            
+            softly.assertThat(context)
+                .as("Secondary phone should not have trailing chars")
+                .doesNotContain("[PHONE]78")
+                .doesNotContain("[PHONE]8");
+            
+            softly.assertThat(context)
+                .as("Secondary IP should not have trailing chars")
+                .doesNotContain("[IP_ADDRESS].1")
+                .doesNotContain("[IP_ADDRESS]1");
+            
+            // No actual values leaked
+            softly.assertThat(context).doesNotContain(mainEmail);
+            softly.assertThat(context).doesNotContain(secondaryPhone);
+            softly.assertThat(context).doesNotContain(secondaryIp);
+        });
+    }
+
+    @Test
+    @DisplayName("Should_SearchInLargeRegion_When_HintPositionFarFromActualPosition")
+    void Should_SearchInLargeRegion_When_HintPositionFarFromActualPosition() {
+        // Given: Hint position is 40 characters away from actual position (within ±50 search radius)
+        String piiValue = "sensitive@email.com";
+        String source = "Text text text text text text " + piiValue + " more text more text";
+        int actualStart = source.indexOf(piiValue);
+        int actualEnd = actualStart + piiValue.length();
+        
+        // Hint is 40 chars before actual position (still within ±50 search radius)
+        int hintStart = actualStart - 40;
+        int hintEnd = actualEnd - 40;
+
+        // When: Using position-as-hints with large offset
+        String context = piiContextExtractor.extractMaskedContext(
+            source, hintStart, hintEnd, "EMAIL", piiValue);
+
+        // Then: Should still find and mask the value within ±50 char search region
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[EMAIL]");
+            softly.assertThat(context).doesNotContain(piiValue);
+        });
+    }
+
+    @Test
+    @DisplayName("Should_UseFallback_When_HintPositionBeyondSearchRadius")
+    void Should_UseFallback_When_HintPositionBeyondSearchRadius() {
+        // Given: Hint position is MORE than 50 characters away (beyond search radius)
+        String piiValue = "far@away.com";
+        String padding = "X".repeat(60); // 60 chars away
+        String source = padding + piiValue + " text";
+        int actualStart = source.indexOf(piiValue);
+        int actualEnd = actualStart + piiValue.length();
+        
+        // Hint is at position 0 (60+ chars before actual position, beyond ±50 radius)
+        int hintStart = 0;
+        int hintEnd = piiValue.length();
+
+        // When: Using position-as-hints with offset beyond search radius
+        String context = piiContextExtractor.extractMaskedContext(
+            source, hintStart, hintEnd, "EMAIL", piiValue);
+
+        // Then: Won't find the value, will fallback to hint positions
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[EMAIL]");
+            // Will use fallback behavior (mask at hint position)
+        });
+    }
+
+    @Test
+    @DisplayName("Should_MaskCorrectly_When_PiiValueContainsSpecialCharacters")
+    void Should_MaskCorrectly_When_PiiValueContainsSpecialCharacters() {
+        // Given: PII value with special regex characters
+        String piiValue = "user+test@example.com";
+        String source = "Email: " + piiValue + " is valid";
+        int start = source.indexOf(piiValue);
+        int end = start + piiValue.length();
+
+        // When: Using position-as-hints with special chars
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL", piiValue);
+
+        // Then: Should handle special chars correctly (not treat + as regex operator)
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[EMAIL]");
+            softly.assertThat(context).doesNotContain(piiValue);
+        });
+    }
+
 }

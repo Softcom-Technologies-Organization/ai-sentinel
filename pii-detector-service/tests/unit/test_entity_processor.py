@@ -135,8 +135,8 @@ class TestProcessEntities:
         assert result[1].end == 33
         assert result[1].score == 0.88
     
-    def test_process_entities_handles_whitespace_in_text(self, processor):
-        """Test that process_entities strips whitespace from entity text."""
+    def test_process_entities_preserves_whitespace_in_text(self, processor):
+        """Test that process_entities preserves whitespace from entity text."""
         raw_entities = [
             {
                 'word': '  test@example.com  ',
@@ -149,8 +149,10 @@ class TestProcessEntities:
         
         result = processor.process_entities(raw_entities, 0.5)
         
-        # Whitespace should be stripped
-        assert result[0].text == 'test@example.com'
+        # Whitespace should be preserved
+        assert result[0].text == '  test@example.com  '
+        # Positions should match text length
+        assert result[0].end - result[0].start == len(result[0].text)
 
 
 class TestDetectEmailsWithRegex:
@@ -219,8 +221,8 @@ class TestCreatePIIEntity:
         assert result.end == 18
         assert result.score == 0.8
     
-    def test_create_pii_entity_strips_whitespace(self, processor):
-        """Test that _create_pii_entity strips whitespace from text."""
+    def test_create_pii_entity_preserves_whitespace(self, processor):
+        """Test that _create_pii_entity preserves whitespace from text."""
         raw_entity = {
             'word': '  John Doe  ',
             'entity_group': 'GIVENNAME',
@@ -231,8 +233,114 @@ class TestCreatePIIEntity:
         
         result = processor._create_pii_entity(raw_entity)
         
-        # Text should be stripped
-        assert result.text == 'John Doe'
+        # Text should be preserved with whitespace
+        assert result.text == '  John Doe  '
+        # Positions should match text length
+        assert result.end - result.start == len(result.text)
+    
+    def test_create_pii_entity_preserves_trailing_spaces_only(self, processor):
+        """Test that _create_pii_entity preserves trailing spaces only."""
+        raw_entity = {
+            'word': 'test@example.com   ',
+            'entity_group': 'EMAIL',
+            'start': 0,
+            'end': 19,
+            'score': 0.95
+        }
+        
+        result = processor._create_pii_entity(raw_entity)
+        
+        # Trailing spaces should be preserved
+        assert result.text == 'test@example.com   '
+        assert result.text.endswith('   ')
+        # Positions should match text length
+        assert result.end - result.start == len(result.text)
+        assert result.end - result.start == 19
+    
+    def test_create_pii_entity_preserves_leading_spaces_only(self, processor):
+        """Test that _create_pii_entity preserves leading spaces only."""
+        raw_entity = {
+            'word': '   test@example.com',
+            'entity_group': 'EMAIL',
+            'start': 0,
+            'end': 19,
+            'score': 0.95
+        }
+        
+        result = processor._create_pii_entity(raw_entity)
+        
+        # Leading spaces should be preserved
+        assert result.text == '   test@example.com'
+        assert result.text.startswith('   ')
+        # Positions should match text length
+        assert result.end - result.start == len(result.text)
+        assert result.end - result.start == 19
+    
+    def test_create_pii_entity_without_spaces_works_correctly(self, processor):
+        """Test that _create_pii_entity works correctly without any spaces (regression check)."""
+        raw_entity = {
+            'word': 'john.doe@example.com',
+            'entity_group': 'EMAIL',
+            'start': 10,
+            'end': 30,
+            'score': 0.98
+        }
+        
+        result = processor._create_pii_entity(raw_entity)
+        
+        # No spaces should be present
+        assert result.text == 'john.doe@example.com'
+        assert not result.text.startswith(' ')
+        assert not result.text.endswith(' ')
+        # Positions should match text length
+        assert result.end - result.start == len(result.text)
+        assert result.end - result.start == 20
+    
+    def test_create_pii_entity_positions_match_various_text_lengths(self, processor):
+        """Test that _create_pii_entity positions match text length for various cases."""
+        test_cases = [
+            {
+                'word': 'a',
+                'entity_group': 'GIVENNAME',
+                'start': 0,
+                'end': 1,
+                'score': 0.9
+            },
+            {
+                'word': '  ',  # Only spaces
+                'entity_group': 'GIVENNAME',
+                'start': 5,
+                'end': 7,
+                'score': 0.9
+            },
+            {
+                'word': 'very.long.email.address.with.many.dots@example.com',
+                'entity_group': 'EMAIL',
+                'start': 0,
+                'end': 50,
+                'score': 0.95
+            },
+            {
+                'word': '  mixed  spaces  ',
+                'entity_group': 'GIVENNAME',
+                'start': 0,
+                'end': 17,
+                'score': 0.85
+            }
+        ]
+        
+        for raw_entity in test_cases:
+            result = processor._create_pii_entity(raw_entity)
+            
+            # Position span must equal text length
+            assert result.end - result.start == len(result.text), \
+                f"Position mismatch for '{result.text}': " \
+                f"end({result.end}) - start({result.start}) = {result.end - result.start}, " \
+                f"but len(text) = {len(result.text)}"
+            
+            # Text must be preserved exactly
+            assert result.text == raw_entity['word'], \
+                f"Text not preserved: expected '{raw_entity['word']}', got '{result.text}'"
     
     def test_create_pii_entity_with_all_pii_types(self, processor):
         """Test _create_pii_entity with all known PIIType values."""
@@ -320,7 +428,7 @@ class TestIntegration:
         assert len(result) == 3
         
         # Verify each entity
-        assert result[0].text == 'alice@example.com'  # Whitespace stripped
+        assert result[0].text == '  alice@example.com  '  # Whitespace preserved
         assert result[0].type_label == PIIType.EMAIL.value
         assert result[0].score == 0.95
         

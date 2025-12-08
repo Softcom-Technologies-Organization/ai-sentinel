@@ -3,7 +3,7 @@ package pro.softcom.aisentinel.domain.pii.reporting;
 import lombok.Builder;
 
 /**
- * Represents sawwwwwwwwwwwwwwwwwqaaya detected PII with its metadata and sensitive values.
+ * Represents detected PII with its metadata and sensitive values.
  * 
  * <p>Business rules:</p>
  * <ul>
@@ -36,12 +36,19 @@ public record DetectedPersonallyIdentifiableInformation(
      * <p>Only the masked context is preserved, allowing the UI to display
      * the detection without revealing the actual sensitive value.</p>
      * 
-     * @return a new instance with sensitiveValue and sensitiveContext set to null
+     * @return a new instance with sensitiveValue and sensitiveContext set to null,
+     *         but maskedContext explicitly preserved
      */
     public DetectedPersonallyIdentifiableInformation withMaskedSensitiveData() {
-        return this.toBuilder()
-                .sensitiveValue(null)
-                .sensitiveContext(null)
-                .build();
+        return new DetectedPersonallyIdentifiableInformation(
+                this.startPosition,
+                this.endPosition,
+                this.piiType,
+                this.piiTypeLabel,
+                this.confidence,
+                null,  // sensitiveValue - masked for security
+                null,  // sensitiveContext - masked for security
+                this.maskedContext  // Explicitly preserved for UI display
+        );
     }
 }

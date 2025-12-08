@@ -239,9 +239,10 @@ public class ScanEventFactory {
                     .toList();
 
         // Extract masked context (for immediate display, stored in clear)
+        // Uses position-as-hints approach: searches for exact piiValue near position hints
         String maskedContext = piiContextExtractor.extractMaskedContext(sourceContent,
                                                                         data.position(), data.end(),
-                                                                        type, all);
+                                                                        type, data.value(), all);
 
         // Extract real context (contains actual PII values, will be encrypted)
         String sensitiveContext = piiContextExtractor.extractSensitiveContext(sourceContent,

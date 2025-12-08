@@ -387,21 +387,48 @@ def should_use_composite_detector() -> bool:
 
 def _load_detection_config() -> Tuple[bool, bool]:
     """
-    Load detection configuration flags from detection-settings.toml.
+    Load detection configuration flags from database (with TOML fallback).
+    
+    Business Rule: Configuration is fetched from database to respect UI settings.
+    Falls back to detection-settings.toml if database is unavailable.
     
     Returns:
         Tuple of (regex_enabled, presidio_enabled)
     """
+    from infrastructure.adapter.out.database_config_adapter import get_database_config_adapter
     from application.config.detection_policy import _load_llm_config
     
+    # Try to fetch from database first
+    try:
+        adapter = get_database_config_adapter()
+        db_config = adapter.fetch_config()
+        
+        if db_config is not None:
+            regex_enabled = db_config.get("regex_enabled", False)
+            presidio_enabled = db_config.get("presidio_enabled", False)
+            logger.info(
+                f"Loaded detection config from database: "
+                f"regex={regex_enabled}, presidio={presidio_enabled}"
+            )
+            return regex_enabled, presidio_enabled
+        else:
+            logger.info("Database config not available, falling back to TOML")
+    except Exception as e:
+        logger.warning(f"Failed to load detection config from database: {e}, falling back to TOML")
+    
+    # Fallback to TOML configuration
     try:
         config = _load_llm_config()
         detection_config = config.get("detection", {})
         regex_enabled = detection_config.get("regex_detection_enabled", False)
         presidio_enabled = detection_config.get("presidio_detection_enabled", False)
+        logger.info(
+            f"Loaded detection config from TOML: "
+            f"regex={regex_enabled}, presidio={presidio_enabled}"
+        )
         return regex_enabled, presidio_enabled
     except Exception as e:
-        logger.warning(f"Failed to load detection config: {e}")
+        logger.error(f"Failed to load detection config from TOML: {e}")
         return False, False
 
 

@@ -42,6 +42,7 @@ public record ContentPiiDetection(
         PHONE("Téléphone"),
         PHONE_NUMBER(PHONE_NUMBER_LABEL),
         TELEPHONENUM(PHONE_NUMBER_LABEL),
+        DATE_OF_BIRTH("Date de naissance"),
         PERSON("Personne"),
         NAME("Nom"),
         SURNAME("Nom de famille"),

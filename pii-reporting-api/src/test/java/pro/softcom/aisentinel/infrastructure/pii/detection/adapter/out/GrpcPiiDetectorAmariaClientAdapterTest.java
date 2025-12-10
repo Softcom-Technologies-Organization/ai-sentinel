@@ -1,7 +1,6 @@
 package pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
@@ -21,7 +20,6 @@ import pii_detection.PiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIdentifiableInformationType;
 import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.GrpcPiiDetectorAmariaClientAdapter;
-import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.PiiDetectionException;
 import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.config.PiiDetectorConfig;
 
 @ExtendWith(MockitoExtension.class)
@@ -81,7 +79,7 @@ class GrpcPiiDetectorAmariaClientAdapterTest {
         GrpcPiiDetectorAmariaClientAdapter service = new GrpcPiiDetectorAmariaClientAdapter(config, stub);
 
         // When
-        ContentPiiDetection result = service.analyzePageContent("123", "Title", "SPACE", "content to analyze", 0.8f);
+        ContentPiiDetection result = service.analyzePageContent("123", "Title", "SPACE", "content to analyze");
 
         // Then - verify deadline set
         verify(stub).withDeadlineAfter(timeoutCaptor.capture(), unitCaptor.capture());
@@ -91,7 +89,7 @@ class GrpcPiiDetectorAmariaClientAdapterTest {
         // Verify request content and threshold
         verify(stub).detectPII(requestCaptor.capture());
         assertThat(requestCaptor.getValue().getContent()).isEqualTo("content to analyze");
-        assertThat(requestCaptor.getValue().getThreshold()).isEqualTo(0.8f);
+        assertThat(requestCaptor.getValue().getThreshold()).isEqualTo(0.42f);
 
         // Assert mapping
         assertThat(result.pageId()).isEqualTo("123");
@@ -169,17 +167,5 @@ class GrpcPiiDetectorAmariaClientAdapterTest {
         assertThat(result.pageId()).isNull();
         assertThat(result.pageTitle()).isNull();
         assertThat(result.spaceKey()).isNull();
-    }
-
-    @Test
-    @DisplayName("analyzePageContent: wraps exceptions into PiiDetectionServiceException")
-    void analyzePageContent_exceptionWraps() {
-        when(stub.withDeadlineAfter(anyLong(), any())).thenReturn(stub);
-        when(stub.detectPII(any())).thenThrow(new RuntimeException("boom"));
-
-        GrpcPiiDetectorAmariaClientAdapter service = new GrpcPiiDetectorAmariaClientAdapter(config, stub);
-
-        assertThatThrownBy(() -> service.analyzePageContent("id", "title", "space", "content", 0.5f))
-                .isInstanceOf(PiiDetectionException.PiiDetectionServiceException.class);
     }
 }

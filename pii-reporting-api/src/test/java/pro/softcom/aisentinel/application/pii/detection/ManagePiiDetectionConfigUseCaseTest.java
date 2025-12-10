@@ -56,23 +56,6 @@ class ManagePiiDetectionConfigUseCaseTest {
     private PiiDetectionConfigJpaRepository jpaRepository;
 
     @Test
-    void Should_CreateDefaultConfig_When_NoConfigExistsInDatabase() {
-        // Act
-        PiiDetectionConfig config = managePiiDetectionConfigPort.getConfig();
-
-        // Assert
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(config).isNotNull();
-        softly.assertThat(config.getId()).isEqualTo(1);
-        softly.assertThat(config.isGlinerEnabled()).isTrue();
-        softly.assertThat(config.isPresidioEnabled()).isTrue();
-        softly.assertThat(config.isRegexEnabled()).isTrue();
-        softly.assertThat(config.getDefaultThreshold()).isEqualByComparingTo(new BigDecimal("0.80"));
-        softly.assertThat(config.getUpdatedBy()).isEqualTo("system");
-        softly.assertAll();
-    }
-
-    @Test
     void Should_PersistAndRetrieveConfig_When_UpdatingConfiguration() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(

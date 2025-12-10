@@ -24,6 +24,7 @@ jobs:
           pip install -e ".[test]"
         env:
           PYTHONPATH: ${{ github.workspace }}/pii-detector-service
+          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
 
       - name: Generate protobuf files
         run: |

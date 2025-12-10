@@ -56,9 +56,12 @@ export class SpaceFilteringService {
       let compareValue = 0;
 
       if (field === 'name') {
-        const nameA = (a.name ?? '').toLowerCase();
-        const nameB = (b.name ?? '').toLowerCase();
-        compareValue = nameA.localeCompare(nameB);
+        // Aligner le tri "par nom" avec l'ordre Confluence (ordre backend)
+        // en s'appuyant sur l'index d'origine fourni par le backend.
+        // Cela garantit que le tri par défaut reflète exactement l'ordre Confluence.
+        const idxA = (a as any).originalIndex ?? 0;
+        const idxB = (b as any).originalIndex ?? 0;
+        compareValue = idxA - idxB;
       } else if (field === 'piiCount') {
         // Sort by priority: high > medium > low (descending for each)
         const priorities = ['high', 'medium', 'low'] as const;

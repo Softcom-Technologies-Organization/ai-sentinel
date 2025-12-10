@@ -5,7 +5,6 @@ import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 /**
  * Enumeration of PII (Personally Identifiable Information) types emitted by the gRPC server.
  * Aligned with server taxonomy including types from ML detector, Presidio, and Regex detectors.
- *
  * What: Each enum constant carries its business-level ContentAnalysis.DataType mapping.
  * How to use: Clients must parse detector labels strictly with {@code PiiType.valueOf(label)}
  * (case-insensitive via upper-casing) and retrieve {@link #dataType()}.
@@ -14,22 +13,63 @@ import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 public enum PersonallyIdentifiableInformationType {
     // Original types from ML detector
     ACCOUNTNUM(ContentPiiDetection.PersonallyIdentifiableInformationType.BANK_ACCOUNT),
+    BANKACCOUNT(ContentPiiDetection.PersonallyIdentifiableInformationType.BANK_ACCOUNT),
     BUILDINGNUM(ContentPiiDetection.PersonallyIdentifiableInformationType.BUILDINGNUM),
     CITY(ContentPiiDetection.PersonallyIdentifiableInformationType.CITY),
     CREDITCARDNUMBER(ContentPiiDetection.PersonallyIdentifiableInformationType.CREDIT_CARD),
-    DATEOFBIRTH(ContentPiiDetection.PersonallyIdentifiableInformationType.PERSON), // closest business category
+    CREDITCARD(ContentPiiDetection.PersonallyIdentifiableInformationType.CREDIT_CARD),
+    CREDITCARDEXP(ContentPiiDetection.PersonallyIdentifiableInformationType.CREDIT_CARD),
+    CVV(ContentPiiDetection.PersonallyIdentifiableInformationType.CREDIT_CARD),
+    DATEOFBIRTH(ContentPiiDetection.PersonallyIdentifiableInformationType.DATE_OF_BIRTH), // closest business category
+    DOB(ContentPiiDetection.PersonallyIdentifiableInformationType.DATE_OF_BIRTH),
     DRIVERLICENSENUM(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
+    DRIVERLICENSE(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
     EMAIL(ContentPiiDetection.PersonallyIdentifiableInformationType.EMAIL),
     GIVENNAME(ContentPiiDetection.PersonallyIdentifiableInformationType.NAME),
     IDCARDNUM(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
     PASSWORD(ContentPiiDetection.PersonallyIdentifiableInformationType.PASSWORD),
     SOCIALNUM(ContentPiiDetection.PersonallyIdentifiableInformationType.SSN),
+    SSN_SHORT(ContentPiiDetection.PersonallyIdentifiableInformationType.SSN),
+    ROUTINGNUM(ContentPiiDetection.PersonallyIdentifiableInformationType.BANK_ACCOUNT),
     STREET(ContentPiiDetection.PersonallyIdentifiableInformationType.STREET),
     SURNAME(ContentPiiDetection.PersonallyIdentifiableInformationType.SURNAME),
     TAXNUM(ContentPiiDetection.PersonallyIdentifiableInformationType.SSN), // treated as sensitive identifier
     TELEPHONENUM(ContentPiiDetection.PersonallyIdentifiableInformationType.PHONE),
     USERNAME(ContentPiiDetection.PersonallyIdentifiableInformationType.USERNAME),
     ZIPCODE(ContentPiiDetection.PersonallyIdentifiableInformationType.ZIPCODE),
+    LOCATIONZIP(ContentPiiDetection.PersonallyIdentifiableInformationType.ZIPCODE),
+    
+    // Personal Identifiers (GLiNER)
+    NAME(ContentPiiDetection.PersonallyIdentifiableInformationType.NAME),
+    AGE(ContentPiiDetection.PersonallyIdentifiableInformationType.PERSON),
+    GENDER(ContentPiiDetection.PersonallyIdentifiableInformationType.PERSON),
+    MARITALSTATUS(ContentPiiDetection.PersonallyIdentifiableInformationType.PERSON),
+    
+    // Location Details (GLiNER)
+    LOCATIONADDRESS(ContentPiiDetection.PersonallyIdentifiableInformationType.LOCATION),
+    LOCATIONSTREET(ContentPiiDetection.PersonallyIdentifiableInformationType.STREET),
+    LOCATIONCITY(ContentPiiDetection.PersonallyIdentifiableInformationType.CITY),
+    LOCATIONSTATE(ContentPiiDetection.PersonallyIdentifiableInformationType.LOCATION),
+    LOCATIONCOUNTRY(ContentPiiDetection.PersonallyIdentifiableInformationType.LOCATION),
+    
+    // Healthcare Information (GLiNER)
+    MEDICALPROFNAME(ContentPiiDetection.PersonallyIdentifiableInformationType.NAME),
+    HEALTHCARENUM(ContentPiiDetection.PersonallyIdentifiableInformationType.SSN),
+    MEDICALCONDITION(ContentPiiDetection.PersonallyIdentifiableInformationType.PERSON),
+    MEDICALPROCESS(ContentPiiDetection.PersonallyIdentifiableInformationType.PERSON),
+    DRUG(ContentPiiDetection.PersonallyIdentifiableInformationType.PERSON),
+    DOSE(ContentPiiDetection.PersonallyIdentifiableInformationType.PERSON),
+    BLOODTYPE(ContentPiiDetection.PersonallyIdentifiableInformationType.PERSON),
+    INJURY(ContentPiiDetection.PersonallyIdentifiableInformationType.PERSON),
+    MEDICALFACILITY(ContentPiiDetection.PersonallyIdentifiableInformationType.LOCATION),
+    MEDICALCODE(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
+    
+    // Identification Documents (GLiNER)
+    PASSPORTNUM(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
+    VEHICLEID(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
+    
+    // Financial Other (GLiNER)
+    MONEY(ContentPiiDetection.PersonallyIdentifiableInformationType.BANK_ACCOUNT),
     
     // Additional types from Presidio and Regex detectors
     PHONE(ContentPiiDetection.PersonallyIdentifiableInformationType.PHONE),
@@ -49,7 +89,6 @@ public enum PersonallyIdentifiableInformationType {
     PERSON_NAME(ContentPiiDetection.PersonallyIdentifiableInformationType.NAME),
     LOCATION(ContentPiiDetection.PersonallyIdentifiableInformationType.LOCATION),
     DATE(ContentPiiDetection.PersonallyIdentifiableInformationType.PERSON),
-    AGE(ContentPiiDetection.PersonallyIdentifiableInformationType.PERSON),
     MEDICAL_LICENSE(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
     PASSPORT(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
     DRIVER_LICENSE(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),

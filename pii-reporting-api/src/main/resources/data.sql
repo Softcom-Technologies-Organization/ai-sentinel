@@ -13,7 +13,7 @@
 -- ============================================================================
 
 INSERT INTO pii_detection_config (id, gliner_enabled, presidio_enabled, regex_enabled, default_threshold, updated_at, updated_by)
-VALUES (1, true, true, true, 0.80, CURRENT_TIMESTAMP, 'system')
+VALUES (1, true, true, true, 0.30, CURRENT_TIMESTAMP, 'system')
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
@@ -74,7 +74,7 @@ UPDATE pii_type_config SET detector_label = 'city' WHERE pii_type = 'CITY' AND d
 UPDATE pii_type_config SET detector_label = 'credit card number' WHERE pii_type = 'CREDITCARDNUMBER' AND detector = 'GLINER';
 UPDATE pii_type_config SET detector_label = 'date of birth' WHERE pii_type = 'DATEOFBIRTH' AND detector = 'GLINER';
 UPDATE pii_type_config SET detector_label = 'driver license number' WHERE pii_type = 'DRIVERLICENSENUM' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'email' WHERE pii_type = 'EMAIL' AND detector = 'GLINER';
+UPDATE pii_type_config SET detector_label = 'email address' WHERE pii_type = 'EMAIL' AND detector = 'GLINER';
 UPDATE pii_type_config SET detector_label = 'first name' WHERE pii_type = 'GIVENNAME' AND detector = 'GLINER';
 UPDATE pii_type_config SET detector_label = 'ID card number' WHERE pii_type = 'IDCARDNUM' AND detector = 'GLINER';
 UPDATE pii_type_config SET detector_label = 'password' WHERE pii_type = 'PASSWORD' AND detector = 'GLINER';
@@ -100,6 +100,149 @@ VALUES
     ('DATE', 'GLINER', true, 0.7, 'Date', 'Generic date (not birth date)', 'Temporal', 'date', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('VEHICLEREG', 'GLINER', true, 0.7, 'Vehicle Registration', 'Vehicle license plate or registration number', 'Identity', 'vehicle registration', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('VOTERID', 'GLINER', true, 0.7, 'Voter ID', 'Voter identification number', 'Identity', 'voter ID', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+ON CONFLICT (pii_type, detector) DO NOTHING;
+
+-- ============================================================================
+-- Additional GLiNER labels - Missing label mappings fix
+-- Source: gliner.txt (GLiNER model labels - source of truth)
+-- Critical Bug Fix: "bank account" and other GLiNER detections now mappable via UI
+-- ============================================================================
+
+-- ============================================================================
+-- PHASE 1: CRITICAL FIX - Financial Information (Bank Account Bug)
+-- ============================================================================
+
+-- Add BANKACCOUNT enum mapping for "bank account" label
+INSERT INTO pii_type_config 
+    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+VALUES 
+    ('BANKACCOUNT', 'GLINER', true, 0.70, 'Bank Account', 'Bank account numbers detected by GLiNER', 'Financial', 'bank account', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+ON CONFLICT (pii_type, detector) DO NOTHING;
+
+-- Add other critical financial labels
+INSERT INTO pii_type_config 
+    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+VALUES 
+    ('ROUTINGNUM', 'GLINER', true, 0.70, 'Routing Number', 'Bank routing numbers', 'Financial', 'routing number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('CREDITCARDEXP', 'GLINER', true, 0.70, 'Credit Card Expiration', 'Credit card expiration dates', 'Financial', 'credit card expiration', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('CVV', 'GLINER', true, 0.75, 'CVV', 'Credit card security codes (CVV/CVC)', 'Financial', 'cvv', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+ON CONFLICT (pii_type, detector) DO NOTHING;
+
+-- ============================================================================
+-- PHASE 2: NORMALIZATION FIXES - Label Variations
+-- ============================================================================
+
+-- Add alternative mapping for "credit card" (in addition to "credit card number")
+INSERT INTO pii_type_config 
+    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+VALUES 
+    ('CREDITCARD', 'GLINER', true, 0.70, 'Credit Card (short)', 'Credit card numbers - short label variant', 'Financial', 'credit card', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+ON CONFLICT (pii_type, detector) DO NOTHING;
+
+-- Add alternative mapping for "driver license" (in addition to "driver license number")
+INSERT INTO pii_type_config 
+    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+VALUES 
+    ('DRIVERLICENSE', 'GLINER', true, 0.80, 'Driver License (short)', 'Driver license numbers - short label variant', 'Government ID', 'driver license', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+ON CONFLICT (pii_type, detector) DO NOTHING;
+
+-- Add "dob" mapping (in addition to "date of birth")
+INSERT INTO pii_type_config 
+    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+VALUES 
+    ('DOB', 'GLINER', true, 0.80, 'DOB', 'Date of birth - short label variant', 'Identity', 'dob', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+ON CONFLICT (pii_type, detector) DO NOTHING;
+
+-- Add "ssn" mapping (in addition to "social security number")
+INSERT INTO pii_type_config 
+    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+VALUES 
+    ('SSN_SHORT', 'GLINER', true, 0.80, 'SSN (short)', 'Social Security Number - short label variant', 'Government ID', 'ssn', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+ON CONFLICT (pii_type, detector) DO NOTHING;
+
+-- Add "location zip" mapping (in addition to "zip code")
+INSERT INTO pii_type_config 
+    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+VALUES 
+    ('LOCATIONZIP', 'GLINER', true, 0.80, 'Location Zip', 'ZIP/postal codes - location variant', 'Location', 'location zip', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+ON CONFLICT (pii_type, detector) DO NOTHING;
+
+-- ============================================================================
+-- PHASE 3: HIGH PRIORITY - Identification Documents & Healthcare
+-- ============================================================================
+
+-- Identification Documents
+INSERT INTO pii_type_config 
+    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+VALUES 
+    ('PASSPORTNUM', 'GLINER', true, 0.80, 'Passport Number', 'Passport numbers', 'Government ID', 'passport number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('VEHICLEID', 'GLINER', true, 0.75, 'Vehicle ID', 'Vehicle identification numbers', 'Identity', 'vehicle id', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+ON CONFLICT (pii_type, detector) DO NOTHING;
+
+-- Healthcare Information
+INSERT INTO pii_type_config 
+    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+VALUES 
+    ('MEDICALPROFNAME', 'GLINER', true, 0.75, 'Medical Professional Name', 'Healthcare provider names', 'Healthcare', 'name medical professional', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('HEALTHCARENUM', 'GLINER', true, 0.80, 'Healthcare Number', 'Healthcare identification numbers', 'Healthcare', 'healthcare number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+ON CONFLICT (pii_type, detector) DO NOTHING;
+
+-- ============================================================================
+-- PHASE 4: MEDIUM PRIORITY - Personal Identifiers
+-- ============================================================================
+
+-- Personal Identity Information
+INSERT INTO pii_type_config 
+    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+VALUES 
+    ('NAME', 'GLINER', true, 0.70, 'Name (Generic)', 'Generic person names', 'Identity', 'name', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('AGE', 'GLINER', true, 0.75, 'Age', 'Age information', 'Identity', 'age', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('GENDER', 'GLINER', true, 0.75, 'Gender', 'Gender identifiers', 'Identity', 'gender', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('MARITALSTATUS', 'GLINER', true, 0.75, 'Marital Status', 'Marital status information', 'Identity', 'marital status', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+ON CONFLICT (pii_type, detector) DO NOTHING;
+
+-- ============================================================================
+-- PHASE 5: MEDIUM PRIORITY - Location Information
+-- ============================================================================
+
+-- Location Details
+INSERT INTO pii_type_config 
+    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+VALUES 
+    ('LOCATIONADDRESS', 'GLINER', true, 0.80, 'Location Address', 'Complete street addresses', 'Location', 'location address', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('LOCATIONSTREET', 'GLINER', true, 0.80, 'Location Street', 'Street names', 'Location', 'location street', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('LOCATIONCITY', 'GLINER', true, 0.80, 'Location City', 'City names', 'Location', 'location city', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('LOCATIONSTATE', 'GLINER', true, 0.80, 'Location State', 'State/province names', 'Location', 'location state', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('LOCATIONCOUNTRY', 'GLINER', true, 0.75, 'Location Country', 'Country names', 'Location', 'location country', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+ON CONFLICT (pii_type, detector) DO NOTHING;
+
+-- ============================================================================
+-- PHASE 6: LOW PRIORITY - Healthcare Details
+-- ============================================================================
+
+-- Detailed Healthcare Information
+INSERT INTO pii_type_config 
+    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+VALUES 
+    ('MEDICALCONDITION', 'GLINER', true, 0.70, 'Medical Condition', 'Medical conditions and diagnoses', 'Healthcare', 'condition', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('MEDICALPROCESS', 'GLINER', true, 0.70, 'Medical Process', 'Medical procedures and treatments', 'Healthcare', 'medical process', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('DRUG', 'GLINER', true, 0.75, 'Drug', 'Pharmaceutical drugs and medications', 'Healthcare', 'drug', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('DOSE', 'GLINER', true, 0.75, 'Dosage', 'Medication dosage information', 'Healthcare', 'dose', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('BLOODTYPE', 'GLINER', true, 0.85, 'Blood Type', 'Blood type information', 'Healthcare', 'blood type', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('INJURY', 'GLINER', true, 0.70, 'Injury', 'Physical injuries and trauma', 'Healthcare', 'injury', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('MEDICALFACILITY', 'GLINER', true, 0.75, 'Medical Facility', 'Healthcare facility names', 'Healthcare', 'organization medical facility', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('MEDICALCODE', 'GLINER', true, 0.80, 'Medical Code', 'Medical classification codes', 'Healthcare', 'medical code', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+ON CONFLICT (pii_type, detector) DO NOTHING;
+
+-- ============================================================================
+-- PHASE 7: VERY LOW PRIORITY - Other Information
+-- ============================================================================
+
+-- Monetary Information
+INSERT INTO pii_type_config 
+    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+VALUES 
+    ('MONEY', 'GLINER', false, 0.65, 'Money', 'Monetary amounts and values', 'Financial', 'money', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
 ON CONFLICT (pii_type, detector) DO NOTHING;
 
 -- ============================================================================

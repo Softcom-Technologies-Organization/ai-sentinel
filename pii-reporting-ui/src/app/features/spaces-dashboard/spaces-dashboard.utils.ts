@@ -14,6 +14,11 @@ export interface UISpace extends Space {
   lastScanTs?: string;
   counts?: { total: number; high: number; medium: number; low: number };
   url?: string;
+  /**
+   * Index de l'ordre d'origine tel que fourni par le backend (Confluence).
+   * Sert de repli pour stabiliser les tris afin de refléter exactement l'ordre Confluence quand requis.
+   */
+  originalIndex: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -55,13 +60,15 @@ export class SpacesDashboardUtils {
    * Replace spaces with UI decorated version for table display.
    */
   setSpaces(spaces: Space[] | null | undefined): void {
-    const mapped: UISpace[] = (spaces ?? []).map<UISpace>(s => ({
+    const mapped: UISpace[] = (spaces ?? []).map<UISpace>((s, idx) => ({
       ...s,
       status: 'PENDING',
       lastScanTs: undefined,
       counts: { total: 0, high: 0, medium: 0, low: 0 },
       // Preserve backend-provided URL when present
-      url: s.url
+      url: s.url,
+      // Conserver l'ordre backend (Confluence) pour des tris cohérents
+      originalIndex: idx
     }));
     this.uiSpaces.set(mapped);
   }

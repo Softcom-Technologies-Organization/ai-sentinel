@@ -18,3 +18,5 @@ secrets/*.txt
 /pii-detector-service/htmlcov/
 /pii-detector-service/tests/coverage.xml
 /pii-detector-service/coverage.xml
+/.run/run/run.iml
+/pii-detector-service/pii-detector-service/pii-detector-service.iml

@@ -6,12 +6,11 @@ before and after refactoring to ensure no regression.
 """
 
 import pytest
-from unittest.mock import Mock, MagicMock, patch
 from typing import List
+from unittest.mock import Mock, MagicMock, patch
 
-from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
-from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
 
 
 class TestGLiNERDetectorChunkingRefactoring:
@@ -76,8 +75,14 @@ class TestGLiNERDetectorChunkingRefactoring:
         threshold = 0.5
         detection_id = "test-001"
         
+        # Mock pii_type_configs for fresh config fetch
+        pii_type_configs = {
+            'GIVENNAME': {'enabled': True, 'detector_label': 'first name', 'threshold': 0.5},
+            'EMAIL': {'enabled': True, 'detector_label': 'email', 'threshold': 0.5}
+        }
+        
         # Act
-        entities = detector._detect_pii_with_chunking(text, threshold, detection_id)
+        entities = detector._detect_pii_with_chunking(text, threshold, detection_id, pii_type_configs)
         
         # Assert
         assert len(entities) == 2
@@ -129,8 +134,14 @@ class TestGLiNERDetectorChunkingRefactoring:
         threshold = 0.5
         detection_id = "test-002"
         
+        # Mock pii_type_configs
+        pii_type_configs = {
+            'GIVENNAME': {'enabled': True, 'detector_label': 'first name', 'threshold': 0.5},
+            'EMAIL': {'enabled': True, 'detector_label': 'email', 'threshold': 0.5}
+        }
+        
         # Act
-        entities = detector._detect_pii_with_chunking(text, threshold, detection_id)
+        entities = detector._detect_pii_with_chunking(text, threshold, detection_id, pii_type_configs)
         
         # Assert
         assert len(entities) == 2
@@ -168,8 +179,13 @@ class TestGLiNERDetectorChunkingRefactoring:
         threshold = 0.5
         detection_id = "test-003"
         
+        # Mock pii_type_configs
+        pii_type_configs = {
+            'EMAIL': {'enabled': True, 'detector_label': 'email', 'threshold': 0.5}
+        }
+        
         # Act
-        entities = detector._detect_pii_with_chunking(text, threshold, detection_id)
+        entities = detector._detect_pii_with_chunking(text, threshold, detection_id, pii_type_configs)
         
         # Assert - should only have one entity (duplicate removed)
         assert len(entities) == 1
@@ -186,7 +202,7 @@ class TestGLiNERDetectorChunkingRefactoring:
         
         # Act & Assert
         with pytest.raises(RuntimeError, match="Semantic chunker not initialized"):
-            detector._detect_pii_with_chunking("test text", 0.5, "test-004")
+            detector._detect_pii_with_chunking("test text", 0.5, "test-004", None)
 
     def test_should_ApplyScoringFilter_When_ConfiguredThresholdsExist(self, detector_with_mocks):
         """
@@ -195,8 +211,10 @@ class TestGLiNERDetectorChunkingRefactoring:
         # Arrange
         detector = detector_with_mocks
         detector.parallel_enabled = False
-        detector.scoring_overrides = {
-            "EMAIL": 0.9  # High threshold for emails
+        
+        # Mock pii_type_configs with high threshold for EMAIL
+        pii_type_configs = {
+            'EMAIL': {'enabled': True, 'detector_label': 'email', 'threshold': 0.9}  # High threshold
         }
         
         chunk = Mock()
@@ -215,7 +233,7 @@ class TestGLiNERDetectorChunkingRefactoring:
         detection_id = "test-005"
         
         # Act
-        entities = detector._detect_pii_with_chunking(text, threshold, detection_id)
+        entities = detector._detect_pii_with_chunking(text, threshold, detection_id, pii_type_configs)
         
         # Assert - entity should be filtered out due to scoring override
         assert len(entities) == 0
@@ -243,8 +261,11 @@ class TestGLiNERDetectorChunkingRefactoring:
         threshold = 0.5
         detection_id = "test-006"
         
+        # Mock pii_type_configs
+        pii_type_configs = {}
+        
         # Act
-        entities = detector._detect_pii_with_chunking(text, threshold, detection_id)
+        entities = detector._detect_pii_with_chunking(text, threshold, detection_id, pii_type_configs)
         
         # Assert - should complete without error
         assert entities == []

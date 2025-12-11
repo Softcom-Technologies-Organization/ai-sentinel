@@ -22,8 +22,8 @@ class TestGLiNERScoringFilter:
         config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
         detector = GLiNERDetector(config=config)
         
-        # Mock scoring overrides
-        detector.scoring_overrides = {
+        # Scoring overrides passed as parameter (no longer instance variable)
+        scoring_overrides = {
             'TELEPHONENUM': 0.95,
             'EMAIL': 0.80,
             'GIVENNAME': 0.75
@@ -49,7 +49,7 @@ class TestGLiNERScoringFilter:
         ]
         
         # Act
-        filtered_entities = detector._apply_entity_scoring_filter(entities)
+        filtered_entities = detector._apply_entity_scoring_filter(entities, scoring_overrides)
         
         # Assert
         assert len(filtered_entities) == 3, \
@@ -73,8 +73,8 @@ class TestGLiNERScoringFilter:
         config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
         detector = GLiNERDetector(config=config)
         
-        # No scoring overrides
-        detector.scoring_overrides = {}
+        # No scoring overrides (empty dict)
+        scoring_overrides = {}
         
         entities = [
             PIIEntity(text="test1", pii_type="EMAIL", type_label="EMAIL", 
@@ -84,7 +84,7 @@ class TestGLiNERScoringFilter:
         ]
         
         # Act
-        filtered_entities = detector._apply_entity_scoring_filter(entities)
+        filtered_entities = detector._apply_entity_scoring_filter(entities, scoring_overrides)
         
         # Assert
         assert len(filtered_entities) == 2, \
@@ -98,7 +98,7 @@ class TestGLiNERScoringFilter:
         detector = GLiNERDetector(config=config)
         
         # Only TELEPHONENUM has a scoring override
-        detector.scoring_overrides = {
+        scoring_overrides = {
             'TELEPHONENUM': 0.95
         }
         
@@ -117,7 +117,7 @@ class TestGLiNERScoringFilter:
         ]
         
         # Act
-        filtered_entities = detector._apply_entity_scoring_filter(entities)
+        filtered_entities = detector._apply_entity_scoring_filter(entities, scoring_overrides)
         
         # Assert
         assert len(filtered_entities) == 2, \
@@ -135,7 +135,7 @@ class TestGLiNERScoringFilter:
         config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
         detector = GLiNERDetector(config=config)
         
-        detector.scoring_overrides = {
+        scoring_overrides = {
             'TELEPHONENUM': 0.95
         }
         
@@ -156,7 +156,7 @@ class TestGLiNERScoringFilter:
         ]
         
         # Act
-        filtered_entities = detector._apply_entity_scoring_filter(entities)
+        filtered_entities = detector._apply_entity_scoring_filter(entities, scoring_overrides)
         
         # Assert
         assert len(filtered_entities) == 2, \
@@ -173,7 +173,7 @@ class TestGLiNERScoringFilter:
         config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
         detector = GLiNERDetector(config=config)
         
-        detector.scoring_overrides = {
+        scoring_overrides = {
             'TELEPHONENUM': 0.95
         }
         
@@ -187,7 +187,7 @@ class TestGLiNERScoringFilter:
         ]
         
         # Act
-        filtered_entities = detector._apply_entity_scoring_filter(entities)
+        filtered_entities = detector._apply_entity_scoring_filter(entities, scoring_overrides)
         
         # Assert
         assert len(filtered_entities) == 1

@@ -1,7 +1,7 @@
 # AI Sentinel
 
 [![Version](https://img.shields.io/badge/version-0.0.1-blue.svg)](https://github.com/Softcom-Technologies-Organization/ai-sentinel/releases)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)](https://www.docker.com/)
 [![Python](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/)
 [![Java](https://img.shields.io/badge/java-21-orange.svg)](https://openjdk.org/)
@@ -735,7 +735,7 @@ A: PII are never sent to external services. Everything is processed locally. Use
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 Copyright © 2025 Softcom Technologies
 

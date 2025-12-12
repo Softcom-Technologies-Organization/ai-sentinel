@@ -4,8 +4,8 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)](https://www.docker.com/)
 [![Python](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/)
-[![Java](https://img.shields.io/badge/java-21-orange.svg)](https://openjdk.org/)
-[![Angular](https://img.shields.io/badge/angular-19-red.svg)](https://angular.io/)
+[![Java](https://img.shields.io/badge/java-25-orange.svg)](https://openjdk.org/)
+[![Angular](https://img.shields.io/badge/angular-21-red.svg)](https://angular.io/)
 
 > Intelligent platform for detecting and analyzing Personally Identifiable Information (PII) in Confluence spaces, powered by advanced AI models
 
@@ -91,8 +91,8 @@ ai-sentinel/
 
 ### Technologies Used
 
-- **Frontend**: Angular 19, TypeScript, TailwindCSS
-- **Backend**: Spring Boot 3, Java 21, Armeria (gRPC client)
+- **Frontend**: Angular 21, TypeScript, TailwindCSS
+- **Backend**: Spring Boot 3, Java 25, Armeria (gRPC client)
 - **Detector**: Python 3.13, gRPC, Hugging Face Transformers
 - **Database**: PostgreSQL 18
 - **Infrastructure**: Docker, Docker Compose

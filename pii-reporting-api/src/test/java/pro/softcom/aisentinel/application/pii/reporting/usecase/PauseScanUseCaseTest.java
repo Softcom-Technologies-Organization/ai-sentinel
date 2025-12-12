@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTaskManager;
+import pro.softcom.aisentinel.application.pii.reporting.port.out.PersonallyIdentifiableInformationScanExecutionOrchestratorPort;
 import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
@@ -29,7 +29,7 @@ class PauseScanUseCaseTest {
     private ScanCheckpointRepository scanCheckpointRepository;
 
     @Mock
-    private ScanTaskManager scanTaskManager;
+    private PersonallyIdentifiableInformationScanExecutionOrchestratorPort personallyIdentifiableInformationScanExecutionOrchestratorPort;
 
     @InjectMocks
     private PauseScanUseCase pauseScanUseCase;
@@ -48,7 +48,8 @@ class PauseScanUseCaseTest {
 
         when(scanCheckpointRepository.findRunningScanCheckpoint(scanId))
             .thenReturn(Optional.of(runningSpace));
-        when(scanTaskManager.pauseScan(scanId)).thenReturn(true);
+        when(
+            personallyIdentifiableInformationScanExecutionOrchestratorPort.pauseScan(scanId)).thenReturn(true);
 
         // When: Pausing the scan
         pauseScanUseCase.pauseScan(scanId);
@@ -69,7 +70,8 @@ class PauseScanUseCaseTest {
         
         when(scanCheckpointRepository.findRunningScanCheckpoint(scanId))
             .thenReturn(Optional.empty());
-        when(scanTaskManager.pauseScan(scanId)).thenReturn(true);
+        when(
+            personallyIdentifiableInformationScanExecutionOrchestratorPort.pauseScan(scanId)).thenReturn(true);
 
         // When: Attempting to pause the scan
         pauseScanUseCase.pauseScan(scanId);
@@ -94,7 +96,8 @@ class PauseScanUseCaseTest {
 
         when(scanCheckpointRepository.findRunningScanCheckpoint(scanId))
             .thenReturn(Optional.of(runningSpace));
-        when(scanTaskManager.pauseScan(scanId)).thenReturn(true);
+        when(
+            personallyIdentifiableInformationScanExecutionOrchestratorPort.pauseScan(scanId)).thenReturn(true);
 
         // When: Pausing the scan
         pauseScanUseCase.pauseScan(scanId);
@@ -121,7 +124,7 @@ class PauseScanUseCaseTest {
         // Then: No repository calls should be made
         verify(scanCheckpointRepository, never()).findRunningScanCheckpoint(any());
         verify(scanCheckpointRepository, never()).save(any());
-        verify(scanTaskManager, never()).pauseScan(any());
+        verify(personallyIdentifiableInformationScanExecutionOrchestratorPort, never()).pauseScan(any());
     }
 
     @Test
@@ -138,7 +141,8 @@ class PauseScanUseCaseTest {
 
         when(scanCheckpointRepository.findRunningScanCheckpoint(scanId))
             .thenReturn(Optional.of(runningSpace));
-        when(scanTaskManager.pauseScan(scanId)).thenReturn(false); // Task not found
+        when(
+            personallyIdentifiableInformationScanExecutionOrchestratorPort.pauseScan(scanId)).thenReturn(false); // Task not found
 
         // When: Pausing the scan
         pauseScanUseCase.pauseScan(scanId);

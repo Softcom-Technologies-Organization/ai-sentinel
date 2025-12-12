@@ -3,7 +3,7 @@ package pro.softcom.aisentinel.application.pii.reporting.usecase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.PauseScanPort;
-import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTaskManager;
+import pro.softcom.aisentinel.application.pii.reporting.port.out.PersonallyIdentifiableInformationScanExecutionOrchestratorPort;
 import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
@@ -18,7 +18,7 @@ import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
 public class PauseScanUseCase implements PauseScanPort {
 
     private final ScanCheckpointRepository scanCheckpointRepository;
-    private final ScanTaskManager scanTaskManager;
+    private final PersonallyIdentifiableInformationScanExecutionOrchestratorPort personallyIdentifiableInformationScanExecutionOrchestratorPort;
 
     @Override
     public void pauseScan(String scanId) {
@@ -30,7 +30,7 @@ public class PauseScanUseCase implements PauseScanPort {
         log.info("[PAUSE] Pausing scan {}", scanId);
         
         // Dispose the reactive subscription to stop the scan in background task
-        boolean disposed = scanTaskManager.pauseScan(scanId);
+        boolean disposed = personallyIdentifiableInformationScanExecutionOrchestratorPort.pauseScan(scanId);
         if (!disposed) {
             log.warn("[PAUSE] Scan {} not found or already completed", scanId);
         }

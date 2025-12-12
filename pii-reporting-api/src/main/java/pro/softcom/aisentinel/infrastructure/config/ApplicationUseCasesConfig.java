@@ -38,11 +38,11 @@ import pro.softcom.aisentinel.application.pii.reporting.port.in.ScanReportingPor
 import pro.softcom.aisentinel.application.pii.reporting.port.in.StreamConfluenceResumeScanPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.StreamConfluenceScanPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.AfterCommitExecutionPort;
+import pro.softcom.aisentinel.application.pii.reporting.port.out.PersonallyIdentifiableInformationScanExecutionOrchestratorPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.PublishEventPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ReadPiiConfigPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanEventStore;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery;
-import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTaskManager;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.aisentinel.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.aisentinel.application.pii.reporting.service.ContentScanOrchestrator;
@@ -148,7 +148,7 @@ public class ApplicationUseCasesConfig {
             ContentScanOrchestrator contentScanOrchestrator,
             AttachmentProcessor attachmentProcessor,
             ScanTimeOutConfig scanTimeoutConfig,
-            ScanTaskManager scanTaskManager,
+            PersonallyIdentifiableInformationScanExecutionOrchestratorPort personallyIdentifiableInformationScanExecutionOrchestratorPort,
             ScanCheckpointRepository scanCheckpointRepository) {
         return new StreamConfluenceScanUseCase(
                 confluenceAccessor,
@@ -156,7 +156,7 @@ public class ApplicationUseCasesConfig {
                 contentScanOrchestrator,
                 attachmentProcessor,
                 scanTimeoutConfig,
-                scanTaskManager,
+                personallyIdentifiableInformationScanExecutionOrchestratorPort,
                 scanCheckpointRepository
         );
     }
@@ -181,8 +181,9 @@ public class ApplicationUseCasesConfig {
 
     @Bean
     public PauseScanPort pauseScanUseCase(ScanCheckpointRepository scanCheckpointRepository,
-                                          ScanTaskManager scanTaskManager) {
-        return new PauseScanUseCase(scanCheckpointRepository, scanTaskManager);
+                                          PersonallyIdentifiableInformationScanExecutionOrchestratorPort personallyIdentifiableInformationScanExecutionOrchestratorPort) {
+        return new PauseScanUseCase(scanCheckpointRepository,
+                                    personallyIdentifiableInformationScanExecutionOrchestratorPort);
     }
 
     @Bean

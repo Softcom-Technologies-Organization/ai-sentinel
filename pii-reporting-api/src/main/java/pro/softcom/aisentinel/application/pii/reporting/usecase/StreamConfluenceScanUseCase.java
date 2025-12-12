@@ -7,7 +7,7 @@ import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.StreamConfluenceScanPort;
-import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTaskManager;
+import pro.softcom.aisentinel.application.pii.reporting.port.out.PersonallyIdentifiableInformationScanExecutionOrchestratorPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.aisentinel.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.aisentinel.application.pii.reporting.service.ContentScanOrchestrator;
@@ -27,7 +27,7 @@ import reactor.core.publisher.Mono;
 public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUseCase implements
     StreamConfluenceScanPort {
 
-    private final ScanTaskManager scanTaskManager;
+    private final PersonallyIdentifiableInformationScanExecutionOrchestratorPort personallyIdentifiableInformationScanExecutionOrchestratorPort;
     private final ScanCheckpointRepository scanCheckpointRepository;
 
     public StreamConfluenceScanUseCase(
@@ -36,10 +36,10 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
         ContentScanOrchestrator contentScanOrchestrator,
         AttachmentProcessor attachmentProcessor,
         ScanTimeOutConfig scanTimeoutConfig,
-        ScanTaskManager scanTaskManager,
+        PersonallyIdentifiableInformationScanExecutionOrchestratorPort personallyIdentifiableInformationScanExecutionOrchestratorPort,
         ScanCheckpointRepository scanCheckpointRepository) {
         super(confluenceAccessor, piiDetectorClient, contentScanOrchestrator, attachmentProcessor, scanTimeoutConfig);
-        this.scanTaskManager = scanTaskManager;
+        this.personallyIdentifiableInformationScanExecutionOrchestratorPort = personallyIdentifiableInformationScanExecutionOrchestratorPort;
         this.scanCheckpointRepository = scanCheckpointRepository;
     }
 
@@ -95,8 +95,8 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
             });
 
         // Start independent scan task and return subscription flux
-        scanTaskManager.startScan(scanId, scanFlux);
-        return scanTaskManager.subscribeScan(scanId);
+        personallyIdentifiableInformationScanExecutionOrchestratorPort.startScan(scanId, scanFlux);
+        return personallyIdentifiableInformationScanExecutionOrchestratorPort.subscribeScan(scanId);
     }
 
     /**
@@ -139,8 +139,8 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
         Flux<ConfluenceContentScanResult> scanFlux = Flux.concat(header, body, footer);
 
         // Start independent scan task and return subscription flux
-        scanTaskManager.startScan(scanCorrelationId, scanFlux);
-        return scanTaskManager.subscribeScan(scanCorrelationId);
+        personallyIdentifiableInformationScanExecutionOrchestratorPort.startScan(scanCorrelationId, scanFlux);
+        return personallyIdentifiableInformationScanExecutionOrchestratorPort.subscribeScan(scanCorrelationId);
     }
 
     private static Flux<ConfluenceContentScanResult> buildAllSpaceScanFluxFooter(String scanId) {

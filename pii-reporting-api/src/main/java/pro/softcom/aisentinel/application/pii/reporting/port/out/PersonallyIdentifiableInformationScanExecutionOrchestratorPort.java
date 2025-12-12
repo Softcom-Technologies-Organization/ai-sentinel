@@ -27,7 +27,7 @@ import reactor.core.publisher.Flux;
  * 
  * @since 1.0
  */
-public interface ScanTaskManager {
+public interface PersonallyIdentifiableInformationScanExecutionOrchestratorPort {
     
     /**
      * Starts a new independent scan with the provided data stream.

@@ -368,7 +368,7 @@ class TestConfiguration:
         
         # Verify first entity: person name
         assert result[0].text == "John Doe"
-        assert result[0].pii_type == "PERSONNAME"
+        assert result[0].pii_type == "PERSON NAME"
         assert result[0].start == 8
         assert result[0].end == 16
         
@@ -380,7 +380,7 @@ class TestConfiguration:
         
         # Verify third entity: phone
         assert result[2].text == "555-1234"
-        assert result[2].pii_type == "TELEPHONENUM"
+        assert result[2].pii_type == "PHONE NUMBER"
         assert result[2].start == 45
         assert result[2].end == 53
     

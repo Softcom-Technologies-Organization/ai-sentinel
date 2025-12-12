@@ -30,7 +30,6 @@ class TestGLiNERDetectorInitialization:
         assert detector.device in ['cpu', 'cuda']
         assert detector.model is None
         assert detector.semantic_chunker is None
-        assert isinstance(detector.pii_type_mapping, dict)
         assert isinstance(detector.log_throughput, bool)
         mock_manager_class.assert_called_once()
     
@@ -211,9 +210,10 @@ class TestConfiguration:
         config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
         detector = GLiNERDetector(config=config)
         
-        # Should have loaded the default mapping
-        assert isinstance(detector.pii_type_mapping, dict)
-        assert len(detector.pii_type_mapping) > 0
+        # Verify detector can get default mapping (no longer stored as instance variable)
+        default_mapping = detector._get_default_mapping()
+        assert isinstance(default_mapping, dict)
+        assert len(default_mapping) > 0
     
     @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_use_default_mapping_when_config_missing(self, mock_manager_class):
@@ -221,8 +221,10 @@ class TestConfiguration:
         config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
         detector = GLiNERDetector(config=config)
         
+        # Verify _get_default_mapping returns a valid mapping
         default_mapping = detector._get_default_mapping()
-        assert detector.pii_type_mapping == default_mapping
+        assert isinstance(default_mapping, dict)
+        assert len(default_mapping) > 0
     
     @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_get_gliner_labels(self, mock_manager_class):
@@ -230,11 +232,19 @@ class TestConfiguration:
         config = DetectionConfig(model_id="gliner-pii", device="cpu", threshold=0.5)
         detector = GLiNERDetector(config=config)
         
-        labels = detector._get_gliner_labels()
+        # Create mock pii_type_mapping to pass as parameter
+        # Structure: detector_label (key) -> PII_TYPE (value)
+        mock_pii_type_mapping = {
+            "email": "EMAIL",
+            "person name": "PERSON NAME"
+        }
+        
+        labels = detector._get_gliner_labels(mock_pii_type_mapping)
         
         assert isinstance(labels, list)
-        assert len(labels) > 0
+        assert len(labels) == 2
         assert "email" in labels
+        assert "person name" in labels
     
     @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_convert_gliner_entities(self, mock_manager_class):
@@ -247,7 +257,13 @@ class TestConfiguration:
             {"text": "john@example.com", "label": "email", "start": 0, "end": 16, "score": 0.95}
         ]
         
-        result = detector._convert_to_pii_entities(raw_entities, chunk_text)
+        # Create mock pii_type_mapping to pass as parameter
+        # Structure: detector_label (key) -> PII_TYPE (value)
+        mock_pii_type_mapping = {
+            "email": "EMAIL"
+        }
+        
+        result = detector._convert_to_pii_entities(raw_entities, chunk_text, mock_pii_type_mapping)
         
         assert len(result) == 1
         assert isinstance(result[0], PIIEntity)
@@ -281,8 +297,14 @@ class TestConfiguration:
             }
         ]
         
+        # Create mock pii_type_mapping to pass as parameter
+        # Structure: detector_label (key) -> PII_TYPE (value)
+        mock_pii_type_mapping = {
+            "email": "EMAIL"
+        }
+        
         # Convert entities - should extract substring using positions
-        result = detector._convert_to_pii_entities(raw_entities, chunk_text)
+        result = detector._convert_to_pii_entities(raw_entities, chunk_text, mock_pii_type_mapping)
         
         # Verify: PIIEntity.text should contain ONLY the extracted email
         assert len(result) == 1
@@ -333,13 +355,20 @@ class TestConfiguration:
             }
         ]
         
-        result = detector._convert_to_pii_entities(raw_entities, chunk_text)
+        # Create mock pii_type_mapping to pass as parameter
+        mock_pii_type_mapping = {
+            "PERSONNAME": {"detector_label": "person name"},
+            "EMAIL": {"detector_label": "email"},
+            "TELEPHONENUM": {"detector_label": "phone number"}
+        }
+        
+        result = detector._convert_to_pii_entities(raw_entities, chunk_text, mock_pii_type_mapping)
         
         assert len(result) == 3
         
         # Verify first entity: person name
         assert result[0].text == "John Doe"
-        assert result[0].pii_type == "PERSONNAME"
+        assert result[0].pii_type == "PERSON NAME"
         assert result[0].start == 8
         assert result[0].end == 16
         
@@ -351,7 +380,7 @@ class TestConfiguration:
         
         # Verify third entity: phone
         assert result[2].text == "555-1234"
-        assert result[2].pii_type == "TELEPHONENUM"
+        assert result[2].pii_type == "PHONE NUMBER"
         assert result[2].start == 45
         assert result[2].end == 53
     
@@ -385,7 +414,12 @@ class TestConfiguration:
             }
         ]
         
-        result = detector._convert_to_pii_entities(raw_entities, chunk_text)
+        # Create mock pii_type_mapping to pass as parameter
+        mock_pii_type_mapping = {
+            "EMAIL": {"detector_label": "email"}
+        }
+        
+        result = detector._convert_to_pii_entities(raw_entities, chunk_text, mock_pii_type_mapping)
         
         # Should not crash, but return entities with empty text
         assert len(result) == 2
@@ -431,7 +465,7 @@ class TestChunkingDetection:
         detector.semantic_chunker = None
         
         with pytest.raises(RuntimeError, match="Semantic chunker not initialized"):
-            detector._detect_pii_with_chunking("test", 0.5, "test_id")
+            detector._detect_pii_with_chunking("test", 0.5, "test_id", None)
     
     @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     def test_should_detect_with_chunking_successfully(self, mock_manager_class):
@@ -453,8 +487,14 @@ class TestChunkingDetection:
             [{"text": "555-1234", "label": "phone number", "start": 5, "end": 13, "score": 0.90}]
         ]
         
+        # Create mock pii_type_configs to pass as parameter
+        mock_pii_type_configs = {
+            "EMAIL": {"enabled": True, "detector_label": "email", "threshold": 0.5},
+            "TELEPHONENUM": {"enabled": True, "detector_label": "phone number", "threshold": 0.5}
+        }
+        
         with patch.object(detector, '_get_gliner_labels', return_value=["email", "phone number"]):
-            result = detector._detect_pii_with_chunking("Contact john@example.com\nCall 555-1234", 0.5, "test_id")
+            result = detector._detect_pii_with_chunking("Contact john@example.com\nCall 555-1234", 0.5, "test_id", mock_pii_type_configs)
         
         assert len(result) == 2
 

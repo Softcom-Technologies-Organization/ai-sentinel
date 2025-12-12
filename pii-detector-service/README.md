@@ -294,33 +294,42 @@ docker run -p 50051:50051 \
 
 ### Project Structure
 
+Following **Hexagonal Architecture** (Ports & Adapters Pattern) principles:
+
 ```
 pii-detector-service/
-├── pii_detector/           # Main application package
-│   ├── config/            # Configuration management
-│   │   ├── detection_config.py
-│   │   ├── model_config.py
-│   │   └── server_config.py
-│   ├── service/           # Service layer
-│   │   ├── detector/     # Detection strategies
-│   │   │   ├── composite_detector.py
-│   │   │   ├── gliner_detector.py
-│   │   │   ├── presidio_detector.py
-│   │   │   └── regex_detector.py
-│   │   └── server/       # gRPC server implementation
-│   │       └── pii_service.py
-│   ├── proto/            # Protocol Buffer definitions
-│   └── server.py         # Main entry point
-├── config/               # Configuration files
-│   ├── detection-settings.toml
-│   └── models/          # Model-specific configs
-├── tests/               # Test suite
-│   ├── unit/
-│   └── integration/
-├── docs/                # Documentation
-├── Dockerfile
-└── pyproject.toml
+├── pii_detector/                          # Main application package
+│   ├── domain/                           # Domain Layer - Pure business logic
+│   │   ├── entity/                       # Domain entities (PII, DetectionResult)
+│   │   ├── exception/                    # Domain exceptions
+│   │   ├── port/                         # Domain ports (interfaces)
+│   │   └── service/                      # Domain services
+│   ├── application/                      # Application Layer - Use cases & orchestration
+│   │   ├── config/                       # Application configuration management
+│   │   ├── factory/                      # Factory patterns for object creation
+│   │   └── orchestration/                # Orchestration logic & workflows
+│   ├── infrastructure/                   # Infrastructure Layer - External adapters
+│   │   ├── adapter/                      # Inbound/outbound adapters
+│   │   ├── detector/                     # Detection strategies (GLiNER, Presidio, Regex)
+│   │   ├── model_management/             # Model loading and management
+│   │   └── text_processing/              # Text processing and utilities
+│   ├── proto/                            # Protocol Buffer definitions (gRPC)
+│   └── utils/                            # Utility functions and helpers
+├── config/                               # Configuration files
+│   ├── detection-settings.toml           # Global detection settings
+│   └── models/                           # Model-specific configurations
+├── tests/                                # Test suite
+│   ├── unit/                             # Unit tests
+│   └── integration/                      # Integration tests
+├── docs/                                 # Documentation and guides
+├── Dockerfile                            # Container image definition
+└── pyproject.toml                        # Python project configuration
 ```
+
+**Hexagonal Architecture Layers**:
+- **Domain Layer** (`domain/`): Core business logic with no external dependencies
+- **Application Layer** (`application/`): Use cases and service orchestration
+- **Infrastructure Layer** (`infrastructure/`): External system adapters (gRPC, ML models, text processing)
 
 ### Component Diagram
 

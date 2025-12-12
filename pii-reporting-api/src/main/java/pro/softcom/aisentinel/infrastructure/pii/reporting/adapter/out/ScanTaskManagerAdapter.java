@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTaskManager;
+import pro.softcom.aisentinel.application.pii.reporting.port.out.PersonallyIdentifiableInformationScanExecutionOrchestratorPort;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -41,7 +41,8 @@ import reactor.core.scheduler.Schedulers;
  */
 @Service
 @Slf4j
-public class ScanTaskManagerAdapter implements ScanTaskManager {
+public class ScanTaskManagerAdapter implements
+    PersonallyIdentifiableInformationScanExecutionOrchestratorPort {
     
     private final Map<String, ManagedScan> managedScans = new ConcurrentHashMap<>();
     

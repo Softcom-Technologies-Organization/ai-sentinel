@@ -407,21 +407,28 @@ def _load_detection_config() -> Tuple[bool, bool]:
 
 def _create_regex_detector_if_enabled(regex_enabled: bool) -> Optional[RegexDetector]:
     """
-    Create RegexDetector instance if enabled in configuration.
+    Create RegexDetector instance (always created for runtime activation).
+    
+    IMPORTANT: This function now ALWAYS creates RegexDetector instance regardless
+    of the regex_enabled parameter. The parameter is kept for backward compatibility
+    but only used for logging purposes.
+    
+    Business rule: Detectors are instantiated at startup to avoid recreation overhead,
+    but can be selectively activated at runtime via database configuration without
+    requiring service restart.
     
     Args:
-        regex_enabled: Whether regex detection is enabled
+        regex_enabled: TOML configuration flag (for logging only)
         
     Returns:
-        RegexDetector instance or None
+        RegexDetector instance or None (only None if creation fails)
     """
-    if not regex_enabled:
-        logger.info("RegexDetector disabled in configuration")
-        return None
-    
     try:
         detector = RegexDetector()
-        logger.info("Created RegexDetector for composite")
+        if regex_enabled:
+            logger.info("Created RegexDetector for composite (enabled by default in TOML)")
+        else:
+            logger.info("Created RegexDetector for composite (disabled by default in TOML, can be activated at runtime)")
         return detector
     except Exception as e:
         logger.warning(f"Failed to create RegexDetector: {e}")
@@ -430,25 +437,32 @@ def _create_regex_detector_if_enabled(regex_enabled: bool) -> Optional[RegexDete
 
 def _create_presidio_detector_if_enabled(presidio_enabled: bool) -> Optional[PresidioDetector]:
     """
-    Create PresidioDetector instance if enabled and available.
+    Create PresidioDetector instance (always created for runtime activation if available).
+    
+    IMPORTANT: This function now ALWAYS creates PresidioDetector instance (if library available)
+    regardless of the presidio_enabled parameter. The parameter is kept for backward compatibility
+    but only used for logging purposes.
+    
+    Business rule: Detectors are instantiated at startup to avoid recreation overhead,
+    but can be selectively activated at runtime via database configuration without
+    requiring service restart.
     
     Args:
-        presidio_enabled: Whether Presidio detection is enabled
+        presidio_enabled: TOML configuration flag (for logging only)
         
     Returns:
-        PresidioDetector instance or None
+        PresidioDetector instance or None (None only if library unavailable or creation fails)
     """
-    if not presidio_enabled:
-        logger.info("PresidioDetector disabled in configuration")
-        return None
-    
     if not PRESIDIO_AVAILABLE:
-        logger.warning("PresidioDetector enabled in config but not available")
+        logger.warning("PresidioDetector not available (library not installed)")
         return None
     
     try:
         detector = PresidioDetector()
-        logger.info("Created PresidioDetector for composite")
+        if presidio_enabled:
+            logger.info("Created PresidioDetector for composite (enabled by default in TOML)")
+        else:
+            logger.info("Created PresidioDetector for composite (disabled by default in TOML, can be activated at runtime)")
         return detector
     except Exception as e:
         logger.warning(f"Failed to create PresidioDetector: {e}")

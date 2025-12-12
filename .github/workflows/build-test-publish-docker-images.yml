@@ -43,10 +43,7 @@ jobs:
     needs: [tests]
     if: |
       github.event_name != 'pull_request' &&
-      (
-        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') ||
-        (github.event_name == 'workflow_dispatch')
-      ) &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') &&
       (github.event.inputs.build_detector != 'false' || github.event_name != 'workflow_dispatch')
     permissions:
       contents: read
@@ -71,9 +68,6 @@ jobs:
             echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$VERSION,ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:latest" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
             echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$VERSION" >> $GITHUB_OUTPUT
-          else
-            BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///')
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$VERSION-$BRANCH_NAME" >> $GITHUB_OUTPUT
           fi
 
       - name: Log in to GitHub Container Registry
@@ -102,10 +96,7 @@ jobs:
     needs: [tests]
     if: |
       github.event_name != 'pull_request' &&
-      (
-        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') ||
-        (github.event_name == 'workflow_dispatch')
-      ) &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') &&
       (github.event.inputs.build_api != 'false' || github.event_name != 'workflow_dispatch')
     permissions:
       contents: read
@@ -130,9 +121,6 @@ jobs:
             echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$VERSION,ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:latest" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
             echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$VERSION" >> $GITHUB_OUTPUT
-          else
-            BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///')
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$VERSION-$BRANCH_NAME" >> $GITHUB_OUTPUT
           fi
 
       - name: Log in to GitHub Container Registry
@@ -161,10 +149,7 @@ jobs:
     needs: [tests]
     if: |
       github.event_name != 'pull_request' &&
-      (
-        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') ||
-        (github.event_name == 'workflow_dispatch')
-      ) &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') &&
       (github.event.inputs.build_ui != 'false' || github.event_name != 'workflow_dispatch')
     permissions:
       contents: read
@@ -189,9 +174,6 @@ jobs:
             echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$VERSION,ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:latest" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
             echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$VERSION" >> $GITHUB_OUTPUT
-          else
-            BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///')
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$VERSION-$BRANCH_NAME" >> $GITHUB_OUTPUT
           fi
 
       - name: Log in to GitHub Container Registry

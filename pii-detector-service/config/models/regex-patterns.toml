@@ -16,13 +16,6 @@ strategy = "complement"
 # REGEX PATTERNS
 # ============================================================================
 
-[patterns.email]
-type = "EMAIL"
-pattern = '\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b'
-description = "Email addresses (RFC-like, not fully RFC 5322 compliant)"
-score = 0.95
-priority = "high"  # Regex highly reliable for emails
-
 [patterns.ipv4]
 type = "IP_ADDRESS"
 pattern = '\b((25[0-5]|2[0-4][0-9]|1\d{2}|[1-9]?\d)\.){3}(25[0-5]|2[0-4][0-9]|1\d{2}|[1-9]?\d)\b'
@@ -106,36 +99,13 @@ score = 0.75  # Lower score due to ambiguity
 priority = "low"
 country = "DE"
 
-[patterns.phone_international]
+[patterns.phone_swiss_strict]
 type = "TELEPHONENUM"
-pattern = '\+?[0-9]{1,3}[-.\s]?[(]?[0-9]{1,4}[)]?[-.\s]?[0-9]{1,4}[-.\s]?[0-9]{1,9}'
-description = "International phone numbers (flexible format)"
-score = 0.85
-priority = "medium"
-
-[patterns.phone_french]
-type = "TELEPHONENUM"
-pattern = '\b0[1-9](?:[-.\s]?\d{2}){4}\b'
-description = "French phone numbers (0X XX XX XX XX)"
-score = 0.92
-priority = "high"
-country = "FR"
-
-[patterns.phone_swiss]
-type = "TELEPHONENUM"
-pattern = '\b0[1-9]{1,2}[-.\s]?\d{3}[-.\s]?\d{2}[-.\s]?\d{2}\b'
-description = "Swiss phone numbers"
-score = 0.92
+pattern = '\b(0|(\+41)|0041)\s?\d{2}\s?\d{3}\s?\d{2}\s?\d{2}\b'
+description = "Swiss phone numbers (strict format: 0XX, +41, 0041)"
+score = 0.93
 priority = "high"
 country = "CH"
-
-[patterns.password_strong]
-type = "PASSWORD"
-pattern = '(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}'
-description = "Strong password pattern (8+ chars with upper, lower, digit, special)"
-score = 0.80  # Lower score - many false positives
-priority = "low"
-enabled = false  # Disabled by default due to high false positive rate
 
 # ============================================================================
 # VALIDATION SETTINGS

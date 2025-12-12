@@ -57,30 +57,6 @@ class TestRegexDetector:
         assert detector.model_id == "regex-detector"
         assert len(detector.patterns) > 0
     
-    def test_Should_DetectEmail_When_ValidEmailInText(self, detector):
-        """Should detect valid email addresses."""
-        text = "Contact me at john.doe@example.com for more info."
-        
-        entities = detector.detect_pii(text)
-        
-        assert len(entities) >= 1
-        email_entities = [e for e in entities if e.pii_type == "EMAIL"]
-        assert len(email_entities) == 1
-        assert email_entities[0].text == "john.doe@example.com"
-        assert email_entities[0].score >= 0.9
-    
-    def test_Should_DetectMultipleEmails_When_MultipleInText(self, detector):
-        """Should detect multiple email addresses."""
-        text = "Send to alice@test.com or bob@example.org"
-        
-        entities = detector.detect_pii(text)
-        
-        email_entities = [e for e in entities if e.pii_type == "EMAIL"]
-        assert len(email_entities) == 2
-        emails = {e.text for e in email_entities}
-        assert "alice@test.com" in emails
-        assert "bob@example.org" in emails
-    
     def test_Should_DetectIPv4_When_ValidIPInText(self, detector):
         """Should detect valid IPv4 addresses."""
         text = "Server IP is 192.168.1.1"
@@ -130,15 +106,6 @@ class TestRegexDetector:
         ssn_entities = [e for e in entities if e.pii_type == "SOCIALNUM"]
         assert len(ssn_entities) >= 1
         assert any("756." in e.text for e in ssn_entities)
-    
-    def test_Should_DetectFrenchPhone_When_ValidPhoneInText(self, detector):
-        """Should detect French phone numbers."""
-        text = "Call me at 01 23 45 67 89"
-        
-        entities = detector.detect_pii(text)
-        
-        phone_entities = [e for e in entities if e.pii_type == "TELEPHONENUM"]
-        assert len(phone_entities) >= 1
     
     def test_Should_ValidateCreditCard_When_ValidLuhn(self, detector):
         """Should validate credit card with Luhn algorithm."""
@@ -211,12 +178,12 @@ class TestRegexDetector:
     
     def test_Should_MaskPII_When_DetectedEntities(self, detector):
         """Should mask detected PII in text."""
-        text = "Contact: john@example.com"
+        text = "Device MAC: 00:1B:44:11:3A:B7"
         
         masked_text, entities = detector.mask_pii(text)
         
-        assert "[EMAIL]" in masked_text
-        assert "john@example.com" not in masked_text
+        assert "[MAC_ADDRESS]" in masked_text
+        assert "00:1B:44:11:3A:B7" not in masked_text
         assert len(entities) >= 1
     
     def test_Should_NoOpDownload_When_CalledSafely(self, detector):
@@ -262,20 +229,8 @@ class TestRegexDetectorIntegration:
         
         # Should detect multiple types
         pii_types = {e.pii_type for e in entities}
-        assert "EMAIL" in pii_types
         assert "IP_ADDRESS" in pii_types
-        assert len(entities) >= 3
-    
-    def test_Should_HandleLargeText_When_MultipleOccurrences(self, detector):
-        """Should handle large texts with many PII occurrences."""
-        # Generate text with many emails
-        emails = [f"user{i}@example.com" for i in range(100)]
-        text = " ".join(emails)
-        
-        entities = detector.detect_pii(text)
-        
-        email_entities = [e for e in entities if e.pii_type == "EMAIL"]
-        assert len(email_entities) == 100
+        assert len(entities) >= 2
     
     def test_Should_PreservePositions_When_Masking(self, detector):
         """Should preserve correct positions when masking."""
@@ -284,8 +239,6 @@ class TestRegexDetectorIntegration:
         masked_text, entities = detector.mask_pii(text)
         
         # Original structure should be preserved
-        assert "Email:" in masked_text
         assert "and" in masked_text
         assert "IP:" in masked_text
-        assert "[EMAIL]" in masked_text
         assert "[IP_ADDRESS]" in masked_text

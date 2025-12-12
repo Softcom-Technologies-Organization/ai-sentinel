@@ -28,8 +28,8 @@ import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceAttachme
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.aisentinel.application.confluence.service.ConfluenceAccessor;
+import pro.softcom.aisentinel.application.pii.reporting.port.out.PersonallyIdentifiableInformationScanExecutionOrchestratorPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.PublishEventPort;
-import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTaskManager;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.aisentinel.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.aisentinel.application.pii.reporting.service.ContentScanOrchestrator;
@@ -85,7 +85,7 @@ class StreamConfluenceScanUseCaseTest {
     private ScanTimeOutConfig scanTimeoutConfig;
 
     @Mock
-    private ScanTaskManager scanTaskManager;
+    private PersonallyIdentifiableInformationScanExecutionOrchestratorPort personallyIdentifiableInformationScanExecutionOrchestratorPort;
 
     @Mock
     private pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService severityCalculationService;
@@ -140,7 +140,7 @@ class StreamConfluenceScanUseCaseTest {
                 contentScanOrchestrator,
                 attachmentProcessor,
                 scanTimeoutConfig,
-                scanTaskManager,
+                personallyIdentifiableInformationScanExecutionOrchestratorPort,
                 scanCheckpointRepository
         );
 
@@ -156,10 +156,11 @@ class StreamConfluenceScanUseCaseTest {
         Mockito.lenient().doAnswer(invocation -> {
                     String scanId = invocation.getArgument(0);
                     Flux<ConfluenceContentScanResult> flux = invocation.getArgument(1);
-                    when(scanTaskManager.subscribeScan(scanId)).thenReturn(flux);
+                    when(
+                        personallyIdentifiableInformationScanExecutionOrchestratorPort.subscribeScan(scanId)).thenReturn(flux);
                     return null;
                 })
-                .when(scanTaskManager)
+                .when(personallyIdentifiableInformationScanExecutionOrchestratorPort)
                 .startScan(any(), any());
     }
 
@@ -602,7 +603,7 @@ class StreamConfluenceScanUseCaseTest {
             contentScanOrchestrator,
             attachmentProcessor,
             scanTimeoutConfig,
-            scanTaskManager,
+            personallyIdentifiableInformationScanExecutionOrchestratorPort,
             scanCheckpointRepository
         );
 
@@ -678,7 +679,7 @@ class StreamConfluenceScanUseCaseTest {
             contentScanOrchestrator,
             attachmentProcessor,
             scanTimeoutConfig,
-            scanTaskManager,
+            personallyIdentifiableInformationScanExecutionOrchestratorPort,
             scanCheckpointRepository
         );
 

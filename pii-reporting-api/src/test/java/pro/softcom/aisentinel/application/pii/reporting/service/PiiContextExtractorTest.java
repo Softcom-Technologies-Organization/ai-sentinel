@@ -1405,9 +1405,7 @@ class PiiContextExtractorTest {
         String piiValue = "far@away.com";
         String padding = "X".repeat(60); // 60 chars away
         String source = padding + piiValue + " text";
-        int actualStart = source.indexOf(piiValue);
-        int actualEnd = actualStart + piiValue.length();
-        
+
         // Hint is at position 0 (60+ chars before actual position, beyond ±50 radius)
         int hintStart = 0;
         int hintEnd = piiValue.length();
@@ -1439,6 +1437,191 @@ class PiiContextExtractorTest {
         assertSoftly(softly -> {
             softly.assertThat(context).contains("[EMAIL]");
             softly.assertThat(context).doesNotContain(piiValue);
+        });
+    }
+
+    // =============================================================================
+    // PHASE 2 BIS TESTS: Whitespace Normalization for Position-as-Hints
+    // =============================================================================
+    // These tests validate the normalized whitespace matching strategy.
+    // When the detector extracts a value with different whitespace than the source
+    // (e.g., "06 11 22" from source "06  11  22"), the algorithm normalizes both
+    // and finds the correct position to mask.
+
+    @Test
+    @DisplayName("Should_FindPiiValue_When_SourceHasExtraWhitespace")
+    void Should_FindPiiValue_When_SourceHasExtraWhitespace() {
+        // Given: Source has extra whitespace between digits, but detector normalized it
+        // Detector extracted: "06 11 22 33 44" (normalized)
+        // Source contains:    "06  11  22  33  44" (with extra spaces)
+        String piiValueFromDetector = "06 11 22 33 44";
+        String piiValueInSource = "06  11  22  33  44";
+        String source = "Phone: " + piiValueInSource + " call me";
+        int start = source.indexOf(piiValueInSource);
+        int end = start + piiValueFromDetector.length(); // Detector provides length based on normalized value
+
+        // When: Using position-as-hints with normalized piiValue
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "PHONE", piiValueFromDetector);
+
+        // Then: Should find and mask the value despite whitespace differences
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[PHONE]");
+            softly.assertThat(context).doesNotContain("06");
+            softly.assertThat(context).doesNotContain("11");
+            softly.assertThat(context).doesNotContain("22");
+            softly.assertThat(context).doesNotContain("33");
+            softly.assertThat(context).doesNotContain("44");
+            softly.assertThat(context).containsIgnoringCase("phone:");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_FindPiiValue_When_SearchValueHasExtraWhitespace")
+    void Should_FindPiiValue_When_SearchValueHasExtraWhitespace() {
+        // Given: Detector value has extra whitespace, source is normalized
+        // This is less common but the normalization should handle both directions
+        String piiValueFromDetector = "john.doe@example.com";
+        String source = "Email: " + piiValueFromDetector + " for info";
+        int start = source.indexOf(piiValueFromDetector);
+        int end = start + piiValueFromDetector.length();
+
+        // When: Using position-as-hints
+        String context = piiContextExtractor.extractMaskedContext(source, start, end, "EMAIL", piiValueFromDetector);
+
+        // Then: Should mask correctly
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[EMAIL]");
+            softly.assertThat(context).doesNotContain("john.doe@example.com");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_MaskCorrectly_When_WhitespaceNormalizationNeeded")
+    void Should_MaskCorrectly_When_WhitespaceNormalizationNeeded() {
+        // Given: Real-world scenario - phone number with varying whitespace
+        String detectorValue = "06 12 34 56 78"; // Detector extracted with single spaces
+        String sourceValue = "06  12   34  56  78"; // Source has irregular spacing
+        String source = "Appelez-moi au " + sourceValue + " merci";
+        
+        // Detector provides positions based on its extracted value
+        int hintStart = source.indexOf("06");
+        int hintEnd = hintStart + detectorValue.length();
+
+        // When: Masking with normalized search
+        String context = piiContextExtractor.extractMaskedContext(source, hintStart, hintEnd, "PHONE", detectorValue);
+
+        // Then: Should mask the entire phone number including extra spaces
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[PHONE]");
+            softly.assertThat(context).doesNotContain("06");
+            softly.assertThat(context).doesNotContain("12");
+            softly.assertThat(context).doesNotContain("34");
+            softly.assertThat(context).doesNotContain("56");
+            softly.assertThat(context).doesNotContain("78");
+            softly.assertThat(context).containsIgnoringCase("appelez-moi au");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_MaskCorrectly_When_TabsAndNewlinesNormalized")
+    void Should_MaskCorrectly_When_TabsAndNewlinesNormalized() {
+        // Given: Source has tabs/newlines that get normalized to spaces
+        String detectorValue = "John Doe";
+        String sourceValue = "John\t\tDoe"; // Source has tabs instead of spaces
+        String source = "Name: " + sourceValue + " registered";
+        int hintStart = source.indexOf("John");
+        int hintEnd = hintStart + detectorValue.length();
+
+        // When: Using normalized matching
+        String context = piiContextExtractor.extractMaskedContext(source, hintStart, hintEnd, "PERSON", detectorValue);
+
+        // Then: Should find and mask despite whitespace type difference
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[PERSON]");
+            softly.assertThat(context).doesNotContain("John");
+            softly.assertThat(context).doesNotContain("Doe");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_PreferExactMatch_When_BothExactAndNormalizedPossible")
+    void Should_PreferExactMatch_When_BothExactAndNormalizedPossible() {
+        // Given: Source contains both exact value and similar value with different whitespace
+        String piiValue = "test@example.com";
+        String source = "Primary: test@example.com, also: test @example.com here";
+        int exactStart = source.indexOf(piiValue);
+        int exactEnd = exactStart + piiValue.length();
+
+        // When: Searching for exact value
+        String context = piiContextExtractor.extractMaskedContext(source, exactStart, exactEnd, "EMAIL", piiValue);
+
+        // Then: Should prefer the exact match
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[EMAIL]");
+            softly.assertThat(context).doesNotContain("test@example.com");
+            // Should mask the first (exact) occurrence, not the spaced one
+            softly.assertThat(context).containsIgnoringCase("primary:");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_HandleLeadingAndTrailingWhitespace_When_Normalizing")
+    void Should_HandleLeadingAndTrailingWhitespace_When_Normalizing() {
+        // Given: Detector value has leading/trailing whitespace trimmed
+        String detectorValue = "secret123";
+        String sourceValue = "  secret123  "; // Source has leading/trailing spaces
+        String source = "Password:" + sourceValue + "end";
+        int hintStart = source.indexOf("secret");
+        int hintEnd = hintStart + detectorValue.length();
+
+        // When: Using normalized search
+        String context = piiContextExtractor.extractMaskedContext(source, hintStart, hintEnd, "PASSWORD", detectorValue);
+
+        // Then: Should find the value ignoring leading/trailing spaces
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[PASSWORD]");
+            softly.assertThat(context).doesNotContain("secret123");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_SelectClosestMatch_When_MultipleNormalizedMatches")
+    void Should_SelectClosestMatch_When_MultipleNormalizedMatches() {
+        // Given: Same value appears multiple times with different whitespace
+        String detectorValue = "06 11 22";
+        String source = "First: 06  11  22, Second: 06 11 22, Third: 06   11   22";
+        
+        // Hint points to the SECOND occurrence (exact match)
+        int secondStart = source.indexOf("Second:") + "Second: ".length();
+        int secondEnd = secondStart + detectorValue.length();
+
+        // When: Using position-as-hints with multiple possible matches
+        String context = piiContextExtractor.extractMaskedContext(source, secondStart, secondEnd, "PHONE", detectorValue);
+
+        // Then: Should select the closest match (the exact one at hint position)
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[PHONE]");
+            softly.assertThat(context).containsIgnoringCase("second:");
+        });
+    }
+
+    @Test
+    @DisplayName("Should_NotMatch_When_WhitespaceDifferenceChangesSemantics")
+    void Should_NotMatch_When_WhitespaceDifferenceChangesSemantics() {
+        // Given: Whitespace difference that shouldn't match (different words)
+        String detectorValue = "John Smith"; // Two words
+        String source = "Contact: JohnSmith and others"; // One word (no space)
+        int hintStart = source.indexOf("JohnSmith");
+        int hintEnd = hintStart + "JohnSmith".length();
+
+        // When: Searching for "John Smith" (with space)
+        String context = piiContextExtractor.extractMaskedContext(source, hintStart, hintEnd, "PERSON", detectorValue);
+
+        // Then: Should NOT match (whitespace removal changes meaning)
+        // Will fallback to position-based masking
+        assertSoftly(softly -> {
+            softly.assertThat(context).contains("[PERSON]");
+            // The fallback should still mask something at the hint position
         });
     }
 

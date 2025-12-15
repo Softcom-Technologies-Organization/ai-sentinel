@@ -48,7 +48,7 @@ public class PiiContextExtractor {
      * @param source   complete source content
      * @param start    approximate start position (used as hint)
      * @param end      approximate end position (used as hint)
-     * @param type     detected PII type
+     * @param type     detected PII piiType
      * @param piiValue exact PII value to search and mask
      * @return extracted and masked context
      */
@@ -63,7 +63,7 @@ public class PiiContextExtractor {
      * @param source      complete source content
      * @param start       approximate start position (used as hint)
      * @param end         approximate end position (used as hint)
-     * @param type        detected PII type
+     * @param type        detected PII piiType
      * @param piiValue    exact PII value to search and mask
      * @param allEntities all entities to mask in the same line
      * @return extracted and masked context
@@ -164,7 +164,7 @@ public class PiiContextExtractor {
      * @param source      complete source content (may contain HTML)
      * @param start       PII start position (calculated on cleaned text, used as hint if piiValue provided)
      * @param end         PII end position (calculated on cleaned text, used as hint if piiValue provided)
-     * @param type        detected PII type (can be null if maskPii is false)
+     * @param type        detected PII piiType (can be null if maskPii is false)
      * @param piiValue    exact PII value to search and mask (can be null for position-exact approach)
      * @param allEntities all entities to mask in the same line (can be null)
      * @param maskPii     whether to mask PII values with tokens
@@ -176,7 +176,7 @@ public class PiiContextExtractor {
             return null;
         }
 
-        // Detect content type and get appropriate parser
+        // Detect content piiType and get appropriate parser
         ContentParser parser = parserFactory.getParser(source);
 
         // FIX: Clean the source FIRST before applying positions
@@ -212,7 +212,7 @@ public class PiiContextExtractor {
                                         String mainType,
                                         List<DetectedPersonallyIdentifiableInformation> allEntities) {
         int lineLen = lineContext.length();
-        List<TempEntity> relEntities = collectRelevantEntities(
+        List<TempPersonallyIdentifiableInformation> relEntities = collectRelevantEntities(
                 lineLen, lineStartInSource, mainStart, mainEnd, mainType, allEntities
         );
 
@@ -238,20 +238,20 @@ public class PiiContextExtractor {
      * @param lineStartInSource absolute position of line start in source
      * @param hintStart        absolute hint start position (from detector)
      * @param hintEnd          absolute hint end position (from detector)
-     * @param mainType         PII type for the main entity
+     * @param mainPiiType         PII piiType for the main entity
      * @param piiValue         exact PII value to search and mask
-     * @param allEntities      all entities to mask in the same line
+     * @param detectedPiiInfoList      all entities to mask in the same line
      * @return masked line text
      */
     private String maskLineWithPositionHints(String lineContext,
                                             int lineStartInSource,
                                             int hintStart,
                                             int hintEnd,
-                                            String mainType,
+                                            String mainPiiType,
                                             String piiValue,
-                                            List<DetectedPersonallyIdentifiableInformation> allEntities) {
+                                            List<DetectedPersonallyIdentifiableInformation> detectedPiiInfoList) {
         int lineLen = lineContext.length();
-        List<TempEntity> relEntities = new ArrayList<>();
+        List<TempPersonallyIdentifiableInformation> relEntities = new ArrayList<>();
 
         // Calculate hint position relative to line
         int hintPosInLine = Math.max(0, hintStart - lineStartInSource);
@@ -261,31 +261,32 @@ public class PiiContextExtractor {
         int searchRadius = 50;
         
         // Search for the exact piiValue near the hint position
-        int foundPos = findClosestOccurrence(lineContext, piiValue, hintPosInLine, searchRadius);
+        SearchResult searchResult = findClosestOccurrence(lineContext, piiValue, hintPosInLine, searchRadius);
         
-        if (foundPos >= 0) {
+        if (searchResult.found()) {
             // Found the PII value - create entity at found position
-            int foundEnd = foundPos + piiValue.length();
-            relEntities.add(new TempEntity(foundPos, foundEnd, mainType, true));
+            // Use lengthInOriginal to handle whitespace differences between detector and source
+            int foundEnd = searchResult.startPosition() + searchResult.lengthInOriginal();
+            relEntities.add(new TempPersonallyIdentifiableInformation(searchResult.startPosition(), foundEnd, mainPiiType, true));
             
-            log.debug("Position-as-hints: found '{}' at position {} (hint was {})", 
-                     piiValue, foundPos, hintPosInLine);
+            log.debug("Position-as-hints: found '{}' at position {} with length {} (hint was {})", 
+                     piiValue, searchResult.startPosition(), searchResult.lengthInOriginal(), hintPosInLine);
         } else {
             // Fallback: use hint positions as-is (original behavior)
             int calculatedStart = Math.clamp(hintPosInLine, 0, lineLen);
-            int calculatedEnd = Math.clamp(hintEnd - lineStartInSource, calculatedStart, lineLen);
-            relEntities.add(new TempEntity(calculatedStart, calculatedEnd, mainType, true));
+            int calculatedEnd = Math.clamp((long) hintEnd - lineStartInSource, calculatedStart, lineLen);
+            relEntities.add(new TempPersonallyIdentifiableInformation(calculatedStart, calculatedEnd, mainPiiType, true));
             
             log.warn("Position-as-hints: could not find '{}' near hint position {}, using hint positions as-is", 
                     piiValue, hintPosInLine);
         }
 
         // Add secondary entities using the same logic as maskLineWithEntities
-        if (allEntities != null && !allEntities.isEmpty()) {
-            allEntities.stream()
+        if (detectedPiiInfoList != null && !detectedPiiInfoList.isEmpty()) {
+            detectedPiiInfoList.stream()
                     .filter(Objects::nonNull)
                     .filter(e -> isEntityInLine(e, lineStartInSource, lineLen))
-                    .filter(e -> !isMainEntity(e, hintStart, hintEnd))
+                    .filter(e -> isNotMainEntity(e, hintStart, hintEnd))
                     .forEach(e -> relEntities.add(createTempEntity(e, lineStartInSource, lineLen)));
         }
 
@@ -299,38 +300,146 @@ public class PiiContextExtractor {
      * When multiple occurrences exist, returns the one closest to the hint position.
      * This implements the "position-as-hints" strategy where positions are approximate
      * location indicators rather than exact boundaries.
+     * <p>
+     * Search Strategy (in order):
+     * 1. Exact match: search for the value as-is
+     * 2. Normalized match: trim whitespace and collapse multiple spaces, then search
+     *    for this normalized value in the normalized text, returning position in original text
      *
      * @param text              the text to search in
      * @param searchValue       the exact value to find
      * @param hintPosition      approximate position where value is expected
      * @param searchRegionRadius how many characters to search on each side of hint
-     * @return position of closest occurrence, or -1 if not found
+     * @return SearchResult with position and length in original text, or notFound() if not found
      */
-    private int findClosestOccurrence(String text, String searchValue, int hintPosition, int searchRegionRadius) {
+    private SearchResult findClosestOccurrence(String text, String searchValue, int hintPosition, int searchRegionRadius) {
         if (text == null || text.isEmpty() || searchValue == null || searchValue.isEmpty()) {
-            return -1;
+            return SearchResult.notFound();
         }
 
         // Define search region boundaries
         int searchStart = Math.max(0, hintPosition - searchRegionRadius);
         int searchEnd = Math.min(text.length(), hintPosition + searchRegionRadius + searchValue.length());
         
-        // Extract search region
+        // Extract search region from original text
         String searchRegion = text.substring(searchStart, searchEnd);
         
-        // Find all occurrences in the search region
+        // Strategy 1: Try exact match first
+        SearchResult exactResult = findClosestExactOccurrence(searchRegion, searchValue, hintPosition, searchStart);
+        if (exactResult.found()) {
+            return exactResult;
+        }
+        
+        // Strategy 2: Try normalized match (trim + collapse whitespace)
+        return findClosestNormalizedOccurrence(searchRegion, searchValue, hintPosition, searchStart);
+    }
+
+    /**
+     * Finds the closest exact occurrence of a value in the search region.
+     *
+     * @param searchRegion   the region of text to search in
+     * @param searchValue    the exact value to find
+     * @param hintPosition   approximate position where value is expected (absolute)
+     * @param regionStart    start position of search region in original text
+     * @return SearchResult with position and length (same as searchValue.length() for exact match)
+     */
+    private SearchResult findClosestExactOccurrence(String searchRegion, String searchValue, int hintPosition, int regionStart) {
         List<Integer> occurrences = new ArrayList<>();
         int pos = 0;
         while ((pos = searchRegion.indexOf(searchValue, pos)) >= 0) {
-            occurrences.add(searchStart + pos);
+            occurrences.add(regionStart + pos);
             pos++;
         }
         
+        int closestPos = findClosestPosition(occurrences, hintPosition);
+        if (closestPos >= 0) {
+            // For exact match, length in original equals searchValue length
+            return new SearchResult(closestPos, searchValue.length());
+        }
+        return SearchResult.notFound();
+    }
+
+    /**
+     * Finds the closest occurrence using normalized whitespace matching.
+     * <p>
+     * This handles cases where the detector extracted value differs from source text
+     * due to whitespace normalization during text cleaning (e.g., "06  11  22" vs "06 11 22").
+     * <p>
+     * Algorithm:
+     * 1. Normalize the search value (trim + collapse multiple spaces)
+     * 2. Build a mapping from normalized text positions to original text positions
+     * 3. Search for normalized value in normalized text
+     * 4. Map found position back to original text position
+     * 5. Calculate length in original text (may differ from normalized due to extra spaces)
+     *
+     * @param searchRegion   the region of text to search in (original, not normalized)
+     * @param searchValue    the value to find (may contain extra whitespace)
+     * @param hintPosition   approximate position where value is expected (absolute)
+     * @param regionStart    start position of search region in original text
+     * @return SearchResult with position and length in original text, or notFound() if not found
+     */
+    private SearchResult findClosestNormalizedOccurrence(String searchRegion, String searchValue, int hintPosition, int regionStart) {
+        String normalizedValue = normalizeWhitespace(searchValue);
+        
+        // NOTE: We ALWAYS search in normalized source text, even if searchValue is already normalized.
+        // The detector sends normalized values (e.g., "06 11 22") but the source may have extra whitespace
+        // (e.g., "06  11  22"). We must normalize the SOURCE and search there.
+        
+        // Build position mapping from normalized to original text
+        NormalizedTextMapping mapping = buildNormalizedMapping(searchRegion);
+        
+        // Search in normalized text and collect SearchResults with position AND length
+        List<SearchResult> foundOccurrences = new ArrayList<>();
+        int pos = 0;
+        while ((pos = mapping.normalizedText.indexOf(normalizedValue, pos)) >= 0) {
+            // Map back to original positions (start and end)
+            int normalizedEndPos = pos + normalizedValue.length() - 1;
+            int originalStartPos = mapping.toOriginalPosition(pos);
+            int originalEndPos = mapping.toOriginalPosition(normalizedEndPos);
+            
+            if (originalStartPos >= 0 && originalEndPos >= 0) {
+                // Calculate length in original text (includes extra whitespace)
+                int lengthInOriginal = originalEndPos - originalStartPos + 1;
+                int absoluteStartPos = regionStart + originalStartPos;
+                foundOccurrences.add(new SearchResult(absoluteStartPos, lengthInOriginal));
+            }
+            pos++;
+        }
+        
+        if (foundOccurrences.isEmpty()) {
+            return SearchResult.notFound();
+        }
+        
+        // Find the occurrence closest to the hint position
+        SearchResult closest = foundOccurrences.getFirst();
+        int minDistance = Math.abs(closest.startPosition() - hintPosition);
+        
+        for (SearchResult occurrence : foundOccurrences) {
+            int distance = Math.abs(occurrence.startPosition() - hintPosition);
+            if (distance < minDistance) {
+                minDistance = distance;
+                closest = occurrence;
+            }
+        }
+        
+        log.debug("Normalized search found '{}' (normalized from '{}') at position {} with length {} in original", 
+                 normalizedValue, searchValue, closest.startPosition(), closest.lengthInOriginal());
+        
+        return closest;
+    }
+
+    /**
+     * Finds the position closest to the hint from a list of occurrences.
+     *
+     * @param occurrences  list of absolute positions
+     * @param hintPosition the hint position to compare against
+     * @return closest position, or -1 if list is empty
+     */
+    private int findClosestPosition(List<Integer> occurrences, int hintPosition) {
         if (occurrences.isEmpty()) {
             return -1;
         }
         
-        // Find the occurrence closest to the hint position
         int closestPos = occurrences.getFirst();
         int minDistance = Math.abs(closestPos - hintPosition);
         
@@ -346,21 +455,103 @@ public class PiiContextExtractor {
     }
 
     /**
+     * Normalizes whitespace in a string: trims and collapses multiple spaces to single space.
+     *
+     * @param value the string to normalize
+     * @return normalized string
+     */
+    private String normalizeWhitespace(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.trim().replaceAll("\\s+", " ");
+    }
+
+    /**
+     * Builds a mapping between normalized text and original text positions.
+     * This allows finding values in normalized space and mapping back to original positions.
+     *
+     * @param original the original text
+     * @return mapping object containing normalized text and position mappings
+     */
+    private NormalizedTextMapping buildNormalizedMapping(String original) {
+        StringBuilder normalized = new StringBuilder(original.length());
+        List<Integer> normalizedToOriginal = new ArrayList<>(original.length());
+        
+        boolean lastWasSpace = true; // Start as true to handle leading spaces
+        for (int i = 0; i < original.length(); i++) {
+            char c = original.charAt(i);
+            if (Character.isWhitespace(c)) {
+                if (!lastWasSpace) {
+                    normalized.append(' ');
+                    normalizedToOriginal.add(i);
+                    lastWasSpace = true;
+                }
+                // Skip additional whitespace
+            } else {
+                normalized.append(c);
+                normalizedToOriginal.add(i);
+                lastWasSpace = false;
+            }
+        }
+        
+        // Trim trailing space if present
+        if (!normalized.isEmpty() && normalized.charAt(normalized.length() - 1) == ' ') {
+            normalized.deleteCharAt(normalized.length() - 1);
+            normalizedToOriginal.removeLast();
+        }
+        
+        return new NormalizedTextMapping(normalized.toString(), normalizedToOriginal);
+    }
+
+    /**
+     * Holds the result of normalizing text along with position mappings.
+     */
+    private record NormalizedTextMapping(String normalizedText, List<Integer> positionMap) {
+        /**
+         * Maps a position in normalized text back to the corresponding position in original text.
+         *
+         * @param normalizedPos position in normalized text
+         * @return corresponding position in original text, or -1 if out of bounds
+         */
+        int toOriginalPosition(int normalizedPos) {
+            if (normalizedPos < 0 || normalizedPos >= positionMap.size()) {
+                return -1;
+            }
+            return positionMap.get(normalizedPos);
+        }
+    }
+
+    /**
+     * Holds the result of a search: start position and length in original text.
+     * This is needed because normalized matching may find values with different length than the search value.
+     */
+    private record SearchResult(int startPosition, int lengthInOriginal) {
+        static SearchResult notFound() {
+            return new SearchResult(-1, 0);
+        }
+        
+        boolean found() {
+            return startPosition >= 0;
+        }
+    }
+
+    /**
      * Collects all relevant entities for masking: the main entity and secondary entities
      * that intersect with the current line.
      */
-    private List<TempEntity> collectRelevantEntities(int lineLen,
-                                                     int lineStartInSource,
-                                                     int mainStart,
-                                                     int mainEnd,
-                                                     String mainType,
-                                                     List<DetectedPersonallyIdentifiableInformation> allEntities) {
-        List<TempEntity> relEntities = new ArrayList<>();
+    private List<TempPersonallyIdentifiableInformation> collectRelevantEntities(int lineLen,
+                                                                                int lineStartInSource,
+                                                                                int mainStart,
+                                                                                int mainEnd,
+                                                                                String mainType,
+                                                                                List<DetectedPersonallyIdentifiableInformation> allEntities) {
+        List<TempPersonallyIdentifiableInformation> relEntities = new ArrayList<>();
 
         // Always include the main entity
         // FIX: Use calculated start position as minimum for end position to prevent trailing characters
         int calculatedStart = (int) Math.clamp((long) mainStart - lineStartInSource, 0L, lineLen);
-        relEntities.add(new TempEntity(
+        relEntities.add(new TempPersonallyIdentifiableInformation(
                 calculatedStart,
                 (int) Math.clamp((long) mainEnd - lineStartInSource, calculatedStart, (long) lineLen),
                 mainType,
@@ -372,7 +563,7 @@ public class PiiContextExtractor {
             allEntities.stream()
                     .filter(Objects::nonNull)
                     .filter(e -> isEntityInLine(e, lineStartInSource, lineLen))
-                    .filter(e -> !isMainEntity(e, mainStart, mainEnd))
+                    .filter(e -> isNotMainEntity(e, mainStart, mainEnd))
                     .forEach(e -> relEntities.add(createTempEntity(e, lineStartInSource, lineLen)));
         }
 
@@ -391,36 +582,36 @@ public class PiiContextExtractor {
     /**
      * Checks if an entity is the main entity being processed.
      */
-    private boolean isMainEntity(DetectedPersonallyIdentifiableInformation entity, int mainStart, int mainEnd) {
-        return entity.startPosition() == mainStart && entity.endPosition() == mainEnd;
+    private boolean isNotMainEntity(DetectedPersonallyIdentifiableInformation entity, int mainStart, int mainEnd) {
+        return entity.startPosition() != mainStart || entity.endPosition() != mainEnd;
     }
 
     /**
      * Creates a TempEntity from a PiiEntity, adjusting positions relative to the line start.
      * FIX: Use calculated start position (rs) as minimum for end position to prevent trailing characters.
      */
-    private TempEntity createTempEntity(DetectedPersonallyIdentifiableInformation entity, int lineStartInSource, int lineLen) {
+    private TempPersonallyIdentifiableInformation createTempEntity(DetectedPersonallyIdentifiableInformation entity, int lineStartInSource, int lineLen) {
         long absS = entity.startPosition();
         long absE = entity.endPosition();
         int rs = (int) Math.clamp(absS - lineStartInSource, 0L, lineLen);
         int re = (int) Math.clamp(absE - lineStartInSource, rs, (long) lineLen);
-        return new TempEntity(rs, re, entity.piiType(), false);
+        return new TempPersonallyIdentifiableInformation(rs, re, entity.piiType(), false);
     }
 
     /**
      * Builds the masked text by replacing entity ranges with tokens.
      */
-    private String buildMaskedText(String lineContext, List<TempEntity> sortedEntities) {
+    private String buildMaskedText(String lineContext, List<TempPersonallyIdentifiableInformation> sortedEntities) {
         int lineLen = lineContext.length();
         StringBuilder out = new StringBuilder(lineLen + 16);
         int idx = 0;
-        for (TempEntity te : sortedEntities) {
+        for (TempPersonallyIdentifiableInformation te : sortedEntities) {
             int s = te.start;
             int e = te.end;
             if (s > idx) {
                 out.append(lineContext, idx, s);
             }
-            out.append(PiiMaskingUtils.token(te.type));
+            out.append(PiiMaskingUtils.token(te.piiType));
             idx = Math.max(idx, e);
         }
 
@@ -431,17 +622,5 @@ public class PiiContextExtractor {
         return out.toString();
     }
 
-    private static final class TempEntity {
-        final int start;
-        final int end;
-        final String type;
-        final boolean isMain;
-
-        TempEntity(int start, int end, String type, boolean isMain) {
-            this.start = start;
-            this.end = end;
-            this.type = type;
-            this.isMain = isMain;
-        }
-    }
+    private record TempPersonallyIdentifiableInformation(int start, int end, String piiType, boolean isMain) { }
 }

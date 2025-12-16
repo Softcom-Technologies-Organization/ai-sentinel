@@ -110,7 +110,7 @@ pii:
     purge-cron: "0 0 3 * * ?"
 
 pii-reporting-api:
-  findings-export-directory: ${PII_REPORTING_API_EXPORT_DIR:/tmp/exports}
+  findings-export-directory: ${PII_REPORTING_API_EXPORT_DIR:/personally-identifiable-information-scan-results}
 
 # Armeria internal services (docs, health, metrics, actuator)
 armeria:

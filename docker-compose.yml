@@ -658,6 +658,8 @@ services:
       CONFLUENCE_POLLING_INTERVAL: ${CONFLUENCE_POLLING_INTERVAL:-60000}
     volumes:
       - ./secrets:/secrets:ro
+      - ./personally-identifiable-information-scan-results:/personally-identifiable-information-scan-results
+
     depends_on:
       postgres:
         condition: service_healthy

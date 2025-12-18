@@ -239,10 +239,32 @@ ON CONFLICT (pii_type, detector) DO NOTHING;
 -- ============================================================================
 
 -- Monetary Information
-INSERT INTO pii_type_config 
+INSERT INTO pii_type_config
     (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
-VALUES 
+VALUES
     ('MONEY', 'GLINER', false, 0.65, 'Money', 'Monetary amounts and values', 'Financial', 'money', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+ON CONFLICT (pii_type, detector) DO NOTHING;
+
+-- ============================================================================
+-- PHASE 8: SECURITY SECRETS & CREDENTIALS (Common in Confluence)
+-- ============================================================================
+
+INSERT INTO pii_type_config
+    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+VALUES
+    ('APIKEY', 'GLINER', true, 0.20, 'API Key', 'API keys and access keys', 'Security', 'api key', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TOKEN', 'GLINER', true, 0.20, 'Token', 'Generic tokens and access tokens', 'Security', 'token', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('JWT', 'GLINER', true, 0.20, 'JWT', 'JSON Web Tokens', 'Security', 'jwt', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('ACCESSKEYID', 'GLINER', true, 0.20, 'Access Key ID', 'AWS-style access key IDs', 'Security', 'access key id', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SECRETACCESSKEY', 'GLINER', true, 0.20, 'Secret Access Key', 'AWS-style secret access keys', 'Security', 'secret access key', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('DBCONNECTIONSTRING', 'GLINER', true, 0.20, 'DB Connection String', 'Database connection strings', 'Security', 'db connection string', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('DATABASESTRING', 'GLINER', true, 0.20, 'Database String', 'Database connection strings', 'Security', 'database string', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('JDBCURL', 'GLINER', true, 0.20, 'JDBC URL', 'Java database connection URLs', 'Security', 'jdbc url', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('DATABASEURL', 'GLINER', true, 0.20, 'Database URL', 'Database URLs', 'Security', 'database url', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('POSTGRESQLSTRING', 'GLINER', true, 0.20, 'PostgreSQL String', 'PostgreSQL connection strings', 'Security', 'postgresql string', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('AVSNUM', 'GLINER', true, 0.20, 'AVS Number', 'Swiss social security number (AVS/AHV)', 'Government ID', 'avs number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('IBANNUMBER', 'GLINER', true, 0.20, 'IBAN Number', 'International Bank Account Number (alternate label)', 'Financial', 'iban number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('BANKACCOUNTNUMBER', 'GLINER', true, 0.20, 'Bank Account Number', 'Bank account numbers (alternate label)', 'Financial', 'bank account number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
 ON CONFLICT (pii_type, detector) DO NOTHING;
 
 -- ============================================================================

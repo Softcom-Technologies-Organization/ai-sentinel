@@ -161,6 +161,7 @@ class PresidioDetector:
         detection_config = self.config.get("detection", {})
         self._default_threshold = detection_config.get("default_threshold", 0.5)
         self._languages = detection_config.get("languages", ["en"])
+        print("\n Languages", self._languages)
         self._labels_to_ignore = detection_config.get("labels_to_ignore", [
             "CARDINAL", "MONEY", "WORK_OF_ART", "PRODUCT", "ORDINAL",
             "QUANTITY", "PERCENT", "LANGUAGE", "EVENT", "LAW", "FAC"

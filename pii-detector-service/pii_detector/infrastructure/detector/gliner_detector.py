@@ -175,7 +175,7 @@ class GLiNERDetector:
             # Even a 6000 char text can have long sentences (code, lists, tables) that get truncated
             # Chunking ensures all content is analyzed without loss
             entities = self._detect_pii_with_chunking(text, threshold, detection_id, pii_type_configs)
-            
+
             return entities
             
         except Exception as e:
@@ -758,7 +758,9 @@ class GLiNERDetector:
             processing_mode = "sequential"
         
         detection_time = time.time() - start_time
-        
+        print("\n\n")
+        print("ENTITIES FOUND")
+        print(all_entities)
         # Apply per-entity-type threshold filtering (post-filter)
         filtered_entities = self._apply_entity_scoring_filter(all_entities, scoring_overrides)
         

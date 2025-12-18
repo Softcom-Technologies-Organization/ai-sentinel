@@ -25,7 +25,7 @@ regex_detection_enabled = false
 # When true, adds PresidioDetector to CompositePIIDetector
 # Presidio provides production-ready, rule-based PII detection by Microsoft
 # When false, Presidio detection is disabled
-presidio_detection_enabled = true
+presidio_detection_enabled = false
 
 # Log detailed provenance information about which model detected each entity
 log_provenance = true

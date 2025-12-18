@@ -6,7 +6,7 @@
 enabled = true
 
 # Hugging Face model identifier
-model_id = "knowledgator/gliner-pii-large-v1.0"
+model_id = "nvidia/gliner-pii"
 
 # Human-readable description
 description = "GLiNER PII large v1.0 - Advanced multilingual PII detection supporting 17 entity types"

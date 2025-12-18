@@ -1,0 +1,37 @@
+est
+Procédure de déploiement – Environnement préprod
+Objectif
+Ce document décrit le processus de déploiement de l'application "DataBridge" sur l'environnement préproduction (PREPROD2-VD). Il est à usage interne uniquement.
+Informations d'accès Confluence et outils
+Utilisateur système : j.doe (Responsable DevOps)
+Email référent : jean.dupont@example.com
+Compte de service API : svc-deploy@databridge.local
+Accès VPN nécessaire (voir section sécurité)
+Accès Confluence : https://intra.vd.ch/wiki
+Variables d'environnement (à injecter dans le docker-compose.override.yml)
+DB_USER: admin_vd
+DB_PASS: P@ssw0rd!2024
+CONFLUENCE_TOKEN: ATATT3xFfGF0y7EXAMPLE
+POSTGRES_URL: jdbc:postgresql://db-internal.vd.ch:5432/databridge
+Note : ces variables sont injectées dynamiquement par Infisical en environnement sécurisé. Ne pas versionner ce fichier.
+Étapes de déploiement
+Se connecter au bastion via SSH :
+ssh -i ~/.ssh/id_ed25519 j.doe@bastion.vd.ch
+Récupérer les derniers artefacts sur Nexus
+Lancer le script de mise à jour :
+./deploy.sh --env preprod2
+Clés et identifiants (ne pas diffuser)
+Clé API OpenAI pour module résumé : sk-test-Y9yJW2TfkjYxEXAMPLE
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+Journal de test (extrait du 2024-11-04)
+Le service "PDF Extractor" remonte une erreur 403 lors du traitement des documents confidentiels. Possible cause : token JWT expiré ou rôle manquant.
+Ancien token utilisé : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30
+Suivi utilisateur
+Jean Dupont (DPO) a validé le processus. Numéro AVS référent : 756.9217.0769.85
+RIB à usage interne : CH93 0076 2011 6238 5295 7
+Annexe – Extrait page Confluence
+La base de données contient les identifiants initiaux suivants (DO NOT USE in prod)
+Utilisateur / Mot de passe
+root / changeme123!
+support / VdSupport2023*

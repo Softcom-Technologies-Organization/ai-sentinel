@@ -157,6 +157,15 @@ public enum PersonallyIdentifiableInformationType {
     JWT_TOKEN(ContentPiiDetection.PersonallyIdentifiableInformationType.TOKEN),
     GITHUB_TOKEN(ContentPiiDetection.PersonallyIdentifiableInformationType.TOKEN),
     AWS_KEY(ContentPiiDetection.PersonallyIdentifiableInformationType.API_KEY),
+    TOKEN(ContentPiiDetection.PersonallyIdentifiableInformationType.TOKEN),
+    SECRETACCESSKEY(ContentPiiDetection.PersonallyIdentifiableInformationType.API_KEY),
+
+    // Swiss specific
+    AVSNUM(ContentPiiDetection.PersonallyIdentifiableInformationType.SSN),
+
+    // Alternate labels from Python detector
+    EMAIL_ADDRESS(ContentPiiDetection.PersonallyIdentifiableInformationType.EMAIL),
+
     UNKNOWN(ContentPiiDetection.PersonallyIdentifiableInformationType.UNKNOWN);
 
     private final ContentPiiDetection.PersonallyIdentifiableInformationType dataType;

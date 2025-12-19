@@ -291,40 +291,42 @@ class GLiNERDetector:
     def _build_pii_type_mapping_from_configs(self, pii_type_configs: Dict) -> Dict[str, str]:
         """
         Build PII type mapping from database configurations (detector_label → pii_type).
-        
+
         Args:
             pii_type_configs: Database PII type configurations
-            
+
         Returns:
             Dictionary mapping detector labels to PII types
         """
         mapping = {}
         for pii_type, config in pii_type_configs.items():
             detector_label = config.get('detector_label')
-            if detector_label and config.get('enabled', False):
+            # Only include GLINER configs - skip PRESIDIO and REGEX labels
+            if detector_label and config.get('enabled', False) and config.get('detector') == 'GLINER':
                 mapping[detector_label] = pii_type
-        
+
         if not mapping:
             self.logger.warning("No enabled PII types with detector labels, using defaults")
             return self._get_default_mapping()
-        
+
         return mapping
     
     def _build_scoring_overrides_from_configs(self, pii_type_configs: Dict) -> Dict[str, float]:
         """
         Build per-entity-type scoring thresholds from database configurations.
-        
+
         Args:
             pii_type_configs: Database PII type configurations
-            
+
         Returns:
             Dictionary mapping PII types to minimum confidence thresholds
         """
         scoring = {}
         for pii_type, config in pii_type_configs.items():
-            if config.get('enabled', False):
+            # Only include GLINER configs - skip PRESIDIO and REGEX thresholds
+            if config.get('enabled', False) and config.get('detector') == 'GLINER':
                 scoring[pii_type] = config['threshold']
-        
+
         return scoring
 
     def _load_parallel_config(self) -> Tuple[bool, int]:
@@ -422,6 +424,12 @@ class GLiNERDetector:
         for entity in entities:
             # Get configured threshold for this entity type
             entity_threshold = scoring_overrides.get(entity.pii_type)
+
+            # DEBUG: Log threshold lookup
+            self.logger.info(
+                f"Threshold check: pii_type='{entity.pii_type}', score={entity.score:.3f}, "
+                f"threshold={entity_threshold}, text='{entity.text[:30]}...'"
+            )
 
             # Post-filter: discard if below entity-specific threshold
             if entity_threshold is not None and entity.score < entity_threshold:
@@ -741,13 +749,25 @@ class GLiNERDetector:
         
         # Get semantic chunks
         chunk_results = self.semantic_chunker.chunk_text(text)
-        
+
         self.logger.info(
             f"[{detection_id}] Semantic chunking: {len(text)} chars → {len(chunk_results)} chunks"
         )
+
+        # DEBUG: Log each chunk's range and content preview
+        for i, chunk in enumerate(chunk_results):
+            chunk_end = chunk.start + len(chunk.text)
+            preview_start = chunk.text[:50].replace('\n', '\\n') if len(chunk.text) > 50 else chunk.text.replace('\n', '\\n')
+            preview_end = chunk.text[-50:].replace('\n', '\\n') if len(chunk.text) > 50 else ""
+            self.logger.info(
+                f"[{detection_id}] Chunk {i}: pos {chunk.start}-{chunk_end} ({len(chunk.text)} chars) "
+                f"start=\"{preview_start}...\" end=\"...{preview_end}\""
+            )
+            self.logger.info(f"Full chunk text: {chunk.text}")
         
         # Pre-compute labels once for all chunks
         labels = self._get_gliner_labels(pii_type_mapping)
+        self.logger.info(f"[{detection_id}] GLiNER labels ({len(labels)}): {labels}")
         
         # Choose processing strategy based on configuration
         if self.parallel_enabled and len(chunk_results) > 1:

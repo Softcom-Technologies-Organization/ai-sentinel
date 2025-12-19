@@ -4,18 +4,69 @@ from pathlib import Path
 
 # Load the model (downloads automatically on first use)
 know_model = GLiNER.from_pretrained("nvidia/gliner-pii")
-urchade_model = GLiNER.from_pretrained("urchade/gliner_multi_pii-v1")
 file_path = (Path(__file__).parent / ".." / "resources" / "raw_text_confluence.txt").resolve()
 text = file_path.read_text(encoding="utf-8")
+
+# Natural language labels - deduplicated
 labels = [
-    "name", "first name", "last name"
-    "email address", "username",
-    "password", "api key", "token", "jwt",
+    "street",
+    "last name",
+    "tax number",
+    "phone number",
+    "username",
+    "zip code",
+    "full name",
     "url",
-    "database string", "jdbc url", "database url",
-    "iban number","bank account number","avs number",
-    "access key id", "secret access key","db connection string","postgresql string"
+    "ip address",
+    "mac address",
+    "crypto wallet",
+    "routing number",
+    "cvv",
+    "passport number",
+    "name medical professional",
+    "healthcare number",
+    "name",
+    "age",
+    "gender",
+    "marital status",
+    "location address",
+    "location street",
+    "location city",
+    "account number",
+    "building number",
+    "city",
+    "credit card number",
+    "date of birth",
+    "driver license number",
+    "email address",
+    "first name",
+    "ID card number",
+    "password",
+    "social security number",
+    "location state",
+    "location country",
+    "condition",
+    "medical process",
+    "drug",
+    "dose",
+    "blood type",
+    "injury",
+    "organization medical facility",
+    "medical code",
+    "money",
+    "api key",
+    "token",
+    "jwt",
+    "access key id",
+    "secret access key",
+    "database connection string",
+    "database string",
+    "avs number",
+    "iban number"
 ]
+
+
+print(f"\nUsing {len(labels)} labels (natural language only, no uppercase)\n")
 
 entities = know_model.predict_entities(text, labels, threshold=0.2)
 print("\n")

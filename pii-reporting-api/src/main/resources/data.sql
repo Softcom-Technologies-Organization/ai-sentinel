@@ -23,31 +23,31 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Category: Contact Information
 INSERT INTO pii_type_config (pii_type, detector, enabled, threshold, display_name, description, category, created_at, updated_at, updated_by)
-VALUES ('EMAIL', 'GLINER', true, 0.80, 'Email Address', 'Email addresses detected by GLiNER', 'Contact', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-       ('TELEPHONENUM', 'GLINER', true, 0.80, 'Phone Number', 'Telephone numbers', 'Contact', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-       ('USERNAME', 'GLINER', true, 0.75, 'Username', 'Usernames and account identifiers', 'Identity', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+VALUES ('EMAIL', 'GLINER', true, 0.2, 'Email Address', 'Email addresses detected by GLiNER', 'Contact', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+       ('TELEPHONENUM', 'GLINER', true, 0.20, 'Phone Number', 'Telephone numbers', 'Contact', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+       ('USERNAME', 'GLINER', true, 0.2, 'Username', 'Usernames and account identifiers', 'Identity', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
 ON CONFLICT (pii_type, detector) DO NOTHING;
 
 -- Category: Personal Identity
 INSERT INTO pii_type_config (pii_type, detector, enabled, threshold, display_name, description, category, created_at, updated_at, updated_by)
-VALUES ('GIVENNAME', 'GLINER', true, 0.75, 'First Name', 'Given names (first names)', 'Identity', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-       ('SURNAME', 'GLINER', true, 0.75, 'Last Name', 'Surnames (last names)', 'Identity', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-       ('DATEOFBIRTH', 'GLINER', true, 0.80, 'Date of Birth', 'Birth dates', 'Identity', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+VALUES ('GIVENNAME', 'GLINER', true, 0.2, 'First Name', 'Given names (first names)', 'Identity', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+       ('SURNAME', 'GLINER', true, 0.2, 'Last Name', 'Surnames (last names)', 'Identity', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+       ('DATEOFBIRTH', 'GLINER', true, 0.2, 'Date of Birth', 'Birth dates', 'Identity', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
 ON CONFLICT (pii_type, detector) DO NOTHING;
 
 -- Category: Financial
 INSERT INTO pii_type_config (pii_type, detector, enabled, threshold, display_name, description, category, created_at, updated_at, updated_by)
-VALUES ('CREDITCARDNUMBER', 'GLINER', true, 0.70, 'Credit Card', 'Credit card numbers', 'Financial', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-       ('ACCOUNTNUM', 'GLINER', true, 0.70, 'Account Number', 'Bank account numbers', 'Financial', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-       ('TAXNUM', 'GLINER', true, 0.80, 'Tax Number', 'Tax identification numbers', 'Financial', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+VALUES ('CREDITCARDNUMBER', 'GLINER', true, 0.20, 'Credit Card', 'Credit card numbers', 'Financial', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+       ('ACCOUNTNUM', 'GLINER', true, 0.20, 'Account Number', 'Bank account numbers', 'Financial', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+       ('TAXNUM', 'GLINER', true, 0.20, 'Tax Number', 'Tax identification numbers', 'Financial', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
 ON CONFLICT (pii_type, detector) DO NOTHING;
 
 -- Category: Government IDs
 INSERT INTO pii_type_config (pii_type, detector, enabled, threshold, display_name, description, category, created_at, updated_at, updated_by)
-VALUES ('SOCIALNUM', 'GLINER', true, 0.80, 'Social Security Number',
+VALUES ('SOCIALNUM', 'GLINER', true, 0.20, 'Social Security Number',
         'Social security and national ID numbers', 'Government ID', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-       ('DRIVERLICENSENUM', 'GLINER', true, 0.80, 'Driver License', 'Driver license numbers', 'Government ID', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-       ('IDCARDNUM', 'GLINER', true, 0.80, 'ID Card Number', 'National ID card numbers', 'Government ID', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+       ('DRIVERLICENSENUM', 'GLINER', true, 0.20, 'Driver License', 'Driver license numbers', 'Government ID', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+       ('IDCARDNUM', 'GLINER', true, 0.20, 'ID Card Number', 'National ID card numbers', 'Government ID', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
 ON CONFLICT (pii_type, detector) DO NOTHING;
 
 -- Category: Location
@@ -60,46 +60,49 @@ ON CONFLICT (pii_type, detector) DO NOTHING;
 
 -- Category: Security
 INSERT INTO pii_type_config (pii_type, detector, enabled, threshold, display_name, description, category, created_at, updated_at, updated_by)
-VALUES ('PASSWORD', 'GLINER', true, 0.85, 'Password', 'Passwords and secrets', 'Security', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+VALUES ('PASSWORD', 'GLINER', true, 0.2, 'Password', 'Passwords and secrets', 'Security', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
 ON CONFLICT (pii_type, detector) DO NOTHING;
+
 
 -- ============================================================================
 -- Detector label mappings for GLiNER PII types
 -- Migrated from init-scripts/009-add-detector-label.sql
 -- ============================================================================
 
-UPDATE pii_type_config SET detector_label = 'account number' WHERE pii_type = 'ACCOUNTNUM' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'building number' WHERE pii_type = 'BUILDINGNUM' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'city' WHERE pii_type = 'CITY' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'credit card number' WHERE pii_type = 'CREDITCARDNUMBER' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'date of birth' WHERE pii_type = 'DATEOFBIRTH' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'driver license number' WHERE pii_type = 'DRIVERLICENSENUM' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'email address' WHERE pii_type = 'EMAIL' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'first name' WHERE pii_type = 'GIVENNAME' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'ID card number' WHERE pii_type = 'IDCARDNUM' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'password' WHERE pii_type = 'PASSWORD' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'social security number' WHERE pii_type = 'SOCIALNUM' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'street' WHERE pii_type = 'STREET' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'last name' WHERE pii_type = 'SURNAME' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'tax number' WHERE pii_type = 'TAXNUM' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'phone number' WHERE pii_type = 'TELEPHONENUM' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'username' WHERE pii_type = 'USERNAME' AND detector = 'GLINER';
-UPDATE pii_type_config SET detector_label = 'zip code' WHERE pii_type = 'ZIPCODE' AND detector = 'GLINER';
+-- UPDATE pii_type_config SET detector_label = 'account number' WHERE pii_type = 'ACCOUNTNUM' AND detector = 'GLINER';
+-- UPDATE pii_type_config SET detector_label = 'building number' WHERE pii_type = 'BUILDINGNUM' AND detector = 'GLINER';
+-- UPDATE pii_type_config SET detector_label = 'city' WHERE pii_type = 'CITY' AND detector = 'GLINER';
+-- UPDATE pii_type_config SET detector_label = 'credit card number' WHERE pii_type = 'CREDITCARDNUMBER' AND detector = 'GLINER';
+-- UPDATE pii_type_config SET detector_label = 'date of birth' WHERE pii_type = 'DATEOFBIRTH' AND detector = 'GLINER';
+
+-- UPDATE pii_type_config SET detector_label = 'driver license number' WHERE pii_type = 'DRIVERLICENSENUM' AND detector = 'GLINER';
+-- UPDATE pii_type_config SET detector_label = 'email address' WHERE pii_type = 'EMAIL' AND detector = 'GLINER';
+-- UPDATE pii_type_config SET detector_label = 'first name' WHERE pii_type = 'GIVENNAME' AND detector = 'GLINER';
+-- UPDATE pii_type_config SET detector_label = 'ID card number' WHERE pii_type = 'IDCARDNUM' AND detector = 'GLINER';
+-- UPDATE pii_type_config SET detector_label = 'password' WHERE pii_type = 'PASSWORD' AND detector = 'GLINER';
+-- UPDATE pii_type_config SET detector_label = 'social security number' WHERE pii_type = 'SOCIALNUM' AND detector = 'GLINER';
+-- UPDATE pii_type_config SET detector_label = 'street' WHERE pii_type = 'STREET' AND detector = 'GLINER';
+-- UPDATE pii_type_config SET detector_label = 'last name' WHERE pii_type = 'SURNAME' AND detector = 'GLINER';
+-- UPDATE pii_type_config SET detector_label = 'tax number' WHERE pii_type = 'TAXNUM' AND detector = 'GLINER';
+-- UPDATE pii_type_config SET detector_label = 'phone number' WHERE pii_type = 'TELEPHONENUM' AND detector = 'GLINER';
+-- UPDATE pii_type_config SET detector_label = 'username' WHERE pii_type = 'USERNAME' AND detector = 'GLINER';
+-- UPDATE pii_type_config SET detector_label = 'zip code' WHERE pii_type = 'ZIPCODE' AND detector = 'GLINER';
 
 -- Insert additional GLiNER PII types with detector labels
-INSERT INTO pii_type_config 
+INSERT INTO pii_type_config
     (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
-VALUES 
-    ('PERSONNAME', 'GLINER', true, 0.7, 'Person Name', 'Generic person name (not split into first/last)', 'Identity', 'person name', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('FULLNAME', 'GLINER', true, 0.7, 'Full Name', 'Complete person name', 'Identity', 'full name', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('URL', 'GLINER', true, 0.7, 'URL', 'Web URL or hyperlink', 'Online', 'URL', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('IBAN', 'GLINER', true, 0.7, 'IBAN', 'International Bank Account Number', 'Financial', 'IBAN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('IPADDRESS', 'GLINER', true, 0.7, 'IP Address', 'IPv4 or IPv6 address', 'Technical', 'IP address', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('MACADDRESS', 'GLINER', true, 0.7, 'MAC Address', 'Network hardware address', 'Technical', 'MAC address', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('CRYPTOWALLET', 'GLINER', true, 0.7, 'Crypto Wallet', 'Cryptocurrency wallet address', 'Financial', 'crypto wallet', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('DATE', 'GLINER', true, 0.7, 'Date', 'Generic date (not birth date)', 'Temporal', 'date', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('VEHICLEREG', 'GLINER', true, 0.7, 'Vehicle Registration', 'Vehicle license plate or registration number', 'Identity', 'vehicle registration', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('VOTERID', 'GLINER', true, 0.7, 'Voter ID', 'Voter identification number', 'Identity', 'voter ID', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+VALUES
+    -- ('PERSONNAME', 'GLINER', true, 0.7, 'Person Name', 'Generic person name (not split into first/last)', 'Identity', 'person name', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),  -- DUPLICATE: use GIVENNAME + SURNAME instead
+    ('FULLNAME', 'GLINER', true, 0.2, 'Full Name', 'Complete person name', 'Identity', 'full name', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('URL', 'GLINER', true, 0.2, 'URL', 'Web URL or hyperlink', 'Online', 'url', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    -- ('IBAN', 'GLINER', true, 0.7, 'IBAN', 'International Bank Account Number', 'Financial', 'IBAN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),  -- DUPLICATE: use IBANNUMBER instead (lowercase label)
+    ('IPADDRESS', 'GLINER', true, 0.2, 'IP Address', 'IPv4 or IPv6 address', 'Technical', 'ip address', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('MACADDRESS', 'GLINER', true, 0.2, 'MAC Address', 'Network hardware address', 'Technical', 'mac address', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('CRYPTOWALLET', 'GLINER', true, 0.2, 'Crypto Wallet', 'Cryptocurrency wallet address', 'Financial', 'crypto wallet', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    -- ('DATE', 'GLINER', true, 0.7, 'Date', 'Generic date (not birth date)', 'Temporal', 'date', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),  -- DUPLICATE: use DATEOFBIRTH instead
+    -- ('VEHICLEREG', 'GLINER', true, 0.7, 'Vehicle Registration', 'Vehicle license plate or registration number', 'Identity', 'vehicle registration', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),  -- RARELY NEEDED
+    -- ('VOTERID', 'GLINER', true, 0.7, 'Voter ID', 'Voter identification number', 'Identity', 'voter ID', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')  -- RARELY NEEDED
+    ('PLACEHOLDER_REMOVE', 'GLINER', false, 0.0, '', '', '', '', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
 ON CONFLICT (pii_type, detector) DO NOTHING;
 
 -- ============================================================================
@@ -112,19 +115,19 @@ ON CONFLICT (pii_type, detector) DO NOTHING;
 -- PHASE 1: CRITICAL FIX - Financial Information (Bank Account Bug)
 -- ============================================================================
 
--- Add BANKACCOUNT enum mapping for "bank account" label
-INSERT INTO pii_type_config 
-    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
-VALUES 
-    ('BANKACCOUNT', 'GLINER', true, 0.70, 'Bank Account', 'Bank account numbers detected by GLiNER', 'Financial', 'bank account', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
-ON CONFLICT (pii_type, detector) DO NOTHING;
+-- DUPLICATE: use BANKACCOUNTNUMBER instead
+-- INSERT INTO pii_type_config
+--     (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+-- VALUES
+--     ('BANKACCOUNT', 'GLINER', true, 0.70, 'Bank Account', 'Bank account numbers detected by GLiNER', 'Financial', 'bank account', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+-- ON CONFLICT (pii_type, detector) DO NOTHING;
 
 -- Add other critical financial labels
-INSERT INTO pii_type_config 
+INSERT INTO pii_type_config
     (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
-VALUES 
+VALUES
     ('ROUTINGNUM', 'GLINER', true, 0.70, 'Routing Number', 'Bank routing numbers', 'Financial', 'routing number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('CREDITCARDEXP', 'GLINER', true, 0.70, 'Credit Card Expiration', 'Credit card expiration dates', 'Financial', 'credit card expiration', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    -- ('CREDITCARDEXP', 'GLINER', true, 0.70, 'Credit Card Expiration', 'Credit card expiration dates', 'Financial', 'credit card expiration', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),  -- DUPLICATE
     ('CVV', 'GLINER', true, 0.75, 'CVV', 'Credit card security codes (CVV/CVC)', 'Financial', 'cvv', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
 ON CONFLICT (pii_type, detector) DO NOTHING;
 
@@ -132,51 +135,51 @@ ON CONFLICT (pii_type, detector) DO NOTHING;
 -- PHASE 2: NORMALIZATION FIXES - Label Variations
 -- ============================================================================
 
--- Add alternative mapping for "credit card" (in addition to "credit card number")
-INSERT INTO pii_type_config 
-    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
-VALUES 
-    ('CREDITCARD', 'GLINER', true, 0.70, 'Credit Card (short)', 'Credit card numbers - short label variant', 'Financial', 'credit card', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
-ON CONFLICT (pii_type, detector) DO NOTHING;
+-- DUPLICATE: use CREDITCARDNUMBER instead
+-- INSERT INTO pii_type_config
+--     (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+-- VALUES
+--     ('CREDITCARD', 'GLINER', true, 0.70, 'Credit Card (short)', 'Credit card numbers - short label variant', 'Financial', 'credit card', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+-- ON CONFLICT (pii_type, detector) DO NOTHING;
 
--- Add alternative mapping for "driver license" (in addition to "driver license number")
-INSERT INTO pii_type_config 
-    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
-VALUES 
-    ('DRIVERLICENSE', 'GLINER', true, 0.80, 'Driver License (short)', 'Driver license numbers - short label variant', 'Government ID', 'driver license', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
-ON CONFLICT (pii_type, detector) DO NOTHING;
+-- DUPLICATE: use DRIVERLICENSENUM instead
+-- INSERT INTO pii_type_config
+--     (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+-- VALUES
+--     ('DRIVERLICENSE', 'GLINER', true, 0.80, 'Driver License (short)', 'Driver license numbers - short label variant', 'Government ID', 'driver license', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+-- ON CONFLICT (pii_type, detector) DO NOTHING;
 
--- Add "dob" mapping (in addition to "date of birth")
-INSERT INTO pii_type_config 
-    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
-VALUES 
-    ('DOB', 'GLINER', true, 0.80, 'DOB', 'Date of birth - short label variant', 'Identity', 'dob', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
-ON CONFLICT (pii_type, detector) DO NOTHING;
+-- DUPLICATE: use DATEOFBIRTH instead
+-- INSERT INTO pii_type_config
+--     (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+-- VALUES
+--     ('DOB', 'GLINER', true, 0.80, 'DOB', 'Date of birth - short label variant', 'Identity', 'dob', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+-- ON CONFLICT (pii_type, detector) DO NOTHING;
 
--- Add "ssn" mapping (in addition to "social security number")
-INSERT INTO pii_type_config 
-    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
-VALUES 
-    ('SSN_SHORT', 'GLINER', true, 0.80, 'SSN (short)', 'Social Security Number - short label variant', 'Government ID', 'ssn', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
-ON CONFLICT (pii_type, detector) DO NOTHING;
+-- DUPLICATE: use SOCIALNUM instead
+-- INSERT INTO pii_type_config
+--     (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+-- VALUES
+--     ('SSN_SHORT', 'GLINER', true, 0.80, 'SSN (short)', 'Social Security Number - short label variant', 'Government ID', 'ssn', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+-- ON CONFLICT (pii_type, detector) DO NOTHING;
 
--- Add "location zip" mapping (in addition to "zip code")
-INSERT INTO pii_type_config 
-    (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
-VALUES 
-    ('LOCATIONZIP', 'GLINER', true, 0.80, 'Location Zip', 'ZIP/postal codes - location variant', 'Location', 'location zip', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
-ON CONFLICT (pii_type, detector) DO NOTHING;
+-- DUPLICATE: use ZIPCODE instead
+-- INSERT INTO pii_type_config
+--     (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
+-- VALUES
+--     ('LOCATIONZIP', 'GLINER', true, 0.80, 'Location Zip', 'ZIP/postal codes - location variant', 'Location', 'location zip', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+-- ON CONFLICT (pii_type, detector) DO NOTHING;
 
 -- ============================================================================
 -- PHASE 3: HIGH PRIORITY - Identification Documents & Healthcare
 -- ============================================================================
 
 -- Identification Documents
-INSERT INTO pii_type_config 
+INSERT INTO pii_type_config
     (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
-VALUES 
-    ('PASSPORTNUM', 'GLINER', true, 0.80, 'Passport Number', 'Passport numbers', 'Government ID', 'passport number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('VEHICLEID', 'GLINER', true, 0.75, 'Vehicle ID', 'Vehicle identification numbers', 'Identity', 'vehicle id', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+VALUES
+    ('PASSPORTNUM', 'GLINER', true, 0.80, 'Passport Number', 'Passport numbers', 'Government ID', 'passport number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+    -- ('VEHICLEID', 'GLINER', true, 0.75, 'Vehicle ID', 'Vehicle identification numbers', 'Identity', 'vehicle id', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')  -- RARELY NEEDED
 ON CONFLICT (pii_type, detector) DO NOTHING;
 
 -- Healthcare Information
@@ -257,14 +260,14 @@ VALUES
     ('JWT', 'GLINER', true, 0.20, 'JWT', 'JSON Web Tokens', 'Security', 'jwt', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('ACCESSKEYID', 'GLINER', true, 0.20, 'Access Key ID', 'AWS-style access key IDs', 'Security', 'access key id', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('SECRETACCESSKEY', 'GLINER', true, 0.20, 'Secret Access Key', 'AWS-style secret access keys', 'Security', 'secret access key', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('DBCONNECTIONSTRING', 'GLINER', true, 0.20, 'DB Connection String', 'Database connection strings', 'Security', 'db connection string', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('DBCONNECTIONSTRING', 'GLINER', true, 0.20, 'DB Connection String', 'Database connection strings', 'Security', 'database connection string', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('DATABASESTRING', 'GLINER', true, 0.20, 'Database String', 'Database connection strings', 'Security', 'database string', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('JDBCURL', 'GLINER', true, 0.20, 'JDBC URL', 'Java database connection URLs', 'Security', 'jdbc url', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('DATABASEURL', 'GLINER', true, 0.20, 'Database URL', 'Database URLs', 'Security', 'database url', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('POSTGRESQLSTRING', 'GLINER', true, 0.20, 'PostgreSQL String', 'PostgreSQL connection strings', 'Security', 'postgresql string', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+--  ('JDBCURL', 'GLINER', true, 0.20, 'JDBC URL', 'Java database connection URLs', 'Security', 'jdbc url', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+--    ('DATABASEURL', 'GLINER', true, 0.20, 'Database URL', 'Database URLs', 'Security', 'database url', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+--    ('POSTGRESQLSTRING', 'GLINER', true, 0.20, 'PostgreSQL String', 'PostgreSQL connection strings', 'Security', 'postgresql string', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('AVSNUM', 'GLINER', true, 0.20, 'AVS Number', 'Swiss social security number (AVS/AHV)', 'Government ID', 'avs number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('IBANNUMBER', 'GLINER', true, 0.20, 'IBAN Number', 'International Bank Account Number (alternate label)', 'Financial', 'iban number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('BANKACCOUNTNUMBER', 'GLINER', true, 0.20, 'Bank Account Number', 'Bank account numbers (alternate label)', 'Financial', 'bank account number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+    ('IBANNUMBER', 'GLINER', true, 0.20, 'IBAN Number', 'International Bank Account Number (alternate label)', 'Financial', 'iban number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+--    ('BANKACCOUNTNUMBER', 'GLINER', true, 0.20, 'Bank Account Number', 'Bank account numbers (alternate label)', 'Financial', 'bank account number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
 ON CONFLICT (pii_type, detector) DO NOTHING;
 
 -- ============================================================================
@@ -534,10 +537,9 @@ UPDATE pii_type_config SET detector_label = 'PERSON' WHERE pii_type = 'PERSON_NA
 UPDATE pii_type_config SET detector_label = 'DATE_TIME' WHERE pii_type = 'DATE' AND detector = 'PRESIDIO';
 
 -- ============================================================================
--- Summary: 
+-- Summary:
 -- - 1 global detection config (singleton)
--- - 17 GLiNER PII types
+-- - ~35 GLiNER PII types (deduplicated)
 -- - 50 Presidio country-specific PII types
 -- - 16 Presidio generic/alias PII types
--- Total: 83 PII type configurations
 -- ============================================================================

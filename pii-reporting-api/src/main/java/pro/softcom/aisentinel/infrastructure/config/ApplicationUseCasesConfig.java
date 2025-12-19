@@ -148,6 +148,7 @@ public class ApplicationUseCasesConfig {
             ContentScanOrchestrator contentScanOrchestrator,
             AttachmentProcessor attachmentProcessor,
             ScanTimeOutConfig scanTimeoutConfig,
+            HtmlContentParser htmlContentParser,
             PersonallyIdentifiableInformationScanExecutionOrchestratorPort personallyIdentifiableInformationScanExecutionOrchestratorPort,
             ScanCheckpointRepository scanCheckpointRepository) {
         return new StreamConfluenceScanUseCase(
@@ -156,6 +157,7 @@ public class ApplicationUseCasesConfig {
                 contentScanOrchestrator,
                 attachmentProcessor,
                 scanTimeoutConfig,
+                htmlContentParser,
                 personallyIdentifiableInformationScanExecutionOrchestratorPort,
                 scanCheckpointRepository
         );
@@ -168,14 +170,16 @@ public class ApplicationUseCasesConfig {
             ContentScanOrchestrator contentScanOrchestrator,
             AttachmentProcessor attachmentProcessor,
             ScanCheckpointRepository scanCheckpointRepository,
-            ScanTimeOutConfig scanTimeoutConfig) {
+            ScanTimeOutConfig scanTimeoutConfig,
+            HtmlContentParser htmlContentParser) {
         return new StreamConfluenceResumeScanUseCase(
                 confluenceAccessor,
                 piiDetectorClient,
                 contentScanOrchestrator,
                 attachmentProcessor,
                 scanCheckpointRepository,
-                scanTimeoutConfig
+                scanTimeoutConfig,
+                htmlContentParser
         );
     }
 

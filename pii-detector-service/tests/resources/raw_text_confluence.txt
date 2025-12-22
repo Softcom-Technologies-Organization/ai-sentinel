@@ -7,7 +7,6 @@ Ce document décrit le processus de déploiement de l'application "DataBridge" s
 Informations d'accès Confluence et outils
 
 Utilisateur système : j.doe (Responsable DevOps)
-
 Email référent : jean.dupont@example.com
 
 Compte de service API : svc-deploy@databridge.local
@@ -17,7 +16,7 @@ Accès VPN nécessaire (voir section sécurité)
 Accès Confluence : https://intra.vd.ch/wiki
 
 Variables d'environnement (à injecter dans le docker-compose.override.yml)
-wide760DB_USER: admin_vd
+DB_USER: admin_vd
 DB_PASS: P@ssw0rd!2024
 CONFLUENCE_TOKEN: ATATT3xFfGF0y7EXAMPLE
 POSTGRES_URL: jdbc:postgresql://db-internal.vd.ch:5432/databridge
@@ -28,13 +27,13 @@ POSTGRES_URL: jdbc:postgresql://db-internal.vd.ch:5432/databridge
 
 Se connecter au bastion via SSH :
 
-wide760ssh -i ~/.ssh/id_ed25519 j.doe@bastion.vd.ch
+ssh -i ~/.ssh/id_ed25519 j.doe@bastion.vd.ch
 
 Récupérer les derniers artefacts sur Nexus
 
 Lancer le script de mise à jour :
 
-wide760./deploy.sh --env preprod2
+./deploy.sh --env preprod2
 
 Clés et identifiants (ne pas diffuser)
 

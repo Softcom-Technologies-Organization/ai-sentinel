@@ -1,157 +1,158 @@
-import pytest
 from gliner import GLiNER
 from pathlib import Path
+from collections import Counter
 
 # Load the model (downloads automatically on first use)
 know_model = GLiNER.from_pretrained("nvidia/gliner-pii")
 file_path = (Path(__file__).parent / ".." / "resources" / "raw_text_confluence.txt").resolve()
 text = file_path.read_text(encoding="utf-8")
 
-# Natural language labels - deduplicated
+# GLiNER labels from data.sql (detector_label values)
+# These are natural language phrases that GLiNER understands
 labels = [
+    # CONTACT_CHANNEL
+    "email address",
+    "phone number",
+    # PERSON_IDENTITY
+    "person name",
+    "username",
+    # PERSON_DEMOGRAPHICS
+    "date of birth",
+    "age",
+    "gender",
+    # FINANCIAL_IDENTIFIER
+    "credit card number",
+    "bank account number",
     "iban",
-    "ssn"
+    "routing number",
+    "tax identification number",
+    "cryptocurrency wallet address",
+    # GOVERNMENT_IDENTIFIER
+    "social security number",
+    "passport number",
+    "driver license number",
+    "national id number",
+    # GEO_LOCATION
+    "street address",
+    "city",
+    "state",
+    "country",
+    "postal code",
+    # CREDENTIAL_SECRET
+    "password",
+    "api key",
+    "access token",
+    "secret key",
+    "database connection string",
+    # STRUCTURED_TECH_IDENTIFIER
+    "ip address",
+    "avs number",
+    "mac address",
+    "url",
+    # HEALTHCARE
+    "medical record number",
+    "health insurance number",
+    "medical condition",
+    "medication",
 ]
 
+# GLiNER model has internal token limit of 378 tokens
+# With ~3-4 chars/token ratio, safe chunk size is ~1000 characters
+# Using 1000 chars with 100 char overlap for context continuity
+CHUNK_SIZE = 1000
+OVERLAP = 100
 
-print(f"\nUsing {len(labels)} labels (natural language only, no uppercase)\n")
-first_text = text[:500]
-second_text = text[500:1000]
-third_text = text[1000:1500]
-fourth_text = text[1500:2000]
-#fifth_text = text[2000:2500]
 
-entities = know_model.predict_entities(first_text, labels, threshold=0.2)
-print("\n")
-for entity in entities:
-    print(f"{entity['text']} => {entity['label']} (confidence: {entity['score']:.2f})")
-print("\n\n")
+def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = OVERLAP) -> list[tuple[str, int]]:
+    """
+    Split text into overlapping chunks for GLiNER processing.
 
-entities = know_model.predict_entities(second_text, labels, threshold=0.2)
-print("\n")
-for entity in entities:
-    print(f"{entity['text']} => {entity['label']} (confidence: {entity['score']:.2f})")
-print("\n\n")
+    Args:
+        text: The full text to chunk
+        chunk_size: Maximum characters per chunk (default 1000, safe for 378 token limit)
+        overlap: Character overlap between chunks for context continuity
 
-entities = know_model.predict_entities(third_text, labels, threshold=0.2,multi_label=True)
-print("\n")
-for entity in entities:
-    print(f"{entity['text']} => {entity['label']} (confidence: {entity['score']:.2f})")
-print("\n\n")
+    Returns:
+        List of tuples (chunk_text, start_offset) for position tracking
+    """
+    chunks = []
+    start = 0
+    text_len = len(text)
 
-entities = know_model.predict_entities(fourth_text, labels, threshold=0.2,multi_label=True)
-print("\n")
-for entity in entities:
-    print(f"{entity['text']} => {entity['label']} (confidence: {entity['score']:.2f})")
-print("\n\n")
-# entities = know_model.predict_entities(fifth_text, labels, threshold=0.2)
-# print("\n")
-# for entity in entities:
-#     print(f"{entity['text']} => {entity['label']} (confidence: {entity['score']:.2f})")
-# print("\n\n")
-#entities = urchade_model.predict_entities(text, labels, threshold=0.2,multi_label=True)
-#for entity in entities:
-#    print(f"{entity['text']} => {entity['label']} (confidence: {entity['score']:.2f})")
+    while start < text_len:
+        end = min(start + chunk_size, text_len)
+        chunk = text[start:end]
+        chunks.append((chunk, start))
 
-# GLiNER isn't limited to PII - you can detect any entities
-#text = "The MacBook Pro with M2 chip costs $1,999 at the Apple Store in Manhattan."
-#custom_labels = ["product", "processor", "price", "store", "location"]
-#print("\n\n")
-#entities = know_model.predict_entities(text, custom_labels, threshold=0.3)
-#for entity in entities:
-#    print(f"{entity['text']} => {entity['label']} (confidence: {entity['score']:.2f})")
+        # Move to next chunk with overlap
+        start = end - overlap if end < text_len else text_len
 
-# import transformers
-# import torch
-# import time
-# model_id = "meta-llama/Meta-Llama-3.1-8B-Instruct"
-#
-# pipeline = transformers.pipeline(
-#     "text-generation",
-#     model=model_id,
-#     model_kwargs={"torch_dtype": torch.bfloat16},
-#     device_map="auto",
-# )
-#
-# messages = [
-#     {"role": "system", "content": "You are an expert at findings PII (Personally identifiable Information) in text. output must be a key value object with PII_CATEGORY: [PII]"},
-#     {"role": "user", "content": """Find the following  PII  [USERNAME,FIRST_NAME,LAST_NAME,EMAIL,API_KEY,DB_CONN_STRING, AVS_NUMBER, IBAN] in the following text:\n Procédure de déploiement – Environnement préprod
-#
-#      Objectif
-#
-#          Ce document décrit le processus de déploiement de l'application "DataBridge" sur l'environnement préproduction (PREPROD2-VD). Il est à usage interne uniquement.
-#
-#     Informations d'accès Confluence et outils
-#
-#      Utilisateur système : j.doe (Responsable DevOps)
-# Email référent : jean.dupont@example.com
-#
-# Compte de service API : svc-deploy@databridge.local
-#
-# Accès VPN nécessaire (voir section sécurité)
-#
-# Accès Confluence : https://intra.vd.ch/wiki
-#
-# Variables d'environnement (à injecter dans le docker-compose.override.yml)
-# wide760DB_USER: admin_vd
-# DB_PASS: P@ssw0rd!2024
-# CONFLUENCE_TOKEN: ATATT3xFfGF0y7EXAMPLE
-# POSTGRES_URL: jdbc:postgresql://db-internal.vd.ch:5432/databridge
-#
-# 🔒 Note : ces variables sont injectées dynamiquement par Infisical en environnement sécurisé. Ne pas versionner ce fichier.
-#
-# Étapes de déploiement
-#
-# Se connecter au bastion via SSH :
-#
-# wide760ssh -i ~/.ssh/id_ed25519 j.doe@bastion.vd.ch
-#
-# Récupérer les derniers artefacts sur Nexus
-#
-# Lancer le script de mise à jour :
-#
-# wide760./deploy.sh --env preprod2
-#
-# Clés et identifiants (ne pas diffuser)
-#
-# Clé API OpenAI pour module résumé : sk-test-Y9yJW2TfkjYxEXAMPLE
-#
-# AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
-#
-# AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-#
-# Journal de test (extrait du 2024-11-04)
-#
-# Le service "PDF Extractor" remonte une erreur 403 lors du traitement des documents confidentiels. Possible cause : token JWT expiré ou rôle manquant.
-#
-# Ancien token utilisé : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0...
-#
-# Suivi utilisateur
-#
-# Jean Dupont (DPO) a validé le processus. Numéro AVS référent : 756.9217.0769.85 RIB à usage interne : CH93 0076 2011 6238 5295 7
-#
-# Annexe – Extrait page Confluence
-#
-# La base de données contient les identifiants initiaux suivants (DO NOT USE in prod)
-#
-# Utilisateur
-#
-# Mot de passe
-#
-# root
-#
-# changeme123!
-#
-# support
-#
-# VdSupport2023*"""},
-# ]
-# start_time = time.time()
-#
-# outputs = pipeline(
-#     messages,
-#     max_new_tokens=256,
-# )
-# elapsed_time = time.time() - start_time
-# print("Elapsed time:", elapsed_time, "seconds")
-# print(outputs[0]["generated_text"][-1])
+    return chunks
+
+
+def predict_with_chunking(model, text: str, labels: list[str], threshold: float = 0.2) -> list[dict]:
+    """
+    Run GLiNER prediction with proper chunking for long texts.
+
+    Args:
+        model: GLiNER model instance
+        text: Full text to analyze
+        labels: List of entity labels to detect
+        threshold: Confidence threshold for detection
+
+    Returns:
+        List of entities with adjusted positions for the full text
+    """
+    chunks = chunk_text(text)
+    all_entities = []
+    seen_entities = set()  # Deduplicate entities from overlapping regions
+
+    for chunk_content, chunk_offset in chunks:
+        entities = model.predict_entities(chunk_content, labels, threshold=threshold)
+
+        for entity in entities:
+            # Adjust positions to full text coordinates
+            adjusted_start = entity['start'] + chunk_offset
+            adjusted_end = entity['end'] + chunk_offset
+
+            # Create unique key for deduplication
+            entity_key = (entity['text'], entity['label'], adjusted_start, adjusted_end)
+
+            if entity_key not in seen_entities:
+                seen_entities.add(entity_key)
+                all_entities.append({
+                    'text': entity['text'],
+                    'label': entity['label'],
+                    'score': entity['score'],
+                    'start': adjusted_start,
+                    'end': adjusted_end,
+                })
+
+    # Sort by position
+    all_entities.sort(key=lambda x: x['start'])
+    return all_entities
+
+
+if __name__ == "__main__":
+    # Run detection with chunking
+    print(f"\n{'='*60}")
+    print("GLiNER PII Detection Test")
+    print(f"{'='*60}")
+    print(f"Text length: {len(text)} characters")
+    print(f"Chunk size: {CHUNK_SIZE} chars (safe for 378 token limit)")
+    print(f"Overlap: {OVERLAP} chars")
+    print(f"Labels: {len(labels)} types")
+    print(f"{'='*60}\n")
+
+    entities = predict_with_chunking(know_model, text, labels, threshold=0.2)
+
+    print(f"Found {len(entities)} PII entities:\n")
+    for entity in entities:
+        print(f"  [{entity['start']:4d}-{entity['end']:4d}] {entity['label']}: '{entity['text']}' (confidence: {entity['score']:.2f})")
+
+    print(f"\n{'='*60}")
+    print("Summary by type:")
+    print(f"{'='*60}")
+    type_counts = Counter(e['label'] for e in entities)
+    for label, count in sorted(type_counts.items(), key=lambda x: -x[1]):
+        print(f"  {label}: {count}")

@@ -603,6 +603,24 @@
     "LOCATIONCITY": "Ville",
     "LOCATIONSTATE": "État/Province",
     "LOCATIONCOUNTRY": "Pays",
-    "UNKNOWN": "Inconnu"
+    "UNKNOWN": "Inconnu",
+    "DATE_OF_BIRTH": "Date de naissance",
+    "BANK_ACCOUNT": "Compte bancaire",
+    "ROUTING_NUMBER": "Numéro de routage",
+    "TAX_ID": "Numéro fiscal",
+    "ZIP_CODE": "Code postal",
+    "MEDICAL_CONDITION": "Condition médicale",
+    "NATIONAL_ID": "Carte d'identité nationale",
+    "ADDRESS": "Adresse",
+    "STATE": "État/Province",
+    "COUNTRY": "Pays",
+    "ACCESS_TOKEN": "Jeton d'accès",
+    "SECRET_KEY": "Clé secrète",
+    "CONNECTION_STRING": "Chaîne de connexion",
+    "AVS_NUMBER": "Numéro AVS",
+    "MEDICAL_RECORD": "Dossier médical",
+    "HEALTH_INSURANCE": "Assurance maladie",
+    "MEDICATION": "Médicament",
+    "TOKEN": "Jeton"
   }
 }

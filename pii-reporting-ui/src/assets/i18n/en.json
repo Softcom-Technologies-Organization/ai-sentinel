@@ -595,6 +595,24 @@
     "LOCATIONCITY": "City",
     "LOCATIONSTATE": "State",
     "LOCATIONCOUNTRY": "Country",
-    "UNKNOWN": "Unknown"
+    "UNKNOWN": "Unknown",
+    "DATE_OF_BIRTH": "Date of Birth",
+    "BANK_ACCOUNT": "Bank Account",
+    "ROUTING_NUMBER": "Routing Number",
+    "TAX_ID": "Tax ID",
+    "ZIP_CODE": "ZIP Code",
+    "MEDICAL_CONDITION": "Medical Condition",
+    "NATIONAL_ID": "National ID",
+    "ADDRESS": "Address",
+    "STATE": "State/Province",
+    "COUNTRY": "Country",
+    "ACCESS_TOKEN": "Access Token",
+    "SECRET_KEY": "Secret Key",
+    "CONNECTION_STRING": "Connection String",
+    "AVS_NUMBER": "AVS Number",
+    "MEDICAL_RECORD": "Medical Record",
+    "HEALTH_INSURANCE": "Health Insurance",
+    "MEDICATION": "Medication",
+    "TOKEN": "Token"
   }
 }

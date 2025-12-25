@@ -166,6 +166,29 @@ public enum PersonallyIdentifiableInformationType {
     // Alternate labels from Python detector
     EMAIL_ADDRESS(ContentPiiDetection.PersonallyIdentifiableInformationType.EMAIL),
 
+    // New GLiNER types (underscore variants for consistency with data.sql)
+    DATE_OF_BIRTH(ContentPiiDetection.PersonallyIdentifiableInformationType.DATE_OF_BIRTH),
+    BANK_ACCOUNT(ContentPiiDetection.PersonallyIdentifiableInformationType.BANK_ACCOUNT),
+    ROUTING_NUMBER(ContentPiiDetection.PersonallyIdentifiableInformationType.BANK_ACCOUNT),
+    TAX_ID(ContentPiiDetection.PersonallyIdentifiableInformationType.SSN),
+    ZIP_CODE(ContentPiiDetection.PersonallyIdentifiableInformationType.ZIPCODE),
+    NATIONAL_ID(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
+    ADDRESS(ContentPiiDetection.PersonallyIdentifiableInformationType.ADDRESS),
+    STATE(ContentPiiDetection.PersonallyIdentifiableInformationType.LOCATION),
+    COUNTRY(ContentPiiDetection.PersonallyIdentifiableInformationType.LOCATION),
+    AVS_NUMBER(ContentPiiDetection.PersonallyIdentifiableInformationType.SSN),
+
+    // New GLiNER credential/secret types
+    ACCESS_TOKEN(ContentPiiDetection.PersonallyIdentifiableInformationType.TOKEN),
+    SECRET_KEY(ContentPiiDetection.PersonallyIdentifiableInformationType.API_KEY),
+    CONNECTION_STRING(ContentPiiDetection.PersonallyIdentifiableInformationType.PASSWORD),
+
+    // New GLiNER healthcare types
+    MEDICAL_RECORD(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
+    HEALTH_INSURANCE(ContentPiiDetection.PersonallyIdentifiableInformationType.SSN),
+    MEDICAL_CONDITION(ContentPiiDetection.PersonallyIdentifiableInformationType.PERSON),
+    MEDICATION(ContentPiiDetection.PersonallyIdentifiableInformationType.PERSON),
+
     UNKNOWN(ContentPiiDetection.PersonallyIdentifiableInformationType.UNKNOWN);
 
     private final ContentPiiDetection.PersonallyIdentifiableInformationType dataType;

@@ -36,6 +36,12 @@ try:
     from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
 except Exception:  # pragma: no cover - safe import guard
     GLiNERDetector = None  # type: ignore
+
+# Import Multi-Pass GLiNER detector for parallel category detection
+try:
+    from pii_detector.infrastructure.detector.multi_pass_gliner_detector import MultiPassGlinerDetector
+except Exception:  # pragma: no cover - safe import guard
+    MultiPassGlinerDetector = None  # type: ignore
 # Optional pre-caching of additional HF models (extensible)
 try:
     from pii_detector.infrastructure.model_management.model_cache import ensure_models_cached, get_env_extra_models
@@ -215,31 +221,62 @@ def _create_multi_detector():
 def _create_single_detector():
     """Create and return a single-model detector instance, or None if no LLM models are enabled."""
     from pii_detector.application.config.detection_policy import DetectionConfig, get_enabled_models, _load_llm_config
-    
+
     # Check if any LLM models are enabled
     try:
         config_dict = _load_llm_config()
         enabled_models = get_enabled_models(config_dict)
-        
+
         if not enabled_models:
             # TODO When no LLM models are enabled, returning None relies on the caller to handle this case correctly. Consider documenting this behavior in the function docstring or adding a check that at least one detection method (Presidio/Regex) is enabled before returning None to prevent a scenario where all detection is disabled.
             # No LLM models enabled - return None to use only Presidio/Regex
             logger.info("No LLM models enabled - will use only Presidio/Regex detection")
             return None
-        
+
         logger.info("Using single-model detector (either multi-detector disabled or only 1 model enabled)")
         config = DetectionConfig()
-        
+
         if _is_gliner_model(config.model_id):
-            logger.info(f"Detected GLiNER model: {config.model_id}")
-            return GLiNERDetector(config=config)
-        
+            # Check if Multi-Pass GLiNER is enabled
+            if _should_use_multipass_gliner(config_dict):
+                logger.info(f"Using Multi-Pass GLiNER detector for: {config.model_id}")
+                return MultiPassGlinerDetector(config=config)
+            else:
+                logger.info(f"Detected GLiNER model: {config.model_id}")
+                return GLiNERDetector(config=config)
+
         logger.info(f"Using standard transformer detector for: {config.model_id}")
         return PIIDetector()
-        
+
     except Exception as e:
         logger.error(f"Failed to create single detector: {e}")
         raise
+
+
+def _should_use_multipass_gliner(config_dict: dict) -> bool:
+    """
+    Check if Multi-Pass GLiNER detection is enabled in config.
+
+    Multi-Pass GLiNER runs 13 parallel detection passes (one per category)
+    to avoid label limit degradation and resolves conflicts deterministically.
+
+    Args:
+        config_dict: Configuration dictionary loaded from detection-settings.toml
+
+    Returns:
+        True if multipass_gliner_enabled is set to true, False otherwise
+    """
+    if MultiPassGlinerDetector is None:
+        logger.debug("MultiPassGlinerDetector not available")
+        return False
+
+    detection_config = config_dict.get("detection", {})
+    multipass_enabled = detection_config.get("multipass_gliner_enabled", False)
+
+    if multipass_enabled:
+        logger.info("Multi-Pass GLiNER detection enabled in config")
+
+    return multipass_enabled
 
 
 def _is_gliner_model(model_id: str) -> bool:

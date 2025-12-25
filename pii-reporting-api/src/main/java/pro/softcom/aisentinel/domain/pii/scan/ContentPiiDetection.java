@@ -35,39 +35,125 @@ public record ContentPiiDetection(
 
     /**
      * Detectable categories of sensitive data found during analysis.
+     * These are business-level categories that group related PII types.
      */
     @Getter
     public enum PersonallyIdentifiableInformationType {
+        // Contact Information
         EMAIL("Email"),
         PHONE("Téléphone"),
         PHONE_NUMBER(PHONE_NUMBER_LABEL),
         TELEPHONENUM(PHONE_NUMBER_LABEL),
+        FAX("Fax"),
+
+        // Identity
         DATE_OF_BIRTH("Date de naissance"),
         PERSON("Personne"),
         NAME("Nom"),
         SURNAME("Nom de famille"),
+        USERNAME("Nom d'utilisateur"),
+        GENDER("Genre"),
+        NATIONALITY("Nationalité"),
+        MARITAL_STATUS("État civil"),
+
+        // Location
         LOCATION("Localisation"),
         ADDRESS("Adresse"),
         STREET("Rue"),
         CITY("Ville"),
         ZIPCODE("Code postal"),
         BUILDINGNUM("Numéro de bâtiment"),
+        COUNTRY("Pays"),
+        STATE("État/Province"),
+        GPS("Coordonnées GPS"),
+
+        // Financial
         CREDIT_CARD("Carte de crédit"),
         BANK_ACCOUNT("Compte bancaire"),
+        IBAN("IBAN"),
+        TAX("Numéro fiscal"),
+        INVOICE("Facture"),
+        SALARY("Salaire"),
+        TRANSACTION("Transaction"),
+
+        // Government IDs
         SSN("Numéro AVS"),
         ID_CARD("Carte d'identité"),
+        PASSPORT("Passeport"),
+        DRIVER_LICENSE("Permis de conduire"),
+
+        // IT & Credentials
         PASSWORD("Mot de passe"),
         API_KEY("Clé API"),
         TOKEN("Jeton"),
+        SECRET("Secret"),
         URL("URL"),
         IP_ADDRESS("Adresse IP"),
+        MAC_ADDRESS("Adresse MAC"),
+        HOSTNAME("Nom d'hôte"),
+        DEVICE("Appareil"),
+        SESSION("Session"),
+
+        // Medical/Healthcare
+        MEDICAL("Information médicale"),
+        PATIENT("Patient"),
+        DIAGNOSIS("Diagnostic"),
+        MEDICATION("Médicament"),
+        HEALTH_INSURANCE("Assurance maladie"),
+        DOCTOR("Médecin"),
+        HOSPITAL("Hôpital"),
+
+        // Professional
+        EMPLOYEE("Employé"),
+        JOB_TITLE("Poste"),
+        COMPANY("Entreprise"),
+        DEPARTMENT("Département"),
+        STUDENT("Étudiant"),
+        SCHOOL("École"),
+
+        // Legal
+        LEGAL("Information légale"),
+        CASE_NUMBER("Numéro de dossier"),
+        COURT("Tribunal"),
+        CRIMINAL_RECORD("Casier judiciaire"),
+        LICENSE("Licence"),
+        PERMIT("Permis"),
+        IMMIGRATION("Immigration"),
+
+        // Assets
+        VEHICLE("Véhicule"),
+        LICENSE_PLATE("Plaque d'immatriculation"),
+        VIN("Numéro VIN"),
+        PROPERTY("Propriété"),
+        INSURANCE("Assurance"),
+
+        // Biometric
+        BIOMETRIC("Données biométriques"),
+        FINGERPRINT("Empreinte digitale"),
+        FACIAL("Reconnaissance faciale"),
+        IRIS("Scan iris"),
+        VOICE("Empreinte vocale"),
+        DNA("ADN"),
+
+        // Temporal
+        DATE("Date"),
+        TIME("Heure"),
+        TIMESTAMP("Horodatage"),
+        AGE("Âge"),
+
+        // Digital Identity
+        SOCIAL_MEDIA("Réseaux sociaux"),
+        ONLINE_HANDLE("Pseudonyme"),
+        ACCOUNT("Compte"),
+        CUSTOMER("Client"),
+
+        // Other
         UNKNOWN("Inconnu"),
         // Legacy values for backward compatibility
         AVS("AVS"),
         SECURITY("Sécurité"),
-        ATTACHMENT("Pièce jointe"),
-        USERNAME("Nom d'utilisateur");
-        
+        ATTACHMENT("Pièce jointe");
+
         private final String label;
 
         PersonallyIdentifiableInformationType(String label) {

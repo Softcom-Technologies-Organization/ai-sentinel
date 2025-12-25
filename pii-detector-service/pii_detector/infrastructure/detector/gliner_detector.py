@@ -432,12 +432,6 @@ class GLiNERDetector:
             # Get configured threshold for this entity type
             entity_threshold = scoring_overrides.get(entity.pii_type)
 
-            # DEBUG: Log threshold lookup
-            self.logger.info(
-                f"Threshold check: pii_type='{entity.pii_type}', score={entity.score:.3f}, "
-                f"threshold={entity_threshold}, text='{entity.text[:30]}...'"
-            )
-
             # Post-filter: discard if below entity-specific threshold
             if entity_threshold is not None and entity.score < entity_threshold:
                 filtered_count += 1
@@ -757,24 +751,12 @@ class GLiNERDetector:
         # Get semantic chunks
         chunk_results = self.semantic_chunker.chunk_text(text)
 
-        self.logger.info(
+        self.logger.debug(
             f"[{detection_id}] Semantic chunking: {len(text)} chars → {len(chunk_results)} chunks"
         )
 
-        # DEBUG: Log each chunk's range and content preview
-        for i, chunk in enumerate(chunk_results):
-            chunk_end = chunk.start + len(chunk.text)
-            preview_start = chunk.text[:50].replace('\n', '\\n') if len(chunk.text) > 50 else chunk.text.replace('\n', '\\n')
-            preview_end = chunk.text[-50:].replace('\n', '\\n') if len(chunk.text) > 50 else ""
-            self.logger.info(
-                f"[{detection_id}] Chunk {i}: pos {chunk.start}-{chunk_end} ({len(chunk.text)} chars) "
-                f"start=\"{preview_start}...\" end=\"...{preview_end}\""
-            )
-            self.logger.info(f"Full chunk text: {chunk.text}")
-        
         # Pre-compute labels once for all chunks
         labels = self._get_gliner_labels(pii_type_mapping)
-        self.logger.info(f"[{detection_id}] GLiNER labels ({len(labels)}): {labels}")
         
         # Choose processing strategy based on configuration
         if self.parallel_enabled and len(chunk_results) > 1:
@@ -785,9 +767,7 @@ class GLiNERDetector:
             processing_mode = "sequential"
         
         detection_time = time.time() - start_time
-        print("\n\n")
-        print("ENTITIES FOUND")
-        print(all_entities)
+
         # Apply per-entity-type threshold filtering (post-filter)
         filtered_entities = self._apply_entity_scoring_filter(all_entities, scoring_overrides)
         

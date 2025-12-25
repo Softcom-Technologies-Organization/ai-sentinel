@@ -16,6 +16,12 @@ multi_detector_enabled = false
 # Note: At least one detection method (LLM, Regex, or Presidio) must be enabled
 llm_detection_enabled = true
 
+# Enable Multi-Pass GLiNER detection (true/false)
+# When true, uses MultiPassGlinerDetector instead of standard GLiNERDetector
+# Multi-pass runs 13 parallel detection passes (one per category) and resolves conflicts
+# This provides better accuracy for large label sets (114 PII types)
+multipass_gliner_enabled = true
+
 # Enable regex-based detection (true/false)
 # When true, adds RegexDetector to CompositePIIDetector
 # When false, regex detection is disabled

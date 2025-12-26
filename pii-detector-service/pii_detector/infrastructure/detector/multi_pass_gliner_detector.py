@@ -330,9 +330,12 @@ class MultiPassGlinerDetector:
             final_entities = self._resolve_overlapping_spans(resolved_entities)
 
             elapsed = time.time() - start_time
-            self.logger.info(
-                f"[{detection_id}] Multi-pass detection complete: {len(final_entities)} entities "
-                f"in {elapsed:.3f}s (from {len(all_entities)} raw detections)"
+
+            # Log comprehensive summary
+            self._log_detection_summary(
+                detection_id, elapsed, len(text),
+                len(categories_to_run), len(all_entities),
+                len(aggregated_spans), len(resolved_entities), len(final_entities)
             )
 
             return final_entities
@@ -552,19 +555,13 @@ class MultiPassGlinerDetector:
             Resolved entities (exactly 1 per span)
         """
         resolved: List[PIIEntity] = []
-        conflicts_found = 0
-
-        # Log all detected PII with their labels before resolution
-        for span in spans:
-            labels_with_scores = [f"{label}({score:.2f})" for label, score in span.labels]
-            text_preview = span.text[:50] + "..." if len(span.text) > 50 else span.text
-            self.logger.info(
-                f"[{detection_id}] PII: '{text_preview}' -> [{', '.join(sorted(labels_with_scores))}]"
-            )
+        single_label_count = 0
+        conflict_count = 0
 
         for span in spans:
             if not span.has_conflict():
                 # Single label - accept the highest score
+                single_label_count += 1
                 best_label, best_score = max(span.labels, key=lambda x: x[1])
                 entity = PIIEntity(
                     text=span.text,
@@ -576,9 +573,15 @@ class MultiPassGlinerDetector:
                 )
                 entity.source = "GLINER_MULTIPASS"
                 resolved.append(entity)
+
+                # Log single-label detections at debug level
+                text_preview = span.text[:40] + "..." if len(span.text) > 40 else span.text
+                self.logger.debug(
+                    f"[{detection_id}] DETECTED | '{text_preview}' -> {best_label} ({best_score:.2f})"
+                )
             else:
-                # Multiple labels - use ConflictResolver
-                conflicts_found += 1
+                # Multiple labels - use ConflictResolver (which logs conflicts)
+                conflict_count += 1
                 result = self._conflict_resolver.resolve(
                     span.text,
                     span.labels,
@@ -596,10 +599,10 @@ class MultiPassGlinerDetector:
                     )
                     resolved.append(entity)
 
-        if conflicts_found > 0:
-            self.logger.info(
-                f"[{detection_id}] Resolved {conflicts_found} conflicts using ConflictResolver"
-            )
+        self.logger.debug(
+            f"[{detection_id}] Conflict resolution: {single_label_count} single-label, "
+            f"{conflict_count} conflicts"
+        )
 
         return resolved
 
@@ -683,6 +686,58 @@ class MultiPassGlinerDetector:
     def _generate_detection_id(self) -> str:
         """Generate unique detection ID for logging."""
         return f"multipass_{int(time.time() * 1000) % 10000}"
+
+    def _log_detection_summary(
+        self,
+        detection_id: str,
+        elapsed: float,
+        text_length: int,
+        num_categories: int,
+        raw_count: int,
+        span_count: int,
+        resolved_count: int,
+        final_count: int
+    ) -> None:
+        """
+        Log comprehensive detection summary with statistics.
+
+        Args:
+            detection_id: Unique ID for this detection run
+            elapsed: Total time taken in seconds
+            text_length: Length of input text
+            num_categories: Number of category passes run
+            raw_count: Raw entity count from all passes
+            span_count: Unique spans after aggregation
+            resolved_count: Entities after conflict resolution
+            final_count: Final entities after overlap removal
+        """
+        # Get conflict stats if available
+        conflict_stats = {}
+        if self._conflict_resolver:
+            conflict_stats = self._conflict_resolver.get_conflict_stats()
+
+        # Calculate derived metrics
+        conflicts_resolved = conflict_stats.get("total_conflicts", 0)
+        overlaps_removed = resolved_count - final_count
+
+        self.logger.info(
+            f"\n{'='*70}\n"
+            f"[{detection_id}] MULTI-PASS DETECTION SUMMARY\n"
+            f"{'='*70}\n"
+            f"  Input:      {text_length:,} chars | {num_categories} categories\n"
+            f"  Pipeline:   {raw_count} raw -> {span_count} spans -> {resolved_count} resolved -> {final_count} final\n"
+            f"  Conflicts:  {conflicts_resolved} resolved "
+            f"(pattern: {conflict_stats.get('resolved_by_pattern', 0)}, "
+            f"fallback: {conflict_stats.get('resolved_by_fallback', 0)}, "
+            f"category: {conflict_stats.get('resolved_by_category', 0)})\n"
+            f"  Overlaps:   {overlaps_removed} removed\n"
+            f"  Time:       {elapsed:.3f}s ({elapsed/num_categories*1000:.1f}ms per category)\n"
+            f"{'='*70}"
+        )
+
+        # Reset conflict stats for next detection
+        if self._conflict_resolver:
+            self._conflict_resolver.reset_conflict_stats()
 
     def _apply_masks(
         self,

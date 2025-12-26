@@ -15,6 +15,8 @@ Design Principles:
     - Regex-only validation (no checksums like Luhn/IBAN)
     - Deterministic resolution (reproducible results)
     - Type-specific patterns for accurate differentiation
+
+CONSOLIDATED VERSION: 44 PII types across 7 categories
 """
 
 import logging
@@ -51,12 +53,13 @@ class ConflictGroup:
 
 # =============================================================================
 # Conflict Groups with Type-Specific Patterns
+# CONSOLIDATED: Only includes the 44 active PII types
 # =============================================================================
 
 CONFLICT_GROUPS: List[ConflictGroup] = [
     # -------------------------------------------------------------------------
     # GROUP 1: NUMERIC_DOTTED - Pattern: \d+(\.\d+)+
-    # Examples: 192.168.1.1, 756.1234.5678.90, 01.02.2024
+    # Examples: 192.168.1.1, 756.1234.5678.90
     # -------------------------------------------------------------------------
     ConflictGroup(
         name="NUMERIC_DOTTED",
@@ -66,12 +69,10 @@ CONFLICT_GROUPS: List[ConflictGroup] = [
             "IP_ADDRESS": r"^((25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)$",
             # Swiss AVS: starts with 756, format 756.XXXX.XXXX.XX (13 digits total)
             "AVS_NUMBER": r"^756\.\d{4}\.\d{4}\.\d{2}$",
-            # Date: DD.MM.YYYY or similar
-            "DATE": r"^(0?[1-9]|[12]\d|3[01])\.(0?[1-9]|1[0-2])\.(\d{2}|\d{4})$",
-            # Medical record: generic dotted number (fallback)
+            # Medical record: generic dotted number
             "MEDICAL_RECORD_NUMBER": r"^\d{1,3}(\.\d{1,4}){2,}$",
         },
-        fallback_priority=["IP_ADDRESS", "AVS_NUMBER", "DATE", "MEDICAL_RECORD_NUMBER"]
+        fallback_priority=["IP_ADDRESS", "AVS_NUMBER", "MEDICAL_RECORD_NUMBER"]
     ),
 
     # -------------------------------------------------------------------------
@@ -130,29 +131,24 @@ CONFLICT_GROUPS: List[ConflictGroup] = [
             "PATIENT_ID": r"^(PAT|PT|P)\d{6,12}$",
             # Access token: JWT-like or long random
             "ACCESS_TOKEN": r"^(eyJ|Bearer\s)?[A-Za-z0-9_-]{20,}$",
-            # Serial number: manufacturer patterns
-            "SERIAL_NUMBER": r"^[A-Z]{2,4}\d{6,12}$",
         },
-        fallback_priority=["API_KEY", "IBAN", "PATIENT_ID", "ACCESS_TOKEN", "SERIAL_NUMBER"]
+        fallback_priority=["API_KEY", "IBAN", "PATIENT_ID", "ACCESS_TOKEN"]
     ),
 
     # -------------------------------------------------------------------------
     # GROUP 5: EMAIL_LIKE - Pattern: .+@.+
+    # Handles all email formats including internal domains
     # -------------------------------------------------------------------------
     ConflictGroup(
         name="EMAIL_LIKE",
-        group_pattern=r"^.+@.+\..+$",
+        group_pattern=r"^.+@.+$",
         type_patterns={
-            # Standard email
+            # Email: broad pattern including internal domains (.local, .internal)
             "EMAIL": r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
-            # Work email: corporate domains
-            "WORK_EMAIL": r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(com|org|net|edu|gov|corp)$",
-            # Username with @ (like Twitter handles in email context)
+            # Username with @ (like Twitter handles)
             "USERNAME": r"^@?[a-zA-Z][a-zA-Z0-9_]{2,30}$",
-            # Login: could be email-like
-            "LOGIN": r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$",
         },
-        fallback_priority=["EMAIL", "WORK_EMAIL", "USERNAME", "LOGIN"]
+        fallback_priority=["EMAIL", "USERNAME"]
     ),
 
     # -------------------------------------------------------------------------
@@ -162,14 +158,6 @@ CONFLICT_GROUPS: List[ConflictGroup] = [
         name="URL_LIKE",
         group_pattern=r"^https?://",
         type_patterns={
-            # API endpoint: /api/ or /v1/ in path
-            "API_ENDPOINT": r"^https?://[^/]+/(api|v\d)/",
-            # Social media URLs
-            "SOCIAL_MEDIA_URL": r"^https?://(www\.)?(facebook|twitter|linkedin|instagram|x)\.com/",
-            # Profile URL: /user/ or /profile/ or /@
-            "PROFILE_URL": r"^https?://[^/]+/(user|profile|u|@)[/\?]",
-            # Personal website: personal domain patterns
-            "PERSONAL_WEBSITE": r"^https?://[^/]+\.(me|io|dev|blog|personal)",
             # Generic URL
             "URL": r"^https?://[^\s]+$",
             # IP in URL
@@ -177,7 +165,7 @@ CONFLICT_GROUPS: List[ConflictGroup] = [
             # Hostname in URL
             "HOSTNAME": r"^https?://[a-zA-Z][a-zA-Z0-9-]*(\.[a-zA-Z0-9-]+)*",
         },
-        fallback_priority=["API_ENDPOINT", "SOCIAL_MEDIA_URL", "PROFILE_URL", "PERSONAL_WEBSITE", "URL", "IP_ADDRESS", "HOSTNAME"]
+        fallback_priority=["URL", "IP_ADDRESS", "HOSTNAME"]
     ),
 
     # -------------------------------------------------------------------------
@@ -189,14 +177,8 @@ CONFLICT_GROUPS: List[ConflictGroup] = [
         type_patterns={
             # Phone: starts with + or digit, common formats
             "PHONE_NUMBER": r"^(\+\d{1,3}[\s-]?)?\(?\d{2,4}\)?[\s.-]?\d{2,4}[\s.-]?\d{2,4}$",
-            # Mobile: typically starts with mobile prefixes
-            "MOBILE_PHONE": r"^(\+\d{1,3}[\s-]?)?(07|06|09|\(0\)7|\(0\)6)\d{1,2}[\s.-]?\d{3}[\s.-]?\d{2,4}$",
-            # Fax: often has fax-like patterns or extension
-            "FAX_NUMBER": r"^(\+\d{1,3}[\s-]?)?\(?\d{2,4}\)?[\s.-]?\d{2,4}[\s.-]?\d{2,4}([\s-]?(ext|x|fax)[\s.-]?\d+)?$",
-            # Work phone: extension patterns
-            "WORK_PHONE": r"^(\+\d{1,3}[\s-]?)?\(?\d{2,4}\)?[\s.-]?\d{2,4}[\s.-]?\d{2,4}([\s-]?(ext|x)[\s.-]?\d+)?$",
         },
-        fallback_priority=["PHONE_NUMBER", "MOBILE_PHONE", "FAX_NUMBER", "WORK_PHONE"]
+        fallback_priority=["PHONE_NUMBER"]
     ),
 
     # -------------------------------------------------------------------------
@@ -206,22 +188,12 @@ CONFLICT_GROUPS: List[ConflictGroup] = [
         name="PERSON_LIKE",
         group_pattern=r"^[A-Z][a-z]+(\s+[A-Z][a-z]+)*$",
         type_patterns={
-            # Full name: 2-4 capitalized words
-            "FULL_NAME": r"^[A-Z][a-z]+(\s+[A-Z][a-z]+){1,3}$",
-            # Person name: 1-3 words
+            # Person name: 1-3 capitalized words
             "PERSON_NAME": r"^[A-Z][a-z]+(\s+[A-Z][a-z]+){0,2}$",
-            # Employee name: often with title
-            "EMPLOYEE_NAME": r"^(Mr|Mrs|Ms|Dr|Prof)?\.?\s?[A-Z][a-z]+(\s+[A-Z][a-z]+){0,2}$",
-            # Doctor name: with Dr. prefix
-            "DOCTOR_NAME": r"^(Dr|Doctor)\.?\s+[A-Z][a-z]+(\s+[A-Z][a-z]+)?$",
-            # First name: single word
-            "FIRST_NAME": r"^[A-Z][a-z]{1,20}$",
-            # Last name: single word, may have prefix
-            "LAST_NAME": r"^(van|von|de|la|le)?\s?[A-Z][a-z]{1,20}$",
             # Username: might be capitalized
             "USERNAME": r"^[A-Za-z][A-Za-z0-9_]{2,20}$",
         },
-        fallback_priority=["FULL_NAME", "PERSON_NAME", "EMPLOYEE_NAME", "DOCTOR_NAME", "FIRST_NAME", "LAST_NAME", "USERNAME"]
+        fallback_priority=["PERSON_NAME", "USERNAME"]
     ),
 
     # -------------------------------------------------------------------------
@@ -229,20 +201,12 @@ CONFLICT_GROUPS: List[ConflictGroup] = [
     # -------------------------------------------------------------------------
     ConflictGroup(
         name="ADDRESS_LIKE",
-        group_pattern=r"^\d+\s+.*(street|st|avenue|ave|road|rd|boulevard|blvd|lane|ln|drive|dr|way|place|pl|court|ct)",
+        group_pattern=r"^\d+\s+.*(street|st|avenue|ave|road|rd|boulevard|blvd|lane|ln|drive|dr|way|place|pl|court|ct|rue|chemin|route)",
         type_patterns={
-            # Home address: includes apartment/unit
-            "HOME_ADDRESS": r"^\d+\s+[A-Za-z\s]+,?\s*(apt|unit|suite|#)?\s*\d*",
-            # Mailing address: with city/state/zip
-            "MAILING_ADDRESS": r"^\d+\s+[A-Za-z\s]+,\s*[A-Za-z\s]+,\s*[A-Z]{2}\s*\d{5}",
-            # Generic street address
-            "ADDRESS": r"^\d+\s+[A-Za-z\s]+(street|st|avenue|ave|road|rd|boulevard|blvd|lane|ln|drive|dr|way|place|pl|court|ct)",
-            # Home location: general
-            "HOME_LOCATION": r"^\d+\s+[A-Za-z\s]+",
-            # Work location
-            "WORK_LOCATION": r"^\d+\s+[A-Za-z\s]+(building|bldg|floor|suite|office)",
+            # Generic address
+            "ADDRESS": r"^\d+\s+[A-Za-z\s]+(street|st|avenue|ave|road|rd|boulevard|blvd|lane|ln|drive|dr|way|place|pl|court|ct|rue|chemin|route)",
         },
-        fallback_priority=["HOME_ADDRESS", "MAILING_ADDRESS", "ADDRESS", "HOME_LOCATION", "WORK_LOCATION"]
+        fallback_priority=["ADDRESS"]
     ),
 
     # -------------------------------------------------------------------------
@@ -252,14 +216,10 @@ CONFLICT_GROUPS: List[ConflictGroup] = [
         name="DATE_LIKE",
         group_pattern=r"^(\d{1,4}[-/\.]\d{1,2}[-/\.]\d{1,4}|\d{1,2}[-/\.]\d{1,2}[-/\.]\d{2,4})$",
         type_patterns={
-            # Birth date: typically historical (not future)
-            "BIRTH_DATE": r"^(0?[1-9]|[12]\d|3[01])[-/\.](0?[1-9]|1[0-2])[-/\.](19|20)\d{2}$",
-            # Date: any valid date
-            "DATE": r"^(\d{1,4}[-/\.]\d{1,2}[-/\.]\d{1,4}|\d{1,2}[-/\.]\d{1,2}[-/\.]\d{2,4})$",
-            # Timestamp: ISO format
-            "TIMESTAMP": r"^\d{4}[-/\.]\d{2}[-/\.]\d{2}(T|\s)\d{2}:\d{2}",
+            # Date of birth: typically historical
+            "DATE_OF_BIRTH": r"^(0?[1-9]|[12]\d|3[01])[-/\.](0?[1-9]|1[0-2])[-/\.](19|20)\d{2}$",
         },
-        fallback_priority=["BIRTH_DATE", "DATE", "TIMESTAMP"]
+        fallback_priority=["DATE_OF_BIRTH"]
     ),
 
     # -------------------------------------------------------------------------
@@ -273,18 +233,10 @@ CONFLICT_GROUPS: List[ConflictGroup] = [
             "BANK_ACCOUNT_NUMBER": r"^\d{8,20}$",
             # Patient ID: 6-12 digits
             "PATIENT_ID": r"^\d{6,12}$",
-            # Employee ID: 5-10 digits
-            "EMPLOYEE_ID": r"^\d{5,10}$",
-            # Student ID: 6-12 digits
-            "STUDENT_ID": r"^\d{6,12}$",
-            # Customer ID: 6-15 digits
-            "CUSTOMER_ID": r"^\d{6,15}$",
-            # User ID: 4-12 digits
-            "USER_ID": r"^\d{4,12}$",
             # Account ID: 6-15 digits
             "ACCOUNT_ID": r"^\d{6,15}$",
         },
-        fallback_priority=["BANK_ACCOUNT_NUMBER", "PATIENT_ID", "EMPLOYEE_ID", "STUDENT_ID", "CUSTOMER_ID", "USER_ID", "ACCOUNT_ID"]
+        fallback_priority=["BANK_ACCOUNT_NUMBER", "PATIENT_ID", "ACCOUNT_ID"]
     ),
 
     # -------------------------------------------------------------------------
@@ -296,28 +248,18 @@ CONFLICT_GROUPS: List[ConflictGroup] = [
         type_patterns={
             # API Key: common prefixes
             "API_KEY": r"^(sk_|pk_|api_|key_|AKIA)[A-Za-z0-9_-]{16,}$",
-            # Access token: bearer-like
+            # Access token: bearer-like or JWT
             "ACCESS_TOKEN": r"^(eyJ|Bearer\s?)[A-Za-z0-9_.-]+$",
             # Secret key: secret_ prefix or hex-like
             "SECRET_KEY": r"^(secret_|sec_)?[A-Fa-f0-9]{32,}$",
-            # OAuth token
-            "OAUTH_TOKEN": r"^(ya29\.|1\/\/)[A-Za-z0-9_-]+$",
-            # Private key: PEM-like content
-            "PRIVATE_KEY": r"^(-----BEGIN|MII)[A-Za-z0-9+/=\s]+$",
-            # SSH key
-            "SSH_KEY": r"^(ssh-rsa|ssh-ed25519|ecdsa-sha2)\s+[A-Za-z0-9+/=]+",
-            # Refresh token
-            "REFRESH_TOKEN": r"^[A-Za-z0-9_-]{32,}$",
             # Password: anything else long
             "PASSWORD": r"^.{8,}$",
-            # Password hash: hex or base64
-            "PASSWORD_HASH": r"^(\$2[aby]?\$|sha256\$|pbkdf2:)?[A-Za-z0-9./=+$]{32,}$",
         },
-        fallback_priority=["API_KEY", "ACCESS_TOKEN", "SECRET_KEY", "OAUTH_TOKEN", "PRIVATE_KEY", "SSH_KEY", "REFRESH_TOKEN", "PASSWORD", "PASSWORD_HASH"]
+        fallback_priority=["API_KEY", "ACCESS_TOKEN", "SECRET_KEY", "PASSWORD"]
     ),
 
     # -------------------------------------------------------------------------
-    # GROUP 13: LOCATION_CODE - [A-Z]{2}\d{4} or similar
+    # GROUP 13: LOCATION_CODE - Postal codes, license plates
     # -------------------------------------------------------------------------
     ConflictGroup(
         name="LOCATION_CODE",
@@ -332,7 +274,7 @@ CONFLICT_GROUPS: List[ConflictGroup] = [
     ),
 
     # -------------------------------------------------------------------------
-    # GROUP 14: MEDICAL_IDENTIFIER - Domain-specific
+    # GROUP 14: MEDICAL_IDENTIFIER - Swiss AVS, health IDs
     # -------------------------------------------------------------------------
     ConflictGroup(
         name="MEDICAL_IDENTIFIER",
@@ -342,35 +284,27 @@ CONFLICT_GROUPS: List[ConflictGroup] = [
             "AVS_NUMBER": r"^756\.\d{4}\.\d{4}\.\d{2}$",
             # Health insurance: similar format but not 756
             "HEALTH_INSURANCE_NUMBER": r"^(?!756)\d{3}\.\d{4}\.\d{4}\.\d{2}$",
-            # Patient ID: alphanumeric
-            "PATIENT_ID": r"^(P|PAT)\d{6,10}$",
             # Medical record number
             "MEDICAL_RECORD_NUMBER": r"^(MRN|MR)?\d{6,12}$",
         },
-        fallback_priority=["AVS_NUMBER", "HEALTH_INSURANCE_NUMBER", "PATIENT_ID", "MEDICAL_RECORD_NUMBER"]
+        fallback_priority=["AVS_NUMBER", "HEALTH_INSURANCE_NUMBER", "MEDICAL_RECORD_NUMBER"]
     ),
 ]
 
 
 # =============================================================================
 # Category Priority for Fallback Resolution
+# CONSOLIDATED: 7 categories (down from 13)
 # =============================================================================
-# Higher priority categories win when no specific pattern matches
 
 CATEGORY_PRIORITY: Dict[str, int] = {
-    "FINANCIAL": 100,      # Highest - financial data is most sensitive
-    "MEDICAL": 95,         # HIPAA/GDPR Art. 9 protected
-    "IT": 90,              # Credentials and secrets
-    "IDENTITY": 85,        # Core PII
-    "CONTACT": 80,
-    "DIGITAL_IDENTITY": 75,
-    "PROFESSIONAL": 70,
-    "LOCATION": 65,
-    "LEGAL": 60,
-    "ASSET": 55,
-    "BIOMETRIC": 50,
-    "TEMPORAL": 45,
-    "RESOURCE": 40,
+    "FINANCIAL": 100,       # Highest - financial data is most sensitive
+    "MEDICAL": 95,          # HIPAA/GDPR Art. 9 protected
+    "IT_CREDENTIALS": 90,   # Credentials and secrets
+    "IDENTITY": 85,         # Core PII
+    "CONTACT": 80,          # Contact information
+    "DIGITAL": 75,          # Online identifiers
+    "LEGAL_ASSET": 70,      # Legal + property
 }
 
 
@@ -419,9 +353,75 @@ class ConflictResolver:
                 for pii_type, pattern in group.type_patterns.items()
             }
 
+        # Conflict statistics for monitoring
+        self._conflict_stats: Dict[str, int] = {
+            "total_conflicts": 0,
+            "resolved_by_pattern": 0,
+            "resolved_by_fallback": 0,
+            "resolved_by_category": 0,
+        }
+
         self.logger.info(
             f"ConflictResolver initialized with {len(CONFLICT_GROUPS)} conflict groups"
         )
+
+    def _log_conflict_resolution(
+        self,
+        detection_id: str,
+        text: str,
+        detected_labels: List[Tuple[str, float]],
+        winner: str,
+        losers: List[str],
+        resolution_method: str,
+        group_name: Optional[str] = None
+    ) -> None:
+        """
+        Log detailed conflict resolution information.
+
+        Args:
+            detection_id: Unique ID for this detection run
+            text: The conflicting text span
+            detected_labels: All detected (type, score) pairs
+            winner: The winning PII type
+            losers: List of discarded PII types
+            resolution_method: How the conflict was resolved
+            group_name: Name of conflict group if applicable
+        """
+        text_preview = text[:40] + "..." if len(text) > 40 else text
+
+        # Build labels summary with scores
+        labels_summary = ", ".join(
+            f"{t}({s:.2f})" for t, s in sorted(detected_labels, key=lambda x: -x[1])
+        )
+
+        # Log the resolution
+        self.logger.info(
+            f"[{detection_id}] CONFLICT RESOLVED | "
+            f"text='{text_preview}' | "
+            f"candidates=[{labels_summary}] | "
+            f"winner={winner} | "
+            f"discarded=[{', '.join(losers)}] | "
+            f"method={resolution_method}" +
+            (f" | group={group_name}" if group_name else "")
+        )
+
+        # Update stats
+        self._conflict_stats["total_conflicts"] += 1
+        if resolution_method == "pattern_match":
+            self._conflict_stats["resolved_by_pattern"] += 1
+        elif resolution_method == "fallback_priority":
+            self._conflict_stats["resolved_by_fallback"] += 1
+        elif resolution_method == "category_priority":
+            self._conflict_stats["resolved_by_category"] += 1
+
+    def get_conflict_stats(self) -> Dict[str, int]:
+        """Return current conflict resolution statistics."""
+        return self._conflict_stats.copy()
+
+    def reset_conflict_stats(self) -> None:
+        """Reset conflict statistics."""
+        for key in self._conflict_stats:
+            self._conflict_stats[key] = 0
 
     def resolve(
         self,
@@ -480,20 +480,20 @@ class ConflictResolver:
             # Exactly one match -> winner
             if len(matching_types) == 1:
                 winner = matching_types[0]
-                text_preview = text[:30] + "..." if len(text) > 30 else text
-                self.logger.info(
-                    f"[{detection_id}] Conflict for '{text_preview}' resolved by pattern: {winner} "
-                    f"(group: {group.name})"
+                losers = [t for t in detected_types if t != winner]
+                self._log_conflict_resolution(
+                    detection_id, text, detected_labels,
+                    winner, losers, "pattern_match", group.name
                 )
                 return (winner, scores.get(winner, 0.0))
 
             # Multiple or no matches -> use fallback priority
             for pii_type in group.fallback_priority:
                 if pii_type in detected_types:
-                    text_preview = text[:30] + "..." if len(text) > 30 else text
-                    self.logger.info(
-                        f"[{detection_id}] Conflict for '{text_preview}' resolved by fallback priority: {pii_type} "
-                        f"(group: {group.name})"
+                    losers = [t for t in detected_types if t != pii_type]
+                    self._log_conflict_resolution(
+                        detection_id, text, detected_labels,
+                        pii_type, losers, "fallback_priority", group.name
                     )
                     return (pii_type, scores.get(pii_type, 0.0))
 
@@ -524,17 +524,24 @@ class ConflictResolver:
         for pii_type, score in detected_labels:
             category = self.pii_type_to_category.get(pii_type, "")
             priority = CATEGORY_PRIORITY.get(category, 0)
-            type_priorities.append((pii_type, priority, score))
+            type_priorities.append((pii_type, priority, score, category))
 
         # Sort by priority (desc), then by score (desc)
         type_priorities.sort(key=lambda x: (x[1], x[2]), reverse=True)
 
-        winner_type, winner_priority, winner_score = type_priorities[0]
+        winner_type, winner_priority, winner_score, winner_category = type_priorities[0]
+        losers = [t for t, _, _, _ in type_priorities[1:]]
 
-        text_preview = text[:30] + "..." if len(text) > 30 else text
-        self.logger.info(
-            f"[{detection_id}] Conflict for '{text_preview}' resolved by category priority: {winner_type} "
-            f"(priority: {winner_priority})"
+        self._log_conflict_resolution(
+            detection_id, text, detected_labels,
+            winner_type, losers, "category_priority"
+        )
+
+        # Also log the category reasoning
+        self.logger.debug(
+            f"[{detection_id}] Category priority details: "
+            f"{winner_type} ({winner_category}={winner_priority}) beat "
+            f"{[(t, c, p) for t, p, _, c in type_priorities[1:]]}"
         )
 
         return (winner_type, winner_score)
@@ -552,15 +559,15 @@ class ConflictResolver:
         Build a PIIEntity from resolved conflict.
 
         Args:
-            text: Entity text
+            text: The PII text content
             pii_type: Resolved PII type
             score: Confidence score
-            start: Start position in original text
-            end: End position in original text
-            source: Detection source for provenance
+            start: Start offset in original text
+            end: End offset in original text
+            source: Detection source identifier
 
         Returns:
-            PIIEntity object
+            PIIEntity with all fields populated
         """
         entity = PIIEntity(
             text=text,

@@ -110,7 +110,7 @@ class DetectorComparisonSuite:
         # Initialiser le modèle GLiNER une seule fois avec des paramètres explicites
         logger.info("Initialisation du modèle GLiNER (chargement unique)...")
         config = SimpleDetectionConfig(
-            model_id="knowledgator/gliner-pii-large-v1.0",
+            model_id="nvidia/gliner-pii",
             device="cpu",
             max_length=720,
             threshold=0.3,

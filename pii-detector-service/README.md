@@ -175,7 +175,7 @@ Each model has its own configuration file in `config/models/`:
 ```toml
 # config/models/gliner-pii.toml
 enabled = true
-model_id = "knowledgator/gliner-pii-large-v1.0"
+model_id = "nvidia/gliner-pii"
 device = "cpu"
 max_length = 720
 threshold = 0.7

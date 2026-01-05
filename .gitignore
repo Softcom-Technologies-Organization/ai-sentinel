@@ -20,3 +20,5 @@ secrets/*.txt
 /pii-detector-service/coverage.xml
 /.run/run/run.iml
 /pii-detector-service/pii-detector-service/pii-detector-service.iml
+
+personally-identifiable-information-scan-results/

@@ -27,7 +27,7 @@
               <p-tag [value]="'piiItem.attachment.types.pdf' | transloco" severity="danger" class="ml-2"></p-tag>
             }
             @case ('excel') {
-              <p-tag [value]="'piiItem.attachment.types.excel' | transloco" severity="warning" class="ml-2"></p-tag>
+              <p-tag [value]="'piiItem.attachment.types.excel' | transloco" severity="warn" class="ml-2"></p-tag>
             }
             @case ('word') {
               <p-tag [value]="'piiItem.attachment.types.word' | transloco" severity="info" class="ml-2"></p-tag>
@@ -60,15 +60,15 @@
         <p-button (click)="toggleDetails()"
                   (keydown.enter)="$event.stopPropagation(); toggleDetails()"
                   (keydown.space)="$event.preventDefault(); $event.stopPropagation(); toggleDetails()"
-                  [ariaLabel]="detailsOpen ? ('piiItem.actions.hideDetail' | transloco) : ('piiItem.actions.viewDetail' | transloco)"
+                  [ariaLabel]="detailsOpen() ? ('piiItem.actions.hideDetail' | transloco) : ('piiItem.actions.viewDetail' | transloco)"
                   [attr.aria-expanded]="detailsOpen"
                   icon="pi pi-angle-right"
-                  [label]="'piiItem.actions.viewDetail' | transloco"
+                  [label]="detailsOpen() ? ('piiItem.actions.hideDetail' | transloco) : ('piiItem.actions.viewDetail' | transloco)"
                   styleClass="p-button-link"></p-button>
       </div>
     }
 
-    @if (detailsOpen) {
+    @if (detailsOpen()) {
 
       <div>
         @if (item?.maskedHtml) {
@@ -76,10 +76,10 @@
         }
         @if (canRevealSecrets()) {
           <div class="controls mt-2">
-            <button pButton pButtonIcon="revealed ? 'pi pi-eye-slash' : 'pi pi-eye'"
+            <button pButton [icon]="revealed() ? 'pi pi-eye-slash' : 'pi pi-eye'"
                     class="p-button-outlined" (click)="toggleReveal()"
-                    [attr.aria-label]="revealed ? ('piiItem.actions.maskAriaLabel' | transloco) : ('piiItem.actions.revealAriaLabel' | transloco)">
-              {{ revealed ? ('piiItem.actions.mask' | transloco) : ('piiItem.actions.reveal' | transloco) }}
+                    [attr.aria-label]="revealed() ? ('piiItem.actions.maskAriaLabel' | transloco) : ('piiItem.actions.revealAriaLabel' | transloco)">
+              {{ revealed() ? ('piiItem.actions.mask' | transloco) : ('piiItem.actions.reveal' | transloco) }}
             </button>
           </div>
         }
@@ -94,7 +94,7 @@
             <div class="col-12 md:col-6 lg:col-4">
               <p-card>
                 <p>
-                  @if (revealed) { {{ detectedPII.sensitiveValue || '—' }} }
+                  @if (revealed()) { {{ detectedPII.sensitiveValue || '—' }} }
                   @else { ••••••••• }
                 </p>
                 <p-divider />

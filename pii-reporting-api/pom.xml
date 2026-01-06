@@ -41,7 +41,7 @@
         <grpc-api.version>1.76.0</grpc-api.version>
         <mockito-core.version>5.19.0</mockito-core.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <testcontainers.version>1.21.2</testcontainers.version>
+        <testcontainers.version>1.21.4</testcontainers.version>
 
         <!-- Proto source root - default for local build -->
         <proto.source.root>${project.basedir}/../proto</proto.source.root>

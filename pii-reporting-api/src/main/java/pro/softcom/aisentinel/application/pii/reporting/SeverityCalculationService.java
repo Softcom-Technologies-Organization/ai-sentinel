@@ -42,13 +42,14 @@ public class SeverityCalculationService {
      */
     private static final Map<String, PersonallyIdentifiableInformationSeverity> SEVERITY_RULES = Map.<String, PersonallyIdentifiableInformationSeverity>ofEntries(
             // =========================================================================
-            // HIGH SEVERITY - Financial, credentials, SSN (12 types)
+            // HIGH SEVERITY - Financial, credentials, SSN (14 types)
             // =========================================================================
             // Financial
             entry("CREDIT_CARD_NUMBER", HIGH),
             entry("BANK_ACCOUNT_NUMBER", HIGH),
             entry("IBAN", HIGH),
             entry("BIC_SWIFT", HIGH),
+            entry("CRYPTO_WALLET", HIGH),
             // IT Credentials (secrets)
             entry("PASSWORD", HIGH),
             entry("API_KEY", HIGH),
@@ -58,11 +59,13 @@ public class SeverityCalculationService {
             // Identity (high risk)
             entry("SSN", HIGH),
             entry("AVS_NUMBER", HIGH),
+            // Medical (high risk)
+            entry("MEDICAL_LICENSE", HIGH),
             // Legal (high risk)
             entry("CRIMINAL_RECORD", HIGH),
 
             // =========================================================================
-            // MEDIUM SEVERITY - Documents, medical, identifiers (18 types)
+            // MEDIUM SEVERITY - Documents, medical, identifiers (38 types)
             // =========================================================================
             // Identity
             entry("NATIONAL_ID", MEDIUM),
@@ -70,9 +73,29 @@ public class SeverityCalculationService {
             entry("DRIVER_LICENSE_NUMBER", MEDIUM),
             entry("DATE_OF_BIRTH", MEDIUM),
             entry("AGE", MEDIUM),
+            entry("ES_NIF", MEDIUM),
+            entry("ES_NIE", MEDIUM),
+            entry("IT_PASSPORT", MEDIUM),
+            entry("IT_IDENTITY_CARD", MEDIUM),
+            entry("IT_DRIVER_LICENSE", MEDIUM),
+            entry("PL_PESEL", MEDIUM),
+            entry("SG_NRIC_FIN", MEDIUM),
+            entry("IN_VOTER", MEDIUM),
+            entry("IN_PASSPORT", MEDIUM),
+            entry("FI_PERSONAL_IDENTITY_CODE", MEDIUM),
+            entry("KR_RRN", MEDIUM),
+            entry("TH_TNIN", MEDIUM),
             // Financial (lower risk)
             entry("TAX_ID", MEDIUM),
             entry("SALARY", MEDIUM),
+            entry("US_ITIN", MEDIUM),
+            entry("IT_FISCAL_CODE", MEDIUM),
+            entry("IT_VAT_CODE", MEDIUM),
+            entry("SG_UEN", MEDIUM),
+            entry("AU_TFN", MEDIUM),
+            entry("AU_ABN", MEDIUM),
+            entry("AU_ACN", MEDIUM),
+            entry("IN_PAN", MEDIUM),
             // Medical
             entry("PATIENT_ID", MEDIUM),
             entry("MEDICAL_RECORD_NUMBER", MEDIUM),
@@ -85,6 +108,7 @@ public class SeverityCalculationService {
             entry("CASE_NUMBER", MEDIUM),
             entry("LICENSE_NUMBER", MEDIUM),
             entry("VEHICLE_REGISTRATION", MEDIUM),
+            entry("IN_VEHICLE_REGISTRATION", MEDIUM),
             entry("VIN", MEDIUM),
             entry("INSURANCE_POLICY_NUMBER", MEDIUM),
 
@@ -147,10 +171,10 @@ public class SeverityCalculationService {
             entry("BIRTH_DATE", MEDIUM),
             entry("DOB", MEDIUM),
             // Medical legacy
-            entry("HEALTH_INSURANCE", MEDIUM),
-            entry("MEDICAL_RECORD", MEDIUM),
-            entry("AU_MEDICARE", MEDIUM),
-            entry("IN_AADHAAR", MEDIUM),
+            entry("HEALTH_INSURANCE", HIGH),
+            entry("MEDICAL_RECORD", HIGH),
+            entry("AU_MEDICARE", HIGH),
+            entry("IN_AADHAAR", HIGH),
             // Name legacy
             entry("NAME", LOW),
             entry("GIVENNAME", LOW),

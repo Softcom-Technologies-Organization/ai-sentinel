@@ -133,6 +133,7 @@ class StreamConfluenceScanUseCaseTest {
                 confluenceDownloadService,
                 attachmentTextExtractionService
         );
+        HtmlContentParser htmlContentParser = new HtmlContentParser();
 
         streamConfluenceScanUseCase = new StreamConfluenceScanUseCase(
                 confluenceAccessor,
@@ -140,6 +141,7 @@ class StreamConfluenceScanUseCaseTest {
                 contentScanOrchestrator,
                 attachmentProcessor,
                 scanTimeoutConfig,
+                htmlContentParser,
                 personallyIdentifiableInformationScanExecutionOrchestratorPort,
                 scanCheckpointRepository
         );
@@ -596,6 +598,7 @@ class StreamConfluenceScanUseCaseTest {
                 confluenceDownloadService,
                 attachmentTextExtractionService
         );
+        HtmlContentParser htmlContentParser = new HtmlContentParser();
 
         StreamConfluenceScanUseCase svc = new StreamConfluenceScanUseCase(
             confluenceAccessor,
@@ -603,6 +606,7 @@ class StreamConfluenceScanUseCaseTest {
             contentScanOrchestrator,
             attachmentProcessor,
             scanTimeoutConfig,
+            htmlContentParser,
             personallyIdentifiableInformationScanExecutionOrchestratorPort,
             scanCheckpointRepository
         );
@@ -672,6 +676,7 @@ class StreamConfluenceScanUseCaseTest {
                 confluenceDownloadService,
                 attachmentTextExtractionService
         );
+        HtmlContentParser htmlContentParser = new HtmlContentParser();
 
         StreamConfluenceScanUseCase svc = new StreamConfluenceScanUseCase(
             confluenceAccessor,
@@ -679,6 +684,7 @@ class StreamConfluenceScanUseCaseTest {
             contentScanOrchestrator,
             attachmentProcessor,
             scanTimeoutConfig,
+            htmlContentParser,
             personallyIdentifiableInformationScanExecutionOrchestratorPort,
             scanCheckpointRepository
         );

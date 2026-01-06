@@ -122,14 +122,15 @@ class StreamConfluenceResumeScanUseCaseTest {
                 confluenceDownloadService,
                 attachmentTextExtractionService
         );
-        
+        HtmlContentParser htmlContentParser = new HtmlContentParser();
         streamConfluenceResumeScanPort = new StreamConfluenceResumeScanUseCase(
                 confluenceAccessor,
                 piiDetectorClient,
                 contentScanOrchestrator,
                 attachmentProcessor,
                 scanCheckpointRepository,
-                scanTimeoutConfig
+                scanTimeoutConfig,
+                htmlContentParser
         );
     }
 

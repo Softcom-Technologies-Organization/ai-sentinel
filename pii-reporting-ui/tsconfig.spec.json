@@ -5,9 +5,16 @@
     "types": ["jest", "node"],
     "esModuleInterop": true,
     "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
     "paths": {
       "@angular/core/testing": [
         "node_modules/@angular/core/types/testing.d.ts"
+      ],
+      "primeng/*": [
+        "node_modules/primeng/*"
+      ],
+      "@angular/platform-browser/animations": [
+        "node_modules/@angular/platform-browser/fesm2022/animations.mjs"
       ]
     }
   },

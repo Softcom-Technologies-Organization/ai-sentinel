@@ -5,6 +5,10 @@
 # DETECTION SETTINGS
 # ============================================================================
 [detection]
+# Disable downloading extra models (e.g., Ar86Bat/multilang-pii-ner)
+# Set to empty list to avoid unnecessary downloads at startup
+pii_extra_models = []
+
 # ============================================================================
 # DATABASE-MANAGED SETTINGS (fetched at runtime via database_config_adapter)
 # ============================================================================

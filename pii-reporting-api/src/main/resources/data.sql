@@ -8,7 +8,7 @@ VALUES (1, true, true, true, 0.30, CURRENT_TIMESTAMP, 'system')
     ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
--- GLINER PII TYPES (44 types) - INSERT ONLY
+-- GLINER PII TYPES - INSERT ONLY
 -- ============================================================================
 -- Category 1: IDENTITY
 INSERT INTO pii_type_config
@@ -130,7 +130,7 @@ VALUES
 INSERT INTO pii_type_config
 (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
 VALUES
-    ('PERSON',    'PRESIDIO', true, 0.65, 'Person Name', 'Person names', 'Personal', 'PERSON', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('PERSON',    'PRESIDIO', true, 0.90, 'Person Name', 'Person names', 'Personal', 'PERSON', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('LOCATION',  'PRESIDIO', true, 0.75, 'Location', 'Geographic locations', 'Location', 'LOCATION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('DATE_TIME', 'PRESIDIO', true, 0.75, 'Date/Time', 'Dates and times', 'Personal', 'DATE_TIME', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('AGE',       'PRESIDIO', true, 0.70, 'Age', 'Age values', 'Personal', 'AGE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
@@ -277,7 +277,7 @@ VALUES
 INSERT INTO pii_type_config
 (pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
 VALUES
-    ('PERSON_NAME', 'PRESIDIO', false, 0.75, 'Person Name (Generic)', 'Generic person name (alias for PERSON)', 'Identity', 'PERSON',    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('PERSON_NAME', 'PRESIDIO', false, 0.95, 'Person Name (Generic)', 'Generic person name (alias for PERSON)', 'Identity', 'PERSON',    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('DATE',        'PRESIDIO', false, 0.85, 'Date (Generic)',        'Generic date (simpler than DATE_TIME)',  'Identity', 'DATE_TIME', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
     ON CONFLICT (pii_type, detector) DO NOTHING;
 

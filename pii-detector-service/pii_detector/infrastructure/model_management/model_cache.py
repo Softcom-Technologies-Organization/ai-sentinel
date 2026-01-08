@@ -33,7 +33,7 @@ def get_env_extra_models() -> List[str]:
     try:
         config = get_config()
         models = config.detection.pii_extra_models
-        if models:
+        if models is not None:
             return models
     except (ValueError, AttributeError):
         # Config not available or validation failed

@@ -5,33 +5,35 @@
 # DETECTION SETTINGS
 # ============================================================================
 [detection]
-# Note: default_threshold is now managed in database (pii_detection_config table)
+# ============================================================================
+# DATABASE-MANAGED SETTINGS (fetched at runtime via database_config_adapter)
+# ============================================================================
+# The following settings are now managed exclusively in the database:
+# - gliner_enabled: Controls GLiNER/MultiPass detector activation
+# - presidio_enabled: Controls Presidio detector activation  
+# - regex_enabled: Controls Regex detector activation
+# - default_threshold: Global confidence threshold
+#
+# These are stored in table `pii_detection_config` (id=1) and fetched
+# when `fetch_config_from_db=true` is set in gRPC request.
+# This allows runtime reconfiguration without service restart.
+# ============================================================================
 
 # Enable multi-model aggregation (true/false)
 multi_detector_enabled = false
 
-# Enable LLM-based detection (true/false)
+# Enable LLM-based detection at startup (true/false)
 # When true, enables ML models (GLiNER, Piiranha, etc.) for PII detection
 # When false, all LLM models are disabled regardless of their individual config
-# Note: At least one detection method (LLM, Regex, or Presidio) must be enabled
+# Note: This is a startup-time configuration - use database for runtime control
 llm_detection_enabled = true
 
 # Enable Multi-Pass GLiNER detection (true/false)
 # When true, uses MultiPassGlinerDetector instead of standard GLiNERDetector
 # Multi-pass runs 13 parallel detection passes (one per category) and resolves conflicts
 # This provides better accuracy for large label sets (114 PII types)
+# Note: This is a startup-time configuration - cannot be changed at runtime
 multipass_gliner_enabled = true
-
-# Enable regex-based detection (true/false)
-# When true, adds RegexDetector to CompositePIIDetector
-# When false, regex detection is disabled
-regex_detection_enabled = false
-
-# Enable Presidio-based detection (true/false)
-# When true, adds PresidioDetector to CompositePIIDetector
-# Presidio provides production-ready, rule-based PII detection by Microsoft
-# When false, Presidio detection is disabled
-presidio_detection_enabled = false
 
 # Log detailed provenance information about which model detected each entity
 log_provenance = true

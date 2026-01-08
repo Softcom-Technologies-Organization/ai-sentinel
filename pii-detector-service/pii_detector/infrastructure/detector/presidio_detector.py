@@ -783,7 +783,7 @@ def should_use_presidio_detector() -> bool:
         True if Presidio detector should be used
     """
     try:
-        from application.config.detection_policy import _load_llm_config
+        from pii_detector.application.config.detection_policy import _load_llm_config
         
         config = _load_llm_config()
         

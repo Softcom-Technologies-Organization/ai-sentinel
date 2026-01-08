@@ -891,10 +891,10 @@ class TestGetDetectorInstanceGLiNER:
     @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service._detector_instance', None)
     @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.should_use_composite_detector', return_value=False)
     @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.should_use_multi_detector', return_value=False)
-    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.GLiNERDetector')
+    @patch('pii_detector.infrastructure.adapter.in.grpc.pii_service.MultiPassGlinerDetector')
     @patch('pii_detector.application.config.detection_policy.DetectionConfig')
-    def test_get_detector_instance_uses_gliner(self, mock_config, mock_gliner, mock_should_multi, mock_should_composite):
-        """Test that GLiNER detector is used for gliner models."""
+    def test_get_detector_instance_uses_gliner(self, mock_config, mock_multipass, mock_should_multi, mock_should_composite):
+        """Test that MultiPassGlinerDetector is used for gliner models."""
         mock_config_inst = Mock()
         mock_config_inst.model_id = "gliner-pii-model"
         mock_config.return_value = mock_config_inst
@@ -902,12 +902,12 @@ class TestGetDetectorInstanceGLiNER:
         mock_detector = Mock()
         mock_detector.download_model = Mock()
         mock_detector.load_model = Mock()
-        mock_gliner.return_value = mock_detector
+        mock_multipass.return_value = mock_detector
         
-        # Should use GLiNER detector for gliner models
+        # Should use MultiPassGlinerDetector for gliner models (default now)
         instance = get_detector_instance()
         
-        mock_gliner.assert_called_once()
+        mock_multipass.assert_called_once()
         assert instance is mock_detector
 
 

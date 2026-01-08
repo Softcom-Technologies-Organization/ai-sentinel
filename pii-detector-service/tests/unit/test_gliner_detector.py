@@ -133,8 +133,8 @@ class TestModelManagement:
     @patch('pii_detector.infrastructure.detector.gliner_detector.create_chunker')
     @patch('pii_detector.infrastructure.detector.gliner_detector.GLiNERModelManager')
     @patch('transformers.AutoTokenizer')
-    def test_should_raise_error_when_fallback_chunker_created(self, mock_tokenizer_class, mock_manager_class, mock_create_chunker):
-        """Test error when fallback chunker is created."""
+    def test_should_accept_fallback_chunker(self, mock_tokenizer_class, mock_manager_class, mock_create_chunker):
+        """Test that fallback chunker is accepted as valid alternative."""
         mock_manager = Mock()
         mock_model = Mock()
         mock_data_processor = Mock()
@@ -144,6 +144,7 @@ class TestModelManagement:
         mock_config.tokenizer = mock_tokenizer
         mock_data_processor.config = mock_config
         mock_model.data_processor = mock_data_processor
+        mock_model.config = Mock(model_name='bert-base-cased')
         
         mock_manager.load_model.return_value = mock_model
         mock_manager_class.return_value = mock_manager
@@ -153,9 +154,11 @@ class TestModelManagement:
         mock_create_chunker.return_value = mock_chunker
         
         detector = GLiNERDetector()
+        detector.load_model()
         
-        with pytest.raises(RuntimeError, match="Semantic chunking REQUIRED"):
-            detector.load_model()
+        # Should complete successfully with fallback chunker
+        assert detector.model is mock_model
+        assert detector.semantic_chunker is mock_chunker
 
 
 class TestPIIDetection:

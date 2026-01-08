@@ -237,9 +237,10 @@ class TestDefaultFactory:
         factory = create_default_factory()
         
         assert factory.is_registered("gliner")
+        assert factory.is_registered("multipass-gliner")
         assert factory.is_registered("regex")
         assert factory.is_registered("default")
-        assert len(factory.get_registered_types()) == 3
+        assert len(factory.get_registered_types()) == 4
     
     def test_should_create_gliner_detector_from_default_factory(self):
         """Test creating GLiNER detector from default factory."""

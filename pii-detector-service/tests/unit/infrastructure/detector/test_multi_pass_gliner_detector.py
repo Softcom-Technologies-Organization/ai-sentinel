@@ -294,7 +294,8 @@ class TestSinglePassDetection:
             text="John Doe",
             threshold=0.3,
             detection_id="test-001",
-            category="IDENTITY"
+            category="IDENTITY",
+            pass_categories=detector_with_model._pass_categories
         )
 
         detector_with_model._gliner_detector.model.predict_entities.assert_called_once()
@@ -311,7 +312,8 @@ class TestSinglePassDetection:
             text="John Doe is here",
             threshold=0.3,
             detection_id="test-002",
-            category="IDENTITY"
+            category="IDENTITY",
+            pass_categories=detector_with_model._pass_categories
         )
 
         assert len(result) == 1
@@ -332,7 +334,8 @@ class TestSinglePassDetection:
             text=full_text,
             threshold=0.3,
             detection_id="test-003",
-            category="CONTACT"
+            category="CONTACT",
+            pass_categories=detector_with_model._pass_categories
         )
 
         assert len(result) == 1
@@ -348,7 +351,8 @@ class TestSinglePassDetection:
             text="No PII here",
             threshold=0.3,
             detection_id="test-004",
-            category="IDENTITY"
+            category="IDENTITY",
+            pass_categories=detector_with_model._pass_categories
         )
 
         assert result == []
@@ -359,7 +363,8 @@ class TestSinglePassDetection:
             text="Some text",
             threshold=0.3,
             detection_id="test-005",
-            category="UNKNOWN_CATEGORY"
+            category="UNKNOWN_CATEGORY",
+            pass_categories=detector_with_model._pass_categories
         )
 
         assert result == []
@@ -613,6 +618,27 @@ class TestDetectPII:
 
             return detector
 
+    @pytest.fixture
+    def detector_without_preloaded_categories(self):
+        """Create detector without preloaded categories to test dynamic config."""
+        with patch('pii_detector.application.config.detection_policy._load_llm_config') as mock_llm_config, \
+             patch('pii_detector.infrastructure.detector.multi_pass_gliner_detector.GLiNERDetector') as mock_gliner_class:
+            mock_llm_config.return_value = {"parallel_processing": {"enabled": False}}
+
+            mock_model = Mock()
+            mock_gliner = Mock()
+            mock_gliner.model = mock_model
+            mock_gliner_class.return_value = mock_gliner
+
+            config = Mock(spec=DetectionConfig)
+            config.threshold = 0.3
+            detector = MultiPassGlinerDetector(config=config)
+            
+            # Intentionally do NOT preload categories or conflict_resolver
+            # to simulate the bug scenario
+            
+            return detector
+
     def test_should_raise_when_model_not_loaded(self, fully_mocked_detector):
         """Test ModelNotLoadedError when model is None."""
         fully_mocked_detector._gliner_detector.model = None
@@ -661,6 +687,63 @@ class TestDetectPII:
 
         # Should only call once (for IDENTITY)
         assert fully_mocked_detector._gliner_detector.model.predict_entities.call_count == 1
+
+    def test_Should_InitializeConflictResolver_When_PiiTypeConfigsProvided(
+        self, detector_without_preloaded_categories
+    ):
+        """
+        Regression test for bug: _conflict_resolver is None when using dynamic pii_type_configs.
+        
+        Bug scenario:
+        1. detect_pii() called with pii_type_configs parameter
+        2. Categories built dynamically via _build_categories_from_config()
+        3. But _conflict_resolver NOT initialized
+        4. Later, _resolve_conflicts() tries to call _conflict_resolver.resolve()
+        5. AttributeError: 'NoneType' object has no attribute 'resolve'
+        
+        This test reproduces the exact flow from the bug logs.
+        """
+        detector = detector_without_preloaded_categories
+        
+        # Simulate detection with conflicts (two types for same span)
+        detector._gliner_detector.model.predict_entities.side_effect = [
+            # IDENTITY pass
+            [{"text": "192.168.1.1", "label": "person name", "start": 0, "end": 11, "score": 0.85}],
+            # DIGITAL pass - conflict on same span
+            [{"text": "192.168.1.1", "label": "ip address", "start": 0, "end": 11, "score": 0.90}],
+        ]
+        
+        # Provide dynamic pii_type_configs (as done by gRPC service)
+        pii_type_configs = {
+            "PERSON_NAME": {
+                "enabled": True,
+                "category": "IDENTITY",
+                "detector": "GLINER",
+                "detector_label": "person name",
+            },
+            "IP_ADDRESS": {
+                "enabled": True,
+                "category": "DIGITAL",
+                "detector": "GLINER",
+                "detector_label": "ip address",
+            },
+        }
+        
+        # This should NOT crash with AttributeError
+        # Before fix: 'NoneType' object has no attribute 'resolve'
+        result = detector.detect_pii(
+            "Test text with 192.168.1.1 data",
+            threshold=0.3,
+            pii_type_configs=pii_type_configs
+        )
+        
+        # Should successfully resolve conflict and return entities
+        assert len(result) >= 1
+        assert detector._conflict_resolver is not None
+        
+        # Verify conflict resolver was properly initialized with category mapping
+        assert "PERSON_NAME" in detector._pii_type_to_category
+        assert "IP_ADDRESS" in detector._pii_type_to_category
 
 
 class TestModelManagement:

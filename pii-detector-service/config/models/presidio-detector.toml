@@ -105,8 +105,18 @@ enabled = false
 score = 0.8
 
 
-# Explicit NLP engine configuration to avoid downloading non-Apache-2 spaCy models
-# Note: We intentionally do NOT list model names here to prevent spaCy from trying to
-# resolve and download packages. The service will inject spaCy blank pipelines at runtime.
+# Explicit NLP engine configuration
 [nlp]
 nlp_engine_name = "spacy"
+
+[[nlp.models]]
+lang_code = "en"
+model_name = "en_core_web_sm"
+
+[[nlp.models]]
+lang_code = "de"
+model_name = "de_core_news_sm"
+
+[[nlp.models]]
+lang_code = "fr"
+model_name = "fr_core_news_sm"

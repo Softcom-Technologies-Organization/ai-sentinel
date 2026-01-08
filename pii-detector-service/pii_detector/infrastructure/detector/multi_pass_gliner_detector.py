@@ -28,16 +28,15 @@ import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from pii_detector.application.config.detection_policy import DetectionConfig
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.exception.exceptions import ModelNotLoadedError, PIIDetectionError
-from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
 from pii_detector.infrastructure.detector.conflict_resolver import (
     ConflictResolver,
-    CATEGORY_PRIORITY,
 )
+from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
 
 
 @dataclass
@@ -215,6 +214,41 @@ class MultiPassGlinerDetector:
             self.logger.error(f"Failed to load categories from database: {e}")
             self._use_fallback_categories()
 
+    def _build_categories_from_config(self, pii_type_configs: dict) -> Dict[str, Dict[str, str]]:
+        """
+        Build categories mapping dynamically from passed configuration.
+        
+        Args:
+            pii_type_configs: Dictionary of PII type configurations
+            
+        Returns:
+            Categories mapping: {Category: {DetectorLabel: PiiType}}
+        """
+        categories: Dict[str, Dict[str, str]] = {}
+        
+        for pii_type, config in pii_type_configs.items():
+            # Only include enabled types for GLINER detector
+            # Or types that don't specify detector (assume ALL)
+            if not config.get('enabled', False):
+                continue
+                
+            config_detector = config.get('detector', 'ALL')
+            if config_detector != 'ALL' and config_detector != 'GLINER':
+                continue
+                
+            category = config.get('category', 'UNKNOWN')
+            detector_label = config.get('detector_label')
+            
+            if not detector_label:
+                continue
+                
+            if category not in categories:
+                categories[category] = {}
+                
+            categories[category][detector_label] = pii_type
+            
+        return categories
+
     def _use_fallback_categories(self) -> None:
         """
         Use hardcoded fallback categories if database is unavailable.
@@ -279,7 +313,8 @@ class MultiPassGlinerDetector:
         self,
         text: str,
         threshold: Optional[float] = None,
-        categories: Optional[List[str]] = None
+        categories: Optional[List[str]] = None,
+        pii_type_configs: Optional[dict] = None
     ) -> List[PIIEntity]:
         """
         Detect PII using multi-pass parallel detection with conflict resolution.
@@ -288,6 +323,7 @@ class MultiPassGlinerDetector:
             text: Text to analyze
             threshold: Confidence threshold (default: 0.3)
             categories: Optional list of categories to run (default: all)
+            pii_type_configs: Optional PII type configs for dynamic settings
 
         Returns:
             List of PIIEntity with exactly 1 label per span
@@ -299,13 +335,30 @@ class MultiPassGlinerDetector:
         if not self._gliner_detector.model:
             raise ModelNotLoadedError("Model must be loaded before detection")
 
-        # Load categories from database on first call
-        if self._pass_categories is None:
+        # Use passed pii_type_configs to build dynamic categories if provided
+        # Otherwise fallback to loaded categories
+        pass_categories = self._pass_categories
+        
+        if pii_type_configs:
+            pass_categories = self._build_categories_from_config(pii_type_configs)
+            
+            # Build pii_type -> category mapping for conflict resolver
+            pii_type_to_category: Dict[str, str] = {}
+            for category, labels in pass_categories.items():
+                for pii_type in labels.values():
+                    pii_type_to_category[pii_type] = category
+            
+            # Initialize conflict resolver with dynamic config
+            self._pii_type_to_category = pii_type_to_category
+            self._conflict_resolver = ConflictResolver(pii_type_to_category)
+        elif self._pass_categories is None:
+            # Load categories from database on first call if no config passed
             self._load_categories_from_database()
+            pass_categories = self._pass_categories
 
         threshold = threshold or self.config.threshold
         detection_id = self._generate_detection_id()
-        categories_to_run = categories or list(self._pass_categories.keys())
+        categories_to_run = categories or list(pass_categories.keys())
 
         self.logger.info(
             f"[{detection_id}] Starting multi-pass detection on {len(text)} chars "
@@ -317,7 +370,7 @@ class MultiPassGlinerDetector:
         try:
             # Step 1: Run parallel passes
             all_entities = self._run_parallel_passes(
-                text, threshold, detection_id, categories_to_run
+                text, threshold, detection_id, categories_to_run, pass_categories
             )
 
             # Step 2: Aggregate by span
@@ -377,7 +430,8 @@ class MultiPassGlinerDetector:
         text: str,
         threshold: float,
         detection_id: str,
-        categories: List[str]
+        categories: List[str],
+        pass_categories: Dict[str, Dict[str, str]]
     ) -> List[PIIEntity]:
         """
         Run detection passes in parallel using ThreadPoolExecutor.
@@ -390,6 +444,7 @@ class MultiPassGlinerDetector:
             threshold: Detection threshold
             detection_id: Logging ID
             categories: Categories to run
+            pass_categories: Categories configuration to use
 
         Returns:
             All entities from all passes (may have duplicates/conflicts)
@@ -406,7 +461,7 @@ class MultiPassGlinerDetector:
                 future_to_category = {
                     executor.submit(
                         self._run_single_pass,
-                        text, threshold, detection_id, category
+                        text, threshold, detection_id, category, pass_categories
                     ): category
                     for category in categories
                 }
@@ -428,7 +483,7 @@ class MultiPassGlinerDetector:
             # Sequential fallback
             self.logger.info(f"[{detection_id}] Running {len(categories)} passes sequentially")
             for category in categories:
-                entities = self._run_single_pass(text, threshold, detection_id, category)
+                entities = self._run_single_pass(text, threshold, detection_id, category, pass_categories)
                 all_entities.extend(entities)
 
         self.logger.info(
@@ -441,7 +496,8 @@ class MultiPassGlinerDetector:
         text: str,
         threshold: float,
         detection_id: str,
-        category: str
+        category: str,
+        pass_categories: Dict[str, Dict[str, str]]
     ) -> List[PIIEntity]:
         """
         Run a single detection pass for one category.
@@ -451,15 +507,16 @@ class MultiPassGlinerDetector:
             threshold: Detection threshold
             detection_id: Logging ID
             category: Category to detect
+            pass_categories: Categories configuration to use
 
         Returns:
             Entities detected in this pass
         """
-        if category not in self._pass_categories:
+        if category not in pass_categories:
             self.logger.warning(f"[{detection_id}] Unknown category: {category}")
             return []
 
-        label_mapping = self._pass_categories[category]
+        label_mapping = pass_categories[category]
         labels = list(label_mapping.keys())
 
         pass_start = time.time()

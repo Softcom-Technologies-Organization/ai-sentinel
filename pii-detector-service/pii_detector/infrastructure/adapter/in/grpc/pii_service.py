@@ -1021,6 +1021,8 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 pii_entity.start = int(entity['start'])
                 pii_entity.end = int(entity['end'])
                 pii_entity.score = float(entity['score'])
+                # Detection source: GLINER, PRESIDIO, REGEX, or UNKNOWN
+                pii_entity.source = str(entity.get('source') or entity.get('detector') or 'UNKNOWN')
             except (ValueError, TypeError) as e:
                 logger.error(
                     f"[{request_id}] Failed to convert entity to protobuf: {e}. "

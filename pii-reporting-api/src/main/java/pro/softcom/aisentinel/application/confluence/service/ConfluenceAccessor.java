@@ -1,15 +1,17 @@
 package pro.softcom.aisentinel.application.confluence.service;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
-import pro.softcom.aisentinel.application.confluence.port.in.ConfluenceSpacePort;
+import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceAttachmentClient;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceClient;
+import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceSpaceRepository;
 import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Encapsulates Confluence data access operations.
@@ -18,23 +20,45 @@ import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
  * Uses cached space data when available to improve stream startup performance.
  */
 @RequiredArgsConstructor
+@Slf4j
 public class ConfluenceAccessor {
 
     private final ConfluenceClient confluenceClient;
     private final ConfluenceAttachmentClient confluenceAttachmentClient;
-    private final ConfluenceSpacePort confluenceSpacePort;
+    private final ConfluenceSpaceRepository spaceRepository;
 
     public CompletableFuture<Optional<ConfluenceSpace>> getSpace(String spaceKey) {
         return confluenceClient.getSpace(spaceKey);
     }
 
     /**
-     * Retrieves all spaces using cache-first strategy via ConfluenceSpacePort.
+     * Retrieves all spaces using cache-first strategy.
      * Performance optimization: Uses cached data when available to avoid waiting for 
      * paginated HTTP calls to Confluence API before starting the scan stream.
      */
     public CompletableFuture<List<ConfluenceSpace>> getAllSpaces() {
-        return confluenceSpacePort.getAllSpaces();
+        log.debug("Fetching Confluence spaces with cache-first strategy");
+        
+        List<ConfluenceSpace> cachedSpaces = spaceRepository.findAll();
+        
+        if (!cachedSpaces.isEmpty()) {
+            log.debug("Returning {} cached spaces", cachedSpaces.size());
+            return CompletableFuture.completedFuture(cachedSpaces);
+        }
+        
+        log.debug("Cache miss - fetching spaces from Confluence API");
+        return fetchAndCacheSpaces();
+    }
+
+    private CompletableFuture<List<ConfluenceSpace>> fetchAndCacheSpaces() {
+        return confluenceClient.getAllSpaces()
+            .thenApply(spaces -> {
+                if (spaces != null && !spaces.isEmpty()) {
+                    spaceRepository.saveAll(spaces);
+                    log.info("Cached {} spaces from Confluence API", spaces.size());
+                }
+                return spaces;
+            });
     }
 
     public CompletableFuture<List<ConfluencePage>> getAllPagesInSpace(String spaceKey) {

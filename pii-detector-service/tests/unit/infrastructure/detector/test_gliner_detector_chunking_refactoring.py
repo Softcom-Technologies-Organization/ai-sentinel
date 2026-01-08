@@ -77,8 +77,8 @@ class TestGLiNERDetectorChunkingRefactoring:
         
         # Mock pii_type_configs for fresh config fetch
         pii_type_configs = {
-            'GIVENNAME': {'enabled': True, 'detector_label': 'first name', 'threshold': 0.5},
-            'EMAIL': {'enabled': True, 'detector_label': 'email', 'threshold': 0.5}
+            'GIVENNAME': {'enabled': True, 'detector_label': 'first name', 'threshold': 0.5, 'detector': 'GLINER'},
+            'EMAIL': {'enabled': True, 'detector_label': 'email', 'threshold': 0.5, 'detector': 'GLINER'}
         }
         
         # Act
@@ -136,13 +136,13 @@ class TestGLiNERDetectorChunkingRefactoring:
         
         # Mock pii_type_configs
         pii_type_configs = {
-            'GIVENNAME': {'enabled': True, 'detector_label': 'first name', 'threshold': 0.5},
-            'EMAIL': {'enabled': True, 'detector_label': 'email', 'threshold': 0.5}
+            'GIVENNAME': {'enabled': True, 'detector_label': 'first name', 'threshold': 0.5, 'detector': 'GLINER'},
+            'EMAIL': {'enabled': True, 'detector_label': 'email', 'threshold': 0.5, 'detector': 'GLINER'}
         }
-        
+
         # Act
         entities = detector._detect_pii_with_chunking(text, threshold, detection_id, pii_type_configs)
-        
+
         # Assert
         assert len(entities) == 2
         assert entities[0].start == 0
@@ -181,12 +181,12 @@ class TestGLiNERDetectorChunkingRefactoring:
         
         # Mock pii_type_configs
         pii_type_configs = {
-            'EMAIL': {'enabled': True, 'detector_label': 'email', 'threshold': 0.5}
+            'EMAIL': {'enabled': True, 'detector_label': 'email', 'threshold': 0.5, 'detector': 'GLINER'}
         }
-        
+
         # Act
         entities = detector._detect_pii_with_chunking(text, threshold, detection_id, pii_type_configs)
-        
+
         # Assert - should only have one entity (duplicate removed)
         assert len(entities) == 1
         assert entities[0].text == "john@example.com"
@@ -214,7 +214,7 @@ class TestGLiNERDetectorChunkingRefactoring:
         
         # Mock pii_type_configs with high threshold for EMAIL
         pii_type_configs = {
-            'EMAIL': {'enabled': True, 'detector_label': 'email', 'threshold': 0.9}  # High threshold
+            'EMAIL': {'enabled': True, 'detector_label': 'email', 'threshold': 0.9, 'detector': 'GLINER'}  # High threshold
         }
         
         chunk = Mock()

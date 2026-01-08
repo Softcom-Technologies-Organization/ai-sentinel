@@ -132,7 +132,15 @@ public class HtmlContentParser implements ContentParser {
             String cleaned = doc.text();
 
             // Convert escaped newlines back to actual newlines
-            return cleaned.replace("\\n", "\n");
+            cleaned = cleaned.replace("\\n", "\n");
+
+            // Normalize whitespace: collapse multiple newlines/spaces into single newline
+            // This prevents patterns like "\n \n \n" that confuse PII detection models
+            cleaned = cleaned.replaceAll("[ \\t]*\\n[ \\t]*", "\n");  // Remove spaces around newlines
+            cleaned = cleaned.replaceAll("\\n{2,}", "\n\n");          // Max 2 consecutive newlines
+            cleaned = cleaned.replaceAll("[ \\t]{2,}", " ");          // Collapse multiple spaces/tabs
+
+            return cleaned.trim();
         } catch (Exception _) {
             // Fallback: return original text if Jsoup parsing fails
             return text;

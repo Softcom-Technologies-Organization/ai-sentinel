@@ -70,10 +70,10 @@ class GLiNERDetector:
             self.model = self.model_manager.load_model()
             self.logger.info("GLiNER model loaded successfully")
             
-            # Initialize semantic chunker with GLiNER's tokenizer
-            # GLiNER has internal 768-token sentence limit, so we chunk at 768 tokens
-            # CRITICAL: semantic chunking is REQUIRED to prevent truncation warnings
-            self._initialize_semantic_chunker()
+            # Initialize text chunker with GLiNER's tokenizer
+            # GLiNER (nvidia/gliner-pii) has internal 378-token limit
+            # Character-based chunking with overlap handles long texts
+            self._initialize_text_chunker()
                 
         except Exception as e:
             self.logger.error(f"Failed to load GLiNER model: {str(e)}")
@@ -96,45 +96,36 @@ class GLiNERDetector:
 
     def _verify_semantic_chunker(self) -> None:
         """
-        Verify that semantic chunker uses semchunk library.
-        
-        Raises:
-            RuntimeError: If chunker is not using semchunk library
+        Verify that chunker is properly initialized.
+
+        Logs chunker configuration for debugging.
         """
         chunk_info = self.semantic_chunker.get_chunk_info()
-        if chunk_info.get("library") != "semchunk":
-            raise RuntimeError(
-                "Semantic chunking REQUIRED but fallback chunker was created. "
-                "Install semchunk: pip install semchunk"
-            )
+        self.logger.info(f"Chunker initialized: {chunk_info}")
 
-    def _initialize_semantic_chunker(self) -> None:
+    def _initialize_text_chunker(self) -> None:
         """
-        Initialize semantic chunker with GLiNER's tokenizer.
-        
-        Raises:
-            RuntimeError: If semantic chunker initialization fails
+        Initialize text chunker for GLiNER processing.
+
+        Uses character-based chunking with overlap to handle GLiNER's 378 token limit.
         """
         try:
             tokenizer = self._get_tokenizer_from_model()
-            
+
             self.semantic_chunker = create_chunker(
                 tokenizer=tokenizer,
-                chunk_size=768,  # GLiNER's hard limit per sentence
-                overlap=100,     # Overlap to catch entities at boundaries
-                use_semantic=True,
+                chunk_size=378,  # GLiNER's internal token limit (nvidia/gliner-pii)
+                overlap=100,     # ~300 char overlap to catch entities at boundaries
+                use_semantic=False,  # Character-based chunking supports overlap
                 logger=self.logger
             )
-            
+
             self._verify_semantic_chunker()
-            self.logger.info("Semantic chunker initialized successfully with semchunk")
-            
+            self.logger.info("Text chunker initialized successfully")
+
         except Exception as e:
-            self.logger.error(f"CRITICAL: Failed to initialize semantic chunker: {e}")
-            raise RuntimeError(
-                "Semantic chunking is REQUIRED for GLiNER to prevent truncation. "
-                f"Error: {str(e)}"
-            ) from e
+            self.logger.error(f"CRITICAL: Failed to initialize text chunker: {e}")
+            raise RuntimeError(f"Text chunker initialization failed: {str(e)}") from e
 
     def detect_pii(self, text: str, threshold: Optional[float] = None, pii_type_configs: Optional[Dict] = None) -> List[PIIEntity]:
         """
@@ -175,7 +166,7 @@ class GLiNERDetector:
             # Even a 6000 char text can have long sentences (code, lists, tables) that get truncated
             # Chunking ensures all content is analyzed without loss
             entities = self._detect_pii_with_chunking(text, threshold, detection_id, pii_type_configs)
-            
+
             return entities
             
         except Exception as e:
@@ -232,43 +223,59 @@ class GLiNERDetector:
     def _get_default_mapping(self) -> Dict[str, str]:
         """
         Get default PII type mapping as fallback.
-        
+
         This fallback mapping is used when database is unavailable.
         In production, mappings should be managed via database (pii_type_config table).
-        
+        Labels match data.sql detector_label values for GLiNER.
+
         Returns:
-            Default mapping from detector labels to PII types (27 types)
+            Default mapping from detector labels to PII types (35 types)
         """
         return {
-            # Original 17 types
-            "account number": "ACCOUNTNUM",
-            "building number": "BUILDINGNUM",
-            "city": "CITY",
-            "credit card number": "CREDITCARDNUMBER",
-            "date of birth": "DATEOFBIRTH",
-            "driver license number": "DRIVERLICENSENUM",
-            "email": "EMAIL",
-            "first name": "GIVENNAME",
-            "ID card number": "IDCARDNUM",
-            "password": "PASSWORD",
-            "social security number": "SOCIALNUM",
-            "street": "STREET",
-            "last name": "SURNAME",
-            "tax number": "TAXNUM",
-            "phone number": "TELEPHONENUM",
+            # CONTACT_CHANNEL
+            "email address": "EMAIL",
+            "phone number": "PHONE",
+            # PERSON_IDENTITY
+            "person name": "PERSON_NAME",
             "username": "USERNAME",
-            "zip code": "ZIPCODE",
-            # Additional 10 types
-            "person name": "PERSONNAME",
-            "full name": "FULLNAME",
-            "URL": "URL",
-            "IBAN": "IBAN",
-            "IP address": "IPADDRESS",
-            "MAC address": "MACADDRESS",
-            "crypto wallet": "CRYPTOWALLET",
-            "date": "DATE",
-            "vehicle registration": "VEHICLEREG",
-            "voter ID": "VOTERID"
+            # PERSON_DEMOGRAPHICS
+            "date of birth": "DATE_OF_BIRTH",
+            "age": "AGE",
+            "gender": "GENDER",
+            # FINANCIAL_IDENTIFIER
+            "credit card number": "CREDIT_CARD",
+            "bank account number": "BANK_ACCOUNT",
+            "iban": "IBAN",
+            "routing number": "ROUTING_NUMBER",
+            "tax identification number": "TAX_ID",
+            "cryptocurrency wallet address": "CRYPTO_WALLET",
+            # GOVERNMENT_IDENTIFIER
+            "social security number": "SSN",
+            "passport number": "PASSPORT",
+            "driver license number": "DRIVER_LICENSE",
+            "national id number": "NATIONAL_ID",
+            # GEO_LOCATION
+            "street address": "ADDRESS",
+            "city": "CITY",
+            "state": "STATE",
+            "country": "COUNTRY",
+            "postal code": "ZIP_CODE",
+            # CREDENTIAL_SECRET
+            "password": "PASSWORD",
+            "api key": "API_KEY",
+            "access token": "ACCESS_TOKEN",
+            "secret key": "SECRET_KEY",
+            "database connection string": "CONNECTION_STRING",
+            # STRUCTURED_TECH_IDENTIFIER
+            "ip address": "IP_ADDRESS",
+            "avs number": "AVS_NUMBER",
+            "mac address": "MAC_ADDRESS",
+            "url": "URL",
+            # HEALTHCARE
+            "medical record number": "MEDICAL_RECORD",
+            "health insurance number": "HEALTH_INSURANCE",
+            "medical condition": "MEDICAL_CONDITION",
+            "medication": "MEDICATION",
         }
 
     def _load_log_throughput_config(self) -> bool:
@@ -291,40 +298,42 @@ class GLiNERDetector:
     def _build_pii_type_mapping_from_configs(self, pii_type_configs: Dict) -> Dict[str, str]:
         """
         Build PII type mapping from database configurations (detector_label → pii_type).
-        
+
         Args:
             pii_type_configs: Database PII type configurations
-            
+
         Returns:
             Dictionary mapping detector labels to PII types
         """
         mapping = {}
         for pii_type, config in pii_type_configs.items():
             detector_label = config.get('detector_label')
-            if detector_label and config.get('enabled', False):
+            # Only include GLINER configs - skip PRESIDIO and REGEX labels
+            if detector_label and config.get('enabled', False) and config.get('detector') == 'GLINER':
                 mapping[detector_label] = pii_type
-        
+
         if not mapping:
             self.logger.warning("No enabled PII types with detector labels, using defaults")
             return self._get_default_mapping()
-        
+
         return mapping
     
     def _build_scoring_overrides_from_configs(self, pii_type_configs: Dict) -> Dict[str, float]:
         """
         Build per-entity-type scoring thresholds from database configurations.
-        
+
         Args:
             pii_type_configs: Database PII type configurations
-            
+
         Returns:
             Dictionary mapping PII types to minimum confidence thresholds
         """
         scoring = {}
         for pii_type, config in pii_type_configs.items():
-            if config.get('enabled', False):
+            # Only include GLINER configs - skip PRESIDIO and REGEX thresholds
+            if config.get('enabled', False) and config.get('detector') == 'GLINER':
                 scoring[pii_type] = config['threshold']
-        
+
         return scoring
 
     def _load_parallel_config(self) -> Tuple[bool, int]:
@@ -741,11 +750,11 @@ class GLiNERDetector:
         
         # Get semantic chunks
         chunk_results = self.semantic_chunker.chunk_text(text)
-        
-        self.logger.info(
+
+        self.logger.debug(
             f"[{detection_id}] Semantic chunking: {len(text)} chars → {len(chunk_results)} chunks"
         )
-        
+
         # Pre-compute labels once for all chunks
         labels = self._get_gliner_labels(pii_type_mapping)
         
@@ -758,7 +767,7 @@ class GLiNERDetector:
             processing_mode = "sequential"
         
         detection_time = time.time() - start_time
-        
+
         # Apply per-entity-type threshold filtering (post-filter)
         filtered_entities = self._apply_entity_scoring_filter(all_entities, scoring_overrides)
         

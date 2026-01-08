@@ -14,6 +14,7 @@ import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTimeOutConf
 import pro.softcom.aisentinel.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.aisentinel.application.pii.reporting.service.AttachmentTextExtracted;
 import pro.softcom.aisentinel.application.pii.reporting.service.ContentScanOrchestrator;
+import pro.softcom.aisentinel.application.pii.reporting.service.parser.HtmlContentParser;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
@@ -40,6 +41,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
     protected final ContentScanOrchestrator contentScanOrchestrator;
     protected final AttachmentProcessor attachmentProcessor;
     protected final ScanTimeOutConfig scanTimeoutConfig;
+    protected final HtmlContentParser htmlContentParser;
 
     //TODO: verify if this should be a value object from the Domain
     protected record ConfluencePageContext(String scanId, String spaceKey, String pageId,
@@ -212,8 +214,8 @@ public abstract class AbstractStreamConfluenceScanUseCase {
 
     private Flux<ConfluenceContentScanResult> processOnePage(String scanId, String spaceKey, ConfluencePage page,
                                                              ScanProgress scanProgress) {
-        String content = extractPageContent(page);
-
+        String rawContent = extractPageContent(page);
+        String content = htmlContentParser.cleanText(rawContent);
         double startProgress = contentScanOrchestrator.calculateProgress(
             scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
             scanProgress.originalTotal());
@@ -227,7 +229,6 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                                                                             scanProgress.originalTotal());
         ConfluenceContentScanResult pageComplete = contentScanOrchestrator.createPageCompleteEvent(scanId, spaceKey, page,
                                                                                                    completeProgress);
-
         return Flux.just(pageStart)
             .concatWith(itemEvent)
             .concatWith(Mono.just(pageComplete))

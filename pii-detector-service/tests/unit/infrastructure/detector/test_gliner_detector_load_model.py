@@ -66,9 +66,9 @@ class TestGLiNERDetectorLoadModel:
             mock_create.assert_called_once()
             call_kwargs = mock_create.call_args.kwargs
             assert call_kwargs['tokenizer'] == mock_tokenizer
-            assert call_kwargs['chunk_size'] == 768
+            assert call_kwargs['chunk_size'] == 378  # GLiNER's internal token limit
             assert call_kwargs['overlap'] == 100
-            assert call_kwargs['use_semantic'] is True
+            assert call_kwargs['use_semantic'] is False  # Character-based chunking
 
     def test_should_LoadModel_When_TokenizerNotInDataProcessor_UsesFallback(self, detector):
         """
@@ -111,11 +111,11 @@ class TestGLiNERDetectorLoadModel:
                 # Verify AutoTokenizer.from_pretrained was called with model name
                 mock_from_pretrained.assert_called_once_with("bert-base-cased")
 
-    def test_should_RaiseError_When_SemanticChunkerNotSemchunk(self, detector):
+    def test_should_LoadModel_When_ChunkerUsesFallbackLibrary(self, detector):
         """
-        Test error is raised when semantic chunker falls back to non-semchunk library.
-        
-        This validates that the detector enforces the requirement for true semantic chunking.
+        Test model loads successfully even when chunker uses fallback library.
+
+        The detector now uses character-based chunking which doesn't require semchunk.
         """
         # Arrange
         mock_model = Mock()
@@ -123,23 +123,25 @@ class TestGLiNERDetectorLoadModel:
         mock_model.data_processor = Mock()
         mock_model.data_processor.config = Mock()
         mock_model.data_processor.config.tokenizer = mock_tokenizer
-        
+
         detector.model_manager.load_model = Mock(return_value=mock_model)
-        
+
         # Mock chunker that returns fallback library (not semchunk)
         mock_chunker = Mock()
         mock_chunker.get_chunk_info = Mock(return_value={"library": "fallback"})
-        
+
         with patch('pii_detector.infrastructure.detector.gliner_detector.create_chunker',
                    return_value=mock_chunker):
-            # Act & Assert
-            with pytest.raises(RuntimeError, 
-                              match="Semantic chunking REQUIRED but fallback chunker was created"):
-                detector.load_model()
+            # Act - should complete without error
+            detector.load_model()
+
+            # Assert
+            assert detector.model == mock_model
+            assert detector.semantic_chunker == mock_chunker
 
     def test_should_RaiseError_When_ChunkerCreationFails(self, detector):
         """
-        Test error handling when semantic chunker creation fails.
+        Test error handling when text chunker creation fails.
         """
         # Arrange
         mock_model = Mock()
@@ -147,15 +149,15 @@ class TestGLiNERDetectorLoadModel:
         mock_model.data_processor = Mock()
         mock_model.data_processor.config = Mock()
         mock_model.data_processor.config.tokenizer = mock_tokenizer
-        
+
         detector.model_manager.load_model = Mock(return_value=mock_model)
-        
+
         # Mock create_chunker to raise an exception
         with patch('pii_detector.infrastructure.detector.gliner_detector.create_chunker',
                    side_effect=Exception("Chunker initialization failed")):
             # Act & Assert
-            with pytest.raises(RuntimeError, 
-                              match="Semantic chunking is REQUIRED for GLiNER"):
+            with pytest.raises(RuntimeError,
+                              match="Text chunker initialization failed"):
                 detector.load_model()
 
     def test_should_RaiseError_When_ModelLoadingFails(self, detector):
@@ -216,25 +218,25 @@ class TestGLiNERDetectorLoadModel:
         mock_model.data_processor = Mock()
         mock_model.data_processor.config = Mock()
         mock_model.data_processor.config.tokenizer = mock_tokenizer
-        
+
         detector.model_manager.load_model = Mock(return_value=mock_model)
-        
+
         mock_chunker = Mock()
         mock_chunker.get_chunk_info = Mock(return_value={"library": "semchunk"})
-        
+
         with patch('pii_detector.infrastructure.detector.gliner_detector.create_chunker',
                    return_value=mock_chunker):
             # Act
             with caplog.at_level("INFO"):
                 detector.load_model()
-            
+
             # Assert - check log messages
             assert "GLiNER model loaded successfully" in caplog.text
-            assert "Semantic chunker initialized successfully with semchunk" in caplog.text
+            assert "Text chunker initialized successfully" in caplog.text
 
-    def test_should_LogError_When_SemanticChunkerInitFails(self, detector, caplog):
+    def test_should_LogError_When_TextChunkerInitFails(self, detector, caplog):
         """
-        Test that error is logged when semantic chunker initialization fails.
+        Test that error is logged when text chunker initialization fails.
         """
         # Arrange
         mock_model = Mock()
@@ -242,15 +244,15 @@ class TestGLiNERDetectorLoadModel:
         mock_model.data_processor = Mock()
         mock_model.data_processor.config = Mock()
         mock_model.data_processor.config.tokenizer = mock_tokenizer
-        
+
         detector.model_manager.load_model = Mock(return_value=mock_model)
-        
+
         with patch('pii_detector.infrastructure.detector.gliner_detector.create_chunker',
                    side_effect=Exception("Chunker failed")):
             # Act & Assert
             with caplog.at_level("ERROR"):
                 with pytest.raises(RuntimeError):
                     detector.load_model()
-            
+
             # Assert - check error was logged
-            assert "CRITICAL: Failed to initialize semantic chunker" in caplog.text
+            assert "CRITICAL: Failed to initialize text chunker" in caplog.text

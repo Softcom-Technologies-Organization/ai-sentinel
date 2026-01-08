@@ -13,22 +13,23 @@ import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 
 /**
  * Application service responsible for calculating PII severity levels and aggregating counts.
- * 
+ *
  * <p>This service implements the business rules for classifying PII types into severity levels
  * (HIGH, MEDIUM, LOW) based on their sensitivity and potential impact if exposed.
- * 
- * <h3>Classification Rules:</h3>
+ *
+ * <h3>Classification Rules (CONSOLIDATED - 44 types):</h3>
  * <ul>
- *   <li><b>HIGH (14 types)</b>: Financial credentials, authentication tokens, government IDs with high sensitivity
- *       <br>Examples: Credit cards, passwords, social security numbers</li>
- *   <li><b>MEDIUM (28 types)</b>: Official documents, identification numbers, personal details
- *       <br>Examples: Driver licenses, passports, dates of birth</li>
- *   <li><b>LOW (13 types)</b>: Contact information, location data, names
- *       <br>Examples: Email addresses, phone numbers, names</li>
+ *   <li><b>HIGH (12 types)</b>: Financial credentials, authentication secrets, SSN
+ *       <br>Examples: Credit cards, passwords, API keys, social security numbers</li>
+ *   <li><b>MEDIUM (18 types)</b>: Official documents, medical info, legal records
+ *       <br>Examples: Driver licenses, passports, diagnoses, case numbers</li>
+ *   <li><b>LOW (14 types)</b>: Contact information, identifiers, names
+ *       <br>Examples: Email addresses, phone numbers, usernames, IP addresses</li>
  * </ul>
- * 
+ *
  * <p><b>Note:</b> Unknown PII types default to LOW severity as a safe fallback.
- * 
+ * Legacy type names are supported for backward compatibility.
+ *
  * @see PersonallyIdentifiableInformationSeverity
  * @see SeverityCounts
  */
@@ -37,78 +38,167 @@ public class SeverityCalculationService {
 
     /**
      * Static mapping of PII type names to their severity levels.
-     * This map defines the business rules for severity classification.
+     * CONSOLIDATED VERSION: 44 types across 7 categories + legacy mappings.
      */
     private static final Map<String, PersonallyIdentifiableInformationSeverity> SEVERITY_RULES = Map.<String, PersonallyIdentifiableInformationSeverity>ofEntries(
-            // HIGH SEVERITY - Financial, authentication, highly sensitive government IDs
+            // =========================================================================
+            // HIGH SEVERITY - Financial, credentials, SSN (14 types)
+            // =========================================================================
+            // Financial
+            entry("CREDIT_CARD_NUMBER", HIGH),
+            entry("BANK_ACCOUNT_NUMBER", HIGH),
+            entry("IBAN", HIGH),
+            entry("BIC_SWIFT", HIGH),
+            entry("CRYPTO_WALLET", HIGH),
+            // IT Credentials (secrets)
             entry("PASSWORD", HIGH),
             entry("API_KEY", HIGH),
-            entry("GITHUB_TOKEN", HIGH),
-            entry("AWS_ACCESS_KEY", HIGH),
-            entry("JWT_TOKEN", HIGH),
-            // Credit cards (ML detector and Presidio)
-            entry("CREDITCARDNUMBER", HIGH),
-            entry("CREDIT_CARD", HIGH),
-            // Bank accounts (ML detector and Presidio)
-            entry("ACCOUNTNUM", HIGH),
-            entry("BANK_ACCOUNT", HIGH),
-            entry("IBAN", HIGH),
-            entry("CRYPTO_WALLET", HIGH),
-            entry("US_BANK_NUMBER", HIGH),
-            // Social Security Numbers (ML detector and Presidio)
-            entry("SOCIALNUM", HIGH),
+            entry("ACCESS_TOKEN", HIGH),
+            entry("SECRET_KEY", HIGH),
+            entry("SESSION_ID", HIGH),
+            // Identity (high risk)
             entry("SSN", HIGH),
-            entry("US_SSN", HIGH),
+            entry("AVS_NUMBER", HIGH),
+            // Medical (high risk)
             entry("MEDICAL_LICENSE", HIGH),
-            entry("AU_MEDICARE", HIGH),
-            entry("IN_AADHAAR", HIGH),
+            // Legal (high risk)
+            entry("CRIMINAL_RECORD", HIGH),
 
-            // MEDIUM SEVERITY (28 types) - Official documents, IDs, personal details
-            entry("DRIVERLICENSENUM", MEDIUM),
-            entry("IDCARDNUM", MEDIUM),
-            entry("ID_CARD", MEDIUM),
-            entry("TAXNUM", MEDIUM),
-            entry("US_PASSPORT", MEDIUM),
-            entry("US_DRIVER_LICENSE", MEDIUM),
-            entry("US_ITIN", MEDIUM),
+            // =========================================================================
+            // MEDIUM SEVERITY - Documents, medical, identifiers (38 types)
+            // =========================================================================
+            // Identity
+            entry("NATIONAL_ID", MEDIUM),
+            entry("PASSPORT_NUMBER", MEDIUM),
+            entry("DRIVER_LICENSE_NUMBER", MEDIUM),
+            entry("DATE_OF_BIRTH", MEDIUM),
+            entry("AGE", MEDIUM),
             entry("ES_NIF", MEDIUM),
             entry("ES_NIE", MEDIUM),
-            entry("IT_FISCAL_CODE", MEDIUM),
             entry("IT_PASSPORT", MEDIUM),
             entry("IT_IDENTITY_CARD", MEDIUM),
             entry("IT_DRIVER_LICENSE", MEDIUM),
-            entry("IT_VAT_CODE", MEDIUM),
             entry("PL_PESEL", MEDIUM),
             entry("SG_NRIC_FIN", MEDIUM),
-            entry("SG_UEN", MEDIUM),
-            entry("AU_TFN", MEDIUM),
-            entry("AU_ABN", MEDIUM),
-            entry("AU_ACN", MEDIUM),
-            entry("IN_PAN", MEDIUM),
-            entry("IN_VEHICLE_REGISTRATION", MEDIUM),
             entry("IN_VOTER", MEDIUM),
             entry("IN_PASSPORT", MEDIUM),
             entry("FI_PERSONAL_IDENTITY_CODE", MEDIUM),
             entry("KR_RRN", MEDIUM),
             entry("TH_TNIN", MEDIUM),
-            entry("DATEOFBIRTH", MEDIUM),
-            entry("AGE", MEDIUM),
+            // Financial (lower risk)
+            entry("TAX_ID", MEDIUM),
+            entry("SALARY", MEDIUM),
+            entry("US_ITIN", MEDIUM),
+            entry("IT_FISCAL_CODE", MEDIUM),
+            entry("IT_VAT_CODE", MEDIUM),
+            entry("SG_UEN", MEDIUM),
+            entry("AU_TFN", MEDIUM),
+            entry("AU_ABN", MEDIUM),
+            entry("AU_ACN", MEDIUM),
+            entry("IN_PAN", MEDIUM),
+            // Medical
+            entry("PATIENT_ID", MEDIUM),
+            entry("MEDICAL_RECORD_NUMBER", MEDIUM),
+            entry("HEALTH_INSURANCE_NUMBER", MEDIUM),
+            entry("DIAGNOSIS", MEDIUM),
+            entry("MEDICATION", MEDIUM),
+            // IT (device/network identifiers)
+            entry("DEVICE_ID", MEDIUM),
+            // Legal/Asset
+            entry("CASE_NUMBER", MEDIUM),
+            entry("LICENSE_NUMBER", MEDIUM),
+            entry("VEHICLE_REGISTRATION", MEDIUM),
+            entry("IN_VEHICLE_REGISTRATION", MEDIUM),
+            entry("VIN", MEDIUM),
+            entry("INSURANCE_POLICY_NUMBER", MEDIUM),
 
-            // LOW SEVERITY - Contact info, location, names
+            // =========================================================================
+            // LOW SEVERITY - Contact info, general identifiers (14 types)
+            // =========================================================================
+            // Identity
+            entry("PERSON_NAME", LOW),
+            entry("GENDER", LOW),
+            entry("NATIONALITY", LOW),
+            // Contact
             entry("EMAIL", LOW),
-            entry("TELEPHONENUM", LOW),
-            entry("PHONE", LOW),
             entry("PHONE_NUMBER", LOW),
+            entry("ADDRESS", LOW),
+            entry("POSTAL_CODE", LOW),
+            // Digital
+            entry("USERNAME", LOW),
+            entry("ACCOUNT_ID", LOW),
+            entry("URL", LOW),
+            // IT (network)
+            entry("IP_ADDRESS", LOW),
+            entry("MAC_ADDRESS", LOW),
+            entry("HOSTNAME", LOW),
+            // Legal/Asset
+            entry("LICENSE_PLATE", LOW),
+
+            // =========================================================================
+            // LEGACY MAPPINGS - Backward compatibility with old type names
+            // =========================================================================
+            // Credit cards legacy
+            entry("CREDITCARDNUMBER", HIGH),
+            entry("CREDIT_CARD", HIGH),
+            entry("DEBIT_CARD_NUMBER", HIGH),
+            // Bank accounts legacy
+            entry("ACCOUNTNUM", HIGH),
+            entry("BANK_ACCOUNT", HIGH),
+            entry("BANKACCOUNT", HIGH),
+            entry("US_BANK_NUMBER", HIGH),
+            // SSN legacy
+            entry("SOCIALNUM", HIGH),
+            entry("US_SSN", HIGH),
+            entry("AVSNUM", HIGH),
+            // Tokens legacy
+            entry("TOKEN", HIGH),
+            entry("GITHUB_TOKEN", HIGH),
+            entry("AWS_ACCESS_KEY", HIGH),
+            entry("JWT_TOKEN", HIGH),
+            // Identity legacy
+            entry("DRIVERLICENSENUM", MEDIUM),
+            entry("DRIVER_LICENSE", MEDIUM),
+            entry("US_DRIVER_LICENSE", MEDIUM),
+            entry("IDCARDNUM", MEDIUM),
+            entry("ID_CARD", MEDIUM),
+            entry("ID_CARD_NUMBER", MEDIUM),
+            entry("PASSPORT", MEDIUM),
+            entry("PASSPORTNUM", MEDIUM),
+            entry("US_PASSPORT", MEDIUM),
+            entry("TAXNUM", MEDIUM),
+            entry("DATEOFBIRTH", MEDIUM),
+            entry("BIRTH_DATE", MEDIUM),
+            entry("DOB", MEDIUM),
+            // Medical legacy
+            entry("HEALTH_INSURANCE", HIGH),
+            entry("MEDICAL_RECORD", HIGH),
+            entry("AU_MEDICARE", HIGH),
+            entry("IN_AADHAAR", HIGH),
+            // Name legacy
             entry("NAME", LOW),
             entry("GIVENNAME", LOW),
             entry("SURNAME", LOW),
-            entry("USERNAME", LOW),
-            entry("IP_ADDRESS", LOW),
-            entry("MAC_ADDRESS", LOW),
-            entry("CITY", LOW),
+            entry("FIRST_NAME", LOW),
+            entry("LAST_NAME", LOW),
+            entry("FULL_NAME", LOW),
+            // Phone legacy
+            entry("TELEPHONENUM", LOW),
+            entry("PHONE", LOW),
+            entry("MOBILE_PHONE", LOW),
+            // Address legacy
+            entry("HOME_ADDRESS", LOW),
+            entry("MAILING_ADDRESS", LOW),
             entry("STREET", LOW),
+            entry("LOCATION", LOW),
+            entry("CITY", LOW),
+            entry("STATE", LOW),
+            entry("COUNTRY", LOW),
+            entry("ZIPCODE", LOW),
             entry("BUILDINGNUM", LOW),
-            entry("ZIPCODE", LOW)
+            // IT legacy
+            entry("IPADDRESS", LOW),
+            entry("MACADDRESS", LOW)
     );
 
     /**

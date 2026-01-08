@@ -111,4 +111,27 @@ class PIIType(Enum):
     JWT_TOKEN = "Token JWT"
     GITHUB_TOKEN = "Token GitHub"
     AWS_KEY = "Clé AWS"
+    TOKEN = "Jeton"
+    ACCESS_TOKEN = "Jeton d'accès"
+    SECRET_KEY = "Clé secrète"
+    CONNECTION_STRING = "Chaîne de connexion"
+
+    # New GLiNER types (underscore variants)
+    DATE_OF_BIRTH = "Date de naissance"
+    BANK_ACCOUNT = "Compte bancaire"
+    ROUTING_NUMBER = "Numéro de routage"
+    TAX_ID = "Numéro fiscal"
+    ZIP_CODE = "Code postal"
+    NATIONAL_ID = "Carte d'identité nationale"
+    ADDRESS = "Adresse"
+    STATE = "État/Province"
+    COUNTRY = "Pays"
+    AVS_NUMBER = "Numéro AVS"
+
+    # Healthcare (new GLiNER types)
+    MEDICAL_RECORD = "Dossier médical"
+    HEALTH_INSURANCE = "Assurance maladie"
+    MEDICAL_CONDITION = "Condition médicale"
+    MEDICATION = "Médicament"
+
     UNKNOWN = "Inconnu"

@@ -161,40 +161,40 @@ class SemanticTextChunker:
 
 class FallbackChunker:
     """
-    Simple character-based fallback chunker when semchunk is not available.
-    
-    This is a basic implementation that splits on character boundaries
-    with approximate token estimation. Not as good as semantic chunking
-    but ensures the system continues to work.
+    Simple character-based chunker with overlap support.
+
+    This implementation splits on character boundaries with approximate token
+    estimation. Works well for GLiNER PII detection as proven by testing.
+    Uses conservative 3 chars/token ratio for safety with multilingual text.
     """
 
     def __init__(
         self,
         chunk_size: int,
         overlap: int = 0,
-        chars_per_token: int = 4,
+        chars_per_token: int = 3,
         logger: Optional[logging.Logger] = None
     ):
         """
-        Initialize fallback chunker.
-        
+        Initialize character-based chunker.
+
         Args:
             chunk_size: Maximum tokens per chunk
             overlap: Number of tokens to overlap
-            chars_per_token: Approximate characters per token (default: 4)
+            chars_per_token: Approximate characters per token (default: 3 for safety)
             logger: Optional logger instance
         """
         self.chunk_size = chunk_size
         self.overlap = overlap
         self.chars_per_token = chars_per_token
         self.logger = logger or logging.getLogger(__name__)
-        
+
         # Convert token limits to character limits
         self.chunk_chars = chunk_size * chars_per_token
         self.overlap_chars = overlap * chars_per_token
-        
-        self.logger.warning(
-            f"Using fallback character-based chunker (semchunk not available). "
+
+        self.logger.info(
+            f"Character-based chunker initialized: "
             f"chunk_chars={self.chunk_chars}, overlap_chars={self.overlap_chars}"
         )
 
@@ -252,27 +252,35 @@ class FallbackChunker:
 
 def create_chunker(
     tokenizer: Optional[Any] = None,
-    chunk_size: int = 768,
-    overlap: int = 100,
-    use_semantic: bool = True,
+    chunk_size: int = 378,
+    overlap: int = 50,
+    use_semantic: bool = False,
     logger: Optional[logging.Logger] = None
 ) -> Any:
     """
     Factory function to create appropriate chunker.
-    
+
     Args:
         tokenizer: HuggingFace tokenizer (required for semantic chunking)
-        chunk_size: Maximum tokens per chunk
-        overlap: Number of tokens to overlap
-        use_semantic: Try to use semantic chunking if available
+        chunk_size: Maximum tokens per chunk (default: 378 for GLiNER)
+        overlap: Number of tokens to overlap (default: 50)
+        use_semantic: Use semantic chunking (default: False, semchunk doesn't support overlap)
         logger: Optional logger instance
-        
+
     Returns:
         SemanticTextChunker or FallbackChunker instance
+
+    Note:
+        Character-based chunking is preferred because:
+        1. It properly supports overlap for context continuity
+        2. It has been tested and works well with GLiNER PII detection
+        3. semchunk library doesn't support overlap parameter
     """
     logger = logger or logging.getLogger(__name__)
-    
-    if use_semantic and SEMCHUNK_AVAILABLE and tokenizer is not None:
+
+    # Use semantic chunking only if explicitly requested AND overlap is 0
+    # (semchunk doesn't support overlap)
+    if use_semantic and SEMCHUNK_AVAILABLE and tokenizer is not None and overlap == 0:
         try:
             return SemanticTextChunker(
                 tokenizer=tokenizer,
@@ -281,8 +289,8 @@ def create_chunker(
                 logger=logger
             )
         except Exception as e:
-            logger.warning(f"Failed to create semantic chunker: {e}, using fallback")
-    
+            logger.warning(f"Failed to create semantic chunker: {e}, using character-based")
+
     return FallbackChunker(
         chunk_size=chunk_size,
         overlap=overlap,

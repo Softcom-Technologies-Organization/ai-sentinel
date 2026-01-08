@@ -8,12 +8,7 @@ import pro.softcom.aisentinel.application.config.port.out.ReadConfluenceConfigPo
 import pro.softcom.aisentinel.application.config.usecase.GetPollingConfigUseCase;
 import pro.softcom.aisentinel.application.confluence.port.in.ConfluenceSpacePort;
 import pro.softcom.aisentinel.application.confluence.port.in.ConfluenceSpaceUpdateInfoPort;
-import pro.softcom.aisentinel.application.confluence.port.out.AttachmentTextExtractor;
-import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceAttachmentClient;
-import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceAttachmentDownloader;
-import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceClient;
-import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceSpaceRepository;
-import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceUrlProvider;
+import pro.softcom.aisentinel.application.confluence.port.out.*;
 import pro.softcom.aisentinel.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.aisentinel.application.confluence.service.ConfluenceSpaceCacheRefreshService;
 import pro.softcom.aisentinel.application.confluence.usecase.FetchConfluenceSpaceContentUseCase;
@@ -32,33 +27,13 @@ import pro.softcom.aisentinel.application.pii.export.port.out.WriteDetectionRepo
 import pro.softcom.aisentinel.application.pii.export.usecase.ExportDetectionReportUseCase;
 import pro.softcom.aisentinel.application.pii.reporting.ScanSeverityCountService;
 import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
-import pro.softcom.aisentinel.application.pii.reporting.port.in.PauseScanPort;
-import pro.softcom.aisentinel.application.pii.reporting.port.in.RevealPiiSecretsPort;
-import pro.softcom.aisentinel.application.pii.reporting.port.in.ScanReportingPort;
-import pro.softcom.aisentinel.application.pii.reporting.port.in.StreamConfluenceResumeScanPort;
-import pro.softcom.aisentinel.application.pii.reporting.port.in.StreamConfluenceScanPort;
-import pro.softcom.aisentinel.application.pii.reporting.port.out.AfterCommitExecutionPort;
-import pro.softcom.aisentinel.application.pii.reporting.port.out.PersonallyIdentifiableInformationScanExecutionOrchestratorPort;
-import pro.softcom.aisentinel.application.pii.reporting.port.out.PublishEventPort;
-import pro.softcom.aisentinel.application.pii.reporting.port.out.ReadPiiConfigPort;
-import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanEventStore;
-import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery;
-import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTimeOutConfig;
-import pro.softcom.aisentinel.application.pii.reporting.service.AttachmentProcessor;
-import pro.softcom.aisentinel.application.pii.reporting.service.ContentScanOrchestrator;
-import pro.softcom.aisentinel.application.pii.reporting.service.PiiContextExtractor;
-import pro.softcom.aisentinel.application.pii.reporting.service.ScanCheckpointService;
-import pro.softcom.aisentinel.application.pii.reporting.service.ScanEventDispatcher;
-import pro.softcom.aisentinel.application.pii.reporting.service.ScanEventFactory;
-import pro.softcom.aisentinel.application.pii.reporting.service.ScanProgressCalculator;
+import pro.softcom.aisentinel.application.pii.reporting.port.in.*;
+import pro.softcom.aisentinel.application.pii.reporting.port.out.*;
+import pro.softcom.aisentinel.application.pii.reporting.service.*;
 import pro.softcom.aisentinel.application.pii.reporting.service.parser.ContentParserFactory;
 import pro.softcom.aisentinel.application.pii.reporting.service.parser.HtmlContentParser;
 import pro.softcom.aisentinel.application.pii.reporting.service.parser.PlainTextParser;
-import pro.softcom.aisentinel.application.pii.reporting.usecase.PauseScanUseCase;
-import pro.softcom.aisentinel.application.pii.reporting.usecase.RevealPiiSecretsUseCase;
-import pro.softcom.aisentinel.application.pii.reporting.usecase.ScanReportingUseCase;
-import pro.softcom.aisentinel.application.pii.reporting.usecase.StreamConfluenceResumeScanUseCase;
-import pro.softcom.aisentinel.application.pii.reporting.usecase.StreamConfluenceScanUseCase;
+import pro.softcom.aisentinel.application.pii.reporting.usecase.*;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.aisentinel.application.pii.security.PiiAccessAuditService;
@@ -105,8 +80,9 @@ public class ApplicationUseCasesConfig {
 
     @Bean
     public ConfluenceAccessor confluenceAccessor(ConfluenceClient confluenceClient,
-                                                  ConfluenceAttachmentClient confluenceAttachmentClient) {
-        return new ConfluenceAccessor(confluenceClient, confluenceAttachmentClient);
+                                                  ConfluenceAttachmentClient confluenceAttachmentClient,
+                                                  ConfluenceSpaceRepository spaceRepository) {
+        return new ConfluenceAccessor(confluenceClient, confluenceAttachmentClient, spaceRepository);
     }
 
     @Bean
@@ -148,6 +124,7 @@ public class ApplicationUseCasesConfig {
             ContentScanOrchestrator contentScanOrchestrator,
             AttachmentProcessor attachmentProcessor,
             ScanTimeOutConfig scanTimeoutConfig,
+            HtmlContentParser htmlContentParser,
             PersonallyIdentifiableInformationScanExecutionOrchestratorPort personallyIdentifiableInformationScanExecutionOrchestratorPort,
             ScanCheckpointRepository scanCheckpointRepository) {
         return new StreamConfluenceScanUseCase(
@@ -156,6 +133,7 @@ public class ApplicationUseCasesConfig {
                 contentScanOrchestrator,
                 attachmentProcessor,
                 scanTimeoutConfig,
+                htmlContentParser,
                 personallyIdentifiableInformationScanExecutionOrchestratorPort,
                 scanCheckpointRepository
         );
@@ -168,14 +146,16 @@ public class ApplicationUseCasesConfig {
             ContentScanOrchestrator contentScanOrchestrator,
             AttachmentProcessor attachmentProcessor,
             ScanCheckpointRepository scanCheckpointRepository,
-            ScanTimeOutConfig scanTimeoutConfig) {
+            ScanTimeOutConfig scanTimeoutConfig,
+            HtmlContentParser htmlContentParser) {
         return new StreamConfluenceResumeScanUseCase(
                 confluenceAccessor,
                 piiDetectorClient,
                 contentScanOrchestrator,
                 attachmentProcessor,
                 scanCheckpointRepository,
-                scanTimeoutConfig
+                scanTimeoutConfig,
+                htmlContentParser
         );
     }
 

@@ -339,9 +339,9 @@ class TestFallbackChunker:
         
         assert chunker.chunk_size == 768
         assert chunker.overlap == 100
-        assert chunker.chars_per_token == 4
-        assert chunker.chunk_chars == 768 * 4
-        assert chunker.overlap_chars == 100 * 4
+        assert chunker.chars_per_token == 3
+        assert chunker.chunk_chars == 768 * 3
+        assert chunker.overlap_chars == 100 * 3
 
     def test_should_use_custom_chars_per_token(self):
         """Should use custom chars_per_token when provided."""
@@ -359,7 +359,7 @@ class TestFallbackChunker:
         )
         
         assert chunker.logger == logger_mock
-        logger_mock.warning.assert_called_once()
+        logger_mock.info.assert_called_once()
 
     def test_should_chunk_text_with_fallback(self):
         """Should chunk text using character-based approach."""
@@ -435,7 +435,7 @@ class TestCreateChunker:
         chunker = create_chunker(
             tokenizer=mock_tokenizer,
             chunk_size=768,
-            overlap=100,
+            overlap=0,
             use_semantic=True
         )
         
@@ -491,7 +491,7 @@ class TestCreateChunker:
         chunker = create_chunker(
             tokenizer=mock_tokenizer,
             chunk_size=768,
-            overlap=100,
+            overlap=0,
             use_semantic=True,
             logger=logger_mock
         )

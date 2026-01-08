@@ -144,8 +144,8 @@ public class PiiContextExtractor {
             lineContext = maskLineWithEntities(lineContext, lineStartInSource, start, end, type, allEntities);
         }
 
-        // Clean HTML tags if present
-        lineContext = parser.cleanText(lineContext);
+        // Note: HTML cleaning is now done BEFORE detection in AbstractStreamConfluenceScanUseCase,
+        // so the sourceContent passed here is already clean text.
 
         // Le masquage repose uniquement sur les positions start/end fournies par le détecteur.
         // Aucun ajustement heuristique supplémentaire n'est appliqué sur le suffixe.

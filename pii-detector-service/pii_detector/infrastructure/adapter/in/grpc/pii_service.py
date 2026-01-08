@@ -36,6 +36,12 @@ try:
     from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
 except Exception:  # pragma: no cover - safe import guard
     GLiNERDetector = None  # type: ignore
+
+# Import Multi-Pass GLiNER detector for parallel category detection
+try:
+    from pii_detector.infrastructure.detector.multi_pass_gliner_detector import MultiPassGlinerDetector
+except Exception:  # pragma: no cover - safe import guard
+    MultiPassGlinerDetector = None  # type: ignore
 # Optional pre-caching of additional HF models (extensible)
 try:
     from pii_detector.infrastructure.model_management.model_cache import ensure_models_cached, get_env_extra_models
@@ -215,31 +221,62 @@ def _create_multi_detector():
 def _create_single_detector():
     """Create and return a single-model detector instance, or None if no LLM models are enabled."""
     from pii_detector.application.config.detection_policy import DetectionConfig, get_enabled_models, _load_llm_config
-    
+
     # Check if any LLM models are enabled
     try:
         config_dict = _load_llm_config()
         enabled_models = get_enabled_models(config_dict)
-        
+
         if not enabled_models:
             # TODO When no LLM models are enabled, returning None relies on the caller to handle this case correctly. Consider documenting this behavior in the function docstring or adding a check that at least one detection method (Presidio/Regex) is enabled before returning None to prevent a scenario where all detection is disabled.
             # No LLM models enabled - return None to use only Presidio/Regex
             logger.info("No LLM models enabled - will use only Presidio/Regex detection")
             return None
-        
+
         logger.info("Using single-model detector (either multi-detector disabled or only 1 model enabled)")
         config = DetectionConfig()
-        
+
         if _is_gliner_model(config.model_id):
-            logger.info(f"Detected GLiNER model: {config.model_id}")
-            return GLiNERDetector(config=config)
-        
+            # Check if Multi-Pass GLiNER is enabled
+            if _should_use_multipass_gliner(config_dict):
+                logger.info(f"Using Multi-Pass GLiNER detector for: {config.model_id}")
+                return MultiPassGlinerDetector(config=config)
+            else:
+                logger.info(f"Detected GLiNER model: {config.model_id}")
+                return GLiNERDetector(config=config)
+
         logger.info(f"Using standard transformer detector for: {config.model_id}")
         return PIIDetector()
-        
+
     except Exception as e:
         logger.error(f"Failed to create single detector: {e}")
         raise
+
+
+def _should_use_multipass_gliner(config_dict: dict) -> bool:
+    """
+    Check if Multi-Pass GLiNER detection is enabled in config.
+
+    Multi-Pass GLiNER runs 13 parallel detection passes (one per category)
+    to avoid label limit degradation and resolves conflicts deterministically.
+
+    Args:
+        config_dict: Configuration dictionary loaded from detection-settings.toml
+
+    Returns:
+        True if multipass_gliner_enabled is set to true, False otherwise
+    """
+    if MultiPassGlinerDetector is None:
+        logger.debug("MultiPassGlinerDetector not available")
+        return False
+
+    detection_config = config_dict.get("detection", {})
+    multipass_enabled = detection_config.get("multipass_gliner_enabled", False)
+
+    if multipass_enabled:
+        logger.info("Multi-Pass GLiNER detection enabled in config")
+
+    return multipass_enabled
 
 
 def _is_gliner_model(model_id: str) -> bool:
@@ -823,129 +860,73 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
     ) -> List:
         """
         Filter detected entities based on PII type-specific configurations.
-        
+
         Business rules:
         1. If a PII type is disabled in config, filter out all entities of that type
         2. If entity score is below type-specific threshold, filter it out
         3. If no config exists for a type, keep the entity (allow by default)
-        
+
         Args:
             entities: List of detected PII entities
             pii_type_configs: Dictionary mapping PII type to config
             request_id: Request identifier for logging
-            
+
         Returns:
             Filtered list of entities
         """
         if not entities or not pii_type_configs:
             return entities
-        
-        # Log available config keys
-        logger.info(
-            f"[{request_id}] POST-FILTER START: {len(entities)} entities to filter"
-        )
-        logger.info(
-            f"[{request_id}] Available PII type configs in DB: {sorted(pii_type_configs.keys())}"
-        )
-        
+
         filtered_entities = []
-        filtered_count = 0
         filter_reasons = {}
-        
-        for idx, entity in enumerate(entities):
-            # Normalize entity type to uppercase for matching
+
+        for entity in entities:
             entity_type_raw = entity.get('type')
             entity_type = _normalize_pii_type_for_grpc(entity_type_raw)
             entity_type_upper = entity_type.upper()
-            entity_text_preview = entity.get('text', '')[:30]
             entity_score = float(entity.get('score', 0.0))
-            
-            # Log each entity processing
-            logger.info(
-                f"[{request_id}] Entity #{idx+1}: raw_type='{entity_type_raw}' → "
-                f"normalized='{entity_type}' → uppercase='{entity_type_upper}' | "
-                f"text='{entity_text_preview}' | score={entity_score:.3f}"
-            )
-            
-            # Get config for this PII type (case-insensitive lookup)
+
             type_config = pii_type_configs.get(entity_type_upper)
-            
-            # Log config lookup result
-            if type_config:
-                logger.info(
-                    f"[{request_id}] Entity #{idx+1} ({entity_type_upper}): Config FOUND → "
-                    f"enabled={type_config.get('enabled')}, "
-                    f"threshold={type_config.get('threshold')}, "
-                    f"detector={type_config.get('detector')}, "
-                    f"detector_label={type_config.get('detector_label')}"
-                )
-            else:
-                logger.info(
-                    f"[{request_id}] Entity #{idx+1} ({entity_type_upper}): Config NOT FOUND → "
-                    f"KEEPING by default (allow-by-default policy)"
-                )
-            
+
             # If no config exists for this type, keep it (allow by default)
             if not type_config:
                 filtered_entities.append(entity)
-                logger.info(
-                    f"[{request_id}] Entity #{idx+1} ({entity_type_upper}): ✅ KEPT (no config)"
-                )
                 continue
-            
+
             # DETECTOR-SPECIFIC FILTERING: Check if config applies to this entity's detector
             config_detector = type_config.get('detector', 'ALL')
             entity_source = entity.get('source', 'UNKNOWN')
-            
+
             # If config is detector-specific and doesn't match entity's source, skip this config
             if config_detector != 'ALL' and config_detector != entity_source:
                 filtered_entities.append(entity)
-                logger.info(
-                    f"[{request_id}] Entity #{idx+1} ({entity_type_upper}): ✅ KEPT "
-                    f"(config detector={config_detector} doesn't match entity source={entity_source})"
-                )
                 continue
-            
+
             # Config applies to this detector - now check if type is enabled
             if not type_config.get('enabled', True):
-                filtered_count += 1
                 reason = f"{entity_type_upper}:disabled"
                 filter_reasons[reason] = filter_reasons.get(reason, 0) + 1
-                logger.info(
-                    f"[{request_id}] Entity #{idx+1} ({entity_type_upper}): ❌ FILTERED OUT "
-                    f"(disabled in config for detector={config_detector}) | text='{entity_text_preview}'"
-                )
                 continue
-            
+
             # Apply type-specific threshold
             type_threshold = float(type_config.get('threshold', 0.5))
-            
+
             if entity_score < type_threshold:
-                filtered_count += 1
                 reason = f"{entity_type_upper}:below_threshold"
                 filter_reasons[reason] = filter_reasons.get(reason, 0) + 1
-                logger.info(
-                    f"[{request_id}] Entity #{idx+1} ({entity_type_upper}): ❌ FILTERED OUT "
-                    f"(score {entity_score:.3f} < threshold {type_threshold:.3f}) | "
-                    f"text='{entity_text_preview}'"
-                )
                 continue
-            
+
             # Entity passed all filters
             filtered_entities.append(entity)
+
+        # Log only the summary
+        filtered_count = len(entities) - len(filtered_entities)
+        if filtered_count > 0:
             logger.info(
-                f"[{request_id}] Entity #{idx+1} ({entity_type_upper}): ✅ KEPT "
-                f"(enabled=true, score {entity_score:.3f} >= threshold {type_threshold:.3f})"
+                f"[{request_id}] Post-filter: {len(filtered_entities)}/{len(entities)} kept, "
+                f"filtered: {dict(filter_reasons)}"
             )
-        
-        # Log filtering summary
-        logger.info(
-            f"[{request_id}] POST-FILTER COMPLETE: Filtered {filtered_count} of {len(entities)} entities. "
-            f"Kept: {len(filtered_entities)}"
-        )
-        if filter_reasons:
-            logger.info(f"[{request_id}] Filter reasons breakdown: {dict(filter_reasons)}")
-        
+
         return filtered_entities
 
     def _log_pii_entities_async(self, request_id: str, entities: List) -> None:
@@ -1040,6 +1021,8 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 pii_entity.start = int(entity['start'])
                 pii_entity.end = int(entity['end'])
                 pii_entity.score = float(entity['score'])
+                # Detection source: GLINER, PRESIDIO, REGEX, or UNKNOWN
+                pii_entity.source = str(entity.get('source') or entity.get('detector') or 'UNKNOWN')
             except (ValueError, TypeError) as e:
                 logger.error(
                     f"[{request_id}] Failed to convert entity to protobuf: {e}. "

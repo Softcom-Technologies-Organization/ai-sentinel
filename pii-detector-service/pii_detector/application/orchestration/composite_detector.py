@@ -22,11 +22,14 @@ from pii_detector.infrastructure.detector.regex_detector import RegexDetector
 from pii_detector.domain.entity.pii_entity import PIIEntity
 
 try:
-    from infrastructure.detector.presidio_detector import PresidioDetector
+    from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
     PRESIDIO_AVAILABLE = True
-except ImportError:
+    print("[PRESIDIO_IMPORT] SUCCESS - PresidioDetector imported successfully")
+except ImportError as e:
     PRESIDIO_AVAILABLE = False
     PresidioDetector = None
+    print(f"[PRESIDIO_IMPORT] FAILED - ImportError: {e}")
+    print(f"[PRESIDIO_IMPORT] PRESIDIO_AVAILABLE set to False")
 
 
 logger = logging.getLogger(__name__)
@@ -156,7 +159,8 @@ class CompositePIIDetector:
         threshold: Optional[float] = None,
         enable_ml: Optional[bool] = None,
         enable_regex: Optional[bool] = None,
-        enable_presidio: Optional[bool] = None
+        enable_presidio: Optional[bool] = None,
+        pii_type_configs: Optional[dict] = None
     ) -> List[PIIEntity]:
         """
         Detect PII using both ML and regex detectors.
@@ -178,6 +182,7 @@ class CompositePIIDetector:
             enable_ml: Override ML detector activation (None=use default, True/False=force)
             enable_regex: Override regex detector activation (None=use default, True/False=force)
             enable_presidio: Override Presidio detector activation (None=use default, True/False=force)
+            pii_type_configs: Optional fresh PII type configurations from database
             
         Returns:
             Merged list of PII entities
@@ -208,7 +213,7 @@ class CompositePIIDetector:
         
         # Execute ML detection
         if use_ml and self.ml_detector:
-            ml_entities = self._run_ml_detection(text, threshold)
+            ml_entities = self._run_ml_detection(text, threshold, pii_type_configs)
             results_per_detector.append((self.ml_detector, ml_entities))
         
         # Execute regex detection
@@ -265,7 +270,10 @@ class CompositePIIDetector:
         return masked_text, entities
     
     def _run_ml_detection(
-        self, text: str, threshold: Optional[float]
+        self, 
+        text: str, 
+        threshold: Optional[float],
+        pii_type_configs: Optional[dict] = None
     ) -> List[PIIEntity]:
         """
         Run ML-based detection with error handling.
@@ -273,12 +281,19 @@ class CompositePIIDetector:
         Args:
             text: Text to analyze
             threshold: Optional confidence threshold
+            pii_type_configs: Optional PII type configs for dynamic settings
             
         Returns:
             List of detected entities (empty if detection fails)
         """
         try:
-            return self.ml_detector.detect_pii(text, threshold)
+            # Check if ML detector supports pii_type_configs
+            import inspect
+            sig = inspect.signature(self.ml_detector.detect_pii)
+            if 'pii_type_configs' in sig.parameters:
+                return self.ml_detector.detect_pii(text, threshold, pii_type_configs=pii_type_configs)
+            else:
+                return self.ml_detector.detect_pii(text, threshold)
         except Exception as e:
             self.logger.error(f"ML detection failed: {e}")
             return []
@@ -347,62 +362,44 @@ def should_use_composite_detector() -> bool:
     """
     Determine if composite detector should be used.
     
-    Returns True if any of these conditions are met:
-    - Regex detection is enabled in global configuration (detection-settings.toml)
-    - OR Presidio detection is enabled in global configuration (detection-settings.toml)
+    Always returns True to enable dynamic runtime activation of detectors.
     
-    Note: Individual detector 'enabled' flags in model configs are no longer used.
-    Only detection-settings.toml controls which detectors are active.
+    Business Rule: CompositePIIDetector is always instantiated to allow runtime
+    activation/deactivation of Regex and Presidio detectors via database config.
+    The actual activation is controlled by `pii_detection_config` table fields:
+    - gliner_enabled
+    - presidio_enabled  
+    - regex_enabled
+    
+    These are fetched at request time via `fetch_config_from_db=true` in gRPC.
     
     Returns:
-        True if composite detector should be used
+        True (always) to enable runtime detector activation via database
     """
-    try:
-        from application.config.detection_policy import _load_llm_config
-        
-        config = _load_llm_config()
-        detection_config = config.get("detection", {})
-        
-        # Check detection flags from detection-settings.toml only
-        regex_detection_enabled = detection_config.get("regex_detection_enabled", False)
-        presidio_detection_enabled = detection_config.get("presidio_detection_enabled", False)
-        
-        # Use composite if either regex or presidio is enabled
-        if regex_detection_enabled or presidio_detection_enabled:
-            enabled_detectors = []
-            if regex_detection_enabled:
-                enabled_detectors.append("Regex")
-            if presidio_detection_enabled:
-                enabled_detectors.append("Presidio")
-            logger.info(f"Composite detector enabled with: {', '.join(enabled_detectors)}")
-            return True
-        
-        logger.info("Neither Regex nor Presidio detection enabled in detection-settings.toml")
-        return False
-        
-    except Exception as e:
-        logger.warning(f"Failed to determine composite detector status: {e}")
-        return False
+    logger.info(
+        "Composite detector always enabled for runtime activation via database config"
+    )
+    return True
 
 
 def _load_detection_config() -> Tuple[bool, bool]:
     """
-    Load detection configuration flags from detection-settings.toml.
+    Return default activation states for detectors.
+    
+    Note: Actual activation is now controlled by database config at runtime.
+    These defaults are used when database config is not available.
+    Both detectors are disabled by default to avoid unexpected behavior.
     
     Returns:
-        Tuple of (regex_enabled, presidio_enabled)
+        Tuple of (regex_enabled_default, presidio_enabled_default)
+        Both False to require explicit database activation.
     """
-    from application.config.detection_policy import _load_llm_config
-    
-    try:
-        config = _load_llm_config()
-        detection_config = config.get("detection", {})
-        regex_enabled = detection_config.get("regex_detection_enabled", False)
-        presidio_enabled = detection_config.get("presidio_detection_enabled", False)
-        return regex_enabled, presidio_enabled
-    except Exception as e:
-        logger.warning(f"Failed to load detection config: {e}")
-        return False, False
+    # Default: both disabled (require explicit database activation)
+    logger.debug(
+        "Default detector activation: Regex=False, Presidio=False "
+        "(use database config for runtime activation)"
+    )
+    return False, False
 
 
 def _create_regex_detector_if_enabled(regex_enabled: bool) -> Optional[RegexDetector]:

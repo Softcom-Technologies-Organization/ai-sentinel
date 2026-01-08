@@ -116,16 +116,23 @@ class DetectorFactory:
     def _determine_detector_type(self, model_id: str) -> str:
         """
         Determine detector type from model identifier.
-        
+
         Args:
             model_id: Model identifier
-            
+
         Returns:
             Detector type key for registry lookup
+
+        Business rules:
+        - "multipass" in model_id → MultiPassGlinerDetector
+        - "gliner" in model_id → GLiNERDetector
+        - Otherwise → default PII detector
         """
         model_id_lower = model_id.lower()
-        
-        if "gliner" in model_id_lower:
+
+        if "multipass" in model_id_lower:
+            return "multipass-gliner"
+        elif "gliner" in model_id_lower:
             return "gliner"
         else:
             return "default"
@@ -171,38 +178,48 @@ class DetectorFactory:
 def create_default_factory() -> DetectorFactory:
     """
     Create factory with default detector types registered.
-    
+
     Registers built-in detector types:
     - "gliner": GLiNERDetector for GLiNER models
+    - "multipass-gliner": MultiPassGlinerDetector for multi-category parallel detection
     - "regex": RegexDetector for regex-based pattern matching
     - "default": PIIDetector for standard HuggingFace models
-    
+
     Returns:
         Configured DetectorFactory instance
     """
     from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
+    from pii_detector.infrastructure.detector.multi_pass_gliner_detector import MultiPassGlinerDetector
     from pii_detector.infrastructure.detector.pii_detector import PIIDetector
     from pii_detector.infrastructure.detector.regex_detector import RegexDetector
-    
+
     factory = DetectorFactory()
-    
+
     # Register GLiNER detector
     factory.register(
         "gliner",
         lambda config: GLiNERDetector(config=config)
     )
-    
+
+    # Register Multi-Pass GLiNER detector
+    # This detector runs GLiNER in parallel across themed label categories
+    # and resolves conflicts deterministically
+    factory.register(
+        "multipass-gliner",
+        lambda config: MultiPassGlinerDetector(config=config)
+    )
+
     # Register regex detector
     factory.register(
         "regex",
         lambda config: RegexDetector(config=config)
     )
-    
+
     # Register default PII detector
     factory.register(
         "default",
         lambda config: PIIDetector(config=config)
     )
-    
-    logger.info("Created default factory with 'gliner', 'regex', and 'default' detector types")
+
+    logger.info("Created default factory with 'gliner', 'multipass-gliner', 'regex', and 'default' detector types")
     return factory

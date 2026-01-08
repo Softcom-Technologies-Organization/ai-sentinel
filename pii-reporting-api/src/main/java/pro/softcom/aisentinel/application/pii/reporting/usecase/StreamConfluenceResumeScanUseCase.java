@@ -8,6 +8,7 @@ import pro.softcom.aisentinel.application.pii.reporting.port.in.StreamConfluence
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.aisentinel.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.aisentinel.application.pii.reporting.service.ContentScanOrchestrator;
+import pro.softcom.aisentinel.application.pii.reporting.service.parser.HtmlContentParser;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
@@ -36,8 +37,9 @@ public class StreamConfluenceResumeScanUseCase extends
         ContentScanOrchestrator contentScanOrchestrator,
         AttachmentProcessor attachmentProcessor,
         ScanCheckpointRepository scanCheckpointRepository,
-        ScanTimeOutConfig scanTimeoutConfig) {
-        super(confluenceAccessor, piiDetectorClient, contentScanOrchestrator, attachmentProcessor, scanTimeoutConfig);
+        ScanTimeOutConfig scanTimeoutConfig,
+        HtmlContentParser htmlContentParser) {
+        super(confluenceAccessor, piiDetectorClient, contentScanOrchestrator, attachmentProcessor, scanTimeoutConfig, htmlContentParser);
         this.scanCheckpointRepository = scanCheckpointRepository;
     }
 

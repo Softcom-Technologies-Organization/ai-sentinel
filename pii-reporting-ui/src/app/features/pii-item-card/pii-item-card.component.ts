@@ -42,9 +42,9 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
   /** If true, values are masked until user reveals. */
   @Input() maskByDefault = true;
 
-  revealed = false;
+  readonly revealed = signal<boolean>(false);
   /** Controls opening of the detail section to match UX spec */
-  detailsOpen = false;
+  readonly detailsOpen = signal<boolean>(false);
   /** Whether revealing secrets is allowed by backend configuration */
   readonly canRevealSecrets = signal<boolean>(true);
   /** Whether a reveal request is in progress */
@@ -69,7 +69,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
       error: () => this.canRevealSecrets.set(false)
     });
     // Initialize revealed state on first load only
-    this.revealed = !this.maskByDefault;
+    this.revealed.set(!this.maskByDefault);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -80,8 +80,8 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
 
       if (isNewItem) {
         // New item: reset all user interaction states
-        this.revealed = !this.maskByDefault;
-        this.detailsOpen = false;
+        this.revealed.set(!this.maskByDefault);
+        this.detailsOpen.set(false);
         this.previousItemId = currentItemId;
       }
       // Same item: preserve user interaction states (detailsOpen, revealed)
@@ -89,7 +89,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
 
     // Handle maskByDefault changes only if item hasn't changed or if it's a new item
     if (changes['maskByDefault'] && !changes['item']) {
-      this.revealed = !this.maskByDefault;
+      this.revealed.set(!this.maskByDefault);
     }
   }
 
@@ -107,9 +107,9 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
   }
 
   toggleReveal(): void {
-    if (this.revealed) {
+    if (this.revealed()) {
       // Already revealed, just toggle back
-      this.revealed = false;
+      this.revealed.set(false);
       return;
     }
 
@@ -117,7 +117,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
     const hasSecrets = this.item?.detectedPersonallyIdentifiableInformationList?.some(e => e.sensitiveValue !== null);
     if (hasSecrets) {
       // Secrets already loaded, just reveal
-      this.revealed = true;
+      this.revealed.set(true);
       return;
     }
 
@@ -142,7 +142,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
             : entity;
         });
         this.item = { ...this.item, detectedPersonallyIdentifiableInformationList: enrichedEntities };
-        this.revealed = true;
+        this.revealed.set(true);
         this.isRevealing.set(false);
         // Force change detection since we mutated the entities
         this.cdr.markForCheck();
@@ -153,7 +153,9 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
       }
     });
   }
-  toggleDetails(): void { this.detailsOpen = !this.detailsOpen; }
+  toggleDetails(): void {
+    this.detailsOpen.update(v => !v);
+  }
 
   sevClass(sev?: Severity | null): string {
     if (sev === 'high') return 'sev-high';

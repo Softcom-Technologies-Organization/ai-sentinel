@@ -65,6 +65,9 @@ class TestEnsureModelsCached:
 
     def test_Should_SkipDownload_When_NoHuggingFaceToken(self, caplog):
         """No token should skip download and log info message."""
+        import logging
+        caplog.set_level(logging.INFO)
+        
         mock_config = Mock()
         mock_config.model.huggingface_api_key = None
         
@@ -80,7 +83,7 @@ class TestEnsureModelsCached:
         mock_snapshot_download = MagicMock()
         
         with patch('pii_detector.infrastructure.model_management.model_cache.get_config', return_value=mock_config), \
-             patch('pii_detector.infrastructure.model_management.model_cache.snapshot_download', mock_snapshot_download):
+             patch('huggingface_hub.snapshot_download', mock_snapshot_download):
             ensure_models_cached(["model1/test", "model2/test"])
         
         assert mock_snapshot_download.call_count == 2
@@ -94,13 +97,16 @@ class TestEnsureModelsCached:
         mock_snapshot_download = MagicMock()
         
         with patch('pii_detector.infrastructure.model_management.model_cache.get_config', return_value=mock_config), \
-             patch('pii_detector.infrastructure.model_management.model_cache.snapshot_download', mock_snapshot_download):
+             patch('huggingface_hub.snapshot_download', mock_snapshot_download):
             ensure_models_cached([])
         
         mock_snapshot_download.assert_not_called()
 
     def test_Should_ContinueOnError_When_DownloadFails(self, caplog):
         """Download errors should be logged but not raise exceptions."""
+        import logging
+        caplog.set_level(logging.WARNING)
+        
         mock_config = Mock()
         mock_config.model.huggingface_api_key = "test_token"
         
@@ -109,18 +115,21 @@ class TestEnsureModelsCached:
                 raise Exception("Download failed")
         
         with patch('pii_detector.infrastructure.model_management.model_cache.get_config', return_value=mock_config), \
-             patch('pii_detector.infrastructure.model_management.model_cache.snapshot_download', side_effect=mock_download):
+             patch('huggingface_hub.snapshot_download', side_effect=mock_download):
             ensure_models_cached(["failing/model", "working/model"])
         
         assert "Failed to cache model failing/model" in caplog.text
 
     def test_Should_HandleGracefully_When_HuggingfaceHubNotInstalled(self, caplog):
         """Missing huggingface_hub package should log warning and skip download."""
+        import logging
+        caplog.set_level(logging.WARNING)
+        
         mock_config = Mock()
         mock_config.model.huggingface_api_key = "test_token"
         
         with patch('pii_detector.infrastructure.model_management.model_cache.get_config', return_value=mock_config), \
-             patch('pii_detector.infrastructure.model_management.model_cache.snapshot_download', side_effect=ImportError("No module named 'huggingface_hub'")):
+             patch('builtins.__import__', side_effect=ImportError("No module named 'huggingface_hub'")):
             ensure_models_cached(["test/model"])
         
         assert "huggingface_hub not available" in caplog.text

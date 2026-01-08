@@ -54,7 +54,8 @@ class TestProtobufTypeConversion:
                 'type_label': 'Email',
                 'start': np.int64(0),  # NumPy type from Presidio
                 'end': np.int64(16),   # NumPy type from Presidio
-                'score': 0.95
+                'score': 0.95,
+                'source': 'PRESIDIO'  # Add source field to avoid default fallback
             }
         ]
         
@@ -85,7 +86,8 @@ class TestProtobufTypeConversion:
                 'type_label': 'Nom de personne',
                 'start': 10,
                 'end': 18,
-                'score': np.float64(0.92)  # NumPy type from Presidio
+                'score': np.float64(0.92),  # NumPy type from Presidio
+                'source': 'PRESIDIO'
             }
         ]
         
@@ -114,7 +116,8 @@ class TestProtobufTypeConversion:
                 'type_label': 'Téléphone',
                 'start': np.int64(5),
                 'end': np.int64(17),
-                'score': np.float64(0.88)
+                'score': np.float64(0.88),
+                'source': 'PRESIDIO'
             },
             {
                 'text': 'FR7630001007941234567890185',
@@ -122,7 +125,8 @@ class TestProtobufTypeConversion:
                 'type_label': 'IBAN',
                 'start': np.int64(20),
                 'end': np.int64(47),
-                'score': np.float64(0.99)
+                'score': np.float64(0.99),
+                'source': 'PRESIDIO'
             }
         ]
         
@@ -157,7 +161,8 @@ class TestProtobufTypeConversion:
                 'type_label': 'Email',
                 'start': 0,
                 'end': 15,
-                'score': 0.95
+                'score': 0.95,
+                'source': 'PRESIDIO'
             }
         ]
         
@@ -240,7 +245,8 @@ class TestProtobufTypeConversion:
                 'type_label': 'Test 1',
                 'start': 0,
                 'end': 12,
-                'score': 0.9
+                'score': 0.9,
+                'source': 'PRESIDIO'
             },
             {
                 'text': 'NumPy types',
@@ -248,7 +254,8 @@ class TestProtobufTypeConversion:
                 'type_label': 'Test 2',
                 'start': np.int64(15),
                 'end': np.int64(26),
-                'score': np.float64(0.85)
+                'score': np.float64(0.85),
+                'source': 'GLINER'
             },
             {
                 'text': 'Mixed types',
@@ -256,7 +263,8 @@ class TestProtobufTypeConversion:
                 'type_label': 'Test 3',
                 'start': np.int64(30),
                 'end': 41,
-                'score': np.float64(0.88)
+                'score': np.float64(0.88),
+                'source': 'PRESIDIO'
             }
         ]
         

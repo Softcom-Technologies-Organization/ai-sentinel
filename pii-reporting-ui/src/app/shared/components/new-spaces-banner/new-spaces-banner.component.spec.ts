@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NewSpacesBannerComponent } from './new-spaces-banner.component';
 import { By } from '@angular/platform-browser';
 import { TranslocoTestingModule } from '@jsverse/transloco';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 describe('NewSpacesBannerComponent', () => {
   let component: NewSpacesBannerComponent;
@@ -11,6 +12,7 @@ describe('NewSpacesBannerComponent', () => {
     await TestBed.configureTestingModule({
       imports: [
         NewSpacesBannerComponent,
+        BrowserAnimationsModule,
         TranslocoTestingModule.forRoot({
           langs: {
             en: {

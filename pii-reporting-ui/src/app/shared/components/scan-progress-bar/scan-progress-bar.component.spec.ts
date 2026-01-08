@@ -3,6 +3,8 @@ import {ScanProgressBarComponent} from './scan-progress-bar.component';
 import {ScanProgressService} from '../../../core/services/scan-progress.service';
 import {signal} from '@angular/core';
 import {ProgressBarModule} from 'primeng/progressbar';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+
 
 describe('ScanProgressBarComponent', () => {
   let component: ScanProgressBarComponent;
@@ -22,7 +24,7 @@ describe('ScanProgressBarComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [ScanProgressBarComponent, ProgressBarModule],
+      imports: [ScanProgressBarComponent, ProgressBarModule, BrowserAnimationsModule],
       providers: [
         { provide: ScanProgressService, useValue: progressServiceSpy }
       ]

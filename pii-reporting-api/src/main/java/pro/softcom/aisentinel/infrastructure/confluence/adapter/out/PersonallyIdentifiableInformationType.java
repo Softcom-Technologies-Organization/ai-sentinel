@@ -21,7 +21,7 @@ import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 public enum PersonallyIdentifiableInformationType {
 
     // =========================================================================
-    // Category 1: IDENTITY - Core personal identity (9 types)
+    // Category 1: IDENTITY - Core personal identity
     // =========================================================================
     PERSON_NAME(ContentPiiDetection.PersonallyIdentifiableInformationType.NAME),
     NATIONAL_ID(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
@@ -32,9 +32,10 @@ public enum PersonallyIdentifiableInformationType {
     GENDER(ContentPiiDetection.PersonallyIdentifiableInformationType.GENDER),
     NATIONALITY(ContentPiiDetection.PersonallyIdentifiableInformationType.NATIONALITY),
     AGE(ContentPiiDetection.PersonallyIdentifiableInformationType.AGE),
+    NRP(ContentPiiDetection.PersonallyIdentifiableInformationType.NRP),
 
     // =========================================================================
-    // Category 2: CONTACT - Contact information (4 types)
+    // Category 2: CONTACT - Contact information
     // =========================================================================
     EMAIL(ContentPiiDetection.PersonallyIdentifiableInformationType.EMAIL),
     PHONE_NUMBER(ContentPiiDetection.PersonallyIdentifiableInformationType.PHONE),
@@ -42,14 +43,14 @@ public enum PersonallyIdentifiableInformationType {
     POSTAL_CODE(ContentPiiDetection.PersonallyIdentifiableInformationType.ZIPCODE),
 
     // =========================================================================
-    // Category 3: DIGITAL - Online identifiers (3 types)
+    // Category 3: DIGITAL - Online identifiers
     // =========================================================================
     USERNAME(ContentPiiDetection.PersonallyIdentifiableInformationType.USERNAME),
     ACCOUNT_ID(ContentPiiDetection.PersonallyIdentifiableInformationType.ACCOUNT),
     URL(ContentPiiDetection.PersonallyIdentifiableInformationType.URL),
 
     // =========================================================================
-    // Category 4: FINANCIAL - Banking and payment (6 types)
+    // Category 4: FINANCIAL - Banking and payment
     // =========================================================================
     CREDIT_CARD_NUMBER(ContentPiiDetection.PersonallyIdentifiableInformationType.CREDIT_CARD),
     BANK_ACCOUNT_NUMBER(ContentPiiDetection.PersonallyIdentifiableInformationType.BANK_ACCOUNT),
@@ -59,7 +60,7 @@ public enum PersonallyIdentifiableInformationType {
     SALARY(ContentPiiDetection.PersonallyIdentifiableInformationType.SALARY),
 
     // =========================================================================
-    // Category 5: MEDICAL - Health information (6 types)
+    // Category 5: MEDICAL - Health information
     // =========================================================================
     AVS_NUMBER(ContentPiiDetection.PersonallyIdentifiableInformationType.SSN),
     PATIENT_ID(ContentPiiDetection.PersonallyIdentifiableInformationType.PATIENT),
@@ -69,7 +70,7 @@ public enum PersonallyIdentifiableInformationType {
     MEDICATION(ContentPiiDetection.PersonallyIdentifiableInformationType.MEDICATION),
 
     // =========================================================================
-    // Category 6: IT_CREDENTIALS - Technical identifiers and secrets (9 types)
+    // Category 6: IT_CREDENTIALS - Technical identifiers and secrets
     // =========================================================================
     IP_ADDRESS(ContentPiiDetection.PersonallyIdentifiableInformationType.IP_ADDRESS),
     MAC_ADDRESS(ContentPiiDetection.PersonallyIdentifiableInformationType.MAC_ADDRESS),

@@ -105,8 +105,9 @@ public class ApplicationUseCasesConfig {
 
     @Bean
     public ConfluenceAccessor confluenceAccessor(ConfluenceClient confluenceClient,
-                                                  ConfluenceAttachmentClient confluenceAttachmentClient) {
-        return new ConfluenceAccessor(confluenceClient, confluenceAttachmentClient);
+                                                  ConfluenceAttachmentClient confluenceAttachmentClient,
+                                                  ConfluenceSpacePort confluenceSpacePort) {
+        return new ConfluenceAccessor(confluenceClient, confluenceAttachmentClient, confluenceSpacePort);
     }
 
     @Bean

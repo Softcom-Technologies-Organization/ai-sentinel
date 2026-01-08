@@ -55,6 +55,7 @@ public record ContentPiiDetection(
         GENDER("Genre"),
         NATIONALITY("Nationalité"),
         MARITAL_STATUS("État civil"),
+        NRP("Nationalité, Religion ou Groupe Politique"),
 
         // Location
         LOCATION("Localisation"),

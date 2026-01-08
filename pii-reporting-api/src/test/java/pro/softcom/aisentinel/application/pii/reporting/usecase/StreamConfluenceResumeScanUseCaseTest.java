@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import pro.softcom.aisentinel.application.confluence.port.in.ConfluenceSpacePort;
 import pro.softcom.aisentinel.application.confluence.port.out.AttachmentTextExtractor;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceAttachmentClient;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceAttachmentDownloader;
@@ -85,6 +86,9 @@ class StreamConfluenceResumeScanUseCaseTest {
     @Mock
     private pro.softcom.aisentinel.application.pii.reporting.ScanSeverityCountService scanSeverityCountService;
 
+    @Mock
+    private ConfluenceSpacePort confluenceSpacePort;
+
     private StreamConfluenceResumeScanPort streamConfluenceResumeScanPort;
 
     @BeforeEach
@@ -113,7 +117,7 @@ class StreamConfluenceResumeScanUseCaseTest {
                                                                           Runnable::run);
 
         // Create parameter objects
-        ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService);
+        ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService, confluenceSpacePort);
         ContentScanOrchestrator contentScanOrchestrator = new ContentScanOrchestrator(
                 eventFactory, progressCalculator, checkpointService, jpaScanEventStoreAdapter, scanEventDispatcher,
                 severityCalculationService, scanSeverityCountService
@@ -141,7 +145,7 @@ class StreamConfluenceResumeScanUseCaseTest {
         String spaceKey = "RS1";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
             ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
-        when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
+        when(confluenceSpacePort.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         ScanCheckpoint cp = ScanCheckpoint.builder()
             .scanId(scanId)
@@ -178,7 +182,7 @@ class StreamConfluenceResumeScanUseCaseTest {
         String spaceKey = "RS2";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
             ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
-        when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
+        when(confluenceSpacePort.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
         when(scanCheckpointRepository.findByScanAndSpace(scanId, spaceKey)).thenReturn(Optional.empty());
 
         CompletableFuture<List<ConfluencePage>> failing = new CompletableFuture<>();
@@ -202,7 +206,7 @@ class StreamConfluenceResumeScanUseCaseTest {
         String spaceKey = "RS3";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
             ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
-        when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
+        when(confluenceSpacePort.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         when(scanCheckpointRepository.findByScanAndSpace(anyString(), anyString())).thenThrow(new RuntimeException("prep-fail"));
 
@@ -222,7 +226,7 @@ class StreamConfluenceResumeScanUseCaseTest {
         String scanId = "SID-4";
         CompletableFuture<List<ConfluenceSpace>> failing = new CompletableFuture<>();
         failing.completeExceptionally(new RuntimeException("resume-allspaces-fail"));
-        when(confluenceService.getAllSpaces()).thenReturn(failing);
+        when(confluenceSpacePort.getAllSpaces()).thenReturn(failing);
 
         Flux<ConfluenceContentScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId).timeout(Duration.ofSeconds(5));
 
@@ -238,7 +242,7 @@ class StreamConfluenceResumeScanUseCaseTest {
         String spaceKey = "RS4";
         ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t","http://test.com", "d",
             ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
-        when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
+        when(confluenceSpacePort.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         ScanCheckpoint cp = ScanCheckpoint.builder()
             .scanId(scanId)

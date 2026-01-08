@@ -22,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import pro.softcom.aisentinel.application.confluence.port.in.ConfluenceSpacePort;
 import pro.softcom.aisentinel.application.confluence.port.out.AttachmentTextExtractor;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceAttachmentClient;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceAttachmentDownloader;
@@ -93,6 +94,9 @@ class StreamConfluenceScanUseCaseTest {
     @Mock
     private pro.softcom.aisentinel.application.pii.reporting.ScanSeverityCountService scanSeverityCountService;
 
+    @Mock
+    private ConfluenceSpacePort confluenceSpacePort;
+
     private StreamConfluenceScanUseCase streamConfluenceScanUseCase;
 
     @BeforeEach
@@ -124,7 +128,7 @@ class StreamConfluenceScanUseCaseTest {
                                                                           Runnable::run);
 
         // Create parameter objects
-        ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService);
+        ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService, confluenceSpacePort);
         ContentScanOrchestrator contentScanOrchestrator = new ContentScanOrchestrator(
                 eventFactory, progressCalculator, checkpointService, jpaScanEventStoreAdapter, scanEventDispatcher,
                 severityCalculationService, scanSeverityCountService
@@ -313,7 +317,7 @@ class StreamConfluenceScanUseCaseTest {
     @Test
     @DisplayName("streamAllSpaces - empty list emits multi_start, error, multiComplete")
     void Should_EmitErrorForAllSpaces_When_NoSpacesAvailable() {
-        when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of()));
+        when(confluenceSpacePort.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of()));
 
         Flux<ConfluenceContentScanResult> flux = streamConfluenceScanUseCase.streamAllSpaces().timeout(Duration.ofSeconds(5));
 
@@ -485,7 +489,7 @@ class StreamConfluenceScanUseCaseTest {
     void Should_EmitErrorEventPerSpace_When_GetAllPagesFails_InStreamAllSpaces() {
         ConfluenceSpace space = new ConfluenceSpace("id", "MS1", "t", "http://test.com", "d",
             ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
-        when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
+        when(confluenceSpacePort.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(List.of(space)));
 
         CompletableFuture<List<ConfluencePage>> failing = new CompletableFuture<>();
         failing.completeExceptionally(new RuntimeException("pages-fail"));
@@ -505,7 +509,7 @@ class StreamConfluenceScanUseCaseTest {
     void Should_EmitGlobalError_When_GetAllSpacesFails_InStreamAllSpaces() {
         CompletableFuture<List<ConfluenceSpace>> failing = new CompletableFuture<>();
         failing.completeExceptionally(new RuntimeException("allspaces-fail"));
-        when(confluenceService.getAllSpaces()).thenReturn(failing);
+        when(confluenceSpacePort.getAllSpaces()).thenReturn(failing);
 
         Flux<ConfluenceContentScanResult> flux = streamConfluenceScanUseCase.streamAllSpaces().timeout(Duration.ofSeconds(5));
 
@@ -589,7 +593,7 @@ class StreamConfluenceScanUseCaseTest {
                                                                           Runnable::run);
 
         // Create parameter objects
-        ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService);
+        ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService, confluenceSpacePort);
         ContentScanOrchestrator contentScanOrchestrator = new ContentScanOrchestrator(
                 eventFactory, progressCalculator, checkpointService, jpaScanEventStoreAdapter, scanEventDispatcher,
                 severityCalculationService, scanSeverityCountService
@@ -667,7 +671,7 @@ class StreamConfluenceScanUseCaseTest {
                                                                           Runnable::run);
 
         // Create parameter objects
-        ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService);
+        ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService, confluenceSpacePort);
         ContentScanOrchestrator contentScanOrchestrator = new ContentScanOrchestrator(
                 eventFactory, progressCalculator, checkpointService, jpaScanEventStoreAdapter, scanEventDispatcher,
                 severityCalculationService, scanSeverityCountService
@@ -760,7 +764,7 @@ class StreamConfluenceScanUseCaseTest {
         ConfluenceSpace space2 = new ConfluenceSpace("id2", "DEF", "Space DEF","http://test.com", "d",
             ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
 
-        when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(
+        when(confluenceSpacePort.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(
             List.of(space1, space2)
         ));
 
@@ -808,7 +812,7 @@ class StreamConfluenceScanUseCaseTest {
         ConfluenceSpace space2 = new ConfluenceSpace("id2", "XYZ", "Space XYZ","http://test.com", "d",
             ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
 
-        when(confluenceService.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(
+        when(confluenceSpacePort.getAllSpaces()).thenReturn(CompletableFuture.completedFuture(
             List.of(space1, space2)
         ));
 

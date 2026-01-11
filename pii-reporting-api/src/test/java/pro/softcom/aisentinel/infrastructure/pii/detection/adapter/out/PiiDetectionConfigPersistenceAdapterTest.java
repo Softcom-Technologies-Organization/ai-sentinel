@@ -99,6 +99,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
             existingConfig.isPresidioEnabled(),
             existingConfig.isRegexEnabled(),
             newThreshold,
+                30,
             updateTime,
             "integration-test"
         );

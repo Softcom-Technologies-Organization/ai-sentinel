@@ -37,7 +37,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_ReturnConfig_When_GetConfigCalled() {
         // Arrange
         PiiDetectionConfig expectedConfig = new PiiDetectionConfig(
-            1, true, true, false, new BigDecimal("0.75"), LocalDateTime.now(), "system"
+            1, true, true, false, new BigDecimal("0.75"),30, LocalDateTime.now(), "system"
         );
         when(repository.findConfig()).thenReturn(expectedConfig);
 
@@ -53,7 +53,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_UpdateAndReturnConfig_When_ValidCommand() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, false, true, new BigDecimal("0.80"), "testuser"
+            true, false, true, new BigDecimal("0.80"),30, "testuser"
         );
 
         // Act
@@ -81,7 +81,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_ThrowException_When_CommandHasInvalidThreshold() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, true, false, new BigDecimal("1.5"), "testuser"
+            true, true, false, new BigDecimal("1.5"),30, "testuser"
         );
 
         // Act & Assert
@@ -94,7 +94,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_ThrowException_When_CommandHasNegativeThreshold() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, true, false, new BigDecimal("-0.1"), "testuser"
+            true, true, false, new BigDecimal("-0.1"), 30,"testuser"
         );
 
         // Act & Assert
@@ -107,7 +107,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_ThrowException_When_NoDetectorsEnabled() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            false, false, false, new BigDecimal("0.75"), "testuser"
+            false, false, false, new BigDecimal("0.75"), 30,"testuser"
         );
 
         // Act & Assert
@@ -120,7 +120,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_UpdateConfig_When_OnlyGlinerEnabled() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, false, false, new BigDecimal("0.75"), "testuser"
+            true, false, false, new BigDecimal("0.75"), 30,"testuser"
         );
 
         // Act
@@ -138,7 +138,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_UpdateConfig_When_OnlyPresidioEnabled() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            false, true, false, new BigDecimal("0.75"), "testuser"
+            false, true, false, new BigDecimal("0.75"), 30,"testuser"
         );
 
         // Act
@@ -156,7 +156,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_UpdateConfig_When_OnlyRegexEnabled() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            false, false, true, new BigDecimal("0.75"), "testuser"
+            false, false, true, new BigDecimal("0.75"), 30,"testuser"
         );
 
         // Act
@@ -174,7 +174,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_AcceptBoundaryThreshold_When_ThresholdIsZero() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, false, false, BigDecimal.ZERO, "testuser"
+            true, false, false, BigDecimal.ZERO, 30,"testuser"
         );
 
         // Act
@@ -188,7 +188,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_AcceptBoundaryThreshold_When_ThresholdIsOne() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, false, false, BigDecimal.ONE, "testuser"
+            true, false, false, BigDecimal.ONE, 30,"testuser"
         );
 
         // Act
@@ -202,7 +202,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_SetConfigIdToOne_When_UpdatingConfig() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, true, false, new BigDecimal("0.75"), "testuser"
+            true, true, false, new BigDecimal("0.75"), 30,"testuser"
         );
 
         // Act
@@ -218,7 +218,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_PropagateException_When_RepositoryThrowsException() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, true, false, new BigDecimal("0.75"), "testuser"
+            true, true, false, new BigDecimal("0.75"), 30,"testuser"
         );
         doThrow(new RuntimeException("Database error"))
             .when(repository).updateConfig(any());

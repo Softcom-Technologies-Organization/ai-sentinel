@@ -52,10 +52,10 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
         }
         
         log.info("Updating PII detection configuration: glinerEnabled={}, presidioEnabled={}, " +
-                "regexEnabled={}, threshold={}, updatedBy={}", 
+                "regexEnabled={}, threshold={}, nbOfLabelByPass={}, updatedBy={}",
                 config.isGlinerEnabled(), config.isPresidioEnabled(), 
                 config.isRegexEnabled(), config.getDefaultThreshold(), 
-                config.getUpdatedBy());
+                config.getNbOfLabelByPass(), config.getUpdatedBy());
         
         PiiDetectionConfigEntity entity = toEntity(config);
         jpaRepository.save(entity);
@@ -76,6 +76,7 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 true,  // presidioEnabled
                 true,  // regexEnabled
                 new BigDecimal("0.75"),  // defaultThreshold
+                35, // nbOfLabelByPass
                 LocalDateTime.now(),
                 "system"
         );
@@ -94,6 +95,7 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 entity.getPresidioEnabled(),
                 entity.getRegexEnabled(),
                 entity.getDefaultThreshold(),
+                entity.getNbOfLabelByPass() != null ? entity.getNbOfLabelByPass() : 35,
                 entity.getUpdatedAt(),
                 entity.getUpdatedBy()
         );
@@ -109,6 +111,7 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 config.isPresidioEnabled(),
                 config.isRegexEnabled(),
                 config.getDefaultThreshold(),
+                config.getNbOfLabelByPass(),
                 config.getUpdatedAt() != null ? config.getUpdatedAt() : LocalDateTime.now(),
                 config.getUpdatedBy()
         );

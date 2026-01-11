@@ -26,7 +26,7 @@ class PiiDetectionConfigTest {
 
         // Act
         PiiDetectionConfig config = new PiiDetectionConfig(
-            id, glinerEnabled, presidioEnabled, regexEnabled, threshold, updatedAt, updatedBy
+            id, glinerEnabled, presidioEnabled, regexEnabled, threshold,30, updatedAt, updatedBy
         );
 
         // Assert
@@ -47,7 +47,7 @@ class PiiDetectionConfigTest {
         // Arrange & Act & Assert
         assertThatThrownBy(() -> {
             new PiiDetectionConfig(
-                1, true, true, true, null, now, "testuser"
+                1, true, true, true, null,30, now, "testuser"
             );
         })
         .isInstanceOf(IllegalArgumentException.class);
@@ -59,7 +59,7 @@ class PiiDetectionConfigTest {
         BigDecimal defaultThreshold = new BigDecimal("-0.75");
         // Arrange & Act & Assert
         assertThatThrownBy(() -> new PiiDetectionConfig(
-            1, true, true, true, defaultThreshold, now, "testuser"
+            1, true, true, true, defaultThreshold, 30,now, "testuser"
         ))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Default threshold must be greater than or equal to 0");
@@ -71,7 +71,7 @@ class PiiDetectionConfigTest {
         BigDecimal defaultThreshold = new BigDecimal("1.1");
         // Arrange & Act & Assert
         assertThatThrownBy(() -> new PiiDetectionConfig(
-            1, true, true, true, defaultThreshold, now, "testuser"
+            1, true, true, true, defaultThreshold, 30,now, "testuser"
         ))
         .isInstanceOf(IllegalArgumentException.class);
     }
@@ -80,7 +80,7 @@ class PiiDetectionConfigTest {
     void should_AcceptThreshold_When_ThresholdIsZero() {
         // Arrange & Act
         PiiDetectionConfig config = new PiiDetectionConfig(
-            1, true, false, false, BigDecimal.ZERO, LocalDateTime.now(), "testuser"
+            1, true, false, false, BigDecimal.ZERO, 30,LocalDateTime.now(), "testuser"
         );
 
         // Assert
@@ -91,7 +91,7 @@ class PiiDetectionConfigTest {
     void should_AcceptThreshold_When_ThresholdIsOne() {
         // Arrange & Act
         PiiDetectionConfig config = new PiiDetectionConfig(
-            1, true, false, false, BigDecimal.ONE, LocalDateTime.now(), "testuser"
+            1, true, false, false, BigDecimal.ONE, 30,LocalDateTime.now(), "testuser"
         );
 
         // Assert
@@ -105,7 +105,7 @@ class PiiDetectionConfigTest {
         // Arrange & Act & Assert
         assertThatThrownBy(() -> {
             new PiiDetectionConfig(
-                1, false, false, false, defaultThreshold, now, "testuser"
+                1, false, false, false, defaultThreshold, 30,now, "testuser"
             );
         })
         .isInstanceOf(IllegalArgumentException.class)
@@ -116,7 +116,7 @@ class PiiDetectionConfigTest {
     void should_AcceptConfig_When_OnlyGlinerEnabled() {
         // Arrange & Act
         PiiDetectionConfig config = new PiiDetectionConfig(
-            1, true, false, false, new BigDecimal("0.75"), LocalDateTime.now(), "testuser"
+            1, true, false, false, new BigDecimal("0.75"), 30,LocalDateTime.now(), "testuser"
         );
 
         // Assert
@@ -131,7 +131,7 @@ class PiiDetectionConfigTest {
     void should_AcceptConfig_When_OnlyPresidioEnabled() {
         // Arrange & Act
         PiiDetectionConfig config = new PiiDetectionConfig(
-            1, false, true, false, new BigDecimal("0.75"), LocalDateTime.now(), "testuser"
+            1, false, true, false, new BigDecimal("0.75"), 30,LocalDateTime.now(), "testuser"
         );
 
         // Assert
@@ -146,7 +146,7 @@ class PiiDetectionConfigTest {
     void should_AcceptConfig_When_OnlyRegexEnabled() {
         // Arrange & Act
         PiiDetectionConfig config = new PiiDetectionConfig(
-            1, false, false, true, new BigDecimal("0.75"), LocalDateTime.now(), "testuser"
+            1, false, false, true, new BigDecimal("0.75"), 30,LocalDateTime.now(), "testuser"
         );
 
         // Assert
@@ -162,10 +162,10 @@ class PiiDetectionConfigTest {
         // Arrange
         LocalDateTime now = LocalDateTime.now();
         PiiDetectionConfig config1 = new PiiDetectionConfig(
-            1, true, true, false, new BigDecimal("0.75"), now, "testuser"
+            1, true, true, false, new BigDecimal("0.75"), 30,now, "testuser"
         );
         PiiDetectionConfig config2 = new PiiDetectionConfig(
-            1, true, true, false, new BigDecimal("0.75"), now, "testuser"
+            1, true, true, false, new BigDecimal("0.75"), 30,now, "testuser"
         );
 
         // Act & Assert
@@ -179,10 +179,10 @@ class PiiDetectionConfigTest {
         // Arrange
         LocalDateTime now = LocalDateTime.now();
         PiiDetectionConfig config1 = new PiiDetectionConfig(
-            1, true, true, false, new BigDecimal("0.75"), now, "testuser"
+            1, true, true, false, new BigDecimal("0.75"), 30,now, "testuser"
         );
         PiiDetectionConfig config2 = new PiiDetectionConfig(
-            1, true, true, false, new BigDecimal("0.80"), now, "testuser"
+            1, true, true, false, new BigDecimal("0.80"), 30,now, "testuser"
         );
 
         // Act & Assert
@@ -193,7 +193,7 @@ class PiiDetectionConfigTest {
     void should_ReturnValidString_When_ToStringCalled() {
         // Arrange
         PiiDetectionConfig config = new PiiDetectionConfig(
-            1, true, true, false, new BigDecimal("0.75"), LocalDateTime.now(), "testuser"
+            1, true, true, false, new BigDecimal("0.75"), 30,LocalDateTime.now(), "testuser"
         );
 
         // Act

@@ -85,6 +85,7 @@ public class PiiDetectionConfigController {
                 request.presidioEnabled(),
                 request.regexEnabled(),
                 request.defaultThreshold(),
+                request.nbOfLabelByPass(),
                 updatedBy
             );
             
@@ -113,6 +114,7 @@ public class PiiDetectionConfigController {
             config.isPresidioEnabled(),
             config.isRegexEnabled(),
             config.getDefaultThreshold(),
+            config.getNbOfLabelByPass(),
             config.getUpdatedAt(),
             config.getUpdatedBy()
         );

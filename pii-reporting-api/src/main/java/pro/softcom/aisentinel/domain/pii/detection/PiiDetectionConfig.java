@@ -19,6 +19,7 @@ public class PiiDetectionConfig {
     private final boolean presidioEnabled;
     private final boolean regexEnabled;
     private final BigDecimal defaultThreshold;
+    private final Integer nbOfLabelByPass;
     private final LocalDateTime updatedAt;
     private final String updatedBy;
 
@@ -30,6 +31,7 @@ public class PiiDetectionConfig {
      * @param presidioEnabled  Whether Presidio detector is enabled
      * @param regexEnabled     Whether custom regex detector is enabled
      * @param defaultThreshold Default confidence threshold (0.0 to 1.0)
+     * @param nbOfLabelByPass  Number of labels per pass for GLiNER
      * @param updatedAt        Last update timestamp
      * @param updatedBy        User who last updated the configuration
      * @throws IllegalArgumentException if threshold is out of range
@@ -40,6 +42,7 @@ public class PiiDetectionConfig {
             boolean presidioEnabled,
             boolean regexEnabled,
             BigDecimal defaultThreshold,
+            Integer nbOfLabelByPass,
             LocalDateTime updatedAt,
             String updatedBy) {
 
@@ -48,6 +51,7 @@ public class PiiDetectionConfig {
         this.presidioEnabled = presidioEnabled;
         this.regexEnabled = regexEnabled;
         this.defaultThreshold = defaultThreshold;
+        this.nbOfLabelByPass = nbOfLabelByPass;
         this.updatedAt = updatedAt;
         this.updatedBy = updatedBy;
 
@@ -78,6 +82,11 @@ public class PiiDetectionConfig {
             throw new IllegalArgumentException(
                     "At least one detector must be enabled");
         }
+
+        if (nbOfLabelByPass == null || nbOfLabelByPass < 1) {
+            throw new IllegalArgumentException(
+                    "Number of labels by pass must be at least 1");
+        }
     }
 
     public Integer getId() {
@@ -98,6 +107,10 @@ public class PiiDetectionConfig {
 
     public BigDecimal getDefaultThreshold() {
         return defaultThreshold;
+    }
+
+    public Integer getNbOfLabelByPass() {
+        return nbOfLabelByPass;
     }
 
     public LocalDateTime getUpdatedAt() {

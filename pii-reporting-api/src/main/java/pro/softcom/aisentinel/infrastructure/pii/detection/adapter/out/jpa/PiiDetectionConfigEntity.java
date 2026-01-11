@@ -43,6 +43,9 @@ public class PiiDetectionConfigEntity {
     @Column(name = "default_threshold", nullable = false, precision = 3, scale = 2)
     private BigDecimal defaultThreshold;
 
+    @Column(name = "nb_of_label_by_pass", nullable = false)
+    private Integer nbOfLabelByPass;
+
     @NotNull
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
@@ -56,12 +59,14 @@ public class PiiDetectionConfigEntity {
 
     public PiiDetectionConfigEntity(Integer id, Boolean glinerEnabled, Boolean presidioEnabled,
                                     Boolean regexEnabled, BigDecimal defaultThreshold,
+                                    Integer nbOfLabelByPass,
                                     LocalDateTime updatedAt, String updatedBy) {
         this.id = id;
         this.glinerEnabled = glinerEnabled;
         this.presidioEnabled = presidioEnabled;
         this.regexEnabled = regexEnabled;
         this.defaultThreshold = defaultThreshold;
+        this.nbOfLabelByPass = nbOfLabelByPass;
         this.updatedAt = updatedAt;
         this.updatedBy = updatedBy;
     }
@@ -104,6 +109,14 @@ public class PiiDetectionConfigEntity {
 
     public void setDefaultThreshold(BigDecimal defaultThreshold) {
         this.defaultThreshold = defaultThreshold;
+    }
+
+    public Integer getNbOfLabelByPass() {
+        return nbOfLabelByPass;
+    }
+
+    public void setNbOfLabelByPass(Integer nbOfLabelByPass) {
+        this.nbOfLabelByPass = nbOfLabelByPass;
     }
 
     public LocalDateTime getUpdatedAt() {

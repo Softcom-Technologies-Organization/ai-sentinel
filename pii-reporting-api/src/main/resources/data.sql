@@ -3,8 +3,8 @@ BEGIN;
 -- ============================================================================
 -- PII Detection Global Config (Singleton with id=1)
 -- ============================================================================
-INSERT INTO pii_detection_config (id, gliner_enabled, presidio_enabled, regex_enabled, default_threshold, updated_at, updated_by)
-VALUES (1, true, true, true, 0.30, CURRENT_TIMESTAMP, 'system')
+INSERT INTO pii_detection_config (id, gliner_enabled, presidio_enabled, regex_enabled, default_threshold, nb_of_label_by_pass, updated_at, updated_by)
+VALUES (1, true, true, true, 0.30, 35, CURRENT_TIMESTAMP, 'system')
     ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================

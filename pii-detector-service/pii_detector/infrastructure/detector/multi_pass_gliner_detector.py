@@ -127,10 +127,22 @@ class MultiPassGlinerDetector:
         # Load parallel processing config
         self._load_parallel_config()
 
+        # Initialize persistent executor
+        self.executor = None
+        if self.parallel_enabled:
+            self.executor = ThreadPoolExecutor(max_workers=self.max_workers)
+
         self.logger.info(
             f"MultiPassGlinerDetector initialized with {self.max_workers} workers "
             f"(categories loaded on first detection)"
         )
+
+    def __del__(self):
+        """Cleanup resources."""
+        if hasattr(self, 'executor') and self.executor:
+            self.executor.shutdown(wait=False)
+        if hasattr(self, '_gliner_detector'):
+            del self._gliner_detector
 
     def _load_parallel_config(self) -> None:
         """Load parallel processing configuration from settings."""
@@ -149,16 +161,9 @@ class MultiPassGlinerDetector:
     def _load_categories_from_database(self) -> None:
         """
         Load PII type configurations from database and group by category.
-
-        This method fetches all GLINER PII types from the database and groups
-        them by their category column. Each category becomes a separate detection pass.
-
-        The mapping structure is:
-            {
-                "IDENTITY": {"person name": "PERSON_NAME", "first name": "FIRST_NAME", ...},
-                "FINANCIAL": {"credit card number": "CREDIT_CARD_NUMBER", ...},
-                ...
-            }
+        
+        This method also fetches the 'nb_of_label_by_pass' configuration to
+        optimize execution passes by merging small categories.
         """
         try:
             from pii_detector.infrastructure.adapter.out.database_config_adapter import (
@@ -166,6 +171,11 @@ class MultiPassGlinerDetector:
             )
 
             adapter = get_database_config_adapter()
+            
+            # Fetch global config for limit
+            global_config = adapter.fetch_config()
+            limit = global_config.get('nb_of_label_by_pass', 35) if global_config else 35
+            
             pii_type_configs = adapter.fetch_pii_type_configs(detector='GLINER')
 
             if not pii_type_configs:
@@ -175,79 +185,95 @@ class MultiPassGlinerDetector:
                 self._use_fallback_categories()
                 return
 
-            # Group by category
-            categories: Dict[str, Dict[str, str]] = {}
+            # Build pii_type_to_category mapping (needed for ConflictResolver logic)
+            # This respects the BUSINESS categories from DB
             pii_type_to_category: Dict[str, str] = {}
-
             for pii_type, config in pii_type_configs.items():
-                if not config.get('enabled', False):
-                    continue
-
-                category = config.get('category', 'UNKNOWN')
-                detector_label = config.get('detector_label')
-
-                if not detector_label:
-                    self.logger.debug(f"Skipping {pii_type}: no detector_label")
-                    continue
-
-                if category not in categories:
-                    categories[category] = {}
-
-                categories[category][detector_label] = pii_type
-                pii_type_to_category[pii_type] = category
-
-            self._pass_categories = categories
+                if config.get('enabled', False):
+                    category = config.get('category', 'UNKNOWN')
+                    pii_type_to_category[pii_type] = category
+            
             self._pii_type_to_category = pii_type_to_category
+
+            # Build optimized execution passes (chunks of labels)
+            # This ignores business categories for execution efficiency
+            self._pass_categories = self._optimize_passes(pii_type_configs, limit)
 
             # Initialize conflict resolver with category mapping
             self._conflict_resolver = ConflictResolver(pii_type_to_category)
 
             # Log summary
-            total_types = sum(len(labels) for labels in categories.values())
+            total_types = sum(len(labels) for labels in self._pass_categories.values())
             self.logger.info(
-                f"Loaded {total_types} PII types from database across {len(categories)} categories"
+                f"Loaded {total_types} PII types from database, optimized into {len(self._pass_categories)} passes (limit={limit})"
             )
-            for cat, labels in sorted(categories.items()):
-                self.logger.info(f"  {cat}: {len(labels)} types")
+            for pass_name, labels in sorted(self._pass_categories.items()):
+                self.logger.info(f"  {pass_name}: {len(labels)} labels")
 
         except Exception as e:
             self.logger.error(f"Failed to load categories from database: {e}")
             self._use_fallback_categories()
 
-    def _build_categories_from_config(self, pii_type_configs: dict) -> Dict[str, Dict[str, str]]:
+    def _optimize_passes(self, pii_type_configs: dict, limit: int) -> Dict[str, Dict[str, str]]:
         """
-        Build categories mapping dynamically from passed configuration.
+        Chunk enabled PII types into optimized passes based on limit.
         
         Args:
-            pii_type_configs: Dictionary of PII type configurations
+            pii_type_configs: Configuration for all PII types
+            limit: Maximum number of labels per pass
             
         Returns:
-            Categories mapping: {Category: {DetectorLabel: PiiType}}
+            Dictionary of {pass_name: {label: pii_type}}
         """
-        categories: Dict[str, Dict[str, str]] = {}
-        
+        # Collect all enabled (label, pii_type) pairs
+        all_labels: List[Tuple[str, str]] = []
         for pii_type, config in pii_type_configs.items():
-            # Only include enabled types for GLINER detector
-            # Or types that don't specify detector (assume ALL)
             if not config.get('enabled', False):
                 continue
-                
+            
+            # Skip if not GLINER or ALL
             config_detector = config.get('detector', 'ALL')
             if config_detector != 'ALL' and config_detector != 'GLINER':
                 continue
-                
-            category = config.get('category', 'UNKNOWN')
+
             detector_label = config.get('detector_label')
+            if detector_label:
+                all_labels.append((detector_label, pii_type))
+        
+        # Sort for deterministic batches
+        all_labels.sort(key=lambda x: x[1])  # Sort by pii_type
+        
+        batches: Dict[str, Dict[str, str]] = {}
+        
+        # Chunk into batches
+        for i in range(0, len(all_labels), limit):
+            chunk = all_labels[i:i+limit]
+            batch_name = f"BATCH_{i//limit + 1}"
+            batches[batch_name] = {label: pii_type for label, pii_type in chunk}
             
-            if not detector_label:
-                continue
-                
-            if category not in categories:
-                categories[category] = {}
-                
-            categories[category][detector_label] = pii_type
-            
-        return categories
+        if not batches:
+             # Fallback if nothing enabled
+             return {}
+             
+        return batches
+
+    def _build_categories_from_config(self, pii_type_configs: dict, limit: Optional[int] = None) -> Dict[str, Dict[str, str]]:
+        """
+        Build categories mapping dynamically from passed configuration.
+        Also applies optimization/chunking using default limit (35).
+
+        Args:
+            pii_type_configs: Dictionary of PII type configurations
+            limit: Maximum number of labels per pass (chunk size)
+
+        Returns:
+            Optimized execution passes
+        """
+        # We use a default limit here because we might not have DB access context
+        # when this is called via direct config injection, but usually
+        # pii_type_configs implies we want to override behavior.
+        # We'll use 35 as a safe default if not provided.
+        return self._optimize_passes(pii_type_configs, limit=limit or 35)
 
     def _use_fallback_categories(self) -> None:
         """
@@ -314,7 +340,8 @@ class MultiPassGlinerDetector:
         text: str,
         threshold: Optional[float] = None,
         categories: Optional[List[str]] = None,
-        pii_type_configs: Optional[dict] = None
+        pii_type_configs: Optional[dict] = None,
+        chunk_size: Optional[int] = None
     ) -> List[PIIEntity]:
         """
         Detect PII using multi-pass parallel detection with conflict resolution.
@@ -324,12 +351,13 @@ class MultiPassGlinerDetector:
             threshold: Confidence threshold (default: 0.3)
             categories: Optional list of categories to run (default: all)
             pii_type_configs: Optional PII type configs for dynamic settings
+            chunk_size: Optional limit for labels per pass (from DB config)
 
         Returns:
             List of PIIEntity with exactly 1 label per span
 
         Raises:
-            ModelNotLoadedError: If model is not loaded
+            ModelNotLoadedError: If model is not loaded9
             PIIDetectionError: If detection fails
         """
         if not self._gliner_detector.model:
@@ -338,10 +366,10 @@ class MultiPassGlinerDetector:
         # Use passed pii_type_configs to build dynamic categories if provided
         # Otherwise fallback to loaded categories
         pass_categories = self._pass_categories
-        
+
         if pii_type_configs:
-            pass_categories = self._build_categories_from_config(pii_type_configs)
-            
+            pass_categories = self._build_categories_from_config(pii_type_configs, limit=chunk_size)
+
             # Build pii_type -> category mapping for conflict resolver
             pii_type_to_category: Dict[str, str] = {}
             for category, labels in pass_categories.items():
@@ -451,34 +479,33 @@ class MultiPassGlinerDetector:
         """
         all_entities: List[PIIEntity] = []
 
-        if self.parallel_enabled and len(categories) > 1:
+        if self.parallel_enabled and self.executor and len(categories) > 1:
             self.logger.info(
                 f"[{detection_id}] Running {len(categories)} passes in parallel "
                 f"with {self.max_workers} workers"
             )
 
-            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-                future_to_category = {
-                    executor.submit(
-                        self._run_single_pass,
-                        text, threshold, detection_id, category, pass_categories
-                    ): category
-                    for category in categories
-                }
+            future_to_category = {
+                self.executor.submit(
+                    self._run_single_pass,
+                    text, threshold, detection_id, category, pass_categories
+                ): category
+                for category in categories
+            }
 
-                for future in as_completed(future_to_category):
-                    category = future_to_category[future]
-                    try:
-                        entities = future.result()
-                        all_entities.extend(entities)
-                        self.logger.debug(
-                            f"[{detection_id}] Pass {category}: {len(entities)} entities"
-                        )
-                    except Exception as e:
-                        self.logger.error(
-                            f"[{detection_id}] Pass {category} failed: {e}"
-                        )
-                        raise
+            for future in as_completed(future_to_category):
+                category = future_to_category[future]
+                try:
+                    entities = future.result()
+                    all_entities.extend(entities)
+                    self.logger.debug(
+                        f"[{detection_id}] Pass {category}: {len(entities)} entities"
+                    )
+                except Exception as e:
+                    self.logger.error(
+                        f"[{detection_id}] Pass {category} failed: {e}"
+                    )
+                    raise
         else:
             # Sequential fallback
             self.logger.info(f"[{detection_id}] Running {len(categories)} passes sequentially")

@@ -160,7 +160,8 @@ class CompositePIIDetector:
         enable_ml: Optional[bool] = None,
         enable_regex: Optional[bool] = None,
         enable_presidio: Optional[bool] = None,
-        pii_type_configs: Optional[dict] = None
+        pii_type_configs: Optional[dict] = None,
+        chunk_size: Optional[int] = None
     ) -> List[PIIEntity]:
         """
         Detect PII using both ML and regex detectors.
@@ -213,7 +214,7 @@ class CompositePIIDetector:
         
         # Execute ML detection
         if use_ml and self.ml_detector:
-            ml_entities = self._run_ml_detection(text, threshold, pii_type_configs)
+            ml_entities = self._run_ml_detection(text, threshold, pii_type_configs, chunk_size)
             results_per_detector.append((self.ml_detector, ml_entities))
         
         # Execute regex detection
@@ -273,7 +274,8 @@ class CompositePIIDetector:
         self, 
         text: str, 
         threshold: Optional[float],
-        pii_type_configs: Optional[dict] = None
+        pii_type_configs: Optional[dict] = None,
+        chunk_size: Optional[int] = None
     ) -> List[PIIEntity]:
         """
         Run ML-based detection with error handling.
@@ -282,18 +284,25 @@ class CompositePIIDetector:
             text: Text to analyze
             threshold: Optional confidence threshold
             pii_type_configs: Optional PII type configs for dynamic settings
+            chunk_size: Optional chunk size for optimizing passes
             
         Returns:
             List of detected entities (empty if detection fails)
         """
         try:
-            # Check if ML detector supports pii_type_configs
+            # Check if ML detector supports parameters using inspection
             import inspect
             sig = inspect.signature(self.ml_detector.detect_pii)
+            
+            kwargs = {}
             if 'pii_type_configs' in sig.parameters:
-                return self.ml_detector.detect_pii(text, threshold, pii_type_configs=pii_type_configs)
-            else:
-                return self.ml_detector.detect_pii(text, threshold)
+                kwargs['pii_type_configs'] = pii_type_configs
+                
+            if 'chunk_size' in sig.parameters and chunk_size is not None:
+                kwargs['chunk_size'] = chunk_size
+                
+            return self.ml_detector.detect_pii(text, threshold, **kwargs)
+            
         except Exception as e:
             self.logger.error(f"ML detection failed: {e}")
             return []

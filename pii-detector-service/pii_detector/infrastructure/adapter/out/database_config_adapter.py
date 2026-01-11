@@ -64,7 +64,8 @@ class DatabaseConfigAdapter:
                     gliner_enabled,
                     presidio_enabled,
                     regex_enabled,
-                    default_threshold
+                    default_threshold,
+                    nb_of_label_by_pass
                 FROM pii_detection_config
                 WHERE id = 1
             """

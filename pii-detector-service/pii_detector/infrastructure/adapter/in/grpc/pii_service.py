@@ -472,10 +472,13 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 return pii_detection_pb2.PIIDetectionResponse()
             
             # Fetch dynamic configuration from database if requested
+            chunk_size = None
             if request.fetch_config_from_db:
-                threshold, pii_type_configs, detector_flags = self._fetch_and_apply_config(threshold, request_id)
+                threshold, pii_type_configs, detector_flags, chunk_size = self._fetch_and_apply_config(threshold, request_id)
             
-            entities = self._execute_detection(content, threshold, request_id, detector_flags, pii_type_configs)
+            entities = self._execute_detection(
+                content, threshold, request_id, detector_flags, pii_type_configs, chunk_size
+            )
             
             # Apply PII type-specific filtering if configs were fetched
             if pii_type_configs:
@@ -552,7 +555,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         else:
             logger.debug(f"[{request_id}] Content: {content}")
 
-    def _fetch_and_apply_config(self, default_threshold: float, request_id: str) -> tuple[float, Optional[dict], Optional[dict]]:
+    def _fetch_and_apply_config(self, default_threshold: float, request_id: str) -> tuple[float, Optional[dict], Optional[dict], Optional[int]]:
         """
         Fetch configuration from database and apply to current detection.
         
@@ -565,10 +568,11 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             request_id: Request identifier for logging
             
         Returns:
-            Tuple of (threshold, pii_type_configs, detector_flags) where:
+            Tuple of (threshold, pii_type_configs, detector_flags, chunk_size) where:
             - threshold: Default threshold value to use for detection
             - pii_type_configs: Dictionary of PII type configs or None
             - detector_flags: Dictionary with gliner_enabled, presidio_enabled, regex_enabled or None
+            - chunk_size: Number of labels per pass for MultiPassGLiNER (or None)
         """
         try:
             from pii_detector.infrastructure.adapter.out.database_config_adapter import (
@@ -587,10 +591,15 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                     f"[{request_id}] Using default threshold {default_threshold} "
                     "(database config not available)"
                 )
-                return default_threshold, pii_type_configs, None
+                return default_threshold, pii_type_configs, None, None
             
             # Extract threshold from database config
             threshold = float(db_config.get('default_threshold', default_threshold))
+            
+            # Extract chunk size (nb_of_label_by_pass)
+            chunk_size = db_config.get('nb_of_label_by_pass')
+            if chunk_size:
+                chunk_size = int(chunk_size)
             
             # Extract detector flags for dynamic activation
             detector_flags = {
@@ -603,7 +612,8 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 f"[{request_id}] Applied database config: threshold={threshold}, "
                 f"gliner={detector_flags['gliner_enabled']}, "
                 f"presidio={detector_flags['presidio_enabled']}, "
-                f"regex={detector_flags['regex_enabled']}"
+                f"regex={detector_flags['regex_enabled']}, "
+                f"chunk_size={chunk_size}"
             )
             
             if pii_type_configs:
@@ -611,14 +621,14 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                     f"[{request_id}] Loaded {len(pii_type_configs)} PII type-specific configs"
                 )
             
-            return threshold, pii_type_configs, detector_flags
+            return threshold, pii_type_configs, detector_flags, chunk_size
             
         except Exception as e:
             logger.warning(
                 f"[{request_id}] Failed to fetch database config: {e}. "
                 f"Using default threshold {default_threshold}"
             )
-            return default_threshold, None, None
+            return default_threshold, None, None, None
 
     def _validate_content(self, content: str, request_id: str) -> Optional[str]:
         """Validate content against business rules.
@@ -651,93 +661,74 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         context.set_details(error_message)
 
     def _execute_detection(
-        self, 
-        content: str, 
-        threshold: float, 
-        request_id: str, 
+        self,
+        content: str,
+        threshold: float,
+        request_id: str,
         detector_flags: Optional[dict] = None,
-        pii_type_configs: Optional[Dict] = None
+        pii_type_configs: Optional[Dict] = None,
+        chunk_size: Optional[int] = None
     ) -> List:
         """Execute PII detection with dynamic detector activation and log performance metrics.
-        
+
         Business rule: Detector activation flags from database override default configuration
         to enable runtime reconfiguration without service restart.
-        
+
         Phase 3 fix: Fresh PII type configs are passed to Presidio detector to avoid
         stale config cache issues when database configurations change.
-        
+
         Args:
             content: Text to analyze
             threshold: Detection confidence threshold
             request_id: Request identifier for logging
             detector_flags: Optional dict with gliner_enabled, presidio_enabled, regex_enabled
             pii_type_configs: Optional fresh PII type configs from database for Presidio
-            
+            chunk_size: Optional labels per pass limit for MultiPassGLiNER
+
         Returns:
             List of detected PII entities
         """
         processing_start = time.time()
         logger.debug("[%s] Starting PII detection processing...", request_id)
-        
+
         # Pass fresh configs to Presidio detector if available
         self._pass_fresh_configs_to_presidio(pii_type_configs, request_id)
+
+        # Prepare arguments based on what the detector supports
+        kwargs = {}
         
-        # Apply detector flags if available (for CompositePIIDetector)
-        if detector_flags and hasattr(self.detector, 'detect_pii'):
-            # Check if detector supports dynamic configuration (CompositePIIDetector)
+        if hasattr(self.detector, 'detect_pii'):
             import inspect
             sig = inspect.signature(self.detector.detect_pii)
-            supports_dynamic_config = 'enable_ml' in sig.parameters
-            supports_pii_configs = 'pii_type_configs' in sig.parameters
             
-            if supports_dynamic_config:
-                logger.debug(
-                    f"[{request_id}] Applying dynamic detector flags: "
-                    f"ML={detector_flags.get('gliner_enabled')}, "
-                    f"Presidio={detector_flags.get('presidio_enabled')}, "
-                    f"Regex={detector_flags.get('regex_enabled')}"
-                )
-                # Pass pii_type_configs if detector supports it
-                if supports_pii_configs:
-                    entities = self.detector.detect_pii(
-                        content, 
-                        threshold,
-                        enable_ml=detector_flags.get('gliner_enabled'),
-                        enable_presidio=detector_flags.get('presidio_enabled'),
-                        enable_regex=detector_flags.get('regex_enabled'),
-                        pii_type_configs=pii_type_configs
+            if 'pii_type_configs' in sig.parameters:
+                kwargs['pii_type_configs'] = pii_type_configs
+            
+            if 'chunk_size' in sig.parameters and chunk_size is not None:
+                kwargs['chunk_size'] = chunk_size
+            
+            # Apply detector flags if available (for CompositePIIDetector)
+            if detector_flags:
+                if 'enable_ml' in sig.parameters:
+                    kwargs['enable_ml'] = detector_flags.get('gliner_enabled')
+                    kwargs['enable_presidio'] = detector_flags.get('presidio_enabled')
+                    kwargs['enable_regex'] = detector_flags.get('regex_enabled')
+                    
+                    logger.debug(
+                        f"[{request_id}] Applying dynamic detector flags: "
+                        f"ML={kwargs['enable_ml']}, "
+                        f"Presidio={kwargs['enable_presidio']}, "
+                        f"Regex={kwargs['enable_regex']}"
                     )
-                else:
-                    entities = self.detector.detect_pii(
-                        content, 
-                        threshold,
-                        enable_ml=detector_flags.get('gliner_enabled'),
-                        enable_presidio=detector_flags.get('presidio_enabled'),
-                        enable_regex=detector_flags.get('regex_enabled')
-                    )
-            else:
-                # Simple detector - check if it supports pii_type_configs
-                if supports_pii_configs:
-                    entities = self.detector.detect_pii(content, threshold, pii_type_configs=pii_type_configs)
-                else:
-                    entities = self.detector.detect_pii(content, threshold)
-        else:
-            # No detector flags - check if detector supports pii_type_configs
-            if hasattr(self.detector, 'detect_pii'):
-                import inspect
-                sig = inspect.signature(self.detector.detect_pii)
-                if 'pii_type_configs' in sig.parameters:
-                    entities = self.detector.detect_pii(content, threshold, pii_type_configs=pii_type_configs)
-                else:
-                    entities = self.detector.detect_pii(content, threshold)
-            else:
-                entities = self.detector.detect_pii(content, threshold)
         
+        # Execute detection with supported arguments
+        entities = self.detector.detect_pii(content, threshold, **kwargs)
+
         processing_time = time.time() - processing_start
-        
+
         self._log_detection_metrics(request_id, content, entities, processing_time)
         self._log_detected_entities(request_id, entities)
-        
+
         return entities
     
     def _pass_fresh_configs_to_presidio(self, pii_type_configs: Optional[Dict], request_id: str) -> None:

@@ -244,7 +244,7 @@ Navigate to the Secrets section and add the following 4 secrets:
 | `CONFLUENCE_USERNAME` | Confluence email or username                               | `user@company.com`                   | ✅ Yes               |
 | `CONFLUENCE_API_TOKEN` | Confluence API token                                       | `ATATT3xFfGF0...`                    | ✅ Yes               |
 | `HUGGING_FACE_API_KEY` | Hugging Face API key (for private models)                  | `hf_...`                             | ✅ Yes               |
-| `PII_DATABASE_ENCRYPTION_KEY` | Database encryption base for stored PII values             | `hf_...`                             | ✅ Auto generated    |
+| `PII_DATABASE_ENCRYPTION_KEY` | Database encryption base for stored PII values             | `qdso...=`                           | ✅ Auto generated    |
 | `PII_REPORTING_ALLOW_SECRET_REVEAL` | Define the UI is allowed to reveal the detected PII values | `false`                              | ✅ Has default value |
 
 *Optional but recommended for accessing gated models.

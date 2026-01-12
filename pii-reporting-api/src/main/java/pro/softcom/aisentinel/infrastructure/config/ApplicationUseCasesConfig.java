@@ -134,8 +134,7 @@ public class ApplicationUseCasesConfig {
                 attachmentProcessor,
                 scanTimeoutConfig,
                 htmlContentParser,
-                personallyIdentifiableInformationScanExecutionOrchestratorPort,
-                scanCheckpointRepository
+                personallyIdentifiableInformationScanExecutionOrchestratorPort
         );
     }
 

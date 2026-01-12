@@ -2,11 +2,6 @@ package pro.softcom.aisentinel.application.pii.reporting.usecase;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import java.time.Duration;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.confluence.service.ConfluenceAccessor;
@@ -26,6 +21,12 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
+import java.time.Duration;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * Application use case orchestrating Confluence scans and PII detection. Business intent:
  * Coordinates the scanning workflow by delegating to specialized services for event creation,
@@ -43,7 +44,6 @@ public abstract class AbstractStreamConfluenceScanUseCase {
     protected final ScanTimeOutConfig scanTimeoutConfig;
     protected final HtmlContentParser htmlContentParser;
 
-    //TODO: verify if this should be a value object from the Domain
     protected record ConfluencePageContext(String scanId, String spaceKey, String pageId,
                                            String pageTitle) {
 
@@ -356,7 +356,6 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         return page.content() != null ? page.content().body() : "";
     }
 
-    //TODO: refactor to reduce cyclomatic complexity
     private ContentPiiDetection detectPii(String content) {
         String safeContent = content != null ? content : "";
         int charCount = safeContent.length();

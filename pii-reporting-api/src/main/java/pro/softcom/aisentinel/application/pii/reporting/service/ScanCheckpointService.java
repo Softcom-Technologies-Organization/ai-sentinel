@@ -181,4 +181,8 @@ public class ScanCheckpointService {
      */
     private record CheckpointData(String lastPage, String lastAttachment, ScanStatus status) {
     }
+
+    public void deleteActiveScanCheckpoints() {
+        scanCheckpointRepository.deleteActiveScanCheckpoints();
+    }
 }

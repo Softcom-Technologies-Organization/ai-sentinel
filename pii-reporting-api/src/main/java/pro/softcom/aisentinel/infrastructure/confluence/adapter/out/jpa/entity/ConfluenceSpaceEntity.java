@@ -4,12 +4,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.*;
+
 import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Getter
 @Setter
@@ -39,10 +36,9 @@ public class ConfluenceSpaceEntity {
     @Column(name = "cache_timestamp", nullable = false)
     private LocalDateTime cacheTimestamp;
 
-    //TODO: this field needs to be renamed for better clarity
-    @Column(name = "last_updated", nullable = false)
-    private LocalDateTime lastUpdated;
+    @Column(name = "last_synced_at", nullable = false)
+    private LocalDateTime lastSyncedAt;
 
-    @Column(name = "last_modified_date")
-    private LocalDateTime lastModifiedDate;
+    @Column(name = "confluence_last_modified_at")
+    private LocalDateTime confluenceLastModifiedAt;
 }

@@ -4,7 +4,7 @@ import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 
 /**
  * Enumeration of PII (Personally Identifiable Information) types emitted by the gRPC server.
- * Aligned with server taxonomy from Multi-Pass GLiNER detector.
+ * Aligned with server taxonomy from Multi-Pass GLiNER detector and Presidio.
  *
  * CONSOLIDATED VERSION: 44 PII types across 7 categories
  * Down from 114 types / 13 categories for better performance and accuracy.
@@ -94,83 +94,52 @@ public enum PersonallyIdentifiableInformationType {
     INSURANCE_POLICY_NUMBER(ContentPiiDetection.PersonallyIdentifiableInformationType.INSURANCE),
 
     // =========================================================================
-    // Legacy types for backward compatibility
-    // These map to the new consolidated types
+    // Presidio / Country Specific Types
+    // These are used by the Presidio detector
     // =========================================================================
-    // Name variants -> PERSON_NAME
-    FIRST_NAME(ContentPiiDetection.PersonallyIdentifiableInformationType.NAME),
-    LAST_NAME(ContentPiiDetection.PersonallyIdentifiableInformationType.SURNAME),
-    FULL_NAME(ContentPiiDetection.PersonallyIdentifiableInformationType.NAME),
-    NAME(ContentPiiDetection.PersonallyIdentifiableInformationType.NAME),
-    GIVENNAME(ContentPiiDetection.PersonallyIdentifiableInformationType.NAME),
-    SURNAME(ContentPiiDetection.PersonallyIdentifiableInformationType.SURNAME),
-
-    // Phone variants -> PHONE_NUMBER
-    MOBILE_PHONE(ContentPiiDetection.PersonallyIdentifiableInformationType.PHONE),
-    PHONE(ContentPiiDetection.PersonallyIdentifiableInformationType.PHONE),
-    TELEPHONENUM(ContentPiiDetection.PersonallyIdentifiableInformationType.PHONE),
-
-    // Address variants -> ADDRESS
-    HOME_ADDRESS(ContentPiiDetection.PersonallyIdentifiableInformationType.ADDRESS),
-    MAILING_ADDRESS(ContentPiiDetection.PersonallyIdentifiableInformationType.ADDRESS),
-    STREET(ContentPiiDetection.PersonallyIdentifiableInformationType.STREET),
-    LOCATION(ContentPiiDetection.PersonallyIdentifiableInformationType.LOCATION),
-
-    // ID variants -> NATIONAL_ID
-    ID_CARD_NUMBER(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
-    IDCARDNUM(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
-
-    // Card variants -> CREDIT_CARD_NUMBER
-    DEBIT_CARD_NUMBER(ContentPiiDetection.PersonallyIdentifiableInformationType.CREDIT_CARD),
-    CREDITCARDNUMBER(ContentPiiDetection.PersonallyIdentifiableInformationType.CREDIT_CARD),
-    CREDIT_CARD(ContentPiiDetection.PersonallyIdentifiableInformationType.CREDIT_CARD),
-
-    // Bank variants -> BANK_ACCOUNT_NUMBER
-    ACCOUNTNUM(ContentPiiDetection.PersonallyIdentifiableInformationType.BANK_ACCOUNT),
-    BANKACCOUNT(ContentPiiDetection.PersonallyIdentifiableInformationType.BANK_ACCOUNT),
-    BANK_ACCOUNT(ContentPiiDetection.PersonallyIdentifiableInformationType.BANK_ACCOUNT),
-
-    // SSN variants
-    SOCIALNUM(ContentPiiDetection.PersonallyIdentifiableInformationType.SSN),
+    
+    // Country-specific (Presidio)
     US_SSN(ContentPiiDetection.PersonallyIdentifiableInformationType.SSN),
-    AVSNUM(ContentPiiDetection.PersonallyIdentifiableInformationType.SSN),
-
-    // Date variants -> DATE_OF_BIRTH
-    BIRTH_DATE(ContentPiiDetection.PersonallyIdentifiableInformationType.DATE_OF_BIRTH),
-    DATEOFBIRTH(ContentPiiDetection.PersonallyIdentifiableInformationType.DATE_OF_BIRTH),
-    DOB(ContentPiiDetection.PersonallyIdentifiableInformationType.DATE_OF_BIRTH),
-
-    // License variants
-    DRIVERLICENSENUM(ContentPiiDetection.PersonallyIdentifiableInformationType.DRIVER_LICENSE),
-    DRIVER_LICENSE(ContentPiiDetection.PersonallyIdentifiableInformationType.DRIVER_LICENSE),
-    PASSPORT(ContentPiiDetection.PersonallyIdentifiableInformationType.PASSPORT),
-    PASSPORTNUM(ContentPiiDetection.PersonallyIdentifiableInformationType.PASSPORT),
-
-    // IT legacy
-    IPADDRESS(ContentPiiDetection.PersonallyIdentifiableInformationType.IP_ADDRESS),
-    MACADDRESS(ContentPiiDetection.PersonallyIdentifiableInformationType.MAC_ADDRESS),
-    TOKEN(ContentPiiDetection.PersonallyIdentifiableInformationType.TOKEN),
-
-    // Location legacy
-    CITY(ContentPiiDetection.PersonallyIdentifiableInformationType.CITY),
-    STATE(ContentPiiDetection.PersonallyIdentifiableInformationType.STATE),
-    COUNTRY(ContentPiiDetection.PersonallyIdentifiableInformationType.COUNTRY),
-    ZIPCODE(ContentPiiDetection.PersonallyIdentifiableInformationType.ZIPCODE),
-    BUILDINGNUM(ContentPiiDetection.PersonallyIdentifiableInformationType.BUILDINGNUM),
-
-    // Tax legacy
-    TAXNUM(ContentPiiDetection.PersonallyIdentifiableInformationType.TAX),
-
-    // Medical legacy
-    HEALTH_INSURANCE(ContentPiiDetection.PersonallyIdentifiableInformationType.HEALTH_INSURANCE),
-    MEDICAL_RECORD(ContentPiiDetection.PersonallyIdentifiableInformationType.MEDICAL),
-
-    // Country-specific legacy (commonly used)
     US_PASSPORT(ContentPiiDetection.PersonallyIdentifiableInformationType.PASSPORT),
     US_DRIVER_LICENSE(ContentPiiDetection.PersonallyIdentifiableInformationType.DRIVER_LICENSE),
     US_BANK_NUMBER(ContentPiiDetection.PersonallyIdentifiableInformationType.BANK_ACCOUNT),
     AU_MEDICARE(ContentPiiDetection.PersonallyIdentifiableInformationType.HEALTH_INSURANCE),
     IN_AADHAAR(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
+
+    // Presidio specific types
+    EMAIL_ADDRESS(ContentPiiDetection.PersonallyIdentifiableInformationType.EMAIL),
+    IBAN_CODE(ContentPiiDetection.PersonallyIdentifiableInformationType.IBAN),
+    CRYPTO(ContentPiiDetection.PersonallyIdentifiableInformationType.BANK_ACCOUNT),
+    PERSON(ContentPiiDetection.PersonallyIdentifiableInformationType.PERSON),
+    DATE_TIME(ContentPiiDetection.PersonallyIdentifiableInformationType.TIMESTAMP),
+    MEDICAL_LICENSE(ContentPiiDetection.PersonallyIdentifiableInformationType.LICENSE),
+    CREDIT_CARD(ContentPiiDetection.PersonallyIdentifiableInformationType.CREDIT_CARD),
+    LOCATION(ContentPiiDetection.PersonallyIdentifiableInformationType.LOCATION),
+    
+    // Country specific Presidio types
+    US_ITIN(ContentPiiDetection.PersonallyIdentifiableInformationType.TAX),
+    UK_NHS(ContentPiiDetection.PersonallyIdentifiableInformationType.MEDICAL),
+    UK_NINO(ContentPiiDetection.PersonallyIdentifiableInformationType.SSN),
+    ES_NIF(ContentPiiDetection.PersonallyIdentifiableInformationType.TAX),
+    ES_NIE(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
+    IT_FISCAL_CODE(ContentPiiDetection.PersonallyIdentifiableInformationType.TAX),
+    IT_DRIVER_LICENSE(ContentPiiDetection.PersonallyIdentifiableInformationType.DRIVER_LICENSE),
+    IT_VAT_CODE(ContentPiiDetection.PersonallyIdentifiableInformationType.TAX),
+    IT_PASSPORT(ContentPiiDetection.PersonallyIdentifiableInformationType.PASSPORT),
+    IT_IDENTITY_CARD(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
+    PL_PESEL(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
+    SG_NRIC_FIN(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
+    SG_UEN(ContentPiiDetection.PersonallyIdentifiableInformationType.COMPANY),
+    AU_ABN(ContentPiiDetection.PersonallyIdentifiableInformationType.COMPANY),
+    AU_ACN(ContentPiiDetection.PersonallyIdentifiableInformationType.COMPANY),
+    AU_TFN(ContentPiiDetection.PersonallyIdentifiableInformationType.TAX),
+    IN_PAN(ContentPiiDetection.PersonallyIdentifiableInformationType.TAX),
+    IN_VEHICLE_REGISTRATION(ContentPiiDetection.PersonallyIdentifiableInformationType.VEHICLE),
+    IN_VOTER(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
+    IN_PASSPORT(ContentPiiDetection.PersonallyIdentifiableInformationType.PASSPORT),
+    FI_PERSONAL_IDENTITY_CODE(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
+    KR_RRN(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
+    TH_TNIN(ContentPiiDetection.PersonallyIdentifiableInformationType.ID_CARD),
 
     // Unknown fallback
     UNKNOWN(ContentPiiDetection.PersonallyIdentifiableInformationType.UNKNOWN);

@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS pii_detection_config
     presidio_enabled  BOOLEAN                  NOT NULL DEFAULT true,
     regex_enabled     BOOLEAN                  NOT NULL DEFAULT true,
     default_threshold DECIMAL(3, 2)            NOT NULL DEFAULT 0.80,
+    nb_of_label_by_pass INTEGER                NOT NULL DEFAULT 35,
     updated_at        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_by        VARCHAR(255)                      DEFAULT 'system',
     CONSTRAINT check_default_threshold CHECK (default_threshold >= 0.0 AND default_threshold <= 1.0),

@@ -1,6 +1,7 @@
 #!/usr/bin/env pwsh
 # Script PowerShell pour exécuter sonar-scanner
-
+# Activation du virtual environment
+& ".\.venv\Scripts\Activate.ps1"
 if (-not $Env:SONAR_QUBE_TOKEN) {
     Write-Error "La variable d'environnement SONAR_QUBE_TOKEN n'est pas définie"
     exit 1

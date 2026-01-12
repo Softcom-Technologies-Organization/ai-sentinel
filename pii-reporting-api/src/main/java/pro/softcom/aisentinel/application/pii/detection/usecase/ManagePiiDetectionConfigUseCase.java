@@ -1,11 +1,12 @@
 package pro.softcom.aisentinel.application.pii.detection.usecase;
 
-import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiDetectionConfigPort;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionConfigRepository;
 import pro.softcom.aisentinel.domain.pii.detection.PiiDetectionConfig;
+
+import java.time.LocalDateTime;
 
 /**
  * Use case for managing PII detection configuration.
@@ -30,9 +31,9 @@ public class ManagePiiDetectionConfigUseCase implements ManagePiiDetectionConfig
 
     @Override
     public PiiDetectionConfig updateConfig(UpdatePiiDetectionConfigCommand command) {
-        log.info("Updating PII detection configuration: gliner={}, presidio={}, regex={}, threshold={}",
+        log.info("Updating PII detection configuration: gliner={}, presidio={}, regex={}, threshold={}, nbOfLabelByPass={}",
                 command.glinerEnabled(), command.presidioEnabled(), command.regexEnabled(),
-                command.defaultThreshold());
+                command.defaultThreshold(), command.nbOfLabelByPass());
 
         PiiDetectionConfig newConfig = new PiiDetectionConfig(
                 CONFIG_ID,
@@ -40,11 +41,11 @@ public class ManagePiiDetectionConfigUseCase implements ManagePiiDetectionConfig
                 command.presidioEnabled(),
                 command.regexEnabled(),
                 command.defaultThreshold(),
+                command.nbOfLabelByPass(),
                 LocalDateTime.now(),
                 command.updatedBy()
         );
 
-        newConfig.validate();
         repository.updateConfig(newConfig);
 
         log.info("PII detection configuration updated successfully by user: {}", command.updatedBy());

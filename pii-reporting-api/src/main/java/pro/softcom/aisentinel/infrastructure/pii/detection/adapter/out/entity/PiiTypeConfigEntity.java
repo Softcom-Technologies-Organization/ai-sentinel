@@ -1,21 +1,14 @@
 package pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-import java.time.LocalDateTime;
-import java.util.Objects;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.PersonallyIdentifiableInformationType;
+
+import java.time.LocalDateTime;
+import java.util.Objects;
 
 /**
  * JPA entity for PII type configuration.
@@ -46,7 +39,8 @@ public class PiiTypeConfigEntity {
     private Long id;
 
     @Column(name = "pii_type", nullable = false, length = 100)
-    private String piiType;
+    @Enumerated(EnumType.STRING)
+    private PersonallyIdentifiableInformationType piiType;
 
     @Column(name = "detector", nullable = false, length = 50)
     private String detector;
@@ -99,7 +93,7 @@ public class PiiTypeConfigEntity {
     public static PiiTypeConfigEntity fromDomain(PiiTypeConfig domain) {
         PiiTypeConfigEntity entity = new PiiTypeConfigEntity();
         entity.id = domain.getId();
-        entity.piiType = domain.getPiiType();
+        entity.piiType = PersonallyIdentifiableInformationType.valueOf(domain.getPiiType());
         entity.detector = domain.getDetector();
         entity.enabled = domain.isEnabled();
         entity.threshold = domain.getThreshold();
@@ -117,7 +111,7 @@ public class PiiTypeConfigEntity {
     public PiiTypeConfig toDomain() {
         return PiiTypeConfig.builder()
                 .id(id)
-                .piiType(piiType)
+                .piiType(piiType.name())
                 .detector(detector)
                 .enabled(enabled)
                 .threshold(threshold)

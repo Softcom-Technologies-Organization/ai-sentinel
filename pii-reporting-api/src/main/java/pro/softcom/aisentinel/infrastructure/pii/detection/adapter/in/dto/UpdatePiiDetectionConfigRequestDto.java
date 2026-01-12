@@ -36,7 +36,12 @@ public record UpdatePiiDetectionConfigRequestDto(
     @NotNull(message = "defaultThreshold is required")
     @DecimalMin(value = "0.0", message = "Default threshold must be at least 0.0")
     @DecimalMax(value = "1.0", message = "Default threshold must be at most 1.0")
-    BigDecimal defaultThreshold
+    BigDecimal defaultThreshold,
+
+    @JsonProperty("nbOfLabelByPass")
+    @NotNull(message = "nbOfLabelByPass is required")
+    @DecimalMin(value = "1", message = "nbOfLabelByPass must be at least 1")
+    Integer nbOfLabelByPass
 ) {
     /**
      * Validates business rules for the configuration request.

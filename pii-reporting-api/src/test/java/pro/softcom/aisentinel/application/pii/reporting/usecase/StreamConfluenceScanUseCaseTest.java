@@ -136,8 +136,7 @@ class StreamConfluenceScanUseCaseTest {
                 attachmentProcessor,
                 scanTimeoutConfig,
                 htmlContentParser,
-                personallyIdentifiableInformationScanExecutionOrchestratorPort,
-                scanCheckpointRepository
+                personallyIdentifiableInformationScanExecutionOrchestratorPort
         );
 
         // Configure severity calculation mock to return a default severity for any PII type
@@ -603,8 +602,7 @@ class StreamConfluenceScanUseCaseTest {
             attachmentProcessor,
             scanTimeoutConfig,
             htmlContentParser,
-            personallyIdentifiableInformationScanExecutionOrchestratorPort,
-            scanCheckpointRepository
+            personallyIdentifiableInformationScanExecutionOrchestratorPort
         );
 
         String spaceKey = "S-BLANK";
@@ -681,8 +679,7 @@ class StreamConfluenceScanUseCaseTest {
             attachmentProcessor,
             scanTimeoutConfig,
             htmlContentParser,
-            personallyIdentifiableInformationScanExecutionOrchestratorPort,
-            scanCheckpointRepository
+            personallyIdentifiableInformationScanExecutionOrchestratorPort
         );
 
         String spaceKey = "S-TRIM2";

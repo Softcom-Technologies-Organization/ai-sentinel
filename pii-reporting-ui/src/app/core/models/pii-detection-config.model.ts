@@ -6,6 +6,7 @@ export interface PiiDetectionConfig {
   presidioEnabled: boolean;
   regexEnabled: boolean;
   defaultThreshold: number;
+  nbOfLabelByPass: number;
   updatedAt?: string;
   updatedBy?: string;
 }
@@ -18,6 +19,7 @@ export interface UpdatePiiDetectionConfigRequest {
   presidioEnabled: boolean;
   regexEnabled: boolean;
   defaultThreshold: number;
+  nbOfLabelByPass: number;
 }
 
 /**

@@ -40,6 +40,7 @@ public interface ManagePiiDetectionConfigPort {
             boolean presidioEnabled,
             boolean regexEnabled,
             BigDecimal defaultThreshold,
+            Integer nbOfLabelByPass,
             String updatedBy
     ) {
     }

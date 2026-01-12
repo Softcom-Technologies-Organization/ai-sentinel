@@ -123,4 +123,18 @@ public class ContentScanOrchestrator {
     private static boolean shouldPublishEvent(ConfluenceContentScanResult event) {
         return ScanEventType.COMPLETE.getValue().equals(event.eventType());
     }
+
+    /**
+     * Purges previous scan data to ensure a clean state before starting a new scan.
+     */
+    public void purgePreviousScanData() {
+        try {
+            log.info("[SCAN] Purging previous active scan data before starting new scan");
+            scanCheckpointService.deleteActiveScanCheckpoints();
+            log.info("[SCAN] Previous scan data purged successfully");
+        } catch (Exception e) {
+            log.error("[SCAN] Failed to purge previous scan data: {}", e.getMessage(), e);
+            // Don't fail the scan if purge fails - log and continue
+        }
+    }
 }

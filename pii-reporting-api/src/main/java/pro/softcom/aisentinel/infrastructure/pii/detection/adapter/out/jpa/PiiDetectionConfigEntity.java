@@ -6,7 +6,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -17,8 +22,12 @@ import java.util.Objects;
  * Represents the database table for storing PII detection settings.
  * Single-row configuration table (id always = 1).
  */
+@Setter
+@Getter
 @Entity
 @Table(name = "pii_detection_config")
+@Builder
+@AllArgsConstructor
 public class PiiDetectionConfigEntity {
 
     @Id
@@ -43,6 +52,11 @@ public class PiiDetectionConfigEntity {
     @Column(name = "default_threshold", nullable = false, precision = 3, scale = 2)
     private BigDecimal defaultThreshold;
 
+    @Column(name = "nb_of_label_by_pass", nullable = false)
+    @NotNull
+    @Min(value = 1, message = "nbOfLabelByPass must be >= 1")
+    private Integer nbOfLabelByPass;
+
     @NotNull
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
@@ -52,74 +66,6 @@ public class PiiDetectionConfigEntity {
 
     protected PiiDetectionConfigEntity() {
         // Required by JPA
-    }
-
-    public PiiDetectionConfigEntity(Integer id, Boolean glinerEnabled, Boolean presidioEnabled,
-                                    Boolean regexEnabled, BigDecimal defaultThreshold,
-                                    LocalDateTime updatedAt, String updatedBy) {
-        this.id = id;
-        this.glinerEnabled = glinerEnabled;
-        this.presidioEnabled = presidioEnabled;
-        this.regexEnabled = regexEnabled;
-        this.defaultThreshold = defaultThreshold;
-        this.updatedAt = updatedAt;
-        this.updatedBy = updatedBy;
-    }
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public Boolean getGlinerEnabled() {
-        return glinerEnabled;
-    }
-
-    public void setGlinerEnabled(Boolean glinerEnabled) {
-        this.glinerEnabled = glinerEnabled;
-    }
-
-    public Boolean getPresidioEnabled() {
-        return presidioEnabled;
-    }
-
-    public void setPresidioEnabled(Boolean presidioEnabled) {
-        this.presidioEnabled = presidioEnabled;
-    }
-
-    public Boolean getRegexEnabled() {
-        return regexEnabled;
-    }
-
-    public void setRegexEnabled(Boolean regexEnabled) {
-        this.regexEnabled = regexEnabled;
-    }
-
-    public BigDecimal getDefaultThreshold() {
-        return defaultThreshold;
-    }
-
-    public void setDefaultThreshold(BigDecimal defaultThreshold) {
-        this.defaultThreshold = defaultThreshold;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public String getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
     }
 
     @Override

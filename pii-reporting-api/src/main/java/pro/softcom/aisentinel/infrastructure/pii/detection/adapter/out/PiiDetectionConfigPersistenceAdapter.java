@@ -1,7 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -10,6 +8,9 @@ import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionCon
 import pro.softcom.aisentinel.domain.pii.detection.PiiDetectionConfig;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out.jpa.PiiDetectionConfigEntity;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out.jpa.PiiDetectionConfigJpaRepository;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * Persistence adapter for PII detection configuration.
@@ -52,10 +53,10 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
         }
         
         log.info("Updating PII detection configuration: glinerEnabled={}, presidioEnabled={}, " +
-                "regexEnabled={}, threshold={}, updatedBy={}", 
-                config.isGlinerEnabled(), config.isPresidioEnabled(), 
-                config.isRegexEnabled(), config.getDefaultThreshold(), 
-                config.getUpdatedBy());
+                "regexEnabled={}, threshold={}, nbOfLabelByPass={}, updatedBy={}",
+                config.glinerEnabled(), config.presidioEnabled(),
+                config.regexEnabled(), config.defaultThreshold(),
+                config.nbOfLabelByPass(), config.updatedBy());
         
         PiiDetectionConfigEntity entity = toEntity(config);
         jpaRepository.save(entity);
@@ -76,6 +77,7 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 true,  // presidioEnabled
                 true,  // regexEnabled
                 new BigDecimal("0.75"),  // defaultThreshold
+                35, // nbOfLabelByPass
                 LocalDateTime.now(),
                 "system"
         );
@@ -94,6 +96,7 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 entity.getPresidioEnabled(),
                 entity.getRegexEnabled(),
                 entity.getDefaultThreshold(),
+                entity.getNbOfLabelByPass() != null ? entity.getNbOfLabelByPass() : 35,
                 entity.getUpdatedAt(),
                 entity.getUpdatedBy()
         );
@@ -103,14 +106,15 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
      * Maps domain model to JPA entity.
      */
     private PiiDetectionConfigEntity toEntity(PiiDetectionConfig config) {
-        return new PiiDetectionConfigEntity(
-                CONFIG_ID,  // Always use id=1 for single-row config
-                config.isGlinerEnabled(),
-                config.isPresidioEnabled(),
-                config.isRegexEnabled(),
-                config.getDefaultThreshold(),
-                config.getUpdatedAt() != null ? config.getUpdatedAt() : LocalDateTime.now(),
-                config.getUpdatedBy()
-        );
+        return PiiDetectionConfigEntity.builder()
+                .id(CONFIG_ID)
+                .glinerEnabled(config.glinerEnabled())
+                .presidioEnabled(config.presidioEnabled())
+                .regexEnabled(config.regexEnabled())
+                .defaultThreshold(config.defaultThreshold())
+                .nbOfLabelByPass(config.nbOfLabelByPass())
+                .updatedAt(config.updatedAt() != null ? config.updatedAt() : LocalDateTime.now())
+                .updatedBy(config.updatedBy())
+                .build();
     }
 }

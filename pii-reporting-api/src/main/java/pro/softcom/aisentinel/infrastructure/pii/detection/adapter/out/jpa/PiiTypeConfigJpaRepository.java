@@ -2,6 +2,7 @@ package pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out.jpa;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.PersonallyIdentifiableInformationType;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out.entity.PiiTypeConfigEntity;
 
 import java.util.List;
@@ -28,5 +29,5 @@ public interface PiiTypeConfigJpaRepository extends JpaRepository<PiiTypeConfigE
      * @param detector the detector name
      * @return optional containing the configuration if found
      */
-    Optional<PiiTypeConfigEntity> findByPiiTypeAndDetector(String piiType, String detector);
+    Optional<PiiTypeConfigEntity> findByPiiTypeAndDetector(PersonallyIdentifiableInformationType piiType, String detector);
 }

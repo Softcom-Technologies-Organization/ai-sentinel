@@ -96,7 +96,7 @@ pii:
     # Allow revealing decrypted PII values to users (default: true)
     # When false, sensitiveValue is never sent to frontend via SSE
     # and the reveal endpoint returns 403 Forbidden
-    allow-secret-reveal: true
+    allow-secret-reveal: ${PII_REPORTING_ALLOW_SECRET_REVEAL:false}
   
   # PII Access Audit Configuration (GDPR/nLPD compliance)
   audit:

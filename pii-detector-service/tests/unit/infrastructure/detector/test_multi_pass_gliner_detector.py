@@ -179,6 +179,7 @@ class TestCategoryLoading:
     def test_should_load_categories_from_database(self, mock_adapter_factory, mock_detector):
         """Test successful category loading from database."""
         mock_adapter = Mock()
+        mock_adapter.fetch_config.return_value = {}  # Mock global config
         mock_adapter.fetch_pii_type_configs.return_value = {
             "PERSON_NAME": {
                 "enabled": True,
@@ -201,9 +202,16 @@ class TestCategoryLoading:
         mock_detector._load_categories_from_database()
 
         assert mock_detector._pass_categories is not None
-        assert "IDENTITY" in mock_detector._pass_categories
-        assert "CONTACT" in mock_detector._pass_categories
-        assert "FINANCIAL" in mock_detector._pass_categories
+        
+        # Flatten all labels from all batches
+        all_labels = []
+        for batch in mock_detector._pass_categories.values():
+            all_labels.extend(batch.keys())
+            
+        assert "person name" in all_labels
+        assert "email address" in all_labels
+        assert "credit card number" in all_labels
+        
         assert mock_detector._pii_type_to_category["PERSON_NAME"] == "IDENTITY"
         assert mock_detector._conflict_resolver is not None
 
@@ -223,6 +231,7 @@ class TestCategoryLoading:
     def test_should_skip_disabled_types(self, mock_adapter_factory, mock_detector):
         """Test disabled PII types are not loaded."""
         mock_adapter = Mock()
+        mock_adapter.fetch_config.return_value = {}  # Mock global config
         mock_adapter.fetch_pii_type_configs.return_value = {
             "EMAIL": {
                 "enabled": True,
@@ -239,8 +248,13 @@ class TestCategoryLoading:
 
         mock_detector._load_categories_from_database()
 
-        assert "email address" in mock_detector._pass_categories.get("CONTACT", {})
-        assert "phone number" not in mock_detector._pass_categories.get("CONTACT", {})
+        # Flatten all labels from all batches
+        all_labels = []
+        for batch in mock_detector._pass_categories.values():
+            all_labels.extend(batch.keys())
+
+        assert "email address" in all_labels
+        assert "phone number" not in all_labels
 
     def test_should_use_fallback_categories(self, mock_detector):
         """Test fallback categories have expected structure."""

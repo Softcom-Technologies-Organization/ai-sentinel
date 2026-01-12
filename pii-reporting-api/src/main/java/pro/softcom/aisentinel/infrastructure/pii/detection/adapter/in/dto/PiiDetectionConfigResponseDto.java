@@ -21,6 +21,7 @@ public record PiiDetectionConfigResponseDto(
     boolean presidioEnabled,
     boolean regexEnabled,
     BigDecimal defaultThreshold,
+    Integer nbOfLabelByPass,
     LocalDateTime updatedAt,
     String updatedBy
 ) {

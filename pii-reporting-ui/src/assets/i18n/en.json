@@ -124,7 +124,8 @@
     "back": "Back to dashboard",
     "sections": {
       "detectors": "Detection Engines",
-      "threshold": "Detection Threshold"
+      "threshold": "Detection Threshold",
+      "performance": "Performance Optimization"
     },
     "detectors": {
       "gliner": {
@@ -143,6 +144,10 @@
     "threshold": {
       "label": "Default Confidence Threshold",
       "description": "Minimum confidence score (0.0-1.0) required for a detection to be reported. Lower values = more detections but potentially more false positives"
+    },
+    "nbLabels": {
+      "label": "Labels per Pass (GLiNER)",
+      "description": "Maximum number of labels processed in a single pass. Higher values improve speed but might reduce accuracy. Default is 35."
     },
     "validation": {
       "atLeastOneDetector": "At least one detector must be enabled"
@@ -167,6 +172,16 @@
         "presidio": "Presidio Detector"
       },
       "categoryNames": {
+        "CONTACT": "Contact Information",
+        "IDENTITY": "Identity & Names",
+        "FINANCIAL": "Financial Data",
+        "GOVERNMENT_ID": "Government Identifications",
+        "LOCATION": "Location & Address",
+        "SECURITY": "Security Credentials",
+        "NETWORK": "Network Identifiers",
+        "MEDICAL": "Medical Information",
+        "BUSINESS": "Business Identifiers",
+        "DIGITAL": "Digital Identifiers",
         "Contact": "Contact Information",
         "Identity": "Identity & Names",
         "Financial": "Financial Data",
@@ -292,7 +307,38 @@
         "LOCATIONSTREET": "Street",
         "LOCATIONCITY": "City",
         "LOCATIONSTATE": "State/Province",
-        "LOCATIONCOUNTRY": "Country"
+        "LOCATIONCOUNTRY": "Country",
+        "ADDRESS": "Address",
+        "POSTAL_CODE": "Postal Code",
+        "ACCOUNT_ID": "Account ID",
+        "CREDIT_CARD_NUMBER": "Credit Card Number",
+        "BANK_ACCOUNT_NUMBER": "Bank Account Number",
+        "BIC_SWIFT": "BIC/SWIFT Code",
+        "TAX_ID": "Tax ID",
+        "SALARY": "Salary",
+        "NATIONAL_ID": "National ID",
+        "PASSPORT_NUMBER": "Passport Number",
+        "DRIVER_LICENSE_NUMBER": "Driver License Number",
+        "DATE_OF_BIRTH": "Date of Birth",
+        "NATIONALITY": "Nationality",
+        "HOSTNAME": "Hostname",
+        "DEVICE_ID": "Device ID",
+        "ACCESS_TOKEN": "Access Token",
+        "SECRET_KEY": "Secret Key",
+        "SESSION_ID": "Session ID",
+        "CASE_NUMBER": "Case Number",
+        "LICENSE_NUMBER": "License Number",
+        "CRIMINAL_RECORD": "Criminal Record",
+        "VEHICLE_REGISTRATION": "Vehicle Registration",
+        "LICENSE_PLATE": "License Plate",
+        "VIN": "Vehicle Identification Number (VIN)",
+        "INSURANCE_POLICY_NUMBER": "Insurance Policy Number",
+        "AVS_NUMBER": "AVS Number",
+        "PATIENT_ID": "Patient ID",
+        "MEDICAL_RECORD_NUMBER": "Medical Record Number",
+        "HEALTH_INSURANCE_NUMBER": "Health Insurance Number",
+        "DIAGNOSIS": "Diagnosis",
+        "MEDICATION": "Medication"
       },
       "typeDescriptions": {
         "EMAIL": "Email addresses in standard format (e.g., user@domain.com)",
@@ -403,7 +449,38 @@
         "LOCATIONSTREET": "Street names and thoroughfares in an address",
         "LOCATIONCITY": "Names of cities, municipalities and localities",
         "LOCATIONSTATE": "Names of states, provinces, regions or departments",
-        "LOCATIONCOUNTRY": "Names of countries and territories"
+        "LOCATIONCOUNTRY": "Names of countries and territories",
+        "ADDRESS": "Complete physical address",
+        "POSTAL_CODE": "Postal or ZIP code",
+        "ACCOUNT_ID": "Unique user account identifier",
+        "CREDIT_CARD_NUMBER": "Credit or debit card number",
+        "BANK_ACCOUNT_NUMBER": "Bank account number",
+        "BIC_SWIFT": "International bank identification code",
+        "TAX_ID": "Tax identification number",
+        "SALARY": "Salary or remuneration information",
+        "NATIONAL_ID": "National identification number",
+        "PASSPORT_NUMBER": "Passport number",
+        "DRIVER_LICENSE_NUMBER": "Driver license number",
+        "DATE_OF_BIRTH": "Date of birth",
+        "NATIONALITY": "Nationality or citizenship",
+        "HOSTNAME": "Network hostname or server name",
+        "DEVICE_ID": "Unique device identifier",
+        "ACCESS_TOKEN": "Access token for authentication",
+        "SECRET_KEY": "Secret or cryptographic key",
+        "SESSION_ID": "Session identifier for web or app",
+        "CASE_NUMBER": "Legal or administrative case number",
+        "LICENSE_NUMBER": "Professional or other license number",
+        "CRIMINAL_RECORD": "Criminal record information",
+        "VEHICLE_REGISTRATION": "Vehicle registration document",
+        "LICENSE_PLATE": "License plate number",
+        "VIN": "Unique vehicle identification number",
+        "INSURANCE_POLICY_NUMBER": "Insurance policy number",
+        "AVS_NUMBER": "Social security number (AVS)",
+        "PATIENT_ID": "Unique patient identifier",
+        "MEDICAL_RECORD_NUMBER": "Electronic medical record number",
+        "HEALTH_INSURANCE_NUMBER": "Health insurance card number",
+        "DIAGNOSIS": "Medical diagnosis or health condition",
+        "MEDICATION": "Medication name or prescription"
       },
       "actions": {
         "saveAll": "Save",

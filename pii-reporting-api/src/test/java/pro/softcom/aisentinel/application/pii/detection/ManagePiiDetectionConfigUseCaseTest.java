@@ -58,8 +58,8 @@ class ManagePiiDetectionConfigUseCaseTest {
     @Test
     void Should_PersistAndRetrieveConfig_When_UpdatingConfiguration() {
         // Arrange
-        UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, false, true, new BigDecimal("0.85"), "integrationtest"
+        UpdatePiiDetectionConfigCommand command =   new UpdatePiiDetectionConfigCommand(
+            true, false, true, new BigDecimal("0.85"), 30,"integrationtest"
         );
 
         // Act
@@ -68,12 +68,12 @@ class ManagePiiDetectionConfigUseCaseTest {
 
         // Assert
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(updated.getId()).isEqualTo(1);
-        softly.assertThat(updated.isGlinerEnabled()).isTrue();
-        softly.assertThat(updated.isPresidioEnabled()).isFalse();
-        softly.assertThat(updated.isRegexEnabled()).isTrue();
-        softly.assertThat(updated.getDefaultThreshold()).isEqualByComparingTo(new BigDecimal("0.85"));
-        softly.assertThat(updated.getUpdatedBy()).isEqualTo("integrationtest");
+        softly.assertThat(updated.id()).isEqualTo(1);
+        softly.assertThat(updated.glinerEnabled()).isTrue();
+        softly.assertThat(updated.presidioEnabled()).isFalse();
+        softly.assertThat(updated.regexEnabled()).isTrue();
+        softly.assertThat(updated.defaultThreshold()).isEqualByComparingTo(new BigDecimal("0.85"));
+        softly.assertThat(updated.updatedBy()).isEqualTo("integrationtest");
         
         softly.assertThat(retrieved).isEqualTo(updated);
         softly.assertAll();
@@ -83,24 +83,24 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_UpdateExistingConfig_When_ConfigAlreadyExists() {
         // Arrange - Create initial config
         UpdatePiiDetectionConfigCommand initialCommand = new UpdatePiiDetectionConfigCommand(
-            true, true, false, new BigDecimal("0.60"), "user1"
+            true, true, false, new BigDecimal("0.60"),30, "user1"
         );
         managePiiDetectionConfigPort.updateConfig(initialCommand);
 
         // Act - Update config
         UpdatePiiDetectionConfigCommand updateCommand = new UpdatePiiDetectionConfigCommand(
-            false, true, true, new BigDecimal("0.90"), "user2"
+            false, true, true, new BigDecimal("0.90"), 30,"user2"
         );
         PiiDetectionConfig updated = managePiiDetectionConfigPort.updateConfig(updateCommand);
 
         // Assert
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(updated.getId()).isEqualTo(1);
-        softly.assertThat(updated.isGlinerEnabled()).isFalse();
-        softly.assertThat(updated.isPresidioEnabled()).isTrue();
-        softly.assertThat(updated.isRegexEnabled()).isTrue();
-        softly.assertThat(updated.getDefaultThreshold()).isEqualByComparingTo(new BigDecimal("0.90"));
-        softly.assertThat(updated.getUpdatedBy()).isEqualTo("user2");
+        softly.assertThat(updated.id()).isEqualTo(1);
+        softly.assertThat(updated.glinerEnabled()).isFalse();
+        softly.assertThat(updated.presidioEnabled()).isTrue();
+        softly.assertThat(updated.regexEnabled()).isTrue();
+        softly.assertThat(updated.defaultThreshold()).isEqualByComparingTo(new BigDecimal("0.90"));
+        softly.assertThat(updated.updatedBy()).isEqualTo("user2");
         softly.assertAll();
 
         // Verify single row in database
@@ -113,7 +113,7 @@ class ManagePiiDetectionConfigUseCaseTest {
         for (int i = 0; i < 5; i++) {
             UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
                 i % 2 == 0, i % 2 != 0, true, 
-                new BigDecimal("0." + (70 + i)), "user" + i
+                new BigDecimal("0." + (70 + i)), 30,"user" + i
             );
             managePiiDetectionConfigPort.updateConfig(command);
         }
@@ -123,63 +123,63 @@ class ManagePiiDetectionConfigUseCaseTest {
         
         // Verify latest update
         PiiDetectionConfig config = managePiiDetectionConfigPort.getConfig();
-        assertThat(config.getUpdatedBy()).isEqualTo("user4");
-        assertThat(config.getDefaultThreshold()).isEqualByComparingTo(new BigDecimal("0.74"));
+        assertThat(config.updatedBy()).isEqualTo("user4");
+        assertThat(config.defaultThreshold()).isEqualByComparingTo(new BigDecimal("0.74"));
     }
 
     @Test
     void Should_PersistBoundaryThresholds_When_ThresholdIsZeroOrOne() {
         // Act - Update with threshold 0.0
         UpdatePiiDetectionConfigCommand zeroCommand = new UpdatePiiDetectionConfigCommand(
-            true, false, false, BigDecimal.ZERO, "testuser"
+            true, false, false, BigDecimal.ZERO, 30,"testuser"
         );
         PiiDetectionConfig zeroConfig = managePiiDetectionConfigPort.updateConfig(zeroCommand);
 
         // Assert
-        assertThat(zeroConfig.getDefaultThreshold()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(zeroConfig.defaultThreshold()).isEqualByComparingTo(BigDecimal.ZERO);
 
         // Act - Update with threshold 1.0
         UpdatePiiDetectionConfigCommand oneCommand = new UpdatePiiDetectionConfigCommand(
-            true, false, false, BigDecimal.ONE, "testuser"
+            true, false, false, BigDecimal.ONE, 30,"testuser"
         );
         PiiDetectionConfig oneConfig = managePiiDetectionConfigPort.updateConfig(oneCommand);
 
         // Assert
-        assertThat(oneConfig.getDefaultThreshold()).isEqualByComparingTo(BigDecimal.ONE);
+        assertThat(oneConfig.defaultThreshold()).isEqualByComparingTo(BigDecimal.ONE);
     }
 
     @Test
     void Should_PersistDetectorStates_When_OnlyOneDetectorEnabled() {
         // Test with only GLiNER enabled
         UpdatePiiDetectionConfigCommand glinerCommand = new UpdatePiiDetectionConfigCommand(
-            true, false, false, new BigDecimal("0.75"), "testuser"
+            true, false, false, new BigDecimal("0.75"),30, "testuser"
         );
         PiiDetectionConfig glinerConfig = managePiiDetectionConfigPort.updateConfig(glinerCommand);
         
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(glinerConfig.isGlinerEnabled()).isTrue();
-        softly.assertThat(glinerConfig.isPresidioEnabled()).isFalse();
-        softly.assertThat(glinerConfig.isRegexEnabled()).isFalse();
+        softly.assertThat(glinerConfig.glinerEnabled()).isTrue();
+        softly.assertThat(glinerConfig.presidioEnabled()).isFalse();
+        softly.assertThat(glinerConfig.regexEnabled()).isFalse();
 
         // Test with only Presidio enabled
         UpdatePiiDetectionConfigCommand presidioCommand = new UpdatePiiDetectionConfigCommand(
-            false, true, false, new BigDecimal("0.75"), "testuser"
+            false, true, false, new BigDecimal("0.75"),30, "testuser"
         );
         PiiDetectionConfig presidioConfig = managePiiDetectionConfigPort.updateConfig(presidioCommand);
         
-        softly.assertThat(presidioConfig.isGlinerEnabled()).isFalse();
-        softly.assertThat(presidioConfig.isPresidioEnabled()).isTrue();
-        softly.assertThat(presidioConfig.isRegexEnabled()).isFalse();
+        softly.assertThat(presidioConfig.glinerEnabled()).isFalse();
+        softly.assertThat(presidioConfig.presidioEnabled()).isTrue();
+        softly.assertThat(presidioConfig.regexEnabled()).isFalse();
 
         // Test with only Regex enabled
         UpdatePiiDetectionConfigCommand regexCommand = new UpdatePiiDetectionConfigCommand(
-            false, false, true, new BigDecimal("0.75"), "testuser"
+            false, false, true, new BigDecimal("0.75"),30, "testuser"
         );
         PiiDetectionConfig regexConfig = managePiiDetectionConfigPort.updateConfig(regexCommand);
         
-        softly.assertThat(regexConfig.isGlinerEnabled()).isFalse();
-        softly.assertThat(regexConfig.isPresidioEnabled()).isFalse();
-        softly.assertThat(regexConfig.isRegexEnabled()).isTrue();
+        softly.assertThat(regexConfig.glinerEnabled()).isFalse();
+        softly.assertThat(regexConfig.presidioEnabled()).isFalse();
+        softly.assertThat(regexConfig.regexEnabled()).isTrue();
         
         softly.assertAll();
     }

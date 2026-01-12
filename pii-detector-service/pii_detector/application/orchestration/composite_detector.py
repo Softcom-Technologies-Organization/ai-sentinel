@@ -16,10 +16,10 @@ from __future__ import annotations
 import logging
 from typing import List, Optional, Tuple
 
-from pii_detector.domain.service.detection_merger import DetectionMerger
-from pii_detector.domain.port.pii_detector_protocol import PIIDetectorProtocol
-from pii_detector.infrastructure.detector.regex_detector import RegexDetector
 from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.domain.port.pii_detector_protocol import PIIDetectorProtocol
+from pii_detector.domain.service.detection_merger import DetectionMerger
+from pii_detector.infrastructure.detector.regex_detector import RegexDetector
 
 try:
     from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
@@ -205,9 +205,9 @@ class CompositePIIDetector:
         if use_presidio:
             active_detectors.append("Presidio")
         
-        self.logger.debug(
-            f"Detecting PII with active detectors: {', '.join(active_detectors) if active_detectors else 'NONE'}"
-        )
+        if self.logger.isEnabledFor(logging.DEBUG):
+            detectors_str = ', '.join(active_detectors) if active_detectors else 'NONE'
+            self.logger.debug("Detecting PII with active detectors: %s", detectors_str)
         
         # Collect results from all detectors
         results_per_detector: List[Tuple[PIIDetectorProtocol, List[PIIEntity]]] = []
@@ -356,15 +356,28 @@ class CompositePIIDetector:
         Returns:
             Masked text with PII replaced by type labels
         """
-        # Sort by position (reverse order for in-place replacement)
-        sorted_entities = sorted(entities, key=lambda x: x.start, reverse=True)
+        if not entities:
+            return text
+
+        # Sort by start position for linear scan
+        sorted_entities = sorted(entities, key=lambda x: x.start)
         
-        masked_text = text
+        parts = []
+        last_pos = 0
+        
         for entity in sorted_entities:
-            mask = f"[{entity.pii_type}]"
-            masked_text = masked_text[:entity.start] + mask + masked_text[entity.end:]
+            # Skip if entity overlaps with previous one
+            if entity.start < last_pos:
+                continue
+                
+            parts.append(text[last_pos:entity.start])
+            parts.append(f"[{entity.pii_type}]")
+            last_pos = entity.end
         
-        return masked_text
+        # Append remaining text
+        parts.append(text[last_pos:])
+        
+        return "".join(parts)
 
 
 def should_use_composite_detector() -> bool:

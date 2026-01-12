@@ -129,13 +129,6 @@ class MultiPassGlinerDetector:
             f"(categories loaded on first detection)"
         )
 
-    def __del__(self):
-        """Cleanup resources."""
-        if hasattr(self, 'executor') and self.executor:
-            self.executor.shutdown(wait=False)
-        if hasattr(self, '_gliner_detector'):
-            del self._gliner_detector
-
     def _load_parallel_config(self) -> None:
         """Load parallel processing configuration from settings."""
         from pii_detector.application.config.detection_policy import _load_llm_config

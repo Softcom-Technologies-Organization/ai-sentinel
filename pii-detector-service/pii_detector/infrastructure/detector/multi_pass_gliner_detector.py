@@ -836,8 +836,16 @@ class MultiPassGlinerDetector:
     def __del__(self):
         """Cleanup when detector is destroyed."""
         try:
+            if hasattr(self, 'executor') and self.executor:
+                self.executor.shutdown(wait=True)
+                self.executor = None
+
             if hasattr(self, '_gliner_detector'):
                 del self._gliner_detector
         except Exception as e:
-            if hasattr(self, 'logger'):
-                self.logger.error(f"Cleanup error: {e}")
+            # During interpreter shutdown, logging might fail
+            try:
+                if hasattr(self, 'logger'):
+                    self.logger.error(f"Cleanup error: {e}")
+            except Exception:
+                pass

@@ -59,7 +59,7 @@ public sealed class PiiDetectionException extends RuntimeException {
             super(message);
         }
 
-        public PiiDetectionServiceException(String message, Throwable cause) {
+        private PiiDetectionServiceException(String message, Throwable cause) {
             super(message, cause);
         }
     }

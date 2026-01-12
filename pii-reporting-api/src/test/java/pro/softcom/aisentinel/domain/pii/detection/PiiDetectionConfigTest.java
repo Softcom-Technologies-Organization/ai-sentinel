@@ -37,6 +37,7 @@ class PiiDetectionConfigTest {
         softly.assertThat(config.presidioEnabled()).isEqualTo(presidioEnabled);
         softly.assertThat(config.regexEnabled()).isEqualTo(regexEnabled);
         softly.assertThat(config.defaultThreshold()).isEqualByComparingTo(threshold);
+        softly.assertThat(config.nbOfLabelByPass()).isEqualTo(30);
         softly.assertThat(config.updatedAt()).isEqualTo(updatedAt);
         softly.assertThat(config.updatedBy()).isEqualTo(updatedBy);
         softly.assertAll();

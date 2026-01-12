@@ -41,7 +41,7 @@ class ReactorErrorHandlerConfigTest {
     void shouldHandlePiiDetectionExceptionWrappingGrpcCancelled() {
         StatusRuntimeException cause = Status.CANCELLED.asRuntimeException();
         PiiDetectionException.PiiDetectionServiceException ex = 
-            new PiiDetectionException.PiiDetectionServiceException("test", cause);
+            PiiDetectionException.serviceError("test", cause);
         assertThatCode(() -> config.handleDroppedError(ex))
                 .doesNotThrowAnyException();
     }

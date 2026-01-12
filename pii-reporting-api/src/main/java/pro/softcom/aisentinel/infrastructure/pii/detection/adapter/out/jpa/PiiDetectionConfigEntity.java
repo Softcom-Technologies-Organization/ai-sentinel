@@ -6,6 +6,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -52,6 +53,8 @@ public class PiiDetectionConfigEntity {
     private BigDecimal defaultThreshold;
 
     @Column(name = "nb_of_label_by_pass", nullable = false)
+    @NotNull
+    @Min(value = 1, message = "nbOfLabelByPass must be >= 1")
     private Integer nbOfLabelByPass;
 
     @NotNull

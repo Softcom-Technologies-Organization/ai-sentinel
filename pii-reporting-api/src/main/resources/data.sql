@@ -239,46 +239,4 @@ VALUES
     ('TH_TNIN', 'PRESIDIO', true, 0.95, 'Thai National ID', 'Thai National ID Number', 'Government ID', 'TH_TNIN', 'TH', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
     ON CONFLICT (pii_type, detector) DO NOTHING;
 
--- ============================================================================
--- Generic/Alias Presidio Types - INSERT ONLY (detector_label directement renseigné)
--- ============================================================================
--- Short aliases
-INSERT INTO pii_type_config
-(pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
-VALUES
-    ('PHONE',         'PRESIDIO', false, 0.90, 'Phone (Generic)', 'Generic phone number (alias for PHONE_NUMBER)', 'Contact',   'PHONE_NUMBER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('IBAN',          'PRESIDIO', false, 0.95, 'IBAN (Generic)', 'Generic IBAN (alias for IBAN_CODE)',            'Financial', 'IBAN_CODE',    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('CRYPTO_WALLET', 'PRESIDIO', false, 0.90, 'Crypto Wallet (Generic)', 'Generic crypto wallet (alias for CRYPTO)', 'Financial','CRYPTO',     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
-    ON CONFLICT (pii_type, detector) DO NOTHING;
-
--- Generic national ID aliases
-INSERT INTO pii_type_config
-(pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
-VALUES
-    ('SSN',           'PRESIDIO', false, 0.90, 'SSN (Generic)', 'Generic Social Security Number', 'Government ID', 'US_SSN',            CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('PASSPORT',      'PRESIDIO', false, 0.90, 'Passport (Generic)', 'Generic passport number',   'Government ID', 'US_PASSPORT',       CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('DRIVER_LICENSE','PRESIDIO', false, 0.85, 'Driver License (Generic)', 'Generic driver license','Government ID','US_DRIVER_LICENSE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('ITIN',          'PRESIDIO', false, 0.90, 'ITIN (Generic)', 'Generic Individual Taxpayer ID','Government ID', 'US_ITIN',           CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
-    ON CONFLICT (pii_type, detector) DO NOTHING;
-
--- Generic medical/business aliases
-INSERT INTO pii_type_config
-(pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
-VALUES
-    ('NHS_NUMBER', 'PRESIDIO', false, 0.90, 'NHS Number (Generic)', 'Generic NHS number', 'Medical',       'UK_NHS',       CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('NRIC',       'PRESIDIO', false, 0.90, 'NRIC (Generic)', 'Generic National Registration ID', 'Government ID', 'SG_NRIC_FIN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('ABN',        'PRESIDIO', false, 0.85, 'ABN (Generic)', 'Generic Australian Business Number', 'Business',    'AU_ABN',      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('ACN',        'PRESIDIO', false, 0.85, 'ACN (Generic)', 'Generic Australian Company Number',  'Business',    'AU_ACN',      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('TFN',        'PRESIDIO', false, 0.90, 'TFN (Generic)', 'Generic Tax File Number',            'Government ID','AU_TFN',      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('MEDICARE',   'PRESIDIO', false, 0.90, 'Medicare (Generic)', 'Generic Medicare number',       'Medical',     'AU_MEDICARE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
-    ON CONFLICT (pii_type, detector) DO NOTHING;
-
--- Additional generic types
-INSERT INTO pii_type_config
-(pii_type, detector, enabled, threshold, display_name, description, category, detector_label, created_at, updated_at, updated_by)
-VALUES
-    ('PERSON_NAME', 'PRESIDIO', false, 0.95, 'Person Name (Generic)', 'Generic person name (alias for PERSON)', 'Identity', 'PERSON',    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('DATE',        'PRESIDIO', false, 0.85, 'Date (Generic)',        'Generic date (simpler than DATE_TIME)',  'Identity', 'DATE_TIME', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
-    ON CONFLICT (pii_type, detector) DO NOTHING;
-
 COMMIT;

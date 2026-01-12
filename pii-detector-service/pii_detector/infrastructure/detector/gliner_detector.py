@@ -471,14 +471,28 @@ class GLiNERDetector:
         Returns:
             Masked text with PII replaced by type labels
         """
-        entities_sorted = sorted(entities, key=lambda x: x.start, reverse=True)
-        masked_text = text
+        if not entities:
+            return text
+
+        # Sort by start position for linear scan
+        entities_sorted = sorted(entities, key=lambda x: x.start)
+        
+        parts = []
+        last_pos = 0
         
         for entity in entities_sorted:
-            mask = f"[{entity.pii_type}]"
-            masked_text = masked_text[:entity.start] + mask + masked_text[entity.end:]
+            # Skip if entity overlaps with previous one
+            if entity.start < last_pos:
+                continue
+                
+            parts.append(text[last_pos:entity.start])
+            parts.append(f"[{entity.pii_type}]")
+            last_pos = entity.end
         
-        return masked_text
+        # Append remaining text
+        parts.append(text[last_pos:])
+        
+        return "".join(parts)
 
     def _process_single_chunk(
         self, 

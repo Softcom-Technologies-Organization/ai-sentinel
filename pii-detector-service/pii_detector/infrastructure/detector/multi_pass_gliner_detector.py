@@ -39,19 +39,11 @@ from pii_detector.infrastructure.detector.conflict_resolver import (
 from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class SpanKey:
     """Key for grouping entities by span position."""
     start: int
     end: int
-
-    def __hash__(self):
-        return hash((self.start, self.end))
-
-    def __eq__(self, other):
-        if not isinstance(other, SpanKey):
-            return False
-        return self.start == other.start and self.end == other.end
 
 
 @dataclass
@@ -499,7 +491,8 @@ class MultiPassGlinerDetector:
                     entities = future.result()
                     all_entities.extend(entities)
                     self.logger.debug(
-                        f"[{detection_id}] Pass {category}: {len(entities)} entities"
+                        "[%s] Pass %s: %d entities",
+                        detection_id, category, len(entities)
                     )
                 except Exception as e:
                     self.logger.error(
@@ -586,7 +579,10 @@ class MultiPassGlinerDetector:
                 f"types: {set(entity_types)}"
             )
         else:
-            self.logger.debug(f"[{detection_id}] Pass {category}: 0 entities in {pass_time:.2f}s")
+            self.logger.debug(
+                "[%s] Pass %s: 0 entities in %.2fs",
+                detection_id, category, pass_time
+            )
 
         return entities
 
@@ -610,16 +606,18 @@ class MultiPassGlinerDetector:
 
         for entity in entities:
             key = SpanKey(entity.start, entity.end)
+            span = span_map.get(key)
 
-            if key not in span_map:
-                span_map[key] = AggregatedSpan(
+            if span is None:
+                span = AggregatedSpan(
                     start=entity.start,
                     end=entity.end,
                     text=entity.text,
                     labels=[]
                 )
+                span_map[key] = span
 
-            span_map[key].labels.append((entity.pii_type, entity.score))
+            span.labels.append((entity.pii_type, entity.score))
 
         return list(span_map.values())
 
@@ -659,10 +657,12 @@ class MultiPassGlinerDetector:
                 resolved.append(entity)
 
                 # Log single-label detections at debug level
-                text_preview = span.text[:40] + "..." if len(span.text) > 40 else span.text
-                self.logger.debug(
-                    f"[{detection_id}] DETECTED | '{text_preview}' -> {best_label} ({best_score:.2f})"
-                )
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    text_preview = span.text[:40] + "..." if len(span.text) > 40 else span.text
+                    self.logger.debug(
+                        "[%s] DETECTED | '%s' -> %s (%.2f)",
+                        detection_id, text_preview, best_label, best_score
+                    )
             else:
                 # Multiple labels - use ConflictResolver (which logs conflicts)
                 conflict_count += 1
@@ -684,8 +684,8 @@ class MultiPassGlinerDetector:
                     resolved.append(entity)
 
         self.logger.debug(
-            f"[{detection_id}] Conflict resolution: {single_label_count} single-label, "
-            f"{conflict_count} conflicts"
+            "[%s] Conflict resolution: %d single-label, %d conflicts",
+            detection_id, single_label_count, conflict_count
         )
 
         return resolved
@@ -716,56 +716,19 @@ class MultiPassGlinerDetector:
         )
 
         kept: List[PIIEntity] = []
+        max_end = -1
 
-        for current in sorted_entities:
-            should_keep = True
-            remove_indices = []
-
-            for i, kept_entity in enumerate(kept):
-                overlap = self._check_span_overlap(kept_entity, current)
-
-                if overlap == "none":
-                    continue
-                elif overlap == "current_contains_kept":
-                    # Current is wider - remove the kept one
-                    remove_indices.append(i)
-                elif overlap in ("kept_contains_current", "partial"):
-                    # Kept is wider or partial overlap - skip current
-                    should_keep = False
-                    break
-
-            # Remove smaller contained entities
-            for idx in reversed(remove_indices):
-                kept.pop(idx)
-
-            if should_keep:
-                kept.append(current)
+        for entity in sorted_entities:
+            # If current entity starts after (or at) the end of the last kept entity,
+            # it means no overlap with any previously kept entity (due to sort order).
+            if entity.start >= max_end:
+                kept.append(entity)
+                max_end = max(max_end, entity.end)
+            # Else: It overlaps with a previously kept entity.
+            # Since we prioritized "longest first" for same start, and "earlier start" generally,
+            # the existing kept entity is preferred. We discard the current one.
 
         return kept
-
-    def _check_span_overlap(
-        self,
-        e1: PIIEntity,
-        e2: PIIEntity
-    ) -> str:
-        """
-        Check overlap relationship between two entities.
-
-        Returns:
-            - "none": No overlap
-            - "kept_contains_current": e1 contains e2
-            - "current_contains_kept": e2 contains e1
-            - "partial": Partial overlap
-        """
-        if e1.end <= e2.start or e2.end <= e1.start:
-            return "none"
-
-        if e1.start <= e2.start and e1.end >= e2.end:
-            return "kept_contains_current"
-        elif e2.start <= e1.start and e2.end >= e1.end:
-            return "current_contains_kept"
-        else:
-            return "partial"
 
     def _generate_detection_id(self) -> str:
         """Generate unique detection ID for logging."""

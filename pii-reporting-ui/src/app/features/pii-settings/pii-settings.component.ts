@@ -153,7 +153,8 @@ export class PiiSettingsComponent implements OnInit {
       glinerEnabled: [true],
       presidioEnabled: [true],
       regexEnabled: [true],
-      defaultThreshold: [0.75, [Validators.required, Validators.min(0), Validators.max(1)]]
+      defaultThreshold: [0.75, [Validators.required, Validators.min(0), Validators.max(1)]],
+      nbOfLabelByPass: [35, [Validators.required, Validators.min(1), Validators.max(100)]]
     }, {
       validators: [this.atLeastOneDetectorValidator]
     });
@@ -190,7 +191,8 @@ export class PiiSettingsComponent implements OnInit {
           glinerEnabled: detectorConfig.glinerEnabled,
           presidioEnabled: detectorConfig.presidioEnabled,
           regexEnabled: detectorConfig.regexEnabled,
-          defaultThreshold: detectorConfig.defaultThreshold
+          defaultThreshold: detectorConfig.defaultThreshold,
+          nbOfLabelByPass: detectorConfig.nbOfLabelByPass
         });
 
         // Set PII types
@@ -506,7 +508,8 @@ export class PiiSettingsComponent implements OnInit {
         glinerEnabled: this.currentConfig()!.glinerEnabled,
         presidioEnabled: this.currentConfig()!.presidioEnabled,
         regexEnabled: this.currentConfig()!.regexEnabled,
-        defaultThreshold: this.currentConfig()!.defaultThreshold
+        defaultThreshold: this.currentConfig()!.defaultThreshold,
+        nbOfLabelByPass: this.currentConfig()!.nbOfLabelByPass
       });
       this.configForm.markAsPristine();
     }

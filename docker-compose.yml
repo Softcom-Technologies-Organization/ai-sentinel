@@ -433,6 +433,14 @@ services:
           -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"$${DB_PASSWORD}\",\"secretComment\":\"Auto-generated PostgreSQL password\",\"type\":\"shared\"}" \
           > /dev/null 2>&1 && echo "[infisical-config]   ✓ DB_PASSWORD created" || echo "[infisical-config]   ⚠ DB_PASSWORD may already exist";
         
+        # Create PII_REPORTING_ALLOW_SECRET_REVEAL secret with default value true
+        echo "[infisical-config]   Creating secret: PII_REPORTING_ALLOW_SECRET_REVEAL";
+        curl -sf -X POST "$${INFISICAL_URL}/api/v4/secrets/PII_REPORTING_ALLOW_SECRET_REVEAL" \
+          -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"true\",\"secretComment\":\"Allow revealing decrypted PII values (default: true)\",\"type\":\"shared\"}" \
+          > /dev/null 2>&1 && echo "[infisical-config]   ✓ PII_REPORTING_ALLOW_SECRET_REVEAL created" || echo "[infisical-config]   ⚠ PII_REPORTING_ALLOW_SECRET_REVEAL may already exist";
+
         # Create PGADMIN_DEFAULT_EMAIL secret with generated value
         echo "[infisical-config]   Creating secret: PGADMIN_DEFAULT_EMAIL";
         PGADMIN_EMAIL=$$(cat /secrets/pgadmin_email.txt);

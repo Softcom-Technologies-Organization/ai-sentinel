@@ -1,10 +1,11 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out.http;
 
+import org.apache.commons.lang3.StringUtils;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConnectionConfig;
+
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import org.apache.commons.lang3.StringUtils;
-import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConnectionConfig;
 
 /**
  * Constructeur d'URLs pour l'API REST Confluence.
@@ -94,7 +95,6 @@ public class ConfluenceApiUrlBuilder {
         );
     }
 
-    //TODO: not sure which method to keep during merge conflict resolving - remove if no need
     public URI buildContentSearchModifiedSinceUri(String spaceKey, String sinceDate) {
         var cql = String.format("lastModified>=\"%s\" AND space=\"%s\"", sinceDate, spaceKey);
         var encodedCql = URLEncoder.encode(cql, StandardCharsets.UTF_8);

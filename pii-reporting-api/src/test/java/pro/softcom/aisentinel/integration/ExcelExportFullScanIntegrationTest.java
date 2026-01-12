@@ -1,32 +1,9 @@
 package pro.softcom.aisentinel.integration;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.DateUtil;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -45,11 +22,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import pro.softcom.aisentinel.AiSentinelApplication;
-import pro.softcom.aisentinel.application.confluence.port.out.AttachmentTextExtractor;
-import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceAttachmentClient;
-import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceAttachmentDownloader;
-import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceClient;
-import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceUrlProvider;
+import pro.softcom.aisentinel.application.confluence.port.out.*;
 import pro.softcom.aisentinel.application.pii.export.port.in.ExportDetectionReportPort;
 import pro.softcom.aisentinel.application.pii.export.port.out.ReadExportContextPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.StreamConfluenceScanPort;
@@ -60,13 +33,29 @@ import pro.softcom.aisentinel.domain.pii.export.ExportContext;
 import pro.softcom.aisentinel.domain.pii.export.SourceType;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.DetectionEventRepository;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+
 /**
  * Integration test to assess the flow :
  * Confluence calls mocked -> Scan Global -> gRPC Detection mocked -> Persistence BD -> Export Excel -> Verification Content
  * No need for gRPC Python or Confluence as they are mocked.
  */
-//FIXME
-@Disabled("the test keeps failing and it is complexe to fix - will be reanabled when the fix is done")
 @Testcontainers
 @SpringBootTest(classes = AiSentinelApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -307,9 +296,9 @@ class ExcelExportFullScanIntegrationTest {
             .isEqualTo("PII Context");
         
         // Compter les détections (sans compter le header)
-        int lastRowNum = detectionsSheet.getLastRowNum();
-        int totalDetections = lastRowNum; // Row 0 est le header
-        
+        int totalDetections = detectionsSheet.getLastRowNum();
+        // Row 0 est le header
+
         softly.assertThat(totalDetections)
             .as("Should have at least one detection row")
             .isGreaterThan(0);
@@ -318,7 +307,7 @@ class ExcelExportFullScanIntegrationTest {
         List<String> detectedTypes = new ArrayList<>();
         List<String> pageTitles = new ArrayList<>();
         
-        for (int i = 1; i <= lastRowNum; i++) {
+        for (int i = 1; i <= totalDetections; i++) {
             Row row = detectionsSheet.getRow(i);
             if (row != null) {
                 String pageTitle = getCellValue(row, 1);

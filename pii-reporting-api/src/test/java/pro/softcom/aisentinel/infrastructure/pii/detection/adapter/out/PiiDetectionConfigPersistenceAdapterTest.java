@@ -1,9 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +14,11 @@ import pro.softcom.aisentinel.AiSentinelApplication;
 import pro.softcom.aisentinel.domain.pii.detection.PiiDetectionConfig;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out.jpa.PiiDetectionConfigEntity;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out.jpa.PiiDetectionConfigJpaRepository;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
 @SpringBootTest(
@@ -60,14 +61,14 @@ class PiiDetectionConfigPersistenceAdapterTest {
 
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(config).isNotNull();
-        softly.assertThat(config.getId()).isEqualTo(CONFIG_ID);
-        softly.assertThat(config.isGlinerEnabled()).isTrue();
-        softly.assertThat(config.isPresidioEnabled()).isTrue();
-        softly.assertThat(config.isRegexEnabled()).isTrue();
-        softly.assertThat(config.getDefaultThreshold())
+        softly.assertThat(config.id()).isEqualTo(CONFIG_ID);
+        softly.assertThat(config.glinerEnabled()).isTrue();
+        softly.assertThat(config.presidioEnabled()).isTrue();
+        softly.assertThat(config.regexEnabled()).isTrue();
+        softly.assertThat(config.defaultThreshold())
             .isEqualByComparingTo(new BigDecimal("0.75"));
-        softly.assertThat(config.getUpdatedAt()).isNotNull();
-        softly.assertThat(config.getUpdatedBy()).isEqualTo("system");
+        softly.assertThat(config.updatedAt()).isNotNull();
+        softly.assertThat(config.updatedBy()).isEqualTo("system");
 
         PiiDetectionConfigEntity entity = jpaRepository.findById(CONFIG_ID).orElse(null);
         softly.assertThat(entity).isNotNull();
@@ -89,15 +90,15 @@ class PiiDetectionConfigPersistenceAdapterTest {
 
         PiiDetectionConfig existingConfig = persistenceAdapter.findConfig();
 
-        BigDecimal newThreshold = existingConfig.getDefaultThreshold()
+        BigDecimal newThreshold = existingConfig.defaultThreshold()
             .add(new BigDecimal("0.10"));
         LocalDateTime updateTime = LocalDateTime.now();
 
         PiiDetectionConfig updatedConfig = new PiiDetectionConfig(
-            existingConfig.getId(),
+            existingConfig.id(),
             false,
-            existingConfig.isPresidioEnabled(),
-            existingConfig.isRegexEnabled(),
+            existingConfig.presidioEnabled(),
+            existingConfig.regexEnabled(),
             newThreshold,
                 30,
             updateTime,
@@ -109,16 +110,16 @@ class PiiDetectionConfigPersistenceAdapterTest {
         PiiDetectionConfig reloadedConfig = persistenceAdapter.findConfig();
 
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(reloadedConfig.getId()).isEqualTo(CONFIG_ID);
-        softly.assertThat(reloadedConfig.isGlinerEnabled()).isFalse();
-        softly.assertThat(reloadedConfig.isPresidioEnabled())
-            .isEqualTo(existingConfig.isPresidioEnabled());
-        softly.assertThat(reloadedConfig.isRegexEnabled())
-            .isEqualTo(existingConfig.isRegexEnabled());
-        softly.assertThat(reloadedConfig.getDefaultThreshold())
+        softly.assertThat(reloadedConfig.id()).isEqualTo(CONFIG_ID);
+        softly.assertThat(reloadedConfig.glinerEnabled()).isFalse();
+        softly.assertThat(reloadedConfig.presidioEnabled())
+            .isEqualTo(existingConfig.presidioEnabled());
+        softly.assertThat(reloadedConfig.regexEnabled())
+            .isEqualTo(existingConfig.regexEnabled());
+        softly.assertThat(reloadedConfig.defaultThreshold())
             .isEqualByComparingTo(newThreshold);
-        softly.assertThat(reloadedConfig.getUpdatedAt()).isNotNull();
-        softly.assertThat(reloadedConfig.getUpdatedBy()).isEqualTo("integration-test");
+        softly.assertThat(reloadedConfig.updatedAt()).isNotNull();
+        softly.assertThat(reloadedConfig.updatedBy()).isEqualTo("integration-test");
 
         PiiDetectionConfigEntity entity = jpaRepository.findById(CONFIG_ID).orElse(null);
         softly.assertThat(entity).isNotNull();

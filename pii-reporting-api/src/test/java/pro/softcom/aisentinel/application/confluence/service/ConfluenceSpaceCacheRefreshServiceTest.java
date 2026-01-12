@@ -1,11 +1,5 @@
 package pro.softcom.aisentinel.application.confluence.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -28,6 +22,12 @@ import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 import pro.softcom.aisentinel.domain.confluence.DataOwners;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.jpa.ConfluenceSpaceJpaRepository;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.jpa.entity.ConfluenceSpaceEntity;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 /**
  * Integration test for ConfluenceSpaceCacheRefreshService.
@@ -71,8 +71,6 @@ class ConfluenceSpaceCacheRefreshServiceTest {
     @Autowired
     private ConfluenceClient confluenceClient; // provided by TestConfiguration as Mockito mock
 
-    //FIXME: this test needs to be fixed
-    @Disabled("Requires manual execution")
     @Test
     void Should_PersistSpaces_When_BackgroundRefreshRuns() {
         // Arrange

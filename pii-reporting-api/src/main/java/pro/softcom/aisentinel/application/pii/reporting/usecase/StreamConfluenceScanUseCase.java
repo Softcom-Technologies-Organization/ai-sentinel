@@ -1,9 +1,5 @@
 package pro.softcom.aisentinel.application.pii.reporting.usecase;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.StreamConfluenceScanPort;
@@ -13,11 +9,15 @@ import pro.softcom.aisentinel.application.pii.reporting.service.AttachmentProces
 import pro.softcom.aisentinel.application.pii.reporting.service.ContentScanOrchestrator;
 import pro.softcom.aisentinel.application.pii.reporting.service.parser.HtmlContentParser;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
-import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Application use case orchestrating Confluence scans and PII detection.
@@ -29,7 +29,6 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
     StreamConfluenceScanPort {
 
     private final PersonallyIdentifiableInformationScanExecutionOrchestratorPort personallyIdentifiableInformationScanExecutionOrchestratorPort;
-    private final ScanCheckpointRepository scanCheckpointRepository;
 
     public StreamConfluenceScanUseCase(
         ConfluenceAccessor confluenceAccessor,
@@ -38,11 +37,10 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
         AttachmentProcessor attachmentProcessor,
         ScanTimeOutConfig scanTimeoutConfig,
         HtmlContentParser htmlContentParser,
-        PersonallyIdentifiableInformationScanExecutionOrchestratorPort personallyIdentifiableInformationScanExecutionOrchestratorPort,
-        ScanCheckpointRepository scanCheckpointRepository) {
+        PersonallyIdentifiableInformationScanExecutionOrchestratorPort personallyIdentifiableInformationScanExecutionOrchestratorPort
+    ) {
         super(confluenceAccessor, piiDetectorClient, contentScanOrchestrator, attachmentProcessor, scanTimeoutConfig, htmlContentParser);
         this.personallyIdentifiableInformationScanExecutionOrchestratorPort = personallyIdentifiableInformationScanExecutionOrchestratorPort;
-        this.scanCheckpointRepository = scanCheckpointRepository;
     }
 
     /**
@@ -126,7 +124,7 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
         log.info("[SCAN] Creating new scan with scanId: {}", scanCorrelationId);
         
         // Purge previous scan data to ensure clean state
-        purgePreviousScanData();
+        contentScanOrchestrator.purgePreviousScanData();
 
         // Opening segment: a single "MULTI_START" event
         Flux<ConfluenceContentScanResult> header = buildAllSpaceScanFluxHeader(scanCorrelationId);
@@ -229,19 +227,4 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
                              .emittedAt(Instant.now().toString())
                              .build());
     }
-
-    /**
-     * Purges previous scan data to ensure a clean state before starting a new scan.
-     */
-    private void purgePreviousScanData() {
-        try {
-            log.info("[SCAN] Purging previous active scan data before starting new scan");
-            scanCheckpointRepository.deleteActiveScanCheckpoints();
-            log.info("[SCAN] Previous scan data purged successfully");
-        } catch (Exception e) {
-            log.error("[SCAN] Failed to purge previous scan data: {}", e.getMessage(), e);
-            // Don't fail the scan if purge fails - log and continue
-        }
-    }
-
 }

@@ -11,7 +11,9 @@ import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.Groupe
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.PiiTypeConfigResponseDto;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.UpdatePiiTypeConfigRequestDto;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -30,7 +32,6 @@ public class PiiTypeConfigController {
 
     private final ManagePiiTypeConfigsPort managePiiTypeConfigsPort;
 
-    // TODO: Replace with actual Spring Security authentication when available
     private static final String PLACEHOLDER_USER = "admin";
 
     public PiiTypeConfigController(ManagePiiTypeConfigsPort managePiiTypeConfigsPort) {

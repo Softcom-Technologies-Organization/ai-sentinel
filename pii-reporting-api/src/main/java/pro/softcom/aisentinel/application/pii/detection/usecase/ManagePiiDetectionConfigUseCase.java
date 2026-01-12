@@ -1,11 +1,12 @@
 package pro.softcom.aisentinel.application.pii.detection.usecase;
 
-import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiDetectionConfigPort;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionConfigRepository;
 import pro.softcom.aisentinel.domain.pii.detection.PiiDetectionConfig;
+
+import java.time.LocalDateTime;
 
 /**
  * Use case for managing PII detection configuration.
@@ -45,7 +46,6 @@ public class ManagePiiDetectionConfigUseCase implements ManagePiiDetectionConfig
                 command.updatedBy()
         );
 
-        newConfig.validate();
         repository.updateConfig(newConfig);
 
         log.info("PII detection configuration updated successfully by user: {}", command.updatedBy());

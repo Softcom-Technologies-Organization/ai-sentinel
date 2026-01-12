@@ -7,11 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiDetectionConfigPort;
 import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiDetectionConfigPort.UpdatePiiDetectionConfigCommand;
 import pro.softcom.aisentinel.domain.pii.detection.PiiDetectionConfig;
@@ -110,13 +106,13 @@ public class PiiDetectionConfigController {
      */
     private PiiDetectionConfigResponseDto toResponseDto(PiiDetectionConfig config) {
         return new PiiDetectionConfigResponseDto(
-            config.isGlinerEnabled(),
-            config.isPresidioEnabled(),
-            config.isRegexEnabled(),
-            config.getDefaultThreshold(),
-            config.getNbOfLabelByPass(),
-            config.getUpdatedAt(),
-            config.getUpdatedBy()
+            config.glinerEnabled(),
+            config.presidioEnabled(),
+            config.regexEnabled(),
+            config.defaultThreshold(),
+            config.nbOfLabelByPass(),
+            config.updatedAt(),
+            config.updatedBy()
         );
     }
 }

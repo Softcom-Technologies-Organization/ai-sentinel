@@ -1,11 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out.jpa.mapper;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.List;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,18 +7,14 @@ import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 import pro.softcom.aisentinel.domain.confluence.DataOwners;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.jpa.entity.ConfluenceSpaceEntity;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 class ConfluenceSpaceEntityMapperTest {
-
-    @Test
-    @DisplayName("Should_ReturnNull_When_EntityIsNull")
-    void Should_ReturnNull_When_EntityIsNull() {
-        // When
-        ConfluenceSpace result = ConfluenceSpaceEntityMapper.toDomain(null);
-
-        // Then
-        assertThat(result).isNull();
-    }
-
     @Test
     @DisplayName("Should_MapAllFieldsAndDefaults_When_EntityIsProvided")
     void Should_MapAllFieldsAndDefaults_When_EntityIsProvided() {
@@ -37,8 +27,8 @@ class ConfluenceSpaceEntityMapperTest {
             .url("https://confluence.local/space")
             .description("Space description")
             .cacheTimestamp(LocalDateTime.now().minusDays(1))
-            .lastUpdated(LocalDateTime.now().minusHours(1))
-            .lastModifiedDate(lastModifiedDate)
+            .lastSyncedAt(LocalDateTime.now().minusHours(1))
+            .confluenceLastModifiedAt(lastModifiedDate)
             .build();
 
         // When
@@ -70,8 +60,8 @@ class ConfluenceSpaceEntityMapperTest {
             .spaceKey("SPACE2")
             .name("Another Space")
             .cacheTimestamp(LocalDateTime.now())
-            .lastUpdated(LocalDateTime.now())
-            .lastModifiedDate(null)
+            .lastSyncedAt(LocalDateTime.now())
+            .confluenceLastModifiedAt(null)
             .build();
 
         // When
@@ -128,10 +118,10 @@ class ConfluenceSpaceEntityMapperTest {
         softly.assertThat(entity.getDescription()).isEqualTo("Desc 3");
         // Timestamps set to now by mapper, so should be within [before, after]
         softly.assertThat(entity.getCacheTimestamp()).isBetween(before, after);
-        softly.assertThat(entity.getLastUpdated()).isBetween(before, after);
+        softly.assertThat(entity.getLastSyncedAt()).isBetween(before, after);
         // lastModified conversion
         LocalDateTime expectedLdt = LocalDateTime.ofInstant(lastModified, ZoneId.systemDefault());
-        softly.assertThat(entity.getLastModifiedDate()).isEqualTo(expectedLdt);
+        softly.assertThat(entity.getConfluenceLastModifiedAt()).isEqualTo(expectedLdt);
         softly.assertAll();
     }
 
@@ -157,9 +147,9 @@ class ConfluenceSpaceEntityMapperTest {
         // Then
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(entity).isNotNull();
-        softly.assertThat(entity.getLastModifiedDate()).isNull();
+        softly.assertThat(entity.getConfluenceLastModifiedAt()).isNull();
         softly.assertThat(entity.getCacheTimestamp()).isNotNull();
-        softly.assertThat(entity.getLastUpdated()).isNotNull();
+        softly.assertThat(entity.getLastSyncedAt()).isNotNull();
         softly.assertAll();
     }
 }

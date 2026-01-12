@@ -7,9 +7,9 @@ CREATE TABLE IF NOT EXISTS confluence_spaces (
   url TEXT,
   description TEXT,
   cache_timestamp TIMESTAMP NOT NULL,
-  last_updated TIMESTAMP NOT NULL,
-  last_modified_date TIMESTAMP
+  last_synced_at TIMESTAMP NOT NULL,
+  confluence_last_modified_at TIMESTAMP
 );
 
 -- Index for efficient staleness queries in background refresh
-CREATE INDEX IF NOT EXISTS idx_confluence_spaces_last_updated ON confluence_spaces(last_updated);
+CREATE INDEX IF NOT EXISTS idx_confluence_spaces_last_synced_at ON confluence_spaces(last_synced_at);

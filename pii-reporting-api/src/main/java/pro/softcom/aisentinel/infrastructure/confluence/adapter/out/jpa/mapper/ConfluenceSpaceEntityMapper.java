@@ -1,11 +1,12 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out.jpa.mapper;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 import pro.softcom.aisentinel.domain.confluence.DataOwners;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.jpa.entity.ConfluenceSpaceEntity;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 public final class ConfluenceSpaceEntityMapper {
 
@@ -17,8 +18,8 @@ public final class ConfluenceSpaceEntityMapper {
             return null;
         }
 
-        Instant lastModified = entity.getLastModifiedDate() != null
-            ? entity.getLastModifiedDate().atZone(ZoneId.systemDefault()).toInstant()
+        Instant lastModified = entity.getConfluenceLastModifiedAt() != null
+            ? entity.getConfluenceLastModifiedAt().atZone(ZoneId.systemDefault()).toInstant()
             : null;
 
         return new ConfluenceSpace(
@@ -51,8 +52,8 @@ public final class ConfluenceSpaceEntityMapper {
             .url(domain.url())
             .description(domain.description())
             .cacheTimestamp(now)
-            .lastUpdated(now)
-            .lastModifiedDate(lastModifiedDate)
+            .lastSyncedAt(now)
+            .confluenceLastModifiedAt(lastModifiedDate)
             .build();
     }
 }

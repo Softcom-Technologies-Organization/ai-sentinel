@@ -7,6 +7,10 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -17,8 +21,12 @@ import java.util.Objects;
  * Represents the database table for storing PII detection settings.
  * Single-row configuration table (id always = 1).
  */
+@Setter
+@Getter
 @Entity
 @Table(name = "pii_detection_config")
+@Builder
+@AllArgsConstructor
 public class PiiDetectionConfigEntity {
 
     @Id
@@ -55,84 +63,6 @@ public class PiiDetectionConfigEntity {
 
     protected PiiDetectionConfigEntity() {
         // Required by JPA
-    }
-
-    public PiiDetectionConfigEntity(Integer id, Boolean glinerEnabled, Boolean presidioEnabled,
-                                    Boolean regexEnabled, BigDecimal defaultThreshold,
-                                    Integer nbOfLabelByPass,
-                                    LocalDateTime updatedAt, String updatedBy) {
-        this.id = id;
-        this.glinerEnabled = glinerEnabled;
-        this.presidioEnabled = presidioEnabled;
-        this.regexEnabled = regexEnabled;
-        this.defaultThreshold = defaultThreshold;
-        this.nbOfLabelByPass = nbOfLabelByPass;
-        this.updatedAt = updatedAt;
-        this.updatedBy = updatedBy;
-    }
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public Boolean getGlinerEnabled() {
-        return glinerEnabled;
-    }
-
-    public void setGlinerEnabled(Boolean glinerEnabled) {
-        this.glinerEnabled = glinerEnabled;
-    }
-
-    public Boolean getPresidioEnabled() {
-        return presidioEnabled;
-    }
-
-    public void setPresidioEnabled(Boolean presidioEnabled) {
-        this.presidioEnabled = presidioEnabled;
-    }
-
-    public Boolean getRegexEnabled() {
-        return regexEnabled;
-    }
-
-    public void setRegexEnabled(Boolean regexEnabled) {
-        this.regexEnabled = regexEnabled;
-    }
-
-    public BigDecimal getDefaultThreshold() {
-        return defaultThreshold;
-    }
-
-    public void setDefaultThreshold(BigDecimal defaultThreshold) {
-        this.defaultThreshold = defaultThreshold;
-    }
-
-    public Integer getNbOfLabelByPass() {
-        return nbOfLabelByPass;
-    }
-
-    public void setNbOfLabelByPass(Integer nbOfLabelByPass) {
-        this.nbOfLabelByPass = nbOfLabelByPass;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public String getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
     }
 
     @Override

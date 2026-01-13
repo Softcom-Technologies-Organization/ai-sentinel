@@ -46,8 +46,6 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
   readonly revealed = signal<boolean>(false);
   /** Controls opening of the detail section to match UX spec */
   readonly detailsOpen = signal<boolean>(false);
-  /** Whether revealing secrets is allowed by backend configuration */
-  readonly canRevealSecrets = signal<boolean>(true);
   /** Whether a reveal request is in progress */
   readonly isRevealing = signal<boolean>(false);
 
@@ -56,7 +54,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
 
   // Utils facade for UI helper methods
   readonly piiItemCardUtils = inject(PiiItemCardUtils);
-  private readonly sentinelleApi = inject(SentinelleApiService);
+  readonly sentinelleApi = inject(SentinelleApiService);
   private readonly cdr = inject(ChangeDetectorRef);
   readonly translocoService = inject(TranslocoService);
 
@@ -64,11 +62,6 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
   readonly testIds = TestIds;
 
   ngOnInit(): void {
-    // Load reveal configuration from backend
-    this.sentinelleApi.getRevealConfig().subscribe({
-      next: (allowed) => this.canRevealSecrets.set(allowed),
-      error: () => this.canRevealSecrets.set(false)
-    });
     // Initialize revealed state on first load only
     this.revealed.set(!this.maskByDefault);
   }
@@ -123,7 +116,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
     }
 
     // Need to fetch secrets from backend
-    if (!this.canRevealSecrets() || !this.item?.pageId) {
+    if (!this.sentinelleApi.revealAllowed() || !this.item?.pageId) {
       // Cannot reveal or missing pageId
       return;
     }
@@ -219,7 +212,7 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
     if (key.toLowerCase().startsWith('piitype')) {
       // Extract just the actual type after the dot
       const parts = key.split('.');
-      cleanKey = parts.length > 1 ? parts[parts.length - 1] : key;
+      cleanKey = parts.length > 1 ? parts.at(-1)! : key;
     }
 
     const normalizedKey = cleanKey.toUpperCase();

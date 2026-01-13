@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,6 +40,7 @@ public class PiiAccessController {
 
     @PostMapping("/reveal-page")
     @Operation(summary = "Reveals PII secrets from a Confluence page")
+    @PreAuthorize("@environment.getProperty('pii.reporting.allow-secret-reveal', 'false') == 'true'")
     @ApiResponse(responseCode = "200", description = "Secrets successfully revealed")
     @ApiResponse(responseCode = "403", description = "Revelation not authorized by configuration")
     @ApiResponse(responseCode = "404", description = "Page not found")

@@ -76,7 +76,7 @@
           @if (item?.maskedHtml) {
             <div class="masked" [innerHTML]="maskedHtmlSafe"></div>
           }
-          @if (canRevealSecrets()) {
+          @if (sentinelleApi.revealAllowed()) {
             <div class="controls mt-2">
               <button pButton [icon]="revealed() ? 'pi pi-eye-slash' : 'pi pi-eye'"
                       class="p-button-outlined" (click)="toggleReveal()"

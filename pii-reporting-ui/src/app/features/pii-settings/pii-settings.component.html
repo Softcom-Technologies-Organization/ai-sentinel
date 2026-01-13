@@ -37,9 +37,10 @@
             <h4 class="section-subtitle">{{ 'settings.sections.detectors' | transloco }}</h4>
 
             <div class="form-field">
-              <label>
+              <label for="glinerEnabled">
                 <span class="field-label">{{ 'settings.detectors.gliner.label' | transloco }}</span>
                 <p-toggleSwitch
+                  inputId="glinerEnabled"
                   formControlName="glinerEnabled"
                   [ariaLabel]="'settings.detectors.gliner.label' | transloco">
                 </p-toggleSwitch>
@@ -48,9 +49,10 @@
             </div>
 
             <div class="form-field">
-              <label>
+              <label for="presidioEnabled">
                 <span class="field-label">{{ 'settings.detectors.presidio.label' | transloco }}</span>
                 <p-toggleSwitch
+                  inputId="presidioEnabled"
                   formControlName="presidioEnabled"
                   [ariaLabel]="'settings.detectors.presidio.label' | transloco">
                 </p-toggleSwitch>
@@ -59,9 +61,10 @@
             </div>
 
             <div class="form-field">
-              <label>
+              <label for="regexEnabled">
                 <span class="field-label">{{ 'settings.detectors.regex.label' | transloco }}</span>
                 <p-toggleSwitch
+                  inputId="regexEnabled"
                   formControlName="regexEnabled"
                   [ariaLabel]="'settings.detectors.regex.label' | transloco">
                 </p-toggleSwitch>
@@ -82,13 +85,14 @@
             <h4 class="section-subtitle">{{ 'settings.sections.threshold' | transloco }}</h4>
 
             <div class="form-field threshold-field">
-              <label>
+              <label for="defaultThreshold">
                 <span class="field-label">{{ 'settings.threshold.label' | transloco }}</span>
               </label>
               <p class="field-description">{{ 'settings.threshold.description' | transloco }}</p>
 
               <div class="threshold-input-group">
                 <p-inputNumber
+                  inputId="defaultThreshold"
                   formControlName="defaultThreshold"
                   [min]="0"
                   [max]="1"
@@ -109,13 +113,14 @@
             <h4 class="section-subtitle">{{ 'settings.sections.performance' | transloco }}</h4>
 
             <div class="form-field threshold-field">
-              <label>
+              <label for="nbOfLabelByPass">
                 <span class="field-label">{{ 'settings.nbLabels.label' | transloco }}</span>
               </label>
               <p class="field-description">{{ 'settings.nbLabels.description' | transloco }}</p>
 
               <div class="threshold-input-group">
                 <p-inputNumber
+                  inputId="nbOfLabelByPass"
                   formControlName="nbOfLabelByPass"
                   [min]="1"
                   [max]="100"
@@ -137,6 +142,7 @@
               icon="pi pi-refresh"
               [disabled]="!hasDetectorChanges"
               (click)="onResetDetectorConfig()"
+              (keydown.enter)="onResetDetectorConfig()"
               styleClass="p-button-sm">
             </p-button>
           </div>
@@ -192,6 +198,7 @@
               [text]="true"
               [rounded]="true"
               (click)="clearSearch()"
+              (keydown.enter)="clearSearch()"
               [ariaLabel]="'settings.piiTypes.search.clear' | transloco"
               styleClass="p-button-sm search-clear-btn">
             </p-button>
@@ -372,6 +379,7 @@
             icon="pi pi-refresh"
             [disabled]="!hasUnsavedTypeChanges()"
             (click)="onResetPiiTypes()"
+            (keydown.enter)="onResetPiiTypes()"
             styleClass="p-button-sm">
           </p-button>
         </div>
@@ -386,6 +394,7 @@
           [disabled]="saving() || !hasUnsavedChanges"
           [loading]="saving()"
           (click)="onSaveAll()"
+          (keydown.enter)="onSaveAll()"
           styleClass="p-button-success">
         </p-button>
 
@@ -394,7 +403,8 @@
           [label]="'settings.actions.resetAll' | transloco"
           icon="pi pi-replay"
           [disabled]="!hasUnsavedChanges"
-          (click)="onResetAll()">
+          (click)="onResetAll()"
+          (keydown.enter)="onResetAll()">
         </p-button>
 
         <p-button
@@ -402,6 +412,7 @@
           [label]="'settings.actions.cancel' | transloco"
           icon="pi pi-times"
           (click)="onCancel()"
+          (keydown.enter)="onCancel()"
           styleClass="p-button-outlined">
         </p-button>
       </div>

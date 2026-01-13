@@ -1,28 +1,31 @@
-import {Component, computed, EventEmitter, Input, OnInit, Output, signal} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {DomSanitizer, SafeHtml} from '@angular/platform-browser';
-import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
-import {Router, RouterLink} from '@angular/router';
-import {TranslocoModule, TranslocoService} from '@jsverse/transloco';
-import {AccordionModule} from 'primeng/accordion';
-import {ButtonModule} from 'primeng/button';
-import {CardModule} from 'primeng/card';
-import {ToggleSwitchModule} from 'primeng/toggleswitch';
-import {InputNumberModule} from 'primeng/inputnumber';
-import {MessageModule} from 'primeng/message';
-import {ProgressSpinnerModule} from 'primeng/progressspinner';
-import {ToastModule} from 'primeng/toast';
-import {IconFieldModule} from 'primeng/iconfield';
-import {InputIconModule} from 'primeng/inputicon';
-import {InputTextModule} from 'primeng/inputtext';
-import {MessageService} from 'primeng/api';
-import {PiiDetectionConfigService} from '../../core/services/pii-detection-config.service';
+import { Component, computed, EventEmitter, Input, OnInit, Output, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import {
-  GroupedPiiTypes,
-  PiiDetectionConfig,
-  PiiTypeConfig
-} from '../../core/models/pii-detection-config.model';
-import {forkJoin} from 'rxjs';
+  AbstractControlOptions,
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
+import { AccordionModule } from 'primeng/accordion';
+import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { MessageModule } from 'primeng/message';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { ToastModule } from 'primeng/toast';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
+import { InputTextModule } from 'primeng/inputtext';
+import { MessageService } from 'primeng/api';
+import { PiiDetectionConfigService } from '../../core/services/pii-detection-config.service';
+import { GroupedPiiTypes, PiiDetectionConfig, PiiTypeConfig } from '../../core/models/pii-detection-config.model';
+import { forkJoin } from 'rxjs';
 
 /**
  * Settings page for PII detection configuration.
@@ -86,7 +89,7 @@ export class PiiSettingsComponent implements OnInit {
       return this.groupedPiiTypes();
     }
 
-    const filtered = this.groupedPiiTypes()
+    return this.groupedPiiTypes()
       .map(detectorGroup => {
         const filteredCategories = detectorGroup.categories
           .map(categoryGroup => {
@@ -98,8 +101,8 @@ export class PiiSettingsComponent implements OnInit {
 
               // Search in name, description, and country code
               return typeName.includes(term) ||
-                     typeDescription.includes(term) ||
-                     countryCode.includes(term);
+                typeDescription.includes(term) ||
+                countryCode.includes(term);
             });
 
             return filteredTypes.length > 0 ? {
@@ -115,8 +118,6 @@ export class PiiSettingsComponent implements OnInit {
         } : null;
       })
       .filter(det => det !== null) as GroupedPiiTypes[];
-
-    return filtered;
   });
 
   // Computed signal for checking if there are no results
@@ -125,9 +126,7 @@ export class PiiSettingsComponent implements OnInit {
     if (!term) return false;
 
     const filtered = this.filteredPiiTypes();
-    return filtered.length === 0 ||
-           filtered.every(det => det.categories.length === 0 ||
-                                 det.categories.every(cat => cat.types.length === 0));
+    return filtered.every(det => det.categories.every(cat => cat.types.length === 0));
   });
 
   // Computed signal for unsaved changes
@@ -157,7 +156,7 @@ export class PiiSettingsComponent implements OnInit {
       nbOfLabelByPass: [35, [Validators.required, Validators.min(1), Validators.max(100)]]
     }, {
       validators: [this.atLeastOneDetectorValidator]
-    });
+    } as AbstractControlOptions);
   }
 
   /**
@@ -180,11 +179,11 @@ export class PiiSettingsComponent implements OnInit {
   private loadAllConfigs(): void {
     this.loading.set(true);
 
-    forkJoin({
-      detectorConfig: this.configService.getConfig(),
-      piiTypes: this.configService.getPiiTypesGroupedForUI()
-    }).subscribe({
-      next: ({detectorConfig, piiTypes}) => {
+    forkJoin([
+      this.configService.getConfig(),
+      this.configService.getPiiTypesGroupedForUI()
+    ]).subscribe({
+      next: ([detectorConfig, piiTypes]) => {
         // Set detector config
         this.currentConfig.set(detectorConfig);
         this.configForm.patchValue({
@@ -594,11 +593,11 @@ export class PiiSettingsComponent implements OnInit {
     }
 
     // Escape special regex characters
-    const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
     const regex = new RegExp(`(${escapedTerm})`, 'gi');
 
     // Replace matches with highlighted version
-    const highlighted = translatedText.replace(regex, '<mark class="search-highlight">$1</mark>');
+    const highlighted = translatedText.replaceAll(regex, '<mark class="search-highlight">$1</mark>');
 
     return this.sanitizer.bypassSecurityTrustHtml(highlighted);
   }

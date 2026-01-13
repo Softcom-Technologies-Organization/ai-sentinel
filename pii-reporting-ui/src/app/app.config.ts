@@ -1,39 +1,29 @@
 import {
-  APP_INITIALIZER,
   ApplicationConfig,
+  inject,
   isDevMode,
+  provideAppInitializer,
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection
 } from '@angular/core';
 import {provideRouter} from '@angular/router';
-import {provideAnimations} from '@angular/platform-browser/animations';
 
 import {routes} from './app.routes';
 import {providePrimeNG} from 'primeng/config';
 import {provideHttpClient} from '@angular/common/http';
 import Aura from '@primeuix/themes/aura';
-import {provideAnimationsAsync} from '@angular/platform-browser/animations/async';
 import {ConfluenceSpacesPollingService} from './core/services/confluence-spaces-polling.service';
 import {provideTransloco} from '@jsverse/transloco';
 import {TranslocoHttpLoader} from './core/services/transloco-http-loader';
 import {ConfirmationService, MessageService} from 'primeng/api';
 import {ToastService} from './core/services/toast.service';
-
-/**
- * Initializes polling configuration from backend during app startup.
- * Business purpose: ensures frontend polling interval matches backend configuration.
- */
-function initializePollingConfig(pollingService: ConfluenceSpacesPollingService): () => Promise<void> {
-  return () => pollingService.loadPollingConfig();
-}
+import {SentinelleApiService} from './core/services/sentinelle-api.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     ConfirmationService,
     MessageService,
     ToastService,
-    provideAnimationsAsync(),
-    provideAnimations(),
     providePrimeNG({
       theme: {
         preset: Aura,
@@ -60,11 +50,7 @@ export const appConfig: ApplicationConfig = {
       },
       loader: TranslocoHttpLoader
     }),
-    {
-      provide: APP_INITIALIZER,
-      useFactory: initializePollingConfig,
-      deps: [ConfluenceSpacesPollingService],
-      multi: true
-    }
+    provideAppInitializer(() => inject(ConfluenceSpacesPollingService).loadPollingConfig()),
+    provideAppInitializer(() => inject(SentinelleApiService).loadRevealConfig())
   ]
 };

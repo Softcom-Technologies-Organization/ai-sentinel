@@ -372,6 +372,17 @@ If you need to configure additional optional secrets (proxy, advanced settings),
 
 Models are configured in `pii-detector-service/config/models/`:
 
+This project uses pre-trained AI models from external sources:
+
+- **nvidia/gliner-PII** (Hugging Face)
+  - **License**: NVIDIA Open Model License Agreement
+  - **Usage**: The model is downloaded at runtime from Hugging Face
+  - **License Link**: https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/
+
+#### Compliance
+
+When deploying this application, users accept the terms of the NVIDIA Open Model License for the GLiNER-PII model. Refer to the model's [Hugging Face page](https://huggingface.co/nvidia/gliner-PII) for details.
+
 - **GLiNER**: `gliner-pii.toml` - Main detection model
 - **Presidio**: `presidio-detector.toml` - Microsoft Presidio detector
 - **Regex**: `regex-patterns.toml` - Regex patterns for emails, phones, etc.

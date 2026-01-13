@@ -1,13 +1,7 @@
 package pro.softcom.aisentinel.application.pii.reporting.usecase;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,12 +23,20 @@ import pro.softcom.aisentinel.application.pii.security.port.out.SavePiiAuditPort
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.PageSecretsResponse;
+import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionMetadata;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionService;
 import pro.softcom.aisentinel.domain.pii.security.PiiAuditRecord;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.JpaScanResultQueryAdapter;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.DetectionEventRepository;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanEventEntity;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Testcontainers
 @DataJpaTest
@@ -163,7 +165,7 @@ class RevealPiiSecretsUseCaseTest {
         ((TestReadPiiConfigPort) readPiiConfigPort).setAllow(true);
 
         DetectedPersonallyIdentifiableInformation entity = new DetectedPersonallyIdentifiableInformation(0, 5, "EMAIL", "Email", 0.99,
-                                                                                                         "secret@example.com", "context", "masked");
+                                                                                                         "secret@example.com", "context", "masked", DetectorSource.UNKNOWN_SOURCE);
         ConfluenceContentScanResult confluenceContentScanResult = ConfluenceContentScanResult.builder()
             .scanId(scanId)
             .spaceKey("SPACE-1")

@@ -9,20 +9,21 @@ import {
   signal,
   SimpleChanges
 } from '@angular/core';
-import {CommonModule} from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   PersonallyIdentifiableInformationScanResult
 } from '../../core/models/personally-identifiable-information-scan-result';
-import {ButtonModule} from 'primeng/button';
-import {CardModule} from 'primeng/card';
-import {TagModule} from 'primeng/tag';
-import {ChipModule} from 'primeng/chip';
-import {Severity} from '../../core/models/severity';
-import {PiiItemCardUtils} from './pii-item-card.utils';
-import {TestIds} from '../test-ids.constants';
-import {SentinelleApiService} from '../../core/services/sentinelle-api.service';
-import {Divider} from 'primeng/divider';
-import {TranslocoModule, TranslocoService} from '@jsverse/transloco';
+import { DetectorSource } from '../../core/models/detected-personally-identifiable-information';
+import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { TagModule } from 'primeng/tag';
+import { ChipModule } from 'primeng/chip';
+import { Severity } from '../../core/models/severity';
+import { PiiItemCardUtils } from './pii-item-card.utils';
+import { TestIds } from '../test-ids.constants';
+import { SentinelleApiService } from '../../core/services/sentinelle-api.service';
+import { Divider } from 'primeng/divider';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 
 /**
  * Display a single detection item with masked HTML snippet, entities and severity badge.
@@ -257,5 +258,18 @@ export class PiiItemCardComponent implements OnInit, OnChanges {
    */
   attachmentKind(type?: string | null): 'pdf' | 'excel' | 'word' | 'ppt' | 'txt' | null {
     return this.piiItemCardUtils.attachmentKind(type);
+  }
+
+  detectorColorTheme(source?: DetectorSource): string {
+    switch (source) {
+      case 'GLINER':
+        return '#8B5CF6';
+      case 'PRESIDIO':
+        return '#10B981';
+      case 'REGEX':
+        return '#F97316';
+      default:
+        return '#71717a';
+    }
   }
 }

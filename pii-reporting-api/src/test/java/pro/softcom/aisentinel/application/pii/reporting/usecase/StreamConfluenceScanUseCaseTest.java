@@ -26,6 +26,7 @@ import pro.softcom.aisentinel.domain.confluence.DataOwners;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
+import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIdentifiableInformationType;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.JpaScanEventStoreAdapter;
@@ -237,7 +238,7 @@ class StreamConfluenceScanUseCaseTest {
         ContentPiiDetection resp = ContentPiiDetection.builder()
                 .statistics(Map.of("EMAIL", 1))
                 .sensitiveDataFound(List.of(
-                        new ContentPiiDetection.SensitiveData(PersonallyIdentifiableInformationType.EMAIL, "john@doe.com", "", 0, 16, 0.95, "sel")
+                        new ContentPiiDetection.SensitiveData(PersonallyIdentifiableInformationType.EMAIL, "john@doe.com", "", 0, 16, 0.95, "sel", DetectorSource.UNKNOWN_SOURCE)
                 ))
                 .build();
         when(piiDetectorClient.analyzeContent(any())).thenReturn(resp);

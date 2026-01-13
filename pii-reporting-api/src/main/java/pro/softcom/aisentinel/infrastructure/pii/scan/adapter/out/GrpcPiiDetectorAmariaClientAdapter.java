@@ -1,10 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -12,8 +7,19 @@ import pii_detection.PIIDetectionServiceGrpc;
 import pii_detection.PiiDetection;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
+import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIdentifiableInformationType;
 import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.config.PiiDetectorConfig;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource.GLINER;
+import static pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource.PRESIDIO;
+import static pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource.REGEX;
 
 /**
  * Armeria-based implementation of the PII detection client.
@@ -104,6 +110,9 @@ public class GrpcPiiDetectorAmariaClientAdapter implements PiiDetectorClient {
         }
         final String context = String.format(Locale.ROOT, "Detected at position %d-%d (confidence: %.2f)",
                 entity.getStart(), entity.getEnd(), entity.getScore());
+        
+        DetectorSource source = convertToDetectorSource(entity.getSource());
+        
         return new ContentPiiDetection.SensitiveData(
                 dataType,
                 entity.getText(),
@@ -111,7 +120,20 @@ public class GrpcPiiDetectorAmariaClientAdapter implements PiiDetectorClient {
                 entity.getStart(),
                 entity.getEnd(),
                 (double) entity.getScore(),
-                String.format("pii-entity-%s", entity.getType().toLowerCase())
+                String.format("pii-entity-%s", entity.getType().toLowerCase()),
+                source
         );
+    }
+
+    private DetectorSource convertToDetectorSource(PiiDetection.DetectorSource protoSource) {
+        if (protoSource == null) {
+            return DetectorSource.UNKNOWN_SOURCE;
+        }
+        return switch (protoSource) {
+            case GLINER -> GLINER;
+            case PRESIDIO -> PRESIDIO;
+            case REGEX -> REGEX;
+            default -> DetectorSource.UNKNOWN_SOURCE;
+        };
     }
 }

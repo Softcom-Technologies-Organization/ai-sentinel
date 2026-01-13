@@ -81,4 +81,15 @@ message PIIEntity {
   
   // Confidence score (0.0-1.0)
   float score = 6;
+
+  // The source detector that found this entity
+  DetectorSource source = 7;
+}
+
+// Source of the detected PII
+enum DetectorSource {
+  UNKNOWN_SOURCE = 0;
+  GLINER = 1;
+  PRESIDIO = 2;
+  REGEX = 3;
 }

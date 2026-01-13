@@ -51,12 +51,6 @@ public class PiiTypeConfigEntity {
     @Column(name = "threshold", nullable = false)
     private double threshold;
 
-    @Column(name = "display_name", length = 200)
-    private String displayName;
-
-    @Column(name = "description", columnDefinition = "TEXT")
-    private String description;
-
     @Column(name = "category", length = 100)
     private String category;
 
@@ -97,8 +91,6 @@ public class PiiTypeConfigEntity {
         entity.detector = domain.getDetector();
         entity.enabled = domain.isEnabled();
         entity.threshold = domain.getThreshold();
-        entity.displayName = domain.getDisplayName();
-        entity.description = domain.getDescription();
         entity.category = domain.getCategory();
         entity.countryCode = domain.getCountryCode();
         entity.detectorLabel = domain.getDetectorLabel();
@@ -115,8 +107,6 @@ public class PiiTypeConfigEntity {
                 .detector(detector)
                 .enabled(enabled)
                 .threshold(threshold)
-                .displayName(displayName)
-                .description(description)
                 .category(category)
                 .countryCode(countryCode)
                 .detectorLabel(detectorLabel)

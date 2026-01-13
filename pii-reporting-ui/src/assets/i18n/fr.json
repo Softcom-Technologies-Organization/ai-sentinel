@@ -102,21 +102,26 @@
   "piiHelp": {
     "buttonTooltip": "Aide sur les niveaux de sévérité",
     "dialogTitle": "Comprendre les niveaux de sévérité des IPI",
-    "introduction": "Les badges colorés indiquent le nombre d'informations personnelles identifiables (IPI) détectées, classées par niveau de sévérité :",
+    "introduction": "Les badges indiquent le nombre d'informations personnelles identifiables (IPI) détectées, classées par niveau de sévérité, ainsi qu'un score global :",
     "high": {
-      "title": "Sévérité élevée (Rouge)",
-      "description": "Données financières, identifiants d'authentification et documents gouvernementaux hautement sensibles.",
-      "types": "Mot de passe, Clé API, Jeton GitHub, Clé AWS, Jeton JWT, Numéro de carte de crédit, IBAN, Portefeuille crypto, Numéro de compte bancaire US, Numéro de sécurité sociale, SSN US, Licence médicale, Medicare australien, Aadhaar indien"
+      "title": "Sévérité critique (Rouge)",
+      "description": "Compte le nombre d'IPI critiques détectées dans l'espace.",
+      "types": "Catégories : Données financières, Sécurité, Identifiants gouvernementaux sensibles (ex: Carte de crédit, Mot de passe, SSN)."
     },
     "medium": {
       "title": "Sévérité moyenne (Orange)",
-      "description": "Documents officiels, numéros d'identification et informations personnelles détaillées.",
-      "types": "Numéro de permis de conduire, Numéro de carte d'identité, Numéro fiscal, Passeport US, Permis de conduire US, ITIN US, NIF espagnol, NIE espagnol, Code fiscal italien, Passeport italien, Carte d'identité italienne, Permis de conduire italien, Code TVA italien, PESEL polonais, NRIC/FIN singapourien, UEN singapourien, TFN australien, ABN australien, ACN australien, PAN indien, Immatriculation véhicule indien, Carte d'électeur indienne, Passeport indien, Code d'identité finlandais, RRN coréen, TNIN thaïlandais, Date de naissance, Âge"
+      "description": "Compte le nombre d'IPI de sévérité moyenne détectées.",
+      "types": "Catégories : Documents officiels, Informations médicales, Identifiants personnels (ex: Passeport, Permis de conduire, Date de naissance)."
     },
     "low": {
       "title": "Sévérité faible (Bleu)",
-      "description": "Informations de contact, données de localisation et noms.",
-      "types": "Email, Numéro de téléphone, Prénom, Nom de famille, Nom d'utilisateur, Numéro de compte, Adresse IP, Adresse MAC, Ville, Rue, Numéro de bâtiment, Code postal"
+      "description": "Compte le nombre d'IPI de faible sévérité détectées.",
+      "types": "Catégories : Informations de contact, Localisation, Noms (ex: Email, Téléphone, Adresse IP)."
+    },
+    "score": {
+      "title": "Score de sévérité (Vert)",
+      "description": "Représente le score total de sévérité pour l'espace.",
+      "calculation": "Ce score est la somme des décomptes critique, moyen et faible."
     }
   },
   "settings": {

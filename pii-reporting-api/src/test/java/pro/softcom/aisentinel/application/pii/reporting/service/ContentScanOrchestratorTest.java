@@ -1,10 +1,5 @@
 package pro.softcom.aisentinel.application.pii.reporting.service;
 
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
-
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,6 +13,13 @@ import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanEventStore;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
+import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
+
+import java.util.List;
+
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ContentScanOrchestrator - Severity Integration Tests")
@@ -120,7 +122,7 @@ class ContentScanOrchestratorTest {
             String scanId = "scan-async";
             String spaceKey = "ASYNC";
             List<DetectedPersonallyIdentifiableInformation> detectedEntities = List.of(
-                    new DetectedPersonallyIdentifiableInformation(10, 27, "email", "Email", 0.98, "test@example.com", "context", "masked")
+                    new DetectedPersonallyIdentifiableInformation(10, 27, "email", "Email", 0.98, "test@example.com", "context", "masked", DetectorSource.UNKNOWN_SOURCE)
             );
 
             ConfluenceContentScanResult event = ConfluenceContentScanResult.builder()

@@ -238,7 +238,7 @@
                         <div class="pii-type-item">
                           <div class="row align-items-center">
                             <div class="col-7 col-md-8">
-                              <span class="type-name" [innerHTML]="highlightText(type.displayName, 'settings.piiTypes.typeNames.' + type.piiType)"></span>
+                              <span class="type-name" [innerHTML]="highlightText('', 'settings.piiTypes.typeNames.' + type.piiType)"></span>
                               @if (type.countryCode) {
                                 <span class="type-country">
                                 ({{ type.countryCode }})
@@ -250,7 +250,7 @@
                               <p-toggleSwitch
                                 [(ngModel)]="type.enabled"
                                 (ngModelChange)="onPiiTypeToggleChange(type, $event)"
-                                [ariaLabel]="'settings.piiTypes.toggle' | transloco: {type: type.displayName}">
+                                [ariaLabel]="'settings.piiTypes.toggle' | transloco: {type: ('settings.piiTypes.typeNames.' + type.piiType) | transloco}">
                               </p-toggleSwitch>
                             </div>
                             <div class="col-3 col-md-2">
@@ -315,7 +315,7 @@
                         <div class="pii-type-item">
                           <div class="row align-items-center">
                             <div class="col-7 col-md-8">
-                              <span class="type-name" [innerHTML]="highlightText(type.displayName, 'settings.piiTypes.typeNames.' + type.piiType)"></span>
+                              <span class="type-name" [innerHTML]="highlightText('', 'settings.piiTypes.typeNames.' + type.piiType)"></span>
                               @if (type.countryCode) {
                                 <span class="type-country">
                                 ({{ type.countryCode }})
@@ -327,7 +327,7 @@
                               <p-toggleSwitch
                                 [(ngModel)]="type.enabled"
                                 (ngModelChange)="onPiiTypeToggleChange(type, $event)"
-                                [ariaLabel]="'settings.piiTypes.toggle' | transloco: {type: type.displayName}">
+                                [ariaLabel]="'settings.piiTypes.toggle' | transloco: {type: ('settings.piiTypes.typeNames.' + type.piiType) | transloco}">
                               </p-toggleSwitch>
                             </div>
                             <div class="col-3 col-md-2">

@@ -1,15 +1,16 @@
 package pro.softcom.aisentinel.application.pii.reporting;
 
+import lombok.extern.slf4j.Slf4j;
+import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
+import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
+
+import java.util.List;
+import java.util.Map;
+
 import static java.util.Map.entry;
 import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.HIGH;
 import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.LOW;
 import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.MEDIUM;
-
-import java.util.List;
-import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
-import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
-import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 
 /**
  * Application service responsible for calculating PII severity levels and aggregating counts.
@@ -134,6 +135,10 @@ public class SeverityCalculationService {
             entry("HOSTNAME", LOW),
             // Legal/Asset
             entry("LICENSE_PLATE", LOW),
+            // Temporal
+            entry("TIMESTAMP", LOW),
+            entry("DATE", LOW),
+            entry("TIME", LOW),
 
             // =========================================================================
             // LEGACY MAPPINGS - Backward compatibility with old type names

@@ -1,13 +1,11 @@
-import {inject, Injectable, signal} from '@angular/core';
-import {ItemsBySpace} from '../../../core/models/item-by-space';
+import { inject, Injectable, signal } from '@angular/core';
+import { ItemsBySpace } from '../../../core/models/item-by-space';
 import {
   PersonallyIdentifiableInformationScanResult
 } from '../../../core/models/personally-identifiable-information-scan-result';
-import {
-  ConfluenceContentPersonallyIdentifiableInformationScanResult
-} from '../../../core/models/stream-event-type';
-import {Severity} from '../../../core/models/severity';
-import {SpacesDashboardUtils} from '../spaces-dashboard.utils';
+import { ConfluenceContentPersonallyIdentifiableInformationScanResult } from '../../../core/models/stream-event-type';
+import { Severity } from '../../../core/models/severity';
+import { SpacesDashboardUtils } from '../spaces-dashboard.utils';
 
 /**
  * Service responsible for managing PII items storage and aggregation.
@@ -82,7 +80,8 @@ export class PiiItemsStorageService {
           sensitiveValue: e?.sensitiveValue,
           sensitiveContext: e?.sensitiveContext,
           maskedContext: e?.maskedContext,
-          confidence: typeof e?.confidence === 'number' ? e.confidence : undefined
+          confidence: typeof e?.confidence === 'number' ? e.confidence : undefined,
+          source: e?.source
         };
       }),
       attachmentName: payload.attachmentName,

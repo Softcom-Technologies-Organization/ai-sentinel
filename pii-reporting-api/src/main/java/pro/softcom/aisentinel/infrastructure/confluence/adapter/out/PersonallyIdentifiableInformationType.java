@@ -40,7 +40,8 @@ public enum PersonallyIdentifiableInformationType {
     EMAIL(ContentPiiDetection.PersonallyIdentifiableInformationType.EMAIL),
     PHONE_NUMBER(ContentPiiDetection.PersonallyIdentifiableInformationType.PHONE),
     ADDRESS(ContentPiiDetection.PersonallyIdentifiableInformationType.ADDRESS),
-    POSTAL_CODE(ContentPiiDetection.PersonallyIdentifiableInformationType.ZIPCODE),
+    CITY(ContentPiiDetection.PersonallyIdentifiableInformationType.CITY),
+    ZIP_CODE(ContentPiiDetection.PersonallyIdentifiableInformationType.ZIPCODE),
 
     // =========================================================================
     // Category 3: DIGITAL - Online identifiers

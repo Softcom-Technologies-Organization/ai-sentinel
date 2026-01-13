@@ -1,9 +1,5 @@
 package pro.softcom.aisentinel.application.pii.reporting.service;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
@@ -15,6 +11,11 @@ import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Factory for creating scan event results. Business intent: Centralizes event creation logic to
@@ -257,6 +258,7 @@ public class ScanEventFactory {
             .startPosition(data.position())
             .endPosition(data.end())
             .confidence(data.score())
+            .source(data.source())
             .build();
     }
 

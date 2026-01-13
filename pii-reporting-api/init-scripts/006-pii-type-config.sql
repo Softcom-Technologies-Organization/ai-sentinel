@@ -9,8 +9,6 @@ CREATE TABLE IF NOT EXISTS pii_type_config
     detector      VARCHAR(50)              NOT NULL,
     enabled       BOOLEAN                  NOT NULL DEFAULT true,
     threshold     DOUBLE PRECISION         NOT NULL,
-    display_name  VARCHAR(200),
-    description   TEXT,
     category      VARCHAR(100),
     country_code  VARCHAR(10),
     created_at    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,

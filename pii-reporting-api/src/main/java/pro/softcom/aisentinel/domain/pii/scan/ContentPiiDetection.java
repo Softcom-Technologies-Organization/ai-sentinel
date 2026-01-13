@@ -1,10 +1,11 @@
 package pro.softcom.aisentinel.domain.pii.scan;
 
+import lombok.Builder;
+import lombok.Getter;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import lombok.Builder;
-import lombok.Getter;
 
 /**
  * Represents PII findings for a single Confluence page.
@@ -162,6 +163,16 @@ public record ContentPiiDetection(
         }
 
     }
+
+    /**
+     * Source of the detected PII entity.
+     */
+    public enum DetectorSource {
+        UNKNOWN_SOURCE,
+        GLINER,
+        PRESIDIO,
+        REGEX
+    }
     
     /**
      * Represents a single sensitive element detected on the page.
@@ -173,6 +184,7 @@ public record ContentPiiDetection(
      * @param end end index of the occurrence in the content
      * @param score confidence score provided by the detector (may be null)
      * @param selector optional selector or hint pointing to the element location
+     * @param source source of the detected PII entity (e.g. GLiNER, Presidio)
      */
     public record SensitiveData(
         PersonallyIdentifiableInformationType type,
@@ -181,7 +193,8 @@ public record ContentPiiDetection(
         int position,
         int end,
         Double score,
-        String selector
+        String selector,
+        DetectorSource source
     ) {
     }
 }

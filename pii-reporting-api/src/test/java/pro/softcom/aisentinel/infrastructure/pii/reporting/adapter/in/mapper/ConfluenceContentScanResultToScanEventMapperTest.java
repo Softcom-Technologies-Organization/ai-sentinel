@@ -1,17 +1,19 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.List;
-import java.util.Map;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
+import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ConfluenceContentScanResultEventDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 class ConfluenceContentScanResultToScanEventMapperTest {
@@ -83,7 +85,8 @@ class ConfluenceContentScanResultToScanEventMapperTest {
             0,
             null,  // detectedValue
             null,  // context
-            null   // maskedContext
+            null,  // maskedContext
+            DetectorSource.UNKNOWN_SOURCE
         );
     }
 }

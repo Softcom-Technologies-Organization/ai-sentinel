@@ -31,8 +31,6 @@ export interface PiiTypeConfig {
   detector: 'GLINER' | 'PRESIDIO' | 'REGEX';
   enabled: boolean;
   threshold: number;
-  displayName: string;
-  description: string;
   category: string;
   countryCode?: string;
   updatedAt?: string;

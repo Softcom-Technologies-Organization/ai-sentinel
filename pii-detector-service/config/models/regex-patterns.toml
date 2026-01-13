@@ -59,7 +59,7 @@ score = 0.95
 priority = "medium"
 
 [patterns.credit_card]
-type = "CREDITCARDNUMBER"
+type = "CREDIT_CARD_NUMBER"
 pattern = '\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|6(?:011|5[0-9]{2})[0-9]{12}|(?:2131|1800|35\d{3})\d{11})\b'
 description = "Credit card numbers (Visa, MC, Amex, Diners, Discover, JCB)"
 score = 0.90  # Lower score, requires Luhn validation
@@ -76,7 +76,7 @@ priority = "medium"
 country = "FR"
 
 [patterns.ssn_switzerland]
-type = "SOCIALNUM"
+type = "AVS_NUMBER"
 pattern = '\b756\.[0-9]{4}\.[0-9]{4}\.[0-9]{2}\b'
 description = "Swiss Social Security Number (AHV format: 756.xxxx.xxxx.xx)"
 score = 0.95
@@ -100,7 +100,7 @@ priority = "low"
 country = "DE"
 
 [patterns.phone_swiss_strict]
-type = "TELEPHONENUM"
+type = "PHONE_NUMBER"
 pattern = '\b(0|(\+41)|0041)\s?\d{2}\s?\d{3}\s?\d{2}\s?\d{2}\b'
 description = "Swiss phone numbers (strict format: 0XX, +41, 0041)"
 score = 0.93

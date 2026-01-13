@@ -24,12 +24,15 @@ import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 import pro.softcom.aisentinel.domain.confluence.DataOwners;
 import pro.softcom.aisentinel.domain.confluence.SpaceUpdateInfo;
+import org.springframework.context.annotation.Import;
+import pro.softcom.aisentinel.infrastructure.config.SecurityConfig;
 
 /**
  * Tests for the ConfluenceController class.
  * These tests verify that the controller correctly processes requests and returns responses.
  */
 @WebMvcTest(ConfluenceController.class)
+@Import(SecurityConfig.class)
 class ConfluenceControllerTest {
 
     @Autowired

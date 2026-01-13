@@ -102,21 +102,26 @@
   "piiHelp": {
     "buttonTooltip": "Help on severity levels",
     "dialogTitle": "Understanding PII Severity Levels",
-    "introduction": "The colored badges indicate the number of Personally Identifiable Information (PII) detected, classified by severity level:",
+    "introduction": "The badges indicate the number of Personally Identifiable Information (PII) detected, classified by severity level, as well as a global score:",
     "high": {
-      "title": "High Severity (Red)",
-      "description": "Financial credentials, authentication secrets, and SSN.",
-      "types": "Credit Card Number, Bank Account Number, IBAN, BIC/SWIFT, Password, API Key, Access Token, Secret Key, Session ID, Social Security Number, AVS Number, Criminal Record"
+      "title": "Critical Severity (Red)",
+      "description": "Counts the number of critical PII detected in the space.",
+      "types": "Categories: Financial Data, Security, Sensitive Government IDs (e.g. Credit Card, Password, SSN)."
     },
     "medium": {
       "title": "Medium Severity (Orange)",
-      "description": "Official documents, medical information, and legal records.",
-      "types": "National ID, Passport Number, Driver License Number, Date of Birth, Age, Tax ID, Salary, Patient ID, Medical Record Number, Health Insurance Number, Diagnosis, Medication, Device ID, Case Number, License Number, Vehicle Registration, VIN, Insurance Policy Number"
+      "description": "Counts the number of medium severity PII detected.",
+      "types": "Categories: Official Documents, Medical Information, Personal IDs (e.g. Passport, Driver License, Date of Birth)."
     },
     "low": {
       "title": "Low Severity (Blue)",
-      "description": "Contact information, general identifiers, and names.",
-      "types": "Person Name, Gender, Nationality, Email, Phone Number, Address, Postal Code, Username, Account ID, URL, IP Address, MAC Address, Hostname, License Plate"
+      "description": "Counts the number of low severity PII detected.",
+      "types": "Categories: Contact Information, Location, Names (e.g. Email, Phone Number, IP Address)."
+    },
+    "score": {
+      "title": "Severity Score (Green)",
+      "description": "Represents the total severity score for the space.",
+      "calculation": "This score is the sum of critical, medium, and low counts."
     }
   },
   "settings": {

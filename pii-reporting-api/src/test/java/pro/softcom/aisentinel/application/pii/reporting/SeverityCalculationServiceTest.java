@@ -1,11 +1,5 @@
 package pro.softcom.aisentinel.application.pii.reporting;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.HIGH;
-import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.LOW;
-import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.MEDIUM;
-
-import java.util.List;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +9,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.HIGH;
+import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.LOW;
+import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.MEDIUM;
 
 /**
  * Unit tests for {@link SeverityCalculationService}. Verifies severity classification rules for all
@@ -122,9 +123,26 @@ class SeverityCalculationServiceTest {
             "CITY",
             "STREET",
             "BUILDINGNUM",
-            "ZIPCODE"
+            "ZIPCODE",
+            "TIMESTAMP",
+            "DATE",
+            "TIME"
         })
         void should_ReturnLowSeverity_When_ContactOrLocationPiiType(String piiType) {
+            PersonallyIdentifiableInformationSeverity result = service.calculateSeverity(piiType);
+
+            assertThat(result)
+                .as("Type %s should be classified as LOW severity", piiType)
+                .isEqualTo(LOW);
+        }
+
+        @ParameterizedTest(name = "{0} should be mapped to LOW severity (temporal)")
+        @CsvSource({
+            "TIMESTAMP",
+            "DATE",
+            "TIME"
+        })
+        void should_ReturnLowSeverity_When_TemporalPiiType(String piiType) {
             PersonallyIdentifiableInformationSeverity result = service.calculateSeverity(piiType);
 
             assertThat(result)

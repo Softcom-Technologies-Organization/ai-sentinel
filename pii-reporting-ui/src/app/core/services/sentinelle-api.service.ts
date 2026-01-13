@@ -1,6 +1,7 @@
-import {Injectable, NgZone} from '@angular/core';
+import {Injectable, NgZone, signal} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {Observable} from 'rxjs';
+import {Observable, of} from 'rxjs';
+import {catchError, tap} from 'rxjs/operators';
 import {Space} from '../models/space';
 import {StreamEvent} from '../models/stream-event';
 import {
@@ -43,7 +44,25 @@ export interface ScanReportingSummaryDto {
 
 @Injectable({ providedIn: 'root' })
 export class SentinelleApiService {
+  /** Signal holding the reveal allowed configuration state */
+  readonly revealAllowed = signal<boolean>(false);
+
   constructor(private readonly http: HttpClient, private readonly zone: NgZone) {
+  }
+
+  /**
+   * Loads the reveal configuration from backend and updates the signal.
+   * Intended to be called during app initialization.
+   */
+  loadRevealConfig(): Observable<boolean> {
+    return this.http.get<boolean>('/api/v1/pii/config/reveal-allowed').pipe(
+      tap(allowed => this.revealAllowed.set(allowed)),
+      catchError((err) => {
+        console.error('Failed to load reveal config', err);
+        this.revealAllowed.set(false);
+        return of(false);
+      })
+    );
   }
 
   getSpaces(): Observable<Space[]> {

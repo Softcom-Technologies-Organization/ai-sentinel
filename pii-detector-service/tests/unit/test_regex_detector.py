@@ -103,7 +103,7 @@ class TestRegexDetector:
         
         entities = detector.detect_pii(text)
         
-        ssn_entities = [e for e in entities if e.pii_type == "SOCIALNUM"]
+        ssn_entities = [e for e in entities if e.pii_type == "AVS_NUMBER"]
         assert len(ssn_entities) >= 1
         assert any("756." in e.text for e in ssn_entities)
     

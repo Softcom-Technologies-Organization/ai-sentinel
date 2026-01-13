@@ -11,13 +11,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Optional, Tuple, Any
 
 from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.entity.detector_source import DetectorSource
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.exception.exceptions import ModelNotLoadedError, PIIDetectionError
 from pii_detector.infrastructure.model_management.gliner_model_manager import \
-  GLiNERModelManager
+    GLiNERModelManager
 # FIXME: from service.detector.models import
 from pii_detector.infrastructure.text_processing.semantic_chunker import \
-  create_chunker
+    create_chunker
 
 
 class GLiNERDetector:
@@ -399,10 +400,11 @@ class GLiNERDetector:
                 type_label=pii_type,
                 start=start,
                 end=end,
-                score=entity.get("score", 0.0)
+                score=entity.get("score", 0.0),
+                source=DetectorSource.GLINER
             )
             # Tag provenance for downstream logging (e.g. gRPC async PII logs)
-            pii_entity.source = "GLINER"
+            pii_entity.source = DetectorSource.GLINER
             entities.append(pii_entity)
         
         return entities
@@ -543,7 +545,8 @@ class GLiNERDetector:
                 type_label=entity.type_label,
                 start=entity.start + chunk_result.start,
                 end=entity.end + chunk_result.start,
-                score=entity.score
+                score=entity.score,
+                source=entity.source
             )
             adjusted_entities.append(adjusted)
         
@@ -674,7 +677,8 @@ class GLiNERDetector:
                         type_label=entity.type_label,
                         start=adjusted_start,
                         end=adjusted_end,
-                        score=entity.score
+                        score=entity.score,
+                        source=entity.source
                     )
                     all_entities.append(adjusted)
         

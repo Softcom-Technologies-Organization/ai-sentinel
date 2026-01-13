@@ -1,118 +1,128 @@
- <div [attr.data-testid]="testIds.piiItemCard.card">
+<div [attr.data-testid]="testIds.piiItemCard.card">
   <p-card>
     <ng-template pTemplate="header">
-    <div class="header-grid">
-      <div class="row top-row">
-        @if (item?.pageUrl) {
-          <a [href]="item.pageUrl" target="_blank" rel="noopener" class="title">{{
-              item?.pageTitle || item?.pageUrl
-            }}</a>
-        } @else {
-          <div class="title">{{ item?.pageTitle || ('piiItem.fallback.page' | transloco) }}</div>
-        }
-        <p-tag [value]="'piiItem.severity.label' | transloco:{ value: sevLabel(item?.severity) }"
-               [severity]="sevPrime(item?.severity)" class="mt-1"></p-tag>
-      </div>
-    </div>
-  </ng-template>
-
-  <div class="card-content">
-    <div class="row top-row">
-      @if (item?.attachmentName) {
-        <div class="attachment-row">
-          <i class="pi pi-paperclip me-2" aria-hidden="true"></i>
-          <span class="attachment-label">{{ 'piiItem.attachment.label' | transloco }}</span>
-          @switch (attachmentKind(item?.attachmentType)) {
-            @case ('pdf') {
-              <p-tag [value]="'piiItem.attachment.types.pdf' | transloco" severity="danger" class="ml-2"></p-tag>
-            }
-            @case ('excel') {
-              <p-tag [value]="'piiItem.attachment.types.excel' | transloco" severity="warn" class="ml-2"></p-tag>
-            }
-            @case ('word') {
-              <p-tag [value]="'piiItem.attachment.types.word' | transloco" severity="info" class="ml-2"></p-tag>
-            }
-            @case ('ppt') {
-              <p-tag [value]="'piiItem.attachment.types.ppt' | transloco" severity="success" class="ml-2"></p-tag>
-            }
-            @case ('txt') {
-              <p-tag [value]="'piiItem.attachment.types.txt' | transloco" severity="secondary" class="ml-2"></p-tag>
-            }
-          }
-
-          @if (item?.attachmentUrl) {
-            <a class="ml-2" [href]="item.attachmentUrl" target="_blank"
-               rel="noopener">{{ item?.attachmentName || item?.attachmentUrl }}</a>
+      <div class="header-grid">
+        <div class="row top-row">
+          @if (item?.pageUrl) {
+            <a [href]="item.pageUrl" target="_blank" rel="noopener" class="title">{{
+                item?.pageTitle || item?.pageUrl
+              }}
+            </a>
           } @else {
-            <span class="ml-2">{{ item?.attachmentName }}</span>
+            <div class="title">{{ item?.pageTitle || ('piiItem.fallback.page' | transloco) }}</div>
           }
+          <p-tag [value]="'piiItem.severity.label' | transloco:{ value: sevLabel(item?.severity) }"
+                 [severity]="sevPrime(item?.severity)" class="mt-1"></p-tag>
         </div>
-      }
-    </div>
-
-    @if (item?.piiTypeSummary; as piiTypeSummary) {
-      <div class="row chips-row">
-        <div class="chips">
-          @for (piiType of objectKeys(piiTypeSummary); track piiType) {
-            <p-chip [label]="translatePiiType(piiType) + ' × ' + piiTypeSummary[piiType]"></p-chip>
-          }
-        </div>
-        <p-button (click)="toggleDetails()"
-                  (keydown.enter)="$event.stopPropagation(); toggleDetails()"
-                  (keydown.space)="$event.preventDefault(); $event.stopPropagation(); toggleDetails()"
-                  [ariaLabel]="detailsOpen() ? ('piiItem.actions.hideDetail' | transloco) : ('piiItem.actions.viewDetail' | transloco)"
-                  [attr.aria-expanded]="detailsOpen"
-                  icon="pi pi-angle-right"
-                  [label]="detailsOpen() ? ('piiItem.actions.hideDetail' | transloco) : ('piiItem.actions.viewDetail' | transloco)"
-                  styleClass="p-button-link"></p-button>
       </div>
-    }
+    </ng-template>
 
-    @if (detailsOpen()) {
+    <div class="card-content">
+      <div class="row top-row">
+        @if (item?.attachmentName) {
+          <div class="attachment-row">
+            <i class="pi pi-paperclip me-2" aria-hidden="true"></i>
+            <span class="attachment-label">{{ 'piiItem.attachment.label' | transloco }}</span>
+            @switch (attachmentKind(item?.attachmentType)) {
+              @case ('pdf') {
+                <p-tag [value]="'piiItem.attachment.types.pdf' | transloco" severity="danger" class="ml-2"></p-tag>
+              }
+              @case ('excel') {
+                <p-tag [value]="'piiItem.attachment.types.excel' | transloco" severity="warn" class="ml-2"></p-tag>
+              }
+              @case ('word') {
+                <p-tag [value]="'piiItem.attachment.types.word' | transloco" severity="info" class="ml-2"></p-tag>
+              }
+              @case ('ppt') {
+                <p-tag [value]="'piiItem.attachment.types.ppt' | transloco" severity="success" class="ml-2"></p-tag>
+              }
+              @case ('txt') {
+                <p-tag [value]="'piiItem.attachment.types.txt' | transloco" severity="secondary" class="ml-2"></p-tag>
+              }
+            }
 
-      <div>
-        @if (item?.maskedHtml) {
-          <div class="masked" [innerHTML]="maskedHtmlSafe"></div>
-        }
-        @if (canRevealSecrets()) {
-          <div class="controls mt-2">
-            <button pButton [icon]="revealed() ? 'pi pi-eye-slash' : 'pi pi-eye'"
-                    class="p-button-outlined" (click)="toggleReveal()"
-                    [attr.aria-label]="revealed() ? ('piiItem.actions.maskAriaLabel' | transloco) : ('piiItem.actions.revealAriaLabel' | transloco)">
-              {{ revealed() ? ('piiItem.actions.mask' | transloco) : ('piiItem.actions.reveal' | transloco) }}
-            </button>
+            @if (item?.attachmentUrl) {
+              <a class="ml-2" [href]="item.attachmentUrl" target="_blank"
+                 rel="noopener">{{ item?.attachmentName || item?.attachmentUrl }}
+              </a>
+            } @else {
+              <span class="ml-2">{{ item?.attachmentName }}</span>
+            }
           </div>
         }
+      </div>
 
-        <br>
+      @if (item?.piiTypeSummary; as piiTypeSummary) {
+        <div class="row chips-row">
+          <div class="chips">
+            @for (piiType of objectKeys(piiTypeSummary); track piiType) {
+              <p-chip [label]="translatePiiType(piiType) + ' × ' + piiTypeSummary[piiType]"></p-chip>
+            }
+          </div>
+          <p-button (click)="toggleDetails()"
+                    (keydown.enter)="$event.stopPropagation(); toggleDetails()"
+                    (keydown.space)="$event.preventDefault(); $event.stopPropagation(); toggleDetails()"
+                    [ariaLabel]="detailsOpen() ? ('piiItem.actions.hideDetail' | transloco) : ('piiItem.actions.viewDetail' | transloco)"
+                    [attr.aria-expanded]="detailsOpen"
+                    icon="pi pi-angle-right"
+                    [label]="detailsOpen() ? ('piiItem.actions.hideDetail' | transloco) : ('piiItem.actions.viewDetail' | transloco)"
+                    styleClass="p-button-link"></p-button>
+        </div>
+      }
 
-        <div class="chips mt-2">
-          @for (
-            detectedPII of item?.detectedPersonallyIdentifiableInformationList;
-            track $index
-          ) {
-            <div class="col-12 md:col-6 lg:col-4">
-              <p-card>
-                <p>
-                  @if (revealed()) { {{ detectedPII.sensitiveValue || '—' }} }
-                  @else { ••••••••• }
-                </p>
-                <p-divider />
-                <div class="flex gap-2 flex-wrap">
-                  @if (detectedPII.piiTypeLabel || detectedPII.piiType) {
-                  <p-tag severity="info" [value]="translatePiiType(detectedPII.piiTypeLabel || detectedPII.piiType)"/>
-                  }
-                  @if (detectedPII.confidence !== undefined) {
-                  <p-tag severity="secondary" [value]="'piiItem.entity.score' | transloco:{ value: formatScore(detectedPII.confidence) }" />
-                  }
-                </div>
-              </p-card>
+      @if (detailsOpen()) {
+
+        <div>
+          @if (item?.maskedHtml) {
+            <div class="masked" [innerHTML]="maskedHtmlSafe"></div>
+          }
+          @if (sentinelleApi.revealAllowed()) {
+            <div class="controls mt-2">
+              <button pButton [icon]="revealed() ? 'pi pi-eye-slash' : 'pi pi-eye'"
+                      class="p-button-outlined" (click)="toggleReveal()"
+                      [attr.aria-label]="revealed() ? ('piiItem.actions.maskAriaLabel' | transloco) : ('piiItem.actions.revealAriaLabel' | transloco)">
+                {{ revealed() ? ('piiItem.actions.mask' | transloco) : ('piiItem.actions.reveal' | transloco) }}
+              </button>
             </div>
           }
-        </div>
 
-      </div>
-    }
+          <br>
+
+          <div class="chips mt-2">
+            @for (detectedPII of item?.detectedPersonallyIdentifiableInformationList;
+              track $index) {
+              <div class="col-12 md:col-6 lg:col-4">
+                <p-card>
+                  <p>
+                    @if (revealed()) {
+                      {{ detectedPII.sensitiveValue || '—' }}
+                    } @else {
+                      •••••••••
+                    }
+                  </p>
+                  <p-divider />
+                  <div class="flex gap-2 flex-wrap">
+                    @if (detectedPII.piiTypeLabel || detectedPII.piiType) {
+                      <p-tag severity="info"
+                             [value]="translatePiiType(detectedPII.piiTypeLabel || detectedPII.piiType)" />
+                    }
+                    @if (detectedPII.confidence !== undefined) {
+                      <p-tag severity="secondary"
+                             [value]="'piiItem.entity.score' | transloco:{ value: formatScore(detectedPII.confidence) }" />
+                    }
+                    @if (detectedPII.source) {
+                      <p-tag [style]="{ 'background-color': detectorColorTheme(detectedPII.source), 'color': '#ffffff','transform': 'scale(0.8)',
+    'transform-origin': 'center'
+                     }" [value]="detectedPII.source" />
+                    }
+                  </div>
+                </p-card>
+              </div>
+            }
+          </div>
+
+        </div>
+      }
     </div>
   </p-card>
 </div>

@@ -27,8 +27,11 @@ import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.Con
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.LastScanMapper;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.ScanReportingSummaryMapper;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.SpaceStatusMapper;
+import org.springframework.context.annotation.Import;
+import pro.softcom.aisentinel.infrastructure.config.SecurityConfig;
 
 @WebMvcTest(LastConfluencePersonallyIdentifiableInformationScanController.class)
+@Import(SecurityConfig.class)
 class LastConfluencePersonallyIdentifiableInformationScanControllerTest {
 
     @Autowired

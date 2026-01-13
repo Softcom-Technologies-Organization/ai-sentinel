@@ -1,5 +1,14 @@
 package pro.softcom.aisentinel.integration;
 
+import org.jsoup.Jsoup;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
+import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
+import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
+import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIdentifiableInformationType;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,13 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.jsoup.Jsoup;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
-import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
-import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
-import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIdentifiableInformationType;
 
 /**
  * Test configuration providing a fake PiiDetectionClient for integration tests.
@@ -63,7 +65,7 @@ public class TestPiiDetectionClientConfiguration {
                     PersonallyIdentifiableInformationType.EMAIL,
                     m.group(),
                     ctx(m.start(), m.end()),
-                    m.start(), m.end(), 0.95, "email"));
+                    m.start(), m.end(), 0.95, "email", DetectorSource.REGEX));
             }
             // Phones (simple heuristic)
             m = PHONE.matcher(cleanedContent);
@@ -74,7 +76,7 @@ public class TestPiiDetectionClientConfiguration {
                     PersonallyIdentifiableInformationType.PHONE,
                     value,
                     ctx(m.start(), m.end()),
-                    m.start(), m.end(), 0.80, "phone"));
+                    m.start(), m.end(), 0.80, "phone", DetectorSource.REGEX));
             }
             // AVS numbers
             m = AVS.matcher(cleanedContent);
@@ -83,7 +85,7 @@ public class TestPiiDetectionClientConfiguration {
                     PersonallyIdentifiableInformationType.AVS,
                     m.group(),
                     ctx(m.start(), m.end()),
-                    m.start(), m.end(), 0.99, "avs"));
+                    m.start(), m.end(), 0.99, "avs", DetectorSource.REGEX));
             }
             // URLs and IPs -> mark as ATTACHMENT for backward compat of the test
             m = URL.matcher(cleanedContent);
@@ -92,7 +94,7 @@ public class TestPiiDetectionClientConfiguration {
                     PersonallyIdentifiableInformationType.ATTACHMENT,
                     m.group(),
                     ctx(m.start(), m.end()),
-                    m.start(), m.end(), 0.70, "url"));
+                    m.start(), m.end(), 0.70, "url", DetectorSource.REGEX));
             }
             // Simple security hints
             if (cleanedContent.toLowerCase().contains("password") || cleanedContent.toLowerCase().contains("sk-")) {
@@ -100,7 +102,7 @@ public class TestPiiDetectionClientConfiguration {
                     PersonallyIdentifiableInformationType.SECURITY,
                     "***",
                     "Detected security-like token",
-                    0, 0, 0.9, "sec"));
+                    0, 0, 0.9, "sec", DetectorSource.REGEX));
             }
 
             Map<String, Integer> stats = new HashMap<>();

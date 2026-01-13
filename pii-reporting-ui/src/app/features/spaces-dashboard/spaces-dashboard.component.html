@@ -290,7 +290,7 @@
 
     <div class="pii-help-section pii-help-high">
       <h4>
-        <p-badge severity="danger" [value]="''" styleClass="severity-badge-icon"></p-badge>
+        <p-badge severity="danger" [value]="''" class="severity-badge-icon"></p-badge>
         {{ 'piiHelp.high.title' | transloco }}
       </h4>
       <p class="pii-help-description">{{ 'piiHelp.high.description' | transloco }}</p>
@@ -299,7 +299,7 @@
 
     <div class="pii-help-section pii-help-medium">
       <h4>
-        <p-badge severity="warn" [value]="''" styleClass="severity-badge-icon"></p-badge>
+        <p-badge severity="warn" [value]="''" class="severity-badge-icon"></p-badge>
         {{ 'piiHelp.medium.title' | transloco }}
       </h4>
       <p class="pii-help-description">{{ 'piiHelp.medium.description' | transloco }}</p>
@@ -308,11 +308,20 @@
 
     <div class="pii-help-section pii-help-low">
       <h4>
-        <p-badge severity="info" [value]="''" styleClass="severity-badge-icon"></p-badge>
+        <p-badge severity="info" [value]="''" class="severity-badge-icon"></p-badge>
         {{ 'piiHelp.low.title' | transloco }}
       </h4>
       <p class="pii-help-description">{{ 'piiHelp.low.description' | transloco }}</p>
       <p class="pii-help-types"><strong>{{ 'piiHelp.low.types' | transloco }}</strong></p>
+    </div>
+
+    <div class="pii-help-section pii-help-score">
+      <h4>
+        <p-badge severity="success" [value]="''" class="severity-badge-icon"></p-badge>
+        {{ 'piiHelp.score.title' | transloco }}
+      </h4>
+      <p class="pii-help-description">{{ 'piiHelp.score.description' | transloco }}</p>
+      <p class="pii-help-calculation"><strong>{{ 'piiHelp.score.calculation' | transloco }}</strong></p>
     </div>
   </p-dialog>
 

@@ -24,8 +24,6 @@ public class PiiTypeConfig {
     private final String detector;
     private final boolean enabled;
     private final double threshold;
-    private final String displayName;
-    private final String description;
     private final String category;
     private final String countryCode;
     /**
@@ -66,7 +64,6 @@ public class PiiTypeConfig {
                 ", detector='" + detector + '\'' +
                 ", enabled=" + enabled +
                 ", threshold=" + threshold +
-                ", displayName='" + displayName + '\'' +
                 ", category='" + category + '\'' +
                 ", countryCode='" + countryCode + '\'' +
                 ", updatedAt=" + updatedAt +

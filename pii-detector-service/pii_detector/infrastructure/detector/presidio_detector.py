@@ -15,13 +15,16 @@ Business value:
 from __future__ import annotations
 
 import logging
-import toml
 from pathlib import Path
+from typing import Dict, List, Optional
+
+import toml
+from presidio_analyzer import AnalyzerEngine
+from presidio_analyzer.nlp_engine import NlpEngineProvider, NerModelConfiguration
+
+from pii_detector.domain.entity.detector_source import DetectorSource
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.entity.pii_type import PIIType
-from presidio_analyzer import AnalyzerEngine, RecognizerRegistry
-from presidio_analyzer.nlp_engine import NlpEngineProvider
-from typing import Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
 
@@ -392,6 +395,24 @@ class PresidioDetector:
 
             if use_provider:
                 nlp_configuration = {**nlp_section}
+                
+                # Inject labels_to_ignore into ner_model_configuration
+                # This is the modern way to configure ignored labels for NlpEngine
+                if "ner_model_configuration" not in nlp_configuration:
+                    nlp_configuration["ner_model_configuration"] = {}
+                
+                ner_config = nlp_configuration["ner_model_configuration"]
+                if "labels_to_ignore" not in ner_config:
+                    ner_config["labels_to_ignore"] = self._labels_to_ignore
+
+                # Also inject into models for backward compatibility or specific engine versions
+                if "models" in nlp_configuration and isinstance(nlp_configuration["models"], list):
+                    for model in nlp_configuration["models"]:
+                        if isinstance(model, dict):
+                            # Add labels_to_ignore if not present
+                            if "labels_to_ignore" not in model:
+                                model["labels_to_ignore"] = self._labels_to_ignore
+                
                 provider = NlpEngineProvider(nlp_configuration=nlp_configuration)
                 nlp_engine = provider.create_engine()
                 supported_langs = self._languages
@@ -403,7 +424,9 @@ class PresidioDetector:
                 except Exception as imp_err:
                     raise RuntimeError(f"spaCy not available for blank injection: {imp_err}")
 
-                nlp_engine = SpacyNlpEngine()
+                # Configure NER to ignore labels even in fallback/blank mode
+                ner_config = NerModelConfiguration(labels_to_ignore=self._labels_to_ignore)
+                nlp_engine = SpacyNlpEngine(ner_model_configuration=ner_config)
                 # Ensure the engine has an 'nlp' mapping
                 if not hasattr(nlp_engine, "nlp") or getattr(nlp_engine, "nlp") is None:
                     setattr(nlp_engine, "nlp", {})
@@ -756,10 +779,9 @@ class PresidioDetector:
                 type_label=pii_type.value,  # Use PIIType enum value as label
                 start=result.start,
                 end=result.end,
-                score=score
+                score=score,
+                source=DetectorSource.PRESIDIO
             )
-            # Tag provenance for downstream logging (e.g. gRPC async PII logs)
-            entity.source = "PRESIDIO"
             
             entities.append(entity)
         

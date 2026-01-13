@@ -51,6 +51,14 @@ armeria:
   internal-services:
     port: 0
 
+pii:
+  # PII Reporting Configuration
+  reporting:
+    # Allow revealing decrypted PII values to users (default: true)
+    # When false, sensitiveValue is never sent to frontend via SSE
+    # and the reveal endpoint returns 403 Forbidden
+    allow-secret-reveal: true
+
 # Reduce logging noise during tests
 logging:
   level:

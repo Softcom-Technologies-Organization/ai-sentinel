@@ -9,7 +9,9 @@ The class provides dictionary-style access methods for backward compatibility
 with code that treats entities as dictionaries.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+from pii_detector.domain.entity.detector_source import DetectorSource
 
 
 @dataclass
@@ -22,6 +24,7 @@ class PIIEntity:
     start: int
     end: int
     score: float
+    source: DetectorSource = field(default=DetectorSource.UNKNOWN_SOURCE)
 
     def __getitem__(self, key):
         """Support dictionary-style access for backward compatibility.
@@ -43,6 +46,8 @@ class PIIEntity:
             return self.end
         elif key == 'score':
             return self.score
+        elif key == 'source':
+            return self.source
         elif hasattr(self, key):
             # Support dynamically attached attributes
             return getattr(self, key)
@@ -81,10 +86,10 @@ class PIIEntity:
         Returns both standard fields and dynamically attached attributes
         (e.g., 'source' set by specific detectors).
         """
-        standard_keys = ['text', 'type', 'type_label', 'type_fr', 'start', 'end', 'score']
+        standard_keys = ['text', 'type', 'type_label', 'type_fr', 'start', 'end', 'score', 'source']
         
         # Get dynamically attached attributes (not dataclass fields or private)
-        dataclass_fields = {'text', 'pii_type', 'type_label', 'start', 'end', 'score'}
+        dataclass_fields = {'text', 'pii_type', 'type_label', 'start', 'end', 'score', 'source'}
         dynamic_keys = [
             key for key in self.__dict__.keys()
             if key not in dataclass_fields and not key.startswith('_')

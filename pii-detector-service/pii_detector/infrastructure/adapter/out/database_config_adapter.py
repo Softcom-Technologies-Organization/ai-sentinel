@@ -162,8 +162,6 @@ class DatabaseConfigAdapter:
                         detector,
                         enabled,
                         threshold,
-                        display_name,
-                        description,
                         category,
                         country_code,
                         detector_label
@@ -180,8 +178,6 @@ class DatabaseConfigAdapter:
                         detector,
                         enabled,
                         threshold,
-                        display_name,
-                        description,
                         category,
                         country_code,
                         detector_label
@@ -208,8 +204,6 @@ class DatabaseConfigAdapter:
                     'enabled': row['enabled'],
                     'threshold': float(row['threshold']),
                     'detector': row['detector'],
-                    'display_name': row['display_name'],
-                    'description': row['description'],
                     'category': row['category'],
                     'country_code': row['country_code'],
                     'detector_label': row['detector_label']

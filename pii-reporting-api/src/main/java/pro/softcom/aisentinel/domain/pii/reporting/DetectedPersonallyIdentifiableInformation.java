@@ -1,9 +1,10 @@
 package pro.softcom.aisentinel.domain.pii.reporting;
 
 import lombok.Builder;
+import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
 
 /**
- * Represents sawwwwwwwwwwwwwwwwwqaaya detected PII with its metadata and sensitive values.
+ * Represents a detected PII with its metadata and sensitive values.
  * 
  * <p>Business rules:</p>
  * <ul>
@@ -24,7 +25,8 @@ public record DetectedPersonallyIdentifiableInformation(
         double confidence,
         String sensitiveValue,
         String sensitiveContext,
-        String maskedContext
+        String maskedContext,
+        DetectorSource source
 ) {
     /**
      * Creates a safe copy with sensitive data masked (set to null).

@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pro.softcom.aisentinel.application.confluence.port.in.ConfluenceSpacePort;
 import pro.softcom.aisentinel.application.confluence.port.in.ConfluenceSpaceUpdateInfoPort;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
+import pro.softcom.aisentinel.domain.confluence.SpaceUpdateInfo;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.in.dto.ConfluencePageDto;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.in.dto.ConfluenceSearchResponseDto;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.in.dto.ConfluenceSpaceDto;
@@ -150,11 +151,19 @@ public class ConfluenceController {
     @GetMapping("/spaces/update-info")
     @Operation(summary = "Retrieve update information for all Confluence spaces")
     @ApiResponse(responseCode = "200", description = "List of space update information")
-    public CompletableFuture<ResponseEntity<@NonNull List<SpaceUpdateInfoDto>>> getAllSpacesUpdateInfo() {
-        log.info("GET request /spaces/update-info");
+    public CompletableFuture<ResponseEntity<@NonNull List<SpaceUpdateInfoDto>>> getAllSpacesUpdateInfo(
+            @Parameter(description = "Filter only spaces modified since last scan")
+            @RequestParam(required = false, defaultValue = "false") boolean modifiedOnly
+    ) {
+        log.info("GET request /spaces/update-info (modifiedOnly={})", modifiedOnly);
 
         return confluenceSpaceUpdateInfoPort.getAllSpacesUpdateInfo()
-            .thenApply(updateInfos -> ResponseEntity.ok(ConfluenceApiMapper.toDtoSpaceUpdateInfos(updateInfos)))
+            .thenApply(updateInfos -> {
+                var filteredInfos = modifiedOnly
+                    ? updateInfos.stream().filter(SpaceUpdateInfo::hasBeenUpdated).toList()
+                    : updateInfos;
+                return ResponseEntity.ok(ConfluenceApiMapper.toDtoSpaceUpdateInfos(filteredInfos));
+            })
             .exceptionally(ex -> {
                 log.error("Error retrieving spaces update info", ex);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

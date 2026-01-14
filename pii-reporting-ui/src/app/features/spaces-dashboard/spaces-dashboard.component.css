@@ -376,3 +376,8 @@
   background-color: #f8f9fa;
   border-bottom: 1px solid #dee2e6;
 }
+
+/* Prevent text wrapping in buttons */
+.white-space-nowrap {
+  white-space: nowrap;
+}

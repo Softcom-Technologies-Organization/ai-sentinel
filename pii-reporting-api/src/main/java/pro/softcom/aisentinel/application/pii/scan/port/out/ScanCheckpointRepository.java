@@ -53,6 +53,14 @@ public interface ScanCheckpointRepository {
     Optional<ScanCheckpoint> findLatestBySpace(String spaceKey);
 
     /**
+     * Lists the most recent checkpoint for every space known in the system.
+     * Business purpose: Build a global view of the latest state of all spaces, even if they belong to different scans.
+     *
+     * @return list of latest checkpoints (one per space)
+     */
+    List<ScanCheckpoint> findAllLatestCheckpoints();
+
+    /**
      * Deletes all checkpoints for the given scan.
      *
      * @param scanId the business identifier of the scan
@@ -61,12 +69,20 @@ public interface ScanCheckpointRepository {
 
     /**
      * Deletes all active scan checkpoints (RUNNING or PAUSED status).
-     * Business purpose: Clean up previous active scans when starting a fresh scan with the "Start" button.
+     * Business purpose: Clean up active scans when starting a fresh scan with the "Start" button.
      * This prevents accumulation of stale scan data and ensures severity counts don't get inflated
      * by mixing data from old and new scans.
      * Note: Completed scans (COMPLETED, FAILED status) are preserved as historical data.
      */
     void deleteActiveScanCheckpoints();
+
+    /**
+     * Deletes active scan checkpoints (RUNNING or PAUSED status) for specific spaces.
+     * Business purpose: Clean up active scans for specific spaces when starting a fresh selected scan.
+     * 
+     * @param spaceKeys list of space keys to purge
+     */
+    void deleteActiveScanCheckpointsForSpaces(List<String> spaceKeys);
 
     /**
      * Finds the checkpoint with RUNNING status for a given scan.

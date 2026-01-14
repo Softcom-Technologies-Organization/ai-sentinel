@@ -137,4 +137,20 @@ public class ContentScanOrchestrator {
             // Don't fail the scan if purge fails - log and continue
         }
     }
+
+    /**
+     * Purges previous scan data for selected spaces to ensure a clean state before starting a new scan.
+     * 
+     * @param spaceKeys list of space keys to purge
+     */
+    public void purgePreviousScanDataForSpaces(java.util.List<String> spaceKeys) {
+        try {
+            log.info("[SCAN] Purging previous active scan data for selected spaces before starting new scan");
+            scanCheckpointService.deleteActiveScanCheckpointsForSpaces(spaceKeys);
+            log.info("[SCAN] Previous scan data for selected spaces purged successfully");
+        } catch (Exception e) {
+            log.error("[SCAN] Failed to purge previous scan data for selected spaces: {}", e.getMessage(), e);
+            // Don't fail the scan if purge fails - log and continue
+        }
+    }
 }

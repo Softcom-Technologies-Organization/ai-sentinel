@@ -36,6 +36,7 @@
   </app-new-spaces-banner>
 
   <p-table #dt [value]="sortedSpaces()"
+           [(selection)]="selectedSpaces"
            dataKey="key"
            sortField="name" [sortOrder]="1"
            [paginator]="true"
@@ -50,6 +51,7 @@
            [attr.data-testid]="testIds.table">
   <ng-template #header>
       <tr>
+        <th style="width: 4rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
         <th id="col-toggle" style="width:3rem"></th>
         <th id="col-space" [attr.data-testid]="testIds.headers.space" pSortableColumn="name">
           {{ 'dashboard.table.headers.space' | transloco }}
@@ -77,6 +79,7 @@
         <th id="col-actions" [attr.data-testid]="testIds.headers.actions">{{ 'dashboard.table.headers.actions' | transloco }}</th>
       </tr>
       <tr>
+        <th></th>
         <th id="col-toggle-value"></th>
         <th id="col-space-value">
           <div class="space-filters">
@@ -90,6 +93,19 @@
                 (ngModelChange)="onGlobalChange($event)"
                 [attr.aria-label]="'common.searchGlobally' | transloco"
                 [attr.data-testid]="'global-filter-input'"/>
+            </div>
+            <div class="filter-item">
+              <p-toggleButton
+                [ngModel]="modifiedOnlyFilter()"
+                (ngModelChange)="onModifiedOnlyChange($event)"
+                onLabel="Modifiés après le dernier scan"
+                offLabel="Modifi�s"
+                onIcon="pi pi-filter-fill"
+                offIcon="pi pi-filter"
+                styleClass="p-button-sm p-button-outlined"
+                [pTooltip]="'dashboard.filters.modifiedOnly' | transloco"
+                tooltipPosition="top">
+              </p-toggleButton>
             </div>
           </div>
         </th>
@@ -120,6 +136,16 @@
         <th id="col-actions-value" class="action-buttons-container">
           <p-button type="button"
                     icon="pi pi-play"
+                    styleClass="p-button-raised p-button-info white-space-nowrap"
+                    (click)="startSelected()"
+                    [disabled]="!canStartScan()"
+                    [label]="'Scan (' + selectedSpacesCount() + ')'"
+                    *ngIf="selectedSpacesCount() > 0"
+                    pTooltip="Scan Selected Spaces"
+                    tooltipPosition="bottom">
+          </p-button>
+          <p-button type="button"
+                    icon="pi pi-play"
                     styleClass="p-button-raised p-button-info"
                     (click)="startAll()"
                     (keydown.enter)="startAll()"
@@ -128,7 +154,8 @@
                     [pTooltip]="'dashboard.actions.startScan' | transloco"
                     tooltipPosition="bottom"
                     [ariaLabel]="'dashboard.actions.startScan' | transloco"
-                    [attr.data-testid]="testIds.buttons.startScan">
+                    [attr.data-testid]="testIds.buttons.startScan"
+                    *ngIf="selectedSpacesCount() === 0">
           </p-button>
           <p-button type="button"
                     icon="pi pi-pause"
@@ -159,6 +186,9 @@
     </ng-template>
     <ng-template #body let-space let-expanded="expanded">
       <tr class="row-click" tabindex="0" [attr.data-testid]="testIds.spaceRow">
+        <td>
+          <p-tableCheckbox [value]="space" (click)="$event.stopPropagation()"></p-tableCheckbox>
+        </td>
         <td>
           <p-button type="button"
                     pRipple
@@ -253,7 +283,7 @@
 
     <ng-template #expandedrow let-space>
       <tr>
-        <td colspan="7">
+        <td colspan="8">
           <div class="row-expansion">
             <div class="pii-scroll">
               <p-dataview [value]="itemsBySpace()[space.key] || []">

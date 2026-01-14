@@ -17,6 +17,7 @@ import {
 import {PiiItemCardComponent} from '../pii-item-card/pii-item-card.component';
 import {PiiSettingsComponent} from '../pii-settings/pii-settings.component';
 import {ToggleSwitchModule} from 'primeng/toggleswitch';
+import {ToggleButtonModule} from 'primeng/togglebutton';
 import {BadgeModule} from 'primeng/badge';
 import {InputTextModule} from 'primeng/inputtext';
 import {SelectModule} from 'primeng/select';
@@ -78,6 +79,7 @@ import {ScanControlService} from './services/scan-control.service';
     FormsModule,
     ButtonModule,
     ToggleSwitchModule,
+    ToggleButtonModule,
     PiiItemCardComponent,
     PiiSettingsComponent,
     BadgeModule,
@@ -129,6 +131,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   // Filtering & Sorting
   readonly globalFilter = computed(() => this.filteringService.globalFilter());
   readonly statusFilter = computed(() => this.filteringService.statusFilter());
+  readonly modifiedOnlyFilter = computed(() => this.filteringService.modifiedOnlyFilter());
   readonly sortedSpaces = computed(() => this.filteringService.sortedSpaces());
   readonly statusOptions = computed(() => this.filteringService.statusOptions());
 
@@ -137,6 +140,15 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly selectedSpaceKey = computed(() => this.uiStateService.selectedSpaceKey());
   readonly maskByDefault = computed(() => this.uiStateService.maskByDefault());
   readonly lines = computed(() => this.uiStateService.lines());
+  readonly selectedSpacesCount = computed(() => this.uiStateService.selectedSpacesCount());
+
+  get selectedSpaces(): any[] {
+    return this.uiStateService.selectedSpaces();
+  }
+
+  set selectedSpaces(val: any[]) {
+    this.uiStateService.selectedSpaces.set(val);
+  }
 
   // PII Items
   readonly itemsBySpace = computed(() => this.piiItemsStorage.itemsBySpace());
@@ -193,6 +205,15 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Initiates scan for selected spaces with user confirmation.
+   * Delegates to ScanControlService.
+   */
+  startSelected(): void {
+    const keys = this.selectedSpaces.map(s => s.key);
+    this.scanControl.startSelected(keys);
+  }
+
+  /**
    * Pauses current scan and marks as PAUSED for later resume.
    * Delegates to ScanControlService.
    */
@@ -222,6 +243,14 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
    */
   onFilter(field: 'name' | 'status', value: string | null | undefined): void {
     this.filteringService.onFilter(field, value);
+  }
+
+  /**
+   * Updates "Modified Only" filter.
+   * Delegates to SpaceFilteringService.
+   */
+  onModifiedOnlyChange(value: boolean): void {
+    this.filteringService.onModifiedOnlyChange(value);
   }
 
   /**

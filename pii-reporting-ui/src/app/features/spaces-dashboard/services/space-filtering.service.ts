@@ -1,6 +1,7 @@
 import {computed, inject, Injectable, signal} from '@angular/core';
 import {SortEvent} from 'primeng/api';
 import {SpacesDashboardUtils} from '../spaces-dashboard.utils';
+import {SpaceDataManagementService} from './space-data-management.service';
 
 /**
  * Service responsible for filtering and sorting spaces in the dashboard.
@@ -20,10 +21,12 @@ import {SpacesDashboardUtils} from '../spaces-dashboard.utils';
 })
 export class SpaceFilteringService {
   private readonly spacesDashboardUtils = inject(SpacesDashboardUtils);
+  private readonly dataManagement = inject(SpaceDataManagementService);
 
   // Filter state
   readonly globalFilter = signal<string>('');
   readonly statusFilter = signal<string | null>(null);
+  readonly modifiedOnlyFilter = signal<boolean>(false);
 
   // Sort state
   readonly sortField = signal<string | null>(null);
@@ -32,9 +35,20 @@ export class SpaceFilteringService {
   /**
    * Filtered spaces based on current filter criteria.
    * Delegates to SpacesDashboardUtils to ensure consistent decoration logic.
+   * Applies "Modified Only" filter if enabled.
    */
   readonly filteredSpaces = computed(() => {
-    return this.spacesDashboardUtils.filteredSpaces();
+    let spaces = this.spacesDashboardUtils.filteredSpaces();
+
+    if (this.modifiedOnlyFilter()) {
+      const updateInfos = this.dataManagement.spacesUpdateInfo();
+      spaces = spaces.filter(s => {
+        const info = updateInfos.find(i => i.spaceKey === s.key);
+        return info?.hasBeenUpdated ?? false;
+      });
+    }
+
+    return spaces;
   });
 
   /**
@@ -109,6 +123,13 @@ export class SpaceFilteringService {
   }
 
   /**
+   * Toggles the "Modified Only" filter.
+   */
+  onModifiedOnlyChange(value: boolean): void {
+    this.modifiedOnlyFilter.set(value);
+  }
+
+  /**
    * Handles custom sort event from PrimeNG table.
    * Updates sort field and order signals to trigger sortedSpaces() recomputation.
    */
@@ -131,6 +152,7 @@ export class SpaceFilteringService {
     this.statusFilter.set(null);
     this.sortField.set(null);
     this.sortOrder.set(1);
+    this.modifiedOnlyFilter.set(false);
     this.spacesDashboardUtils.globalFilter.set('');
     this.onFilter('status', null);
   }

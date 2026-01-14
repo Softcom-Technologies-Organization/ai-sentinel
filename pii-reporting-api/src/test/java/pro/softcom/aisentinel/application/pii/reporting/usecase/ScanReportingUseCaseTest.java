@@ -372,4 +372,139 @@ class ScanReportingUseCaseTest {
         
         softly.assertAll();
     }
+
+    @Test
+    void Should_ReturnGlobalSummary_AggregatingDifferentScans() {
+        // Arrange - Space A from Scan 1
+        String scanId1 = "scan-1";
+        Instant ts1 = Instant.parse("2024-01-01T10:00:00Z");
+
+        // Scan 1 events for Space A
+        ObjectNode payload1 = objectMapper.createObjectNode();
+        payload1.put("scanId", scanId1);
+        payload1.put("spaceKey", "SPACE-A");
+        payload1.put("eventType", "pageComplete");
+
+        ScanEventEntity event1 = ScanEventEntity.builder()
+            .scanId(scanId1).eventSeq(1L).spaceKey("SPACE-A").eventType("pageComplete")
+            .ts(ts1).pageId("p1").pageTitle("Page 1").payload(payload1).build();
+        detectionEventRepository.save(event1);
+
+        // Scan 1 checkpoint for Space A
+        ScanCheckpoint cp1 = ScanCheckpoint.builder()
+            .scanId(scanId1).spaceKey("SPACE-A").scanStatus(ScanStatus.COMPLETED)
+            .updatedAt(LocalDateTime.of(2024, 1, 1, 10, 0))
+            .progressPercentage(100.0).build();
+        scanCheckpointRepository.save(cp1);
+
+        // Arrange - Space B from Scan 2 (Latest)
+        String scanId2 = "scan-2";
+        Instant ts2 = Instant.parse("2024-01-02T10:00:00Z");
+
+        // Scan 2 events for Space B
+        ObjectNode payload2 = objectMapper.createObjectNode();
+        payload2.put("scanId", scanId2);
+        payload2.put("spaceKey", "SPACE-B");
+        payload2.put("eventType", "pageComplete");
+
+        ScanEventEntity event2 = ScanEventEntity.builder()
+            .scanId(scanId2).eventSeq(1L).spaceKey("SPACE-B").eventType("pageComplete")
+            .ts(ts2).pageId("p2").pageTitle("Page 2").payload(payload2).build();
+        detectionEventRepository.save(event2);
+
+        // Scan 2 checkpoint for Space B
+        ScanCheckpoint cp2 = ScanCheckpoint.builder()
+            .scanId(scanId2).spaceKey("SPACE-B").scanStatus(ScanStatus.RUNNING)
+            .updatedAt(LocalDateTime.of(2024, 1, 2, 10, 0))
+            .progressPercentage(50.0).build();
+        scanCheckpointRepository.save(cp2);
+
+        // Act
+        var summary = scanReportingUseCase.getGlobalScanSummary();
+
+        // Assert
+        assertThat(summary).isPresent();
+        var globalSummary = summary.get();
+
+        // Should use scanId from latest scan (scan-2)
+        assertThat(globalSummary.scanId()).isEqualTo(scanId2);
+        assertThat(globalSummary.spacesCount()).isEqualTo(2);
+
+        // Space A should be from Scan 1
+        var spaceA = globalSummary.spaces().stream().filter(s -> s.spaceKey().equals("SPACE-A")).findFirst().get();
+        assertThat(spaceA.status()).isEqualTo("COMPLETED");
+        assertThat(spaceA.pagesDone()).isEqualTo(1);
+
+        // Space B should be from Scan 2
+        var spaceB = globalSummary.spaces().stream().filter(s -> s.spaceKey().equals("SPACE-B")).findFirst().get();
+        assertThat(spaceB.status()).isEqualTo("RUNNING");
+        assertThat(spaceB.pagesDone()).isEqualTo(1);
+    }
+
+    @Test
+    void Should_ReturnGlobalItems_AggregatingDifferentScans() {
+        // Arrange - Scan 1 for Space A with an item
+        String scanId1 = "scan-items-1";
+        Instant ts1 = Instant.parse("2024-01-01T10:00:00Z");
+
+        ObjectNode payload1 = objectMapper.createObjectNode();
+        payload1.put("scanId", scanId1);
+        payload1.put("spaceKey", "SPACE-A");
+        payload1.put("eventType", "item");
+        payload1.put("maskedContent", "EncryptedContentA");
+
+        ScanEventEntity event1 = ScanEventEntity.builder()
+            .scanId(scanId1).eventSeq(1L).spaceKey("SPACE-A").eventType("item")
+            .ts(ts1).pageId("p1").pageTitle("Page 1").payload(payload1).build();
+        detectionEventRepository.save(event1);
+
+        ScanCheckpoint cp1 = ScanCheckpoint.builder()
+            .scanId(scanId1).spaceKey("SPACE-A").scanStatus(ScanStatus.COMPLETED)
+            .updatedAt(LocalDateTime.of(2024, 1, 1, 10, 0))
+            .progressPercentage(100.0).build();
+        scanCheckpointRepository.save(cp1);
+
+        // Arrange - Scan 2 for Space B with an item
+        String scanId2 = "scan-items-2";
+        Instant ts2 = Instant.parse("2024-01-02T10:00:00Z");
+
+        ObjectNode payload2 = objectMapper.createObjectNode();
+        payload2.put("scanId", scanId2);
+        payload2.put("spaceKey", "SPACE-B");
+        payload2.put("eventType", "item");
+        payload2.put("maskedContent", "EncryptedContentB");
+
+        ScanEventEntity event2 = ScanEventEntity.builder()
+            .scanId(scanId2).eventSeq(1L).spaceKey("SPACE-B").eventType("item")
+            .ts(ts2).pageId("p2").pageTitle("Page 2").payload(payload2).build();
+        detectionEventRepository.save(event2);
+
+        ScanCheckpoint cp2 = ScanCheckpoint.builder()
+            .scanId(scanId2).spaceKey("SPACE-B").scanStatus(ScanStatus.COMPLETED)
+            .updatedAt(LocalDateTime.of(2024, 1, 2, 10, 0))
+            .progressPercentage(100.0).build();
+        scanCheckpointRepository.save(cp2);
+
+        // DEBUG: Verify direct access
+        var itemsDirect = scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey(scanId2, "SPACE-B");
+        assertThat(itemsDirect).hasSize(1);
+
+        // Act
+        List<ConfluenceContentScanResult> items = scanReportingUseCase.getGlobalScanItemsEncrypted();
+
+        // Assert
+        assertThat(items).hasSize(2);
+        
+        // Should contain item from Scan 1 (Space A)
+        assertThat(items).anyMatch(i -> 
+            i.scanId().equals(scanId1) && 
+            i.spaceKey().equals("SPACE-A")
+        );
+        
+        // Should contain item from Scan 2 (Space B)
+        assertThat(items).anyMatch(i -> 
+            i.scanId().equals(scanId2) && 
+            i.spaceKey().equals("SPACE-B")
+        );
+    }
 }

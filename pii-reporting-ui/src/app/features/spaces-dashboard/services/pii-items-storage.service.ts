@@ -128,4 +128,22 @@ export class PiiItemsStorageService {
       });
     }
   }
+
+  /**
+   * Clears items for a specific space.
+   * Business purpose: Reset data for a space being re-scanned.
+   */
+  clearItemsForSpace(spaceKey: string): void {
+    const map = this.itemsBySpace();
+    if (!map[spaceKey]) {
+      return;
+    }
+
+    const { [spaceKey]: _, ...rest } = map;
+    this.itemsBySpace.set(rest);
+
+    this.spacesDashboardUtils.updateSpace(spaceKey, {
+      counts: { total: 0, high: 0, medium: 0, low: 0 }
+    });
+  }
 }

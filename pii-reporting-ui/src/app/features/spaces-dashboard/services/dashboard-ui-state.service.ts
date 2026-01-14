@@ -36,6 +36,9 @@ export class DashboardUiStateService {
   // Currently selected space key for highlighting
   readonly selectedSpaceKey = signal<string | null>(null);
 
+  // Currently selected spaces for bulk action
+  readonly selectedSpaces = signal<any[]>([]);
+
   // Currently active space being scanned (for SSE tracking)
   readonly activeSpaceKey = signal<string | null>(null);
 
@@ -56,6 +59,11 @@ export class DashboardUiStateService {
   // Computed: whether any space is selected
   readonly hasSelectedSpace = computed(() => {
     return this.selectedSpaceKey() !== null;
+  });
+
+  // Computed: number of selected spaces
+  readonly selectedSpacesCount = computed(() => {
+    return this.selectedSpaces().length;
   });
 
   /**
@@ -220,6 +228,7 @@ export class DashboardUiStateService {
     this.expandedRowKeys.set({});
     this.selectedSpaceKey.set(null);
     this.activeSpaceKey.set(null);
+    this.selectedSpaces.set([]);
     this.lines.set([]);
     this.history.set([]);
   }

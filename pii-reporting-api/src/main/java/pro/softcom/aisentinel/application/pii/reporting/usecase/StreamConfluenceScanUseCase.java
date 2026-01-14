@@ -143,6 +143,61 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
         return personallyIdentifiableInformationScanExecutionOrchestratorPort.subscribeScan(scanCorrelationId);
     }
 
+    @Override
+    public Flux<ConfluenceContentScanResult> streamSelectedSpaces(List<String> spaceKeys) {
+        // Always create a new scanId for a fresh scan
+        String scanCorrelationId = UUID.randomUUID().toString();
+        log.info("[SCAN] Creating new selected spaces scan with scanId: {}", scanCorrelationId);
+
+        // Purge previous scan data for selected spaces to ensure clean state
+        contentScanOrchestrator.purgePreviousScanDataForSpaces(spaceKeys);
+
+        // Opening segment: a single "MULTI_START" event
+        Flux<ConfluenceContentScanResult> header = buildAllSpaceScanFluxHeader(scanCorrelationId);
+
+        // Main segment: iterate over selected spaces and perform scans sequentially
+        Flux<ConfluenceContentScanResult> body = buildSelectedSpaceScanFluxBody(scanCorrelationId, spaceKeys);
+
+        // Closing segment: a single "MULTI_COMPLETE" event
+        Flux<ConfluenceContentScanResult> footer = buildAllSpaceScanFluxFooter(scanCorrelationId);
+
+        // Sequential and ordered concatenation of segments
+        Flux<ConfluenceContentScanResult> scanFlux = Flux.concat(header, body, footer);
+
+        // Start independent scan task and return subscription flux
+        personallyIdentifiableInformationScanExecutionOrchestratorPort.startScan(scanCorrelationId, scanFlux);
+        return personallyIdentifiableInformationScanExecutionOrchestratorPort.subscribeScan(scanCorrelationId);
+    }
+
+    private Flux<ConfluenceContentScanResult> buildSelectedSpaceScanFluxBody(String scanId, List<String> spaceKeys) {
+        // Asynchronous retrieval of all spaces (Future -> Mono)
+        // Optimization: We could fetch only specific spaces if the API supported it, but filtering is safe.
+        return Mono.fromFuture(confluenceAccessor.getAllSpaces())
+            // Then unfold into Flux<ScanResult>
+            .flatMapMany(allSpaces -> {
+                // Filter spaces based on provided keys
+                List<ConfluenceSpace> selectedSpaces = allSpaces.stream()
+                    .filter(space -> spaceKeys.contains(space.key()))
+                    .toList();
+
+                // If the list is empty, generate a small error Flux. Otherwise, create the scan Flux.
+                Flux<ConfluenceContentScanResult> errrorScanResultsFlux = createErrorScanResultIfNoSpace(scanId, selectedSpaces);
+                return Objects.requireNonNullElseGet(errrorScanResultsFlux, () -> createScanResultFlux(scanId, selectedSpaces));
+            })
+            // Global error handling: map any exception to a readable business event
+            .onErrorResume(exception -> {
+                log.error("[USECASE] Erreur globale du flux multi-espaces sélectionné: {}",
+                    exception.getMessage(),
+                    exception);
+                return Flux.just(ConfluenceContentScanResult.builder()
+                    .scanId(scanId)
+                    .eventType(DetectionReportingEventType.ERROR.getLabel())
+                    .message(exception.getMessage())
+                    .emittedAt(Instant.now().toString())
+                    .build());
+            });
+    }
+
     private static Flux<ConfluenceContentScanResult> buildAllSpaceScanFluxFooter(String scanId) {
         return Flux.just(ConfluenceContentScanResult.builder()
                              .scanId(scanId)

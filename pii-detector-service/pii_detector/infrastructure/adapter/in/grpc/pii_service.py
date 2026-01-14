@@ -38,6 +38,13 @@ try:
     from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
 except Exception:  # pragma: no cover - safe import guard
     GLiNERDetector = None  # type: ignore
+
+# Import Multi-Pass GLiNER detector for parallel category detection
+try:
+    from pii_detector.infrastructure.detector.multi_pass_gliner_detector import MultiPassGlinerDetector
+except Exception:  # pragma: no cover - safe import guard
+    MultiPassGlinerDetector = None  # type: ignore
+
 # Optional pre-caching of additional HF models (extensible)
 try:
     from pii_detector.infrastructure.model_management.model_cache import ensure_models_cached, get_env_extra_models
@@ -233,8 +240,13 @@ def _create_single_detector():
         config = DetectionConfig()
         
         if _is_gliner_model(config.model_id):
-            logger.info(f"Detected GLiNER model: {config.model_id}")
-            return GLiNERDetector(config=config)
+            # Check if Multi-Pass GLiNER is enabled
+            if _should_use_multipass_gliner(config_dict):
+                logger.info(f"Using Multi-Pass GLiNER detector for: {config.model_id}")
+                return MultiPassGlinerDetector(config=config)
+            else:
+                logger.info(f"Detected GLiNER model: {config.model_id}")
+                return GLiNERDetector(config=config)
         
         logger.info(f"Using standard transformer detector for: {config.model_id}")
         return PIIDetector()
@@ -242,6 +254,32 @@ def _create_single_detector():
     except Exception as e:
         logger.error(f"Failed to create single detector: {e}")
         raise
+
+
+def _should_use_multipass_gliner(config_dict: dict) -> bool:
+    """
+    Check if Multi-Pass GLiNER detection is enabled in config.
+    
+    Multi-Pass GLiNER runs 13 parallel detection passes (one per category)
+    to avoid label limit degradation and resolves conflicts deterministically.
+    
+    Args:
+        config_dict: Configuration dictionary loaded from detection-settings.toml
+        
+    Returns:
+        True if multipass_gliner_enabled is set to true, False otherwise
+    """
+    if MultiPassGlinerDetector is None:
+        logger.debug("MultiPassGlinerDetector not available")
+        return False
+        
+    detection_config = config_dict.get("detection", {})
+    multipass_enabled = detection_config.get("multipass_gliner_enabled", False)
+    
+    if multipass_enabled:
+        logger.info("Multi-Pass GLiNER detection enabled in config")
+        
+    return multipass_enabled
 
 
 def _is_gliner_model(model_id: str) -> bool:
@@ -437,10 +475,13 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 return pii_detection_pb2.PIIDetectionResponse()
             
             # Fetch dynamic configuration from database if requested
+            chunk_size = None
             if request.fetch_config_from_db:
-                threshold, pii_type_configs, detector_flags = self._fetch_and_apply_config(threshold, request_id)
+                threshold, pii_type_configs, detector_flags, chunk_size = self._fetch_and_apply_config(threshold, request_id)
             
-            entities = self._execute_detection(content, threshold, request_id, detector_flags, pii_type_configs)
+            entities = self._execute_detection(
+                content, threshold, request_id, detector_flags, pii_type_configs, chunk_size
+            )
             
             # Apply PII type-specific filtering if configs were fetched
             if pii_type_configs:
@@ -517,7 +558,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         else:
             logger.debug(f"[{request_id}] Content: {content}")
 
-    def _fetch_and_apply_config(self, default_threshold: float, request_id: str) -> tuple[float, Optional[dict], Optional[dict]]:
+    def _fetch_and_apply_config(self, default_threshold: float, request_id: str) -> tuple[float, Optional[dict], Optional[dict], Optional[int]]:
         """
         Fetch configuration from database and apply to current detection.
         
@@ -530,10 +571,11 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             request_id: Request identifier for logging
             
         Returns:
-            Tuple of (threshold, pii_type_configs, detector_flags) where:
+            Tuple of (threshold, pii_type_configs, detector_flags, chunk_size) where:
             - threshold: Default threshold value to use for detection
             - pii_type_configs: Dictionary of PII type configs or None
             - detector_flags: Dictionary with gliner_enabled, presidio_enabled, regex_enabled or None
+            - chunk_size: Number of labels per pass for MultiPassGLiNER (or None)
         """
         try:
             from pii_detector.infrastructure.adapter.out.database_config_adapter import (
@@ -552,10 +594,15 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                     f"[{request_id}] Using default threshold {default_threshold} "
                     "(database config not available)"
                 )
-                return default_threshold, pii_type_configs, None
+                return default_threshold, pii_type_configs, None, None
             
             # Extract threshold from database config
             threshold = float(db_config.get('default_threshold', default_threshold))
+            
+            # Extract chunk size (nb_of_label_by_pass)
+            chunk_size = db_config.get('nb_of_label_by_pass')
+            if chunk_size:
+                chunk_size = int(chunk_size)
             
             # Extract detector flags for dynamic activation
             detector_flags = {
@@ -568,7 +615,8 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 f"[{request_id}] Applied database config: threshold={threshold}, "
                 f"gliner={detector_flags['gliner_enabled']}, "
                 f"presidio={detector_flags['presidio_enabled']}, "
-                f"regex={detector_flags['regex_enabled']}"
+                f"regex={detector_flags['regex_enabled']}, "
+                f"chunk_size={chunk_size}"
             )
             
             if pii_type_configs:
@@ -576,14 +624,14 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                     f"[{request_id}] Loaded {len(pii_type_configs)} PII type-specific configs"
                 )
             
-            return threshold, pii_type_configs, detector_flags
+            return threshold, pii_type_configs, detector_flags, chunk_size
             
         except Exception as e:
             logger.warning(
                 f"[{request_id}] Failed to fetch database config: {e}. "
                 f"Using default threshold {default_threshold}"
             )
-            return default_threshold, None, None
+            return default_threshold, None, None, None
 
     def _validate_content(self, content: str, request_id: str) -> Optional[str]:
         """Validate content against business rules.
@@ -621,7 +669,8 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         threshold: float, 
         request_id: str, 
         detector_flags: Optional[dict] = None,
-        pii_type_configs: Optional[Dict] = None
+        pii_type_configs: Optional[Dict] = None,
+        chunk_size: Optional[int] = None
     ) -> List:
         """Execute PII detection with dynamic detector activation and log performance metrics.
         
@@ -637,6 +686,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             request_id: Request identifier for logging
             detector_flags: Optional dict with gliner_enabled, presidio_enabled, regex_enabled
             pii_type_configs: Optional fresh PII type configs from database for Presidio
+            chunk_size: Optional limit for labels per pass (for MultiPassGLiNER)
             
         Returns:
             List of detected PII entities
@@ -647,6 +697,15 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         # Pass fresh configs to Presidio detector if available
         self._pass_fresh_configs_to_presidio(pii_type_configs, request_id)
         
+        # Determine if we should pass chunk_size
+        kwargs = {}
+        if hasattr(self.detector, 'detect_pii'):
+            import inspect
+            sig = inspect.signature(self.detector.detect_pii)
+            if 'chunk_size' in sig.parameters and chunk_size is not None:
+                kwargs['chunk_size'] = chunk_size
+                logger.debug(f"[{request_id}] Passing chunk_size={chunk_size} to detector")
+
         # Apply detector flags if available (for CompositePIIDetector)
         if detector_flags and hasattr(self.detector, 'detect_pii'):
             # Check if detector supports dynamic configuration (CompositePIIDetector)
@@ -662,39 +721,38 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                     f"Presidio={detector_flags.get('presidio_enabled')}, "
                     f"Regex={detector_flags.get('regex_enabled')}"
                 )
+                
+                # Combine flags and configs
+                call_kwargs = {
+                    'enable_ml': detector_flags.get('gliner_enabled'),
+                    'enable_presidio': detector_flags.get('presidio_enabled'),
+                    'enable_regex': detector_flags.get('regex_enabled'),
+                    **kwargs
+                }
+                
                 # Pass pii_type_configs if detector supports it
                 if supports_pii_configs:
-                    entities = self.detector.detect_pii(
-                        content, 
-                        threshold,
-                        enable_ml=detector_flags.get('gliner_enabled'),
-                        enable_presidio=detector_flags.get('presidio_enabled'),
-                        enable_regex=detector_flags.get('regex_enabled'),
-                        pii_type_configs=pii_type_configs
-                    )
-                else:
-                    entities = self.detector.detect_pii(
-                        content, 
-                        threshold,
-                        enable_ml=detector_flags.get('gliner_enabled'),
-                        enable_presidio=detector_flags.get('presidio_enabled'),
-                        enable_regex=detector_flags.get('regex_enabled')
-                    )
+                    call_kwargs['pii_type_configs'] = pii_type_configs
+                
+                entities = self.detector.detect_pii(content, threshold, **call_kwargs)
             else:
                 # Simple detector - check if it supports pii_type_configs
+                call_kwargs = {**kwargs}
                 if supports_pii_configs:
-                    entities = self.detector.detect_pii(content, threshold, pii_type_configs=pii_type_configs)
-                else:
-                    entities = self.detector.detect_pii(content, threshold)
+                    call_kwargs['pii_type_configs'] = pii_type_configs
+                
+                entities = self.detector.detect_pii(content, threshold, **call_kwargs)
         else:
             # No detector flags - check if detector supports pii_type_configs
             if hasattr(self.detector, 'detect_pii'):
                 import inspect
                 sig = inspect.signature(self.detector.detect_pii)
+                
+                call_kwargs = {**kwargs}
                 if 'pii_type_configs' in sig.parameters:
-                    entities = self.detector.detect_pii(content, threshold, pii_type_configs=pii_type_configs)
-                else:
-                    entities = self.detector.detect_pii(content, threshold)
+                    call_kwargs['pii_type_configs'] = pii_type_configs
+                
+                entities = self.detector.detect_pii(content, threshold, **call_kwargs)
             else:
                 entities = self.detector.detect_pii(content, threshold)
         

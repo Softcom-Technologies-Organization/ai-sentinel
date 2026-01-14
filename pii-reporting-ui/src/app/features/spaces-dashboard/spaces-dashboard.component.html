@@ -49,20 +49,28 @@
            (onRowCollapse)="onRowCollapse($event)"
            (onSort)="onCustomSort($event)" [customSort]="true"
            [attr.data-testid]="testIds.table">
-  <ng-template #header>
+    <ng-template #header>
       <tr>
-        <th style="width: 4rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+        <th id="col-check-box" style="width: 4rem">
+          <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+        </th>
         <th id="col-toggle" style="width:3rem"></th>
         <th id="col-space" [attr.data-testid]="testIds.headers.space" pSortableColumn="name">
           {{ 'dashboard.table.headers.space' | transloco }}
-          <p-sortIcon field="name"/>
+          <p-sortIcon field="name" />
         </th>
-        <th id="col-status" [attr.data-testid]="testIds.headers.status">{{ 'dashboard.table.headers.status' | transloco }}</th>
-        <th id="col-progress" [attr.data-testid]="testIds.headers.progress">{{ 'dashboard.table.headers.progress' | transloco }}</th>
-        <th id="col-last-scan" [attr.data-testid]="testIds.headers.lastScan">{{ 'dashboard.table.headers.lastScan' | transloco }}</th>
+        <th id="col-status"
+            [attr.data-testid]="testIds.headers.status">{{ 'dashboard.table.headers.status' | transloco }}
+        </th>
+        <th id="col-progress"
+            [attr.data-testid]="testIds.headers.progress">{{ 'dashboard.table.headers.progress' | transloco }}
+        </th>
+        <th id="col-last-scan"
+            [attr.data-testid]="testIds.headers.lastScan">{{ 'dashboard.table.headers.lastScan' | transloco }}
+        </th>
         <th id="col-pii" class="pii-header-cell" [attr.data-testid]="testIds.headers.pii" pSortableColumn="piiCount">
           {{ 'dashboard.table.headers.pii' | transloco }}
-          <p-sortIcon field="piiCount"/>
+          <p-sortIcon field="piiCount" />
           <p-button type="button"
                     icon="pi pi-question-circle"
                     [text]="true"
@@ -76,37 +84,35 @@
                     styleClass="pii-help-button">
           </p-button>
         </th>
-        <th id="col-actions" [attr.data-testid]="testIds.headers.actions">{{ 'dashboard.table.headers.actions' | transloco }}</th>
+        <th id="col-actions"
+            [attr.data-testid]="testIds.headers.actions">{{ 'dashboard.table.headers.actions' | transloco }}
+        </th>
       </tr>
       <tr>
         <th></th>
         <th id="col-toggle-value"></th>
         <th id="col-space-value">
           <div class="space-filters">
-            <div class="filter-item">
-              <input
-                class="search-global"
-                pInputText
-                type="text"
-                [placeholder]="'common.search' | transloco"
-                [ngModel]="globalFilter()"
-                (ngModelChange)="onGlobalChange($event)"
-                [attr.aria-label]="'common.searchGlobally' | transloco"
-                [attr.data-testid]="'global-filter-input'"/>
-            </div>
-            <div class="filter-item">
-              <p-toggleButton
-                [ngModel]="modifiedOnlyFilter()"
-                (ngModelChange)="onModifiedOnlyChange($event)"
-                onLabel="Modifiés après le dernier scan"
-                offLabel="Modifi�s"
-                onIcon="pi pi-filter-fill"
-                offIcon="pi pi-filter"
-                styleClass="p-button-sm p-button-outlined"
-                [pTooltip]="'dashboard.filters.modifiedOnly' | transloco"
-                tooltipPosition="top">
-              </p-toggleButton>
-            </div>
+            <input
+              class="search-global"
+              pInputText
+              type="text"
+              [placeholder]="'common.search' | transloco"
+              [ngModel]="globalFilter()"
+              (ngModelChange)="onGlobalChange($event)"
+              [attr.aria-label]="'common.searchGlobally' | transloco"
+              [attr.data-testid]="'global-filter-input'" />
+            <p-toggleButton
+              [ngModel]="modifiedOnlyFilter()"
+              (ngModelChange)="onModifiedOnlyChange($event)"
+              [onLabel]="'dashboard.filters.modifiedOnlyLabel' | transloco"
+              [offLabel]="'dashboard.filters.modifiedOnlyLabel' | transloco"
+              onIcon="pi pi-filter-fill"
+              offIcon="pi pi-filter"
+              class="p-button-sm p-button-outlined modified-filter-button white-space-nowrap"
+              [pTooltip]="'dashboard.filters.modifiedOnly' | transloco"
+              tooltipPosition="top">
+            </p-toggleButton>
           </div>
         </th>
         <th id="col-status-value">
@@ -133,30 +139,36 @@
         <th id="col-progress-value"></th>
         <th id="col-last-scan-value"></th>
         <th id="col-pii-value"></th>
-        <th id="col-actions-value" class="action-buttons-container">
-          <p-button type="button"
-                    icon="pi pi-play"
-                    styleClass="p-button-raised p-button-info white-space-nowrap"
-                    (click)="startSelected()"
-                    [disabled]="!canStartScan()"
-                    [label]="'Scan (' + selectedSpacesCount() + ')'"
-                    *ngIf="selectedSpacesCount() > 0"
-                    pTooltip="Scan Selected Spaces"
-                    tooltipPosition="bottom">
-          </p-button>
-          <p-button type="button"
-                    icon="pi pi-play"
-                    styleClass="p-button-raised p-button-info"
-                    (click)="startAll()"
-                    (keydown.enter)="startAll()"
-                    (keydown.space)="$event.preventDefault(); startAll()"
-                    [disabled]="!canStartScan()"
-                    [pTooltip]="'dashboard.actions.startScan' | transloco"
-                    tooltipPosition="bottom"
-                    [ariaLabel]="'dashboard.actions.startScan' | transloco"
-                    [attr.data-testid]="testIds.buttons.startScan"
-                    *ngIf="selectedSpacesCount() === 0">
-          </p-button>
+        <th id="col-actions-value">
+          @if (selectedSpacesCount() > 0) {
+            <p-button type="button"
+                      icon="pi pi-play"
+                      styleClass="p-button-raised p-button-info white-space-nowrap scan-selected-button"
+                      (click)="startSelected()"
+                      (keydown.enter)="startSelected()"
+                      (keydown.space)="$event.preventDefault(); startSelected()"
+                      [disabled]="!canStartScan()"
+                      [label]="'dashboard.actions.scanSelectedLabel' | transloco: { count: selectedSpacesCount() }"
+                      [pTooltip]="'dashboard.actions.scanSelected' | transloco: { count: selectedSpacesCount() }"
+                      tooltipPosition="bottom">
+            </p-button>
+            <div class="divider"></div>
+          }
+          @if (selectedSpacesCount() === 0) {
+            <p-button type="button"
+                      icon="pi pi-play"
+                      styleClass="p-button-raised p-button-info"
+                      (click)="startAll()"
+                      (keydown.enter)="startAll()"
+                      (keydown.space)="$event.preventDefault(); startAll()"
+                      [disabled]="!canStartScan()"
+                      [pTooltip]="'dashboard.actions.startScan' | transloco"
+                      tooltipPosition="bottom"
+                      [ariaLabel]="'dashboard.actions.startScan' | transloco"
+                      [attr.data-testid]="testIds.buttons.startScan">
+            </p-button>
+            <div class="divider"></div>
+          }
           <p-button type="button"
                     icon="pi pi-pause"
                     styleClass="p-button-raised pause-button"
@@ -169,6 +181,7 @@
                     [ariaLabel]="'dashboard.actions.pauseScan' | transloco"
                     [attr.data-testid]="testIds.buttons.pauseScan">
           </p-button>
+          <div class="divider"></div>
           <p-button type="button"
                     icon="pi pi-eject"
                     styleClass="p-button-raised p-button-info resume-button"

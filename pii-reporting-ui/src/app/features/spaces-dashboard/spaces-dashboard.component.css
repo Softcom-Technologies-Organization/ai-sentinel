@@ -109,9 +109,27 @@
 
 /* Action buttons - horizontal alignment */
 .action-buttons-container {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  display: inline-block;
+  /* Ensure consistent height for the container to avoid row jumping */
+  min-height: 3rem;
+  /* Center content vertically if possible, but display:block limits this */
+  /* We use margins on buttons for spacing */
+}
+.divider{
+  width:5px;
+  height:auto;
+  display:inline-block;
+}
+/* Ensure all buttons in action container have consistent height and spacing */
+:host ::ng-deep .action-buttons-container .p-button {
+  height: 2.5rem;
+  white-space: nowrap;
+  display: inline-flex;
+  margin-right: 0.5rem;
+}
+
+:host ::ng-deep .action-buttons-container .p-button:last-child {
+  margin-right: 0;
 }
 
 /* Resume scan button: rotate eject icon 90deg clockwise
@@ -380,4 +398,32 @@
 /* Prevent text wrapping in buttons */
 .white-space-nowrap {
   white-space: nowrap;
+}
+
+/* Space filters container - vertical layout */
+.space-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Search input - full width with spacing below */
+.space-filters .search-global {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+/* Action buttons container - keep all buttons on a single line */
+:host ::ng-deep #col-actions-value {
+  white-space: nowrap;
+}
+
+:host ::ng-deep #col-actions-value .p-button {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+:host ::ng-deep #col-actions-value .divider {
+  display: inline-block;
+  vertical-align: middle;
 }

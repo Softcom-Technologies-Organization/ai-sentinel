@@ -50,7 +50,13 @@
       "resumeScan": "Resume last scan",
       "openInConfluence": "Open in Confluence",
       "confluenceUnavailable": "URL unavailable (not provided by backend)",
-      "settings": "Settings"
+      "settings": "Settings",
+      "scanSelected": "Scan Selected Spaces ({{count}})",
+      "scanSelectedLabel": "({{count}})"
+    },
+    "filters": {
+      "modifiedOnly": "Show only modified spaces",
+      "modifiedOnlyLabel": "Spaces to rescan"
     },
     "notifications": {
       "newSpaces": {

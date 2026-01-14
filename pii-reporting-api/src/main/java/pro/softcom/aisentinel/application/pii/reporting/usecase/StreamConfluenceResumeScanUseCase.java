@@ -54,7 +54,7 @@ public class StreamConfluenceResumeScanUseCase extends
                              Flux.fromIterable(spaces)
                                  .concatMap(space -> resumeScanResultFlux(scanId, space)))
             .onErrorResume(exception -> {
-                log.error("[USECASE] Erreur globale de reprise: {}", exception.getMessage(),
+                log.error("[USECASE] Error when resuming scan: {}", exception.getMessage(),
                           exception);
                 return buildErrorScanResultFlux(scanId, null, exception);
             });
@@ -79,12 +79,12 @@ public class StreamConfluenceResumeScanUseCase extends
                                        scanRemainingPages.originalTotal());
                 })
                 .onErrorResume(exception -> {
-                    log.error("[USECASE] Erreur lors de la reprise de l'espace {}: {}",
+                    log.error("[USECASE] Error when resuming scan of space {}: {}",
                               space.key(), exception.getMessage(), exception);
                     return buildErrorScanResultFlux(scanId, space, exception);
                 }));
         } catch (Exception exception) {
-            log.error("[USECASE] Erreur lors de la reprise (préparation) de l'espace {}: {}",
+            log.error("[USECASE] Error when resuming scan of space {}: {}",
                       space.key(), exception.getMessage(), exception);
             return buildErrorScanResultFlux(scanId, space, exception);
         }

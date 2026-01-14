@@ -90,22 +90,22 @@ public class ScanReportingUseCase implements ScanReportingPort {
         try {
             // 1) Find the latest checkpoint for every space
             List<ScanCheckpoint> latestCheckpoints = checkpointRepo.findAllLatestCheckpoints();
-            log.info("[DASHBOARD] Found {} latest checkpoints for global items aggregation", latestCheckpoints.size());
+            log.info("[SCAN] Found {} latest checkpoints for global items aggregation", latestCheckpoints.size());
             List<ConfluenceContentScanResult> allItems = new ArrayList<>();
 
             for (ScanCheckpoint cp : latestCheckpoints) {
-                log.info("[DASHBOARD] Processing checkpoint: space={}, scanId={}", cp.spaceKey(), cp.scanId());
+                log.info("[SCAN] Processing checkpoint: space={}, scanId={}", cp.spaceKey(), cp.scanId());
                 // 2) Load items for this specific (scanId, spaceKey) pair
                 List<ConfluenceContentScanResult> spaceItems = scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey(
                     cp.scanId(),
                     cp.spaceKey()
                 );
-                log.info("[DASHBOARD] Found {} items for space={}, scanId={}", spaceItems.size(), cp.spaceKey(), cp.scanId());
+                log.info("[SCAN] Found {} items for space={}, scanId={}", spaceItems.size(), cp.spaceKey(), cp.scanId());
                 allItems.addAll(spaceItems);
             }
             return allItems;
         } catch (Exception ex) {
-            log.warn("[DASHBOARD] Failed to get global scan items: {}", ex.getMessage());
+            log.warn("[SCAN] Failed to get global scan items: {}", ex.getMessage());
             return List.of();
         }
     }
@@ -151,7 +151,7 @@ public class ScanReportingUseCase implements ScanReportingPort {
                 spaces
             ));
         } catch (Exception ex) {
-            log.warn("[DASHBOARD] Failed to get dashboard ScanReportingSummary for {}: {}", scanId, ex.getMessage());
+            log.warn("[SCAN] Failed to get dashboard ScanReportingSummary for {}: {}", scanId, ex.getMessage());
             return Optional.empty();
         }
     }
@@ -227,7 +227,7 @@ public class ScanReportingUseCase implements ScanReportingPort {
             ));
 
         } catch (Exception ex) {
-            log.warn("[DASHBOARD] Failed to get global ScanReportingSummary: {}", ex.getMessage());
+            log.warn("[SCAN] Failed to get global ScanReportingSummary: {}", ex.getMessage());
             return Optional.empty();
         }
     }

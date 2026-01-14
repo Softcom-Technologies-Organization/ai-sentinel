@@ -364,17 +364,19 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         long endTime = System.currentTimeMillis();
         long duration = endTime - startTime;
 
-        //TODO: remove the following log before first release
-        Mono.fromRunnable(() -> {
-//            log.info("Content: {}", safeContent);
-            log.info("Time to send and received content pii scan result: {}", duration);
-            log.info("Pii content: {}", contentPiiDetection);
-            double charsPerSecond = duration > 0 ? (charCount * 1000.0) / duration : 0;
-            log.info("[PERFORMANCE] Scan throughput: {} chars/sec ({} chars scanned in {} ms)", 
-                    String.format(Locale.ROOT, "%.2f", charsPerSecond), charCount, duration);
-        })
-        .subscribeOn(Schedulers.parallel())
-        .subscribe();
+        if (log.isDebugEnabled()){
+            Mono.fromRunnable(() -> {
+                        log.debug("Content: {}", safeContent);
+                        log.debug("Time to send and received content pii scan result: {}", duration);
+                        log.debug("Pii content: {}", contentPiiDetection);
+                        double charsPerSecond = duration > 0 ? (charCount * 1000.0) / duration : 0;
+                        log.debug("[PERFORMANCE] Scan throughput: {} chars/sec ({} chars scanned in {} ms)",
+                                String.format(Locale.ROOT, "%.2f", charsPerSecond), charCount, duration);
+                    })
+                    .subscribeOn(Schedulers.parallel())
+                    .subscribe();
+        }
+
         
         return contentPiiDetection;
     }

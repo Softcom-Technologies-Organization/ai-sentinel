@@ -40,7 +40,7 @@ public class FetchConfluenceSpaceContentUseCase implements ConfluenceSpacePort {
 
   @Override
   public CompletableFuture<List<ConfluenceSpace>> getAllSpaces() {
-    log.debug("Fetching Confluence spaces with cache-first strategy");
+    log.info("Fetching Confluence spaces with cache-first strategy");
     
     List<ConfluenceSpace> cachedSpaces = spaceRepository.findAll();
     
@@ -49,7 +49,7 @@ public class FetchConfluenceSpaceContentUseCase implements ConfluenceSpacePort {
       return CompletableFuture.completedFuture(cachedSpaces);
     }
     
-    log.debug("Cache miss - fetching spaces from Confluence API");
+    log.info("Cache miss - fetching spaces from Confluence API");
     return fetchAndCacheSpaces();
   }
 

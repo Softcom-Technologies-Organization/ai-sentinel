@@ -73,7 +73,7 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
                                          .scanId(scanId)
                                          .spaceKey(spaceKey)
                                          .eventType(DetectionReportingEventType.ERROR.getLabel())
-                                         .message("Espace non trouvé")
+                                         .message("Space not found")
                                          .emittedAt(Instant.now().toString())
                                          .build());
                 }
@@ -84,7 +84,7 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
             })
             // Global safety net: transform any exception into a UI-consumable error event
             .onErrorResume(exception -> {
-                log.error("[USECASE] Erreur dans le flux: {}", exception.getMessage(), exception);
+                log.error("[USECASE] Error in webflux: {}", exception.getMessage(), exception);
                 return Flux.just(ConfluenceContentScanResult.builder()
                                      .scanId(scanId)
                                      .spaceKey(spaceKey)
@@ -186,7 +186,7 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
             })
             // Global error handling: map any exception to a readable business event
             .onErrorResume(exception -> {
-                log.error("[USECASE] Erreur globale du flux multi-espaces sélectionné: {}",
+                log.error("[USECASE] Error in the webflux of selected spaces: {}",
                     exception.getMessage(),
                     exception);
                 return Flux.just(ConfluenceContentScanResult.builder()
@@ -219,7 +219,7 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
             })
             // Global error handling: map any exception to a readable business event
             .onErrorResume(exception -> {
-                log.error("[USECASE] Erreur globale du flux multi-espaces: {}",
+                log.error("[USECASE] Error in the multi-space webflux: {}",
                           exception.getMessage(),
                           exception);
                 return Flux.just(ConfluenceContentScanResult.builder()
@@ -268,7 +268,7 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
             return Flux.just(ConfluenceContentScanResult.builder()
                                  .scanId(scanId)
                                  .eventType(DetectionReportingEventType.ERROR.getLabel())
-                                 .message("Aucun espace trouvé")
+                                 .message("No space found")
                                  .emittedAt(Instant.now().toString())
                                  .build());
         }

@@ -13,6 +13,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    @SuppressWarnings("squid:S4502") // CSRF disabled since it is a local environment without authentication
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http

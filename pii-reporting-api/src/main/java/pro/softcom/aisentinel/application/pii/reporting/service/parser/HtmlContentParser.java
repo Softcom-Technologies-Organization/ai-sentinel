@@ -136,9 +136,9 @@ public class HtmlContentParser implements ContentParser {
 
             // Normalize whitespace: collapse multiple newlines/spaces into single newline
             // This prevents patterns like "\n \n \n" that confuse PII detection models
-            cleaned = cleaned.replaceAll("[ \\t]*\\n[ \\t]*", "\n");  // Remove spaces around newlines
-            cleaned = cleaned.replaceAll("\\n{2,}", "\n\n");          // Max 2 consecutive newlines
-            cleaned = cleaned.replaceAll("[ \\t]{2,}", " ");          // Collapse multiple spaces/tabs
+            cleaned = cleaned.replaceAll("[ \\t]*+\\n[ \\t]*+", "\n");  // Remove spaces around newlines (possessive quantifiers prevent ReDoS)
+            cleaned = cleaned.replaceAll("\\n{2,}", "\n\n");            // Max 2 consecutive newlines
+            cleaned = cleaned.replaceAll("[ \\t]{2,}+", " ");           // Collapse multiple spaces/tabs (possessive quantifier)
 
             return cleaned.trim();
         } catch (Exception _) {

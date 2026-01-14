@@ -139,7 +139,6 @@ public class ConfluencePersonallyIdentifiableInformationScanController {
                         .comment("ping")
                         .build());
 
-        // Use new use case method
         Flux<ServerSentEvent<@NonNull ConfluenceContentScanResultEventDto>> data = streamConfluenceScanPort.streamSelectedSpaces(spaceKeys)
                 .delaySubscription(Duration.ofMillis(50))
                 .map(ev -> ServerSentEvent.<ConfluenceContentScanResultEventDto>builder()

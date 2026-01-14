@@ -21,11 +21,11 @@ CONSOLIDATED VERSION: 44 PII types across 7 categories
 
 import logging
 import re
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple, Union
 
+from pii_detector.domain.entity.detector_source import DetectorSource
 from pii_detector.domain.entity.pii_entity import PIIEntity
-
 
 logger = logging.getLogger(__name__)
 
@@ -553,7 +553,7 @@ class ConflictResolver:
         score: float,
         start: int,
         end: int,
-        source: str = "GLINER_MULTIPASS"
+        source: Union[DetectorSource, str] = DetectorSource.GLINER
     ) -> PIIEntity:
         """
         Build a PIIEntity from resolved conflict.
@@ -564,7 +564,7 @@ class ConflictResolver:
             score: Confidence score
             start: Start offset in original text
             end: End offset in original text
-            source: Detection source identifier
+            source: Detection source (DetectorSource enum recommended)
 
         Returns:
             PIIEntity with all fields populated
@@ -577,5 +577,9 @@ class ConflictResolver:
             end=end,
             score=score
         )
-        entity.source = source
+        # Ensure source is DetectorSource enum for proper gRPC mapping
+        if isinstance(source, str):
+            entity.source = DetectorSource.GLINER
+        else:
+            entity.source = source
         return entity

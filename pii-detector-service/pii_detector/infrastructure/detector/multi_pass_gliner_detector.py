@@ -31,6 +31,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.entity.detector_source import DetectorSource
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.exception.exceptions import ModelNotLoadedError, PIIDetectionError
 from pii_detector.infrastructure.detector.conflict_resolver import (
@@ -559,7 +560,7 @@ class MultiPassGlinerDetector:
                 end=end,
                 score=entity.get("score", 0.0)
             )
-            pii_entity.source = f"GLINER_{category}"
+            pii_entity.source = DetectorSource.GLINER
             entities.append(pii_entity)
 
         pass_time = time.time() - pass_start
@@ -646,7 +647,7 @@ class MultiPassGlinerDetector:
                     end=span.end,
                     score=best_score
                 )
-                entity.source = "GLINER_MULTIPASS"
+                entity.source = DetectorSource.GLINER
                 resolved.append(entity)
 
                 # Log single-label detections at debug level
@@ -672,7 +673,7 @@ class MultiPassGlinerDetector:
                         score=winner_score,
                         start=span.start,
                         end=span.end,
-                        source="GLINER_MULTIPASS_RESOLVED"
+                        source=DetectorSource.GLINER
                     )
                     resolved.append(entity)
 

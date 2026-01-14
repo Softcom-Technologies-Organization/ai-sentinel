@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Duration;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -122,6 +123,31 @@ public class ConfluencePersonallyIdentifiableInformationScanController {
 
         return Flux.merge(data, keepalive)
                 .doFinally(sig -> log.info("[SSE] Connection closed for all spaces scan (signal={})", sig));
+    }
+
+    @GetMapping(value = "/confluence/spaces/events/selected", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Stream scan of selected Confluence spaces (SSE)")
+    @ApiResponse(responseCode = "200", description = "SSE stream started")
+    public Flux<ServerSentEvent<@NonNull ConfluenceContentScanResultEventDto>> streamSelectedSpacesScan(
+            @Parameter(description = "List of space keys to scan") @RequestParam List<String> spaceKeys
+    ) {
+        log.info("[SSE] Starting multi-space stream for selected spaces: {}", spaceKeys);
+
+        Flux<ServerSentEvent<@NonNull ConfluenceContentScanResultEventDto>> keepalive = Flux.interval(Duration.ofSeconds(15))
+                .map(_ -> ServerSentEvent.<ConfluenceContentScanResultEventDto>builder()
+                        .event(ScanEventType.KEEPALIVE.toJson())
+                        .comment("ping")
+                        .build());
+
+        Flux<ServerSentEvent<@NonNull ConfluenceContentScanResultEventDto>> data = streamConfluenceScanPort.streamSelectedSpaces(spaceKeys)
+                .delaySubscription(Duration.ofMillis(50))
+                .map(ev -> ServerSentEvent.<ConfluenceContentScanResultEventDto>builder()
+                        .event(ev.eventType())
+                        .data(confluenceContentScanResultToScanEventMapper.toDto(ev))
+                        .build());
+
+        return Flux.merge(data, keepalive)
+                .doFinally(sig -> log.info("[SSE] Connection closed for selected spaces scan (signal={})", sig));
     }
 
     @PostMapping("/{scanId}/resume")

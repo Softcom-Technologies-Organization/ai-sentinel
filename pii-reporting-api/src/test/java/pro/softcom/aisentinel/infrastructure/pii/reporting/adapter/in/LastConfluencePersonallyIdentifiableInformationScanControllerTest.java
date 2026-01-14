@@ -17,7 +17,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.ScanReportingPort;
-import pro.softcom.aisentinel.domain.pii.reporting.LastScanMeta;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanReportingSummary;
 import pro.softcom.aisentinel.domain.pii.reporting.SpaceSummary;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanReportingSummaryDto;
@@ -59,7 +58,6 @@ class LastConfluencePersonallyIdentifiableInformationScanControllerTest {
         Instant lastUpdated = Instant.parse("2025-01-15T10:00:00Z");
         Instant lastEventTs = Instant.parse("2025-01-15T09:30:00Z");
 
-        LastScanMeta metadata = new LastScanMeta(scanId, lastUpdated, 2);
         ScanReportingSummary domainSummary = new ScanReportingSummary(
             scanId,
             lastUpdated,
@@ -96,8 +94,7 @@ class LastConfluencePersonallyIdentifiableInformationScanControllerTest {
             )
         );
 
-        when(scanReportingPort.getLatestScan()).thenReturn(Optional.of(metadata));
-        when(scanReportingPort.getScanReportingSummary(scanId)).thenReturn(Optional.of(domainSummary));
+        when(scanReportingPort.getGlobalScanSummary()).thenReturn(Optional.of(domainSummary));
         when(scanReportingSummaryMapper.toDto(domainSummary)).thenReturn(dto);
 
         // Act & Assert
@@ -122,8 +119,7 @@ class LastConfluencePersonallyIdentifiableInformationScanControllerTest {
             .andExpect(jsonPath("$.spaces[1].severityCounts.low").value(12))
             .andExpect(jsonPath("$.spaces[1].severityCounts.total").value(22));
 
-        verify(scanReportingPort).getLatestScan();
-        verify(scanReportingPort).getScanReportingSummary(scanId);
+        verify(scanReportingPort).getGlobalScanSummary();
         verify(scanReportingSummaryMapper).toDto(domainSummary);
     }
 
@@ -134,7 +130,6 @@ class LastConfluencePersonallyIdentifiableInformationScanControllerTest {
         Instant lastUpdated = Instant.parse("2025-01-15T10:00:00Z");
         Instant lastEventTs = Instant.parse("2025-01-15T09:30:00Z");
 
-        LastScanMeta metadata = new LastScanMeta(scanId, lastUpdated, 1);
         ScanReportingSummary domainSummary = new ScanReportingSummary(
             scanId,
             lastUpdated,
@@ -159,8 +154,7 @@ class LastConfluencePersonallyIdentifiableInformationScanControllerTest {
             )
         );
 
-        when(scanReportingPort.getLatestScan()).thenReturn(Optional.of(metadata));
-        when(scanReportingPort.getScanReportingSummary(scanId)).thenReturn(Optional.of(domainSummary));
+        when(scanReportingPort.getGlobalScanSummary()).thenReturn(Optional.of(domainSummary));
         when(scanReportingSummaryMapper.toDto(domainSummary)).thenReturn(dto);
 
         // Act & Assert
@@ -173,6 +167,7 @@ class LastConfluencePersonallyIdentifiableInformationScanControllerTest {
             .andExpect(jsonPath("$.spaces[0].severityCounts.low").value(0))
             .andExpect(jsonPath("$.spaces[0].severityCounts.total").value(0));
 
+        verify(scanReportingPort).getGlobalScanSummary();
         verify(scanReportingSummaryMapper).toDto(domainSummary);
     }
 
@@ -182,7 +177,6 @@ class LastConfluencePersonallyIdentifiableInformationScanControllerTest {
         String scanId = "scan-789";
         Instant lastUpdated = Instant.parse("2025-01-15T10:00:00Z");
 
-        LastScanMeta metadata = new LastScanMeta(scanId, lastUpdated, 0);
         ScanReportingSummary domainSummary = new ScanReportingSummary(
             scanId,
             lastUpdated,
@@ -197,8 +191,7 @@ class LastConfluencePersonallyIdentifiableInformationScanControllerTest {
             List.of()
         );
 
-        when(scanReportingPort.getLatestScan()).thenReturn(Optional.of(metadata));
-        when(scanReportingPort.getScanReportingSummary(scanId)).thenReturn(Optional.of(domainSummary));
+        when(scanReportingPort.getGlobalScanSummary()).thenReturn(Optional.of(domainSummary));
         when(scanReportingSummaryMapper.toDto(domainSummary)).thenReturn(dto);
 
         // Act & Assert
@@ -211,40 +204,21 @@ class LastConfluencePersonallyIdentifiableInformationScanControllerTest {
             .andExpect(jsonPath("$.spaces").isArray())
             .andExpect(jsonPath("$.spaces").isEmpty());
 
+        verify(scanReportingPort).getGlobalScanSummary();
         verify(scanReportingSummaryMapper).toDto(domainSummary);
     }
 
     @Test
-    void should_ReturnNoContent_When_NoScanExists() throws Exception {
+    void should_ReturnNoContent_When_NoScanSummaryExists() throws Exception {
         // Arrange
-        when(scanReportingPort.getLatestScan()).thenReturn(Optional.empty());
+        when(scanReportingPort.getGlobalScanSummary()).thenReturn(Optional.empty());
 
         // Act & Assert
         mockMvc.perform(get("/api/v1/scans/dashboard/spaces-summary")
                 .accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isNoContent());
 
-        verify(scanReportingPort).getLatestScan();
-    }
-
-    @Test
-    void should_ReturnNoContent_When_ScanExistsButSummaryNotFound() throws Exception {
-        // Arrange
-        String scanId = "scan-999";
-        Instant lastUpdated = Instant.parse("2025-01-15T10:00:00Z");
-
-        LastScanMeta metadata = new LastScanMeta(scanId, lastUpdated, 0);
-
-        when(scanReportingPort.getLatestScan()).thenReturn(Optional.of(metadata));
-        when(scanReportingPort.getScanReportingSummary(scanId)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        mockMvc.perform(get("/api/v1/scans/dashboard/spaces-summary")
-                .accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isNoContent());
-
-        verify(scanReportingPort).getLatestScan();
-        verify(scanReportingPort).getScanReportingSummary(scanId);
+        verify(scanReportingPort).getGlobalScanSummary();
     }
 
     @Test
@@ -254,7 +228,6 @@ class LastConfluencePersonallyIdentifiableInformationScanControllerTest {
         Instant lastUpdated = Instant.parse("2025-01-15T12:00:00Z");
         Instant lastEventTs = Instant.parse("2025-01-15T11:45:00Z");
 
-        LastScanMeta metadata = new LastScanMeta(scanId, lastUpdated, 1);
         ScanReportingSummary domainSummary = new ScanReportingSummary(
             scanId,
             lastUpdated,
@@ -279,8 +252,7 @@ class LastConfluencePersonallyIdentifiableInformationScanControllerTest {
             )
         );
 
-        when(scanReportingPort.getLatestScan()).thenReturn(Optional.of(metadata));
-        when(scanReportingPort.getScanReportingSummary(scanId)).thenReturn(Optional.of(domainSummary));
+        when(scanReportingPort.getGlobalScanSummary()).thenReturn(Optional.of(domainSummary));
         when(scanReportingSummaryMapper.toDto(domainSummary)).thenReturn(dto);
 
         // Act & Assert - Verify complete JSON structure
@@ -306,5 +278,8 @@ class LastConfluencePersonallyIdentifiableInformationScanControllerTest {
             .andExpect(jsonPath("$.spaces[0].severityCounts.medium").value(7))
             .andExpect(jsonPath("$.spaces[0].severityCounts.low").value(11))
             .andExpect(jsonPath("$.spaces[0].severityCounts.total").value(21));
+
+        verify(scanReportingPort).getGlobalScanSummary();
+        verify(scanReportingSummaryMapper).toDto(domainSummary);
     }
 }

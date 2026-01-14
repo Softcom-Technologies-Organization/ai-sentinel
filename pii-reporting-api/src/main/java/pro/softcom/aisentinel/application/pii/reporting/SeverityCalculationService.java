@@ -221,15 +221,15 @@ public class SeverityCalculationService {
      */
     public PersonallyIdentifiableInformationSeverity calculateSeverity(String piiType) {
         String normalizedType = normalizeType(piiType);
-        log.info("Calculating severity for PII type '{}' normalized to '{}'", piiType, normalizedType);
+        log.debug("Calculating severity for PII type '{}' normalized to '{}'", piiType, normalizedType);
 
         PersonallyIdentifiableInformationSeverity severity = SEVERITY_RULES.get(normalizedType);
         if (severity != null) {
-            log.info("Found severity mapping for normalized PII type '{}': {}", normalizedType, severity);
+            log.debug("Found severity mapping for normalized PII type '{}': {}", normalizedType, severity);
             return severity;
         }
 
-        log.info("No severity mapping found for normalized PII type '{}', using default severity: {}", normalizedType, LOW);
+        log.warn("No severity mapping found for normalized PII type '{}', using default severity: {}", normalizedType, LOW);
         return LOW;
     }
 

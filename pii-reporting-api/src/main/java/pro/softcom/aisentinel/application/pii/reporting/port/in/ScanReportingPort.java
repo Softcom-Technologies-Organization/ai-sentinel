@@ -15,6 +15,8 @@ public interface ScanReportingPort {
 
     List<ConfluenceContentScanResult> getLatestSpaceScanResultList();
 
+    List<ConfluenceContentScanResult> getGlobalScanItemsEncrypted();
+
     /**
      * Returns a complete dashboard nbOfDetectedPIIBySeverity for the specified scan.
      * Combines authoritative state from scan_checkpoints with aggregated counters from scan_events.
@@ -23,4 +25,11 @@ public interface ScanReportingPort {
      * @return an Optional containing the dashboard nbOfDetectedPIIBySeverity, or empty if scan not found
      */
     Optional<ScanReportingSummary> getScanReportingSummary(String scanId);
+
+    /**
+     * Returns a complete dashboard summary aggregating the latest state of all spaces across all scans.
+     *
+     * @return an Optional containing the dashboard summary, or empty if no data found
+     */
+    Optional<ScanReportingSummary> getGlobalScanSummary();
 }

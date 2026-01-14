@@ -106,6 +106,55 @@ export class ScanControlService {
   }
 
   /**
+   * Initiates a scan for selected spaces with user confirmation.
+   */
+  startSelected(spaceKeys: string[]): void {
+    if (this.isStreaming() || spaceKeys.length === 0) {
+      return;
+    }
+
+    // Display confirmation before starting the scan
+    this.confirmationService.confirm({
+      header: this.translocoService.translate('confirmations.selectedScan.header'),
+      message: this.translocoService.translate('confirmations.selectedScan.message', { count: spaceKeys.length }),
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: this.translocoService.translate('confirmations.selectedScan.acceptLabel'),
+      rejectLabel: this.translocoService.translate('confirmations.selectedScan.rejectLabel'),
+      acceptButtonStyleClass: 'p-button-info',
+      rejectButtonStyleClass: 'p-button-secondary',
+      accept: () => {
+        this.executeStartSelected(spaceKeys);
+      },
+      reject: () => {
+        this.uiStateService.append(
+          this.translocoService.translate('dashboard.logs.scanCancelled')
+        );
+      }
+    });
+  }
+
+  private executeStartSelected(spaceKeys: string[]): void {
+    this.disconnectSse();
+    this.resetDashboardForNewScan(spaceKeys);
+
+    this.isStreaming.set(true);
+
+    this.sseSubscription = this.sentinelleApiService.startSelectedSpacesStream(spaceKeys).subscribe({
+      next: (ev) => {
+        this.sseEventHandler.routeStreamEvent(ev.type as StreamEventType, ev.data);
+      },
+      error: (err) => {
+        this.uiStateService.append(
+          this.translocoService.translate('dashboard.logs.sseError', {
+            error: err?.message ?? err
+          })
+        );
+        this.isStreaming.set(false);
+      }
+    });
+  }
+
+  /**
    * Executes the actual scan start after user confirmation.
    * Business purpose: initiates full multi-space scan with data purge.
    *
@@ -160,37 +209,48 @@ export class ScanControlService {
   }
 
   /**
-   * Resets dashboard state and UI decoration when starting a completely new scan.
+   * Resets dashboard state and UI decoration when starting a new scan.
    * Business rule: do not apply this on resume, as resume should continue displaying existing results.
    *
-   * Side effects:
-   * - Clears in-memory PII items
-   * - Resets all progress indicators
-   * - Clears scan history
-   * - Collapses all rows and resets selection
-   * - Clears previous error toasts
-   * - Reinitializes UI decoration for all spaces
+   * @param spaceKeys optional list of space keys to reset. If not provided, resets ALL spaces.
    */
-  private resetDashboardForNewScan(): void {
-    // Clear in-memory per-space items and progress
-    this.piiItemsStorage.clearAllItems();
-    this.scanProgressService.resetAllProgress();
-    this.uiStateService.clearHistory();
+  private resetDashboardForNewScan(spaceKeys?: string[]): void {
+    if (spaceKeys && spaceKeys.length > 0) {
+      // Partial reset for selected spaces
+      for (const key of spaceKeys) {
+        this.piiItemsStorage.clearItemsForSpace(key);
+        this.scanProgressService.resetProgress(key);
+        // Reset UI decoration for this space to PENDING/initial state
+        this.spacesDashboardUtils.updateSpace(key, {
+          status: 'PENDING',
+          lastScanTs: undefined,
+          counts: { total: 0, high: 0, medium: 0, low: 0 }
+        });
+      }
+      // Clear history is global, maybe we should keep it for partial scans?
+      // For now, let's append a separator line or just keep it.
+      // this.uiStateService.clearHistory(); // Don't clear history for partial scan
+    } else {
+      // Full reset for global scan
+      this.piiItemsStorage.clearAllItems();
+      this.scanProgressService.resetAllProgress();
+      this.uiStateService.clearHistory();
 
-    // Collapse all rows and reset selection/active markers
+      // Reinitialize UI decoration (status/counts/lastScanTs) for ALL spaces
+      try {
+        this.spacesDashboardUtils.setSpaces(this.dataManagement.spaces());
+      } catch {
+        // no-op
+      }
+    }
+
+    // Collapse all rows and reset selection/active markers (common behavior)
     this.uiStateService.collapseAllRows();
     this.uiStateService.selectSpace(null);
     this.uiStateService.activeSpaceKey.set(null);
 
-    // Clear previous error toasts when starting a new scan
+    // Clear previous error toasts
     this.toastService.clearScanErrors();
-
-    // Reinitialize UI decoration (status/counts/lastScanTs) for all known spaces
-    try {
-      this.spacesDashboardUtils.setSpaces(this.dataManagement.spaces());
-    } catch {
-      // no-op: defensive in case spaces() not ready yet
-    }
   }
 
   /**

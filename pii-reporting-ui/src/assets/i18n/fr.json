@@ -50,7 +50,13 @@
       "resumeScan": "Reprendre le dernier scan",
       "openInConfluence": "Ouvrir dans Confluence",
       "confluenceUnavailable": "URL indisponible (non fournie par le backend)",
-      "settings": "Paramètres"
+      "settings": "Paramètres",
+      "scanSelected": "Scanner les espaces sélectionnés ({{count}})",
+      "scanSelectedLabel": "({{count}})"
+    },
+    "filters": {
+      "modifiedOnly": "Afficher uniquement les espaces modifiés depuis le dernier scan",
+      "modifiedOnlyLabel": "Espaces à rescanner"
     },
     "notifications": {
       "newSpaces": {
@@ -95,6 +101,12 @@
     "globalScan": {
       "header": "Confirmation de scan global",
       "message": "<p>Êtes-vous sûr de vouloir démarrer le scan de tous les espaces Confluence ?</p>\n<p><b>Les données existantes seront écrasées.</b></p>\n<p>Cette opération peut prendre du temps.</p>",
+      "acceptLabel": "Oui, démarrer",
+      "rejectLabel": "Annuler"
+    },
+    "selectedScan": {
+      "header": "Confirmation de scan sélectif",
+      "message": "<p>Êtes-vous sûr de vouloir démarrer le scan de <b>{{count}}</b> espace(s) sélectionné(s) ?</p>\n<p><b>Les résultats précédents seront écrasés.</b></p>",
       "acceptLabel": "Oui, démarrer",
       "rejectLabel": "Annuler"
     }

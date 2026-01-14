@@ -30,6 +30,11 @@ public class TestWebContextStubsConfiguration {
             public Flux<ConfluenceContentScanResult> streamAllSpaces() {
                 return Flux.empty();
             }
+
+            @Override
+            public Flux<ConfluenceContentScanResult> streamSelectedSpaces(java.util.List<String> spaceKeys) {
+                return Flux.empty();
+            }
         };
     }
 
@@ -54,8 +59,18 @@ public class TestWebContextStubsConfiguration {
             }
 
             @Override
+            public java.util.List<ConfluenceContentScanResult> getGlobalScanItemsEncrypted() {
+                return java.util.List.of();
+            }
+
+            @Override
             public java.util.Optional<ScanReportingSummary> getScanReportingSummary(
                 String scanId) {
+                return java.util.Optional.empty();
+            }
+
+            @Override
+            public java.util.Optional<ScanReportingSummary> getGlobalScanSummary() {
                 return java.util.Optional.empty();
             }
         };

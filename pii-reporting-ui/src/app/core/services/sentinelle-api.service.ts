@@ -240,6 +240,36 @@ export class SentinelleApiService {
     });
   }
 
+  /** Start SSE stream for selected spaces scan. */
+  startSelectedSpacesStream(spaceKeys: string[]): Observable<StreamEvent> {
+    return new Observable<StreamEvent>((observer) => {
+      // Build query params manually to ensure correct format for List<String>
+      const params = spaceKeys.map(k => `spaceKeys=${encodeURIComponent(k)}`).join('&');
+      const url = `/api/v1/stream/confluence/spaces/events/selected?${params}`;
+      const es = new EventSource(url);
+
+      const types: StreamEventType[] = [
+        'multiStart', 'start', 'pageStart', 'item', 'attachmentItem', 'pageComplete', 'scanError', 'complete', 'multiComplete', 'keepalive'
+      ];
+
+      for (const t of types) {
+        const handler = (e: Event) => this.onSseEvent(observer, t, e as MessageEvent);
+        es.addEventListener(t, handler as EventListener);
+      }
+
+      const onError = () => this.zone.run(() => observer.error(new Error('SSE connection error')));
+      es.onerror = onError as any;
+
+      return () => {
+        try {
+          es.close();
+        } catch {
+          // ignore
+        }
+      };
+    });
+  }
+
   private onSseEvent(observer: { next: (ev: StreamEvent) => void }, type: StreamEventType, e: MessageEvent): void {
     const raw = String((e as any)?.data ?? '');
     this.zone.run(() => this.emitStreamEvent(observer, type, raw));

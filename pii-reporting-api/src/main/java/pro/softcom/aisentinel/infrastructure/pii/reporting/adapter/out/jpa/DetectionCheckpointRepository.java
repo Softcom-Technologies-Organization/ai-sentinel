@@ -25,6 +25,17 @@ public interface DetectionCheckpointRepository extends
 
     Optional<ScanCheckpointEntity> findFirstBySpaceKeyOrderByUpdatedAtDesc(String spaceKey);
 
+    /**
+     * Finds the latest checkpoint for every space key using a window function logic.
+     * Business purpose: Aggregate the global state of all spaces from their most recent scans.
+     */
+    @Query(value = """
+        SELECT DISTINCT ON (space_key) *
+        FROM scan_checkpoints
+        ORDER BY space_key, updated_at DESC
+        """, nativeQuery = true)
+    List<ScanCheckpointEntity> findAllLatestCheckpoints();
+
     void deleteByScanId(String scanId);
 
     /**
@@ -69,6 +80,17 @@ public interface DetectionCheckpointRepository extends
     @Transactional
     @Query("DELETE FROM ScanCheckpointEntity s WHERE s.status IN ('RUNNING', 'PAUSED')")
     void deleteActiveScanCheckpoints();
+
+    /**
+     * Deletes active scan checkpoints (RUNNING or PAUSED status) for specific spaces.
+     * Business purpose: Clean up active scans for specific spaces when starting a fresh selected scan.
+     * 
+     * @param spaceKeys list of space keys to purge
+     */
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM ScanCheckpointEntity s WHERE s.status IN ('RUNNING', 'PAUSED') AND s.spaceKey IN :spaceKeys")
+    void deleteActiveScanCheckpointsForSpaces(@Param("spaceKeys") List<String> spaceKeys);
 
     /**
      * Persists or updates a scan checkpoint using PostgreSQL's UPSERT mechanism.

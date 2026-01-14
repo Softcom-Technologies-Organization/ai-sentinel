@@ -185,4 +185,8 @@ public class ScanCheckpointService {
     public void deleteActiveScanCheckpoints() {
         scanCheckpointRepository.deleteActiveScanCheckpoints();
     }
+
+    public void deleteActiveScanCheckpointsForSpaces(java.util.List<String> spaceKeys) {
+        scanCheckpointRepository.deleteActiveScanCheckpointsForSpaces(spaceKeys);
+    }
 }

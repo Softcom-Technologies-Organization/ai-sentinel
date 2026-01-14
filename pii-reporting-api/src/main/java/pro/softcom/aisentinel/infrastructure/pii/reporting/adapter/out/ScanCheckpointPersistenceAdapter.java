@@ -86,6 +86,13 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
     }
 
     @Override
+    public List<ScanCheckpoint> findAllLatestCheckpoints() {
+        return jpaRepository.findAllLatestCheckpoints().stream()
+            .map(ScanCheckpointPersistenceAdapter::toDomain)
+            .toList();
+    }
+
+    @Override
     public void deleteByScan(String scanId) {
         if (isBlank(scanId)) {
             return;
@@ -99,6 +106,17 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
         log.info("[PURGE] Deleting all active scan checkpoints (RUNNING/PAUSED status)");
         jpaRepository.deleteActiveScanCheckpoints();
         log.info("[PURGE] Active scan checkpoints deleted successfully");
+    }
+
+    @Override
+    @Transactional
+    public void deleteActiveScanCheckpointsForSpaces(List<String> spaceKeys) {
+        if (spaceKeys == null || spaceKeys.isEmpty()) {
+            return;
+        }
+        log.info("[PURGE] Deleting active scan checkpoints for {} spaces", spaceKeys.size());
+        jpaRepository.deleteActiveScanCheckpointsForSpaces(spaceKeys);
+        log.info("[PURGE] Active scan checkpoints for spaces deleted successfully");
     }
 
     @Override

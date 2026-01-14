@@ -13,6 +13,7 @@ from typing import Dict, List
 from unittest.mock import Mock, MagicMock, patch
 
 from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.entity.detector_source import DetectorSource
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.exception.exceptions import ModelNotLoadedError, PIIDetectionError
 from pii_detector.infrastructure.detector.multi_pass_gliner_detector import (
@@ -335,7 +336,7 @@ class TestSinglePassDetection:
         assert result[0].pii_type == "PERSON_NAME"
         assert result[0].text == "John Doe"
         assert result[0].score == 0.92
-        assert result[0].source == "GLINER_IDENTITY"
+        assert result[0].source == DetectorSource.GLINER
 
     def test_should_extract_text_using_positions(self, detector_with_model):
         """Test text is extracted using start/end positions."""

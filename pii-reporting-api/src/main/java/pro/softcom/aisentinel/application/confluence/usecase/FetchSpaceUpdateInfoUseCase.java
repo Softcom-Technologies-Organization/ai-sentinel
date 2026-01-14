@@ -48,7 +48,7 @@ public class FetchSpaceUpdateInfoUseCase implements ConfluenceSpaceUpdateInfoPor
 
     @Override
     public CompletableFuture<Optional<SpaceUpdateInfo>> getSpaceUpdateInfo(String spaceKey) {
-        log.debug("Getting update info for space: {}", spaceKey);
+        log.info("Getting update info for space: {}", spaceKey);
         
         return confluenceSpacePort.getSpace(spaceKey)
             .thenCompose(optionalSpace -> optionalSpace.map(confluenceSpace -> buildSpaceUpdateInfo(confluenceSpace)
@@ -72,7 +72,7 @@ public class FetchSpaceUpdateInfoUseCase implements ConfluenceSpaceUpdateInfoPor
         Optional<Instant> lastScanDate = findLastScanDate(spaceKey);
 
         if (lastScanDate.isEmpty()) {
-            log.debug("No completed scan found for space {}", spaceKey);
+            log.info("No completed scan found for space {}", spaceKey);
             return CompletableFuture.completedFuture(
                 SpaceUpdateInfo.noScanYet(spaceKey, spaceName, null)
             );

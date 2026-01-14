@@ -1,11 +1,14 @@
 package pro.softcom.aisentinel.application.pii.reporting.usecase;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.ScanReportingPort;
@@ -83,6 +86,31 @@ public class ScanReportingUseCase implements ScanReportingPort {
     }
 
     @Override
+    public List<ConfluenceContentScanResult> getGlobalScanItemsEncrypted() {
+        try {
+            // 1) Find the latest checkpoint for every space
+            List<ScanCheckpoint> latestCheckpoints = checkpointRepo.findAllLatestCheckpoints();
+            log.info("[SCAN] Found {} latest checkpoints for global items aggregation", latestCheckpoints.size());
+            List<ConfluenceContentScanResult> allItems = new ArrayList<>();
+
+            for (ScanCheckpoint cp : latestCheckpoints) {
+                log.info("[SCAN] Processing checkpoint: space={}, scanId={}", cp.spaceKey(), cp.scanId());
+                // 2) Load items for this specific (scanId, spaceKey) pair
+                List<ConfluenceContentScanResult> spaceItems = scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey(
+                    cp.scanId(),
+                    cp.spaceKey()
+                );
+                log.info("[SCAN] Found {} items for space={}, scanId={}", spaceItems.size(), cp.spaceKey(), cp.scanId());
+                allItems.addAll(spaceItems);
+            }
+            return allItems;
+        } catch (Exception ex) {
+            log.warn("[SCAN] Failed to get global scan items: {}", ex.getMessage());
+            return List.of();
+        }
+    }
+
+    @Override
     public Optional<ScanReportingSummary> getScanReportingSummary(String scanId) {
         if (scanId == null || scanId.isBlank()) return Optional.empty();
 
@@ -123,7 +151,83 @@ public class ScanReportingUseCase implements ScanReportingPort {
                 spaces
             ));
         } catch (Exception ex) {
-            log.warn("[DASHBOARD] Failed to get dashboard ScanReportingSummary for {}: {}", scanId, ex.getMessage());
+            log.warn("[SCAN] Failed to get dashboard ScanReportingSummary for {}: {}", scanId, ex.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public Optional<ScanReportingSummary> getGlobalScanSummary() {
+        try {
+            // 1) Find the latest checkpoint for every space
+            List<ScanCheckpoint> latestCheckpoints = checkpointRepo.findAllLatestCheckpoints();
+            if (latestCheckpoints.isEmpty()) {
+                return Optional.empty();
+            }
+
+            // 2) Collect relevant scanIds
+            Set<String> scanIds = new HashSet<>();
+            for (ScanCheckpoint cp : latestCheckpoints) {
+                scanIds.add(cp.scanId());
+            }
+
+            // 3) Load counters for these scanIds
+            Map<String, List<ScanResultQuery.SpaceCounter>> countersByScan = new HashMap<>();
+            for (String scanId : scanIds) {
+                countersByScan.put(scanId, scanResultQuery.getSpaceCounters(scanId));
+            }
+
+            // 4) Build space summaries
+            List<SpaceSummary> spaces = new ArrayList<>();
+            for (ScanCheckpoint cp : latestCheckpoints) {
+                List<ScanResultQuery.SpaceCounter> scanCounters = countersByScan.get(cp.scanId());
+
+                long pagesDone = 0;
+                long attachmentsDone = 0;
+                Instant lastEventTs = null;
+
+                if (scanCounters != null) {
+                    for (ScanResultQuery.SpaceCounter sc : scanCounters) {
+                        if (sc.spaceKey().equals(cp.spaceKey())) {
+                            pagesDone = sc.pagesDone();
+                            attachmentsDone = sc.attachmentsDone();
+                            lastEventTs = sc.lastEventTs();
+                            break;
+                        }
+                    }
+                }
+
+                spaces.add(new SpaceSummary(
+                    cp.spaceKey(),
+                    mapPresentationStatus(cp.scanStatus().name(), pagesDone, attachmentsDone),
+                    cp.progressPercentage(),
+                    pagesDone,
+                    attachmentsDone,
+                    lastEventTs
+                ));
+            }
+
+            // 5) Determine global meta info
+            Optional<LastScanMeta> latestMeta = getLatestScan();
+            String globalScanId = latestMeta.map(LastScanMeta::scanId).orElse(
+                latestCheckpoints.getFirst().scanId()
+            );
+
+            Instant globalLastUpdated = spaces.stream()
+                .map(SpaceSummary::lastEventTs)
+                .filter(Objects::nonNull)
+                .max(Instant::compareTo)
+                .orElse(Instant.now());
+
+            return Optional.of(new ScanReportingSummary(
+                globalScanId,
+                globalLastUpdated,
+                spaces.size(),
+                spaces
+            ));
+
+        } catch (Exception ex) {
+            log.warn("[SCAN] Failed to get global ScanReportingSummary: {}", ex.getMessage());
             return Optional.empty();
         }
     }

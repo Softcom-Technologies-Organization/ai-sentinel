@@ -29,12 +29,12 @@ import static pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.Detecto
 @Slf4j
 @Service
 @ConditionalOnProperty(name = "pii-detector.client", havingValue = "armeria")
-public class GrpcPiiDetectorAmariaClientAdapter implements PiiDetectorClient {
+public class GrpcPiiDetectorArmeriaClientAdapter implements PiiDetectorClient {
 
     private final PiiDetectorConfig config;
     private final PIIDetectionServiceGrpc.PIIDetectionServiceBlockingStub blockingStub;
 
-    public GrpcPiiDetectorAmariaClientAdapter(PiiDetectorConfig config, PIIDetectionServiceGrpc.PIIDetectionServiceBlockingStub blockingStub) {
+    public GrpcPiiDetectorArmeriaClientAdapter(PiiDetectorConfig config, PIIDetectionServiceGrpc.PIIDetectionServiceBlockingStub blockingStub) {
         this.config = config;
         this.blockingStub = blockingStub;
         log.info("PII Detection Service (Armeria) initialized - Host: {}, Port: {}", config.host(), config.port());
@@ -58,7 +58,6 @@ public class GrpcPiiDetectorAmariaClientAdapter implements PiiDetectorClient {
     @Override
     public ContentPiiDetection analyzePageContent(String pageId, String pageTitle, String spaceKey, String content, float threshold) {
         log.debug("[Armeria] Analyzing content for PII - PageId: {}, Threshold: {}", pageId, threshold);
-        log.info("[Armeria] PII Detection request for page with title {} and id {} with content: \n{}",pageTitle, pageId, content);
         try {
             PiiDetection.PIIDetectionRequest request = PiiDetection.PIIDetectionRequest.newBuilder()
                     .setContent(content)

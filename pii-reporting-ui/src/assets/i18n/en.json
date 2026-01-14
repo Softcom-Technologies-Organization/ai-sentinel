@@ -50,7 +50,13 @@
       "resumeScan": "Resume last scan",
       "openInConfluence": "Open in Confluence",
       "confluenceUnavailable": "URL unavailable (not provided by backend)",
-      "settings": "Settings"
+      "settings": "Settings",
+      "scanSelected": "Scan Selected Spaces ({{count}})",
+      "scanSelectedLabel": "({{count}})"
+    },
+    "filters": {
+      "modifiedOnly": "Show only modified spaces",
+      "modifiedOnlyLabel": "Spaces to rescan"
     },
     "notifications": {
       "newSpaces": {
@@ -95,6 +101,12 @@
     "globalScan": {
       "header": "Global scan confirmation",
       "message": "<p>Are you sure you want to start scanning all Confluence spaces?</p>\n<p><b>Existing data will be overwritten.</b></p>\n<p>This operation may take some time.</p>",
+      "acceptLabel": "Yes, start",
+      "rejectLabel": "Cancel"
+    },
+    "selectedScan": {
+      "header": "Selected spaces scan confirmation",
+      "message": "<p>Are you sure you want to start scanning <b>{{count}}</b> selected space(s)?</p>\n<p><b>Previous results will be overwritten.</b></p>",
       "acceptLabel": "Yes, start",
       "rejectLabel": "Cancel"
     }

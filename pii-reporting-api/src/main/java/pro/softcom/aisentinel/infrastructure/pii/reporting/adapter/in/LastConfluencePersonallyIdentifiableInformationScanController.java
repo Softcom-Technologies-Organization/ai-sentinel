@@ -50,7 +50,7 @@ public class LastConfluencePersonallyIdentifiableInformationScanController {
 
     @GetMapping("/last/items")
     public ResponseEntity<@NonNull List<ConfluenceContentScanResultEventDto>> getLastScanItems() {
-        List<ConfluenceContentScanResultEventDto> items = scanReportingPort.getLatestSpaceScanResultList().stream()
+        List<ConfluenceContentScanResultEventDto> items = scanReportingPort.getGlobalScanItemsEncrypted().stream()
                 .map(confluenceContentScanResultToScanEventMapper::toDto)
                 .toList();
         if (items.isEmpty()) {
@@ -67,8 +67,7 @@ public class LastConfluencePersonallyIdentifiableInformationScanController {
      */
     @GetMapping("/dashboard/spaces-summary")
     public ResponseEntity<@NonNull ScanReportingSummaryDto> getDashboardSpacesSummary() {
-        return scanReportingPort.getLatestScan()
-                .flatMap(meta -> scanReportingPort.getScanReportingSummary(meta.scanId()))
+        return scanReportingPort.getGlobalScanSummary()
                 .map(scanReportingSummaryMapper::toDto)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.noContent().build());

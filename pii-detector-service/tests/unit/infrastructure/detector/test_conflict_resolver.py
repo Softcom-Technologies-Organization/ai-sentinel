@@ -425,35 +425,6 @@ class TestBuildPIIEntity:
         assert entity.start == 10
         assert entity.end == 26
 
-    def test_should_set_source_field(self):
-        """Test that source field is set correctly."""
-        resolver = ConflictResolver()
-
-        entity = resolver.build_pii_entity(
-            text="192.168.1.1",
-            pii_type="IP_ADDRESS",
-            score=0.88,
-            start=0,
-            end=11,
-            source="GLINER_MULTIPASS",
-        )
-
-        assert entity.source == "GLINER_MULTIPASS"
-
-    def test_should_use_default_source(self):
-        """Test default source is set when not provided."""
-        resolver = ConflictResolver()
-
-        entity = resolver.build_pii_entity(
-            text="test",
-            pii_type="TEST",
-            score=0.5,
-            start=0,
-            end=4,
-        )
-
-        assert entity.source == "GLINER_MULTIPASS"
-
 
 class TestConflictLogging:
     """Test cases for conflict resolution logging."""

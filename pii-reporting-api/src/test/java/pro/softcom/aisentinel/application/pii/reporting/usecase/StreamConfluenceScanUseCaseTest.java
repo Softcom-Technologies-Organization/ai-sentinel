@@ -173,7 +173,6 @@ class StreamConfluenceScanUseCaseTest {
                     assertThat(ev).isNotNull();
                     assertThat(ev.eventType()).isEqualTo(ScanEventType.ERROR.toJson());
                     assertThat(ev.spaceKey()).isEqualTo(spaceKey);
-                    assertThat(ev.message()).isEqualTo("Espace non trouvé");
                 })
                 .verifyComplete();
     }

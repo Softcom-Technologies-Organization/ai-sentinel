@@ -115,11 +115,11 @@ export class ScanControlService {
 
     // Display confirmation before starting the scan
     this.confirmationService.confirm({
-      header: this.translocoService.translate('confirmations.globalScan.header'),
-      message: `Start scanning ${spaceKeys.length} selected spaces? This will purge previous results.`, // TODO: Translate
+      header: this.translocoService.translate('confirmations.selectedScan.header'),
+      message: this.translocoService.translate('confirmations.selectedScan.message', { count: spaceKeys.length }),
       icon: 'pi pi-exclamation-triangle',
-      acceptLabel: this.translocoService.translate('confirmations.globalScan.acceptLabel'),
-      rejectLabel: this.translocoService.translate('confirmations.globalScan.rejectLabel'),
+      acceptLabel: this.translocoService.translate('confirmations.selectedScan.acceptLabel'),
+      rejectLabel: this.translocoService.translate('confirmations.selectedScan.rejectLabel'),
       acceptButtonStyleClass: 'p-button-info',
       rejectButtonStyleClass: 'p-button-secondary',
       accept: () => {

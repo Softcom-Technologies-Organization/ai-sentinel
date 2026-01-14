@@ -103,6 +103,12 @@
       "message": "<p>Êtes-vous sûr de vouloir démarrer le scan de tous les espaces Confluence ?</p>\n<p><b>Les données existantes seront écrasées.</b></p>\n<p>Cette opération peut prendre du temps.</p>",
       "acceptLabel": "Oui, démarrer",
       "rejectLabel": "Annuler"
+    },
+    "selectedScan": {
+      "header": "Confirmation de scan sélectif",
+      "message": "<p>Êtes-vous sûr de vouloir démarrer le scan de <b>{{count}}</b> espace(s) sélectionné(s) ?</p>\n<p><b>Les résultats précédents seront écrasés.</b></p>",
+      "acceptLabel": "Oui, démarrer",
+      "rejectLabel": "Annuler"
     }
   },
   "piiHelp": {

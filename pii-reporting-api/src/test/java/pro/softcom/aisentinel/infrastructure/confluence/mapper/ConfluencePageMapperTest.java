@@ -1,10 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.confluence.mapper;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +7,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.dto.ConfluencePageDto;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.mapper.ConfluencePageMapper;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 class ConfluencePageMapperTest {

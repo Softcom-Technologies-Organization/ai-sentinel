@@ -1,10 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.SoftAssertions.assertSoftly;
-
-import java.util.Collections;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,6 +7,12 @@ import pro.softcom.aisentinel.domain.pii.reporting.PageSecretsResponse;
 import pro.softcom.aisentinel.domain.pii.reporting.RevealedSecret;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.PiiAccessController.PageSecretsResponseDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.PiiAccessController.RevealedSecretDto;
+
+import java.util.Collections;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 @DisplayName("PageSecretsResponseMapper - Maps domain models to DTOs")
 class PageSecretsResponseMapperTest {

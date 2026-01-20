@@ -1,19 +1,6 @@
 package pro.softcom.aisentinel.infrastructure.pii.export.adapter.out;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,6 +15,16 @@ import pro.softcom.aisentinel.application.pii.export.dto.DetectionReportEntry;
 import pro.softcom.aisentinel.application.pii.export.port.out.WriteDetectionReportPort;
 import pro.softcom.aisentinel.domain.pii.export.DataSourceContact;
 import pro.softcom.aisentinel.domain.pii.export.ExportContext;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("Excel report content and data writing tests")
 class ExcelDetectionReportWriterAdapterContentTest {

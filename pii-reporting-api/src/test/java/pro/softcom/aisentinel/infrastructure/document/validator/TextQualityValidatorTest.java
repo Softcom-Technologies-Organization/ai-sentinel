@@ -1,8 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.document.validator;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.SoftAssertions.assertSoftly;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,6 +7,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import pro.softcom.aisentinel.infrastructure.document.config.TextQualityThresholds;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 @DisplayName("TextQualityValidator - Human-Readable Text Detection")
 class TextQualityValidatorTest {

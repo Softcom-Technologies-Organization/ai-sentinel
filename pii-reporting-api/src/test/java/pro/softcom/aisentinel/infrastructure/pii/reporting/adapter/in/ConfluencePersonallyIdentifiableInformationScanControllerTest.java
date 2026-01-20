@@ -1,12 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.time.Duration;
-import java.util.List;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +16,14 @@ import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEv
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.ConfluenceContentScanResultToScanEventMapper;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
+
+import java.time.Duration;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for WebFluxStreamingScanController focusing on SSE mapping and keepalive.

@@ -1,10 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out.http;
 
-import static org.mockito.Mockito.lenient;
-
-import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,6 +7,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConnectionConfig;
+
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
+import static org.mockito.Mockito.lenient;
 
 /**
  * Unit tests for ConfluenceApiUrlBuilder.

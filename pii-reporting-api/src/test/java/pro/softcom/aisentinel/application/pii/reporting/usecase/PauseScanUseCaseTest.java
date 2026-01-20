@@ -1,12 +1,5 @@
 package pro.softcom.aisentinel.application.pii.reporting.usecase;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,6 +9,14 @@ import pro.softcom.aisentinel.application.pii.reporting.port.out.PersonallyIdent
 import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
+
+import java.util.Optional;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests for PauseScanUseCase to verify correct behavior when pausing scans.

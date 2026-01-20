@@ -1,11 +1,7 @@
 package pro.softcom.aisentinel.application.pii.reporting.usecase;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Instant;
-import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +19,11 @@ import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.Detec
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.DetectionEventRepository;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanCheckpointEntity;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanEventEntity;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
 @SpringBootTest(classes = AiSentinelApplication.class,

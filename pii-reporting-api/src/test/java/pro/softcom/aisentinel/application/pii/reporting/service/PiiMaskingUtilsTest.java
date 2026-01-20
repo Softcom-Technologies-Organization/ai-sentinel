@@ -1,10 +1,5 @@
 package pro.softcom.aisentinel.application.pii.reporting.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.SoftAssertions.assertSoftly;
-
-import java.util.Collections;
-import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -13,6 +8,12 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
+
+import java.util.Collections;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 @DisplayName("PiiMaskingUtils - Utility methods for PII masking operations")
 class PiiMaskingUtilsTest {

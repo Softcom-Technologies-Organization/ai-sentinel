@@ -1,18 +1,19 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.lang.reflect.Method;
-import java.time.Instant;
-import java.util.Optional;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConnectionConfig;
+
+import java.lang.reflect.Method;
+import java.time.Instant;
+import java.util.Optional;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class ConfluenceHttpClientAdapterDateExtractionTest {
 

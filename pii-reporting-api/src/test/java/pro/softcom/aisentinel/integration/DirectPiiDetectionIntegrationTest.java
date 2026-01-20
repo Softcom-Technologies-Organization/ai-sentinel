@@ -1,7 +1,5 @@
 package pro.softcom.aisentinel.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,6 +14,8 @@ import pro.softcom.aisentinel.AiSentinelApplication;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIdentifiableInformationType;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Direct integration test for PII detection service with real gRPC calls.

@@ -1,7 +1,5 @@
 package pro.softcom.aisentinel.application.config.usecase;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +13,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import pro.softcom.aisentinel.AiSentinelApplication;
 import pro.softcom.aisentinel.application.config.port.out.ReadConfluenceConfigPort;
 import pro.softcom.aisentinel.domain.config.PollingConfig;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
 @SpringBootTest(classes = AiSentinelApplication.class,

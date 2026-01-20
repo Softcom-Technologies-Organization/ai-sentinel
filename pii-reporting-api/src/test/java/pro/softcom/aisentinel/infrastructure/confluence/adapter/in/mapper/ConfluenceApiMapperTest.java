@@ -1,9 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.in.mapper;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.time.Instant;
-import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
@@ -13,6 +9,11 @@ import pro.softcom.aisentinel.domain.confluence.SpaceUpdateInfo;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.in.dto.ConfluencePageDto;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.in.dto.ConfluenceSpaceDto;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.in.dto.SpaceUpdateInfoDto;
+
+import java.time.Instant;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("Verifies Confluence API mapping behaviors")
 class ConfluenceApiMapperTest {

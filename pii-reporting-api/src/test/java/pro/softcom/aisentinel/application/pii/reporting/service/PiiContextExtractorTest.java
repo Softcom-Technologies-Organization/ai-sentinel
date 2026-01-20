@@ -1,10 +1,5 @@
 package pro.softcom.aisentinel.application.pii.reporting.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.SoftAssertions.assertSoftly;
-
-import java.util.List;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,6 +13,12 @@ import pro.softcom.aisentinel.application.pii.reporting.service.parser.HtmlConte
 import pro.softcom.aisentinel.application.pii.reporting.service.parser.PlainTextParser;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
+
+import java.util.List;
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 /**
  * Unit tests for {@link PiiContextExtractor}.

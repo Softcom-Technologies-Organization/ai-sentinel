@@ -1,7 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import jakarta.persistence.EntityManager;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +18,8 @@ import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.ScanSeverityCountJpaRepository;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanSeverityCountEntity;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanSeverityCountId;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration test for {@link ScanSeverityCountPersistenceAdapter}.

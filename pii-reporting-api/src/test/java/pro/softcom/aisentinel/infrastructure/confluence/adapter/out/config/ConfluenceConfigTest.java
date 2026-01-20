@@ -1,19 +1,16 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfig.ApiPaths;
-import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfig.CacheSettings;
-import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfig.ConnectionSettings;
-import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfig.PaginationSettings;
-import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfig.PollingSettings;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfig.*;
+
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("DefaultConfluenceConnectionConfig - Tests de validation et fonctionnalités")
 class ConfluenceConfigTest {

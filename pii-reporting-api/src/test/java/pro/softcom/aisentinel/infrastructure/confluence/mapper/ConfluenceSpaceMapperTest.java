@@ -1,16 +1,17 @@
 package pro.softcom.aisentinel.infrastructure.confluence.mapper;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.dto.ConfluenceSpaceDto;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.mapper.ConfluenceSpaceMapper;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ConfluenceSpaceMapperTest {
 

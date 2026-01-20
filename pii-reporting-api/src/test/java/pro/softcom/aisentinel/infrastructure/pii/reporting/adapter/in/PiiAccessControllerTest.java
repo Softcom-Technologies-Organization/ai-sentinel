@@ -1,22 +1,7 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.SoftAssertions.assertSoftly;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 import org.jspecify.annotations.NonNull;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -28,6 +13,18 @@ import pro.softcom.aisentinel.domain.pii.reporting.RevealedSecret;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.PiiAccessController.PageRevealRequest;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.PiiAccessController.PageSecretsResponseDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.PiiAccessController.RevealedSecretDto;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PiiAccessController - REST controller for PII access control")

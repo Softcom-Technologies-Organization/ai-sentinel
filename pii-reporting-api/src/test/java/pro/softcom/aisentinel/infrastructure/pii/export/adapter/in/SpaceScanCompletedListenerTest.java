@@ -1,9 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.pii.export.adapter.in;
 
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,6 +9,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.application.pii.export.usecase.ExportDetectionReportUseCase;
 import pro.softcom.aisentinel.domain.pii.export.SourceType;
 import pro.softcom.aisentinel.domain.pii.scan.SpaceScanCompleted;
+
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Space scan completed listener tests")

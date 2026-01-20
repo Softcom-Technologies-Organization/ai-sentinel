@@ -1,9 +1,5 @@
 package pro.softcom.aisentinel.application.pii.export;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.List;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,6 +9,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import pro.softcom.aisentinel.application.pii.export.dto.DetectionReportEntry;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
+
+import java.util.List;
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("Detection report mapper tests")
 class DetectionReportMapperTest {

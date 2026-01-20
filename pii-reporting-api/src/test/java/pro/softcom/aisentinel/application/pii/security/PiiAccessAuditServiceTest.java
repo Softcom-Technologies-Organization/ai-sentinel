@@ -1,16 +1,6 @@
 package pro.softcom.aisentinel.application.pii.security;
 
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.SoftAssertions.assertSoftly;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,6 +12,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.application.pii.security.port.out.SavePiiAuditPort;
 import pro.softcom.aisentinel.domain.pii.reporting.AccessPurpose;
 import pro.softcom.aisentinel.domain.pii.security.PiiAuditRecord;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PiiAccessAuditService - PII access audit tracking")

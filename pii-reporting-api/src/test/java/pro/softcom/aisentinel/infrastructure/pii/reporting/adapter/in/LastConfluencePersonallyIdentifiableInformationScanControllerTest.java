@@ -1,24 +1,16 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in;
 
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.ScanReportingPort;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanReportingSummary;
 import pro.softcom.aisentinel.domain.pii.reporting.SpaceSummary;
+import pro.softcom.aisentinel.infrastructure.config.SecurityConfig;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanReportingSummaryDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.SeverityCountsDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.SpaceSummaryDto;
@@ -26,8 +18,17 @@ import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.Con
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.LastScanMapper;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.ScanReportingSummaryMapper;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.SpaceStatusMapper;
-import org.springframework.context.annotation.Import;
-import pro.softcom.aisentinel.infrastructure.config.SecurityConfig;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(LastConfluencePersonallyIdentifiableInformationScanController.class)
 @Import(SecurityConfig.class)

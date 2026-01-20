@@ -1,16 +1,17 @@
 package pro.softcom.aisentinel.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pii_detection.PIIDetectionServiceGrpc;
 import pii_detection.PiiDetection;
+
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class GrpcDirectConnectionTest {
     

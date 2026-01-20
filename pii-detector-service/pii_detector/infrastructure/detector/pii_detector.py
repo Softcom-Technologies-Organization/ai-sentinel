@@ -7,21 +7,23 @@ in text content using the Piiranha model with optimizations for memory usage and
 
 import logging
 import time
+from typing import Dict, List, Optional, Tuple
+
 import torch
 import unicodedata
+from transformers import AutoTokenizer, AutoModelForTokenClassification, \
+    pipeline
+
 from pii_detector.application.config.detection_policy import DetectionConfig
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.exception.exceptions import PIIDetectionError, \
-  ModelNotLoadedError
+    ModelNotLoadedError
 from pii_detector.domain.service.entity_processor import EntityProcessor
 # Import managers
 from pii_detector.infrastructure.model_management.memory_manager import \
-  MemoryManager
+    MemoryManager
 from pii_detector.infrastructure.model_management.model_manager import \
-  ModelManager
-from transformers import AutoTokenizer, AutoModelForTokenClassification, \
-  pipeline
-from typing import Dict, List, Optional, Tuple
+    ModelManager
 
 # Constants
 _MODEL_NOT_LOADED_ERROR_MESSAGE = "The model must be loaded before use"

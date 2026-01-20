@@ -26,8 +26,8 @@ Usage:
 from dataclasses import dataclass
 from typing import Optional
 
-from .detection_config import DetectionConfig
 from pii_detector.application.config.model_config import ModelConfig
+from .detection_config import DetectionConfig
 from .server_config import ServerConfig
 
 

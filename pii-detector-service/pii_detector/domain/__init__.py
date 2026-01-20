@@ -8,14 +8,6 @@ This layer contains pure business logic with NO external dependencies.
 # Import and re-export domain entities
 from .entity.pii_entity import PIIEntity
 from .entity.pii_type import PIIType
-
-# Import and re-export domain ports (interfaces - Dependency Inversion Principle)
-from .port.pii_detector_protocol import PIIDetectorProtocol
-
-# Import and re-export domain services (pure business logic)
-from .service.detection_merger import DetectionMerger
-from .service.entity_processor import EntityProcessor
-
 # Import and re-export domain exceptions
 from .exception.exceptions import (
     PIIDetectionError,
@@ -23,6 +15,11 @@ from .exception.exceptions import (
     ModelLoadError,
     APIKeyError,
 )
+# Import and re-export domain ports (interfaces - Dependency Inversion Principle)
+from .port.pii_detector_protocol import PIIDetectorProtocol
+# Import and re-export domain services (pure business logic)
+from .service.detection_merger import DetectionMerger
+from .service.entity_processor import EntityProcessor
 
 __all__ = [
     # ===== ENTITIES =====

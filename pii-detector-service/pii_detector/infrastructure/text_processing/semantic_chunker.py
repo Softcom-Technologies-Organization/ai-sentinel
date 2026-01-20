@@ -6,8 +6,8 @@ This module provides intelligent text chunking that respects semantic boundaries
 Critical for models like GLiNER that have internal sentence-level token limits.
 """
 
-import time
 import logging
+import time
 from dataclasses import dataclass
 from typing import Any, List, Optional
 

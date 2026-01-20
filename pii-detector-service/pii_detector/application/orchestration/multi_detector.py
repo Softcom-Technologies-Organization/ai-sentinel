@@ -21,13 +21,13 @@ from __future__ import annotations
 
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Iterable, List, Optional, Tuple, Dict
+from typing import Iterable, List, Optional, Tuple
 
-from pii_detector.domain.service.detection_merger import DetectionMerger
-from pii_detector.application.factory.detector_factory import DetectorFactory, create_default_factory
 from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.application.factory.detector_factory import DetectorFactory, create_default_factory
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.port.pii_detector_protocol import PIIDetectorProtocol
+from pii_detector.domain.service.detection_merger import DetectionMerger
 
 logger = logging.getLogger(__name__)
 

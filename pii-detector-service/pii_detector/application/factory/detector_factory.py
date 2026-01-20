@@ -10,10 +10,9 @@ from __future__ import annotations
 import logging
 from typing import Callable, Dict, Optional
 
-from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
 from pii_detector.application.config.detection_policy import DetectionConfig
 from pii_detector.domain.port.pii_detector_protocol import PIIDetectorProtocol
-
+from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
 
 logger = logging.getLogger(__name__)
 

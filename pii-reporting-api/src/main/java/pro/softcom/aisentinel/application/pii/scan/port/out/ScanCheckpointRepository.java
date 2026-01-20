@@ -1,8 +1,9 @@
 package pro.softcom.aisentinel.application.pii.scan.port.out;
 
+import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
+
 import java.util.List;
 import java.util.Optional;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
 
 /**
  * Application out port to store and retrieve scan checkpoints.

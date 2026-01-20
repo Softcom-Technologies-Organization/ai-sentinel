@@ -1,11 +1,12 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import java.util.List;
-import java.util.Map;
 import lombok.Builder;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Payload for Server-Sent Events emitted during a Confluence space scan.

@@ -1,11 +1,12 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out.http;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Exécuteur HTTP avec mécanisme de retry automatique.

@@ -1,9 +1,10 @@
 package pro.softcom.aisentinel.application.pii.reporting.service;
 
+import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 
 /**
  * Small shared masking helpers used by both context extraction and presentation mappers.

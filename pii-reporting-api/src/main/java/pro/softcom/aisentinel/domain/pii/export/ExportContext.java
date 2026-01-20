@@ -1,8 +1,9 @@
 package pro.softcom.aisentinel.domain.pii.export;
 
+import lombok.Builder;
+
 import java.util.List;
 import java.util.Map;
-import lombok.Builder;
 
 /**
  * Represents the business context for exporting detection reports.

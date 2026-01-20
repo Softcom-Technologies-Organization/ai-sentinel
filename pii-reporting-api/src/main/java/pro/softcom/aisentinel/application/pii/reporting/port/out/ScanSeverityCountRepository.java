@@ -1,9 +1,10 @@
 package pro.softcom.aisentinel.application.pii.reporting.port.out;
 
-import java.util.List;
-import java.util.Optional;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanSeverityCount;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Application out port to store and retrieve PII severity counts for scans.

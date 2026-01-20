@@ -1,9 +1,10 @@
 package pro.softcom.aisentinel.application.pii.reporting.service.parser;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Parser for HTML content where logical lines are delimited by block-level tags.

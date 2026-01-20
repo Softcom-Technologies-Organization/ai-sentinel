@@ -1,10 +1,11 @@
 package pro.softcom.aisentinel.application.pii.export;
 
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.pii.export.dto.DetectionReportEntry;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
+
+import java.util.List;
 
 @Slf4j
 public class DetectionReportMapper {

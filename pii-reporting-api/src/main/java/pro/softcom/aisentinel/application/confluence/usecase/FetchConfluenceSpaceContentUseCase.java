@@ -1,8 +1,5 @@
 package pro.softcom.aisentinel.application.confluence.usecase;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.confluence.port.in.ConfluenceSpacePort;
@@ -10,6 +7,10 @@ import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceSpaceRepository;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @RequiredArgsConstructor
 @Slf4j

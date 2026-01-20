@@ -1,12 +1,13 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out.mapper;
 
-import java.time.Instant;
-import java.time.format.DateTimeParseException;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 import pro.softcom.aisentinel.domain.confluence.DataOwners;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.dto.ConfluenceSpaceDto;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.dto.ConfluenceSpaceDto.HistoryDto;
+
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 
 /**
  * Maps ConfluenceSpaceDto (REST) to ConfluenceSpace (domain).

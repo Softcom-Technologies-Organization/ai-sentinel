@@ -1,8 +1,9 @@
 package pro.softcom.aisentinel.application.pii.export.port.out;
 
-import java.io.IOException;
 import pro.softcom.aisentinel.application.pii.export.dto.DetectionReportEntry;
 import pro.softcom.aisentinel.domain.pii.export.ExportContext;
+
+import java.io.IOException;
 
 /**
  * Port for writing detection reports in various formats.

@@ -1,10 +1,11 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out;
 
-import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTimeOutConfig;
 import pro.softcom.aisentinel.infrastructure.config.ScanTimeoutConfig;
+
+import java.time.Duration;
 
 /**
  * Adapter providing scan timeout configuration from Spring properties.

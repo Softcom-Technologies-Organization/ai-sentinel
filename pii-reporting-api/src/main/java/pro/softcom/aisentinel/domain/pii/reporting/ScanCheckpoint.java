@@ -1,8 +1,9 @@
 package pro.softcom.aisentinel.domain.pii.reporting;
 
-import java.time.LocalDateTime;
 import lombok.Builder;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
+
+import java.time.LocalDateTime;
 
 /**
  * Fine-grained checkpoint to resume scanning inside a space at page/attachment level.

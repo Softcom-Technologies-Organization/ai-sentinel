@@ -1,11 +1,12 @@
 package pro.softcom.aisentinel.infrastructure.pii.scan.service;
 
+import lombok.extern.slf4j.Slf4j;
+import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.extern.slf4j.Slf4j;
-import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 
 /**
  * Service responsible for buffering scan events in memory for replay on reconnection.

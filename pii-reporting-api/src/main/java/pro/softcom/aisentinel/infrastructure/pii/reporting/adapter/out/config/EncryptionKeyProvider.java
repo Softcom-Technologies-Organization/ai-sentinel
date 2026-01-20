@@ -1,12 +1,13 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.config;
 
-import java.util.Arrays;
-import java.util.Base64;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.util.Arrays;
+import java.util.Base64;
 
 /**
  * Provides the AES encryption key (KEK) used for encrypting and decrypting PII data.

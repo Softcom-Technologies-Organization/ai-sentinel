@@ -1,7 +1,8 @@
 package pro.softcom.aisentinel.application.pii.reporting.port.in;
 
-import java.util.Optional;
 import pro.softcom.aisentinel.domain.pii.reporting.PageSecretsResponse;
+
+import java.util.Optional;
 
 /**
  * In-port for revealing PII secrets from scan results.

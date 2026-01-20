@@ -5,7 +5,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import jakarta.annotation.PreDestroy;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -13,6 +12,8 @@ import org.springframework.stereotype.Service;
 import pii_detection.PIIDetectionServiceGrpc;
 import pii_detection.PiiDetection;
 import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.config.PiiDetectorConfig;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Netty-based gRPC transport for PII detection calls.

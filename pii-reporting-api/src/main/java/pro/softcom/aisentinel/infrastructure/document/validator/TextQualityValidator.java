@@ -1,10 +1,11 @@
 package pro.softcom.aisentinel.infrastructure.document.validator;
 
-import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import pro.softcom.aisentinel.infrastructure.document.config.TextQualityThresholds;
+
+import java.util.Locale;
 
 /**
  * Validator for human-readable text quality.

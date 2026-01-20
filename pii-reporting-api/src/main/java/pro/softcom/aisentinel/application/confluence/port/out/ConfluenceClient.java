@@ -1,13 +1,14 @@
 package pro.softcom.aisentinel.application.confluence.port.out;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 import pro.softcom.aisentinel.domain.confluence.ModifiedAttachmentInfo;
 import pro.softcom.aisentinel.domain.confluence.ModifiedPageInfo;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Confluence client (outbound domain port).

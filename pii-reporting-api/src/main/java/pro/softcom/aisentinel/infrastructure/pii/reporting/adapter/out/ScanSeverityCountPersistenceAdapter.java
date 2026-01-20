@@ -1,7 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out;
 
-import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanSeverityCountRepository;
@@ -10,6 +8,9 @@ import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.ScanSeverityCountJpaRepository;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanSeverityCountEntity;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanSeverityCountId;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * JPA adapter implementing {@link ScanSeverityCountRepository} port.

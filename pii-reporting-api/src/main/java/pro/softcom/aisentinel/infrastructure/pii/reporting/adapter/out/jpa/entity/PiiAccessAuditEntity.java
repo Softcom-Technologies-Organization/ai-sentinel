@@ -1,22 +1,12 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.proxy.HibernateProxy;
+
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
-import org.hibernate.proxy.HibernateProxy;
 
 /**
  * JPA entity for PII access audit logs.

@@ -1,8 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -12,6 +9,10 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanCheckpointEntity;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanCheckpointId;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DetectionCheckpointRepository extends

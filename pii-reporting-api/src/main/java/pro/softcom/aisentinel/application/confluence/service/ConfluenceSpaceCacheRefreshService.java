@@ -1,12 +1,13 @@
 package pro.softcom.aisentinel.application.confluence.service;
 
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.confluence.exception.ConfluenceSpaceCacheException;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceSpaceRepository;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
+
+import java.util.List;
 
 /**
  * Rafraîchit le cache des espaces Confluence sur demande.

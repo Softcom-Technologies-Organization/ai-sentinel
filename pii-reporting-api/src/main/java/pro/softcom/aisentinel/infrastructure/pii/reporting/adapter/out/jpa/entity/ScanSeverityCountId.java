@@ -2,13 +2,10 @@ package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.enti
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import lombok.*;
+
 import java.io.Serializable;
 import java.util.Objects;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 /**
  * Composite primary key for {@link ScanSeverityCountEntity}.

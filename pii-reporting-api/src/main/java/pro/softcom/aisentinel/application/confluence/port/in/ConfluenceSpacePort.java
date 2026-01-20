@@ -1,10 +1,11 @@
 package pro.softcom.aisentinel.application.confluence.port.in;
 
+import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
+import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
-import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 
 public interface ConfluenceSpacePort {
   CompletableFuture<Boolean> testConnection();

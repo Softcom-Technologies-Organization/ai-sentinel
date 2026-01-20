@@ -1,7 +1,8 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.in.dto;
 
-import java.util.List;
 import lombok.Builder;
+
+import java.util.List;
 
 /**
  * DTO de réponse pour une recherche de pages Confluence.

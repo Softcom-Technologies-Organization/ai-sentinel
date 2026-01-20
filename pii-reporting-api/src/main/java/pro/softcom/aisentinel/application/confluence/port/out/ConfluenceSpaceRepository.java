@@ -1,8 +1,9 @@
 package pro.softcom.aisentinel.application.confluence.port.out;
 
+import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
+
 import java.util.List;
 import java.util.Optional;
-import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 
 public interface ConfluenceSpaceRepository {
 

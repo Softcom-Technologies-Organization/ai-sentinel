@@ -1,8 +1,9 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.in.dto;
 
+import org.jspecify.annotations.Nullable;
+
 import java.time.Instant;
 import java.util.List;
-import org.jspecify.annotations.Nullable;
 
 /**
  * DTO representing update information for a Confluence space.

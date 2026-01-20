@@ -1,12 +1,13 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out.jpa;
 
-import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceSpaceRepository;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.jpa.mapper.ConfluenceSpaceEntityMapper;
+
+import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor

@@ -1,6 +1,5 @@
 package pro.softcom.aisentinel.application.pii.security;
 
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
@@ -8,6 +7,8 @@ import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiabl
 import pro.softcom.aisentinel.domain.pii.security.EncryptionException;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionMetadata;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionService;
+
+import java.util.List;
 
 /**
  * Processor for encrypting/decrypting detectedPIIList in ScanResult.

@@ -1,7 +1,8 @@
 package pro.softcom.aisentinel.domain.confluence;
 
-import java.time.Instant;
 import lombok.Getter;
+
+import java.time.Instant;
 
 public record ConfluenceSpace(
     String id,

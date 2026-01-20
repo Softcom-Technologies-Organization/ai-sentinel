@@ -1,8 +1,9 @@
 package pro.softcom.aisentinel.domain.pii.scan;
 
+import pro.softcom.aisentinel.domain.pii.ScanStatus;
+
 import java.util.Map;
 import java.util.Set;
-import pro.softcom.aisentinel.domain.pii.ScanStatus;
 
 /**
  * Manages status transitions for scan checkpoints according to business rules.

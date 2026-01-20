@@ -1,8 +1,5 @@
 package pro.softcom.aisentinel.application.pii.reporting.usecase;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.RevealPiiSecretsPort;
@@ -12,6 +9,10 @@ import pro.softcom.aisentinel.domain.pii.reporting.AccessPurpose;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.PageSecretsResponse;
 import pro.softcom.aisentinel.domain.pii.reporting.RevealedSecret;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Use case for revealing PII secrets from scan results.

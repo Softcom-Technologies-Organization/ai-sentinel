@@ -1,7 +1,5 @@
 package pro.softcom.aisentinel.application.pii.reporting.usecase;
 
-import java.time.Instant;
-import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.confluence.service.ConfluenceAccessor;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.StreamConfluenceResumeScanPort;
@@ -19,6 +17,9 @@ import pro.softcom.aisentinel.domain.pii.reporting.ScanRemainingPages;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanRemainingPagesCalculator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Application use case orchestrating Confluence scans and PII detection. What: encapsulates

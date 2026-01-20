@@ -1,7 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.pii.export.adapter.out;
 
-import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,6 +15,9 @@ import pro.softcom.aisentinel.domain.confluence.DataOwners;
 import pro.softcom.aisentinel.domain.pii.export.DataSourceContact;
 import pro.softcom.aisentinel.domain.pii.export.ExportContext;
 import pro.softcom.aisentinel.domain.pii.export.SourceType;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Adapts Confluence spaces to export contexts.

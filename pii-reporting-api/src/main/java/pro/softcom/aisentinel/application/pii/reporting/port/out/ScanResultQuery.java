@@ -1,11 +1,12 @@
 package pro.softcom.aisentinel.application.pii.reporting.port.out;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
 import pro.softcom.aisentinel.domain.pii.reporting.AccessPurpose;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.LastScanMeta;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Application out port used by the reporting layer to read scan outcomes.

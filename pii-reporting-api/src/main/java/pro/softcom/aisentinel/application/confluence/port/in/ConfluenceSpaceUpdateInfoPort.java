@@ -1,8 +1,9 @@
 package pro.softcom.aisentinel.application.confluence.port.in;
 
+import pro.softcom.aisentinel.domain.confluence.SpaceUpdateInfo;
+
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import pro.softcom.aisentinel.domain.confluence.SpaceUpdateInfo;
 
 /**
  * Use case for retrieving update information about Confluence spaces.

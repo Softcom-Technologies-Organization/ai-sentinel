@@ -1,14 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out;
 
-import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Base64;
-import javax.crypto.Cipher;
-import javax.crypto.Mac;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
@@ -17,6 +8,16 @@ import pro.softcom.aisentinel.domain.pii.security.EncryptionException;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionMetadata;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionService;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.config.EncryptionKeyProvider;
+
+import javax.crypto.Cipher;
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Base64;
 
 /**
  * AES-256-GCM encryption adapter with HKDF key derivation.

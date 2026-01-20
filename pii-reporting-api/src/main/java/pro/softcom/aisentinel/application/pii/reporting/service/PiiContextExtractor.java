@@ -1,15 +1,16 @@
 package pro.softcom.aisentinel.application.pii.reporting.service;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.pii.reporting.service.parser.ContentParser;
 import pro.softcom.aisentinel.application.pii.reporting.service.parser.ContentParserFactory;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Extracts a readable context around detected PII occurrences.

@@ -1,12 +1,13 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper;
 
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ConfluenceContentScanResultEventDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
+
+import java.util.List;
 
 /**
  * Maps domain ScanResult (clean architecture) to presentation ScanEvent (DTO for SSE/JSON).

@@ -1,12 +1,13 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.in.mapper;
 
-import java.util.List;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 import pro.softcom.aisentinel.domain.confluence.SpaceUpdateInfo;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.in.dto.ConfluencePageDto;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.in.dto.ConfluenceSpaceDto;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.in.dto.SpaceUpdateInfoDto;
+
+import java.util.List;
 
 /**
  * Mapper d'adaptateur pour convertir les objets du domaine Confluence vers des DTO d'API.

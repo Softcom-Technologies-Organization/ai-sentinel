@@ -1,10 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -15,6 +10,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
 import reactor.core.scheduler.Schedulers;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Infrastructure adapter that implements the management of scan tasks decoupled from SSE.

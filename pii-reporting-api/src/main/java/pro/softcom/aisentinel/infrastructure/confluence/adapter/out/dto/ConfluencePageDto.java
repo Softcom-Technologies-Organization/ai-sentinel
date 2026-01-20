@@ -2,8 +2,9 @@ package pro.softcom.aisentinel.infrastructure.confluence.adapter.out.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Map;
 import lombok.Builder;
+
+import java.util.Map;
 
 /**
  * DTO pour la sérialisation/désérialisation des pages Confluence.

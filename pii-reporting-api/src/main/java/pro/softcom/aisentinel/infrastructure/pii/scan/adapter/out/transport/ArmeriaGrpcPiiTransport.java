@@ -1,12 +1,13 @@
 package pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.transport;
 
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import pii_detection.PIIDetectionServiceGrpc;
 import pii_detection.PiiDetection;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Armeria-based gRPC transport for PII detection.

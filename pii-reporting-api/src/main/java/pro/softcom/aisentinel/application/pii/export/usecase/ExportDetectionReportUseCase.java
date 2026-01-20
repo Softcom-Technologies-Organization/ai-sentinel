@@ -1,6 +1,5 @@
 package pro.softcom.aisentinel.application.pii.export.usecase;
 
-import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -14,6 +13,8 @@ import pro.softcom.aisentinel.application.pii.export.port.out.WriteDetectionRepo
 import pro.softcom.aisentinel.domain.pii.export.ExportContext;
 import pro.softcom.aisentinel.domain.pii.export.SourceType;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
+
+import java.io.IOException;
 
 /**
  * Use case for exporting detection reports.

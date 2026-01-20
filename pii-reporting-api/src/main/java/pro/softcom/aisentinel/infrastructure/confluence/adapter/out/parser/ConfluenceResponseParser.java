@@ -1,9 +1,6 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out.parser;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
@@ -13,6 +10,10 @@ import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.dto.Confluen
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.dto.ConfluenceSpacesResponseDto;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.mapper.ConfluencePageMapper;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.mapper.ConfluenceSpaceMapper;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 public class ConfluenceResponseParser {

@@ -1,7 +1,8 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.in.dto;
 
-import java.util.List;
 import lombok.Builder;
+
+import java.util.List;
 
 /**
  * API DTO représentant une page Confluence exposée par le contrat HTTP.

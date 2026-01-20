@@ -1,11 +1,12 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in;
 
-import java.util.List;
 import org.springframework.stereotype.Component;
 import pro.softcom.aisentinel.domain.pii.reporting.PageSecretsResponse;
 import pro.softcom.aisentinel.domain.pii.reporting.RevealedSecret;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.PiiAccessController.PageSecretsResponseDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.PiiAccessController.RevealedSecretDto;
+
+import java.util.List;
 
 /**
  * Mapper for transforming domain models to REST DTOs.

@@ -1,17 +1,9 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
+import jakarta.persistence.*;
+import lombok.*;
+
 import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 /**
  * JPA entity mapped to scan_checkpoints table.

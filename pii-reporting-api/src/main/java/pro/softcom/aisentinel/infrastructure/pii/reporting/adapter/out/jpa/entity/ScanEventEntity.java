@@ -1,19 +1,12 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
-import jakarta.persistence.Table;
-import java.time.Instant;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+
+import java.time.Instant;
 
 /**
  * JPA entity for event-sourced scan events. Payload stores the serialized ScanEvent as JSONB.

@@ -1,6 +1,5 @@
 package pro.softcom.aisentinel.application.pii.reporting.service;
 
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.confluence.port.out.AttachmentTextExtractor;
@@ -9,6 +8,8 @@ import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
 import pro.softcom.aisentinel.domain.confluence.AttachmentTypeFilter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 /**
  * Service that extracts readable text from Confluence attachments.

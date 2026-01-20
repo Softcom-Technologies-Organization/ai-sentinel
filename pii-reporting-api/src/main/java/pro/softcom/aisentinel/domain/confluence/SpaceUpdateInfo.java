@@ -1,8 +1,9 @@
 package pro.softcom.aisentinel.domain.confluence;
 
+import org.jspecify.annotations.Nullable;
+
 import java.time.Instant;
 import java.util.List;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Value object representing update information for a Confluence space.

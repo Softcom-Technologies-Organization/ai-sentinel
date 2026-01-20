@@ -1,12 +1,13 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import pro.softcom.aisentinel.application.confluence.port.out.AttachmentTextExtractor;
 import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * WHAT: Composite implementation that delegates to the first supporting strategy.

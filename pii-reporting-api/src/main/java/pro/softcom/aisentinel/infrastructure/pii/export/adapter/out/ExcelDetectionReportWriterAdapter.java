@@ -1,5 +1,18 @@
 package pro.softcom.aisentinel.infrastructure.pii.export.adapter.out;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.common.usermodel.HyperlinkType;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.apache.tika.io.FilenameUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import pro.softcom.aisentinel.application.pii.export.dto.DetectionReportEntry;
+import pro.softcom.aisentinel.application.pii.export.port.out.WriteDetectionReportPort;
+import pro.softcom.aisentinel.domain.pii.export.ExportContext;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -9,25 +22,6 @@ import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.common.usermodel.HyperlinkType;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.DataFormat;
-import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.Hyperlink;
-import org.apache.poi.ss.usermodel.IndexedColors;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.apache.tika.io.FilenameUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import pro.softcom.aisentinel.application.pii.export.dto.DetectionReportEntry;
-import pro.softcom.aisentinel.application.pii.export.port.out.WriteDetectionReportPort;
-import pro.softcom.aisentinel.domain.pii.export.ExportContext;
 
 @Component
 @RequiredArgsConstructor

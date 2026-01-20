@@ -1,10 +1,11 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity;
 
-import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+
+import java.io.Serializable;
 
 /**
  * Composite identifier for ScanCheckpointEntity (scanId, spaceKey).

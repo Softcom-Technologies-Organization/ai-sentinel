@@ -1,8 +1,9 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out.mapper;
 
-import java.util.List;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpaceDataOwner;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.dto.ConfluenceSpaceDto;
+
+import java.util.List;
 
 /**
  * Maps Confluence space permissions to data owners.

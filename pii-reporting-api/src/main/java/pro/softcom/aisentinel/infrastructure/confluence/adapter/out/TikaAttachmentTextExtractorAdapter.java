@@ -1,7 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out;
 
-import java.io.ByteArrayInputStream;
-import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
@@ -13,6 +11,9 @@ import org.springframework.stereotype.Component;
 import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
 import pro.softcom.aisentinel.domain.confluence.AttachmentTypeFilter;
 import pro.softcom.aisentinel.infrastructure.document.validator.TextQualityValidator;
+
+import java.io.ByteArrayInputStream;
+import java.util.Optional;
 
 /**
  * WHAT: Attachment text extractor based on Apache Tika (programmatic API, no XML config).

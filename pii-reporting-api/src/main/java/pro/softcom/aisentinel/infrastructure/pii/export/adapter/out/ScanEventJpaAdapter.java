@@ -1,12 +1,13 @@
 package pro.softcom.aisentinel.infrastructure.pii.export.adapter.out;
 
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import pro.softcom.aisentinel.application.pii.export.port.out.ReadScanEventsPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
+
+import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor

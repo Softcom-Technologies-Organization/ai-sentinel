@@ -1,10 +1,5 @@
 package pro.softcom.aisentinel.application.confluence.usecase;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.confluence.port.in.ConfluenceSpacePort;
@@ -16,6 +11,12 @@ import pro.softcom.aisentinel.domain.confluence.ModifiedAttachmentInfo;
 import pro.softcom.aisentinel.domain.confluence.ModifiedPageInfo;
 import pro.softcom.aisentinel.domain.confluence.SpaceUpdateInfo;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
+
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Service responsible for determining if Confluence spaces have been updated since their last scan.

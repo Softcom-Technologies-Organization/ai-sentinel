@@ -1,6 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa;
 
-import java.util.List;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -10,6 +9,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanSeverityCountEntity;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanSeverityCountId;
+
+import java.util.List;
 
 /**
  * JPA repository for atomic persistence of PII severity counts.

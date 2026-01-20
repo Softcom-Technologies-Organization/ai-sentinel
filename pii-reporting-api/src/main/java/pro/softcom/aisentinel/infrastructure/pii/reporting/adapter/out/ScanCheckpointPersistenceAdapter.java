@@ -1,9 +1,6 @@
 
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +9,10 @@ import pro.softcom.aisentinel.domain.pii.ScanStatus;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.DetectionCheckpointRepository;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanCheckpointEntity;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * PostgreSQL-backed implementation of ScanCheckpointRepository. Business intent: persist

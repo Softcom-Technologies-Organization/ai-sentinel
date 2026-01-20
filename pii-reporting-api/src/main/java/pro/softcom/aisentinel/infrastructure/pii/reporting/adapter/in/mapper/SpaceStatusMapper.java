@@ -1,9 +1,10 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper;
 
-import java.util.List;
 import org.springframework.stereotype.Component;
 import pro.softcom.aisentinel.domain.pii.scan.ConfluenceSpaceScanState;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.SpaceScanStateDto;
+
+import java.util.List;
 
 @Component
 public class SpaceStatusMapper {

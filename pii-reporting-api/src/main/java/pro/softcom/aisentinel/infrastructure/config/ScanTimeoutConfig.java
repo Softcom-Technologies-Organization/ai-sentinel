@@ -1,11 +1,12 @@
 package pro.softcom.aisentinel.infrastructure.config;
 
-import java.time.Duration;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
+
+import java.time.Duration;
 
 /**
  * Configuration for scan operation timeouts.

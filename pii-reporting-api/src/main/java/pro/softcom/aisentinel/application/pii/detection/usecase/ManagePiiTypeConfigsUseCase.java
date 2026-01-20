@@ -1,11 +1,12 @@
 package pro.softcom.aisentinel.application.pii.detection.usecase;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiTypeConfigsPort;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRepository;
 import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Use case implementation for managing PII type-specific configurations.

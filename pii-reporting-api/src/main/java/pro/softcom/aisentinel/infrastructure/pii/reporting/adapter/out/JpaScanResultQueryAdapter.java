@@ -1,10 +1,6 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -17,6 +13,11 @@ import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.LastScanMeta;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.DetectionEventRepository;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanEventEntity;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Adapter JPA implémentant le port de lecture ScanResultQuery.

@@ -1,11 +1,12 @@
 package pro.softcom.aisentinel.application.pii.reporting.port.in;
 
-import java.util.List;
-import java.util.Optional;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.LastScanMeta;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanReportingSummary;
 import pro.softcom.aisentinel.domain.pii.scan.ConfluenceSpaceScanState;
+
+import java.util.List;
+import java.util.Optional;
 
 public interface ScanReportingPort {
 

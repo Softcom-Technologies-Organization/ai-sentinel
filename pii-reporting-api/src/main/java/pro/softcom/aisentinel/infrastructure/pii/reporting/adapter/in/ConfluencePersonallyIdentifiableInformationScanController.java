@@ -4,20 +4,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.time.Duration;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.ServerSentEvent;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.PauseScanPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.StreamConfluenceResumeScanPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.StreamConfluenceScanPort;
@@ -25,6 +18,9 @@ import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.Conflu
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.ConfluenceContentScanResultToScanEventMapper;
 import reactor.core.publisher.Flux;
+
+import java.time.Duration;
+import java.util.List;
 
 /**
  * SSE WebFlux controller that streams a space scan as Server-Sent Events.

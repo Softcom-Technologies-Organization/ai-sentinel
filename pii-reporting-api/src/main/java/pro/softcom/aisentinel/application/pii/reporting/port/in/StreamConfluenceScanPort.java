@@ -1,8 +1,9 @@
 package pro.softcom.aisentinel.application.pii.reporting.port.in;
 
-import java.util.List;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import reactor.core.publisher.Flux;
+
+import java.util.List;
 
 /**
  * Use case orchestrating Confluence scans and PII detection.

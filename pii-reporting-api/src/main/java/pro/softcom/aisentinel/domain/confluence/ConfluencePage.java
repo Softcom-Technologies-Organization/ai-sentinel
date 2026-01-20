@@ -1,9 +1,10 @@
 package pro.softcom.aisentinel.domain.confluence;
 
+import lombok.Builder;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import lombok.Builder;
 
 @Builder
 public record ConfluencePage(

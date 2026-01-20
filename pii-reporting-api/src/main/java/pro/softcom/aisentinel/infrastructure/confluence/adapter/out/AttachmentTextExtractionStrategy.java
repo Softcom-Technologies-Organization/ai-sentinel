@@ -1,8 +1,9 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out;
 
-import java.util.Optional;
 import pro.softcom.aisentinel.application.confluence.port.out.AttachmentTextExtractor;
 import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
+
+import java.util.Optional;
 
 /**
  * Adapter-out internal strategy for attachment text extraction.

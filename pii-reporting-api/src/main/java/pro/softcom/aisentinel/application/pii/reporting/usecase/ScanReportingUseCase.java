@@ -1,25 +1,15 @@
 package pro.softcom.aisentinel.application.pii.reporting.usecase;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.ScanReportingPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery;
 import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
-import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
-import pro.softcom.aisentinel.domain.pii.reporting.LastScanMeta;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
-import pro.softcom.aisentinel.domain.pii.reporting.ScanReportingSummary;
-import pro.softcom.aisentinel.domain.pii.reporting.SpaceSummary;
+import pro.softcom.aisentinel.domain.pii.reporting.*;
 import pro.softcom.aisentinel.domain.pii.scan.ConfluenceSpaceScanState;
+
+import java.time.Instant;
+import java.util.*;
 
 @RequiredArgsConstructor
 @Slf4j

@@ -1,7 +1,8 @@
 package pro.softcom.aisentinel.domain.pii.security;
 
-import java.time.Instant;
 import pro.softcom.aisentinel.domain.pii.reporting.AccessPurpose;
+
+import java.time.Instant;
 
 /**
  * Domain model representing a PII access audit record.

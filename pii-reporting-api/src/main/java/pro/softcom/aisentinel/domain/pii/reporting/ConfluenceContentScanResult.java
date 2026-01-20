@@ -1,10 +1,11 @@
 package pro.softcom.aisentinel.domain.pii.reporting;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import java.util.List;
-import java.util.Map;
 import lombok.Builder;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
+
+import java.util.List;
+import java.util.Map;
 
 @Builder(toBuilder = true)
 public record ConfluenceContentScanResult(

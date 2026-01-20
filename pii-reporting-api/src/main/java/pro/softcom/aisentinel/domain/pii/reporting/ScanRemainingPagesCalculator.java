@@ -1,8 +1,9 @@
 package pro.softcom.aisentinel.domain.pii.reporting;
 
-import java.util.List;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
+
+import java.util.List;
 
 /**
  * Décide du plan de reprise d’un scan : quelles pages restent à traiter et

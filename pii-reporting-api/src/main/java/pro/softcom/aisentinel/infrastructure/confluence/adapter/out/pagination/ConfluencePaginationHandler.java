@@ -1,8 +1,9 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out.pagination;
 
-import java.util.List;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.dto.ConfluenceSpaceDto;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.dto.ConfluenceSpacesResponseDto;
+
+import java.util.List;
 
 /**
  * Gère la logique de pagination pour les réponses de l'API Confluence.

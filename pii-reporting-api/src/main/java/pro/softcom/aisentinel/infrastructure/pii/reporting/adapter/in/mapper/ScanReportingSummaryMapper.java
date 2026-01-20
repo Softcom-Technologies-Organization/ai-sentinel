@@ -1,7 +1,5 @@
 package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper;
 
-import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import pro.softcom.aisentinel.application.pii.reporting.ScanSeverityCountService;
@@ -11,6 +9,9 @@ import pro.softcom.aisentinel.domain.pii.reporting.SpaceSummary;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanReportingSummaryDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.SeverityCountsDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.SpaceSummaryDto;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Maps domain DashboardSummary to presentation DashboardSummaryDto.

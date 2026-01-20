@@ -1,14 +1,14 @@
-import {Injectable, NgZone, signal} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
-import {Observable, of} from 'rxjs';
-import {catchError, tap} from 'rxjs/operators';
-import {Space} from '../models/space';
-import {StreamEvent} from '../models/stream-event';
+import { Injectable, NgZone, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
+import { Space } from '../models/space';
+import { StreamEvent } from '../models/stream-event';
 import {
   ConfluenceContentPersonallyIdentifiableInformationScanResult,
   StreamEventType
 } from '../models/stream-event-type';
-import {SpaceUpdateInfo} from '../models/space-update-info.model';
+import { SpaceUpdateInfo } from '../models/space-update-info.model';
 
 export interface LastScanMeta {
   scanId: string;

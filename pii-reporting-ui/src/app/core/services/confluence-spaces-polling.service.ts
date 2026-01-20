@@ -1,10 +1,10 @@
-import {inject, Injectable} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
-import {firstValueFrom, Observable, timer} from 'rxjs';
-import {catchError, map, shareReplay, skip, switchMap} from 'rxjs/operators';
-import {SentinelleApiService} from './sentinelle-api.service';
-import {Space} from '../models/space';
-import {SpaceUpdateInfo} from '../models/space-update-info.model';
+import { inject, Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom, Observable, timer } from 'rxjs';
+import { catchError, map, shareReplay, skip, switchMap } from 'rxjs/operators';
+import { SentinelleApiService } from './sentinelle-api.service';
+import { Space } from '../models/space';
+import { SpaceUpdateInfo } from '../models/space-update-info.model';
 
 export interface SpaceChangeDetection {
   spaces: Space[];

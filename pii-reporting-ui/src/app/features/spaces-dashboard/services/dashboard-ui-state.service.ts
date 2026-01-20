@@ -1,7 +1,7 @@
-import {computed, inject, Injectable, signal} from '@angular/core';
-import {TranslocoService} from '@jsverse/transloco';
-import {HistoryEntry} from '../../../core/models/history-entry';
-import {SpacesDashboardUtils} from '../spaces-dashboard.utils';
+import { computed, inject, Injectable, signal } from '@angular/core';
+import { TranslocoService } from '@jsverse/transloco';
+import { HistoryEntry } from '../../../core/models/history-entry';
+import { SpacesDashboardUtils } from '../spaces-dashboard.utils';
 
 /**
  * Service responsible for managing dashboard UI state.

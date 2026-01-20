@@ -6,18 +6,18 @@ import {
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection
 } from '@angular/core';
-import {provideRouter} from '@angular/router';
+import { provideRouter } from '@angular/router';
 
-import {routes} from './app.routes';
-import {providePrimeNG} from 'primeng/config';
-import {provideHttpClient} from '@angular/common/http';
+import { routes } from './app.routes';
+import { providePrimeNG } from 'primeng/config';
+import { provideHttpClient } from '@angular/common/http';
 import Aura from '@primeuix/themes/aura';
-import {ConfluenceSpacesPollingService} from './core/services/confluence-spaces-polling.service';
-import {provideTransloco} from '@jsverse/transloco';
-import {TranslocoHttpLoader} from './core/services/transloco-http-loader';
-import {ConfirmationService, MessageService} from 'primeng/api';
-import {ToastService} from './core/services/toast.service';
-import {SentinelleApiService} from './core/services/sentinelle-api.service';
+import { ConfluenceSpacesPollingService } from './core/services/confluence-spaces-polling.service';
+import { provideTransloco } from '@jsverse/transloco';
+import { TranslocoHttpLoader } from './core/services/transloco-http-loader';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { ToastService } from './core/services/toast.service';
+import { SentinelleApiService } from './core/services/sentinelle-api.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [

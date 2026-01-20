@@ -1,16 +1,16 @@
-import {computed, inject, Injectable, signal} from '@angular/core';
-import {Subscription} from 'rxjs';
-import {ConfirmationService} from 'primeng/api';
-import {TranslocoService} from '@jsverse/transloco';
-import {SentinelleApiService} from '../../../core/services/sentinelle-api.service';
-import {ToastService} from '../../../core/services/toast.service';
-import {ScanProgressService} from '../../../core/services/scan-progress.service';
-import {SpacesDashboardUtils} from '../spaces-dashboard.utils';
-import {PiiItemsStorageService} from './pii-items-storage.service';
-import {DashboardUiStateService} from './dashboard-ui-state.service';
-import {SpaceDataManagementService} from './space-data-management.service';
-import {SseEventHandlerService} from './sse-event-handler.service';
-import {StreamEventType} from '../spaces-dashboard-stream.utils';
+import { computed, inject, Injectable, signal } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { ConfirmationService } from 'primeng/api';
+import { TranslocoService } from '@jsverse/transloco';
+import { SentinelleApiService } from '../../../core/services/sentinelle-api.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { ScanProgressService } from '../../../core/services/scan-progress.service';
+import { SpacesDashboardUtils } from '../spaces-dashboard.utils';
+import { PiiItemsStorageService } from './pii-items-storage.service';
+import { DashboardUiStateService } from './dashboard-ui-state.service';
+import { SpaceDataManagementService } from './space-data-management.service';
+import { SseEventHandlerService } from './sse-event-handler.service';
+import { StreamEventType } from '../spaces-dashboard-stream.utils';
 
 /**
  * Service responsible for controlling scan lifecycle (start, stop, resume).

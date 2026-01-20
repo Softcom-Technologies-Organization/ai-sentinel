@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import {TestIds} from '../src/app/features/test-ids.constants';
+import { expect, test } from '@playwright/test';
+import { TestIds } from '../src/app/features/test-ids.constants';
 
 /**
  * E2E tests for the Spaces Dashboard component.

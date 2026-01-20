@@ -1,11 +1,13 @@
-import {ChangeDetectionStrategy, Component, inject, input} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 
-import {TagModule} from 'primeng/tag';
-import {DataViewModule} from 'primeng/dataview';
-import {PersonallyIdentifiableInformationScanResult} from '../../core/models/personally-identifiable-information-scan-result';
-import {ProgressMap} from '../../core/models/progress-map';
-import {PiiItemCardComponent} from '../pii-item-card/pii-item-card.component';
-import {TranslocoModule, TranslocoService} from '@jsverse/transloco';
+import { TagModule } from 'primeng/tag';
+import { DataViewModule } from 'primeng/dataview';
+import {
+  PersonallyIdentifiableInformationScanResult
+} from '../../core/models/personally-identifiable-information-scan-result';
+import { ProgressMap } from '../../core/models/progress-map';
+import { PiiItemCardComponent } from '../pii-item-card/pii-item-card.component';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 
 // Keep a local minimal model for UI space to avoid importing private types
 export type UISpaceLike = { key: string; name?: string; status: 'FAILED'|'RUNNING'|'OK' } | null;

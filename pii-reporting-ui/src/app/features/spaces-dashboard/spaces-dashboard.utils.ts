@@ -1,5 +1,5 @@
-import {computed, Injectable, signal} from '@angular/core';
-import {Space} from '../../core/models/space';
+import { computed, Injectable, signal } from '@angular/core';
+import { Space } from '../../core/models/space';
 import {
   PersonallyIdentifiableInformationScanResult
 } from '../../core/models/personally-identifiable-information-scan-result';

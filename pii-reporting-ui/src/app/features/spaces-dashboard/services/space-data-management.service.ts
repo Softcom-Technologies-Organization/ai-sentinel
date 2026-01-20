@@ -1,21 +1,15 @@
-import {computed, inject, Injectable, signal} from '@angular/core';
-import {Observable, Subscription} from 'rxjs';
-import {
-  LastScanMeta,
-  SentinelleApiService,
-  SpaceScanStateDto
-} from '../../../core/services/sentinelle-api.service';
-import {Space} from '../../../core/models/space';
-import {SpaceUpdateInfo} from '../../../core/models/space-update-info.model';
-import {
-  ConfluenceSpacesPollingService
-} from '../../../core/services/confluence-spaces-polling.service';
-import {SpacesDashboardUtils} from '../spaces-dashboard.utils';
-import {ScanProgressService} from '../../../core/services/scan-progress.service';
-import {PiiItemsStorageService} from './pii-items-storage.service';
-import {DashboardUiStateService} from './dashboard-ui-state.service';
-import {TranslocoService} from '@jsverse/transloco';
-import {coerceSpaceKey} from '../spaces-dashboard-stream.utils';
+import { computed, inject, Injectable, signal } from '@angular/core';
+import { Observable, Subscription } from 'rxjs';
+import { LastScanMeta, SentinelleApiService, SpaceScanStateDto } from '../../../core/services/sentinelle-api.service';
+import { Space } from '../../../core/models/space';
+import { SpaceUpdateInfo } from '../../../core/models/space-update-info.model';
+import { ConfluenceSpacesPollingService } from '../../../core/services/confluence-spaces-polling.service';
+import { SpacesDashboardUtils } from '../spaces-dashboard.utils';
+import { ScanProgressService } from '../../../core/services/scan-progress.service';
+import { PiiItemsStorageService } from './pii-items-storage.service';
+import { DashboardUiStateService } from './dashboard-ui-state.service';
+import { TranslocoService } from '@jsverse/transloco';
+import { coerceSpaceKey } from '../spaces-dashboard-stream.utils';
 
 /**
  * Service responsible for managing space data loading and background polling.

@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
 

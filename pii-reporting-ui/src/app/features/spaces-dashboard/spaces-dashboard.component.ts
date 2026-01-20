@@ -1,49 +1,35 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  OnDestroy,
-  OnInit,
-  signal
-} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {FormsModule} from '@angular/forms';
-import {ButtonModule} from 'primeng/button';
-import {TranslocoModule} from '@jsverse/transloco';
-import {
-  LanguageSelectorComponent
-} from '../../core/components/language-selector/language-selector.component';
-import {PiiItemCardComponent} from '../pii-item-card/pii-item-card.component';
-import {PiiSettingsComponent} from '../pii-settings/pii-settings.component';
-import {ToggleSwitchModule} from 'primeng/toggleswitch';
-import {ToggleButtonModule} from 'primeng/togglebutton';
-import {BadgeModule} from 'primeng/badge';
-import {InputTextModule} from 'primeng/inputtext';
-import {SelectModule} from 'primeng/select';
-import {TableModule} from 'primeng/table';
-import {TagModule} from 'primeng/tag';
-import {SpacesDashboardUtils} from './spaces-dashboard.utils';
-import {Ripple} from 'primeng/ripple';
-import {TooltipModule} from 'primeng/tooltip';
-import {DataViewModule} from 'primeng/dataview';
-import {SkeletonModule} from 'primeng/skeleton';
-import {
-  ScanProgressBarComponent
-} from '../../shared/components/scan-progress-bar/scan-progress-bar.component';
-import {SortEvent} from 'primeng/api';
-import {TestIds} from '../test-ids.constants';
-import {ToastModule} from 'primeng/toast';
-import {ConfirmDialogModule} from 'primeng/confirmdialog';
-import {DialogModule} from 'primeng/dialog';
-import {
-  NewSpacesBannerComponent
-} from '../../shared/components/new-spaces-banner/new-spaces-banner.component';
-import {SpaceFilteringService} from './services/space-filtering.service';
-import {DashboardUiStateService} from './services/dashboard-ui-state.service';
-import {PiiItemsStorageService} from './services/pii-items-storage.service';
-import {SpaceDataManagementService} from './services/space-data-management.service';
-import {ScanControlService} from './services/scan-control.service';
+import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
+import { TranslocoModule } from '@jsverse/transloco';
+import { LanguageSelectorComponent } from '../../core/components/language-selector/language-selector.component';
+import { PiiItemCardComponent } from '../pii-item-card/pii-item-card.component';
+import { PiiSettingsComponent } from '../pii-settings/pii-settings.component';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { ToggleButtonModule } from 'primeng/togglebutton';
+import { BadgeModule } from 'primeng/badge';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
+import { SpacesDashboardUtils } from './spaces-dashboard.utils';
+import { Ripple } from 'primeng/ripple';
+import { TooltipModule } from 'primeng/tooltip';
+import { DataViewModule } from 'primeng/dataview';
+import { SkeletonModule } from 'primeng/skeleton';
+import { ScanProgressBarComponent } from '../../shared/components/scan-progress-bar/scan-progress-bar.component';
+import { SortEvent } from 'primeng/api';
+import { TestIds } from '../test-ids.constants';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DialogModule } from 'primeng/dialog';
+import { NewSpacesBannerComponent } from '../../shared/components/new-spaces-banner/new-spaces-banner.component';
+import { SpaceFilteringService } from './services/space-filtering.service';
+import { DashboardUiStateService } from './services/dashboard-ui-state.service';
+import { PiiItemsStorageService } from './services/pii-items-storage.service';
+import { SpaceDataManagementService } from './services/space-data-management.service';
+import { ScanControlService } from './services/scan-control.service';
 
 /**
  * Dashboard to orchestrate scanning all Confluence spaces sequentially.

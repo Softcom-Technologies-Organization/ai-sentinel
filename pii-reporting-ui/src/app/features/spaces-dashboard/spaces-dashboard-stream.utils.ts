@@ -1,6 +1,4 @@
-import {
-  ConfluenceContentPersonallyIdentifiableInformationScanResult
-} from '../../core/models/stream-event-type';
+import { ConfluenceContentPersonallyIdentifiableInformationScanResult } from '../../core/models/stream-event-type';
 
 /**
  * Utilities for stream-event handling in Spaces Dashboard.

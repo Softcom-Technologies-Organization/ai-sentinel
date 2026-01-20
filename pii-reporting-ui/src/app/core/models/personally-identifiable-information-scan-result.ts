@@ -1,7 +1,5 @@
-import {
-  DetectedPersonallyIdentifiableInformation
-} from './detected-personally-identifiable-information';
-import {Severity} from './severity';
+import { DetectedPersonallyIdentifiableInformation } from './detected-personally-identifiable-information';
+import { Severity } from './severity';
 
 export interface PersonallyIdentifiableInformationScanResult {
   scanId: string;

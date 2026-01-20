@@ -1,6 +1,6 @@
-import {ChangeDetectionStrategy, Component, computed, inject, Input} from '@angular/core';
-import {ProgressBarModule} from 'primeng/progressbar';
-import {ScanProgressService} from '../../../core/services/scan-progress.service';
+import { ChangeDetectionStrategy, Component, computed, inject, Input } from '@angular/core';
+import { ProgressBarModule } from 'primeng/progressbar';
+import { ScanProgressService } from '../../../core/services/scan-progress.service';
 
 /**
  * Component responsible for displaying scan progress for a Confluence space.

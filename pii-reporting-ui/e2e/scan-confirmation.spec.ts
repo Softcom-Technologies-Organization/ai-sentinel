@@ -1,6 +1,6 @@
-import {expect, test} from '@playwright/test';
-import {TestIds} from '../src/app/features/test-ids.constants';
-import {DIALOG_SELECTORS} from './helpers/dialog-selectors';
+import { expect, test } from '@playwright/test';
+import { TestIds } from '../src/app/features/test-ids.constants';
+import { DIALOG_SELECTORS } from './helpers/dialog-selectors';
 
 /**
  * E2E tests for scan start confirmation dialog.

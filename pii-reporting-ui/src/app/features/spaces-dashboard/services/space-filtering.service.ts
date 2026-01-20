@@ -1,7 +1,7 @@
-import {computed, inject, Injectable, signal} from '@angular/core';
-import {SortEvent} from 'primeng/api';
-import {SpacesDashboardUtils} from '../spaces-dashboard.utils';
-import {SpaceDataManagementService} from './space-data-management.service';
+import { computed, inject, Injectable, signal } from '@angular/core';
+import { SortEvent } from 'primeng/api';
+import { SpacesDashboardUtils } from '../spaces-dashboard.utils';
+import { SpaceDataManagementService } from './space-data-management.service';
 
 /**
  * Service responsible for filtering and sorting spaces in the dashboard.

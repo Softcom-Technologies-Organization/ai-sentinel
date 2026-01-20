@@ -1,20 +1,13 @@
-import {inject, Injectable} from '@angular/core';
-import {TranslocoService} from '@jsverse/transloco';
-import {ScanProgressService} from '../../../core/services/scan-progress.service';
-import {ToastService} from '../../../core/services/toast.service';
-import {
-  ConfluenceContentPersonallyIdentifiableInformationScanResult
-} from '../../../core/models/stream-event-type';
-import {SpacesDashboardUtils} from '../spaces-dashboard.utils';
-import {
-  coerceSpaceKey,
-  formatEventLog,
-  isAttachmentPayload,
-  StreamEventType
-} from '../spaces-dashboard-stream.utils';
-import {SpaceDataManagementService} from './space-data-management.service';
-import {PiiItemsStorageService} from './pii-items-storage.service';
-import {DashboardUiStateService} from './dashboard-ui-state.service';
+import { inject, Injectable } from '@angular/core';
+import { TranslocoService } from '@jsverse/transloco';
+import { ScanProgressService } from '../../../core/services/scan-progress.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { ConfluenceContentPersonallyIdentifiableInformationScanResult } from '../../../core/models/stream-event-type';
+import { SpacesDashboardUtils } from '../spaces-dashboard.utils';
+import { coerceSpaceKey, formatEventLog, isAttachmentPayload, StreamEventType } from '../spaces-dashboard-stream.utils';
+import { SpaceDataManagementService } from './space-data-management.service';
+import { PiiItemsStorageService } from './pii-items-storage.service';
+import { DashboardUiStateService } from './dashboard-ui-state.service';
 
 /**
  * Service responsible for handling and routing Server-Sent Events (SSE) from scan operations.

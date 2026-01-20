@@ -1,6 +1,6 @@
 # AI Sentinel
 
-[![Version](https://img.shields.io/badge/version-0.0.1-blue.svg)](https://github.com/Softcom-Technologies-Organization/ai-sentinel/releases)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Softcom-Technologies-Organization/ai-sentinel/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)](https://www.docker.com/)
 [![Python](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/)
@@ -169,6 +169,15 @@ docker compose up -d
 ```bash
 docker compose -f docker-compose.dev.yml up -d
 ```
+
+⚠️ **Note for first-time setup:**
+When running the command for the first time, you will see errors for `pii-reporting-api` container. **This is expected and normal.**
+
+![Expected Docker Error](docs/screenshots/docker-compose-first-normal-error.png)
+
+**Why does this happen?**
+This service requires secure credentials (like database encryption keys) to start. The `ai-sentinel-infisical-configurator` container needs to run first to generate these credentials and store them in Infisical. Once the configuration is complete (in Step 3), restarting the services will allow 
+them to fetch the credentials and start correctly. `pii-detector-service` also needs to be restarted to load the new secrets even if it doesn't show any errors.
 
 The `ai-sentinel-infisical-configurator` container will automatically:
 - ✅ Create the Infisical instance

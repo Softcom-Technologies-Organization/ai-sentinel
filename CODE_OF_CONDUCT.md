@@ -80,8 +80,7 @@ This Code of Conduct applies to all project-related activities, including but no
 If you experience or witness unacceptable behavior, or have any other concerns,
 please report it by contacting the project team at:
 
-**Email**: changeme@softcom.pro
-**Alternative**: changeme@softcom.pro
+**Email**: Thibaut.Vuillaume@softcom.pro
 
 All reports will be handled with discretion. In your report please include:
 
@@ -107,7 +106,7 @@ reporters and victims.
 ## Enforcement
 
 Any instances of abusive, harassing, or otherwise unacceptable behavior should be
-reported to the project team at changeme@softcom.pro. Each complaint
+reported to the project team at Thibaut.Vuillaume@softcom.pro Each complaint
 will be carefully reviewed and investigated, resulting in an appropriate response
 based on the specific circumstances. The project team maintains strict
 confidentiality regarding incident reporters and handles all matters with

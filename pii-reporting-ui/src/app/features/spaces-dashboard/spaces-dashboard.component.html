@@ -1,58 +1,207 @@
+<p-toast key="scan-errors" position="top-right" [baseZIndex]="5000"></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
 <div class="page p-3">
   <div class="header">
-    <h2 class="m-0">Sentinel AI</h2>
+    <h2 class="m-0">
+      {{ 'dashboard.title' | transloco }}
+      <output class="scan-status-badge"
+              [class.scanning]="isStreaming()"
+              [class.inactive]="!isStreaming()"
+              [attr.aria-live]="isStreaming() ? 'polite' : 'off'"
+              [attr.aria-label]="(isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco">
+        {{ (isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco }}
+      </output>
+    </h2>
     <div class="spacer"></div>
-    <button pButton type="button" class="p-button-raised p-button-primary" (click)="startAll()" [disabled]="!canStartScan()">Démarrer le scan globale</button>
-    <button pButton type="button" class="p-button-outlined p-button-danger" (click)="stopCurrentScan()" [disabled]="!isStreaming()">Interrompre</button>
-    <button pButton type="button" class="p-button-warning" (click)="resumeLastScan()"
-            [disabled]="!canResumeScan()" style="margin-left: .5rem;">
-      Reprendre le dernier scan
-    </button>
-    <div class="search-global">
-      <span class="p-input-icon-left">
-        <i class="pi pi-search"></i>
-        <input pInputText type="text" placeholder="Rechercher" [ngModel]="globalFilter()" (ngModelChange)="onGlobalChange($event)" aria-label="Rechercher globalement"/>
-      </span>
-    </div>
-    <div class="ms-auto text-muted">{{ isStreaming() ? 'En cours...' : 'Prêt' }}</div>
+    <p-button type="button"
+              icon="pi pi-cog"
+              [text]="true"
+              [rounded]="true"
+              (click)="openSettingsDialog()"
+              [pTooltip]="'dashboard.actions.settings' | transloco"
+              tooltipPosition="bottom"
+              [ariaLabel]="'dashboard.actions.settings' | transloco"
+              styleClass="settings-button">
+    </p-button>
+    <app-language-selector></app-language-selector>
   </div>
 
-  @if (lastScanMeta(); as last) {
-    <div class="mt-2 text-sm text-muted">
-      Dernier scan: <strong>{{ last.scanId }}</strong>
-      · {{ last.lastUpdated | date:'short' }}
-      · {{ last.spacesCount }} espaces
-    </div>
-  }
+  <!-- Phase 2: New spaces notification banner -->
+  <app-new-spaces-banner
+    [hasNewSpaces]="hasNewSpaces()"
+    [newSpacesCount]="newSpacesCount()"
+    (refresh)="refreshSpaces()"
+    (dismiss)="dismissNotification()">
+  </app-new-spaces-banner>
 
-  <p-table #dt [value]="filteredSpaces()" [paginator]="true" [rows]="10" [tableStyle]="{'min-width':'60rem'}"
-           [rowsPerPageOptions]="[10,20,50]" dataKey="key" ariaLabel="Liste des spaces"
-           [expandedRowKeys]="expandedRowKeys()" (onRowExpand)="onRowExpand($event)" (onRowCollapse)="onRowCollapse($event)"
-           [loading]="isSpacesLoading()" [showLoader]="false">
+  <p-table #dt [value]="sortedSpaces()"
+           [(selection)]="selectedSpaces"
+           dataKey="key"
+           sortField="name" [sortOrder]="1"
+           [paginator]="true"
+           [tableStyle]="{'min-width':'60rem'}"
+           [loading]="isSpacesLoading()" [showLoader]="false"
+           [rows]="20"
+           [rowsPerPageOptions]="[10,20,50]"
+           [expandedRowKeys]="expandedRowKeys()"
+           (onRowExpand)="onRowExpand($event)"
+           (onRowCollapse)="onRowCollapse($event)"
+           (onSort)="onCustomSort($event)" [customSort]="true"
+           [attr.data-testid]="testIds.table">
     <ng-template #header>
       <tr>
+        <th id="col-check-box" style="width: 4rem">
+          <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+        </th>
         <th id="col-toggle" style="width:3rem"></th>
-        <th id="col-space">Space</th>
-        <th id="col-status">Statut</th>
-        <th id="col-progress">Progression</th>
-        <th id="col-last-scan">Dernier scan</th>
-        <th id="col-pii">PII</th>
-        <th id="col-actions">Actions</th>
+        <th id="col-space" [attr.data-testid]="testIds.headers.space" pSortableColumn="name">
+          {{ 'dashboard.table.headers.space' | transloco }}
+          <p-sortIcon field="name" />
+        </th>
+        <th id="col-status"
+            [attr.data-testid]="testIds.headers.status">{{ 'dashboard.table.headers.status' | transloco }}
+        </th>
+        <th id="col-progress"
+            [attr.data-testid]="testIds.headers.progress">{{ 'dashboard.table.headers.progress' | transloco }}
+        </th>
+        <th id="col-last-scan"
+            [attr.data-testid]="testIds.headers.lastScan">{{ 'dashboard.table.headers.lastScan' | transloco }}
+        </th>
+        <th id="col-pii" class="pii-header-cell" [attr.data-testid]="testIds.headers.pii" pSortableColumn="piiCount">
+          {{ 'dashboard.table.headers.pii' | transloco }}
+          <p-sortIcon field="piiCount" />
+          <p-button type="button"
+                    icon="pi pi-question-circle"
+                    [text]="true"
+                    [rounded]="true"
+                    (click)="openPiiHelpDialog(); $event.stopPropagation()"
+                    (keydown.enter)="openPiiHelpDialog(); $event.stopPropagation()"
+                    (keydown.space)="$event.preventDefault(); openPiiHelpDialog(); $event.stopPropagation()"
+                    [pTooltip]="'piiHelp.buttonTooltip' | transloco"
+                    tooltipPosition="top"
+                    [ariaLabel]="'piiHelp.buttonTooltip' | transloco"
+                    styleClass="pii-help-button">
+          </p-button>
+        </th>
+        <th id="col-actions"
+            [attr.data-testid]="testIds.headers.actions">{{ 'dashboard.table.headers.actions' | transloco }}
+        </th>
       </tr>
       <tr>
+        <th></th>
         <th id="col-toggle-value"></th>
-        <th id="col-space-value"></th>
+        <th id="col-space-value">
+          <div class="space-filters">
+            <input
+              class="search-global"
+              pInputText
+              type="text"
+              [placeholder]="'common.search' | transloco"
+              [ngModel]="globalFilter()"
+              (ngModelChange)="onGlobalChange($event)"
+              [attr.aria-label]="'common.searchGlobally' | transloco"
+              [attr.data-testid]="'global-filter-input'" />
+            <p-toggleButton
+              [ngModel]="modifiedOnlyFilter()"
+              (ngModelChange)="onModifiedOnlyChange($event)"
+              [onLabel]="'dashboard.filters.modifiedOnlyLabel' | transloco"
+              [offLabel]="'dashboard.filters.modifiedOnlyLabel' | transloco"
+              onIcon="pi pi-filter-fill"
+              offIcon="pi pi-filter"
+              class="p-button-sm p-button-outlined modified-filter-button white-space-nowrap"
+              [pTooltip]="'dashboard.filters.modifiedOnly' | transloco"
+              tooltipPosition="top">
+            </p-toggleButton>
+          </div>
+        </th>
         <th id="col-status-value">
-          <p-select [options]="statusOptions" optionLabel="label" optionValue="value" placeholder="Any" (onChange)="onFilter('status', $event.value)" [showClear]="true"></p-select>
+          <div class="space-filters">
+            <div class="filter-item">
+              <p-select
+                [options]="statusOptions()"
+                optionLabel="labelKey"
+                optionValue="value"
+                [ngModel]="statusFilter()"
+                (ngModelChange)="onFilter('status', $event)"
+                [showClear]="true"
+                [attr.data-testid]="'status-filter-select'">
+                <ng-template pTemplate="item" let-option>
+                  {{ option.labelKey | transloco }}
+                </ng-template>
+                <ng-template pTemplate="selectedItem" let-option>
+                  {{ option.labelKey | transloco }}
+                </ng-template>
+              </p-select>
+            </div>
+          </div>
         </th>
         <th id="col-progress-value"></th>
         <th id="col-last-scan-value"></th>
         <th id="col-pii-value"></th>
-        <th id="col-actions-value"></th>
+        <th id="col-actions-value">
+          @if (selectedSpacesCount() > 0) {
+            <p-button type="button"
+                      icon="pi pi-play"
+                      styleClass="p-button-raised p-button-info white-space-nowrap scan-selected-button"
+                      (click)="startSelected()"
+                      (keydown.enter)="startSelected()"
+                      (keydown.space)="$event.preventDefault(); startSelected()"
+                      [disabled]="!canStartScan()"
+                      [label]="'dashboard.actions.scanSelectedLabel' | transloco: { count: selectedSpacesCount() }"
+                      [pTooltip]="'dashboard.actions.scanSelected' | transloco: { count: selectedSpacesCount() }"
+                      tooltipPosition="bottom">
+            </p-button>
+            <div class="divider"></div>
+          }
+          @if (selectedSpacesCount() === 0) {
+            <p-button type="button"
+                      icon="pi pi-play"
+                      styleClass="p-button-raised p-button-info"
+                      (click)="startAll()"
+                      (keydown.enter)="startAll()"
+                      (keydown.space)="$event.preventDefault(); startAll()"
+                      [disabled]="!canStartScan()"
+                      [pTooltip]="'dashboard.actions.startScan' | transloco"
+                      tooltipPosition="bottom"
+                      [ariaLabel]="'dashboard.actions.startScan' | transloco"
+                      [attr.data-testid]="testIds.buttons.startScan">
+            </p-button>
+            <div class="divider"></div>
+          }
+          <p-button type="button"
+                    icon="pi pi-pause"
+                    styleClass="p-button-raised pause-button"
+                    (click)="pauseScan()"
+                    (keydown.enter)="pauseScan()"
+                    (keydown.space)="$event.preventDefault(); pauseScan()"
+                    [disabled]="!isStreaming()"
+                    [pTooltip]="'dashboard.actions.pauseScan' | transloco"
+                    tooltipPosition="bottom"
+                    [ariaLabel]="'dashboard.actions.pauseScan' | transloco"
+                    [attr.data-testid]="testIds.buttons.pauseScan">
+          </p-button>
+          <div class="divider"></div>
+          <p-button type="button"
+                    icon="pi pi-eject"
+                    styleClass="p-button-raised p-button-info resume-button"
+                    (click)="resumeLastScan()"
+                    (keydown.enter)="resumeLastScan()"
+                    (keydown.space)="$event.preventDefault(); resumeLastScan()"
+                    [disabled]="!canResumeScan()"
+                    [pTooltip]="'dashboard.actions.resumeScan' | transloco"
+                    tooltipPosition="bottom"
+                    [ariaLabel]="'dashboard.actions.resumeScan' | transloco"
+                    [attr.data-testid]="testIds.buttons.resumeScan">
+          </p-button>
+        </th>
       </tr>
     </ng-template>
     <ng-template #body let-space let-expanded="expanded">
-      <tr class="row-click" tabindex="0">
+      <tr class="row-click" tabindex="0" [attr.data-testid]="testIds.spaceRow">
+        <td>
+          <p-tableCheckbox [value]="space" (click)="$event.stopPropagation()"></p-tableCheckbox>
+        </td>
         <td>
           <p-button type="button"
                     pRipple
@@ -60,31 +209,47 @@
                     [text]="true"
                     [rounded]="true"
                     [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
-                    [ariaLabel]="expanded ? 'Réduire' : 'Développer'">
+                    [ariaLabel]="(expanded ? 'dashboard.table.collapse' : 'dashboard.table.expand') | transloco"
+                    [attr.data-testid]="testIds.expandButton">
           </p-button>
         </td>
         <td>
-          <div class="d-flex align-items-center gap-2">
-            <span class="fw-600">{{ space.name }}</span>
+          <div class="d-flex align-items-center">
+            <span class="fw-600" [attr.data-testid]="testIds.spaceName">{{ space.name }}</span>
+            @if (hasSpaceBeenUpdated(space.key)) {
+              <span class="space-updated-indicator"
+                    [pTooltip]="getSpaceUpdateTooltip(space.key)"
+                    tooltipPosition="right"
+                    aria-hidden="true"></span>
+            }
           </div>
         </td>
         <td>
-          <p-tag [value]="statusLabel(space.status)" [severity]="statusSeverity(space.status)"></p-tag>
+          <p-tag [value]="statusLabel(space.status)"
+                 [severity]="statusStyle(space.status)"
+                 [class]="'status-tag ' + (spacesDashboardUtils.statusStyleClass(space.status) || '')"
+                 [attr.data-testid]="testIds.spaceStatus"></p-tag>
         </td>
         <td>
-          <p-progressBar [value]="progressPercent(space.key)" [showValue]="true" [style]="{'height':'0.75rem'}"></p-progressBar>
+          <app-scan-progress-bar [spaceKey]="space.key" [status]="space.status"></app-scan-progress-bar>
         </td>
         <td>{{ space.lastScanTs | date:'short' }}</td>
         <td>
-          <p-badge [value]="space?.counts?.total ?? 0" size="large"></p-badge>
-          <span class="ml-2">
-                <p-badge [value]="space?.counts?.high ?? 0" severity="danger" class="ml-1" size="large"></p-badge>
-                <p-badge [value]="space?.counts?.medium ?? 0" severity="warn" class="ml-1" size="large"></p-badge>
-                <p-badge [value]="space?.counts?.low ?? 0" severity="info" class="ml-1" size="large"></p-badge>
-              </span>
+          <p-badge [value]="space?.counts?.total ?? 0" size="large"
+                   [attr.data-testid]="testIds.badges.total"></p-badge>
+          <span>
+                <p-badge [value]="space?.counts?.high ?? 0" severity="danger" class="ml-1"
+                         size="large" [attr.data-testid]="testIds.badges.high"></p-badge>
+                <p-badge [value]="space?.counts?.medium ?? 0" severity="warn" class="ml-1"
+                         size="large" [attr.data-testid]="testIds.badges.medium"></p-badge>
+                <p-badge [value]="space?.counts?.low ?? 0" severity="info" class="ml-1" size="large"
+                         [attr.data-testid]="testIds.badges.low"></p-badge>
+          </span>
         </td>
         <td>
-          <span [pTooltip]="spacesDashboardUtils.hasConfluenceUrl(space) ? 'Ouvrir dans Confluence' : 'URL indisponible (non fournie par le backend)'" tooltipPosition="top">
+          <span
+            [pTooltip]="(spacesDashboardUtils.hasConfluenceUrl(space) ? 'dashboard.actions.openInConfluence' : 'dashboard.actions.confluenceUnavailable') | transloco"
+            tooltipPosition="top">
             <p-button icon="pi pi-external-link"
                       styleClass="p-button-text"
                       [disabled]="!spacesDashboardUtils.hasConfluenceUrl(space)"
@@ -98,38 +263,55 @@
     </ng-template>
 
     <ng-template pTemplate="loadingbody">
-      <tr *ngFor="let _ of skeletonRows">
-        <td><p-skeleton width="1.5rem" height="1.5rem" shape="circle"></p-skeleton></td>
-        <td><p-skeleton width="12rem"></p-skeleton></td>
-        <td><p-skeleton width="6rem" height="1.5rem"></p-skeleton></td>
-        <td><p-skeleton width="8rem" height="0.75rem"></p-skeleton></td>
-        <td><p-skeleton width="9rem"></p-skeleton></td>
-        <td>
-          <div style="display:flex; align-items:center; gap:0.5rem">
-            <p-skeleton width="2rem" height="2rem"></p-skeleton>
-            <p-skeleton width="2rem" height="2rem"></p-skeleton>
-            <p-skeleton width="2rem" height="2rem"></p-skeleton>
-          </div>
-        </td>
-        <td><p-skeleton width="7rem"></p-skeleton></td>
-      </tr>
+      @for (_ of skeletonRows; track $index) {
+        <tr>
+          <td>
+            <p-skeleton width="1.5rem" height="1.5rem" shape="circle"></p-skeleton>
+          </td>
+          <td>
+            <p-skeleton width="12rem"></p-skeleton>
+          </td>
+          <td>
+            <p-skeleton width="6rem" height="1.5rem"></p-skeleton>
+          </td>
+          <td>
+            <p-skeleton width="8rem" height="0.75rem"></p-skeleton>
+          </td>
+          <td>
+            <p-skeleton width="9rem"></p-skeleton>
+          </td>
+          <td>
+            <div style="display:flex; align-items:center; gap:0.5rem">
+              <p-skeleton width="2rem" height="2rem"></p-skeleton>
+              <p-skeleton width="2rem" height="2rem"></p-skeleton>
+              <p-skeleton width="2rem" height="2rem"></p-skeleton>
+            </div>
+          </td>
+          <td>
+            <p-skeleton width="7rem"></p-skeleton>
+          </td>
+        </tr>
+      }
     </ng-template>
 
     <ng-template #expandedrow let-space>
       <tr>
-        <td colspan="7">
+        <td colspan="8">
           <div class="row-expansion">
             <div class="pii-scroll">
               <p-dataview [value]="itemsBySpace()[space.key] || []">
                 <ng-template #list let-items>
                   <div class="grid grid-nogutter">
-                    <div class="col-12" *ngFor="let it of items">
-                      <app-pii-item-card [item]="it" [maskByDefault]="maskByDefault()"></app-pii-item-card>
-                    </div>
+                    @for (it of items; track $index) {
+                      <div class="col-12">
+                        <app-pii-item-card [item]="it"
+                                           [maskByDefault]="maskByDefault()"></app-pii-item-card>
+                      </div>
+                    }
                   </div>
                 </ng-template>
                 <ng-template #empty>
-                  <div class="text-muted">Aucun élément à afficher</div>
+                  <div class="text-muted">{{ 'dashboard.table.emptyMessage' | transloco }}</div>
                 </ng-template>
               </p-dataview>
             </div>
@@ -138,4 +320,67 @@
       </tr>
     </ng-template>
   </p-table>
+
+  <!-- PII Severity Help Dialog -->
+  <p-dialog [header]="'piiHelp.dialogTitle' | transloco"
+            [(visible)]="showPiiHelpDialog"
+            [modal]="true"
+            [closable]="true"
+            [dismissableMask]="true"
+            [style]="{width: '600px'}"
+            styleClass="pii-help-dialog">
+    <p class="pii-help-intro">{{ 'piiHelp.introduction' | transloco }}</p>
+
+    <div class="pii-help-section pii-help-high">
+      <h4>
+        <p-badge severity="danger" [value]="''" class="severity-badge-icon"></p-badge>
+        {{ 'piiHelp.high.title' | transloco }}
+      </h4>
+      <p class="pii-help-description">{{ 'piiHelp.high.description' | transloco }}</p>
+      <p class="pii-help-types"><strong>{{ 'piiHelp.high.types' | transloco }}</strong></p>
+    </div>
+
+    <div class="pii-help-section pii-help-medium">
+      <h4>
+        <p-badge severity="warn" [value]="''" class="severity-badge-icon"></p-badge>
+        {{ 'piiHelp.medium.title' | transloco }}
+      </h4>
+      <p class="pii-help-description">{{ 'piiHelp.medium.description' | transloco }}</p>
+      <p class="pii-help-types"><strong>{{ 'piiHelp.medium.types' | transloco }}</strong></p>
+    </div>
+
+    <div class="pii-help-section pii-help-low">
+      <h4>
+        <p-badge severity="info" [value]="''" class="severity-badge-icon"></p-badge>
+        {{ 'piiHelp.low.title' | transloco }}
+      </h4>
+      <p class="pii-help-description">{{ 'piiHelp.low.description' | transloco }}</p>
+      <p class="pii-help-types"><strong>{{ 'piiHelp.low.types' | transloco }}</strong></p>
+    </div>
+
+    <div class="pii-help-section pii-help-score">
+      <h4>
+        <p-badge severity="success" [value]="''" class="severity-badge-icon"></p-badge>
+        {{ 'piiHelp.score.title' | transloco }}
+      </h4>
+      <p class="pii-help-description">{{ 'piiHelp.score.description' | transloco }}</p>
+      <p class="pii-help-calculation"><strong>{{ 'piiHelp.score.calculation' | transloco }}</strong></p>
+    </div>
+  </p-dialog>
+
+  <!-- Settings Dialog - Fullscreen modal overlay to preserve SSE connection -->
+  <p-dialog [(visible)]="showSettingsDialog"
+            [modal]="true"
+            [closable]="true"
+            [dismissableMask]="true"
+            [maximizable]="true"
+            [draggable]="false"
+            [resizable]="false"
+            [style]="{width: '95vw', height: '95vh'}"
+            styleClass="settings-fullscreen-dialog"
+            [header]="'settings.title' | transloco">
+    <app-pii-settings [dialogMode]="true"
+                      (closeDialog)="closeSettingsDialog()">
+    </app-pii-settings>
+  </p-dialog>
 </div>

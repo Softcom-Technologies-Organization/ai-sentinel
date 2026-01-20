@@ -1,4 +1,4 @@
-import { PiiItem } from './pii-item';
+import { PersonallyIdentifiableInformationScanResult } from './personally-identifiable-information-scan-result';
 
-export type ItemsBySpace = Record<string, PiiItem[]>;
+export type ItemsBySpace = Record<string, PersonallyIdentifiableInformationScanResult[]>;
 

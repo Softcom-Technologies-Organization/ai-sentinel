@@ -1,19 +1,19 @@
-<div class="bottom-panel" aria-label="Détails du space">
+<div class="bottom-panel" [attr.aria-label]="'spaceScanDetail.ariaLabel' | transloco">
   <div class="panel-actions">
     <div class="left">
       @if (scanning()) {
         <i class="pi pi-sync pi-spin"></i>
-        <span class="ml-2">Scan en cours</span>
+        <span class="ml-2">{{ 'spaceScanDetail.scanInProgress' | transloco }}</span>
         @if (currentSpaceKey(); as key) {
           @if (progress()[key]; as p) {
             <span class="ml-2">{{ (p.index || 0) }} / {{ (p.total || 0) }} pages</span>
           }
         }
         @if (space()) {
-          <span class="ml-2">• {{ items()?.length || 0 }} éléments</span>
+          <span class="ml-2">• {{ items()?.length || 0 }} {{ 'piiItem.fallback.items' | transloco }}</span>
         }
       } @else {
-        <span>Détails du space sélectionné</span>
+        <span>{{ 'spaceScanDetail.selectedSpace' | transloco }}</span>
       }
     </div>
     <div class="right"></div>
@@ -25,7 +25,7 @@
       <p-tag [value]="statusLabel(s.status)" [severity]="statusSeverity(s.status)"></p-tag>
     </div>
     <div class="pii-cards">
-      <p-dataView [value]="items()" layout="list" [paginator]="true" [rows]="10">
+      <p-dataView [value]="items()" layout="list" [paginator]="true" [rows]="10" [trackBy]="trackByItem">
         <ng-template let-item pTemplate="listItem">
           <app-pii-item-card [item]="item" [maskByDefault]="true"></app-pii-item-card>
         </ng-template>

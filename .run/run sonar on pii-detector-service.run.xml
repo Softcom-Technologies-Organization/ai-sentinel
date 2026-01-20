@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="run sonar on pii-detector-service" type="PowerShellRunType"
+    factoryName="PowerShell" scriptUrl="$PROJECT_DIR$\pii-detector-service\run-sonar.ps1"
+    workingDirectory="$PROJECT_DIR$\pii-detector-service"
+    executablePath="pwsh.exe">">
+    <envs/>
+    <method v="2"/>
+  </configuration>
+</component>

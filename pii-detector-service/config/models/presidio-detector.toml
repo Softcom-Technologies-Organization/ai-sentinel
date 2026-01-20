@@ -1,0 +1,122 @@
+# Microsoft Presidio Detector Configuration
+# Production-ready rule-based PII detection powered by Microsoft Presidio
+# https://microsoft.github.io/presidio/
+
+# ============================================================================
+# IMPORTANT: PII Type Configuration Moved to Database
+# ============================================================================
+# 
+# Recognizer enabled/disabled states and confidence thresholds are now managed
+# in the database for runtime configurability without redeployment.
+#
+# Database Table: pii_type_config
+# - pii_type: Internal PII type code (e.g., "EMAIL_ADDRESS", "US_SSN")
+# - detector_label: Presidio entity type (e.g., "EMAIL_ADDRESS", "CREDIT_CARD")
+# - threshold: Per-type confidence threshold (0.0-1.0)
+# - enabled: Whether this recognizer is active
+# - detector: Detector name (must be "PRESIDIO")
+#
+# Configuration is loaded at runtime via database_config_adapter.py
+# Fallback to [recognizers] and [scoring] sections only if database is unavailable.
+#
+# To modify recognizer settings or thresholds:
+# 1. Use the Java API: PUT /api/pii-type-configs/{id}
+# 2. Or directly update pii_type_config table in PostgreSQL
+# 3. Changes take effect immediately without service restart
+#
+# Database population: pii-reporting-api/src/main/resources/data.sql
+# Schema definition: init-scripts/007-pii-detection-config.sql
+# ============================================================================
+
+[model]
+model_id = "presidio-detector"
+# Note: Enable/disable via detection-settings.toml [detection] presidio_detection_enabled
+priority = 2
+strategy = "complement"  # complement, replace, or hybrid
+
+[detection]
+# Confidence threshold for Presidio recognizers (0.0 to 1.0)
+default_threshold = 0.8
+
+# Language support (Presidio supports multiple languages)
+# Supported: en, es, fr, de, it, pt, nl, he, etc.
+# Multi-language retained for regex-based recognizers (no spaCy required).
+# Do NOT enable spaCy-dependent entities (PERSON/LOCATION/ORG) to avoid non-Apache-compatible models for FR/ES/IT.
+languages = ["en", "fr", "de", "es", "it"]
+
+# spaCy NLP configuration - labels to ignore (not PII)
+labels_to_ignore = [
+    "CARDINAL",     # Numerals that are not identifiers
+    "MONEY",        # Amounts of money or currency
+    "WORK_OF_ART",  # Titles of works
+    "PRODUCT",      # Named products
+    "ORDINAL",      # 1st, 2nd, etc.
+    "QUANTITY",     # Measurements
+    "PERCENT",      # Percentages
+    "LANGUAGE",     # Languages
+    "EVENT",        # Named events
+    "LAW",          # Laws
+    "FAC"           # Facilities
+]
+
+# Enable specific recognizers (set to false to disable)
+# Entities requiring spaCy (via SpacyRecognizer):
+#   - PERSON (must remain disabled)
+#   - LOCATION (must remain disabled)
+#   - ORGANIZATION/GPE (not configured; must remain disabled)
+# Rationale: spaCy models for FR/ES/IT small are not Apache-2.0 compatible; we do not ship spaCy.
+# All other Presidio entities (EMAIL, PHONE, CREDIT_CARD, IP_ADDRESS, national IDs, etc.)
+# use regex-based recognizers and do NOT require spaCy.
+[anonymization]
+# Anonymization strategy for detected entities
+# Options: replace, mask, redact, encrypt, hash
+default_strategy = "replace"
+operator = "replace"
+
+# Custom anonymization per entity type
+[anonymization.operators]
+EMAIL_ADDRESS = "mask"
+PHONE_NUMBER = "mask"
+CREDIT_CARD = "mask"
+IBAN_CODE = "mask"
+PERSON = "replace"
+LOCATION = "redact"
+
+[advanced]
+# Enable context support for better accuracy
+use_context = true
+
+# Return decision process details
+return_decision_process = false
+
+# Allow list - entities that should NOT be detected as PII
+allow_list = []
+
+# Deny list - additional patterns to always flag as PII
+deny_list = []
+
+# Custom regex patterns (Presidio PatternRecognizer format)
+# Example for custom IDs, tokens, etc.
+[[custom_recognizers]]
+name = "CUSTOM_ID"
+patterns = []
+context = []
+enabled = false
+score = 0.8
+
+
+# Explicit NLP engine configuration
+[nlp]
+nlp_engine_name = "spacy"
+
+[[nlp.models]]
+lang_code = "en"
+model_name = "en_core_web_sm"
+
+[[nlp.models]]
+lang_code = "de"
+model_name = "de_core_news_sm"
+
+[[nlp.models]]
+lang_code = "fr"
+model_name = "fr_core_news_sm"

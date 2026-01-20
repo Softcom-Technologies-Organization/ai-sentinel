@@ -1,0 +1,266 @@
+############################################
+# Synthetic Confluence Content (PII Stress Test)
+# Purpose: evaluate GLiNER-based PII detection + chunking with overlap
+# Note: all PII is FAKE / TEST (e.g., payment test numbers, random IDs)
+############################################
+
+=== Confluence: Page Export (storage format) ======================
+<ac:structured-macro ac:name="panel">
+  <ac:parameter ac:name="title">Annuaire interne - Équipe Paris (FAUX)</ac:parameter>
+  <ac:rich-text-body>
+    <p><strong>Contact d'urgence:</strong> Jean <em>Dupont</em> (GIVENNAME SURNAME)</p>
+    <p>Adresse: Bâtiment <span>27B</span> (BUILDINGNUM), 12 Rue de la Paix (STREET),
+       75008 (ZIPCODE) Paris (CITY), FR</p>
+    <p>Téléphone (TELEPHONENUM): +33 6 12 34 56 78 ; Fixe: (01) 44 55 66 77</p>
+    <p>Email (EMAIL): jean.dupont<span> at </span>example.com
+       — variante: jean . dupont @ example . com — autre: jean(dot)dupont(at)example(dot)com</p>
+    <p>Nom d'utilisateur (USERNAME): jdupont ; Mot de passe (PASSWORD) suggéré:
+       "S3 cr3t! 234" (avec espace délibéré)</p>
+    <p>Date de naissance (DATEOFBIRTH): 16/07/1985</p>
+    <p>Numéro de sécurité sociale FR (SOCIALNUM): 1 85 07 75 123 456 78 (FAUX)</p>
+    <p>Numéro fiscal (TAXNUM): 1234567890123</p>
+    <p>Numéro de permis de conduire (DRIVERLICENSENUM): FR-DL D123-4567-8901</p>
+    <p>Numéro de carte d'identité (IDCARDNUM): CNI 01 23 456 789</p>
+    <p>Numéro de compte (ACCOUNTNUM): ACCT-000123456789 ; IBAN (ACCOUNTNUM): FR76 3000 6000 0112 3456 7890 189</p>
+    <p>Carte bancaire (CREDITCARDNUMBER): 4111 1111 1111 1111 (Visa TEST), 5555-5555-5555-4444 (Mastercard TEST), 3782 822463 10005 (Amex TEST)</p>
+  </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:name="expand">
+  <ac:parameter ac:name="title">Détails supplémentaires - Onboarding</ac:parameter>
+  <ac:rich-text-body>
+    <ul>
+      <li>Badge Bâtiment (BUILDINGNUM): 18A - Accès: RDC + N2</li>
+      <li>Adresse pro (STREET/CITY/ZIPCODE): 24 Avenue des Champs-Élysées, 75008, Paris</li>
+      <li>Compte salaires (ACCOUNTNUM): FR14 2004 1010 0505 0001 3M02 606 (IBAN, FAUX)</li>
+      <li>Identifiants:
+        <ul>
+          <li>USERNAME: jeanne.morel ; PASSWORD: "Pa ss word!23" (mot de passe avec espaces)</li>
+          <li>EMAIL: jeanne.more l@ex ample.com (avec espaces entre nom de domaine)</li>
+          <li>TELEPHONENUM: +33 (0)1 23 45 67 89</li>
+        </ul>
+      </li>
+    </ul>
+  </ac:rich-text-body>
+</ac:structured-macro>
+
+<!-- HTML table typical in Confluence -->
+<table class="confluenceTable">
+  <thead>
+    <tr>
+      <th>Given Name (GIVENNAME)</th>
+      <th>Surname (SURNAME)</th>
+      <th>Email (EMAIL)</th>
+      <th>Phone (TELEPHONENUM)</th>
+      <th>Username (USERNAME)</th>
+      <th>Account # (ACCOUNTNUM)</th>
+      <th>City (CITY)</th>
+      <th>ZIP (ZIPCODE)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Alice</td>
+      <td>Martin</td>
+      <td>alice.martin@exa mple.com</td>
+      <td>(+33) 7 55 44 33 22</td>
+      <td>amartin</td>
+      <td>0000-9999-8888-7777</td>
+      <td>Lyon</td>
+      <td>69002</td>
+    </tr>
+    <tr>
+      <td>Bob</td>
+      <td>Leroy</td>
+      <td>bob.leroy(at)example(dot)org</td>
+      <td>+33 4 72 00 00 00</td>
+      <td>bleroy_1982</td>
+      <td>ACCT 987654321</td>
+      <td>Marseille</td>
+      <td>13001</td>
+    </tr>
+    <tr>
+      <td>Camille</td>
+      <td>Bernard</td>
+      <td>"camille" + "." + "bernard" + "@" + "example.com"</td>
+      <td>+33 1 44 55 66 77</td>
+      <td>cbernard</td>
+      <td>FR76-30006-00001-12345678901-89</td>
+      <td>Paris</td>
+      <td>75002</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Mixed formats, realistic notes and inline code -->
+<p>Notes: le client <code>USERNAME: mbernard</code> a partagé un mot de passe temporaire:
+<code>P a$$ w0rd-Temp</code> (PASSWORD). Merci de le modifier. Téléphone: <code>+33-6-98-76-54-32</code>. SSN US (SOCIALNUM) pour test: <code>123-45-6789</code> (FAUX).</p>
+
+=== Confluence: Markdown Section (.md stored in a page) ==========
+# Notes d’intervention — Centre de Support (FAUX)
+
+**Client:** Jeanne Morel
+- **Adresse**: 10 bis, Rue du Bac (STREET), 75007 (ZIPCODE) Paris (CITY)
+- **Bâtiment**: Aile C, 3e (BUILDINGNUM)
+- **Téléphone**: 06 07 08 09 10 (TELEPHONENUM)
+- **Email**: jeanne.more l @ exa mple . com (EMAIL, avec espaces)
+- **Compte**: ACCT: 001-234567-89 (ACCOUNTNUM)
+- **CB**: 4000 0566 5566 5556 (CREDITCARDNUMBER, TEST)
+- **Date de naissance**: 1989-12-30 (DATEOFBIRTH)
+- **Numéro fiscal**: FR NIF 12345678901 (TAXNUM)
+- **ID carte**: ID FR-ABC-123456 (IDCARDNUM)
+- **Permis**: DDL FR-9F-1234-AB-56 (DRIVERLICENSENUM)
+- **Nom d'utilisateur**: jmorel (USERNAME) — **Mot de passe**: `S up3r-Str0ng!` (PASSWORD avec espace au début, dans du code)
+
+> Edge case: e‑mail fragmenté sur plusieurs lignes (EMAIL)
+>
+> jeanne.
+> morel@ex
+> ample.com
+
+Tableau Markdown (collé depuis un CSV) :
+
+| First Name (GIVENNAME) | Last Name (SURNAME) | Email (EMAIL)                 | Phone (TELEPHONENUM) | Street (STREET)              | City (CITY) | ZIP (ZIPCODE) |
+|---|---|---|---|---|---|---|
+| Marc                   | Duval               | marc.duval@ex ample.org       | +33 2 41 00 00 00     | 22 Rue des Lilas             | Nantes      | 44000         |
+| Sara                   | Cohen               | sara.cohen(at)example(dot)net | 07 55 66 77 88        | 3-5, boulevard Victor (Bât. 2)| Lille       | 59000         |
+
+Blocs de code (copiés depuis une page Confluence) :
+
+```json
+{
+  "service": "payments-sandbox",
+  "owner": { "first_name": "Nadia", "last_name": "Rossi" },       // GIVENNAME, SURNAME
+  "contact": {
+    "email": "nadia.rossi@exam ple.com",                          // EMAIL avec espace
+    "phone": "+33-5-12-34-56-78"                                  // TELEPHONENUM
+  },
+  "billing": {
+    "account_number": "ACCT-101-222-333",                         // ACCOUNTNUM
+    "card": "6011 0009 9013 9424",                                // CREDITCARDNUMBER (Discover TEST)
+    "tax_number": "TIN 12-3456789"                                // TAXNUM (US style)
+  },
+  "address": {
+    "building": "Bâtiment 9C",                                    // BUILDINGNUM
+    "street": "8 allée des Peupliers",                            // STREET
+    "city": "Bordeaux",                                           // CITY
+    "zip": "33000"                                                // ZIPCODE
+  },
+  "compliance": {
+    "social_security_number": "987-65-4320",                      // SOCIALNUM (FAUX)
+    "date_of_birth": "1977-03-21",                                // DATEOFBIRTH
+    "id_card": "CNI-FR-77 03 21 123 456",                         // IDCARDNUM
+    "driver_license": "D123-456-78-901-0"                         // DRIVERLICENSENUM pattern
+  },
+  "credentials": { "username": "nrossi", "password": "my pass word" } // USERNAME, PASSWORD (avec espaces)
+}
+
+# .env exporté depuis Confluence (format texte)
+APP_ENV: "prod"
+ADMIN_USERNAME: "admin.paris"          # USERNAME
+ADMIN_PASSWORD: "P@ ss w0rd!!!"        # PASSWORD avec espaces
+ALERT_EMAIL: "sec urite@ex ample.fr"   # EMAIL avec espaces
+HOTLINE_PHONE: "+33 800 12 34 56"      # TELEPHONENUM
+SIEGE_STREET: "15 rue Royale"          # STREET
+SIEGE_CITY: "Paris"                    # CITY
+SIEGE_ZIP: "75001"                     # ZIPCODE
+COMPTA_ACCOUNT: "FR76-30006-00001-99999999999-99" # ACCOUNTNUM (IBAN-like)
+FISCAL_ID: "FR-1234567890123"          # TAXNUM
+
+=== Confluence: Meeting Notes (storage + mixed HTML) =============
+
+<p>Participants: <strong>Lucie</strong> (GIVENNAME) <strong>Durand</strong> (SURNAME), "lucie.durand at example.com" (EMAIL), tél: 06 11 22 33 44 (TELEPHONENUM).</p> <p>Lieu: Bâtiment 3B (BUILDINGNUM), 5 place de la République (STREET), 59000 (ZIPCODE) Lille (CITY).</p> <p>Ticket #PAY-1342 — bug sur la tokenisation: texte > fenêtre, chunk overlap à 128. Vérifier sur un texte dépassant 768 tokens (cf. modèle GLiNER PII large).</p> <p>Comptabilité: compte client (ACCOUNTNUM) AC-000-111-222, carte test (CREDITCARDNUMBER) 4000-0000-0000-0002, mot de passe (PASSWORD) "R and 0 m-Token" (avec espace), date de naissance (DATEOFBIRTH) 31.01.1990, SSN (SOCIALNUM) 111-22-3333, TAXNUM "FR NIF 9988776655443".</p>
+
+<ac:structured-macro ac:name="code">
+<ac:parameter ac:name="language">bash</ac:parameter>
+ac:plain-text-body
+
+<![CDATA[ # Script d’exemple: extrait un CSV Confluence et cherche des PII export USERNAME="ops.runner" export PASSWORD="Sup erSe cure#2025" export CONTACT_EMAIL="ops.team (at) example.org" export CONTACT_PHONE="+33 9 70 00 00 00" export STREET="42 boulevard Haussmann" export CITY="Paris" export ZIPCODE="75009" export ACCOUNTNUM="ACCT-4242-4242-4242" # CB test (stripe): 4242 4242 4242 4242 (CREDITCARDNUMBER) ]]>
+
+</ac:plain-text-body>
+</ac:structured-macro>
+
+=== Confluence: Long “How-To” with list items (to add length) ====
+
+Créer un compte utilisateur (USERNAME): m.lefevre ; définir un mot de passe (PASSWORD): "S3 cur e!!".
+
+Renseigner l’adresse: Bâtiment 7D (BUILDINGNUM), 4 rue du Port (STREET), 29200 (ZIPCODE) Brest (CITY).
+
+Sauvegarder les informations de paie:
+
+Numéro de compte (ACCOUNTNUM): 000198765432
+
+Numéro fiscal (TAXNUM): 13-579-24680
+
+SSN US (SOCIALNUM): 222-33-4444 (FAUX)
+
+Date de naissance (DATEOFBIRTH): 2001/05/09
+
+Numéro de permis (DRIVERLICENSENUM): DL-FR-AB-1234-89
+
+Numéro de carte d'identité (IDCARDNUM): FR-CNI-12 34 567 890
+
+Téléphone (TELEPHONENUM): +33 3 29 00 11 22
+
+Email (EMAIL): m.lefevre@exam ple.org
+
+Tester des formats obfusqués:
+
+"prenom.nom arobase domaine point com" => alice . martin at example . com (EMAIL)
+
+"mon mot de passe est 'My Pa ss word 2025' " (PASSWORD)
+
+"CB: 5105-1051-0510-5100" (CREDITCARDNUMBER, TEST) avec tirets.
+
+Table HTML imbriquée:
+
+<table class="confluenceTable"> <tr> <td> <table class="confluenceTable"> <tr><th>Key</th><th>Value</th></tr> <tr><td>GIVENNAME</td><td>Thierry</td></tr> <tr><td>SURNAME</td><td>Fontaine</td></tr> <tr><td>EMAIL</td><td>thierry.fontaine@ exam ple.net</td></tr> <tr><td>TELEPHONENUM</td><td>+33 1 23 45 67 00</td></tr> <tr><td>ACCOUNTNUM</td><td>ACCT/FR/0088/123456</td></tr> <tr><td>STREET</td><td>9 rue des Fleurs</td></tr> <tr><td>CITY</td><td>Tours</td></tr> <tr><td>ZIPCODE</td><td>37000</td></tr> <tr><td>DATEOFBIRTH</td><td>14-02-1972</td></tr> <tr><td>SOCIALNUM</td><td>333-44-5555</td></tr> <tr><td>TAXNUM</td><td>FR-NIF-0011223344556</td></tr> <tr><td>DRIVERLICENSENUM</td><td>FR-DL-AB12-34C5-678</td></tr> <tr><td>IDCARDNUM</td><td>ID-FR-998877665</td></tr> <tr><td>CREDITCARDNUMBER</td><td>6011-1111-1111-1117</td></tr> <tr><td>USERNAME</td><td>tfontaine</td></tr> <tr><td>PASSWORD</td><td>"To pSec ret!"</td></tr> </table> </td> </tr> </table>
+
+=== Confluence: Copy-paste from email thread (plain text) =========
+From: "Service RH" <rh (at) example.com>
+To: "Lucie D." <lucie.durand @ example . com>
+Subject: Mise à jour dossier salarié
+Body:
+Bonjour Lucie Durand (GIVENNAME SURNAME).
+Merci de confirmer vos infos:
+
+Adresse (STREET/CITY/ZIPCODE): 16 avenue Saint-Mandé, 75012, Paris
+
+Téléphone (TELEPHONENUM): 06.44.55.66.77
+
+Date de naissance (DATEOFBIRTH): 23/11/1992
+
+N° Sécu (SOCIALNUM): 2 92 11 75 123 456 12 (FAUX)
+
+N° fiscal (TAXNUM): 1234567890123
+
+Compte (ACCOUNTNUM): FR76 3000 1000 2000 3000 4000 500 (FAUX)
+
+Copie CNI (IDCARDNUM): FR-CNI-1234-567-890
+
+Permis (DRIVERLICENSENUM): FR-DL-9Z-8765-XY
+
+Carte bancaire (CREDITCARDNUMBER): 3530 111333 000000 (JCB TEST)
+
+Identifiants: USERNAME lucie.d / PASSWORD "Secu re- 2024"
+
+Signature:
+Lucie Durand
+Bâtiment 12 (BUILDINGNUM), 5 rue Linois (STREET), 75015 Paris (CITY), FR (ZIPCODE 75015)
+Email: lucie.durand(at)example(dot)com ; Tel: +33 (0)6 88 77 66 55 (TELEPHONENUM)
+
+=== Confluence: Random long paragraph (adds length) ===============
+Ce paragraphe allonge intentionnellement le document pour dépasser la fenêtre de contexte.
+Il parle de procédures internes, de workflows, d’approbations et de synchronisations
+planifiées. Rien d’important ici, si ce n’est que certains tokens ressemblent à des entités
+mais n’en sont pas: "account", "user", "street art", "city bike". On répète quelques
+métadonnées, du lorem ipsum et des extraits de logs. Les macros Confluence comme
+<ac:structured-macro ac:name="toc"/> ou <ac:structured-macro ac:name="status"/> apparaissent
+parfois au milieu du texte. On ajoute encore quelques variations: e‑mail "contact at
+example dot io", "contact@ exa mple . io", utilisateur "ops_admin" (USERNAME), mot de passe
+(plaintext) "Do n’t do Thi s" (PASSWORD), numéros de téléphone formatés différemment
+"+33600000000", "(+33)600000000", "06-00-00-00-00" (TELEPHONENUM), adresses "1 place Bellecour"
+(STREET) à "Lyon" (CITY), code postal "69002" (ZIPCODE). Pour être explicites, on répète aussi
+quelques identifiants: "ACCT-555-666-777" (ACCOUNTNUM), "SSN: 444-55-6666" (SOCIALNUM),
+"CB: 5200 8282 8282 8210" (CREDITCARDNUMBER, TEST), "DL: FR-A1B2C3D4" (DRIVERLICENSENUM),
+"ID: FR-CNI-555 444 333" (IDCARDNUM), "NIF: 1122334455667" (TAXNUM). Fin du paragraphe.

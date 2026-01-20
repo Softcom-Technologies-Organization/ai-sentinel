@@ -55,6 +55,32 @@ def generate_grpc_code():
             sys.exit(1)
 
         logger.info("gRPC code generated successfully")
+        
+        # Fix imports in generated gRPC file
+        # grpc_tools.protoc generates absolute imports like: import pii_detection_pb2
+        # We need to change them to: from pii_detector.proto.generated import pii_detection_pb2
+        grpc_file = output_dir / "pii_detection_pb2_grpc.py"
+        if grpc_file.exists():
+            logger.info(f"Fixing imports in {grpc_file}")
+            
+            with open(grpc_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Replace absolute import with relative import within the package
+            original_import = "import pii_detection_pb2 as pii__detection__pb2"
+            fixed_import = "from pii_detector.proto.generated import pii_detection_pb2 as pii__detection__pb2"
+            
+            if original_import in content:
+                content = content.replace(original_import, fixed_import)
+                
+                with open(grpc_file, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                
+                logger.info("Import fixed successfully")
+            else:
+                logger.warning(f"Expected import statement not found in {grpc_file}")
+        else:
+            logger.warning(f"gRPC file not found: {grpc_file}")
 
         # Create __init__.py file if it doesn't exist
         init_file = output_dir / "__init__.py"

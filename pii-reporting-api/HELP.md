@@ -15,8 +15,8 @@ Ce document complète le README avec des instructions pratiques pour démarrer e
 
 2) Lancer l’application Java
 - `./mvnw clean package`
-- `java -jar target/sentinelle-0.0.1-SNAPSHOT.jar`
-- Swagger: http://localhost:8080/sentinelle/swagger-ui.html
+- `java -jar target/ai-sentinel-0.0.1-SNAPSHOT.jar`
+- Swagger: http://localhost:8080/ai-sentinel/swagger-ui.html
 
 ## 3. Configuration essentielle
 - Confluence via variables d’environnement (voir README).
@@ -43,12 +43,12 @@ Seul le serveur Python PII doit écouter le port 50051. Si un autre processus oc
   - Service gRPC attendu: `grpcurl -plaintext localhost:50051 list` → doit afficher `pii_detection.PIIDetectionService`
 
 ## 5. Tests rapides d’API
-- POST /sentinelle/api/pii-test/analyze
-- POST /sentinelle/api/pii-test/analyze-page
+- POST /ai-sentinel/api/pii-test/analyze
+- POST /ai-sentinel/api/pii-test/analyze-page
 
 Exemple PowerShell:
 ```powershell
-Invoke-RestMethod -Method Post -Uri "http://localhost:8080/sentinelle/api/pii-test/analyze" `
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/ai-sentinel/api/pii-test/analyze" `
   -ContentType "application/json" `
   -Body '{"content":"Email: john@example.com","threshold":0.5}'
 ```

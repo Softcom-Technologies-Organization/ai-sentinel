@@ -1,21 +1,31 @@
 spring:
   application:
-    name: sentinelle
+    name: ai-sentinel
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:sentinelle}}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:ai-sentinel}}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     open-in-view: false
     show-sql: false
     hibernate:
       ddl-auto: update
+    # IMPORTANT: Execute data.sql AFTER Hibernate schema creation
+    defer-datasource-initialization: true
     properties:
       hibernate:
         jdbc:
           lob:
             non_contextual_creation: true
+  sql:
+    init:
+      # Always execute data.sql on startup (inserts PII type configs)
+      mode: always
+      # Encoding for SQL scripts
+      encoding: UTF-8
+      # Continue on error (already inserted data with ON CONFLICT DO NOTHING)
+      continue-on-error: false
   mvc:
     async:
       request-timeout: 300000  # 5 minutes for async requests
@@ -29,7 +39,6 @@ confluence:
   base-url: ${CONFLUENCE_BASE_URL}
   username: ${CONFLUENCE_USERNAME}
   api-token: ${CONFLUENCE_API_TOKEN}
-  space-key: ${CONFLUENCE_SPACE_KEY}
   connection-settings:
     connect-timeout: 30000
     read-timeout: 60000
@@ -50,12 +59,17 @@ confluence:
     attachment-child-suffix: /child/attachment
     default-page-expands: body.storage,version,metadata,ancestors
     default-space-expands: permissions,metadata
+  cache:
+    refresh-interval-ms: ${CONFLUENCE_CACHE_REFRESH_INTERVAL:300000}  # 5 minutes default
+    initial-delay-ms: ${CONFLUENCE_CACHE_INITIAL_DELAY:5000}  # 5 seconds default
+  polling:
+    interval-ms: ${CONFLUENCE_POLLING_INTERVAL:60000}  # 1 minute default
 
 # Logging Configuration
 logging:
   level:
-    com.example.sentinelle.infrastructure.confluence: DEBUG
-    com.example.sentinelle.infrastructure.pii: DEBUG
+    pro.softcom.aisentinel.infrastructure.confluence: DEBUG
+    pro.softcom.aisentinel.infrastructure.pii: DEBUG
     org.springframework.web.client: DEBUG
 
 # PII Detector Configuration
@@ -63,9 +77,40 @@ pii-detector:
   client: ${PII_DETECTOR_CLIENT:armeria}  # armeria|grpc
   host: localhost
   port: 50051
-  default-threshold: 0.5
-  connection-timeout-ms: 5000
-  request-timeout-ms: 60000  # Increased to 60 seconds to avoid timeouts
+  default-threshold: 0.75
+  connection-timeout-ms: 300000  # 5 minutes to handle large attachments (e.g., CSV files)
+  request-timeout-ms: 300000      # 5 minutes to handle large attachments (e.g., CSV files)
+
+# Scan Timeouts Configuration
+scan:
+  timeouts:
+    pii-detection: 305s  # Should be > gRPC timeout (300s) to let gRPC exception trigger first
+
+pii-encryption:
+  kek-pii-encryption-key: ${PII_DATABASE_ENCRYPTION_KEY}
+
+# PII Configuration
+pii:
+  # PII Reporting Configuration
+  reporting:
+    # Allow revealing decrypted PII values to users (default: true)
+    # When false, sensitiveValue is never sent to frontend via SSE
+    # and the reveal endpoint returns 403 Forbidden
+    allow-secret-reveal: ${PII_REPORTING_ALLOW_SECRET_REVEAL}
+  
+  # PII Access Audit Configuration (GDPR/nLPD compliance)
+  audit:
+    # Retention period in days (730 days = 2 years, nLPD compliant)
+    retention-days: 730
+    # Enable/disable automatic purge job
+    retention:
+      enabled: true
+    # Purge schedule (cron expression: second minute hour day month weekday)
+    # Default: 3 AM every day
+    purge-cron: "0 0 3 * * ?"
+
+pii-reporting-api:
+  findings-export-directory: ${PII_REPORTING_API_EXPORT_DIR:/personally-identifiable-information-scan-results}
 
 # Armeria internal services (docs, health, metrics, actuator)
 armeria:
@@ -77,7 +122,7 @@ armeria:
 server:
   port: ${SERVER_PORT:8080}
   servlet:
-    context-path: /sentinelle
+    context-path: /ai-sentinel
   tomcat:
     connection-timeout: 60000  # 1 minute
     threads:
@@ -92,3 +137,32 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: method
 
+# Document Text Validation Configuration
+# Configurable thresholds for detecting valid human-readable text
+# versus corrupted, scanned, or image-only content
+# Independent of extraction tool (Tika, PDFBox, etc.) - focuses on text quality
+document:
+  text-quality:
+    # Minimum text length (in characters) to consider as valid text
+    # Documents with less text are considered image-only or OCR garbage
+    min-text-length: 50
+    
+    # Minimum ratio of alphanumeric characters (0.0 to 1.0)
+    # Text with less than this ratio is considered corrupted
+    min-alphanumeric-ratio: 0.05  # 5%
+    
+    # Minimum ratio of spaces for text longer than min-length-for-space-check
+    # Natural text contains roughly 12-20% spaces
+    min-space-ratio: 0.02  # 2%
+    
+    # Minimum ratio of printable characters (0.0 to 1.0)
+    # Text with many control characters is likely corrupted
+    min-printable-ratio: 0.80  # 80%
+    
+    # Maximum ratio of special characters (0.0 to 1.0)
+    # Excessive special characters suggest OCR artifacts
+    max-special-char-ratio: 0.40  # 40%
+    
+    # Minimum text length to apply space ratio check
+    # Space ratio check is only meaningful for longer texts
+    min-length-for-space-check: 100

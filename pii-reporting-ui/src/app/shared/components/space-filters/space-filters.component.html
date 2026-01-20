@@ -1,0 +1,31 @@
+<div class="space-filters">
+  <div class="filter-item">
+    <input
+      class="search-global"
+      pInputText
+      type="text"
+      [placeholder]="'common.search' | transloco"
+      [ngModel]="globalFilter"
+      (ngModelChange)="onGlobalFilterChange($event)"
+      [attr.aria-label]="'common.searchGlobally' | transloco"
+      [attr.data-testid]="'global-filter-input'" />
+  </div>
+
+  <div class="filter-item">
+    <p-select
+      [options]="statusOptions"
+      optionLabel="labelKey"
+      optionValue="value"
+      [ngModel]="statusFilter"
+      (ngModelChange)="onStatusFilterChange($event)"
+      [showClear]="true"
+      [attr.data-testid]="'status-filter-select'">
+      <ng-template pTemplate="item" let-option>
+        {{ option.labelKey | transloco }}
+      </ng-template>
+      <ng-template pTemplate="selectedItem" let-option>
+        {{ option.labelKey | transloco }}
+      </ng-template>
+    </p-select>
+  </div>
+</div>

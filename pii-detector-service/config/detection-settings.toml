@@ -1,0 +1,108 @@
+# Global Detection and Performance Settings
+# This file contains cross-cutting configuration that applies to all models
+
+# ============================================================================
+# DETECTION SETTINGS
+# ============================================================================
+[detection]
+# Disable downloading extra models (e.g., Ar86Bat/multilang-pii-ner)
+# Set to empty list to avoid unnecessary downloads at startup
+pii_extra_models = []
+
+# ============================================================================
+# DATABASE-MANAGED SETTINGS (fetched at runtime via database_config_adapter)
+# ============================================================================
+# The following settings are now managed exclusively in the database:
+# - gliner_enabled: Controls GLiNER/MultiPass detector activation
+# - presidio_enabled: Controls Presidio detector activation  
+# - regex_enabled: Controls Regex detector activation
+# - default_threshold: Global confidence threshold
+#
+# These are stored in table `pii_detection_config` (id=1) and fetched
+# when `fetch_config_from_db=true` is set in gRPC request.
+# This allows runtime reconfiguration without service restart.
+# ============================================================================
+
+# Enable multi-model aggregation (true/false)
+multi_detector_enabled = false
+
+# Enable LLM-based detection at startup (true/false)
+# When true, enables ML models (GLiNER, Piiranha, etc.) for PII detection
+# When false, all LLM models are disabled regardless of their individual config
+# Note: This is a startup-time configuration - use database for runtime control
+llm_detection_enabled = true
+
+# Enable Multi-Pass GLiNER detection (true/false)
+# When true, uses MultiPassGlinerDetector instead of standard GLiNERDetector
+# Multi-pass runs 13 parallel detection passes (one per category) and resolves conflicts
+# This provides better accuracy for large label sets (114 PII types)
+# Note: This is a startup-time configuration - cannot be changed at runtime
+multipass_gliner_enabled = true
+
+# Log detailed provenance information about which model detected each entity
+log_provenance = false
+
+# Log throughput metrics (chars/second) for performance monitoring
+log_throughput = false
+
+# Token overlap for chunk splitting (prevents boundary truncation)
+# Recommended 10-20% of max_length for optimal entity detection at boundaries
+# For GLiNER (720 tokens): 100 tokens overlap = 13.9%
+stride_tokens = 100
+
+# Character threshold to trigger chunked processing
+long_text_threshold = 10000
+
+# ============================================================================
+# AGGREGATION SETTINGS
+# Settings for combining results when using multiple models
+# ============================================================================
+[aggregation]
+# Deduplication method: "max_score", "average_score", "consensus"
+deduplication_method = "max_score"
+
+# Overlap resolution strategy: "prefer_longer", "prefer_confident", "prefer_priority"
+overlap_resolution = "prefer_longer"
+
+# Minimum number of models that must detect an entity (comment out = disabled)
+# min_consensus = 2
+
+# ============================================================================
+# PARALLEL PROCESSING SETTINGS
+# Settings for parallel text processing within a single model
+# ============================================================================
+[parallel_processing]
+# Enable parallel processing of multiple texts (ThreadPoolExecutor)
+# When true, multiple texts are processed in parallel by the same model
+# Performance impact: ~49% faster with 5 workers (based on benchmark tests)
+# Note: This is NOT batch processing (which GLiNER doesn't support)
+# This uses ThreadPoolExecutor to process multiple texts concurrently
+enabled = true
+
+# Number of worker threads for parallel text processing
+# Recommended values based on CPU cores:
+# - 3 workers: Good balance for 4-core CPUs (~43% gain)
+# - 5 workers: Optimal for 6-8 core CPUs (~49% gain)
+# - Set to 1 to disable parallelization (sequential processing)
+max_workers = 6
+
+# Minimum number of texts to trigger parallel processing
+# If batch has fewer texts than this threshold, process sequentially
+# This avoids overhead for small batches
+min_texts_for_parallel = 3
+
+# ============================================================================
+# PERFORMANCE SETTINGS  
+# Settings for multi-model execution
+# ============================================================================
+[performance]
+# Enable parallel execution of MULTIPLE models (not the same as parallel_processing above)
+# This allows running multiple different models simultaneously
+parallel_execution = true
+
+# Maximum number of worker threads for multi-model parallel execution
+# (comment out = auto-detect based on CPU cores)
+# max_workers = 4
+
+# Timeout per model in seconds (increased to 180s to handle complex pages)
+model_timeout = 180

@@ -1,0 +1,96 @@
+sequenceDiagram
+    autonumber
+    participant ServerPy as server.py
+    participant PiiService as pii_service.PIIDetectionServicer
+    participant MemServer as pii_service.MemoryLimitedServer
+    participant Detector as pii_detector.PIIDetector
+    participant ModelMgr as model_manager.ModelManager
+    participant MemMgr as memory_manager.MemoryManager
+    participant EntProc as entity_processor.EntityProcessor
+
+    note over ServerPy,EntProc: Démarrage et Initialisation du Serveur gRPC
+
+    ServerPy->>ServerPy: main()
+    ServerPy->>ServerPy: check_environment()
+    note right of ServerPy: Validation HUGGING_FACE_API_KEY
+    
+    ServerPy->>ServerPy: verify_dependencies()
+    note right of ServerPy: Vérification transformers, pipeline
+    
+    ServerPy->>PiiService: serve(port, max_workers)
+    
+    PiiService->>MemServer: MemoryLimitedServer(port, max_workers)
+    MemServer->>MemServer: __init__()
+    note right of MemServer: Configure pool threads<br/>et limites mémoire
+    
+    MemServer->>PiiService: PIIDetectionServicer()
+    PiiService->>PiiService: __init__()
+    note right of PiiService: max_text_size=1M<br/>enable_memory_monitoring=true
+    
+    PiiService->>PiiService: get_detector_instance()
+    note right of PiiService: Pattern Singleton
+    
+    PiiService->>PiiService: _initialize_detector_instance()
+    PiiService->>PiiService: _should_use_multi_detector()
+    
+    alt Mode Multi-Détecteur
+        PiiService->>Detector: MultiModelPIIDetector(model_ids)
+        note right of Detector: Plusieurs modèles configurés
+    else Mode Simple
+        PiiService->>Detector: PIIDetector(config)
+        note right of Detector: Un seul modèle
+    end
+    
+    Detector->>Detector: __init__(config)
+    Detector->>MemMgr: MemoryManager()
+    MemMgr-->>Detector: instance
+    
+    Detector->>ModelMgr: ModelManager(config)
+    ModelMgr-->>Detector: instance
+    
+    Detector->>EntProc: EntityProcessor()
+    EntProc-->>Detector: instance
+    note right of EntProc: Initialise label_mapping
+    
+    PiiService->>Detector: download_model()
+    Detector->>ModelMgr: download_model()
+    note right of ModelMgr: Télécharge depuis<br/>HuggingFace Hub
+    ModelMgr-->>Detector: Modèle téléchargé
+    
+    PiiService->>Detector: load_model()
+    Detector->>ModelMgr: load_model_components()
+    
+    ModelMgr->>ModelMgr: _load_tokenizer()
+    note right of ModelMgr: AutoTokenizer.from_pretrained()
+    
+    ModelMgr->>ModelMgr: _load_model()
+    note right of ModelMgr: AutoModelForTokenClassification
+    
+    ModelMgr-->>Detector: (tokenizer, model)
+    
+    Detector->>Detector: _create_pipeline()
+    note right of Detector: pipeline("token-classification"<br/>aggregation_strategy="simple")
+    
+    Detector->>MemMgr: clear_cache(device)
+    note right of MemMgr: Nettoyage initial
+    
+    Detector-->>PiiService: Détecteur prêt
+    PiiService-->>PiiService: _start_memory_monitoring()
+    note right of PiiService: Thread daemon (30s interval)
+    
+    MemServer->>MemServer: serve()
+    MemServer->>MemServer: server = grpc.server(executor)
+    note right of MemServer: ThreadPoolExecutor<br/>max_workers configurés
+    
+    MemServer->>MemServer: add_PIIDetectionServiceServicer_to_server()
+    MemServer->>MemServer: enable_server_reflection()
+    note right of MemServer: Pour service discovery
+    
+    MemServer->>MemServer: server.add_insecure_port()
+    note right of MemServer: Bind [::]:port puis 0.0.0.0:port
+    
+    MemServer->>MemServer: server.start()
+    MemServer-->>ServerPy: server instance
+    
+    ServerPy->>ServerPy: server.wait_for_termination()
+    note right of ServerPy: Serveur actif<br/>en attente de requêtes

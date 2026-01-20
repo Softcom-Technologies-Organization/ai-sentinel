@@ -1,0 +1,167 @@
+sequenceDiagram
+    autonumber
+    participant Client as gRPC Client
+    participant PiiService as pii_service.PIIDetectionServicer
+    participant Detector as pii_detector.PIIDetector
+    participant EntProc as entity_processor.EntityProcessor
+    participant MemMgr as memory_manager.MemoryManager
+
+    note over Client,MemMgr: Processing a DetectPII Request
+
+    Client->>PiiService: DetectPII(request)
+    PiiService->>PiiService: _generate_request_id(start_time)
+    note right of PiiService: Format: req_N_timestamp
+
+    PiiService->>PiiService: _extract_and_validate_request()
+    PiiService->>PiiService: _validate_content(content)
+    note right of PiiService: Checks:<br/>- content not empty<br/>- size <= max_text_size
+
+    alt Validation fails
+        PiiService->>PiiService: _set_validation_error()
+        note right of PiiService: StatusCode.INVALID_ARGUMENT
+        PiiService-->>Client: PIIDetectionResponse (empty)
+    else Validation succeeds
+        PiiService->>PiiService: _execute_detection(content, threshold)
+        note right of PiiService: Logging: detection start
+
+        PiiService->>Detector: detect_pii(text, threshold)
+
+        alt Long text (> 5000 characters)
+            Detector->>Detector: _detect_pii_chunked(text, threshold)
+        else Standard text
+            Detector->>Detector: _detect_pii_standard(text, threshold)
+        end
+
+        Detector->>Detector: _detect_pii_token_splitting(text, threshold)
+        note right of Detector: Unicode NFC normalization
+
+        Detector->>Detector: _split_text_by_tokens(text, 256)
+        note right of Detector: Segmentation with overlap<br/>configurable stride_tokens
+
+        loop For each segment (segment_text, start_char, end_char)
+            Detector->>Detector: pipeline(segment_text)
+            note right of Detector: ML model inference<br/>torch.no_grad()
+
+            Detector->>EntProc: process_entities(raw, threshold)
+
+            loop For each raw entity
+                EntProc->>EntProc: score >= threshold?
+                alt Sufficient score
+                    EntProc->>EntProc: _create_pii_entity(entity)
+                    note right of EntProc: PIIEntity with type mapping
+                    EntProc-->>Detector: PIIEntity
+                end
+            end
+
+            Detector->>Detector: Adjust positions
+            note right of Detector: start += start_char<br/>end += start_char
+
+            Detector->>Detector: _is_duplicate_entity()
+            alt Not duplicate
+                Detector->>Detector: Add to all_entities
+            end
+        end
+
+        Detector->>Detector: _post_process_entities(text, all_entities)
+        note right of Detector: Business post-processing
+
+        Detector->>Detector: _expand_email_domain()
+        note right of Detector: Looks for @ within 50 chars<br/>Captures full domain
+
+        loop For each EMAIL without @
+            Detector->>Detector: _try_expand_email()
+            Detector->>Detector: _capture_email_local_part()
+            Detector->>Detector: _capture_email_domain()
+            Detector->>Detector: _is_valid_email_structure()
+            alt Valid email
+                Detector->>Detector: Create extended PIIEntity
+            end
+        end
+
+        Detector->>Detector: _split_zipcode_and_city()
+        note right of Detector: Splits ZIPCODE and CITY
+
+        loop For each ZIPCODE
+            Detector->>Detector: _try_split_zipcode()
+            alt Comma present
+                Detector->>Detector: _try_comma_split()
+            else Separator transition
+                Detector->>Detector: _try_separator_split()
+            end
+            alt Valid split
+                Detector->>Detector: _create_zipcode_city_entities()
+                note right of Detector: 2 entities: ZIPCODE + CITY
+            end
+        end
+
+        Detector->>Detector: _merge_adjacent_entities()
+        note right of Detector: Merges adjacent entities<br/>of same type
+
+        loop For adjacent entities
+            Detector->>Detector: _can_merge_entities()
+            note right of Detector: Same type AND<br/>(adjacent OR sep: ' - ')
+            alt Mergeable
+                Detector->>Detector: _create_merged_entity()
+                note right of Detector: Example: Rod+ri+gue → Rodrigue
+            end
+        end
+
+        Detector->>Detector: Deduplicate
+        note right of Detector: By (type, start, end)
+
+        Detector->>MemMgr: clear_cache(device)
+        Detector-->>PiiService: List[PIIEntity]
+
+        PiiService->>PiiService: _log_detection_metrics()
+        note right of PiiService: Time, throughput, count
+
+        PiiService->>PiiService: _build_detection_response()
+
+        PiiService->>PiiService: _add_entities_to_response()
+        note right of PiiService: Limit: max 1000 entities
+
+        loop For each entity (max 1000)
+            PiiService->>PiiService: response.entities.add()
+            note right of PiiService: text, type, type_label<br/>start, end, score
+        end
+
+        alt More than 1000 entities
+            PiiService->>PiiService: Log warning (truncated)
+        end
+
+        PiiService->>PiiService: _add_summary_to_response()
+        note right of PiiService: Count by type_label
+
+        loop For each unique PII type
+            PiiService->>PiiService: response.summary[type] = count
+        end
+
+        PiiService->>PiiService: _add_masked_content_to_response()
+
+        alt Content <= 10000 characters
+            PiiService->>Detector: _apply_masks(content, entities)
+
+            loop For each entity (reverse order)
+                Detector->>Detector: Replace with [TYPE]
+                note right of Detector: Example: Jean → [PERSON]
+            end
+
+            Detector-->>PiiService: masked_content
+            PiiService->>PiiService: response.masked_content = masked
+        else Content too large
+            PiiService->>PiiService: masked_content = "[Content too large]"
+        end
+
+        PiiService->>PiiService: _log_request_completion()
+        note right of PiiService: Total time, success
+
+        PiiService->>PiiService: _perform_periodic_gc()
+
+        alt request_counter % gc_frequency == 0
+            PiiService->>PiiService: gc.collect()
+            note right of PiiService: Periodic cleanup
+        end
+
+        PiiService-->>Client: PIIDetectionResponse
+        note right of Client: entities, summary<br/>masked_content
+    end

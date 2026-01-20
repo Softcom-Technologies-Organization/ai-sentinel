@@ -1,0 +1,873 @@
+# Docker Compose for production - uses pre-built images from GitHub Container Registry
+# Usage (full stack):  docker-compose -f docker-compose.yml up
+# Usage (secrets only): docker-compose -f docker-compose.yml up secrets-bootstrap
+
+services:
+  # ============================================================================
+  # BOOTSTRAP SECRETS (one-shot)
+  # Creates ./secrets and generates the secrets required for Infisical on first startup
+  # - infisical_encryption_key.txt (32 hex)
+  # - infisical_auth_secret.txt (base64 44)
+  # - infisical_db_password.txt (24 alphanum)
+  # - postgres_user.txt (generated username)
+  # - postgres_password.txt (24 alphanum)
+  # - pgadmin_email.txt (generated email)
+  # - pgadmin_password.txt (24 alphanum)
+  # And creates placeholder files if missing:
+  # - infisical_prod_client_id.txt
+  # - infisical_prod_client_secret.txt
+  # - infisical_project_id.txt
+  # ============================================================================
+  secrets-bootstrap:
+    image: alpine:3.20
+    container_name: ai-sentinel-secrets-bootstrap
+    restart: "no"
+    command: >
+      sh -c '
+        set -eu;
+        
+        echo "[secrets-bootstrap] Starting secrets initialization...";
+        echo "[secrets-bootstrap] Creating /secrets directory...";
+        mkdir -p /secrets || { echo "[ERROR] Failed to create /secrets directory"; exit 1; };
+        
+        # Verify directory is writable
+        if [ ! -w /secrets ]; then
+          echo "[ERROR] /secrets directory is not writable!";
+          echo "[ERROR] Make sure Docker has permissions to write to the mounted volume.";
+          exit 1;
+        fi;
+        
+        echo "[secrets-bootstrap] Directory /secrets is ready and writable.";
+
+        # Quick exit if required secrets already exist and look valid
+        if [ -f /secrets/infisical_encryption_key.txt ] \
+          && [ "$(wc -c < /secrets/infisical_encryption_key.txt 2>/dev/null || echo 0)" -eq 32 ] \
+          && [ -f /secrets/infisical_auth_secret.txt ] \
+          && [ "$(wc -c < /secrets/infisical_auth_secret.txt 2>/dev/null || echo 0)" -ge 44 ] \
+          && [ -s /secrets/infisical_db_password.txt ] \
+          && [ -s /secrets/postgres_user.txt ] \
+          && [ -s /secrets/postgres_password.txt ] \
+          && [ -s /secrets/pgadmin_email.txt ] \
+          && [ -s /secrets/pgadmin_password.txt ]; then
+          echo "[secrets-bootstrap] Core secrets already initialized and valid.";
+          
+          # Still create placeholder files if they do not exist
+          [ -f /secrets/infisical_prod_client_id.txt ] || { echo "[secrets-bootstrap] Creating placeholder: infisical_prod_client_id.txt"; touch /secrets/infisical_prod_client_id.txt; };
+          [ -f /secrets/infisical_prod_client_secret.txt ] || { echo "[secrets-bootstrap] Creating placeholder: infisical_prod_client_secret.txt"; touch /secrets/infisical_prod_client_secret.txt; };
+          [ -f /secrets/infisical_project_id.txt ] || { echo "[secrets-bootstrap] Creating placeholder: infisical_project_id.txt"; touch /secrets/infisical_project_id.txt; };
+          
+          echo "[secrets-bootstrap] All done - secrets are ready!";
+          exit 0;
+        fi;
+
+        echo "[secrets-bootstrap] Generating Infisical internal secrets...";
+
+        # Infisical internal secrets
+        if [ ! -f /secrets/infisical_encryption_key.txt ] \
+          || [ "$(wc -c < /secrets/infisical_encryption_key.txt 2>/dev/null || echo 0)" -ne 32 ]; then
+          echo "[secrets-bootstrap] Generating infisical_encryption_key.txt (32 hex chars)...";
+          od -An -tx1 -N16 /dev/urandom | tr -d " \n" > /secrets/infisical_encryption_key.txt || { echo "[ERROR] Failed to create encryption key"; exit 1; };
+          echo "[secrets-bootstrap] ✓ infisical_encryption_key.txt created";
+        else
+          echo "[secrets-bootstrap] ✓ infisical_encryption_key.txt already exists and is valid";
+        fi;
+
+        if [ ! -f /secrets/infisical_auth_secret.txt ] \
+          || [ "$(wc -c < /secrets/infisical_auth_secret.txt 2>/dev/null || echo 0)" -lt 44 ]; then
+          echo "[secrets-bootstrap] Generating infisical_auth_secret.txt (base64 44 chars)...";
+          head -c 32 /dev/urandom | base64 | tr -d "\n\r" > /secrets/infisical_auth_secret.txt || { echo "[ERROR] Failed to create auth secret"; exit 1; };
+          echo "[secrets-bootstrap] ✓ infisical_auth_secret.txt created";
+        else
+          echo "[secrets-bootstrap] ✓ infisical_auth_secret.txt already exists and is valid";
+        fi;
+
+        if [ ! -s /secrets/infisical_db_password.txt ]; then
+          echo "[secrets-bootstrap] Generating infisical_db_password.txt (24 alphanumeric)...";
+          head -c 256 /dev/urandom | tr -dc "A-Za-z0-9" | head -c 24 > /secrets/infisical_db_password.txt || { echo "[ERROR] Failed to create DB password"; exit 1; };
+          echo "[secrets-bootstrap] ✓ infisical_db_password.txt created";
+        else
+          echo "[secrets-bootstrap] ✓ infisical_db_password.txt already exists";
+        fi;
+      
+        # PII Database Encryption Key (AES-256: 32 bytes = 44 base64 chars)
+        if [ ! -f /secrets/pii_database_encryption_key.txt ] \
+          || [ "$(wc -c < /secrets/pii_database_encryption_key.txt 2>/dev/null || echo 0)" -lt 44 ]; then
+          echo "[secrets-bootstrap] Generating pii_database_encryption_key.txt (base64 44 chars)...";
+          head -c 32 /dev/urandom | base64 | tr -d "\n\r" > /secrets/pii_database_encryption_key.txt || { echo "[ERROR] Failed to create PII encryption key"; exit 1; };
+          echo "[secrets-bootstrap] ✓ pii_database_encryption_key.txt created";
+        fi;
+
+        # PostgreSQL Main Database Credentials
+        if [ ! -s /secrets/postgres_user.txt ]; then
+          echo "[secrets-bootstrap] Generating postgres_user.txt...";
+          echo "postgres" > /secrets/postgres_user.txt || { echo "[ERROR] Failed to create postgres user"; exit 1; };
+          echo "[secrets-bootstrap] ✓ postgres_user.txt created";
+        else
+          echo "[secrets-bootstrap] ✓ postgres_user.txt already exists";
+        fi;
+
+        if [ ! -s /secrets/postgres_password.txt ]; then
+          echo "[secrets-bootstrap] Generating postgres_password.txt (24 alphanumeric)...";
+          head -c 256 /dev/urandom | tr -dc "A-Za-z0-9" | head -c 24 > /secrets/postgres_password.txt || { echo "[ERROR] Failed to create postgres password"; exit 1; };
+          echo "[secrets-bootstrap] ✓ postgres_password.txt created";
+        else
+          echo "[secrets-bootstrap] ✓ postgres_password.txt already exists";
+        fi;
+
+        # PGAdmin Credentials
+        if [ ! -s /secrets/pgadmin_email.txt ]; then
+          echo "[secrets-bootstrap] Generating pgadmin_email.txt...";
+          echo "admin@ai-sentinel.local" > /secrets/pgadmin_email.txt || { echo "[ERROR] Failed to create pgadmin email"; exit 1; };
+          echo "[secrets-bootstrap] ✓ pgadmin_email.txt created";
+        else
+          echo "[secrets-bootstrap] ✓ pgadmin_email.txt already exists";
+        fi;
+
+        if [ ! -s /secrets/pgadmin_password.txt ]; then
+          echo "[secrets-bootstrap] Generating pgadmin_password.txt (24 alphanumeric)...";
+          head -c 256 /dev/urandom | tr -dc "A-Za-z0-9" | head -c 24 > /secrets/pgadmin_password.txt || { echo "[ERROR] Failed to create pgadmin password"; exit 1; };
+          echo "[secrets-bootstrap] ✓ pgadmin_password.txt created";
+        else
+          echo "[secrets-bootstrap] ✓ pgadmin_password.txt already exists";
+        fi;
+
+        echo "[secrets-bootstrap] Creating placeholder files for manual configuration...";
+        # Placeholders to link other services later (must be filled manually)
+        touch /secrets/infisical_prod_client_id.txt || { echo "[ERROR] Failed to create infisical_prod_client_id.txt"; exit 1; };
+        echo "[secrets-bootstrap] ✓ infisical_prod_client_id.txt created (EMPTY - fill manually)";
+        
+        touch /secrets/infisical_prod_client_secret.txt || { echo "[ERROR] Failed to create infisical_prod_client_secret.txt"; exit 1; };
+        echo "[secrets-bootstrap] ✓ infisical_prod_client_secret.txt created (EMPTY - fill manually)";
+        
+        touch /secrets/infisical_project_id.txt || { echo "[ERROR] Failed to create infisical_project_id.txt"; exit 1; };
+        echo "[secrets-bootstrap] ✓ infisical_project_id.txt created (EMPTY - fill manually)";
+        
+        echo "";
+        echo "[secrets-bootstrap] ========================================";
+        echo "[secrets-bootstrap] SUCCESS! All secret files created.";
+        echo "[secrets-bootstrap] ========================================";
+        echo "[secrets-bootstrap] ";
+        echo "[secrets-bootstrap] NEXT STEPS:";
+        echo "[secrets-bootstrap] 1. Fill in these files manually with values from Infisical UI:";
+        echo "[secrets-bootstrap]    - infisical_prod_client_id.txt";
+        echo "[secrets-bootstrap]    - infisical_prod_client_secret.txt";
+        echo "[secrets-bootstrap]    - infisical_project_id.txt";
+        echo "[secrets-bootstrap] 2. See secrets/README.md for detailed instructions";
+        echo "[secrets-bootstrap] ";
+      '
+    volumes:
+      - ./secrets:/secrets
+    networks:
+      - ai-sentinel-network
+  # ============================================================================
+  # INFISICAL AUTO-CONFIGURATOR (one-shot)
+  # Automatically configures Infisical after first startup:
+  # - Creates super admin account (admin@ai-sentinel.local)
+  # - Creates AI Sentinel project
+  # - Creates machine identity for prod environment
+  # - Creates required secrets with placeholder values
+  # - Saves credentials to ./secrets/ directory
+  # ============================================================================
+  infisical-configurator:
+    image: alpine:3.20
+    container_name: ai-sentinel-infisical-configurator
+    restart: "no"
+    command: >
+      sh -c '
+        set -eu;
+        
+        echo "[infisical-config] ================================================";
+        echo "[infisical-config] Infisical Auto-Configuration Starting...";
+        echo "[infisical-config] ================================================";
+        echo "";
+        
+        # Install required tools
+        echo "[infisical-config] Installing curl and jq...";
+        apk add --no-cache curl jq > /dev/null 2>&1 || { echo "[ERROR] Failed to install dependencies"; exit 1; };
+        
+        INFISICAL_URL="http://infisical:8080";
+        ADMIN_EMAIL="admin@ai-sentinel.local";
+        ORG_NAME="AI Sentinel";
+        PROJECT_NAME="AI Sentinel";
+        PROJECT_SLUG="ai-sentinel";
+        ENV_NAME="prod";
+        
+        # Check if already configured
+        if [ -s /secrets/infisical_project_id.txt ] && [ -s /secrets/infisical_prod_client_id.txt ]; then
+          echo "[infisical-config] ✓ Infisical already configured (project ID and client ID exist)";
+          echo "[infisical-config] Skipping configuration.";
+          echo "";
+          exit 0;
+        fi;
+        
+        echo "[infisical-config] Waiting for Infisical API to be ready...";
+        max_retries=30;
+        retry=0;
+        until curl -sf "$${INFISICAL_URL}/api/status" > /dev/null 2>&1; do
+          retry=$$((retry + 1));
+          if [ $$retry -ge $$max_retries ]; then
+            echo "[ERROR] Infisical API not ready after $$max_retries attempts";
+            exit 1;
+          fi;
+          sleep 2;
+        done;
+        echo "[infisical-config] ✓ Infisical API is ready";
+        echo "";
+        
+        # Generate random password (24 alphanumeric characters)
+        echo "[infisical-config] Generating secure admin password...";
+        ADMIN_PASSWORD=$$(head -c 256 /dev/urandom | tr -dc "A-Za-z0-9" | head -c 24);
+        echo "[infisical-config] ✓ Password generated";
+        echo "";
+        
+        # Step 1: Bootstrap super admin
+        echo "[infisical-config] Step 1/5: Creating super admin account...";
+        echo "[infisical-config] Calling bootstrap API...";
+        BOOTSTRAP_RESPONSE=$$(curl -s -w "\n%{http_code}" -X POST "$${INFISICAL_URL}/api/v1/admin/bootstrap" \
+          -H "Content-Type: application/json" \
+          -d "{\"email\":\"$${ADMIN_EMAIL}\",\"password\":\"$${ADMIN_PASSWORD}\",\"organization\":\"$${ORG_NAME}\"}");
+        
+        HTTP_CODE=$$(echo "$$BOOTSTRAP_RESPONSE" | tail -n1);
+        BOOTSTRAP_BODY=$$(echo "$$BOOTSTRAP_RESPONSE" | head -n -1);
+        
+        echo "[infisical-config] DEBUG - HTTP Code: $$HTTP_CODE";
+        echo "[infisical-config] DEBUG - Response Body: $$BOOTSTRAP_BODY";
+        
+        if [ "$$HTTP_CODE" != "200" ]; then
+          echo "[ERROR] Failed to create super admin (HTTP $$HTTP_CODE)";
+          echo "[ERROR] API Response: $$BOOTSTRAP_BODY";
+          echo "[ERROR] ";
+          echo "[ERROR] Possible causes:";
+          echo "[ERROR] 1. Infisical is already initialized - delete volumes to reconfigure:";
+          echo "[ERROR]    docker volume rm ai-sentinel-infisical-db-data-prod ai-sentinel-infisical-redis-data-prod";
+          echo "[ERROR] 2. API validation error - check the response above for details";
+          exit 1;
+        fi;
+        
+        BOOTSTRAP_RESPONSE="$$BOOTSTRAP_BODY";
+        
+        # Extract identity access token (used for identity-level operations)
+        ADMIN_TOKEN=$$(echo "$$BOOTSTRAP_RESPONSE" | jq -r ".identity.credentials.token" 2>/dev/null);
+        if [ -z "$$ADMIN_TOKEN" ] || [ "$$ADMIN_TOKEN" = "null" ]; then
+          echo "[ERROR] Failed to extract admin identity token from bootstrap response";
+          echo "[ERROR] DEBUG - Full response for token extraction: $$BOOTSTRAP_RESPONSE";
+          exit 1;
+        fi;
+
+        # Extract organization id for later use (login + identity creation)
+        ORG_ID=$$(echo "$$BOOTSTRAP_RESPONSE" | jq -r ".organization.id" 2>/dev/null);
+        if [ -z "$$ORG_ID" ] || [ "$$ORG_ID" = "null" ]; then
+          echo "[ERROR] Failed to extract organization id from bootstrap response";
+          echo "[ERROR] DEBUG - Full response for org id extraction: $$BOOTSTRAP_RESPONSE";
+          exit 1;
+        fi;
+
+        echo "[infisical-config] ✓ Super admin created successfully";
+        echo "";
+        
+        # Step 2: Create project using the identity token from bootstrap
+        # The identity token has sufficient privileges to create projects and the
+        # bootstrap user will automatically have access to the organization workspace.
+        echo "[infisical-config] Step 2/5: Creating project \"$${PROJECT_NAME}\"...";
+        PROJECT_RESPONSE=$$(curl -s -w "\n%{http_code}" -X POST "$${INFISICAL_URL}/api/v1/projects" \
+          -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"projectName\":\"$${PROJECT_NAME}\",\"projectDescription\":\"Auto-configured AI Sentinel project\",\"type\":\"secret-manager\",\"shouldCreateDefaultEnvs\":true}");
+        
+        HTTP_CODE=$$(echo "$$PROJECT_RESPONSE" | tail -n1);
+        PROJECT_BODY=$$(echo "$$PROJECT_RESPONSE" | head -n -1);
+        
+        echo "[infisical-config] DEBUG - Create Project HTTP Code: $$HTTP_CODE";
+        echo "[infisical-config] DEBUG - Create Project Response: $$PROJECT_BODY";
+        
+        if [ "$$HTTP_CODE" != "200" ] && [ "$$HTTP_CODE" != "201" ]; then
+          echo "[ERROR] Failed to create project (HTTP $$HTTP_CODE)";
+          echo "[ERROR] Response: $$PROJECT_BODY";
+          exit 1;
+        fi;
+        
+        PROJECT_RESPONSE="$$PROJECT_BODY";
+        
+        PROJECT_ID=$$(echo "$$PROJECT_RESPONSE" | jq -r ".project.id" 2>/dev/null);
+        if [ -z "$$PROJECT_ID" ] || [ "$$PROJECT_ID" = "null" ]; then
+          echo "[ERROR] Failed to extract project ID from response";
+          echo "[ERROR] Tried to extract with: .project.id";
+          exit 1;
+        fi;
+        echo "[infisical-config] ✓ Project created with ID: $$PROJECT_ID";
+        echo "$$PROJECT_ID" > /secrets/infisical_project_id.txt;
+        echo "";
+        
+        
+        # Step 3: Create machine identity (Universal Auth)
+        echo "[infisical-config] Step 3/5: Creating machine identity for \"$${ENV_NAME}\" environment...";
+        
+        # Step 3a: Create the identity
+        echo "[infisical-config] Creating identity...";
+        IDENTITY_CREATE_RESPONSE=$$(curl -s -w "\n%{http_code}" -X POST "$${INFISICAL_URL}/api/v1/identities" \
+          -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"name\":\"ai-sentinel-$${ENV_NAME}\",\"organizationId\":\"$${ORG_ID}\",\"role\":\"admin\"}");
+        
+        HTTP_CODE=$$(echo "$$IDENTITY_CREATE_RESPONSE" | tail -n1);
+        IDENTITY_CREATE_BODY=$$(echo "$$IDENTITY_CREATE_RESPONSE" | head -n -1);
+        
+        echo "[infisical-config] DEBUG - Create Identity HTTP Code: $$HTTP_CODE";
+        echo "[infisical-config] DEBUG - Create Identity Response: $$IDENTITY_CREATE_BODY";
+        
+        if [ "$$HTTP_CODE" != "200" ] && [ "$$HTTP_CODE" != "201" ]; then
+          echo "[ERROR] Failed to create machine identity (HTTP $$HTTP_CODE)";
+          echo "[ERROR] Response: $$IDENTITY_CREATE_BODY";
+          exit 1;
+        fi;
+        
+        IDENTITY_ID=$$(echo "$$IDENTITY_CREATE_BODY" | jq -r ".identity.id" 2>/dev/null);
+        if [ -z "$$IDENTITY_ID" ] || [ "$$IDENTITY_ID" = "null" ]; then
+          echo "[ERROR] Failed to extract identity ID from response";
+          echo "[ERROR] Tried path: .identity.id";
+          exit 1;
+        fi;
+        echo "[infisical-config] ✓ Identity created with ID: $$IDENTITY_ID";
+        
+        # Step 3b: Attach Universal Auth to the identity
+        echo "[infisical-config] Attaching Universal Auth configuration...";
+        UNIVERSAL_AUTH_RESPONSE=$$(curl -s -w "\n%{http_code}" -X POST "$${INFISICAL_URL}/api/v1/auth/universal-auth/identities/$${IDENTITY_ID}" \
+          -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"accessTokenTTL\":2592000,\"accessTokenMaxTTL\":2592000,\"accessTokenNumUsesLimit\":0}");
+        
+        HTTP_CODE=$$(echo "$$UNIVERSAL_AUTH_RESPONSE" | tail -n1);
+        UNIVERSAL_AUTH_BODY=$$(echo "$$UNIVERSAL_AUTH_RESPONSE" | head -n -1);
+        
+        echo "[infisical-config] DEBUG - Universal Auth HTTP Code: $$HTTP_CODE";
+        echo "[infisical-config] DEBUG - Universal Auth Response: $$UNIVERSAL_AUTH_BODY";
+        
+        if [ "$$HTTP_CODE" != "200" ] && [ "$$HTTP_CODE" != "201" ]; then
+          echo "[ERROR] Failed to attach Universal Auth (HTTP $$HTTP_CODE)";
+          echo "[ERROR] Response: $$UNIVERSAL_AUTH_BODY";
+          exit 1;
+        fi;
+        
+        CLIENT_ID=$$(echo "$$UNIVERSAL_AUTH_BODY" | jq -r ".identityUniversalAuth.clientId" 2>/dev/null);
+        if [ -z "$$CLIENT_ID" ] || [ "$$CLIENT_ID" = "null" ]; then
+          echo "[ERROR] Failed to extract client ID from Universal Auth response";
+          echo "[ERROR] Tried path: .identityUniversalAuth.clientId";
+          exit 1;
+        fi;
+        echo "[infisical-config] ✓ Universal Auth attached, Client ID: $$CLIENT_ID";
+        
+        # Step 3c: Add machine identity to project
+        echo "[infisical-config] Adding machine identity to project...";
+        ADD_TO_PROJECT_RESPONSE=$$(curl -s -w "\n%{http_code}" -X POST "$${INFISICAL_URL}/api/v2/workspace/$${PROJECT_ID}/identity-memberships/$${IDENTITY_ID}" \
+          -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"role\":\"admin\"}");
+        
+        HTTP_CODE=$$(echo "$$ADD_TO_PROJECT_RESPONSE" | tail -n1);
+        ADD_PROJECT_BODY=$$(echo "$$ADD_TO_PROJECT_RESPONSE" | head -n -1);
+        
+        echo "[infisical-config] DEBUG - Add to Project HTTP Code: $$HTTP_CODE";
+        echo "[infisical-config] DEBUG - Add to Project Response: $$ADD_PROJECT_BODY";
+        
+        if [ "$$HTTP_CODE" != "200" ] && [ "$$HTTP_CODE" != "201" ]; then
+          echo "[WARN] Failed to add identity to project (HTTP $$HTTP_CODE), continuing anyway...";
+        else
+          echo "[infisical-config] ✓ Identity added to project";
+        fi;
+        
+        # Step 3d: Create client secret for the identity
+        echo "[infisical-config] Generating client secret...";
+        CLIENT_SECRET_RESPONSE=$$(curl -s -w "\n%{http_code}" -X POST "$${INFISICAL_URL}/api/v1/auth/universal-auth/identities/$${IDENTITY_ID}/client-secrets" \
+          -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"description\":\"Auto-generated for $${ENV_NAME}\",\"ttl\":0,\"numUsesLimit\":0}");
+        
+        HTTP_CODE=$$(echo "$$CLIENT_SECRET_RESPONSE" | tail -n1);
+        CLIENT_SECRET_BODY=$$(echo "$$CLIENT_SECRET_RESPONSE" | head -n -1);
+        
+        echo "[infisical-config] DEBUG - Client Secret HTTP Code: $$HTTP_CODE";
+        echo "[infisical-config] DEBUG - Client Secret Response: $$CLIENT_SECRET_BODY";
+        
+        if [ "$$HTTP_CODE" != "200" ] && [ "$$HTTP_CODE" != "201" ]; then
+          echo "[ERROR] Failed to create client secret (HTTP $$HTTP_CODE)";
+          echo "[ERROR] Response: $$CLIENT_SECRET_BODY";
+          exit 1;
+        fi;
+        
+        CLIENT_SECRET=$$(echo "$$CLIENT_SECRET_BODY" | jq -r ".clientSecret" 2>/dev/null);
+        if [ -z "$$CLIENT_SECRET" ] || [ "$$CLIENT_SECRET" = "null" ]; then
+          echo "[ERROR] Failed to extract client secret from response";
+          echo "[ERROR] Tried path: .clientSecret";
+          exit 1;
+        fi;
+        
+        echo "$$CLIENT_ID" > /secrets/infisical_prod_client_id.txt;
+        echo "$$CLIENT_SECRET" > /secrets/infisical_prod_client_secret.txt;
+        echo "[infisical-config] ✓ Client credentials saved";
+        echo "";
+        
+        # Step 4: Create required secrets with auto-generated values
+        echo "[infisical-config] Step 4/5: Creating required secrets in project...";
+        
+        # Note: The following secrets must be created manually in Infisical UI:
+        # - HUGGING_FACE_API_KEY
+        # - CONFLUENCE_BASE_URL
+        # - CONFLUENCE_USERNAME
+        # - CONFLUENCE_API_TOKEN
+        
+        # Create DB_USER secret with generated value
+        echo "[infisical-config]   Creating secret: DB_USER";
+        DB_USER=$$(cat /secrets/postgres_user.txt);
+        curl -sf -X POST "$${INFISICAL_URL}/api/v4/secrets/DB_USER" \
+          -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"$${DB_USER}\",\"secretComment\":\"Auto-generated PostgreSQL username\",\"type\":\"shared\"}" \
+          > /dev/null 2>&1 && echo "[infisical-config]   ✓ DB_USER created" || echo "[infisical-config]   ⚠ DB_USER may already exist";
+        
+        # Create DB_PASSWORD secret with generated value
+        echo "[infisical-config]   Creating secret: DB_PASSWORD";
+        DB_PASSWORD=$$(cat /secrets/postgres_password.txt);
+        curl -sf -X POST "$${INFISICAL_URL}/api/v4/secrets/DB_PASSWORD" \
+          -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"$${DB_PASSWORD}\",\"secretComment\":\"Auto-generated PostgreSQL password\",\"type\":\"shared\"}" \
+          > /dev/null 2>&1 && echo "[infisical-config]   ✓ DB_PASSWORD created" || echo "[infisical-config]   ⚠ DB_PASSWORD may already exist";
+        
+        # Create PII_REPORTING_ALLOW_SECRET_REVEAL secret with default value true
+        echo "[infisical-config]   Creating secret: PII_REPORTING_ALLOW_SECRET_REVEAL";
+        curl -sf -X POST "$${INFISICAL_URL}/api/v4/secrets/PII_REPORTING_ALLOW_SECRET_REVEAL" \
+          -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"true\",\"secretComment\":\"Allow revealing decrypted PII values (default: true)\",\"type\":\"shared\"}" \
+          > /dev/null 2>&1 && echo "[infisical-config]   ✓ PII_REPORTING_ALLOW_SECRET_REVEAL created" || echo "[infisical-config]   ⚠ PII_REPORTING_ALLOW_SECRET_REVEAL may already exist";
+
+        # Create PGADMIN_DEFAULT_EMAIL secret with generated value
+        echo "[infisical-config]   Creating secret: PGADMIN_DEFAULT_EMAIL";
+        PGADMIN_EMAIL=$$(cat /secrets/pgadmin_email.txt);
+        curl -sf -X POST "$${INFISICAL_URL}/api/v4/secrets/PGADMIN_DEFAULT_EMAIL" \
+          -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"$${PGADMIN_EMAIL}\",\"secretComment\":\"Auto-generated PGAdmin email\",\"type\":\"shared\"}" \
+          > /dev/null 2>&1 && echo "[infisical-config]   ✓ PGADMIN_DEFAULT_EMAIL created" || echo "[infisical-config]   ⚠ PGADMIN_DEFAULT_EMAIL may already exist";
+        
+        # Create PGADMIN_DEFAULT_PASSWORD secret with generated value
+        echo "[infisical-config]   Creating secret: PGADMIN_DEFAULT_PASSWORD";
+        PGADMIN_PASSWORD=$$(cat /secrets/pgadmin_password.txt);
+        curl -sf -X POST "$${INFISICAL_URL}/api/v4/secrets/PGADMIN_DEFAULT_PASSWORD" \
+          -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"$${PGADMIN_PASSWORD}\",\"secretComment\":\"Auto-generated PGAdmin password\",\"type\":\"shared\"}" \
+          > /dev/null 2>&1 && echo "[infisical-config]   ✓ PGADMIN_DEFAULT_PASSWORD created" || echo "[infisical-config]   ⚠ PGADMIN_DEFAULT_PASSWORD may already exist";
+        # Create or update PII_DATABASE_ENCRYPTION_KEY idempotently
+        PII_DATABASE_ENCRYPTION_KEY=$$(cat /secrets/pii_database_encryption_key.txt);
+
+        # Try POST first and capture HTTP status without failing the script
+        HTTP_CODE=$$(curl -s -o /dev/null -w "%{http_code}" -X POST "$${INFISICAL_URL}/api/v4/secrets/PII_DATABASE_ENCRYPTION_KEY" \
+          -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"$${PII_DATABASE_ENCRYPTION_KEY}\",\"secretComment\":\"Auto-generated AES-256 encryption key for PII database (32 bytes base64-encoded)\",\"type\":\"shared\"}");
+
+        if [ "$$HTTP_CODE" = "200" ] || [ "$$HTTP_CODE" = "201" ]; then
+          echo "[infisical-config]   ✓ PII_DATABASE_ENCRYPTION_KEY created";
+        elif [ "$$HTTP_CODE" = "409" ]; then
+          # Secret exists -> attempt update (PUT)
+          HTTP_CODE_PUT=$$(curl -s -o /dev/null -w "%{http_code}" -X PUT "$${INFISICAL_URL}/api/v4/secrets/PII_DATABASE_ENCRYPTION_KEY" \
+            -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"$${PII_DATABASE_ENCRYPTION_KEY}\",\"type\":\"shared\"}");
+          if [ "$$HTTP_CODE_PUT" = "200" ]; then
+            echo "[infisical-config]   ✓ PII_DATABASE_ENCRYPTION_KEY updated";
+          else
+            echo "[infisical-config]   ⚠ PII_DATABASE_ENCRYPTION_KEY exists but update returned HTTP $$HTTP_CODE_PUT; continuing";
+          fi
+        else
+          echo "[infisical-config]   ⚠ Failed to create PII_DATABASE_ENCRYPTION_KEY (HTTP $$HTTP_CODE); continuing";
+        fi
+
+        # Create the 4 manually-configured secrets WITHOUT placeholder values
+        echo "[infisical-config]   Creating empty secrets (to be filled manually)...";
+        for secret_name in "HUGGING_FACE_API_KEY" "CONFLUENCE_BASE_URL" "CONFLUENCE_USERNAME" "CONFLUENCE_API_TOKEN"; do
+          echo "[infisical-config]   Creating secret: $$secret_name";
+          curl -sf -X POST "$${INFISICAL_URL}/api/v4/secrets/$$secret_name" \
+            -H "Authorization: Bearer $${ADMIN_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"\",\"secretComment\":\"Created empty - must be filled manually with real value\",\"type\":\"shared\"}" \
+            > /dev/null 2>&1 && echo "[infisical-config]   ✓ $$secret_name created (empty)" || echo "[infisical-config]   ⚠ $$secret_name may already exist";
+        done;
+        
+        echo "[infisical-config] ✓ Secrets created with placeholder or real values";
+        echo "";
+        
+        # Step 5: Display success summary
+        echo "";
+        echo "[infisical-config] ================================================";
+        echo "[infisical-config] ✓ INFISICAL CONFIGURED SUCCESSFULLY!";
+        echo "[infisical-config] ================================================";
+        echo "";
+        echo "[infisical-config] Super Admin Account:";
+        echo "[infisical-config]   Email:    $${ADMIN_EMAIL}";
+        echo "[infisical-config]   Password: $${ADMIN_PASSWORD}";
+        echo "";
+        echo "[infisical-config] IMPORTANT: Save this password securely!";
+        echo "[infisical-config] You can reset it via MailHog at http://localhost:8025";
+        echo "";
+        echo "[infisical-config] Project:";
+        echo "[infisical-config]   Name: $${PROJECT_NAME}";
+        echo "[infisical-config]   ID:   $${PROJECT_ID}";
+        echo "";
+        echo "[infisical-config] ✓ Machine Identity configured for \"$${ENV_NAME}\" environment";
+        echo "[infisical-config] ✓ Credentials saved to ./secrets/ directory";
+        echo "";
+        echo "[infisical-config] Auto-generated secrets created:";
+        echo "[infisical-config]   ✓ DB_USER";
+        echo "[infisical-config]   ✓ DB_PASSWORD";
+        echo "[infisical-config]   ✓ PGADMIN_DEFAULT_EMAIL";
+        echo "[infisical-config]   ✓ PGADMIN_DEFAULT_PASSWORD";
+        echo "[infisical-config]   ✓ PII_DATABASE_ENCRYPTION_KEY";
+        echo "[infisical-config] ";
+        echo "[infisical-config] IMPORTANT: Create these secrets manually in Infisical UI:";
+        echo "[infisical-config]   ⚠ HUGGING_FACE_API_KEY (required for PII detection)";
+        echo "[infisical-config]   ⚠ CONFLUENCE_BASE_URL (required for Confluence integration)";
+        echo "[infisical-config]   ⚠ CONFLUENCE_USERNAME (required for Confluence integration)";
+        echo "[infisical-config]   ⚠ CONFLUENCE_API_TOKEN (required for Confluence integration)";
+        echo "";
+        echo "[infisical-config] Access Infisical UI at: http://localhost:8082";
+        echo "[infisical-config] ================================================";
+        echo "";
+      '
+    volumes:
+      - ./secrets:/secrets
+    depends_on:
+      infisical:
+        condition: service_healthy
+      secrets-bootstrap:
+        condition: service_completed_successfully
+    networks:
+      - ai-sentinel-network
+
+  # ============================================================================
+  # DATABASE SERVICE
+  # ============================================================================
+  postgres:
+    image: postgres:18
+    container_name: ai-sentinel-db-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ai-sentinel
+    command: >
+      sh -c '
+        export POSTGRES_USER=$$(cat /secrets/postgres_user.txt) &&
+        export POSTGRES_PASSWORD=$$(cat /secrets/postgres_password.txt) &&
+        exec docker-entrypoint.sh postgres
+      '
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./secrets:/secrets:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$(cat /secrets/postgres_user.txt) -d ai-sentinel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      secrets-bootstrap:
+        condition: service_completed_successfully
+    networks:
+      - ai-sentinel-network
+
+  # ============================================================================
+  # PII DETECTOR SERVICE (Python/gRPC) - PRE-BUILT IMAGE
+  # ============================================================================
+  pii-detector:
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-pii-detector:0.0.1
+    container_name: pii-detector-service
+    restart: unless-stopped
+    
+    # Resource limits for stability (prevents OOM and limits CPU usage)
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'      # Max 4 CPU cores (adjust based on host)
+          memory: 8G       # Max 8GB RAM for NLP/ML models
+        reservations:
+          cpus: '2.0'      # Guaranteed 2 CPU cores
+          memory: 4G       # Guaranteed 4GB RAM
+    
+    ports:
+      - "50051:50051"
+    environment:
+      # Infisical Configuration - secrets will be read from /secrets/
+      INFISICAL_CLIENT_ID_FILE: /secrets/infisical_prod_client_id.txt
+      INFISICAL_CLIENT_SECRET_FILE: /secrets/infisical_prod_client_secret.txt
+      INFISICAL_PROJECT_ID_FILE: /secrets/infisical_project_id.txt
+      INFISICAL_API_URL: http://infisical:8080
+      INFISICAL_ENV: prod
+
+      # Database configuration (static host/port, credentials from Infisical)
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ai-sentinel
+
+      # Static non-sensitive configuration
+      HF_HOME: /app/.cache/huggingface
+      TRANSFORMERS_CACHE: /app/.cache/huggingface
+    volumes:
+      - huggingface-cache:/app/.cache/huggingface
+      - ./secrets:/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      infisical-configurator:
+        condition: service_completed_successfully
+      infisical:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import grpc; channel = grpc.insecure_channel(\"localhost:50051\"); channel.close()'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - ai-sentinel-network
+
+  # ============================================================================
+  # PII REPORTING API (Spring Boot) - PRE-BUILT IMAGE
+  # ============================================================================
+  pii-reporting-api:
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-api:0.0.1
+    container_name: pii-reporting-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "8090:8090"  # Armeria internal services (health, metrics, docs)
+    environment:
+      # Infisical Configuration - secrets will be read from /secrets/
+      INFISICAL_CLIENT_ID_FILE: /secrets/infisical_prod_client_id.txt
+      INFISICAL_CLIENT_SECRET_FILE: /secrets/infisical_prod_client_secret.txt
+      INFISICAL_PROJECT_ID_FILE: /secrets/infisical_project_id.txt
+      INFISICAL_API_URL: http://infisical:8080
+      INFISICAL_ENV: prod
+
+      # Static non-sensitive configuration  
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ai-sentinel
+      SERVER_PORT: 8080
+      PII_DETECTOR_CLIENT: armeria
+      PII_DETECTOR_HOST: pii-detector
+      PII_DETECTOR_PORT: 50051
+      
+      # Non-sensitive Confluence configuration (optional with defaults)
+      CONFLUENCE_ENABLE_PROXY: ${CONFLUENCE_ENABLE_PROXY:-false}
+      CONFLUENCE_PROXY_HOST: ${CONFLUENCE_PROXY_HOST:-}
+      CONFLUENCE_PROXY_PORT: ${CONFLUENCE_PROXY_PORT:-8080}
+      CONFLUENCE_PROXY_USERNAME: ${CONFLUENCE_PROXY_USERNAME:-}
+      CONFLUENCE_CACHE_REFRESH_INTERVAL: ${CONFLUENCE_CACHE_REFRESH_INTERVAL:-300000}
+      CONFLUENCE_CACHE_INITIAL_DELAY: ${CONFLUENCE_CACHE_INITIAL_DELAY:-5000}
+      CONFLUENCE_POLLING_INTERVAL: ${CONFLUENCE_POLLING_INTERVAL:-60000}
+    volumes:
+      - ./secrets:/secrets:ro
+      - ./personally-identifiable-information-scan-results:/personally-identifiable-information-scan-results
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      pii-detector:
+        condition: service_started
+      infisical-configurator:
+        condition: service_completed_successfully
+      infisical:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ai-sentinel/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - ai-sentinel-network
+
+  # ============================================================================
+  # PII REPORTING UI (Angular + Nginx) - PRE-BUILT IMAGE
+  # ============================================================================
+  pii-reporting-ui:
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-ui:0.0.1
+    container_name: pii-reporting-ui
+    restart: unless-stopped
+    ports:
+      - "4200:80"
+    depends_on:
+      pii-reporting-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - ai-sentinel-network
+
+  # ============================================================================
+  # INFISICAL (Secrets Manager)
+  # ============================================================================
+  infisical-db:
+    image: postgres:18-alpine
+    container_name: infisical-db-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: infisical
+      POSTGRES_PASSWORD_FILE: /secrets/infisical_db_password.txt
+      POSTGRES_DB: infisical
+    volumes:
+      - infisical-db-data:/var/lib/postgresql/data
+      - ./secrets:/secrets:ro
+    networks:
+      - ai-sentinel-network
+
+  infisical-redis:
+    image: redis:7-alpine
+    container_name: infisical-redis-prod
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - infisical-redis-data:/data
+    networks:
+      - ai-sentinel-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    restart: unless-stopped
+    ports:
+      # SMTP server is only needed inside Docker network; not exposed to host for security
+      # - "127.0.0.1:1025:1025"  # Uncomment if you need to test SMTP from the host
+      - "127.0.0.1:8025:8025"  # Web UI (localhost only)
+    networks:
+      - ai-sentinel-network
+
+  infisical:
+    image: infisical/infisical:v0.153.4
+    container_name: infisical-prod
+    restart: unless-stopped
+    ports:
+      - "8082:8080"  # Expose Infisical UI on localhost:8082
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://infisical-redis:6379
+      SITE_URL: ${INFISICAL_SITE_URL:-http://localhost:8082}
+      # SMTP Configuration (MailHog for local development, configure real SMTP in production)
+      SMTP_HOST: ${SMTP_HOST:-mailhog}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS:-noreply@ai-sentinel.local}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-AI Sentinel Infisical}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_TLS_ENABLED: ${SMTP_TLS_ENABLED:-false}
+      SMTP_STARTTLS_ENABLED: ${SMTP_STARTTLS_ENABLED:-false}
+      SMTP_IGNORE_TLS: ${SMTP_IGNORE_TLS:-true}
+    command: >
+      sh -c '
+        export ENCRYPTION_KEY=$$(cat /secrets/infisical_encryption_key.txt) &&
+        export AUTH_SECRET=$$(cat /secrets/infisical_auth_secret.txt) &&
+        export DB_CONNECTION_URI="postgres://infisical:$$(cat /secrets/infisical_db_password.txt)@infisical-db:5432/infisical" &&
+        exec /usr/local/bin/docker-entrypoint.sh ./standalone-entrypoint.sh
+      '
+    depends_on:
+      secrets-bootstrap:
+        condition: service_completed_successfully
+      infisical-db:
+        condition: service_started
+      infisical-redis:
+        condition: service_started
+      mailhog:
+        condition: service_started
+    volumes:
+      - ./secrets:/secrets:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/status"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 60s
+    networks:
+      - ai-sentinel-network
+
+  # ============================================================================
+  # PGADMIN (Optional - Database Management UI)
+  # ============================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin-sentinel
+    restart: unless-stopped
+    environment:
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+      # Infisical Configuration - secrets will be read from /secrets/
+      INFISICAL_CLIENT_ID_FILE: /secrets/infisical_prod_client_id.txt
+      INFISICAL_CLIENT_SECRET_FILE: /secrets/infisical_prod_client_secret.txt
+      INFISICAL_PROJECT_ID_FILE: /secrets/infisical_project_id.txt
+      INFISICAL_API_URL: http://infisical:8080
+      INFISICAL_ENV: prod
+    command: >
+      sh -c '
+        apk add --no-cache curl jq > /dev/null 2>&1;
+        
+        INFISICAL_CLIENT_ID=$$(cat /secrets/infisical_prod_client_id.txt);
+        INFISICAL_CLIENT_SECRET=$$(cat /secrets/infisical_prod_client_secret.txt);
+        INFISICAL_PROJECT_ID=$$(cat /secrets/infisical_project_id.txt);
+        INFISICAL_API_URL="http://infisical:8080";
+        
+        echo "[pgadmin] Authenticating with Infisical...";
+        TOKEN_RESPONSE=$$(curl -s -X POST "$$INFISICAL_API_URL/api/v1/auth/universal-auth/login" \
+          -H "Content-Type: application/json" \
+          -d "{\"clientId\":\"$$INFISICAL_CLIENT_ID\",\"clientSecret\":\"$$INFISICAL_CLIENT_SECRET\"}");
+        
+        ACCESS_TOKEN=$$(echo "$$TOKEN_RESPONSE" | jq -r ".accessToken");
+        
+        echo "[pgadmin] Fetching secrets from Infisical...";
+        SECRETS_RESPONSE=$$(curl -s "$$INFISICAL_API_URL/api/v3/secrets/raw?workspaceId=$$INFISICAL_PROJECT_ID&environment=prod" \
+          -H "Authorization: Bearer $$ACCESS_TOKEN");
+        
+        export PGADMIN_DEFAULT_EMAIL=$$(echo "$$SECRETS_RESPONSE" | jq -r ".secrets[] | select(.secretKey==\"PGADMIN_DEFAULT_EMAIL\") | .secretValue");
+        export PGADMIN_DEFAULT_PASSWORD=$$(echo "$$SECRETS_RESPONSE" | jq -r ".secrets[] | select(.secretKey==\"PGADMIN_DEFAULT_PASSWORD\") | .secretValue");
+        
+        echo "[pgadmin] Secrets loaded, starting PGAdmin...";
+        exec /entrypoint.sh
+      '
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./secrets:/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      infisical-configurator:
+        condition: service_completed_successfully
+      infisical:
+        condition: service_healthy
+    networks:
+      - ai-sentinel-network
+    profiles:
+      - admin  # Optional: start only with --profile admin
+
+volumes:
+  postgres-data:
+    name: ai-sentinel-postgres-data
+  pgadmin-data:
+    name: ai-sentinel-pgadmin-data
+  huggingface-cache:
+    name: ai-sentinel-huggingface-cache
+  infisical-db-data:
+    name: ai-sentinel-infisical-db-data-prod
+  infisical-redis-data:
+    name: ai-sentinel-infisical-redis-data-prod
+
+networks:
+  ai-sentinel-network:
+    name: ai-sentinel-network
+    driver: bridge
+
+# Note: We use a bind volume ./secrets to simplify automatic bootstrap.
+# For increased security in production, replace it with Docker secrets managed by your orchestrator.

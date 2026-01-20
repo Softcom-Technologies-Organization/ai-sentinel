@@ -1,0 +1,518 @@
+"""
+Tests for Presidio detector improvements.
+
+This module validates the enhancements made to PresidioDetector:
+- Whitelist construction from config
+- Entity filtering via analyze() entities parameter
+- Post-filtering based on scoring thresholds
+- SpacyRecognizer removal when person_name is disabled
+- Unknown entity logging
+"""
+
+from unittest.mock import Mock, patch
+
+import pytest
+
+from pii_detector.domain.entity.pii_type import PIIType
+from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
+
+
+class TestPresidioDetectorImprovements:
+    """Test suite for Presidio detector improvements."""
+    
+    @pytest.fixture
+    def mock_config(self):
+        """Provide a mock configuration for testing."""
+        return {
+            "model": {
+                "model_id": "presidio-detector",
+                "enabled": True,
+                "priority": 2
+            },
+            "detection": {
+                "default_threshold": 0.5,
+                "languages": ["en"],
+                "labels_to_ignore": []
+            },
+            "recognizers": {
+                "email": True,
+                "phone": True,
+                "person_name": False,  # Disabled to test SpacyRecognizer removal
+                "ip_address": True,
+                "credit_card": True,
+                "location": False
+            },
+            "scoring": {
+                "EMAIL_ADDRESS": 0.95,
+                "PHONE_NUMBER": 0.85,
+                "IP_ADDRESS": 0.98,
+                "CREDIT_CARD": 0.90
+            },
+            "advanced": {
+                "use_context": True,
+                "allow_list": [],
+                "deny_list": []
+            }
+        }
+    
+    @pytest.fixture
+    def mock_db_configs(self):
+        """Provide mock database PII type configs for testing."""
+        return {
+            'EMAIL': {
+                'enabled': True,
+                'threshold': 0.95,
+                'detector': 'PRESIDIO',
+                'display_name': 'Email Address',
+                'description': 'Email addresses',
+                'category': 'Contact',
+                'country_code': None,
+                'detector_label': 'EMAIL_ADDRESS'
+            },
+            'PHONE': {
+                'enabled': True,
+                'threshold': 0.85,
+                'detector': 'PRESIDIO',
+                'display_name': 'Phone Number',
+                'description': 'Phone numbers',
+                'category': 'Contact',
+                'country_code': None,
+                'detector_label': 'PHONE_NUMBER'
+            },
+            'IP_ADDRESS': {
+                'enabled': True,
+                'threshold': 0.98,
+                'detector': 'PRESIDIO',
+                'display_name': 'IP Address',
+                'description': 'IP addresses',
+                'category': 'Network',
+                'country_code': None,
+                'detector_label': 'IP_ADDRESS'
+            },
+            'CREDIT_CARD': {
+                'enabled': True,
+                'threshold': 0.90,
+                'detector': 'PRESIDIO',
+                'display_name': 'Credit Card',
+                'description': 'Credit card numbers',
+                'category': 'Financial',
+                'country_code': None,
+                'detector_label': 'CREDIT_CARD'
+            },
+            'PERSON_NAME': {
+                'enabled': False,
+                'threshold': 0.80,
+                'detector': 'PRESIDIO',
+                'display_name': 'Person Name',
+                'description': 'Person names',
+                'category': 'Personal',
+                'country_code': None,
+                'detector_label': 'PERSON'
+            },
+            'LOCATION': {
+                'enabled': False,
+                'threshold': 0.80,
+                'detector': 'PRESIDIO',
+                'display_name': 'Location',
+                'description': 'Locations',
+                'category': 'Personal',
+                'country_code': None,
+                'detector_label': 'LOCATION'
+            }
+        }
+    
+    @pytest.fixture
+    def detector_with_mock_config(self, mock_config, mock_db_configs):
+        """Create a PresidioDetector with mocked configuration."""
+        with patch.object(PresidioDetector, '_load_config', return_value=mock_config):
+            # Mock the database adapter to return None (force TOML fallback)
+            with patch('pii_detector.infrastructure.adapter.out.database_config_adapter.get_database_config_adapter', return_value=None):
+                detector = PresidioDetector()
+                # Mock _load_pii_type_configs_from_database to return mock configs
+                detector._load_pii_type_configs_from_database = Mock(return_value=mock_db_configs)
+                return detector
+    
+    def test_build_allowed_entities_should_map_config_keys_to_presidio_entities(
+        self, detector_with_mock_config, mock_db_configs
+    ):
+        """
+        Should_CreateWhitelistWithCorrectPresidioEntityNames_When_BuildingFromConfig.
+        
+        Validates that config keys are correctly mapped to official Presidio entity types.
+        """
+        # When
+        allowed_entities = detector_with_mock_config._build_allowed_entities(mock_db_configs)
+        
+        # Then
+        assert "EMAIL_ADDRESS" in allowed_entities  # email -> EMAIL_ADDRESS
+        assert "PHONE_NUMBER" in allowed_entities   # phone -> PHONE_NUMBER
+        assert "IP_ADDRESS" in allowed_entities     # ip_address -> IP_ADDRESS
+        assert "CREDIT_CARD" in allowed_entities    # credit_card -> CREDIT_CARD
+        
+        # Disabled entities should not be in whitelist
+        assert "PERSON" not in allowed_entities     # person_name = false
+        assert "LOCATION" not in allowed_entities   # location = false
+    
+    def test_build_allowed_entities_should_log_warning_for_unknown_config_keys(
+        self, detector_with_mock_config, caplog, mock_db_configs
+    ):
+        """
+        Should_LogWarning_When_ConfigContainsUnknownRecognizerKey.
+        
+        Validates that unknown recognizer keys are logged for debugging.
+        """
+        # Given: Add an unknown recognizer key to database configs
+        mock_db_configs['UNKNOWN_ENTITY'] = {
+            'enabled': True,
+            'threshold': 0.80,
+            'detector': 'PRESIDIO',
+            'display_name': 'Unknown Entity',
+            'description': 'Unknown entity type',
+            'category': 'Other',
+            'country_code': None,
+            'detector_label': None  # No detector_label
+        }
+        
+        # When
+        with caplog.at_level("WARNING"):
+            allowed_entities = detector_with_mock_config._build_allowed_entities(mock_db_configs)
+        
+        # Then
+        assert "UNKNOWN_ENTITY enabled but has no detector_label" in caplog.text
+    
+    def test_allowed_entities_excludes_person_when_person_name_disabled(
+        self, detector_with_mock_config, mock_db_configs
+    ):
+        """
+        Should_ExcludePersonFromWhitelist_When_PersonNameIsDisabled.
+        
+        Validates that PERSON entity is excluded from allowed_entities whitelist
+        when person_name=false to reduce false positives.
+        """
+        # When
+        allowed_entities = detector_with_mock_config._build_allowed_entities(mock_db_configs)
+        
+        # Then
+        assert "PERSON" not in allowed_entities
+        
+        # Verify other entities are still present
+        assert "EMAIL_ADDRESS" in allowed_entities
+        assert "PHONE_NUMBER" in allowed_entities
+        assert "IP_ADDRESS" in allowed_entities
+    
+    def test_detect_pii_should_pass_entities_whitelist_to_analyzer(
+        self, detector_with_mock_config, mock_db_configs
+    ):
+        """
+        Should_PassEntitiesWhitelist_When_CallingAnalyze.
+        
+        Validates that the entities parameter is used in analyze() to lock detection scope.
+        """
+        # Given
+        mock_analyzer = Mock()
+        mock_analyzer.analyze.return_value = []
+        detector_with_mock_config._analyzer = mock_analyzer
+        
+        text = "Test text with email@test.com"
+        
+        # When
+        detector_with_mock_config.detect_pii(text, pii_type_configs=mock_db_configs)
+        
+        # Then
+        call_args = mock_analyzer.analyze.call_args
+        assert call_args is not None, "analyze() was not called"
+        assert "entities" in call_args.kwargs
+        entities_param = call_args.kwargs["entities"]
+        
+        # Verify whitelist contains expected entities
+        assert "EMAIL_ADDRESS" in entities_param
+        assert "PHONE_NUMBER" in entities_param
+        assert "IP_ADDRESS" in entities_param
+        
+        # Verify disabled entities are not in whitelist
+        assert "PERSON" not in entities_param
+        assert "LOCATION" not in entities_param
+    
+    def test_convert_and_filter_results_should_apply_entity_specific_thresholds(
+        self, detector_with_mock_config, mock_db_configs
+    ):
+        """
+        Should_FilterOutLowScoreResults_When_BelowEntitySpecificThreshold.
+        
+        Validates post-filtering based on per-entity thresholds from [scoring].
+        """
+        # Given
+        text = "email@test.com and phone 555-1234"
+        
+        # Mock results with different scores
+        mock_results = [
+            # Email with high score - should pass (threshold: 0.95)
+            Mock(
+                entity_type="EMAIL_ADDRESS",
+                start=0,
+                end=14,
+                score=0.96
+            ),
+            # Email with low score - should be filtered (threshold: 0.95)
+            Mock(
+                entity_type="EMAIL_ADDRESS",
+                start=0,
+                end=14,
+                score=0.85
+            ),
+            # Phone with acceptable score - should pass (threshold: 0.85)
+            Mock(
+                entity_type="PHONE_NUMBER",
+                start=25,
+                end=33,
+                score=0.87
+            ),
+            # Phone with low score - should be filtered (threshold: 0.85)
+            Mock(
+                entity_type="PHONE_NUMBER",
+                start=25,
+                end=33,
+                score=0.70
+            )
+        ]
+        
+        # When
+        entities = detector_with_mock_config._convert_and_filter_results(text, mock_results, mock_db_configs)
+        
+        # Then
+        assert len(entities) == 2  # Only 2 out of 4 should pass
+        
+        # Verify the passing entities
+        assert entities[0].pii_type == PIIType.EMAIL
+        assert entities[0].score == 0.96
+        
+        assert entities[1].pii_type == PIIType.PHONE
+        assert entities[1].score == 0.87
+    
+    def test_convert_and_filter_results_should_log_unknown_entity_types(
+        self, detector_with_mock_config, caplog, mock_db_configs
+    ):
+        """
+        Should_LogWarning_When_UnknownPresidioEntityTypeDetected.
+        
+        Validates that unknown Presidio entity types are logged for debugging.
+        """
+        # Given
+        text = "some text"
+        mock_results = [
+            Mock(
+                entity_type="UNKNOWN_TYPE",
+                start=0,
+                end=9,
+                score=0.90
+            )
+        ]
+        
+        # When
+        with caplog.at_level("WARNING"):
+            entities = detector_with_mock_config._convert_and_filter_results(
+                text, mock_results, mock_db_configs
+            )
+        
+        # Then
+        assert "Unknown Presidio entity_type 'UNKNOWN_TYPE'" in caplog.text
+        assert "Consider adding to PRESIDIO_TO_PII_TYPE_MAP" in caplog.text
+        
+        # Entity should still be created with UNKNOWN type
+        assert len(entities) == 1
+        assert entities[0].pii_type == PIIType.UNKNOWN
+    
+    def test_convert_and_filter_results_should_preserve_original_scores(
+        self, detector_with_mock_config, mock_db_configs
+    ):
+        """
+        Should_PreserveOriginalPresidioScores_When_ConvertingResults.
+        
+        Validates that original Presidio scores are not overridden,
+        and [scoring] values are used only as thresholds.
+        """
+        # Given
+        text = "email@test.com"
+        original_score = 0.97
+        
+        mock_results = [
+            Mock(
+                entity_type="EMAIL_ADDRESS",
+                start=0,
+                end=14,
+                score=original_score
+            )
+        ]
+        
+        # When
+        entities = detector_with_mock_config._convert_and_filter_results(
+            text, mock_results, mock_db_configs
+        )
+        
+        # Then
+        assert len(entities) == 1
+        assert entities[0].score == original_score  # Score should be preserved
+    
+    def test_convert_and_filter_results_should_log_filtered_count(
+        self, detector_with_mock_config, caplog, mock_db_configs
+    ):
+        """
+        Should_LogFilteredCount_When_PostFilteringApplied.
+        
+        Validates that the number of filtered results is logged for monitoring.
+        """
+        # Given
+        text = "test"
+        mock_results = [
+            # Below threshold - will be filtered
+            Mock(entity_type="EMAIL_ADDRESS", start=0, end=4, score=0.70),
+            Mock(entity_type="EMAIL_ADDRESS", start=0, end=4, score=0.80),
+            # Above threshold - will pass
+            Mock(entity_type="EMAIL_ADDRESS", start=0, end=4, score=0.96)
+        ]
+        
+        # When
+        with caplog.at_level("INFO"):
+            entities = detector_with_mock_config._convert_and_filter_results(
+                text, mock_results, mock_db_configs
+            )
+        
+        # Then
+        assert "Post-filtered 2 results based on per-entity thresholds" in caplog.text
+        assert len(entities) == 1
+    
+    def test_detect_pii_should_return_empty_list_when_no_entities_enabled(
+        self, detector_with_mock_config, caplog
+    ):
+        """
+        Should_ReturnEmptyListAndLogWarning_When_NoEntitiesEnabled.
+        
+        Validates graceful handling when all recognizers are disabled.
+        """
+        # Given: Empty database configs (all recognizers disabled)
+        empty_configs = {}
+        
+        # When
+        with caplog.at_level("WARNING"):
+            entities = detector_with_mock_config.detect_pii("test text", pii_type_configs=empty_configs)
+        
+        # Then
+        assert len(entities) == 0
+        assert "No entities enabled in configuration" in caplog.text
+    
+    def test_detect_pii_should_log_raw_entity_types_for_debugging(
+        self, detector_with_mock_config, caplog, mock_db_configs
+    ):
+        """
+        Should_LogRawEntityTypes_When_ResultsReturned.
+        
+        Validates that raw Presidio entity types are logged for debugging.
+        """
+        # Given
+        mock_analyzer = Mock()
+        mock_results = [
+            Mock(entity_type="EMAIL_ADDRESS", start=0, end=10, score=0.96),
+            Mock(entity_type="PHONE_NUMBER", start=11, end=20, score=0.90)
+        ]
+        mock_analyzer.analyze.return_value = mock_results
+        detector_with_mock_config._analyzer = mock_analyzer
+        
+        # When
+        with caplog.at_level("INFO"):
+            detector_with_mock_config.detect_pii("test text", pii_type_configs=mock_db_configs)
+        
+        # Then
+        assert "Raw entity types detected:" in caplog.text
+
+
+class TestPresidioDetectorConfigurationScenarios:
+    """Test various configuration scenarios for Presidio detector."""
+    
+    def test_should_handle_high_threshold_configuration(self):
+        """
+        Should_FilterMoreAggressively_When_HighThresholdsConfigured.
+        
+        Validates that high scoring thresholds reduce false positives.
+        """
+        # Given: Very high thresholds
+        config = {
+            "model": {"model_id": "test", "enabled": True, "priority": 1},
+            "detection": {"default_threshold": 0.9, "languages": ["en"], "labels_to_ignore": []},
+            "recognizers": {"email": True, "phone": True},
+            "scoring": {
+                "EMAIL_ADDRESS": 0.99,  # Very high threshold
+                "PHONE_NUMBER": 0.99
+            },
+            "advanced": {"use_context": True, "allow_list": [], "deny_list": []}
+        }
+        
+        # Mock database configs with high thresholds
+        mock_db_configs = {
+            'EMAIL': {
+                'enabled': True,
+                'threshold': 0.99,
+                'detector': 'PRESIDIO',
+                'detector_label': 'EMAIL_ADDRESS'
+            },
+            'PHONE': {
+                'enabled': True,
+                'threshold': 0.99,
+                'detector': 'PRESIDIO',
+                'detector_label': 'PHONE_NUMBER'
+            }
+        }
+        
+        with patch.object(PresidioDetector, '_load_config', return_value=config):
+            with patch('pii_detector.infrastructure.adapter.out.database_config_adapter.get_database_config_adapter', return_value=None):
+                detector = PresidioDetector()
+                
+                # Mock results with good but not excellent scores
+                mock_results = [
+                    Mock(entity_type="EMAIL_ADDRESS", start=0, end=10, score=0.95),  # Below 0.99
+                    Mock(entity_type="PHONE_NUMBER", start=11, end=20, score=0.96)   # Below 0.99
+                ]
+                
+                # When
+                entities = detector._convert_and_filter_results("test", mock_results, mock_db_configs)
+                
+                # Then
+                assert len(entities) == 0  # All filtered due to high thresholds
+    
+    def test_should_allow_all_entities_when_no_scoring_overrides(self):
+        """
+        Should_PassAllResults_When_NoScoringOverridesConfigured.
+        
+        Validates that entities pass through when no specific thresholds are set.
+        """
+        # Given: No scoring overrides
+        config = {
+            "model": {"model_id": "test", "enabled": True, "priority": 1},
+            "detection": {"default_threshold": 0.5, "languages": ["en"], "labels_to_ignore": []},
+            "recognizers": {"email": True},
+            "scoring": {},  # Empty scoring section
+            "advanced": {"use_context": True, "allow_list": [], "deny_list": []}
+        }
+        
+        # Mock database configs without thresholds
+        mock_db_configs = {
+            'EMAIL': {
+                'enabled': True,
+                'threshold': 0.5,
+                'detector': 'PRESIDIO',
+                'detector_label': 'EMAIL_ADDRESS'
+            }
+        }
+        
+        with patch.object(PresidioDetector, '_load_config', return_value=config):
+            with patch('pii_detector.infrastructure.adapter.out.database_config_adapter.get_database_config_adapter', return_value=None):
+                detector = PresidioDetector()
+                
+                mock_results = [
+                    Mock(entity_type="EMAIL_ADDRESS", start=0, end=10, score=0.60)
+                ]
+                
+                # When
+                entities = detector._convert_and_filter_results("test", mock_results, mock_db_configs)
+                
+                # Then
+                assert len(entities) == 1  # Should pass with threshold 0.5

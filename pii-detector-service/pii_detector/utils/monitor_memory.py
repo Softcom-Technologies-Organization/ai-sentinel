@@ -5,12 +5,13 @@ This script monitors the memory usage of the PII detection service and provides
 real-time statistics and alerts.
 """
 
-import psutil
-import time
-import sys
 import argparse
 import datetime
+import sys
+import time
 from typing import Optional
+
+import psutil
 
 
 class MemoryMonitor:
@@ -75,67 +76,107 @@ class MemoryMonitor:
             interval: Monitoring interval in seconds
             log_file: Optional file path to save logs
         """
+        self._print_monitor_header()
+        
+        log_handle = self._open_log_file(log_file)
+        
+        try:
+            while True:
+                if not self._monitor_iteration(interval, log_handle):
+                    break
+        except KeyboardInterrupt:
+            self._handle_monitor_stop("user interrupt")
+        except Exception as e:
+            self._handle_monitor_stop(f"error: {e}")
+        finally:
+            self._close_log_file(log_handle)
+    
+    def _print_monitor_header(self) -> None:
+        """Print monitoring header information."""
         print(f"Monitoring PID {self.pid} - {self.process.name()}")
         print(f"Initial memory: {self.initial_memory:.2f} MB")
         print(f"Warning threshold: {self.warning_threshold}%")
         print(f"Critical threshold: {self.critical_threshold}%")
         print("-" * 80)
-        
-        log_handle = None
-        if log_file:
-            try:
-                log_handle = open(log_file, 'a')
-                log_handle.write(f"\n\n=== Memory monitoring started at {datetime.datetime.now()} ===\n")
-            except Exception as e:
-                print(f"Warning: Could not open log file: {e}")
+    
+    def _open_log_file(self, log_file: Optional[str]) -> Optional[object]:
+        """Open log file for writing if specified."""
+        if not log_file:
+            return None
         
         try:
-            while True:
-                stats = self.get_memory_stats()
-                
-                if stats is None:
-                    print("\nProcess terminated")
-                    break
-                
-                # Format output
-                timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                uptime = self.format_uptime(stats['uptime_seconds'])
-                
-                # Determine alert level
-                alert = ""
-                if stats['memory_percent'] >= self.critical_threshold:
-                    alert = " [CRITICAL]"
-                elif stats['memory_percent'] >= self.warning_threshold:
-                    alert = " [WARNING]"
-                
-                # Create output line
-                output = (f"{timestamp} | "
-                         f"Memory: {stats['memory_mb']:.2f} MB ({stats['memory_percent']:.1f}%) | "
-                         f"CPU: {stats['cpu_percent']:.1f}% | "
-                         f"Peak: {stats['peak_memory_mb']:.2f} MB | "
-                         f"Uptime: {uptime}{alert}")
-                
-                print(output)
-                
-                # Write to log file if specified
-                if log_handle:
-                    log_handle.write(output + "\n")
-                    log_handle.flush()
-                
-                # Check for critical memory usage
-                if stats['memory_percent'] >= self.critical_threshold:
-                    print(f"\n⚠️  CRITICAL: Memory usage is at {stats['memory_percent']:.1f}%!")
-                    print("Consider restarting the service or investigating memory leaks.")
-                
-                time.sleep(interval)
-                
-        except KeyboardInterrupt:
-            print("\n\nMonitoring stopped by user")
+            log_handle = open(log_file, 'a')
+            log_handle.write(f"\n\n=== Memory monitoring started at {datetime.datetime.now()} ===\n")
+            return log_handle
         except Exception as e:
-            print(f"\nError during monitoring: {e}")
-        finally:
-            if log_handle:
-                log_handle.close()
+            print(f"Warning: Could not open log file: {e}")
+            return None
+    
+    def _monitor_iteration(self, interval: int, log_handle) -> bool:
+        """Execute one iteration of monitoring.
+        
+        Args:
+            interval: Sleep interval in seconds
+            log_handle: Optional file handle for logging
+            
+        Returns:
+            True if monitoring should continue, False to stop
+        """
+        stats = self.get_memory_stats()
+        
+        if stats is None:
+            print("\nProcess terminated")
+            return False
+        
+        output = self._format_monitor_output(stats)
+        self._write_monitor_output(output, log_handle)
+        self._check_critical_memory(stats)
+        
+        time.sleep(interval)
+        return True
+    
+    def _format_monitor_output(self, stats: dict) -> str:
+        """Format monitoring statistics as output string."""
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        uptime = self.format_uptime(stats['uptime_seconds'])
+        alert = self._get_alert_level(stats)
+        
+        return (f"{timestamp} | "
+                f"Memory: {stats['memory_mb']:.2f} MB ({stats['memory_percent']:.1f}%) | "
+                f"CPU: {stats['cpu_percent']:.1f}% | "
+                f"Peak: {stats['peak_memory_mb']:.2f} MB | "
+                f"Uptime: {uptime}{alert}")
+    
+    def _get_alert_level(self, stats: dict) -> str:
+        """Determine alert level based on memory usage."""
+        if stats['memory_percent'] >= self.critical_threshold:
+            return " [CRITICAL]"
+        elif stats['memory_percent'] >= self.warning_threshold:
+            return " [WARNING]"
+        return ""
+    
+    def _write_monitor_output(self, output: str, log_handle) -> None:
+        """Write monitoring output to console and log file."""
+        print(output)
+        
+        if log_handle:
+            log_handle.write(output + "\n")
+            log_handle.flush()
+    
+    def _check_critical_memory(self, stats: dict) -> None:
+        """Check and alert if memory usage is critical."""
+        if stats['memory_percent'] >= self.critical_threshold:
+            print(f"\n⚠️  CRITICAL: Memory usage is at {stats['memory_percent']:.1f}%!")
+            print("Consider restarting the service or investigating memory leaks.")
+    
+    def _handle_monitor_stop(self, reason: str) -> None:
+        """Handle monitoring stop with reason."""
+        print(f"\n\nMonitoring stopped: {reason}")
+    
+    def _close_log_file(self, log_handle) -> None:
+        """Close log file if open."""
+        if log_handle:
+            log_handle.close()
 
 
 def find_process_by_name(name: str) -> Optional[int]:

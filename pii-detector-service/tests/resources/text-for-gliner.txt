@@ -1,0 +1,73 @@
+title: "Référentiel des données à caractère personnel détectées par le service d'analyse PII"
+labels:
+  - protection-des-données
+  - ai-sentinel
+  - détection-automatique
+---
+# Contexte
+Cette page décrit, à destination des équipes métiers et de conformité, l'ensemble des catégories de données à caractère personnel (PII) que le service d'analyse automatique (gRPC PII Detector) est en mesure d'identifier dans les contenus Confluence : comptes rendus de réunion, procédures internes, modèles de courrier, formulaires, etc.
+Pour chaque type de donnée, un exemple textuel réaliste est fourni. Ces exemples sont purement fictifs et n'ont pour objectif que d'illustrer ce que le moteur peut signaler dans une page de documentation.
+Remarque : les noms techniques entre `[...]` correspondent aux codes utilisés en base de données (colonne `pii_type`).
+----
+« Pour toute question relative à votre dossier, vous pouvez contacter Mme Dupont à l'adresse suivante : marie.dupont@example.fr »
+« Le standard du service urbanisme est joignable au +33 1 45 67 89 01 du lundi au vendredi de 9h à 17h. »
+« Lors de la création de votre compte agent, un identifiant technique vous est attribué, par exemple : agent_urba_042. »
+« Les usagers peuvent suivre l'avancement de leur demande sur le portail : https://demarches.ville-exemple.fr/suivi-dossier. »
+----
+« La demande a été déposée par Sophie le 12/03/2025. »
+« Le dossier est rattaché au foyer Martin. »
+« Le responsable du projet est Sophie Martin (Direction des Systèmes d'Information). »
+« Date de naissance du demandeur : 14/07/1985. »
+« Le dispositif est réservé aux usagers âgés de 65 ans et plus au 1er janvier de l'année en cours. »
+« Pour les statistiques internes, la saisie de l'appartenance à un groupe religieux ou politique est strictement proscrite et doit être évitée dans toute page Confluence. »
+----
+« L'usager doit envoyer le courrier à l'adresse suivante : 12 rue des Lilas. »
+« Le centre social de référence est situé à Lyon. »
+« Le formulaire est à retourner à l'adresse 12 rue des Lilas, 75015 Paris. »
+« Les locaux du service RH sont situés bâtiment B, numéro 4, au sein du campus administratif. »
+----
+« À titre d'exemple, un numéro de carte bancaire se présente sous la forme : 4111 1111 1111 1111 (ne jamais saisir de vrais numéros dans Confluence). »
+« Les mandats de prélèvement sont rattachés à un numéro de compte bancaire, par exemple : 12345678901. »
+« Exemple de structure IBAN : FR76 3000 6000 0112 3456 7890 189. »
+« Un identifiant de portefeuille peut ressembler à : bc1qw508d6qejxtdg4y5r3zarvaryvg6kdaj. »
+« Exemple de numéro UEN : 201912345K. »
+« Exemple de numéro ABN : 12 345 678 901. »
+« Exemple de numéro ACN : 123 456 789. »
+« Exemple de numéro de TVA italien : IT12345678901. »
+----
+« Un numéro de sécurité sociale peut être présenté sous la forme : 123-45-6789. »
+« Exemple de SSN américain : 987-65-4320 (format 3-2-4 chiffres). »
+« Lors de l'étude de certains dossiers, des numéros tels que 2950729456789 peuvent apparaître et doivent être masqués. »
+« Exemple de code d'identité finlandais : 131052-308T. »
+« Exemple de numéro PESEL : 44051401359. »
+« Exemple de NRIC : S1234567D. »
+« Exemple de numéro d'identité thaï : 1-2345-67890-12-3. »
+« Exemple de NHS Number : 943 476 5919. »
+« Le numéro fiscal peut être saisi sous la forme 123-45-6789 pour un ITIN, ou 123 456 789 pour un TFN. »
+« Exemple d'ITIN US : 912-70-1234. »
+« Exemple de NIF espagnol : 12345678Z. »
+« Exemple de NIE espagnol : X1234567L. »
+« Exemple de codice fiscale : RSSMRA85T10A562S. »
+« Exemple de PAN : ABCDE1234F. »
+« Exemple de TFN : 123 456 789. »
+« Exemple de numéro de passeport : XK1234567. »
+« Exemple : 123456789. »
+« Exemple : YA1234567. »
+« Exemple : N1234567. »
+« Exemple de numéro de permis : D-123-456-789-000. »
+« Exemple : D123-4567-8901. »
+« Exemple : A12 34 567890. »
+« Exemple d'identifiant de carte : IDFR-1234-5678-90. »
+« Exemple de Resident Registration Number : 900101-1234567. »
+« Exemple de numéro Medicare : 2951 57531 1. »
+« Exemple de numéro Aadhaar : 1234 5678 9123. »
+« Exemple de NINO : QQ 12 34 56 C. »
+« Le praticien référent est identifié sous le numéro de licence médicale FR-12345-6789. »
+« Exemple de numéro Medicare australien : 2951 57531 1. »
+« Le dossier patient porte le numéro NHS 943 476 5919. »
+« Pour l'analyse des journaux applicatifs, seule la forme anonymisée des adresses IP doit être conservée, par exemple : 192.168.10.15. »
+« Une adresse MAC typique est au format 00-1A-2B-3C-4D-5E. »
+« Il est strictement interdit d'inscrire des mots de passe en clair dans Confluence, comme par exemple : P@ssw0rd!2025. »
+----
+« Exemple de numéro d'immatriculation indien : DL01AB1234. »
+« Exemple de Voter ID : ABC1234567. »

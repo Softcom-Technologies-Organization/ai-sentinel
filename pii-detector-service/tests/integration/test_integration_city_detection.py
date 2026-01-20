@@ -1,11 +1,11 @@
 import os
-import pytest
-from unittest.mock import patch, MagicMock
-
 import sys
+
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from pii_detector.service.detector.pii_detector import PIIDetector, PIIEntity
+from infrastructure.detector.pii_detector import PIIDetector, PIIEntity
 
 
 SAMPLE_TEXT_WITH_ADDRESSES = (

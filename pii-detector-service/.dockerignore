@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.so
+*.dylib
+*.egg-info/
+dist/
+.env
+.venv/
+.git
+.gitignore
+README-PII-TEST.md
+run-sonar.ps1
+sonar-project.properties
+tests/
+doc/

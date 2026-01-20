@@ -5,12 +5,7 @@ spring:
     exclude:
       - com.linecorp.armeria.spring.ArmeriaAutoConfiguration
   application:
-    name: sentinelle
-  datasource:
-    url: jdbc:h2:mem:sentinelle;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: 
+    name: ai-sentinel
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     open-in-view: false
@@ -33,12 +28,15 @@ confluence:
     pages-limit: 10
     max-pages: 10
 
+pii-encryption:
+  kek-pii-encryption-key: '46TCyS1+5ie3I0zfG7RzePn7+0otW8nrwOQurxiS6z8='
+
 # Keep Armeria as default client in tests; use loopback host
 pii-detector:
   client: armeria
   host: 127.0.0.1
   port: 50051
-  default-threshold: 0.5
+  default-threshold: 0.75
   connection-timeout-ms: 2000
   request-timeout-ms: 5000
 
@@ -46,16 +44,24 @@ pii-detector:
 server:
   port: 0
   servlet:
-    context-path: /sentinelle
+    context-path: /ai-sentinel
 
 # Ensure Armeria internal services bind to a random port to avoid clashes during tests
 armeria:
   internal-services:
     port: 0
 
+pii:
+  # PII Reporting Configuration
+  reporting:
+    # Allow revealing decrypted PII values to users (default: true)
+    # When false, sensitiveValue is never sent to frontend via SSE
+    # and the reveal endpoint returns 403 Forbidden
+    allow-secret-reveal: true
+
 # Reduce logging noise during tests
 logging:
   level:
     root: WARN
-    com.example.sentinelle: INFO
-    com.example.sentinelle.infrastructure.pii: INFO
+    pro.softcom.aisentinel: INFO
+    pro.softcom.aisentinel.infrastructure.pii: INFO

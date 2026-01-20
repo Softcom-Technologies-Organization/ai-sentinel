@@ -5,9 +5,9 @@ spring:
     exclude:
       - com.linecorp.armeria.spring.ArmeriaAutoConfiguration
   application:
-    name: sentinelle
+    name: ai-sentinel
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:sentinelle}}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:ai-sentinel}}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
@@ -36,16 +36,30 @@ pii-detector:
 server:
   port: 0
   servlet:
-    context-path: /sentinelle
+    context-path: /ai-sentinel
 
 # Ensure Armeria internal services bind to a random port to avoid clashes during tests
 armeria:
   internal-services:
     port: 0
 
+# Confluence Configuration for Integration Tests
+# These require valid environment variables to be set:
+# - CONFLUENCE_BASE_URL (e.g., https://your-domain.atlassian.net/wiki)
+# - CONFLUENCE_USERNAME (your Confluence user email)
+# - CONFLUENCE_API_TOKEN (your Confluence API token)
+confluence:
+  base-url: "https://softcomtechnologies.atlassian.net/wiki"
+  username: ${CONFLUENCE_USERNAME:test-user@example.com}
+  api-token: ${CONFLUENCE_API_TOKEN:test-token}
+  connection-settings:
+    connect-timeout: 30000
+    read-timeout: 60000
+
 # Reduce logging noise during tests
 logging:
   level:
     root: WARN
-    com.example.sentinelle: INFO
-    com.example.sentinelle.infrastructure.pii: INFO
+    pro.softcom.aisentinel: INFO
+    pro.softcom.aisentinel.infrastructure.pii: INFO
+    pro.softcom.aisentinel.infrastructure.confluence: DEBUG

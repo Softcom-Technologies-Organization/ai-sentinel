@@ -1,0 +1,29 @@
+.space-filters {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.filter-item {
+  min-width: 0;
+}
+
+.search-global {
+  width: 100%;
+}
+
+.filter-item p-select {
+  width: 100%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .space-filters {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .filter-item {
+    width: 100%;
+  }
+}

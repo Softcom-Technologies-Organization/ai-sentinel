@@ -1,4 +1,4 @@
-# Sentinelle - Confluence Analysis & PII Detection via gRPC
+# AI-Sentinel - Confluence Analysis & PII Detection via gRPC
 
 Spring Boot application to analyze Confluence spaces and detect personally identifiable information (PII) via a Python gRPC microservice.
 
@@ -29,7 +29,7 @@ IMPORTANT: gRPC Port 50051
 ### 1. Clone the project
 ```bash
 git clone [REPO_URL]
-cd sentinelle
+cd ai-sentinel
 ```
 
 ### 2. Configuration
@@ -40,7 +40,6 @@ Create a `.env` file with your Confluence credentials:
 CONFLUENCE_BASE_URL=https://your-instance.atlassian.net
 CONFLUENCE_USERNAME=your-email@company.com
 CONFLUENCE_API_TOKEN=your-token
-CONFLUENCE_SPACE_KEY=your-space
 ```
 
 gRPC client parameters (application.yml):
@@ -80,48 +79,48 @@ DB_PASSWORD=changeme
 2) Launch the Java application
 ```bash
 ./mvnw clean package
-java -jar target/sentinelle-0.0.1-SNAPSHOT.jar
+java -jar target/ai-sentinel-0.0.1-SNAPSHOT.jar
 ```
 
-Swagger/OpenAPI: http://localhost:8080/sentinelle/swagger-ui.html
+Swagger/OpenAPI: http://localhost:8080/ai-sentinel/swagger-ui.html
 
 ## Usage
 
 ### Main endpoints (excerpts)
-- GET /sentinelle/api/v1/confluence/health
-- GET /sentinelle/api/v1/confluence/spaces
-- GET /sentinelle/api/v1/confluence/spaces/{spaceKey}
-- GET /sentinelle/api/v1/confluence/spaces/{spaceKey}/pages
-- GET /sentinelle/api/v1/confluence/spaces/{spaceKey}/search?query=...&limit=20
-- GET /sentinelle/api/v1/confluence/pages/{pageId}
-- PUT /sentinelle/api/v1/confluence/pages/{pageId}
+- GET /ai-sentinel/api/v1/confluence/health
+- GET /ai-sentinel/api/v1/confluence/spaces
+- GET /ai-sentinel/api/v1/confluence/spaces/{spaceKey}
+- GET /ai-sentinel/api/v1/confluence/spaces/{spaceKey}/pages
+- GET /ai-sentinel/api/v1/confluence/spaces/{spaceKey}/search?query=...&limit=20
+- GET /ai-sentinel/api/v1/confluence/pages/{pageId}
+- PUT /ai-sentinel/api/v1/confluence/pages/{pageId}
 
 ### Scan & streaming endpoints (updated)
-- GET /sentinelle/api/v1/scans/last
-- GET /sentinelle/api/v1/scans/last/spaces
-- GET /sentinelle/api/v1/scans/last/items
-- POST /sentinelle/api/v1/scans/purge
-- POST /sentinelle/api/v1/scans/{scanId}/resume
-- SSE GET /sentinelle/api/v1/stream/confluence/space/{spaceKey}/events
-- SSE GET /sentinelle/api/v1/stream/confluence/spaces/events[?scanId={scanId}]
+- GET /ai-sentinel/api/v1/scans/last
+- GET /ai-sentinel/api/v1/scans/last/spaces
+- GET /ai-sentinel/api/v1/scans/last/items
+- POST /ai-sentinel/api/v1/scans/purge
+- POST /ai-sentinel/api/v1/scans/{scanId}/resume
+- SSE GET /ai-sentinel/api/v1/stream/confluence/space/{spaceKey}/events
+- SSE GET /ai-sentinel/api/v1/stream/confluence/spaces/events[?scanId={scanId}]
 
 Examples:
 - Stream a space (curl):
   ```bash
-  curl -N http://localhost:8080/sentinelle/api/v1/stream/confluence/space/WIKI/events
+  curl -N http://localhost:8080/ai-sentinel/api/v1/stream/confluence/space/WIKI/events
   ```
 - Stream all spaces (new scan):
   ```bash
-  curl -N "http://localhost:8080/sentinelle/api/v1/stream/confluence/spaces/events"
+  curl -N "http://localhost:8080/ai-sentinel/api/v1/stream/confluence/spaces/events"
   ```
 - Resume an interrupted scan (on UI side, append `?scanId=` to the SSE URL):
   ```bash
-  curl -N "http://localhost:8080/sentinelle/api/v1/stream/confluence/spaces/events?scanId=<SCAN_ID>"
+  curl -N "http://localhost:8080/ai-sentinel/api/v1/stream/confluence/spaces/events?scanId=<SCAN_ID>"
   ```
 
 ## Architecture
 ```
-src/main/java/com/example/sentinelle/
+src/main/java/pro/softcom/aisentinel/
 ├── domain/                      # Business core (entities, value objects, ports)
 ├── application/                 # Use cases (orchestration)
 └── infrastructure/              # Technical adapters + Spring configuration
@@ -150,7 +149,7 @@ Domain (business core — stable)
   - Technical access (HTTP, DB, gRPC, Spring annotations, framework logs).
   - Controllers, DTOs, technical mappers.
 - Allowed dependencies: Java/stdlib and internal types. No dependency to Application/Presentation/Infrastructure.
-- Examples in this repo: com.example.sentinelle.domain.model.*, com.example.sentinelle.domain.service.* (ScanCheckpointRepository, etc.).
+- Examples in this repo: pro.softcom.aisentinel.domain.model.*, pro.softcom.aisentinel.domain.service.* (ScanCheckpointRepository, etc.).
 
 Application (use cases — orchestration)
 - Contains:
@@ -161,7 +160,7 @@ Application (use cases — orchestration)
   - Direct DB/HTTP/gRPC access, technical implementations, Spring configurations.
   - Complex business logic (it stays in Domain).
 - Allowed dependencies: towards Domain (entities/ports), utilities. Not towards Infrastructure.
-- Examples in this repo: com.example.sentinelle.application.* (ConfluenceScanStreamerServiceImpl, etc.), DTOs in application.dto when they exist.
+- Examples in this repo: pro.softcom.aisentinel.application.* (ConfluenceScanStreamerServiceImpl, etc.), DTOs in application.dto when they exist.
 
 Infrastructure (technical adapters)
 - Contains:
@@ -172,7 +171,7 @@ Infrastructure (technical adapters)
 - Does not contain:
   - Business logic/use cases.
 - Allowed dependencies: frameworks (Spring Data, WebClient/HttpClient, gRPC, etc.), and towards interfaces (ports) of Domain/Application. No dependency towards Presentation.
-- Examples in this repo: com.example.sentinelle.infrastructure.confluence.*, .infrastructure.pii.*, .infrastructure.scan.*, configs under .infrastructure.config.
+- Examples in this repo: pro.softcom.aisentinel.infrastructure.confluence.*, .infrastructure.pii.*, .infrastructure.scan.*, configs under .infrastructure.config.
 
 Input Adapters (Controllers — in this project)
 - REST controllers reside under infrastructure.adapter.in according to ArchUnit tests.
@@ -203,7 +202,7 @@ Note on project scope
 
 ### Debug
 ```bash
-java -jar target/sentinelle-0.0.1-SNAPSHOT.jar --logging.level.com.example.sentinelle=DEBUG
+java -jar target/sentinelle-0.0.1-SNAPSHOT.jar --logging.level.pro.softcom.aisentinel=DEBUG
 ```
 
 ## Troubleshooting gRPC (port 50051)

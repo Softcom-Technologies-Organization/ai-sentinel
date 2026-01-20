@@ -1,0 +1,61 @@
+# GLiNER PII Large v1.0 Model Configuration
+# ✅ Fully integrated with custom GLiNERDetector adapter
+# Advanced multilingual PII detection supporting 17 entity types
+
+# Enable or disable this model
+enabled = true
+
+# Hugging Face model identifier
+model_id = "nvidia/gliner-PII"
+
+# Human-readable description
+description = "Nvidia GLiNER PII - Advanced multilingual PII detection supporting 55+ entity types with improved accuracy"
+
+# Priority (3 = tertiary priority)
+priority = 3
+
+# Device allocation: "cpu", "cuda", or "mps"
+device = "cpu"
+
+# Maximum token length for model context window (GLiNER actual limit: 768 tokens)
+# Using 720 tokens to leave margin for special tokens, with 100 tokens overlap (13.9%)
+max_length = 720
+
+# Model-specific confidence threshold (optimized for GLiNER)
+threshold = 0.3
+
+# Download settings for this model
+[download]
+# Uncomment to specify custom cache directory
+# cache_dir = "/path/to/cache"
+force_download = false
+resume_download = true
+
+# Custom filenames for GLiNER model (uses gliner_config.json instead of config.json)
+[download.custom_filenames]
+"config.json" = "gliner_config.json"
+
+# ============================================================================
+# IMPORTANT: PII Type Configuration Moved to Database
+# ============================================================================
+# 
+# PII type mappings and thresholds are now managed in the database for
+# runtime configurability without redeployment.
+#
+# Database Table: pii_type_config
+# - pii_type: Internal PII type code (e.g., "EMAIL", "PERSONNAME")
+# - detector_label: Natural language label for detector (e.g., "email", "person name")
+# - threshold: Per-type confidence threshold (0.0-1.0)
+# - enabled: Whether this PII type is active
+# - detector: Detector name (GLINER, PRESIDIO, REGEX)
+#
+# Configuration is loaded at runtime via database_config_adapter.py
+# Fallback to hardcoded defaults only if database is unavailable.
+#
+# To add new PII types or modify mappings:
+# 1. Use the Java API: POST /api/pii-type-configs
+# 2. Or directly update pii_type_config table in PostgreSQL
+# 3. Changes take effect immediately without service restart
+#
+# Migration: init-scripts/009-add-detector-label.sql
+# ============================================================================

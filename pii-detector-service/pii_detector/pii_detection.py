@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from typing import Dict, List
 
 import betterproto
-import grpclib
 
 
 @dataclass

@@ -1,0 +1,122 @@
+# Regex Pattern Configuration for PII Detection
+# These patterns are used by RegexDetector for deterministic PII detection
+
+[model]
+model_id = "regex-detector"
+# Note: Enable/disable via detection-settings.toml [detection] regex_detection_enabled
+priority = 2  # High priority - executes after ML models
+
+# Detection strategy
+# - "standalone": Regex results are independent
+# - "validation": Regex validates/enhances ML results
+# - "complement": Regex complements ML (default)
+strategy = "complement"
+
+# ============================================================================
+# REGEX PATTERNS
+# ============================================================================
+
+[patterns.ipv4]
+type = "IP_ADDRESS"
+pattern = '\b((25[0-5]|2[0-4][0-9]|1\d{2}|[1-9]?\d)\.){3}(25[0-5]|2[0-4][0-9]|1\d{2}|[1-9]?\d)\b'
+description = "IPv4 addresses (0-255.0-255.0-255.0-255)"
+score = 0.98
+priority = "high"
+
+[patterns.ipv6]
+type = "IP_ADDRESS"
+pattern = '\b([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b'
+description = "IPv6 addresses (full format)"
+score = 0.98
+priority = "high"
+
+[patterns.mac_address]
+type = "MAC_ADDRESS"
+pattern = '\b([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})\b'
+description = "MAC addresses (6 hex octets with : or - separator)"
+score = 0.97
+priority = "high"
+
+[patterns.github_token]
+type = "API_KEY"
+pattern = 'gh[pousr]_[A-Za-z0-9_]{36,255}'
+description = "GitHub API tokens (ghp_, gho_, ghu_, ghs_, ghr_)"
+score = 0.99
+priority = "high"
+
+[patterns.aws_access_key]
+type = "API_KEY"
+pattern = 'AKIA[0-9A-Z]{16}'
+description = "AWS Access Keys (AKIA prefix + 16 chars)"
+score = 0.99
+priority = "high"
+
+[patterns.jwt_token]
+type = "API_KEY"
+pattern = 'eyJ[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*'
+description = "JWT tokens (3 base64url parts separated by dots)"
+score = 0.95
+priority = "medium"
+
+[patterns.credit_card]
+type = "CREDIT_CARD_NUMBER"
+pattern = '\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|6(?:011|5[0-9]{2})[0-9]{12}|(?:2131|1800|35\d{3})\d{11})\b'
+description = "Credit card numbers (Visa, MC, Amex, Diners, Discover, JCB)"
+score = 0.90  # Lower score, requires Luhn validation
+priority = "medium"
+requires_validation = true
+validation_method = "luhn"
+
+[patterns.ssn_france]
+type = "SOCIALNUM"
+pattern = '\b[12]\d{2}(0[1-9]|1[0-2])\d{2}\d{3}\d{3}\d{2}\b'
+description = "French Social Security Number (INSEE format)"
+score = 0.92
+priority = "medium"
+country = "FR"
+
+[patterns.ssn_switzerland]
+type = "AVS_NUMBER"
+pattern = '\b756\.[0-9]{4}\.[0-9]{4}\.[0-9]{2}\b'
+description = "Swiss Social Security Number (AHV format: 756.xxxx.xxxx.xx)"
+score = 0.95
+priority = "high"
+country = "CH"
+
+[patterns.ssn_belgium]
+type = "SOCIALNUM"
+pattern = '\b\d{6}-\d{3}-\d{2}\b'
+description = "Belgian National Register Number"
+score = 0.93
+priority = "medium"
+country = "BE"
+
+[patterns.ssn_germany]
+type = "SOCIALNUM"
+pattern = '\b\d{11}\b'
+description = "German Social Security Number (11 digits, context-dependent)"
+score = 0.75  # Lower score due to ambiguity
+priority = "low"
+country = "DE"
+
+[patterns.phone_swiss_strict]
+type = "PHONE_NUMBER"
+pattern = '\b(0|(\+41)|0041)\s?\d{2}\s?\d{3}\s?\d{2}\s?\d{2}\b'
+description = "Swiss phone numbers (strict format: 0XX, +41, 0041)"
+score = 0.93
+priority = "high"
+country = "CH"
+
+# ============================================================================
+# VALIDATION SETTINGS
+# ============================================================================
+
+[validation]
+# Enable Luhn algorithm validation for credit cards
+enable_luhn = true
+
+# Minimum confidence score to keep a detection
+min_confidence = 0.70
+
+# Remove detections that overlap with higher priority patterns
+remove_overlaps = true

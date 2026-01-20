@@ -1,0 +1,21 @@
+name: CI - Tests (feature branches)
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+    types: [opened, synchronize, reopened]
+  workflow_dispatch: {}
+
+concurrency:
+  group: ci-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    uses: ./.github/workflows/run-tests.yml

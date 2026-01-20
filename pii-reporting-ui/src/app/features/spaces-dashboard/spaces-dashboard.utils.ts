@@ -1,6 +1,8 @@
-import {computed, Injectable, signal} from '@angular/core';
-import {Space} from '../../core/models/space';
-import {PiiItem} from '../../core/models/pii-item';
+import { computed, Injectable, signal } from '@angular/core';
+import { Space } from '../../core/models/space';
+import {
+  PersonallyIdentifiableInformationScanResult
+} from '../../core/models/personally-identifiable-information-scan-result';
 
 /**
  * Facade for Spaces Dashboard UI concerns.
@@ -12,10 +14,16 @@ export interface UISpace extends Space {
   lastScanTs?: string;
   counts?: { total: number; high: number; medium: number; low: number };
   url?: string;
+  /**
+   * Index de l'ordre d'origine tel que fourni par le backend (Confluence).
+   * Sert de repli pour stabiliser les tris afin de refléter exactement l'ordre Confluence quand requis.
+   */
+  originalIndex: number;
 }
 
 @Injectable({ providedIn: 'root' })
 export class SpacesDashboardUtils {
+
   // raw ui list populated from backend spaces with safe defaults for display fields
   private readonly uiSpaces = signal<UISpace[]>([]);
 
@@ -23,13 +31,17 @@ export class SpacesDashboardUtils {
   readonly globalFilter = signal<string>('');
   private readonly filters = signal<{ name?: string; status?: string | null }>({});
 
-  readonly statusOptions = [
-    { label: 'Non démarré', value: 'PENDING' },
-    { label: 'Interrompue', value: 'INTERRUPTED' },
-    { label: 'En cours', value: 'RUNNING' },
-    { label: 'Terminé', value: 'OK' },
-    { label: 'En échec', value: 'FAILED' }
-  ];
+  /**
+   * Status options for dropdown filter with i18n support.
+   * The translation is handled in the template using transloco pipe.
+   */
+  readonly statusOptions = signal<Array<{ labelKey: string; value: string }>>([
+    { labelKey: 'dashboard.status.pending', value: 'PENDING' },
+    { labelKey: 'dashboard.status.paused', value: 'PAUSED' },
+    { labelKey: 'dashboard.status.running', value: 'RUNNING' },
+    { labelKey: 'dashboard.status.ok', value: 'OK' },
+    { labelKey: 'dashboard.status.failed', value: 'FAILED' }
+  ]);
 
   /**
    * UI-facing, filtered list of spaces according to current filters.
@@ -48,13 +60,15 @@ export class SpacesDashboardUtils {
    * Replace spaces with UI decorated version for table display.
    */
   setSpaces(spaces: Space[] | null | undefined): void {
-    const mapped: UISpace[] = (spaces ?? []).map<UISpace>(s => ({
+    const mapped: UISpace[] = (spaces ?? []).map<UISpace>((s, idx) => ({
       ...s,
       status: 'PENDING',
       lastScanTs: undefined,
       counts: { total: 0, high: 0, medium: 0, low: 0 },
       // Preserve backend-provided URL when present
-      url: s.url
+      url: s.url,
+      // Conserver l'ordre backend (Confluence) pour des tris cohérents
+      originalIndex: idx
     }));
     this.uiSpaces.set(mapped);
   }
@@ -68,7 +82,7 @@ export class SpacesDashboardUtils {
     this.uiSpaces.set(updated);
   }
 
-  onFilter(field: 'name' | 'status', value: string | null): void {
+  onFilter(field: 'name' | 'status', value: string | null = null): void {
     this.filters.set({ ...this.filters(), [field]: value });
   }
 
@@ -76,18 +90,33 @@ export class SpacesDashboardUtils {
     // Normalize to business-friendly French labels
     if (status === 'FAILED') return 'En échec';
     if (status === 'RUNNING') return 'En cours';
-    if (status === 'INTERRUPTED') return 'Interrompue';
+    if (status === 'PAUSED') return 'En pause';
     if (status === 'PENDING' || !status) return 'Non démarré';
     return 'Terminé';
   }
 
-  statusSeverity(status?: string): 'danger' | 'warning' | 'success' | 'info' | 'secondary' {
+  statusStyle(status?: string): 'danger' | 'warning' | 'success' | 'info' | 'secondary' {
     // Use PrimeNG-supported severities for Tag: success | info | warning | danger | secondary
     if (status === 'FAILED') return 'danger';
     if (status === 'RUNNING') return 'warning';
-    if (status === 'INTERRUPTED') return 'info';
+    if (status === 'PAUSED') return 'info';
     if (status === 'PENDING' || !status) return 'secondary';
     return 'success';
+  }
+
+  /**
+   * Additional style class for status badge.
+   * Business rule: highlight running scan ("En cours") with a dedicated blue tone
+   * and paused scan ("En pause") with a distinct palette.
+   */
+  statusStyleClass(status?: string): string | undefined {
+    if (status === 'RUNNING') {
+      return 'status-running';
+    }
+    if (status === 'PAUSED') {
+      return 'status-paused';
+    }
+    return undefined;
   }
 
   canViewResult(space: UISpace): boolean {
@@ -107,10 +136,21 @@ export class SpacesDashboardUtils {
 
   /** True when a Confluence URL is configured/known for this space. */
   hasConfluenceUrl(space: UISpace | null | undefined): boolean {
-    return !!space?.url && typeof space.url === 'string' && space.url.length > 0;
+    return !!space?.url && space.url.length > 0;
   }
 
-  severityCounts(arr: PiiItem[]): { total: number; high: number; medium: number; low: number } {
+  /**
+   * Get current severity counts for a space.
+   * Returns default zero counts if space not found.
+   */
+  getSpaceCounts(key: string): { total: number; high: number; medium: number; low: number } {
+    const nk = (v: string | null | undefined) => String(v ?? '').trim().toLowerCase();
+    const k = nk(key);
+    const space = this.uiSpaces().find(s => nk(s.key) === k);
+    return space?.counts ?? { total: 0, high: 0, medium: 0, low: 0 };
+  }
+
+  severityCounts(arr: PersonallyIdentifiableInformationScanResult[]): { total: number; high: number; medium: number; low: number } {
     let high = 0, medium = 0, low = 0;
     for (const it of arr) {
       if (it.severity === 'high') high++;

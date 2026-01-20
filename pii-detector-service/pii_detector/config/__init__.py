@@ -9,7 +9,7 @@ This module provides a unified interface to configuration:
 Only includes actually used environment variables.
 
 Usage:
-    from pii_detector.config import get_config
+    from config import get_config
     
     config = get_config()
     
@@ -26,9 +26,9 @@ Usage:
 from dataclasses import dataclass
 from typing import Optional
 
-from .server_config import ServerConfig
-from .model_config import ModelConfig
+from pii_detector.application.config.model_config import ModelConfig
 from .detection_config import DetectionConfig
+from .server_config import ServerConfig
 
 
 @dataclass

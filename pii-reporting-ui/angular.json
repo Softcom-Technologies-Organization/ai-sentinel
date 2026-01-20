@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "src",
   "projects": {
-    "sentinelle-ui-angular": {
+    "ai-sentinel-ui-angular": {
       "projectType": "application",
       "root": "",
       "sourceRoot": "src",
@@ -12,7 +12,7 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "outputPath": "dist/sentinelle-ui-angular",
+            "outputPath": "dist/ai-sentinel-ui-angular",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
@@ -52,30 +52,29 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "buildTarget": "sentinelle-ui-angular:build",
+            "buildTarget": "ai-sentinel-ui-angular:build",
             "proxyConfig": "proxy.conf.json"
           },
           "configurations": {
             "production": {
-              "buildTarget": "sentinelle-ui-angular:build:production"
+              "buildTarget": "ai-sentinel-ui-angular:build:production"
             },
             "development": {
-              "buildTarget": "sentinelle-ui-angular:build:development"
+              "buildTarget": "ai-sentinel-ui-angular:build:development"
             }
           },
           "defaultConfiguration": "development"
         },
         "test": {
-          "builder": "@angular-devkit/build-angular:karma",
+          "builder": "@angular-devkit/build-angular:jest",
           "options": {
-            "polyfills": ["zone.js", "zone.js/testing"],
-            "tsConfig": "tsconfig.spec.json",
-            "assets": ["src/favicon.ico", "src/assets"],
-            "styles": ["src/styles.scss"],
-            "scripts": []
+            "tsConfig": "tsconfig.spec.json"
           }
         }
       }
     }
+  },
+  "cli": {
+    "analytics": false
   }
 }

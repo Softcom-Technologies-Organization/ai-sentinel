@@ -1,10 +1,14 @@
-import {Injectable, NgZone} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
-import {Observable} from 'rxjs';
-import {Space} from '../models/space';
-import {StreamEvent} from '../models/stream-event';
-import {RawStreamPayload, StreamEventType} from '../models/stream-event-type';
-import {Severity} from '../models/severity';
+import { Injectable, NgZone, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
+import { Space } from '../models/space';
+import { StreamEvent } from '../models/stream-event';
+import {
+  ConfluenceContentPersonallyIdentifiableInformationScanResult,
+  StreamEventType
+} from '../models/stream-event-type';
+import { SpaceUpdateInfo } from '../models/space-update-info.model';
 
 export interface LastScanMeta {
   scanId: string;
@@ -12,17 +16,53 @@ export interface LastScanMeta {
   spacesCount: number;
 }
 
-export interface SpaceStatusDto {
+export interface SpaceScanStateDto {
   spaceKey: string;
   status: string;
   pagesDone: number;
   attachmentsDone: number;
   lastEventTs: string;
+  progressPercentage?: number;
+}
+
+export interface SpaceSummaryDto {
+  spaceKey: string;
+  status: string;
+  progressPercentage: number | null;
+  pagesDone: number;
+  attachmentsDone: number;
+  lastEventTs: string;
+  severityCounts: { high: number; medium: number; low: number; total: number; } | null;
+}
+
+export interface ScanReportingSummaryDto {
+  scanId: string;
+  lastUpdated: string;
+  spacesCount: number;
+  spaces: SpaceSummaryDto[];
 }
 
 @Injectable({ providedIn: 'root' })
 export class SentinelleApiService {
+  /** Signal holding the reveal allowed configuration state */
+  readonly revealAllowed = signal<boolean>(false);
+
   constructor(private readonly http: HttpClient, private readonly zone: NgZone) {
+  }
+
+  /**
+   * Loads the reveal configuration from backend and updates the signal.
+   * Intended to be called during app initialization.
+   */
+  loadRevealConfig(): Observable<boolean> {
+    return this.http.get<boolean>('/api/v1/pii/config/reveal-allowed').pipe(
+      tap(allowed => this.revealAllowed.set(allowed)),
+      catchError((err) => {
+        console.error('Failed to load reveal config', err);
+        this.revealAllowed.set(false);
+        return of(false);
+      })
+    );
   }
 
   getSpaces(): Observable<Space[]> {
@@ -44,6 +84,22 @@ export class SentinelleApiService {
     });
   }
 
+  /** Fetch update information for all Confluence spaces. */
+  getSpacesUpdateInfo(): Observable<SpaceUpdateInfo[]> {
+    return new Observable<SpaceUpdateInfo[]>((observer) => {
+      const sub = this.http.get<SpaceUpdateInfo[]>('/api/v1/confluence/spaces/update-info').subscribe({
+        next: (data) => {
+          observer.next(Array.isArray(data) ? data : []);
+          observer.complete();
+        },
+        error: (err) => {
+          observer.error(err);
+        }
+      });
+      return () => sub.unsubscribe();
+    });
+  }
+
   /** Fetch metadata for the last scan (may be null if none). */
   getLastScanMeta(): Observable<LastScanMeta | null> {
     return new Observable<LastScanMeta | null>((observer) => {
@@ -52,7 +108,7 @@ export class SentinelleApiService {
           observer.next(meta ?? null);
           observer.complete();
         },
-        error: (err) => {
+        error: () => {
           // No content or backend error → expose null to simplify UI
           observer.next(null);
           observer.complete();
@@ -63,9 +119,9 @@ export class SentinelleApiService {
   }
 
   /** Fetch per-space statuses for the last scan. */
-  getLastScanSpaceStatuses(): Observable<SpaceStatusDto[]> {
-    return new Observable<SpaceStatusDto[]>((observer) => {
-      const sub = this.http.get<SpaceStatusDto[]>('/api/v1/scans/last/spaces').subscribe({
+  getLastScanSpaceStatuses(): Observable<SpaceScanStateDto[]> {
+    return new Observable<SpaceScanStateDto[]>((observer) => {
+      const sub = this.http.get<SpaceScanStateDto[]>('/api/v1/scans/last/spaces').subscribe({
         next: (list) => {
           observer.next(Array.isArray(list) ? list : []);
           observer.complete();
@@ -80,9 +136,9 @@ export class SentinelleApiService {
   }
 
   /** Fetch persisted item events for the last scan (page and attachment items). */
-  getLastScanItems(): Observable<RawStreamPayload[]> {
-    return new Observable<RawStreamPayload[]>((observer) => {
-      const sub = this.http.get<RawStreamPayload[]>('/api/v1/scans/last/items').subscribe({
+  getLastScanItems(): Observable<ConfluenceContentPersonallyIdentifiableInformationScanResult[]> {
+    return new Observable<ConfluenceContentPersonallyIdentifiableInformationScanResult[]>((observer) => {
+      const sub = this.http.get<ConfluenceContentPersonallyIdentifiableInformationScanResult[]>('/api/v1/scans/last/items').subscribe({
         next: (list) => {
           observer.next(Array.isArray(list) ? list : []);
           observer.complete();
@@ -96,11 +152,44 @@ export class SentinelleApiService {
     });
   }
 
+  /**
+   * Fetch unified dashboard summary combining authoritative progress from checkpoints
+   * with aggregated counters from events. Replaces separate getLastScanSpaceStatuses()
+   * and getLastScanItems() calls to avoid race conditions.
+   */
+  getDashboardSpacesSummary(): Observable<ScanReportingSummaryDto | null> {
+    return new Observable<ScanReportingSummaryDto | null>((observer) => {
+      const sub = this.http.get<ScanReportingSummaryDto>('/api/v1/scans/dashboard/spaces-summary').subscribe({
+        next: (summary) => {
+          observer.next(summary ?? null);
+          observer.complete();
+        },
+        error: () => {
+          observer.next(null);
+          observer.complete();
+        }
+      });
+      return () => sub.unsubscribe();
+    });
+  }
+
   /** Command the backend to resume the last scan with the same scanId (best-effort). */
   resumeScan(scanId: string): Observable<void> {
     return new Observable<void>((observer) => {
       const id = encodeURIComponent(String(scanId ?? ''));
-      const sub = this.http.post<void>(`/api/v1/scans/${id}/resume`, {}).subscribe({
+      const sub = this.http.post<void>(`/api/v1/stream/${id}/resume`, {}).subscribe({
+        next: () => { observer.next(); observer.complete(); },
+        error: (err) => { observer.error(err); }
+      });
+      return () => sub.unsubscribe();
+    });
+  }
+
+  /** Command the backend to pause a running scan by updating checkpoints to PAUSED status. */
+  pauseScan(scanId: string): Observable<void> {
+    return new Observable<void>((observer) => {
+      const id = encodeURIComponent(String(scanId ?? ''));
+      const sub = this.http.post<void>(`/api/v1/stream/${id}/pause`, {}).subscribe({
         next: () => { observer.next(); observer.complete(); },
         error: (err) => { observer.error(err); }
       });
@@ -128,7 +217,7 @@ export class SentinelleApiService {
       const es = new EventSource(url);
 
       const types: StreamEventType[] = [
-        'multiStart', 'start', 'pageStart', 'item', 'attachmentItem', 'pageComplete', 'error', 'complete', 'multiComplete', 'keepalive'
+        'multiStart', 'start', 'pageStart', 'item', 'attachmentItem', 'pageComplete', 'scanError', 'complete', 'multiComplete', 'keepalive'
       ];
 
       // Register event listeners with lightweight, named handlers to avoid deep nesting
@@ -151,6 +240,36 @@ export class SentinelleApiService {
     });
   }
 
+  /** Start SSE stream for selected spaces scan. */
+  startSelectedSpacesStream(spaceKeys: string[]): Observable<StreamEvent> {
+    return new Observable<StreamEvent>((observer) => {
+      // Build query params manually to ensure correct format for List<String>
+      const params = spaceKeys.map(k => `spaceKeys=${encodeURIComponent(k)}`).join('&');
+      const url = `/api/v1/stream/confluence/spaces/events/selected?${params}`;
+      const es = new EventSource(url);
+
+      const types: StreamEventType[] = [
+        'multiStart', 'start', 'pageStart', 'item', 'attachmentItem', 'pageComplete', 'scanError', 'complete', 'multiComplete', 'keepalive'
+      ];
+
+      for (const t of types) {
+        const handler = (e: Event) => this.onSseEvent(observer, t, e as MessageEvent);
+        es.addEventListener(t, handler as EventListener);
+      }
+
+      const onError = () => this.zone.run(() => observer.error(new Error('SSE connection error')));
+      es.onerror = onError as any;
+
+      return () => {
+        try {
+          es.close();
+        } catch {
+          // ignore
+        }
+      };
+    });
+  }
+
   private onSseEvent(observer: { next: (ev: StreamEvent) => void }, type: StreamEventType, e: MessageEvent): void {
     const raw = String((e as any)?.data ?? '');
     this.zone.run(() => this.emitStreamEvent(observer, type, raw));
@@ -158,10 +277,10 @@ export class SentinelleApiService {
 
   private emitStreamEvent(observer: { next: (ev: StreamEvent) => void }, type: StreamEventType, raw: string): void {
     const parsed = this.parseRawPayload(raw);
-    observer.next({ type, dataRaw: raw, data: parsed });
+    observer.next({ type, data: parsed });
   }
 
-  private parseRawPayload(raw: string): RawStreamPayload | undefined {
+  private parseRawPayload(raw: string): ConfluenceContentPersonallyIdentifiableInformationScanResult | undefined {
     try {
       return JSON.parse(raw);
     } catch {
@@ -169,29 +288,59 @@ export class SentinelleApiService {
     }
   }
 
-  /** Compute severity level based on max entity score. */
-  severityForEntities(entities: Array<{ score?: number }> | undefined): Severity {
-    if (!Array.isArray(entities) || entities.length === 0) return 'low';
-    let max = 0;
-    for (const e of entities) {
-      const s = typeof e?.score === 'number' ? e.score : 0;
-      if (s > max) max = s;
-    }
-    if (max >= 0.95) return 'high';
-    if (max >= 0.85) return 'medium';
-    return 'low';
+
+  /**
+   * Check if revealing PII secrets is allowed by backend configuration.
+   */
+  getRevealConfig(): Observable<boolean> {
+    return new Observable<boolean>((observer) => {
+      const sub = this.http.get<boolean>('/api/v1/pii/config/reveal-allowed').subscribe({
+        next: (allowed) => {
+          observer.next(allowed);
+          observer.complete();
+        },
+        error: (err) => {
+          observer.error(err);
+        }
+      });
+      return () => sub.unsubscribe();
+    });
   }
 
   /**
-   * Replace [TOKEN] style markup with chip spans; used only for visual amenity.
-   * Returned string should be considered unsafe; bind via DomSanitizer in components.
+   * Reveal decrypted PII secrets for a specific Confluence page.
+   * Triggers audit log on backend.
    */
-  sanitizeMaskedHtml(raw?: string): string | undefined {
-    if (!raw) return undefined;
-    try {
-      return raw.replace(/\[([A-Z_]+)\]/g, (_m: string, g1: string) => `<span class="chip">[${g1}]</span>`);
-    } catch {
-      return raw;
-    }
+  revealPageSecrets(scanId: string, pageId: string): Observable<PageSecretsResponse> {
+    return new Observable<PageSecretsResponse>((observer) => {
+      const sub = this.http.post<PageSecretsResponse>(
+        '/api/v1/pii/reveal-page',
+        { scanId, pageId }
+      ).subscribe({
+        next: (response) => {
+          observer.next(response);
+          observer.complete();
+        },
+        error: (err) => {
+          observer.error(err);
+        }
+      });
+      return () => sub.unsubscribe();
+    });
   }
+}
+
+export interface PageSecretsResponse {
+  scanId: string;
+  pageId: string;
+  pageTitle: string;
+  secrets: RevealedSecret[];
+}
+
+export interface RevealedSecret {
+  startPosition: number;
+  endPosition: number;
+  sensitiveValue: string;
+  sensitiveContext: string;
+  maskedContext: string;
 }

@@ -1,5 +1,5 @@
 {
-  "compileOnSave": false,
+	"compileOnSave": false,
   "compilerOptions": {
     "baseUrl": ".",
     "outDir": "./dist/out-tsc",
@@ -15,6 +15,7 @@
     "module": "ES2022",
     "moduleResolution": "bundler",
     "lib": ["ES2022", "DOM"],
-    "types": []
+    "esModuleInterop": true,
+    "types": ["node","jest"]
   }
 }

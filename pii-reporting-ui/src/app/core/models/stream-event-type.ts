@@ -7,12 +7,13 @@ export type StreamEventType =
   | 'item'
   | 'attachmentItem'
   | 'pageComplete'
-  | 'error'
+  | 'scanError'
   | 'complete'
   | 'multiComplete'
   | 'keepalive';
 
-export interface RawStreamPayload {
+export interface ConfluenceContentPersonallyIdentifiableInformationScanResult {
+  scanId?: string;
   spaceKey?: string;
   pageId?: string | number;
   pageTitle?: string;
@@ -21,11 +22,24 @@ export interface RawStreamPayload {
   isFinal?: boolean;
   pagesTotal?: number;
   pageIndex?: number;
-  entities?: Array<{ typeLabel?: string; type?: string; text?: string; score?: number }>;
-  summary?: Record<string, number>;
+  detectedPIIList?: Array<{
+    piiTypeLabel?: string;
+    piiType?: string;
+    sensitiveValue?: string;
+    sensitiveContext?: string;
+    maskedContext?: string;
+    confidence?: number;
+    source?: string;
+  }>;
+  nbOfDetectedPIIBySeverity?: Record<string, number>;  // Severity-based counts (high, medium, low) for badges
+  nbOfDetectedPIIByType?: Record<string, number>;  // PII type-based counts (EMAIL, CREDIT_CARD, etc.) for item details
   maskedContent?: string;
   // Attachment context for 'attachment_item' events
   attachmentName?: string;
   attachmentType?: string;
   attachmentUrl?: string;
+  // Scan status from backend (e.g., 'RUNNING', 'COMPLETED', 'FAILED')
+  status?: string;
+  // Pre-calculated severity from backend (HIGH/MEDIUM/LOW)
+  severity?: string;
 }

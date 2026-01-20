@@ -8,5 +8,5 @@ import { RouterOutlet } from '@angular/router';
   styleUrl: './app.css'
 })
 export class App {
-  protected readonly title = signal('sentinelle-ui-angular');
+  protected readonly title = signal('ai-sentinel-ui-angular');
 }

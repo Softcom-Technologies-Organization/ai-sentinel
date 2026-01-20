@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="PROD" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <envs>
+      <env name="DB_PORT" value="5433" />
+    </envs>
+    <module name="ai-sentinel" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="pro.softcom.aisentinel.AiSentinelApplication" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

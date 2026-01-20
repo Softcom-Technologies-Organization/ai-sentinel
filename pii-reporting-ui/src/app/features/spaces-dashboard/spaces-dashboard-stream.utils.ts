@@ -1,4 +1,4 @@
-import {RawStreamPayload} from '../../core/models/stream-event-type';
+import { ConfluenceContentPersonallyIdentifiableInformationScanResult } from '../../core/models/stream-event-type';
 
 /**
  * Utilities for stream-event handling in Spaces Dashboard.
@@ -9,10 +9,12 @@ export type StreamEventType =
   | 'pageStart'
   | 'item'
   | 'attachmentItem'
-  | 'error'
+  | 'scanError'
   | 'complete'
   | 'multiStart'
-  | 'multiComplete';
+  | 'multiComplete'
+  | 'pageComplete'
+  | 'keepalive';
 
 /**
  * Returns a human-readable log line for the given event type and raw payload json.
@@ -59,7 +61,7 @@ export function formatEventLog(type: StreamEventType, jsonData: string): string 
 /**
  * Determines if the payload looks like an attachment line item.
  */
-export function isAttachmentPayload(payload: RawStreamPayload | undefined | null): boolean {
+export function isAttachmentPayload(payload: ConfluenceContentPersonallyIdentifiableInformationScanResult | undefined | null): boolean {
   const anyPayload = payload as any;
   return Boolean(anyPayload?.attachmentName ?? anyPayload?.attachmentUrl);
 }
@@ -67,7 +69,7 @@ export function isAttachmentPayload(payload: RawStreamPayload | undefined | null
 /**
  * Tries to extract a trimmed space key from payload; returns null if empty or whitespace.
  */
-export function coerceSpaceKey(payload: RawStreamPayload | undefined | null): string | null {
+export function coerceSpaceKey(payload: ConfluenceContentPersonallyIdentifiableInformationScanResult | undefined | null): string | null {
   const key = payload?.spaceKey;
   if (key == null) return null;
   const trimmed = String(key).trim();

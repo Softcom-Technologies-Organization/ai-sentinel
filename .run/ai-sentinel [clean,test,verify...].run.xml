@@ -1,0 +1,37 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ai-sentinel [clean,test,verify...]" type="MavenRunConfiguration" factoryName="Maven" nameIsGenerated="true">
+    <MavenSettings>
+      <option name="myGeneralSettings" />
+      <option name="myRunnerSettings" />
+      <option name="myRunnerParameters">
+        <MavenRunnerParameters>
+          <option name="cmdOptions" />
+          <option name="profiles">
+            <set />
+          </option>
+          <option name="goals">
+            <list>
+              <option value="clean" />
+              <option value="test" />
+              <option value="verify" />
+              <option value="jacoco:report" />
+              <option value="sonar:sonar" />
+              <option value="-Dsonar.token=${SONAR_QUBE_TOKEN}" />
+            </list>
+          </option>
+          <option name="multimoduleDir" />
+          <option name="pomFileName" />
+          <option name="profilesMap">
+            <map />
+          </option>
+          <option name="projectsCmdOptionValues">
+            <list />
+          </option>
+          <option name="resolveToWorkspace" value="false" />
+          <option name="workingDirPath" value="$PROJECT_DIR$/pii-reporting-api" />
+        </MavenRunnerParameters>
+      </option>
+    </MavenSettings>
+    <method v="2" />
+  </configuration>
+</component>

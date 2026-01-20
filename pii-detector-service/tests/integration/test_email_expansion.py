@@ -2,8 +2,8 @@
 Test script to verify the improved email expansion with forward search.
 Tests the problematic cases from the logs where partial emails were detected.
 """
-import sys
 import os
+import sys
 
 # Add the project root to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))

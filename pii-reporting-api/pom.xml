@@ -5,43 +5,53 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-      <version>4.0.0-M2</version>
+        <version>4.0.0-M2</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
     <groupId>pro.softcom</groupId>
     <artifactId>ai-sentinel</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>ai-sentinel</name>
     <description>ai-sentinel - Application to scan Confluence spaces and reporting PIIs</description>
 
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
     <properties>
-        <java.version>24</java.version>
+        <java.version>25</java.version>
         <jackson.version>2.15.3</jackson.version>
         <springdoc.version>2.2.0</springdoc.version>
-        <grpc.version>1.74.0</grpc.version>
-        <protobuf.version>4.31.1</protobuf.version>
-        <armeria-bom.version>1.32.5</armeria-bom.version>
+        <grpc.version>1.76.0</grpc.version>
+        <protobuf.version>4.33.0</protobuf.version>
+        <armeria-bom.version>1.34.0</armeria-bom.version>
         <jsoup.version>1.17.2</jsoup.version>
-        <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
-        <archunit-junit5.version>1.4.0</archunit-junit5.version>
+        <archunit-junit5.version>1.4.1</archunit-junit5.version>
         <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <build-helper-maven-plugin.version>3.4.0</build-helper-maven-plugin.version>
         <pdfbox.version>3.0.5</pdfbox.version>
         <tika.version>3.2.2</tika.version>
         <lombok.version>1.18.40</lombok.version>
-        <grpc-api.version>1.75.0</grpc-api.version>
+        <grpc-api.version>1.76.0</grpc-api.version>
         <mockito-core.version>5.19.0</mockito-core.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <testcontainers.version>1.21.2</testcontainers.version>
+        <testcontainers.version>1.21.4</testcontainers.version>
+
+        <!-- Proto source root - default for local build -->
+        <proto.source.root>${project.basedir}/../proto</proto.source.root>
 
         <!-- SonarQube properties -->
         <sonar.host.url>http://localhost:9000</sonar.host.url>
-        <sonar.projectKey>sentinelle</sonar.projectKey>
-        <sonar.projectName>Sentinelle</sonar.projectName>
+        <sonar.projectKey>ai-sentinel-pii-reporting-api</sonar.projectKey>
+        <sonar.projectName>ai-sentinel-pii-reporting-api</sonar.projectName>
         <sonar.projectVersion>${project.version}</sonar.projectVersion>
-        <sonar.sources>src/main/java,sentinelle-ui-angular/src</sonar.sources>
+        <sonar.sources>src/main/java</sonar.sources>
         <sonar.tests>src/test/java</sonar.tests>
         <sonar.java.binaries>target/classes</sonar.java.binaries>
         <sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
@@ -52,6 +62,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -162,11 +176,6 @@
             <version>${protobuf.version}</version>
         </dependency>
         <dependency>
-            <groupId>javax.annotation</groupId>
-            <artifactId>javax.annotation-api</artifactId>
-            <version>${javax.annotation-api.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.linecorp.armeria</groupId>
             <artifactId>armeria-spring-boot3-starter</artifactId>
         </dependency>
@@ -183,11 +192,6 @@
         </dependency>
 
         <!-- Test dependencies -->
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -258,6 +262,23 @@
 
     <profiles>
         <profile>
+            <id>local-build</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <proto.source.root>${project.basedir}/../proto</proto.source.root>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>docker-build</id>
+            <properties>
+                <proto.source.root>${project.basedir}/proto</proto.source.root>
+            </properties>
+        </profile>
+
+        <profile>
             <id>unit-and-integration-tests</id>
             <properties>
                 <profile.description>Run unit + integration tests</profile.description>
@@ -268,6 +289,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration combine.self="override">
+                            <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
                             <includes>
                                 <include>**/Test*.java</include>
                                 <include>**/*Test.java</include>
@@ -296,10 +318,56 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
+                          <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
                             <excludes>
                                 <exclude>**/integration/*.java</exclude>
                             </excludes>
                         </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>ci-build</id>
+            <properties>
+                <profile.description>CI/CD build profile - runs unit tests with code coverage</profile.description>
+            </properties>
+            <build>
+                <plugins>
+                    <!-- Run unit tests only (exclude integration tests) -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                          <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+                            <excludes>
+                                <exclude>**/integration/*.java</exclude>
+                            </excludes>
+                            <!-- Fail build if no tests are found -->
+                            <failIfNoTests>true</failIfNoTests>
+                        </configuration>
+                    </plugin>
+                    <!-- JaCoCo for code coverage -->
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>0.8.13</version>
+                        <executions>
+                            <execution>
+                                <id>prepare-agent</id>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>report</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
@@ -323,6 +391,8 @@
                     <excludes>
                         <exclude>**/integration/*.java</exclude>
                     </excludes>
+                    <!-- Enable dynamic agent loading for Mockito with Java 25 -->
+                  <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -353,10 +423,10 @@
                 <artifactId>protobuf-maven-plugin</artifactId>
                 <version>${protobuf-maven-plugin.version}</version>
                 <configuration>
-                    <protoSourceRoot>${project.basedir}/../proto</protoSourceRoot>
-                    <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:windows-x86_64</protocArtifact>
+                    <protoSourceRoot>${proto.source.root}</protoSourceRoot>
+                    <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
                     <pluginId>grpc-java</pluginId>
-                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:windows-x86_64</pluginArtifact>
+                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
                 </configuration>
                 <executions>
                     <execution>
@@ -419,7 +489,6 @@
                 </executions>
             </plugin>
 
-            <!-- SonarQube Maven Plugin -->
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>

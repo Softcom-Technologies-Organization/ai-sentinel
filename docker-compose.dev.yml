@@ -1,0 +1,376 @@
+services:
+  # ============================================================================
+  # BOOTSTRAP SECRETS (one-shot) - DEV
+  # Creates ./secrets and generates the secrets required for Infisical on first startup
+  # Mirrors production behavior but writes DEV client placeholders:
+  # - infisical_dev_client_id.txt
+  # - infisical_dev_client_secret.txt
+  # - infisical_project_id.txt
+  # ============================================================================
+  secrets-bootstrap:
+    image: alpine:3.20
+    container_name: ai-sentinel-secrets-bootstrap-dev
+    restart: "no"
+    command: ["sh", "/usr/local/bin/secrets-bootstrap-dev.sh"]
+    volumes:
+      - ./secrets:/secrets
+      - ./docker/secrets-bootstrap-dev.sh:/usr/local/bin/secrets-bootstrap-dev.sh:ro
+    networks:
+      - ai-sentinel-network
+
+  # ============================================================================
+  # INFISICAL AUTO-CONFIGURATOR (one-shot) - DEV
+  # Uses Infisical API to bootstrap admin + project + machine identity for DEV
+  # and stores the Universal Auth credentials in ./secrets
+  # ============================================================================
+  infisical-configurator:
+    image: alpine:3.20
+    container_name: ai-sentinel-infisical-configurator-dev
+    restart: "no"
+    command: ["sh", "/usr/local/bin/infisical-configurator-dev.sh"]
+    volumes:
+      - ./secrets:/secrets
+      - ./docker/infisical-configurator-dev.sh:/usr/local/bin/infisical-configurator-dev.sh:ro
+    depends_on:
+      infisical:
+        condition: service_healthy
+      secrets-bootstrap:
+        condition: service_completed_successfully
+    networks:
+      - ai-sentinel-network
+
+  # ============================================================================
+  # DATABASE SERVICE - DEV
+  # Mirrors prod configuration but publishes Postgres to localhost:5433 for dev tools.
+  # ============================================================================
+  postgres:
+    image: postgres:18
+    container_name: ai-sentinel-db-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ai-sentinel
+    command: >
+      sh -c '
+        export POSTGRES_USER=$$(cat /secrets/postgres_user.txt) &&
+        export POSTGRES_PASSWORD=$$(cat /secrets/postgres_password.txt) &&
+        exec docker-entrypoint.sh postgres
+      '
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./pii-reporting-api/init-scripts:/docker-entrypoint-initdb.d
+      - ./secrets:/secrets:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$(cat /secrets/postgres_user.txt) -d ai-sentinel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      secrets-bootstrap:
+        condition: service_completed_successfully
+    networks:
+      - ai-sentinel-network
+
+  # ============================================================================
+  # PII DETECTOR SERVICE (Python/gRPC)
+  # ============================================================================
+  pii-detector:
+    build:
+      context: .
+      dockerfile: pii-detector-service/Dockerfile
+    container_name: pii-detector-service
+    restart: unless-stopped
+    
+    # Resource limits for stability (prevents OOM and limits CPU usage)
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'      # Max 4 CPU cores (adjust based on host)
+          memory: 8G       # Max 8GB RAM for NLP/ML models
+        reservations:
+          cpus: '2.0'      # Guaranteed 2 CPU cores
+          memory: 4G       # Guaranteed 4GB RAM
+    
+    ports:
+      - "50051:50051"
+    environment:
+      # Infisical Configuration - secrets will be read from /secrets/
+      INFISICAL_CLIENT_ID_FILE: /secrets/infisical_dev_client_id.txt
+      INFISICAL_CLIENT_SECRET_FILE: /secrets/infisical_dev_client_secret.txt
+      INFISICAL_PROJECT_ID_FILE: /secrets/infisical_project_id.txt
+      INFISICAL_API_URL: http://infisical:8080
+      INFISICAL_ENV: dev
+      
+      # Database Configuration for dynamic config fetch
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ai-sentinel
+      
+      # Static non-sensitive configuration
+      HF_HOME: /app/.cache/huggingface
+      TRANSFORMERS_CACHE: /app/.cache/huggingface
+    volumes:
+      - huggingface-cache:/app/.cache/huggingface
+      - ./secrets:/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      infisical-configurator:
+        condition: service_completed_successfully
+      infisical:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import grpc; channel = grpc.insecure_channel(\"localhost:50051\"); channel.close()'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - ai-sentinel-network
+
+  # ============================================================================
+  # PII REPORTING API (Spring Boot)
+  # ============================================================================
+  pii-reporting-api:
+    build:
+      context: .
+      dockerfile: pii-reporting-api/Dockerfile
+    container_name: pii-reporting-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "8090:8090"  # Armeria internal services (health, metrics, docs)
+    environment:
+      # Infisical Configuration - secrets will be read from /secrets/
+      INFISICAL_CLIENT_ID_FILE: /secrets/infisical_dev_client_id.txt
+      INFISICAL_CLIENT_SECRET_FILE: /secrets/infisical_dev_client_secret.txt
+      INFISICAL_PROJECT_ID_FILE: /secrets/infisical_project_id.txt
+      INFISICAL_API_URL: http://infisical:8080
+      INFISICAL_ENV: dev
+      
+      # Static non-sensitive configuration
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ai-sentinel
+      SERVER_PORT: 8080
+      PII_DETECTOR_CLIENT: armeria
+      PII_DETECTOR_HOST: pii-detector
+      PII_DETECTOR_PORT: 50051
+      
+      # Non-sensitive Confluence configuration (optional with defaults)
+      CONFLUENCE_ENABLE_PROXY: ${CONFLUENCE_ENABLE_PROXY:-false}
+      CONFLUENCE_PROXY_HOST: ${CONFLUENCE_PROXY_HOST:-}
+      CONFLUENCE_PROXY_PORT: ${CONFLUENCE_PROXY_PORT:-8080}
+      CONFLUENCE_PROXY_USERNAME: ${CONFLUENCE_PROXY_USERNAME:-}
+      CONFLUENCE_CACHE_REFRESH_INTERVAL: ${CONFLUENCE_CACHE_REFRESH_INTERVAL:-300000}
+      CONFLUENCE_CACHE_INITIAL_DELAY: ${CONFLUENCE_CACHE_INITIAL_DELAY:-5000}
+      CONFLUENCE_POLLING_INTERVAL: ${CONFLUENCE_POLLING_INTERVAL:-60000}
+      PII_DATABASE_ENCRYPTION_KEY_FILE: /secrets/pii_database_encryption_key.txt
+    volumes:
+      - ./personally-identifiable-information-scan-results:/personally-identifiable-information-scan-results
+      - ./secrets:/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      pii-detector:
+        condition: service_started
+      infisical-configurator:
+        condition: service_completed_successfully
+      infisical:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ai-sentinel/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - ai-sentinel-network
+
+  # ============================================================================
+  # PII REPORTING UI (Angular + Nginx)
+  # ============================================================================
+  pii-reporting-ui:
+    build:
+      context: ./pii-reporting-ui
+      dockerfile: Dockerfile
+    container_name: pii-reporting-ui
+    restart: unless-stopped
+    ports:
+      - "4200:80"
+    depends_on:
+      pii-reporting-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - ai-sentinel-network
+
+  # ============================================================================
+  # PGADMIN (Optional - Database Management UI)
+  # ============================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin-sentinel
+    restart: unless-stopped
+    environment:
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+      # Infisical Configuration - secrets will be read from /secrets/
+      INFISICAL_CLIENT_ID_FILE: /secrets/infisical_dev_client_id.txt
+      INFISICAL_CLIENT_SECRET_FILE: /secrets/infisical_dev_client_secret.txt
+      INFISICAL_PROJECT_ID_FILE: /secrets/infisical_project_id.txt
+      INFISICAL_API_URL: http://infisical:8080
+      INFISICAL_ENV: dev
+    command: >
+      sh -c '
+        apk add --no-cache curl jq > /dev/null 2>&1;
+
+        INFISICAL_CLIENT_ID=$$(cat /secrets/infisical_dev_client_id.txt);
+        INFISICAL_CLIENT_SECRET=$$(cat /secrets/infisical_dev_client_secret.txt);
+        INFISICAL_PROJECT_ID=$$(cat /secrets/infisical_project_id.txt);
+        INFISICAL_API_URL="http://infisical:8080";
+
+        echo "[pgadmin] Authenticating with Infisical...";
+        TOKEN_RESPONSE=$$(curl -s -X POST "$$INFISICAL_API_URL/api/v1/auth/universal-auth/login" \
+          -H "Content-Type: application/json" \
+          -d "{\"clientId\":\"$$INFISICAL_CLIENT_ID\",\"clientSecret\":\"$$INFISICAL_CLIENT_SECRET\"}");
+
+        ACCESS_TOKEN=$$(echo "$$TOKEN_RESPONSE" | jq -r ".accessToken");
+
+        echo "[pgadmin] Fetching secrets from Infisical...";
+        SECRETS_RESPONSE=$$(curl -s "$$INFISICAL_API_URL/api/v3/secrets/raw?workspaceId=$$INFISICAL_PROJECT_ID&environment=dev" \
+          -H "Authorization: Bearer $$ACCESS_TOKEN");
+
+        export PGADMIN_DEFAULT_EMAIL=$$(echo "$$SECRETS_RESPONSE" | jq -r ".secrets[] | select(.secretKey==\"PGADMIN_DEFAULT_EMAIL\") | .secretValue");
+        export PGADMIN_DEFAULT_PASSWORD=$$(echo "$$SECRETS_RESPONSE" | jq -r ".secrets[] | select(.secretKey==\"PGADMIN_DEFAULT_PASSWORD\") | .secretValue");
+
+        echo "[pgadmin] Secrets loaded, starting PGAdmin...";
+        exec /entrypoint.sh
+      '
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./secrets:/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      infisical-configurator:
+        condition: service_completed_successfully
+      infisical:
+        condition: service_healthy
+    networks:
+      - ai-sentinel-network
+    profiles:
+      - admin
+
+  # ============================================================================
+  # INFISICAL (Secrets Manager - UI only for development)
+  # ============================================================================
+  infisical-db:
+    image: postgres:18-alpine
+    container_name: infisical-db-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: infisical
+      POSTGRES_PASSWORD_FILE: /secrets/infisical_db_password.txt
+      POSTGRES_DB: infisical
+    volumes:
+      - infisical-db-data:/var/lib/postgresql/data
+      - ./secrets:/secrets:ro
+    depends_on:
+      secrets-bootstrap:
+        condition: service_completed_successfully
+    networks:
+      - ai-sentinel-network
+
+  infisical-redis:
+    image: redis:7-alpine
+    container_name: infisical-redis-dev
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - infisical-redis-data:/data
+    networks:
+      - ai-sentinel-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    restart: unless-stopped
+    ports:
+      # SMTP server is only needed inside Docker network; not exposed to host for security
+      # - "127.0.0.1:1025:1025"  # Uncomment if you need to test SMTP from the host
+      - "127.0.0.1:8025:8025"  # Web UI (localhost only)
+    networks:
+      - ai-sentinel-network
+
+  infisical:
+    image: infisical/infisical:v0.153.4
+    container_name: infisical-dev
+    restart: unless-stopped
+    ports:
+      - "8082:8080"  # Expose Infisical UI on localhost:8082
+    environment:
+      NODE_ENV: development
+      REDIS_URL: redis://infisical-redis:6379
+      SITE_URL: ${INFISICAL_SITE_URL:-http://localhost:8082}
+      # SMTP Configuration (MailHog for local development)
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_SECURE: "false"
+      SMTP_FROM_ADDRESS: noreply@ai-sentinel.local
+      SMTP_FROM_NAME: "AI Sentinel Infisical"
+      SMTP_TLS_ENABLED: "false"
+      SMTP_STARTTLS_ENABLED: "false"
+      SMTP_IGNORE_TLS: "true"
+    command: >
+      sh -c '
+        export ENCRYPTION_KEY=$$(cat /secrets/infisical_encryption_key.txt) &&
+        export AUTH_SECRET=$$(cat /secrets/infisical_auth_secret.txt) &&
+        export DB_CONNECTION_URI="postgres://infisical:$$(cat /secrets/infisical_db_password.txt)@infisical-db:5432/infisical" &&
+        exec /usr/local/bin/docker-entrypoint.sh ./standalone-entrypoint.sh
+      '
+    depends_on:
+      secrets-bootstrap:
+        condition: service_completed_successfully
+      infisical-db:
+        condition: service_started
+      infisical-redis:
+        condition: service_started
+      mailhog:
+        condition: service_started
+    volumes:
+      - ./secrets:/secrets:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/status"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 60s
+    networks:
+      - ai-sentinel-network
+
+volumes:
+  postgres-data:
+    name: ai-sentinel-postgres-data
+  pgadmin-data:
+    name: ai-sentinel-pgadmin-data
+  huggingface-cache:
+    name: ai-sentinel-huggingface-cache
+  infisical-db-data:
+    name: ai-sentinel-infisical-db-data
+  infisical-redis-data:
+    name: ai-sentinel-infisical-redis-data
+
+networks:
+  ai-sentinel-network:
+    name: ai-sentinel-network
+    driver: bridge
+

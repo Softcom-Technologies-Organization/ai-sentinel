@@ -54,3 +54,376 @@
   overflow-y: auto;
   padding-right: .5rem; /* keep scrollbar away from content */
 }
+
+/* Refresh button spinning animation (Phase 1) */
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.new-spaces-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background-color: #e3f2fd;
+  border-left: 4px solid #2196f3;
+  border-radius: 4px;
+  animation: slideDown 300ms ease-out;
+}
+
+.new-spaces-banner i {
+  color: #2196f3;
+  font-size: 1.25rem;
+}
+
+.new-spaces-banner .banner-message {
+  flex: 1;
+  font-weight: 500;
+  color: #1565c0;
+}
+
+.new-spaces-banner button {
+  flex-shrink: 0;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Action buttons - horizontal alignment */
+.action-buttons-container {
+  display: inline-block;
+  /* Ensure consistent height for the container to avoid row jumping */
+  min-height: 3rem;
+  /* Center content vertically if possible, but display:block limits this */
+  /* We use margins on buttons for spacing */
+}
+.divider{
+  width:5px;
+  height:auto;
+  display:inline-block;
+}
+/* Ensure all buttons in action container have consistent height and spacing */
+:host ::ng-deep .action-buttons-container .p-button {
+  height: 2.5rem;
+  white-space: nowrap;
+  display: inline-flex;
+  margin-right: 0.5rem;
+}
+
+:host ::ng-deep .action-buttons-container .p-button:last-child {
+  margin-right: 0;
+}
+
+/* Resume scan button: rotate eject icon 90deg clockwise
+ * We need ::ng-deep to reach into the PrimeNG p-button internal template.
+ */
+:host ::ng-deep .resume-button .p-button-icon.pi-eject {
+  transform: rotate(90deg);
+}
+
+/* Space update indicator (shows when space has been modified since last scan) */
+.space-updated-indicator {
+  display: inline-block;
+  width: 0.5rem; /* small dot */
+  height: 0.5rem;
+  background-color: #f44336; /* red dot */
+  border-radius: 50%;
+  margin-left: 0.375rem; /* reasonable spacing */
+  vertical-align: super; /* placed above the text */
+  cursor: help;
+}
+
+/* Ensure all status tags in the table have the same visual width */
+.status-tag.p-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 7.5rem;
+  box-sizing: border-box;
+}
+
+/* Status badge customization: running ("En cours") in blue tone */
+.status-running.p-tag {
+  background-color: #2196F3A8; /* light blue, similar tone intensity to existing green */
+  border-color: #2196F3DA; /* primary blue accent */
+  color: #263238; /* readable dark blue text */
+}
+
+/* Status badge customization: paused ("En pause") in neutral blue-grey tone */
+.status-paused.p-tag {
+  background-color: #CFD8D8; /* light grey-blue background */
+  border-color: #90A4AE; /* medium blue-grey border */
+  color: #263238; /* dark text for good readability */
+}
+
+/* Pause button styling aligned with "En pause" status badge.
+ *
+ * Note : les styles globaux du thème PrimeNG peuvent surcharger les couleurs
+ * par défaut des boutons. On utilise :host ::ng-deep avec !important pour
+ * garantir que le bouton pause garde la même palette que le badge
+ * .status-paused, sans impacter les autres boutons.
+ */
+:host ::ng-deep .pause-button.p-button {
+  background-color: #CFD8D8 !important;
+  border-color: #90A4AE !important;
+  color: #263238 !important;
+}
+
+:host ::ng-deep .pause-button.p-button .p-button-icon,
+:host ::ng-deep .pause-button.p-button .p-button-label {
+  color: #263238 !important;
+}
+
+/* Scan Error Toast Styling - Using PrimeNG default template with custom colors */
+::ng-deep .p-toast.p-component {
+  z-index: 9999;
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error {
+  background-color: #ffebee;
+  border-left: 6px solid #f44336;
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.25);
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-message-icon {
+  color: #f44336;
+  font-size: 2rem;
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-summary {
+  font-weight: 600;
+  color: #c62828;
+  font-size: 1.05rem;
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-detail {
+  color: #424242;
+  white-space: pre-line;
+  margin-top: 0.5rem;
+  line-height: 1.6;
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-icon-close {
+  color: #666;
+  transition: color 0.2s;
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-icon-close:hover {
+  color: #f44336;
+}
+
+/* Title container with badge - horizontal alignment */
+.header h2 {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Scan status badge - displayed next to the title */
+.scan-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 0.375rem;
+  transition: all 0.3s ease;
+}
+
+/* Active state: scan in progress (blue with color pulse animation) */
+.scan-status-badge.scanning {
+  color: white;
+  animation: color-pulse 2s ease-in-out infinite;
+}
+
+/* Inactive state: no scan running (grey) */
+.scan-status-badge.inactive {
+  background-color: #CFD8D8;
+  color: #263238;
+}
+
+/* Color pulse animation - progressive color change from light blue to dark blue */
+@keyframes color-pulse {
+  0%, 100% {
+    background-color: #42A5F5; /* Light blue */
+  }
+  50% {
+    background-color: #1565C0; /* Dark blue */
+  }
+}
+
+/* Responsive: smaller badge on mobile */
+@media (max-width: 768px) {
+  .scan-status-badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.5rem;
+    margin-left: 0.5rem;
+  }
+}
+
+/* PII Header Cell - relative positioning for absolute button placement */
+.pii-header-cell {
+  position: relative;
+}
+
+/* PII Help Button - positioned at top-right of header cell */
+:host ::ng-deep .pii-help-button.p-button {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+:host ::ng-deep .pii-help-button.p-button .p-button-icon {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+:host ::ng-deep .pii-help-button.p-button:hover .p-button-icon {
+  color: #3b82f6;
+}
+
+/* PII Help Dialog Styling */
+::ng-deep .pii-help-dialog .p-dialog-content {
+  padding: 1.5rem;
+}
+
+.pii-help-intro {
+  margin-bottom: 1.5rem;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.pii-help-section {
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.pii-help-section h4 {
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.pii-help-section .pii-help-description {
+  margin: 0 0 0.5rem 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.pii-help-section .pii-help-types {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #334155;
+  line-height: 1.5;
+}
+
+/* High severity section - red theme */
+.pii-help-high {
+  background-color: #fef2f2;
+}
+
+.pii-help-high h4 {
+  color: #b91c1c;
+}
+
+/* Medium severity section - orange theme */
+.pii-help-medium {
+  background-color: #fffbeb;
+}
+
+.pii-help-medium h4 {
+  color: #b45309;
+}
+
+/* Low severity section - blue theme */
+.pii-help-low {
+  background-color: #eff6ff;
+}
+
+.pii-help-low h4 {
+  color: #1d4ed8;
+}
+
+/* Severity badge icon in dialog headers */
+::ng-deep .severity-badge-icon.p-badge {
+  width: 1rem;
+  height: 1rem;
+  min-width: 1rem;
+  border-radius: 50%;
+}
+
+/* Settings Fullscreen Dialog Styling */
+::ng-deep .settings-fullscreen-dialog .p-dialog-content {
+  padding: 0;
+  overflow-y: auto;
+  height: 100%;
+}
+
+::ng-deep .settings-fullscreen-dialog .p-dialog {
+  max-height: 95vh;
+}
+
+::ng-deep .settings-fullscreen-dialog .p-dialog-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* Prevent text wrapping in buttons */
+.white-space-nowrap {
+  white-space: nowrap;
+}
+
+/* Space filters container - vertical layout */
+.space-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Search input - full width with spacing below */
+.space-filters .search-global {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+/* Action buttons container - keep all buttons on a single line */
+:host ::ng-deep #col-actions-value {
+  white-space: nowrap;
+}
+
+:host ::ng-deep #col-actions-value .p-button {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+:host ::ng-deep #col-actions-value .divider {
+  display: inline-block;
+  vertical-align: middle;
+}

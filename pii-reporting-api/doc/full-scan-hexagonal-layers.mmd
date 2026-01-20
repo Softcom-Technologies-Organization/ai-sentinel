@@ -1,0 +1,102 @@
+sequenceDiagram
+    autonumber
+    
+    participant UI as 🌐 UI (Angular)<br/>EXTERNAL
+    
+    participant Controller as 📥 ScanController<br/>ADAPTER IN<br/>Infrastructure
+    participant ConfAdapter as 📤 ConfluenceHttpClientAdapter<br/>ADAPTER OUT<br/>Infrastructure
+    participant DBAdapter as 📤 JpaScanResultRepository<br/>ADAPTER OUT<br/>Infrastructure
+    
+    participant UseCase as ⚙️ StreamConfluenceScanUseCase<br/>PORT IN + USE CASE<br/>Application
+    participant ConfluenceAcc as 🔧 ConfluenceAccessor<br/>SERVICE<br/>Application
+    participant ConfPort as 🔌 ConfluenceClient<br/>PORT OUT (interface)<br/>Application
+    participant PiiPort as 🔌 PiiDetectorClient<br/>PORT OUT (interface)<br/>Application
+    participant ScanOrch as 🔧 ScanOrchestrator<br/>SERVICE<br/>Application
+    
+    participant Domain as 📦 ContentPiiDetection<br/>DOMAIN OBJECT<br/>Domain
+    participant Event as 📦 SpaceScanCompleted<br/>DOMAIN EVENT<br/>Domain
+    
+    participant Confluence as 🌐 Confluence API<br/>EXTERNAL
+    participant PiiService as 🌐 pii-detector-service<br/>EXTERNAL (gRPC)
+    participant DB as 🗄️ PostgreSQL<br/>EXTERNAL
+
+    Note over UI,DB: Scan Nominal - Nouveau scan global de tous les espaces
+
+    UI->>Controller: GET /api/v1/stream/confluence/spaces/events<br/>(SSE WebFlux)
+    activate Controller
+    Note right of Controller: Line 77: streamAllSpacesScan()
+    
+    Controller->>UseCase: streamAllSpaces()
+    activate UseCase
+    Note right of UseCase: Interface Port IN + implémentation
+    
+    UseCase->>UseCase: Génère scanId (UUID)
+    UseCase-->>Controller: Flux: event "MULTI_START"
+    Controller-->>UI: SSE: MULTI_START (scanId)
+    
+    UseCase->>ConfluenceAcc: getAllSpaces()
+    activate ConfluenceAcc
+    ConfluenceAcc->>ConfPort: getAllSpaces()
+    Note right of ConfPort: Interface Port OUT
+    ConfPort->>ConfAdapter: [implémentation]
+    activate ConfAdapter
+    ConfAdapter->>Confluence: GET /wiki/api/v2/spaces
+    Confluence-->>ConfAdapter: List<Space>
+    deactivate ConfAdapter
+    ConfAdapter-->>ConfluenceAcc: List<ConfluenceSpace>
+    deactivate ConfluenceAcc
+    
+    loop Pour chaque espace (nominal)
+        UseCase->>ConfluenceAcc: getAllPagesInSpace(spaceKey)
+        ConfluenceAcc->>ConfAdapter: via ConfluenceClient
+        ConfAdapter->>Confluence: GET /wiki/api/v2/spaces/{id}/pages
+        Confluence-->>ConfAdapter: List<Page>
+        ConfAdapter-->>UseCase: List<ConfluencePage>
+        
+        UseCase-->>Controller: event "start" (pagesTotal)
+        Controller-->>UI: SSE: start
+        
+        loop Pour chaque page (nominal)
+            UseCase->>ScanOrch: processPage(page)
+            activate ScanOrch
+            
+            ScanOrch->>ConfAdapter: getPageContent(pageId)
+            ConfAdapter->>Confluence: GET /wiki/api/v2/pages/{id}
+            Confluence-->>ConfAdapter: Page content
+            ConfAdapter-->>ScanOrch: String content
+            
+            ScanOrch->>PiiPort: analyzeContent(content)
+            Note right of PiiPort: Interface Port OUT
+            PiiPort->>PiiService: gRPC DetectPii(request)
+            PiiService-->>PiiPort: PiiDetectionResponse
+            PiiPort-->>ScanOrch: ContentPiiDetection
+            
+            ScanOrch->>Domain: new ContentPiiDetection(detections)
+            Note right of Domain: Objet du domaine métier
+            
+            ScanOrch-->>UseCase: ContentPiiDetection
+            deactivate ScanOrch
+            
+            UseCase->>DBAdapter: persist(ScanEvent)
+            DBAdapter->>DB: INSERT INTO scan_events
+            DB-->>DBAdapter: OK
+            
+            UseCase-->>Controller: event "item" (détections)
+            Controller-->>UI: SSE: item
+        end
+        
+        UseCase-->>Controller: event "complete" (space terminé)
+        Controller-->>UI: SSE: complete
+        
+        UseCase->>Event: new SpaceScanCompleted(scanId, spaceKey)
+        Note right of Event: Domain Event publié
+        UseCase->>UseCase: publish(SpaceScanCompleted)
+        Note over Event: Déclenche export Excel (async)
+    end
+    
+    UseCase-->>Controller: event "MULTI_COMPLETE"
+    deactivate UseCase
+    Controller-->>UI: SSE: MULTI_COMPLETE
+    deactivate Controller
+
+    Note over UI,DB: Architecture Hexagonale :<br/>- Domain : logique métier pure, indépendante<br/>- Application : cas d'usage, orchestration via ports<br/>- Infrastructure : adaptateurs vers systèmes externes

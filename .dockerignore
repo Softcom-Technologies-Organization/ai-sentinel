@@ -1,0 +1,36 @@
+# Ignore other modules when building specific services
+# Note: pii-detector-service and pii-reporting-api both use root context
+# Only ignore pii-reporting-ui when not building it
+pii-reporting-ui/
+my-files/
+
+# Git
+.git
+.gitignore
+
+# Documentation at root
+README.md
+QUICKSTART.md
+DOCKER_DEPLOYMENT.md
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Build artifacts in pii-reporting-api (will be rebuilt in Docker)
+pii-reporting-api/target/
+
+# Scripts
+start-app.sh
+start-app.ps1
+
+# Env files
+.env
+.env.*
+
+# Keep these files for pii-reporting-api build:
+# - pii-reporting-api/pom.xml
+# - pii-reporting-api/src/
+# - pii-reporting-api/Dockerfile
+# - proto/

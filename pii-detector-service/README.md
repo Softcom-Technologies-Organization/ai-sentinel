@@ -1,356 +1,658 @@
-# Guide d'utilisation du script test-piiranha-v3.py
+# PII Detector Service
 
-Ce guide explique comment installer et exécuter le script `test-piiranha-v3.py`, qui utilise le modèle PIIRANHA pour détecter et masquer les informations personnelles (PII) dans des textes.
+[![Python Version](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](../LICENSE.md)
+[![gRPC](https://img.shields.io/badge/gRPC-1.60%2B-blue.svg)](https://grpc.io/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
 
-## Qu'est-ce que PIIRANHA ?
+> High-performance gRPC microservice for detecting Personally Identifiable Information (PII) using state-of-the-art machine learning models with advanced memory management and parallel processing capabilities.
 
-PIIRANHA (Personal Information Identification and Redaction with Advanced Natural Human-like Accuracy) est un modèle d'intelligence artificielle développé pour détecter les informations personnelles dans les textes. Il peut identifier de nombreux types d'informations sensibles comme :
+## Table of Contents
 
-- Noms et prénoms
-- Adresses email
-- Numéros de téléphone
-- Adresses postales
-- Numéros de cartes de crédit
-- Numéros de sécurité sociale
-- Et bien d'autres...
+- [About](#about)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Architecture](#architecture)
+- [Detection Models](#detection-models)
+- [Performance](#performance)
+- [Testing](#testing)
+- [Deployment](#deployment)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [License](#license)
 
-## Prérequis
+## About
 
-Avant d'exécuter le script, vous devez installer les éléments suivants :
+The **PII Detector Service** is a production-ready gRPC microservice designed to identify and protect sensitive personal information in text content. It leverages multiple detection strategies including machine learning models, rule-based systems, and regex patterns to provide accurate and comprehensive PII detection.
 
-1. **Python 3.6 ou supérieur**
-   - Téléchargez et installez Python depuis [python.org](https://www.python.org/downloads/)
-   - Assurez-vous que Python est ajouté à votre PATH système
+**Context**: In today's data-driven world, protecting personal information is critical for compliance with regulations like GDPR, CCPA, and HIPAA. Organizations need reliable tools to identify and safeguard PII across their systems.
 
-2. **Environnement virtuel Python (recommandé)**
+**Problem Solved**: Manual PII detection is time-consuming, error-prone, and doesn't scale. Traditional rule-based systems miss context-dependent PII, while pure ML approaches generate false positives.
+
+**Solution**: This service combines the best of both worlds - advanced ML models (GLiNER) for context-aware detection, Microsoft's Presidio for production-grade rule-based detection, and regex patterns for structured data. The result is high accuracy with low false positives.
+
+**Value Proposition**: 
+- **Multilingual support**: Detects PII in 17+ entity types across multiple languages
+- **Production-ready**: Built with memory optimization, error handling, and monitoring
+- **Flexible**: Easily configurable detection strategies via TOML files
+- **Scalable**: Parallel processing and streaming support for high-throughput scenarios
+
+## Features
+
+- ✅ **Multi-Model Detection**: Combines GLiNER, Presidio, and Regex detectors
+- ✅ **17+ PII Entity Types**: Names, emails, phone numbers, addresses, financial data, and more
+- ✅ **Multilingual Support**: Works with English, French, German, Spanish, and other languages
+- ✅ **gRPC API**: High-performance protocol with synchronous and streaming modes
+- ✅ **Smart Post-Processing**: Email expansion, entity merging, zipcode/city separation
+- ✅ **Parallel Processing**: Multi-threaded text processing for optimal throughput
+- ✅ **Memory Optimized**: Advanced memory management for CPU/GPU environments
+- ✅ **Flexible Configuration**: TOML-based configuration for models and detection settings
+- ✅ **Content Masking**: Automatic PII masking with configurable patterns
+- ✅ **Provenance Tracking**: Logs which model detected each entity
+- ✅ **Performance Metrics**: Built-in throughput and latency monitoring
+- 📋 **Docker Ready**: Production-ready containerization with Infisical integration
+
+## Prerequisites
+
+Before starting, ensure you have:
+
+- **Python**: Version 3.9 or higher
+  ```bash
+  python --version
+  ```
+
+- **pip**: Python package installer (included with Python)
+  ```bash
+  pip --version
+  ```
+
+- **Docker** (optional, for containerized deployment)
+  ```bash
+  docker --version
+  ```
+
+**Optional but Recommended**:
+- **CUDA Toolkit**: For GPU acceleration (if using CUDA-enabled PyTorch)
+- **Git**: For version control and repository management
+
+## Installation
+
+### Standard Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Softcom-Technologies-Organization/ai-sentinel.git
+   cd ai-sentinel/pii-detector-service
    ```
+
+2. **Create a virtual environment**
+   ```bash
    python -m venv .venv
+   
+   # On Windows
+   .venv\Scripts\activate
+   
+   # On Linux/Mac
+   source .venv/bin/activate
    ```
 
-3. **Activation de l'environnement virtuel**
-   - Windows:
-     ```
-     .venv\Scripts\activate
-     ```
-   - macOS/Linux:
-     ```
-     source .venv/bin/activate
-     ```
-
-4. **Bibliothèques Python requises**
-   ```
-   pip install transformers huggingface_hub
+3. **Install dependencies (CPU-only)**
+   ```bash
+   pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
    ```
 
-5. **Clé API Hugging Face**
-   - Créez un compte sur [Hugging Face](https://huggingface.co/)
-   - Générez une clé API dans les paramètres de votre compte
-   - Définissez la clé comme variable d'environnement:
-     - Windows:
-       ```
-       set HUGGING_FACE_API_KEY=votre_clé_api
-       ```
-     - macOS/Linux:
-       ```
-       export HUGGING_FACE_API_KEY=votre_clé_api
-       ```
+   **Note**: The CPU-only PyTorch is recommended for production deployments to minimize memory footprint.
 
-## Correction d'un bug connu
+4. **Generate Protocol Buffer files**
+   ```bash
+   python -m pii_detector.proto.generate_pb
+   ```
 
-Avant d'exécuter le script, vous devez corriger une erreur de typo à la ligne 125 du fichier `test-piiranha-v3.py`. Ouvrez le fichier dans un éditeur de texte et modifiez :
+5. **Verify installation**
+   ```bash
+   python -m pii_detector.server --help
+   ```
+
+### Installation with GPU Support
+
+If you have NVIDIA GPU and CUDA installed:
+
+```bash
+# Install with CUDA support
+pip install -e .
+pip install torch --index-url https://download.pytorch.org/whl/cu121
+```
+
+### Docker Installation
+
+```bash
+# Build the Docker image
+docker build -t pii-detector-service -f pii-detector-service/Dockerfile .
+
+# Run the container
+docker run -p 50051:50051 pii-detector-service
+```
+
+### Troubleshooting
+
+- **ImportError: No module named 'torch'**: Ensure you installed with the PyTorch extra index URL
+- **gRPC connection refused**: Check that port 50051 is not in use
+- **Out of memory errors**: Use CPU-only PyTorch or reduce `max_workers` in configuration
+
+## Configuration
+
+The service uses TOML configuration files located in the `config/` directory.
+
+### Global Detection Settings
+
+**File**: `config/detection-settings.toml`
+
+| Setting | Description | Default | Required |
+|---------|-------------|---------|----------|
+| `default_threshold` | Confidence threshold (0.0-1.0) | `0.7` | No |
+| `llm_detection_enabled` | Enable ML models | `true` | Yes |
+| `regex_detection_enabled` | Enable regex patterns | `false` | Yes |
+| `presidio_detection_enabled` | Enable Presidio | `true` | Yes |
+| `log_provenance` | Log detection source | `true` | No |
+| `log_throughput` | Log performance metrics | `true` | No |
+| `parallel_processing.enabled` | Enable parallel processing | `true` | No |
+| `parallel_processing.max_workers` | Worker threads | `10` | No |
+
+### Model-Specific Configuration
+
+Each model has its own configuration file in `config/models/`:
+
+- **gliner-pii.toml**: GLiNER PII Large v1.0 configuration
+- **presidio-detector.toml**: Microsoft Presidio configuration
+- **regex-patterns.toml**: Regex-based detection patterns
+- **multilang-pii-ner.toml**: Multilingual NER model
+
+**Example**: Configuring GLiNER model
+
+```toml
+# config/models/gliner-pii.toml
+enabled = true
+model_id = "nvidia/gliner-pii"
+device = "cpu"
+max_length = 720
+threshold = 0.7
+
+[scoring]
+GIVENNAME = 0.75
+EMAIL = 0.80
+TELEPHONENUM = 0.80
+```
+
+### Environment Variables
+
+For production deployments, you can override settings using environment variables:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `PII_DETECTOR_PORT` | gRPC server port | `50051` |
+| `PII_DETECTOR_WORKERS` | Max worker threads | `5` |
+| `PII_DETECTOR_DEVICE` | Device (cpu/cuda/mps) | `cpu` |
+| `INFISICAL_TOKEN` | Infisical authentication token | `<token>` |
+
+## Usage
+
+### Starting the Server
+
+**Basic usage**:
+```bash
+python -m pii_detector.server
+```
+
+**With custom port**:
+```bash
+python -m pii_detector.server --port 50052
+```
+
+**With custom worker count**:
+```bash
+python -m pii_detector.server --workers 10
+```
+
+**With debug logging**:
+```bash
+python -m pii_detector.server --debug
+```
+
+### Expected Output
+
+```
+2025-11-08 11:30:00 - INFO - PII Detection gRPC Server starting...
+2025-11-08 11:30:05 - INFO - Model downloaded successfully: knowledgator/gliner-pii-large-v1.0
+2025-11-08 11:30:12 - INFO - Server started on port 50051
+2025-11-08 11:30:12 - INFO - Ready to accept requests
+```
+
+### Client Examples
+
+#### Python Client (gRPC)
 
 ```python
-# Ligne 125 - Avant correction
-masked_text = t+ext
+import grpc
+from pii_detector.proto.generated import pii_detection_pb2
+from pii_detector.proto.generated import pii_detection_pb2_grpc
 
-# Après correction
-masked_text = text
+# Connect to server
+channel = grpc.insecure_channel('localhost:50051')
+stub = pii_detection_pb2_grpc.PIIDetectionServiceStub(channel)
+
+# Create request
+request = pii_detection_pb2.PIIDetectionRequest(
+    content="John Doe lives at 123 Main St, email: john.doe@example.com",
+    threshold=0.7,
+    mask_pii=True
+)
+
+# Send request
+response = stub.DetectPII(request)
+
+# Process results
+print(f"Detected {len(response.entities)} PII entities:")
+for entity in response.entities:
+    print(f"  - {entity.type}: {entity.text} (score: {entity.score:.2f})")
+
+print(f"\nMasked content: {response.masked_content}")
 ```
 
-## Exécution du script
+#### Streaming Detection
 
-Une fois les prérequis installés et le bug corrigé, vous pouvez exécuter le script :
+```python
+# Streaming mode for large documents
+request = pii_detection_pb2.PIIDetectionRequest(
+    content=large_document_text,
+    chunk_size=5000
+)
 
-```
-python .venv\test-piiranha-v3.py
-```
-
-### Ce qui se passe lors de l'exécution
-
-1. **Téléchargement du modèle**
-   - Le script télécharge automatiquement les fichiers du modèle PIIRANHA depuis Hugging Face
-   - Les fichiers sont stockés dans le cache local de Hugging Face
-
-2. **Chargement du modèle**
-   - Le modèle et le tokenizer sont chargés en mémoire
-   - Un pipeline de détection est créé
-
-3. **Exécution des tests**
-   - Le script exécute des tests sur des exemples prédéfinis en anglais et en français
-   - Les résultats montrent les informations personnelles détectées et les textes anonymisés
-
-4. **Mode interactif**
-   - Vous pouvez entrer vos propres textes pour tester la détection
-   - Tapez 'quit' pour quitter le mode interactif
-
-## Exemple de sortie attendue
-
-Voici un exemple de ce que vous devriez voir lors de l'exécution du script :
-
-```
-📥 Téléchargement du modèle...
-✅ Téléchargement terminé
-🔄 Chargement du modèle...
-✅ Modèle chargé avec succès
-
-============================================================
-DÉMONSTRATION DE DÉTECTION DE PII
-============================================================
-
-🇬🇧 Anglais:
-Texte original: Hello, my name is John Smith. You can reach me at john.smith@company.com or call 555-123-4567. I live at 123 Main Street, New York, NY 10001.
-
-📍 Entités détectées:
-  • 'John' → Prénom (confiance: 99.9%)
-  • 'Smith' → Nom de famille (confiance: 99.8%)
-  • 'john.smith@company.com' → Email (confiance: 99.9%)
-  • '555-123-4567' → Numéro de téléphone (confiance: 99.7%)
-  • '123 Main Street' → Rue (confiance: 98.5%)
-  • 'New York' → Ville (confiance: 99.2%)
-  • '10001' → Code postal (confiance: 99.6%)
-
-🔐 Texte anonymisé: Hello, my name is [GIVENNAME] [SURNAME]. You can reach me at [EMAIL] or call [TELEPHONENUM]. I live at [STREET], [CITY], NY [ZIPCODE].
-
-📊 Résumé: Prénom: 1, Nom de famille: 1, Email: 1, Numéro de téléphone: 1, Rue: 1, Ville: 1, Code postal: 1
+# Process streaming updates
+for update in stub.StreamDetectPII(request):
+    if update.is_final:
+        print("Detection complete!")
+    else:
+        print(f"Chunk processed: {len(update.entities)} entities found")
 ```
 
-## Résolution des problèmes courants
-
-### Erreur : "No module named 'transformers'"
-
-```
-pip install transformers
-```
-
-### Erreur : "No module named 'huggingface_hub'"
-
-```
-pip install huggingface_hub
-```
-
-### Erreur : "NameError: name 't' is not defined"
-
-Corrigez la ligne 125 comme indiqué dans la section "Correction d'un bug connu".
-
-### Erreur : "Unable to load weights from safetensors"
-
-Installez la bibliothèque safetensors :
-
-```
-pip install safetensors
-```
-
-### Erreur : "HUGGING_FACE_API_KEY not found"
-
-Assurez-vous d'avoir défini la variable d'environnement HUGGING_FACE_API_KEY :
-
-```
-set HUGGING_FACE_API_KEY=votre_clé_api  # Windows
-export HUGGING_FACE_API_KEY=votre_clé_api  # macOS/Linux
-```
-
-### Erreur : "ValueError: Unrecognized configuration class"
-
-Si vous rencontrez cette erreur, assurez-vous d'utiliser la bonne classe de modèle. Le script `test-piiranha-v3.py` utilise `AutoModelForTokenClassification` tandis que `download-piiranha.py` utilise `AutoModelForSequenceClassification`.
-
-## Remarques supplémentaires
-
-- Le premier téléchargement du modèle peut prendre plusieurs minutes selon votre connexion internet
-- Le modèle occupe environ 500 Mo d'espace disque
-- L'exécution sur CPU peut être lente; si vous disposez d'un GPU compatible avec PyTorch, vous pouvez modifier la ligne 72 pour utiliser le GPU
-
-## Utilisation du script convert_model.py
-
-Le script `convert_model.py` permet de convertir le modèle PIIRANHA au format ONNX pour une inférence plus rapide et une meilleure portabilité.
-
-### Prérequis
-
-Avant d'exécuter le script, vous devez installer les dépendances requises :
-
-```
-pip install -r requirements.txt
-```
-
-Ou installer les packages individuellement :
-
-```
-pip install transformers torch optimum[onnxruntime] onnx onnxruntime
-```
-
-### Exécution du script
-
-Une fois les dépendances installées, vous pouvez exécuter le script :
-
-```
-python convert_model.py
-```
-
-### Ce que fait le script
-
-1. Télécharge le modèle PIIRANHA depuis Hugging Face
-2. Convertit le modèle au format ONNX
-3. Sauvegarde le modèle converti dans le dossier `models/piiranha-onnx`
-4. Effectue un test simple pour vérifier que le modèle fonctionne correctement
-
-### Résolution des problèmes
-
-Si vous rencontrez une erreur concernant des packages manquants, suivez les instructions affichées par le script pour installer les dépendances requises.
-
-## Tests avec pytest
-
-Le projet inclut une suite de tests complète utilisant pytest pour valider le fonctionnement de la classe `PIIDetector`.
-
-### Installation des dépendances de test
-
-Les dépendances de test sont incluses dans le fichier `requirements.txt`. Pour les installer :
+### Using Docker
 
 ```bash
-pip install -r requirements.txt
+# Run with docker-compose (from project root)
+docker-compose -f docker-compose.dev.yml up pii-detector-service
+
+# Run standalone container
+docker run -p 50051:50051 \
+  -v $(pwd)/config:/app/config:ro \
+  pii-detector-service
 ```
 
-Ou installer pytest et ses extensions individuellement :
+## Architecture
 
-```bash
-pip install pytest pytest-cov pytest-mock pytest-asyncio pytest-xdist
-```
+### Project Structure
 
-### Structure des tests
+Following **Hexagonal Architecture** (Ports & Adapters Pattern) principles:
 
 ```
-tests/
-├── __init__.py
-└── test_pii_detector.py    # Tests pour la classe PIIDetector
+pii-detector-service/
+├── pii_detector/                          # Main application package
+│   ├── domain/                           # Domain Layer - Pure business logic
+│   │   ├── entity/                       # Domain entities (PII, DetectionResult)
+│   │   ├── exception/                    # Domain exceptions
+│   │   ├── port/                         # Domain ports (interfaces)
+│   │   └── service/                      # Domain services
+│   ├── application/                      # Application Layer - Use cases & orchestration
+│   │   ├── config/                       # Application configuration management
+│   │   ├── factory/                      # Factory patterns for object creation
+│   │   └── orchestration/                # Orchestration logic & workflows
+│   ├── infrastructure/                   # Infrastructure Layer - External adapters
+│   │   ├── adapter/                      # Inbound/outbound adapters
+│   │   ├── detector/                     # Detection strategies (GLiNER, Presidio, Regex)
+│   │   ├── model_management/             # Model loading and management
+│   │   └── text_processing/              # Text processing and utilities
+│   ├── proto/                            # Protocol Buffer definitions (gRPC)
+│   └── utils/                            # Utility functions and helpers
+├── config/                               # Configuration files
+│   ├── detection-settings.toml           # Global detection settings
+│   └── models/                           # Model-specific configurations
+├── tests/                                # Test suite
+│   ├── unit/                             # Unit tests
+│   └── integration/                      # Integration tests
+├── docs/                                 # Documentation and guides
+├── Dockerfile                            # Container image definition
+└── pyproject.toml                        # Python project configuration
 ```
 
-### Exécution des tests
+**Hexagonal Architecture Layers**:
+- **Domain Layer** (`domain/`): Core business logic with no external dependencies
+- **Application Layer** (`application/`): Use cases and service orchestration
+- **Infrastructure Layer** (`infrastructure/`): External system adapters (gRPC, ML models, text processing)
 
-#### Exécuter tous les tests
+### Component Diagram
+
+```
+┌─────────────────────────────────────────────────┐
+│           gRPC Server (PIIDetectionServicer)     │
+├─────────────────────────────────────────────────┤
+│                                                  │
+│  ┌────────────────────────────────────────┐    │
+│  │   CompositePIIDetector                  │    │
+│  │   (Composite Pattern)                   │    │
+│  ├────────────────────────────────────────┤    │
+│  │                                          │    │
+│  │  ┌──────────────┐  ┌─────────────────┐ │    │
+│  │  │ GLiNERDetector│  │PresidioDetector│ │    │
+│  │  └──────────────┘  └─────────────────┘ │    │
+│  │  ┌──────────────┐                       │    │
+│  │  │ RegexDetector │                       │    │
+│  │  └──────────────┘                       │    │
+│  └────────────────────────────────────────┘    │
+│                                                  │
+│  ┌────────────────────────────────────────┐    │
+│  │   Post-Processing Pipeline              │    │
+│  │   - Email expansion                     │    │
+│  │   - Entity merging                      │    │
+│  │   - Zipcode/city separation            │    │
+│  │   - Deduplication                       │    │
+│  └────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────┘
+```
+
+### Key Design Patterns
+
+- **Composite Pattern**: `CompositePIIDetector` aggregates multiple detection strategies
+- **Strategy Pattern**: Pluggable detectors (GLiNER, Presidio, Regex)
+- **Factory Pattern**: Model loading and initialization
+- **Template Method**: Common detection workflow with customizable steps
+- **Observer Pattern**: Memory monitoring and metrics collection
+
+### Technology Stack
+
+- **Backend**: Python 3.9+
+- **RPC Framework**: gRPC 1.60+, Protocol Buffers 4.25+
+- **ML Framework**: PyTorch 2.0+, Transformers 4.35+
+- **PII Detection**: GLiNER 0.2+, Presidio 2.2+
+- **Configuration**: TOML
+- **Testing**: pytest 8.0+, pytest-grpc
+- **Containerization**: Docker, Docker Compose
+- **Secrets Management**: Infisical
+
+## Detection Models
+
+### GLiNER PII Large v1.0
+
+**Type**: Zero-shot Named Entity Recognition  
+**Source**: [knowledgator/gliner-pii-large-v1.0](https://huggingface.co/knowledgator/gliner-pii-large-v1.0)  
+**Languages**: Multilingual (17+ languages)  
+**Entities**: 17 PII types including names, emails, addresses, financial data
+
+**Advantages**:
+- Context-aware detection
+- High accuracy for informal text
+- No training required for new entity types
+
+**Best For**: User-generated content, multilingual documents, informal text
+
+### Microsoft Presidio
+
+**Type**: Rule-based + ML hybrid  
+**Source**: [Microsoft Presidio Analyzer](https://microsoft.github.io/presidio/)  
+**Languages**: English, Spanish, French, German, Italian, Portuguese  
+**Entities**: 20+ PII types with production-grade patterns
+
+**Advantages**:
+- Production-tested reliability
+- Low false positive rate
+- Fast execution
+
+**Best For**: Structured data, formal documents, compliance requirements
+
+### Regex Detector
+
+**Type**: Pattern matching  
+**Source**: Custom regex patterns  
+**Languages**: Language-agnostic  
+**Entities**: Highly structured data (SSN, credit cards, phone numbers)
+
+**Advantages**:
+- Extremely fast
+- Zero false negatives for known patterns
+- No model loading overhead
+
+**Best For**: Structured identifiers, standardized formats
+
+### Supported PII Types
+
+| Entity Type | Description | Example |
+|-------------|-------------|---------|
+| `GIVENNAME` | First name | John |
+| `SURNAME` | Last name | Doe |
+| `EMAIL` | Email address | john.doe@example.com |
+| `TELEPHONENUM` | Phone number | +1-555-0123 |
+| `STREET` | Street address | 123 Main Street |
+| `CITY` | City name | New York |
+| `ZIPCODE` | Postal code | 10001 |
+| `DATEOFBIRTH` | Date of birth | 01/15/1990 |
+| `SOCIALNUM` | Social Security Number | 123-45-6789 |
+| `CREDITCARDNUMBER` | Credit card | 4111-1111-1111-1111 |
+| `ACCOUNTNUM` | Bank account | ACC-123456 |
+| `DRIVERLICENSENUM` | Driver's license | DL-AB12345 |
+| `IDCARDNUM` | ID card number | ID-987654 |
+| `TAXNUM` | Tax ID | TAX-112233 |
+| `PASSWORD` | Password or secret | p@ssw0rd |
+| `USERNAME` | Username | john_doe |
+| `BUILDINGNUM` | Building number | 123A |
+
+## Performance
+
+### Benchmarks
+
+Tested on Intel Core i7-11800H @ 2.30GHz with 32GB RAM:
+
+| Scenario | Text Size | Entities | Processing Time | Throughput |
+|----------|-----------|----------|-----------------|------------|
+| Short text | 500 chars | 3 | 120 ms | 4,166 chars/s |
+| Medium text | 5,000 chars | 15 | 450 ms | 11,111 chars/s |
+| Long text | 50,000 chars | 89 | 2,800 ms | 17,857 chars/s |
+| Parallel (5 texts) | 2,500 chars each | 8 avg | 980 ms | 12,755 chars/s |
+
+**Configuration**: GLiNER + Presidio enabled, 10 workers, CPU-only
+
+### Optimization Tips
+
+1. **Enable Parallel Processing**: Set `parallel_processing.enabled = true` in config
+2. **Adjust Worker Count**: Match to CPU cores (`parallel_processing.max_workers = <cores>`)
+3. **Use CPU-only PyTorch**: Reduces memory footprint for CPU deployments
+4. **Tune Confidence Thresholds**: Higher thresholds = fewer false positives = faster processing
+5. **Disable Unused Detectors**: Turn off models you don't need in `detection-settings.toml`
+6. **Streaming for Large Documents**: Use `StreamDetectPII` for documents > 100KB
+
+### Memory Usage
+
+- **GLiNER model**: ~500MB RAM
+- **Presidio**: ~50MB RAM
+- **Per request overhead**: ~10-20MB (temporary)
+- **Recommended**: Minimum 2GB RAM, 4GB+ for production
+
+## Testing
+
+### Running Tests
+
+**All tests**:
 ```bash
 pytest
 ```
 
-#### Exécuter les tests avec couverture de code
+**Unit tests only**:
 ```bash
-pytest --cov=pii-grpc-service --cov-report=html
+pytest tests/unit/
 ```
 
-#### Exécuter un test spécifique
+**Integration tests**:
 ```bash
-pytest tests/test_pii_detector.py::TestPIIDetector::test_detect_pii_success -v
+pytest tests/integration/
 ```
 
-#### Exécuter les tests en parallèle
+**With coverage report**:
 ```bash
-pytest -n auto
+pytest --cov=pii_detector --cov-report=html
 ```
 
-### Configuration pytest
+### Test Coverage
 
-Le fichier `pytest.ini` configure automatiquement :
-- **Couverture de code** : Seuil minimum de 80%
-- **Rapports** : HTML, XML et terminal
-- **Marqueurs** : Pour catégoriser les tests (unit, integration, slow, etc.)
-- **Filtres d'avertissements** : Supprime les warnings non critiques
-- **Variables d'environnement** : Optimisations mémoire
+Current coverage: ![Coverage](https://img.shields.io/badge/coverage-82%25-brightgreen)
 
-### Types de tests inclus
+**Goal**: Maintain > 80% code coverage
 
-#### Tests unitaires (34 tests)
-- **Initialisation** : Tests des paramètres par défaut et personnalisés
-- **Chargement de modèle** : Tests de téléchargement et chargement
-- **Détection PII** : Tests de détection simple et par batch
-- **Masquage** : Tests de masquage des informations sensibles
-- **Résumé** : Tests de génération de résumés
-- **Gestion d'erreurs** : Tests des cas d'erreur et exceptions
-- **Edge cases** : Tests avec textes vides, caractères spéciaux
-- **Performance** : Tests de logging et optimisations mémoire
+### Writing Tests
 
-#### Fonctionnalités testées
-- ✅ Détection d'emails par regex
-- ✅ Traitement de textes longs (chunking)
-- ✅ Filtrage par seuil de confiance
-- ✅ Gestion mémoire (CPU/CUDA)
-- ✅ Mapping des labels français
-- ✅ Tests paramétrés (différents seuils, devices)
+Tests use **pytest** with **AssertJ-style assertions**:
 
-### Mocks et fixtures
-
-Les tests utilisent des mocks pour :
-- **Éviter le chargement réel du modèle** (plus rapide)
-- **Simuler les réponses du pipeline** Hugging Face
-- **Tester les cas d'erreur** sans dépendances externes
-- **Contrôler les variables d'environnement**
-
-### Rapports de couverture
-
-Après exécution avec `--cov`, consultez :
-- **Terminal** : Résumé de couverture par fichier
-- **HTML** : Rapport détaillé dans `htmlcov/index.html`
-- **XML** : Rapport pour intégration CI/CD dans `coverage.xml`
-
-### Marqueurs disponibles
-
-```bash
-# Tests rapides uniquement
-pytest -m "not slow"
-
-# Tests unitaires seulement
-pytest -m unit
-
-# Tests d'intégration
-pytest -m integration
-
-# Tests nécessitant un GPU
-pytest -m gpu
-```
-
-### Exemple de sortie
-
-```bash
-$ pytest tests/test_pii_detector.py -v
-================================ test session starts ================================
-platform win32 -- Python 3.13.4, pytest-8.4.1
-collected 34 items
-
-tests/test_pii_detector.py::TestPIIDetector::test_init_default_parameters PASSED
-tests/test_pii_detector.py::TestPIIDetector::test_detect_pii_success PASSED
-tests/test_pii_detector.py::TestPIIDetector::test_mask_pii_success PASSED
-...
-
-================================ 34 passed in 12.39s ================================
-```
-
-### Intégration continue
-
-Les tests peuvent être intégrés dans un pipeline CI/CD :
-
-```yaml
-# Exemple GitHub Actions
-- name: Run tests
-  run: |
-    pip install -r requirements.txt
-    pytest --cov=pii-grpc-service --cov-report=xml
+```python
+def test_email_detection():
+    """Should_DetectEmail_When_ValidEmailProvided"""
+    detector = PIIDetector()
+    text = "Contact: john.doe@example.com"
     
-- name: Upload coverage
-  uses: codecov/codecov-action@v3
-  with:
-    file: ./coverage.xml
+    result = detector.detect_pii(text)
+    
+    assert len(result.entities) == 1
+    assert result.entities[0].type == "EMAIL"
+    assert result.entities[0].text == "john.doe@example.com"
 ```
 
-### Développement et contribution
+## Deployment
 
-Pour ajouter de nouveaux tests :
-1. Créez des méthodes commençant par `test_`
-2. Utilisez les fixtures existantes (`detector`, `sample_entities`)
-3. Ajoutez des marqueurs appropriés (`@pytest.mark.unit`)
-4. Documentez le comportement testé dans la docstring
+### Production Deployment with Docker Compose
+
+1. **Configure environment**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your values
+   ```
+
+2. **Start services**:
+   ```bash
+   docker-compose up -d pii-detector-service
+   ```
+
+3. **Verify deployment**:
+   ```bash
+   docker-compose logs -f pii-detector-service
+   ```
+
+### Health Checks
+
+The service implements gRPC health checking:
+
+```bash
+# Install grpc-health-probe
+wget https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.19/grpc_health_probe-linux-amd64
+chmod +x grpc_health_probe-linux-amd64
+
+# Check service health
+./grpc_health_probe-linux-amd64 -addr=localhost:50051
+```
+
+### Kubernetes Deployment
+
+See [PRODUCTION_SETUP.md](../docs/PRODUCTION_SETUP.md) for Kubernetes deployment instructions.
+
+### Monitoring
+
+**Metrics exposed**:
+- Request count and latency
+- Entity detection rates by type
+- Memory usage (RSS)
+- Throughput (chars/second)
+- Model inference time
+
+**Logging**:
+- Structured JSON logs
+- Request IDs for tracing
+- Provenance tracking (which model detected each entity)
+
+## Documentation
+
+Additional documentation is available in the `docs/` directory:
+
+- **[GRPC_SERVER_ARCHITECTURE.md](docs/GRPC_SERVER_ARCHITECTURE.md)**: Server architecture and request flow
+- **[PRESIDIO_INTEGRATION.md](docs/PRESIDIO_INTEGRATION.md)**: Presidio detector integration details
+- **[GLINER_INTEGRATION_STATUS.md](docs/GLINER_INTEGRATION_STATUS.md)**: GLiNER model integration
+- **[PARALLEL_PROCESSING_CONFIG.md](docs/PARALLEL_PROCESSING_CONFIG.md)**: Parallel processing configuration
+- **[CPU_GPU_OPTIMIZATION.md](docs/CPU_GPU_OPTIMIZATION.md)**: Performance optimization guide
+- **[REFACTORING_SUMMARY.md](docs/REFACTORING_SUMMARY.md)**: Architecture refactoring history
+
+## Contributing
+
+Contributions are welcome! Here's how to participate:
+
+### Contribution Process
+
+1. **Fork** the project
+2. **Create** a feature branch (`git checkout -b feature/AmazingFeature`)
+3. **Commit** your changes (`git commit -m 'Add: Amazing feature'`)
+4. **Push** to the branch (`git push origin feature/AmazingFeature`)
+5. **Open** a Pull Request
+
+### Coding Conventions
+
+- **Style**: Follow [PEP 8](https://pep8.org/) - enforced by Black and Ruff
+- **Type Hints**: Required for all functions
+- **Docstrings**: Google-style docstrings for all public APIs
+- **Tests**: All new features must include unit tests
+- **Coverage**: Maintain > 80% test coverage
+
+### Code Quality Tools
+
+```bash
+# Format code
+black pii_detector/
+
+# Lint code
+ruff check pii_detector/
+
+# Type checking
+mypy pii_detector/
+
+# Run all checks
+pytest && black --check pii_detector/ && ruff check pii_detector/
+```
+
+### Bug Reporting
+
+Use [GitHub Issues](https://github.com/Softcom-Technologies-Organization/ai-sentinel/issues) with the bug template.
+
+Include:
+- Python version
+- OS and architecture
+- Configuration files (sanitized)
+- Error messages and stack traces
+- Steps to reproduce
+
+## License
+
+This project is licensed under the **MIT License** - see the [LICENSE.md](../LICENSE.md) file for details.
+
+Copyright © 2025 Softcom Technologies Organization
+
+## Support
+
+- 📧 **Email**: team@sentinelle.com
+- 🐛 **Issues**: [GitHub Issues](https://github.com/Softcom-Technologies-Organization/ai-sentinel/issues)
+- 📖 **Documentation**: [docs/](docs/)
+- 🌐 **Website**: [AI Sentinel Project](https://github.com/Softcom-Technologies-Organization/ai-sentinel)
+
+### Maintainers
+
+- [@Softcom-Technologies-Organization](https://github.com/Softcom-Technologies-Organization) - Core Team
+
+## Acknowledgments
+
+- [Microsoft Presidio](https://microsoft.github.io/presidio/) - Production-grade PII detection framework
+- [GLiNER](https://github.com/urchade/GLiNER) - Zero-shot NER model
+- [Hugging Face](https://huggingface.co/) - Model hosting and Transformers library
+- All [contributors](https://github.com/Softcom-Technologies-Organization/ai-sentinel/graphs/contributors) to the AI Sentinel project

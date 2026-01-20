@@ -1,8 +1,9 @@
 import os
 import warnings
+from typing import List, Dict, Tuple
+
 from huggingface_hub import hf_hub_download
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
-from typing import List, Dict, Tuple
 
 # Supprimer les avertissements
 warnings.filterwarnings("ignore")

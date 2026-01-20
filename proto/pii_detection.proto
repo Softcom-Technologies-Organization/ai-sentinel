@@ -19,6 +19,11 @@ message PIIDetectionRequest {
   // Optional confidence threshold (0.0-1.0)
   // If not provided, a default value will be used
   float threshold = 2;
+  
+  // Optional flag to fetch fresh configuration from database
+  // When true, fetches latest config from PostgreSQL before processing
+  // When false or not provided, uses default/cached configuration
+  bool fetch_config_from_db = 3;
 }
 
 // Response message containing the PII detection results
@@ -76,4 +81,15 @@ message PIIEntity {
   
   // Confidence score (0.0-1.0)
   float score = 6;
+
+  // The source detector that found this entity
+  DetectorSource source = 7;
+}
+
+// Source of the detected PII
+enum DetectorSource {
+  UNKNOWN_SOURCE = 0;
+  GLINER = 1;
+  PRESIDIO = 2;
+  REGEX = 3;
 }

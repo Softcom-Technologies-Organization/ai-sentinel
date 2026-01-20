@@ -4,8 +4,9 @@ Unit tests for CompositePIIDetector.
 Tests the hybrid detection approach combining ML and regex detectors.
 """
 
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, MagicMock, patch
 
 from pii_detector.application.orchestration.composite_detector import CompositePIIDetector
 from pii_detector.domain.entity.pii_entity import PIIEntity

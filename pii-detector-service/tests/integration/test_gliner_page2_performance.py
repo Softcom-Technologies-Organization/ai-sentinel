@@ -9,11 +9,9 @@ Ce test mesure:
 """
 
 import os
-import time
-import pytest
-from typing import List
-
 import sys
+import time
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from service.detector.gliner_detector import GLiNERDetector

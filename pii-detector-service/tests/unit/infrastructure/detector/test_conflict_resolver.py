@@ -8,16 +8,14 @@ CONSOLIDATED: Tests the 44 PII types across 7 categories.
 """
 
 import logging
-import pytest
-from typing import Dict, List, Tuple
 
+import pytest
+
+from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.infrastructure.detector.conflict_resolver import (
     ConflictResolver,
-    ConflictGroup,
     CONFLICT_GROUPS,
-    CATEGORY_PRIORITY,
 )
-from pii_detector.domain.entity.pii_entity import PIIEntity
 
 
 class TestConflictResolverInitialization:

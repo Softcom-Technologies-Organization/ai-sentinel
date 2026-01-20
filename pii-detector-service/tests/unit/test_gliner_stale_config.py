@@ -8,8 +8,7 @@ This test suite verifies the fix for the bug where database configuration change
 were not reflected in real-time because configs were cached at initialization.
 """
 
-import pytest
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock
 
 from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
 

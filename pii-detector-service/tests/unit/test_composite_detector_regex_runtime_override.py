@@ -15,9 +15,9 @@ consistency throughout the entire scan. Detector flags are applied dynamically
 without service restart."
 """
 
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from typing import List
 
 from pii_detector.application.orchestration.composite_detector import (
     CompositePIIDetector,

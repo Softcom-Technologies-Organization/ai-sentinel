@@ -8,9 +8,8 @@ This ensures that Presidio's whitelist and scoring thresholds are built only
 from relevant configurations, preventing incorrect detection behavior.
 """
 
-import pytest
-from unittest.mock import Mock, patch
-from pathlib import Path
+from unittest.mock import patch
+
 from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
 
 

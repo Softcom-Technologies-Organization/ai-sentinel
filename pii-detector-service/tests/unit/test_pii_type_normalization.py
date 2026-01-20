@@ -5,7 +5,6 @@ This test ensures that PII types sent via gRPC are properly normalized
 to match Java PiiType enum expectations (e.g., 'EMAIL' not 'PIIType.EMAIL').
 """
 
-import pytest
 from pii_detector.domain.entity.pii_type import PIIType
 
 

@@ -5,12 +5,13 @@ This module contains comprehensive tests for the ModelManager class,
 covering model downloading, loading, and error handling scenarios.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock, call
+from unittest.mock import Mock, patch
 
-from pii_detector.infrastructure.model_management.model_manager import ModelManager
+import pytest
+
 from pii_detector.application.config.detection_policy import DetectionConfig
-from pii_detector.domain.exception.exceptions import APIKeyError, ModelLoadError
+from pii_detector.domain.exception.exceptions import ModelLoadError
+from pii_detector.infrastructure.model_management.model_manager import ModelManager
 
 
 class TestModelManagerInit:

@@ -8,7 +8,7 @@ Test Naming Convention: Should_ExpectedBehavior_When_StateUnderTest
 """
 
 import logging
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 

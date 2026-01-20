@@ -5,14 +5,15 @@ This module contains comprehensive tests for the DetectorFactory class,
 covering registration, creation, and factory patterns.
 """
 
-import pytest
 from unittest.mock import Mock, patch
 
+import pytest
+
+from pii_detector.application.config.detection_policy import DetectionConfig
 from pii_detector.application.factory.detector_factory import (
     DetectorFactory,
     create_default_factory
 )
-from pii_detector.application.config.detection_policy import DetectionConfig
 
 
 class TestDetectorFactoryInitialization:

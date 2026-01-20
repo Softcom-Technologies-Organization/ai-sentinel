@@ -7,8 +7,8 @@ before any test modules are loaded.
 """
 
 import sys
-from unittest.mock import Mock, MagicMock
 import types
+from unittest.mock import Mock, MagicMock
 
 
 # Create a comprehensive mock for torch module

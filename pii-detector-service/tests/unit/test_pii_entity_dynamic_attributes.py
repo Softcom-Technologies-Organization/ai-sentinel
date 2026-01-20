@@ -9,6 +9,7 @@ the post-filtering logic couldn't access it reliably.
 """
 
 import pytest
+
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.entity.pii_type import PIIType
 

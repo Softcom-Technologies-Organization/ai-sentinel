@@ -8,14 +8,16 @@ Test Naming Convention: Should_ExpectedBehavior_When_StateUnderTest
 """
 
 import logging
+
 import pytest
 import unicodedata
+
 from pii_detector.application.config.detection_policy import DetectionConfig
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.exception.exceptions import PIIDetectionError, \
-  ModelNotLoadedError
+    ModelNotLoadedError
 from pii_detector.infrastructure.detector.pii_detector import PIIDetector, \
-  setup_logging
+    setup_logging
 
 
 # ============================================================================

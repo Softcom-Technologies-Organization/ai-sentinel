@@ -1,8 +1,9 @@
 import os
-import pytest
+import sys
 from pathlib import Path
 
-import sys
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from pii_detector.service.detector.gliner_detector import GLiNERDetector

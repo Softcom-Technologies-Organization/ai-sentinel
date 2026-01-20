@@ -1,8 +1,9 @@
-import os
 import importlib
+import os
+import sys
+
 import pytest
 
-import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from infrastructure.detector.pii_detector import PIIEntity

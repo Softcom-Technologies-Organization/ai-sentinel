@@ -1,8 +1,8 @@
 import os
-import pytest
-from unittest.mock import patch, MagicMock
-
 import sys
+
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from infrastructure.detector.pii_detector import PIIDetector, PIIEntity

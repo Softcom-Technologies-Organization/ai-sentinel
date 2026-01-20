@@ -9,13 +9,12 @@ This module validates the enhancements made to PresidioDetector:
 - Unknown entity logging
 """
 
-import pytest
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
-from presidio_analyzer import RecognizerResult
+from unittest.mock import Mock, patch
 
-from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
+import pytest
+
 from pii_detector.domain.entity.pii_type import PIIType
+from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
 
 
 class TestPresidioDetectorImprovements:

@@ -7,21 +7,20 @@ covering multi-pass detection, conflict resolution, and span aggregation.
 Uses mocking to avoid GPU/model dependencies.
 """
 
-import logging
+from unittest.mock import Mock, patch
+
 import pytest
-from typing import Dict, List
-from unittest.mock import Mock, MagicMock, patch
 
 from pii_detector.application.config.detection_policy import DetectionConfig
 from pii_detector.domain.entity.detector_source import DetectorSource
 from pii_detector.domain.entity.pii_entity import PIIEntity
-from pii_detector.domain.exception.exceptions import ModelNotLoadedError, PIIDetectionError
+from pii_detector.domain.exception.exceptions import ModelNotLoadedError
+from pii_detector.infrastructure.detector.conflict_resolver import ConflictResolver
 from pii_detector.infrastructure.detector.multi_pass_gliner_detector import (
     MultiPassGlinerDetector,
     SpanKey,
     AggregatedSpan,
 )
-from pii_detector.infrastructure.detector.conflict_resolver import ConflictResolver
 
 
 class TestSpanKey:

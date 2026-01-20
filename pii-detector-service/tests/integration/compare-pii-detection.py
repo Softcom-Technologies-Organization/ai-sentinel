@@ -7,11 +7,8 @@ on the same text and compares the results to evaluate the effectiveness of each 
 """
 
 import importlib.util
-import os
 import re
-import subprocess
 import sys
-import time
 from pathlib import Path
 
 

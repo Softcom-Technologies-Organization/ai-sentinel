@@ -5,9 +5,9 @@ These tests validate the behavior of _detect_pii_with_chunking method
 before and after refactoring to ensure no regression.
 """
 
+from unittest.mock import Mock, patch
+
 import pytest
-from typing import List
-from unittest.mock import Mock, MagicMock, patch
 
 from pii_detector.application.config.detection_policy import DetectionConfig
 from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector

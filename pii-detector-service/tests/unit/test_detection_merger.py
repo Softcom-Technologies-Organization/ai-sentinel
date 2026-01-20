@@ -5,11 +5,10 @@ This module contains comprehensive tests for the DetectionMerger class,
 covering deduplication, overlap resolution, and provenance logging.
 """
 
-import pytest
 from unittest.mock import Mock, patch
 
-from pii_detector.domain.service.detection_merger import DetectionMerger
 from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.domain.service.detection_merger import DetectionMerger
 
 
 class TestDetectionMergerInitialization:

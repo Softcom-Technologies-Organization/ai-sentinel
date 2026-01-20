@@ -5,10 +5,10 @@ Tests that Presidio detector correctly uses fresh configs passed at request time
 instead of relying on stale cached configs from initialization.
 """
 
-import pytest
-from unittest.mock import Mock, MagicMock
-from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
+from unittest.mock import Mock
+
 from pii_detector.domain.entity.pii_type import PIIType
+from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
 
 
 class TestPresidioStaleConfigFix:

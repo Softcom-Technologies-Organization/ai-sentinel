@@ -1,12 +1,12 @@
-import pytest
 import os
-import sys
 import time
-from pathlib import Path
 from collections import defaultdict
 from unittest.mock import patch, MagicMock
+
+import pytest
+
 from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
-from presidio_analyzer import AnalyzerEngine, RecognizerRegistry
+
 # Configurable threshold map for Presidio PII types
 # Easily modify these values to adjust detection sensitivity per PII type
 PRESIDIO_PII_TYPE_THRESHOLDS = {

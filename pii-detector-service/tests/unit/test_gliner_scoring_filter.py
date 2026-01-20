@@ -5,11 +5,11 @@ This module tests the _apply_entity_scoring_filter method
 to ensure per-entity-type threshold filtering works correctly.
 """
 
-import pytest
+from unittest.mock import patch
+
 from pii_detector.application.config.detection_policy import DetectionConfig
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
-from unittest.mock import Mock, patch
 
 
 class TestGLiNERScoringFilter:

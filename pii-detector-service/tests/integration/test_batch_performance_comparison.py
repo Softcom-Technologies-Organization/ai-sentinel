@@ -13,16 +13,14 @@ Stratégies testées:
 - Multi-Text Parallel: traitement parallèle de plusieurs textes (simulation batch)
 """
 
-import asyncio
 import concurrent.futures
 import json
-import statistics
+import random
 import sys
 import time
 from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import List, Dict, Tuple
-import random
+from typing import List, Dict
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 

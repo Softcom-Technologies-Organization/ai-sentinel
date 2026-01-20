@@ -5,16 +5,14 @@ This module contains comprehensive tests for the PIIDetectionServicer class,
 MemoryLimitedServer class, and related functionality in pii_service.py.
 """
 
-import gc
 import os
-import pytest
-import time
-import threading
-from unittest.mock import Mock, patch, MagicMock, call
-from typing import Dict, List
-
 # Add the service directory to the path for imports
 import sys
+import threading
+from unittest.mock import Mock, patch
+
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import grpc
@@ -628,8 +626,7 @@ class TestStreamDetectPII:
     @pytest.fixture
     def mock_streaming_detector(self):
         """Create a mock detector for streaming tests."""
-        from pii_detector.domain.entity.pii_entity import PIIEntity
-        
+
         detector = Mock()
         detector.config = Mock(chunk_size=1000, chunk_overlap=100)
         detector.pipeline = Mock(return_value=[])

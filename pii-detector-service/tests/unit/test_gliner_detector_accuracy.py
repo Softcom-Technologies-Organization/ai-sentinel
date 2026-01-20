@@ -1,6 +1,7 @@
-from gliner import GLiNER
-from pathlib import Path
 from collections import Counter
+from pathlib import Path
+
+from gliner import GLiNER
 
 # Load the BI-ENCODER model (supports unlimited labels!)
 bi_encoder_model = GLiNER.from_pretrained("gretelai/gretel-gliner-bi-large-v1.0")

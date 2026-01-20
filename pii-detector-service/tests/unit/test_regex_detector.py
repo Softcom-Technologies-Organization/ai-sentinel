@@ -6,10 +6,9 @@ validation logic, and overlap resolution.
 """
 
 import pytest
-from pathlib import Path
 
-from pii_detector.infrastructure.detector.regex_detector import RegexDetector, RegexPattern
 from pii_detector.domain.entity.pii_entity import PIIEntity
+from pii_detector.infrastructure.detector.regex_detector import RegexDetector, RegexPattern
 
 
 class TestRegexPattern:

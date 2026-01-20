@@ -5,9 +5,7 @@ Business Rule: PII type configs with a specific detector (GLINER, PRESIDIO, REGE
 should only apply to entities detected by that detector, not to entities from other sources.
 """
 
-import pytest
 import importlib
-from unittest.mock import Mock, MagicMock
 
 # Import workaround: "in" is a Python reserved keyword in the module path
 # pii_detector.infrastructure.adapter.in.grpc.pii_service

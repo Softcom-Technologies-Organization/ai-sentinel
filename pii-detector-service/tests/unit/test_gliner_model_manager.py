@@ -5,12 +5,13 @@ This module contains comprehensive tests for the GLiNERModelManager class,
 covering model downloading, loading, and error handling scenarios.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
-from pii_detector.infrastructure.model_management.gliner_model_manager import GLiNERModelManager
+import pytest
+
 from pii_detector.application.config.detection_policy import DetectionConfig
 from pii_detector.domain.exception.exceptions import ModelLoadError
+from pii_detector.infrastructure.model_management.gliner_model_manager import GLiNERModelManager
 
 
 class TestGLiNERModelManagerInit:

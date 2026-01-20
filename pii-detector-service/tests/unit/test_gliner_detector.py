@@ -5,17 +5,16 @@ This module contains comprehensive tests for the GLiNERDetector class,
 covering all methods and edge cases for 100% code coverage.
 """
 
-import logging
+from unittest.mock import Mock, patch
+
 import pytest
-from typing import List, Dict
-from unittest.mock import Mock, patch, MagicMock
 
 from pii_detector.application.config.detection_policy import DetectionConfig
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.exception.exceptions import ModelNotLoadedError
 from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
 from pii_detector.infrastructure.text_processing.semantic_chunker import \
-  ChunkResult
+    ChunkResult
 
 
 class TestGLiNERDetectorInitialization:

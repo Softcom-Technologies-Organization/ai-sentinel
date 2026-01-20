@@ -7,7 +7,6 @@ import pytest
 from pii_detector.infrastructure.adapter.out.database_config_adapter import (
     DatabaseConfigAdapter,
 )
-
 # Reuse the PostgreSQL Testcontainer fixture to populate DB using data.sql
 from .fixtures.database_fixtures import postgres_container  # noqa: F401
 

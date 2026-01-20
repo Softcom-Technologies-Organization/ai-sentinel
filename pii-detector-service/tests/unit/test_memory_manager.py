@@ -6,9 +6,7 @@ covering memory optimization, device-specific optimizations, and cache clearing.
 """
 
 import os
-import gc
-import pytest
-from unittest.mock import Mock, patch, call
+from unittest.mock import patch
 
 from pii_detector.infrastructure.model_management.memory_manager import MemoryManager
 

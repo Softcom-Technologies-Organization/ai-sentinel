@@ -5,9 +5,9 @@ This module contains comprehensive tests for the MultiModelPIIDetector class,
 covering multi-model orchestration, parallel detection, deduplication, and overlap resolution.
 """
 
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from typing import List
 
 from pii_detector.application.orchestration.multi_detector import (
     MultiModelPIIDetector,
@@ -16,7 +16,6 @@ from pii_detector.application.orchestration.multi_detector import (
     _get_provenance_logging
 )
 from pii_detector.domain.entity.pii_entity import PIIEntity
-from pii_detector.application.config.detection_policy import DetectionConfig
 
 
 @pytest.fixture

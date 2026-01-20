@@ -5,12 +5,12 @@ These tests validate the behavior of load_model() method
 before and after refactoring to ensure no regression.
 """
 
-import pytest
-from unittest.mock import Mock, MagicMock, patch
-from typing import Any
+from unittest.mock import Mock, patch
 
-from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
+import pytest
+
 from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.infrastructure.detector.gliner_detector import GLiNERDetector
 
 
 class TestGLiNERDetectorLoadModel:

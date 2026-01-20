@@ -133,17 +133,6 @@ def _log_windows_env_setup_instructions():
     logger.info("Note: After setting environment variables, you may need to restart your command prompt or IDE.")
 
 
-def _log_environment_variables():
-    """Log environment variables for debugging, masking sensitive values."""
-    logger.debug("Environment variables visible to Python:")
-    for key, value in os.environ.items():
-        if any(term in key.lower() for term in ["key", "token", "secret", "password"]):
-            masked_value = value[:3] + "..." if value else None
-            logger.debug(f"  {key}: {masked_value}")
-        else:
-            logger.debug(f"  {key}: {value}")
-
-
 def _validate_api_key(api_key, env_api_key):
     """Validate and set API key, exit if not available."""
     hugging_face_api_key = api_key or env_api_key
@@ -155,7 +144,6 @@ def _validate_api_key(api_key, env_api_key):
         if sys.platform == "win32":
             _log_windows_env_setup_instructions()
         
-        _log_environment_variables()
         sys.exit(1)
     
     if api_key:

@@ -40,10 +40,10 @@ llm_detection_enabled = true
 multipass_gliner_enabled = true
 
 # Log detailed provenance information about which model detected each entity
-log_provenance = true
+log_provenance = false
 
 # Log throughput metrics (chars/second) for performance monitoring
-log_throughput = true
+log_throughput = false
 
 # Token overlap for chunk splitting (prevents boundary truncation)
 # Recommended 10-20% of max_length for optimal entity detection at boundaries

@@ -147,7 +147,7 @@
     "detectors": {
       "gliner": {
         "label": "Détecteur GLiNER",
-        "description": "Reconnaissance d'entités basée sur l'IA utilisant le modèle Piiranha pour détecter les informations personnelles"
+        "description": "Reconnaissance d'entités basée sur l'IA utilisant le modèle GLiNER pour détecter les informations personnelles"
       },
       "presidio": {
         "label": "Détecteur Presidio",

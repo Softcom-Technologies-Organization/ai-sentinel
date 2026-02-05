@@ -11,6 +11,12 @@
   margin-bottom: 1rem;
 }
 
+.app-logo {
+  height: 6rem;
+  width: auto;
+  mix-blend-mode: multiply;
+}
+
 .spacer {
   flex: 1;
 }

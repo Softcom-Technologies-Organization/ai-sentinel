@@ -12,7 +12,7 @@
 }
 
 .app-logo {
-  height: 6rem;
+  height: 8rem;
   width: auto;
   mix-blend-mode: multiply;
 }
@@ -416,7 +416,28 @@
 /* Search input - full width with spacing below */
 .space-filters .search-global {
   width: 100%;
+  height: 2.5rem;
   margin-bottom: 0.5rem;
+}
+
+.space-filters .scan-status-badge {
+  width: 100%;
+  height: 2.5rem;
+  margin-left: 0;
+  margin-bottom: 0.5rem;
+  box-sizing: border-box;
+}
+
+.space-filters .filter-item {
+  width: 100%;
+}
+
+.space-filters ::ng-deep p-select {
+  width: 100%;
+}
+
+.space-filters ::ng-deep p-select .p-select {
+  width: 100%;
 }
 
 /* Action buttons container - keep all buttons on a single line */

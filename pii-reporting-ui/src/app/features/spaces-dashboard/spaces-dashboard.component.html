@@ -3,16 +3,10 @@
 
 <div class="page p-3">
   <div class="header">
-    <img src="assets/softcom_logo_1.png" alt="Softcom Logo" class="app-logo" />
+    <img ngSrc="assets/softcom_logo_1.png" alt="Softcom Logo" class="app-logo" height="696" width="696" />
     <h2 class="m-0">
       {{ 'dashboard.title' | transloco }}
-      <output class="scan-status-badge"
-              [class.scanning]="isStreaming()"
-              [class.inactive]="!isStreaming()"
-              [attr.aria-live]="isStreaming() ? 'polite' : 'off'"
-              [attr.aria-label]="(isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco">
-        {{ (isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco }}
-      </output>
+
     </h2>
     <div class="spacer"></div>
     <p-button type="button"
@@ -117,7 +111,15 @@
           </div>
         </th>
         <th id="col-status-value">
+
           <div class="space-filters">
+              <output class="scan-status-badge"
+                      [class.scanning]="isStreaming()"
+                      [class.inactive]="!isStreaming()"
+                      [attr.aria-live]="isStreaming() ? 'polite' : 'off'"
+                      [attr.aria-label]="(isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco">
+                  {{ (isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco }}
+              </output>
             <div class="filter-item">
               <p-select
                 [options]="statusOptions()"

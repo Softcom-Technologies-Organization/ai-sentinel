@@ -8,6 +8,9 @@
 [![Angular](https://img.shields.io/badge/angular-21-red.svg)](https://angular.io/)
 
 > Intelligent platform for detecting and analyzing Personally Identifiable Information (PII) in Confluence spaces, powered by advanced AI models
+## Demo video
+
+https://github.com/user-attachments/assets/d2c633d6-3209-4b2f-b80a-88fe2e41f945
 
 ## Table of Contents
 

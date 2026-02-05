@@ -23,7 +23,7 @@ RUN curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.rp
 
 WORKDIR /app
 
-COPY --from=build /workspace/target/*-SNAPSHOT.jar /app/app.jar
+COPY --from=build /workspace/target/ai-sentinel-*.jar /app/app.jar
 
 # Copy entrypoint script
 COPY pii-reporting-api/docker-entrypoint.sh /usr/local/bin/

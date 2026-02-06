@@ -578,7 +578,7 @@ services:
   # PII DETECTOR SERVICE (Python/gRPC) - PRE-BUILT IMAGE
   # ============================================================================
   pii-detector:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-pii-detector:0.0.1
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-pii-detector:1.0.0
     container_name: pii-detector-service
     restart: unless-stopped
     
@@ -633,7 +633,7 @@ services:
   # PII REPORTING API (Spring Boot) - PRE-BUILT IMAGE
   # ============================================================================
   pii-reporting-api:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-api:0.0.1
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-api:1.0.0
     container_name: pii-reporting-api
     restart: unless-stopped
     ports:
@@ -690,7 +690,7 @@ services:
   # PII REPORTING UI (Angular + Nginx) - PRE-BUILT IMAGE
   # ============================================================================
   pii-reporting-ui:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-ui:0.0.1
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-ui:1.0.0
     container_name: pii-reporting-ui
     restart: unless-stopped
     ports:

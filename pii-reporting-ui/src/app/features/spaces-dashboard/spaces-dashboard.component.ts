@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { TranslocoModule } from '@jsverse/transloco';
@@ -60,31 +60,32 @@ import { ScanControlService } from './services/scan-control.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    ButtonModule,
-    ToggleSwitchModule,
-    ToggleButtonModule,
-    PiiItemCardComponent,
-    PiiSettingsComponent,
-    BadgeModule,
-    InputTextModule,
-    SelectModule,
-    TableModule,
-    TagModule,
-    Ripple,
-    TooltipModule,
-    DataViewModule,
-    SkeletonModule,
-    ConfirmDialogModule,
-    DialogModule,
-    ToastModule,
-    TranslocoModule,
-    LanguageSelectorComponent,
-    NewSpacesBannerComponent,
-    ScanProgressBarComponent
-  ],
+    imports: [
+        CommonModule,
+        FormsModule,
+        ButtonModule,
+        ToggleSwitchModule,
+        ToggleButtonModule,
+        PiiItemCardComponent,
+        PiiSettingsComponent,
+        BadgeModule,
+        InputTextModule,
+        SelectModule,
+        TableModule,
+        TagModule,
+        Ripple,
+        TooltipModule,
+        DataViewModule,
+        SkeletonModule,
+        ConfirmDialogModule,
+        DialogModule,
+        ToastModule,
+        TranslocoModule,
+        LanguageSelectorComponent,
+        NewSpacesBannerComponent,
+        ScanProgressBarComponent,
+        NgOptimizedImage
+    ],
   templateUrl: './spaces-dashboard.component.html',
   styleUrl: './spaces-dashboard.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

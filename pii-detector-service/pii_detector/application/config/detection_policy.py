@@ -218,7 +218,6 @@ class DetectionConfig:
                 "├── detection-settings.toml  # Global settings\n"
                 "└── models/\n"
                 "    ├── gliner-pii.toml      # Model configurations\n"
-                "    ├── piiranha-v1.toml\n"
                 "    └── ...\n\n"
                 "See the old config/llm.toml for reference."
             ) from e

@@ -147,7 +147,7 @@
     "detectors": {
       "gliner": {
         "label": "Détecteur GLiNER",
-        "description": "Reconnaissance d'entités basée sur l'IA utilisant le modèle Piiranha pour détecter les informations personnelles"
+        "description": "Reconnaissance d'entités basée sur l'IA utilisant le modèle GLiNER pour détecter les informations personnelles"
       },
       "presidio": {
         "label": "Détecteur Presidio",
@@ -270,6 +270,7 @@
         "STREET": "Adresse de rue",
         "BUILDINGNUM": "Numéro de bâtiment",
         "ZIPCODE": "Code postal",
+        "ZIP_CODE": "Code postal",
         "PASSWORD": "Mot de passe",
         "API_KEY": "Clé API",
         "JWT_TOKEN": "Jeton JWT",
@@ -419,6 +420,7 @@
         "STREET": "Noms de rues et adresses",
         "BUILDINGNUM": "Numéros de bâtiment, maison ou appartement",
         "ZIPCODE": "Codes postaux",
+        "ZIP_CODE": "Codes postaux",
         "PASSWORD": "Chaînes de mot de passe et identifiants d'authentification",
         "API_KEY": "Clés API et jetons de service",
         "JWT_TOKEN": "Jetons Web JSON pour l'authentification",

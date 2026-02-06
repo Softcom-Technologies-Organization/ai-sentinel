@@ -2,6 +2,8 @@
 
 Spring Boot application to analyze Confluence spaces and detect personally identifiable information (PII) via a Python gRPC microservice.
 
+> **🎥 [Voir la vidéo de démonstration](doc/screenshots/demo.mp4)**
+
 IMPORTANT: gRPC Port 50051
 - Only the Python PII microservice server should listen on port 50051 for the service to work correctly.
 - If another process is listening on this port, you may encounter errors like "unknown service pii_detection.PIIDetectionService" or "UNAVAILABLE" on the Java side.

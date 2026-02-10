@@ -137,8 +137,62 @@
     }
   },
   "settings": {
-    "title": "Paramètres de détection d'IPI",
+    "title": "Paramètres",
     "back": "Retour au tableau de bord",
+    "tabs": {
+      "detection": "Détection d'IPI",
+      "confluence": "Connexion Confluence"
+    },
+    "confluence": {
+      "title": "Configuration de la connexion Confluence",
+      "connection": {
+        "title": "Connexion",
+        "baseUrl": "URL de base",
+        "username": "Nom d'utilisateur",
+        "apiToken": "Jeton API",
+        "apiTokenHint": "Jeton actuel :"
+      },
+      "timeouts": {
+        "title": "Délais d'attente",
+        "connectTimeout": "Délai de connexion",
+        "connectTimeoutDesc": "Temps maximum pour établir la connexion au serveur Confluence (en millisecondes)",
+        "readTimeout": "Délai de lecture",
+        "readTimeoutDesc": "Temps maximum pour recevoir une réponse du serveur Confluence (en millisecondes)",
+        "maxRetries": "Nombre de tentatives",
+        "maxRetriesDesc": "Nombre maximum de tentatives en cas d'échec de connexion"
+      },
+      "pagination": {
+        "title": "Pagination",
+        "pagesLimit": "Limite de pages par requête",
+        "pagesLimitDesc": "Nombre de pages Confluence récupérées par requête API",
+        "maxPages": "Maximum de pages",
+        "maxPagesDesc": "Nombre maximum de pages à scanner par espace Confluence"
+      },
+      "buttons": {
+        "save": "Enregistrer",
+        "test": "Tester la connexion",
+        "reset": "Réinitialiser"
+      },
+      "placeholders": {
+        "baseUrl": "https://votre-instance.atlassian.net/wiki",
+        "username": "votre.email@domaine.com",
+        "apiToken": "Entrez votre jeton API Confluence",
+        "apiTokenExisting": "Laisser vide pour conserver le jeton actuel"
+      },
+      "validation": {
+        "baseUrlRequired": "L'URL de base est requise et doit commencer par http:// ou https://",
+        "usernameRequired": "Le nom d'utilisateur est requis",
+        "apiTokenRequired": "Le jeton API est requis"
+      },
+      "messages": {
+        "saveSuccess": "Configuration de la connexion Confluence enregistrée avec succès",
+        "saveError": "Erreur lors de l'enregistrement de la configuration : {{error}}",
+        "loadError": "Erreur lors du chargement de la configuration Confluence : {{error}}",
+        "testSuccess": "Connexion à Confluence réussie",
+        "testError": "Erreur lors du test de connexion : {{error}}",
+        "testFailed": "La connexion à Confluence a échoué : {{message}}"
+      }
+    },
     "sections": {
       "detectors": "Moteurs de détection",
       "threshold": "Seuil de détection",

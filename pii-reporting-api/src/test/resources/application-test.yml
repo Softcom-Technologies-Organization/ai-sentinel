@@ -12,21 +12,6 @@ spring:
     show-sql: false
     hibernate:
       ddl-auto: update
-# Provide safe defaults for Confluence to avoid unresolved placeholders
-# These values are only for test context bootstrapping
-confluence:
-  base-url: http://localhost
-  username: test
-  api-token: test
-  space-key: TEST
-  connection-settings:
-    connect-timeout: 1000
-    read-timeout: 2000
-    max-retries: 0
-    enable-proxy: false
-  pagination-settings:
-    pages-limit: 10
-    max-pages: 10
 
 pii-encryption:
   kek-pii-encryption-key: '46TCyS1+5ie3I0zfG7RzePn7+0otW8nrwOQurxiS6z8='

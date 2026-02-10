@@ -10,7 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfig;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConnectionConfig;
 
 import java.lang.reflect.Field;
 import java.net.http.HttpClient;
@@ -38,7 +38,7 @@ class ConfluenceAttachmentHttpDownloaderAdapterTest {
         return r;
     }
 
-    private ConfluenceConfig config;
+    private ConfluenceConnectionConfig config;
     private ObjectMapper objectMapper;
     private ConfluenceAttachmentHttpDownloaderAdapter service;
     private HttpClient httpClient; // will be injected via reflection
@@ -46,16 +46,22 @@ class ConfluenceAttachmentHttpDownloaderAdapterTest {
     @BeforeEach
     void setUp() throws Exception {
         objectMapper = new ObjectMapper();
-        config = new ConfluenceConfig(
-                "https://example.atlassian.net", // baseUrl
-                "user@example.com",
-                "token-123",
-                new ConfluenceConfig.ConnectionSettings(5_000, 5_000, 2, false, null),
-                new ConfluenceConfig.PaginationSettings(50, 5),
-                new ConfluenceConfig.ApiPaths("/content/", "/content/search", "/space", "/child/attachment", "body.storage,version", "permissions"),
-                new ConfluenceConfig.CacheSettings(300000, 5000),
-                new ConfluenceConfig.PollingSettings(60000)
-        );
+        config = mock(ConfluenceConnectionConfig.class);
+        when(config.baseUrl()).thenReturn("https://example.atlassian.net");
+        when(config.username()).thenReturn("user@example.com");
+        when(config.apiToken()).thenReturn("token-123");
+        when(config.getRestApiUrl()).thenReturn("https://example.atlassian.net/rest/api");
+        when(config.connectTimeout()).thenReturn(5_000);
+        when(config.readTimeout()).thenReturn(5_000);
+        when(config.maxRetries()).thenReturn(2);
+        when(config.pagesLimit()).thenReturn(50);
+        when(config.maxPages()).thenReturn(5);
+        when(config.contentPath()).thenReturn("/content/");
+        when(config.searchContentPath()).thenReturn("/content/search");
+        when(config.spacePath()).thenReturn("/space");
+        when(config.attachmentChildSuffix()).thenReturn("/child/attachment");
+        when(config.defaultPageExpands()).thenReturn("body.storage,version");
+        when(config.defaultSpaceExpands()).thenReturn("permissions");
         service = new ConfluenceAttachmentHttpDownloaderAdapter(config, objectMapper);
 
         // replace private final httpClient with a mock using reflection

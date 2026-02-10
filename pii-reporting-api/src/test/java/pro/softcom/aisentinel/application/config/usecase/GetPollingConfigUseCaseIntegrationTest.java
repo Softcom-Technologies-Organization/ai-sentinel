@@ -38,9 +38,9 @@ class GetPollingConfigUseCaseIntegrationTest {
         registry.add("spring.jpa.properties.hibernate.dialect",
             () -> "org.hibernate.dialect.PostgreSQLDialect");
 
-        // Confluence configuration required by ConfluenceConfigAdapter / GetPollingConfigUseCase
-        registry.add("confluence.cache.refresh-interval-ms", () -> 5_000L);
-        registry.add("confluence.polling.interval-ms", () -> 2_000L);
+        // Confluence cache/polling configuration required by ConfluenceConfigAdapter / GetPollingConfigUseCase
+        registry.add("ai-sentinel.confluence.cache.refresh-interval-ms", () -> 5_000L);
+        registry.add("ai-sentinel.confluence.polling.interval-ms", () -> 2_000L);
     }
 
     private GetPollingConfigUseCase getPollingConfigUseCase;

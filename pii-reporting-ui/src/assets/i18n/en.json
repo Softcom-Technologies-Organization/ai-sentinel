@@ -137,8 +137,62 @@
     }
   },
   "settings": {
-    "title": "PII Detection Settings",
+    "title": "Settings",
     "back": "Back to dashboard",
+    "tabs": {
+      "detection": "PII Detection",
+      "confluence": "Confluence Connection"
+    },
+    "confluence": {
+      "title": "Confluence Connection Configuration",
+      "connection": {
+        "title": "Connection",
+        "baseUrl": "Base URL",
+        "username": "Username",
+        "apiToken": "API Token",
+        "apiTokenHint": "Current token:"
+      },
+      "timeouts": {
+        "title": "Timeouts",
+        "connectTimeout": "Connect Timeout",
+        "connectTimeoutDesc": "Maximum time to establish a connection to the Confluence server (in milliseconds)",
+        "readTimeout": "Read Timeout",
+        "readTimeoutDesc": "Maximum time to receive a response from the Confluence server (in milliseconds)",
+        "maxRetries": "Max Retries",
+        "maxRetriesDesc": "Maximum number of retry attempts on connection failure"
+      },
+      "pagination": {
+        "title": "Pagination",
+        "pagesLimit": "Pages per Request",
+        "pagesLimitDesc": "Number of Confluence pages fetched per API request",
+        "maxPages": "Maximum Pages",
+        "maxPagesDesc": "Maximum number of pages to scan per Confluence space"
+      },
+      "buttons": {
+        "save": "Save",
+        "test": "Test Connection",
+        "reset": "Reset"
+      },
+      "placeholders": {
+        "baseUrl": "https://your-instance.atlassian.net/wiki",
+        "username": "your.email@domain.com",
+        "apiToken": "Enter your Confluence API token",
+        "apiTokenExisting": "Leave empty to keep current token"
+      },
+      "validation": {
+        "baseUrlRequired": "Base URL is required and must start with http:// or https://",
+        "usernameRequired": "Username is required",
+        "apiTokenRequired": "API token is required"
+      },
+      "messages": {
+        "saveSuccess": "Confluence connection configuration saved successfully",
+        "saveError": "Error saving configuration: {{error}}",
+        "loadError": "Error loading Confluence configuration: {{error}}",
+        "testSuccess": "Successfully connected to Confluence",
+        "testError": "Connection test failed: {{error}}",
+        "testFailed": "Confluence connection failed: {{message}}"
+      }
+    },
     "sections": {
       "detectors": "Detection Engines",
       "threshold": "Detection Threshold",

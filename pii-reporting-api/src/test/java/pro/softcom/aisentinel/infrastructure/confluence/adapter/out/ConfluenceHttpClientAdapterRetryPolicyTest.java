@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
-import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfig;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConnectionConfig;
 
 import java.lang.reflect.Field;
 import java.net.http.HttpClient;
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
 class ConfluenceHttpClientAdapterRetryPolicyTest {
 
     @Mock
-    private ConfluenceConfig config;
+    private ConfluenceConnectionConfig config;
 
     @Mock
     private HttpClient httpClient;
@@ -55,38 +55,17 @@ class ConfluenceHttpClientAdapterRetryPolicyTest {
         lenient().when(config.username()).thenReturn("testuser");
         lenient().when(config.apiToken()).thenReturn("testtoken");
         lenient().when(config.getRestApiUrl()).thenReturn("https://confluence.test.com/rest/api");
-
-        var connectionSettings = mock(ConfluenceConfig.ConnectionSettings.class);
-        lenient().when(connectionSettings.connectTimeout()).thenReturn(5000);
-        lenient().when(connectionSettings.readTimeout()).thenReturn(10000);
-        lenient().when(connectionSettings.maxRetries()).thenReturn(1); // 1 retry for tests
-        lenient().when(config.connectionSettings()).thenReturn(connectionSettings);
         lenient().when(config.connectTimeout()).thenReturn(5000);
         lenient().when(config.readTimeout()).thenReturn(10000);
-        lenient().when(config.maxRetries()).thenReturn(1);
-
-        var paginationSettings = mock(ConfluenceConfig.PaginationSettings.class);
-        lenient().when(paginationSettings.pagesLimit()).thenReturn(50);
-        lenient().when(paginationSettings.maxPages()).thenReturn(100);
-        lenient().when(config.paginationSettings()).thenReturn(paginationSettings);
+        lenient().when(config.maxRetries()).thenReturn(1); // 1 retry for tests
         lenient().when(config.pagesLimit()).thenReturn(50);
         lenient().when(config.maxPages()).thenReturn(100);
-
-        var apiPaths = new ConfluenceConfig.ApiPaths(
-            "/content/",
-            "/content/search",
-            "/space",
-            "/child/attachment",
-            "body.storage,version,metadata,ancestors",
-            "permissions,metadata"
-        );
-        lenient().when(config.apiPaths()).thenReturn(apiPaths);
-        lenient().when(config.contentPath()).thenReturn(apiPaths.contentPath());
-        lenient().when(config.searchContentPath()).thenReturn(apiPaths.searchContentPath());
-        lenient().when(config.spacePath()).thenReturn(apiPaths.spacePath());
-        lenient().when(config.attachmentChildSuffix()).thenReturn(apiPaths.attachmentChildSuffix());
-        lenient().when(config.defaultPageExpands()).thenReturn(apiPaths.defaultPageExpands());
-        lenient().when(config.defaultSpaceExpands()).thenReturn(apiPaths.defaultSpaceExpands());
+        lenient().when(config.contentPath()).thenReturn("/content/");
+        lenient().when(config.searchContentPath()).thenReturn("/content/search");
+        lenient().when(config.spacePath()).thenReturn("/space");
+        lenient().when(config.attachmentChildSuffix()).thenReturn("/child/attachment");
+        lenient().when(config.defaultPageExpands()).thenReturn("body.storage,version,metadata,ancestors");
+        lenient().when(config.defaultSpaceExpands()).thenReturn("permissions,metadata");
     }
 
     private void setupHttpClient() throws Exception {

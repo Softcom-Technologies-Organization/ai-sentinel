@@ -53,9 +53,9 @@ class ConfluenceSpaceCacheRefreshServiceTest {
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
         registry.add("spring.jpa.show-sql", () -> "false");
         registry.add("spring.jpa.properties.hibernate.dialect", () -> "org.hibernate.dialect.PostgreSQLDialect");
-        // Ensure Confluence cache properties are present to avoid NPE in service logging
-        registry.add("confluence.cache.refresh-interval-ms", () -> 1000L);
-        registry.add("confluence.cache.initial-delay-ms", () -> 0L);
+        // Ensure Confluence cache properties are present for ConfluenceConfigAdapter / scheduled job
+        registry.add("ai-sentinel.confluence.cache.refresh-interval-ms", () -> 1000L);
+        registry.add("ai-sentinel.confluence.cache.initial-delay-ms", () -> 0L);
         // Disable background scheduling during this IT to avoid race with Mockito stubbing
         registry.add("spring.task.scheduling.enabled", () -> "false");
         // Minimal required confluence core props are already provided by application-test.yml,

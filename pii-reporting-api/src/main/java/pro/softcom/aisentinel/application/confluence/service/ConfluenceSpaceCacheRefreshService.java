@@ -40,6 +40,9 @@ public class ConfluenceSpaceCacheRefreshService {
         } catch (ConfluenceSpaceCacheException e) {
             log.error("Failed to refresh Confluence spaces cache during operation: {} - will retry on next schedule",
                 e.getOperation(), e);
+        } catch (Exception e) {
+            log.warn("Confluence spaces cache refresh failed (connection unavailable or not configured) - will retry on next schedule: {}",
+                e.getMessage());
         }
     }
 }

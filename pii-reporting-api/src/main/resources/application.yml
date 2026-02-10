@@ -33,37 +33,14 @@ spring:
     exclude:
       - com.linecorp.armeria.spring.ArmeriaAutoConfiguration
 
-# Confluence Configuration
-# Environment variables determine the targeted Confluence instance
-confluence:
-  base-url: ${CONFLUENCE_BASE_URL}
-  username: ${CONFLUENCE_USERNAME}
-  api-token: ${CONFLUENCE_API_TOKEN}
-  connection-settings:
-    connect-timeout: 30000
-    read-timeout: 60000
-    max-retries: 3
-    enable-proxy: ${CONFLUENCE_ENABLE_PROXY:false}
-    proxy-settings:
-      host: ${CONFLUENCE_PROXY_HOST}
-      port: ${CONFLUENCE_PROXY_PORT:8080}
-      username: ${CONFLUENCE_PROXY_USERNAME}
-      password: ${CONFLUENCE_PROXY_PASSWORD}
-  pagination-settings:
-    pages-limit: 50
-    max-pages: 100
-  api-paths:
-    content-path: /content/
-    search-content-path: /content/search
-    space-path: /space
-    attachment-child-suffix: /child/attachment
-    default-page-expands: body.storage,version,metadata,ancestors
-    default-space-expands: permissions,metadata
-  cache:
-    refresh-interval-ms: ${CONFLUENCE_CACHE_REFRESH_INTERVAL:300000}  # 5 minutes default
-    initial-delay-ms: ${CONFLUENCE_CACHE_INITIAL_DELAY:5000}  # 5 seconds default
-  polling:
-    interval-ms: ${CONFLUENCE_POLLING_INTERVAL:60000}  # 1 minute default
+# Confluence cache/polling settings (connection config is DB-backed)
+ai-sentinel:
+  confluence:
+    cache:
+      refresh-interval-ms: ${CONFLUENCE_CACHE_REFRESH_INTERVAL:300000}  # 5 minutes default
+      initial-delay-ms: ${CONFLUENCE_CACHE_INITIAL_DELAY:5000}  # 5 seconds default
+    polling:
+      interval-ms: ${CONFLUENCE_POLLING_INTERVAL:60000}  # 1 minute default
 
 # Logging Configuration
 logging:

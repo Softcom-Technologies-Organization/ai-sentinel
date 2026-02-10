@@ -1,8 +1,10 @@
 package pro.softcom.aisentinel.infrastructure.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfigUpdatedEvent;
 import pro.softcom.aisentinel.application.config.port.in.GetPollingConfigPort;
 import pro.softcom.aisentinel.application.config.port.out.ReadConfluenceConfigPort;
 import pro.softcom.aisentinel.application.config.usecase.GetPollingConfigUseCase;
@@ -19,6 +21,9 @@ import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionCon
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRepository;
 import pro.softcom.aisentinel.application.pii.detection.usecase.ManagePiiDetectionConfigUseCase;
 import pro.softcom.aisentinel.application.pii.detection.usecase.ManagePiiTypeConfigsUseCase;
+import pro.softcom.aisentinel.application.confluence.port.in.ManageConfluenceConnectionPort;
+import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceConnectionConfigRepository;
+import pro.softcom.aisentinel.application.confluence.usecase.ManageConfluenceConnectionUseCase;
 import pro.softcom.aisentinel.application.pii.export.DetectionReportMapper;
 import pro.softcom.aisentinel.application.pii.export.port.in.ExportDetectionReportPort;
 import pro.softcom.aisentinel.application.pii.export.port.out.ReadExportContextPort;
@@ -261,5 +266,17 @@ public class ApplicationUseCasesConfig {
     public ManagePiiTypeConfigsPort managePiiTypeConfigsPort(
         PiiTypeConfigRepository piiTypeConfigRepository) {
         return new ManagePiiTypeConfigsUseCase(piiTypeConfigRepository);
+    }
+
+    @Bean
+    public ManageConfluenceConnectionPort manageConfluenceConnectionPort(
+            ConfluenceConnectionConfigRepository confluenceConnectionConfigRepository,
+            EncryptionService encryptionService,
+            ApplicationEventPublisher eventPublisher) {
+        return new ManageConfluenceConnectionUseCase(
+                confluenceConnectionConfigRepository,
+                encryptionService,
+                () -> eventPublisher.publishEvent(new ConfluenceConfigUpdatedEvent(this))
+        );
     }
 }

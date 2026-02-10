@@ -12,7 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
-import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfig;
+import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConnectionConfig;
 
 import java.lang.reflect.Field;
 import java.net.http.HttpClient;
@@ -24,7 +24,6 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
@@ -37,7 +36,7 @@ import static org.mockito.Mockito.when;
 class ConfluenceHttpClientAdapterTest {
 
     @Mock
-    private ConfluenceConfig config;
+    private ConfluenceConnectionConfig config;
 
     @Mock
     private HttpClient httpClient;
@@ -54,22 +53,9 @@ class ConfluenceHttpClientAdapterTest {
         lenient().when(config.username()).thenReturn("testuser");
         lenient().when(config.apiToken()).thenReturn("testtoken");
         lenient().when(config.getRestApiUrl()).thenReturn("https://confluence.test.com/rest/api");
-
-        // Connection settings configuration
-        var connectionSettings = mock(ConfluenceConfig.ConnectionSettings.class);
-        lenient().when(connectionSettings.connectTimeout()).thenReturn(5000);
-        lenient().when(connectionSettings.readTimeout()).thenReturn(10000);
-        lenient().when(connectionSettings.maxRetries()).thenReturn(3);
-        lenient().when(config.connectionSettings()).thenReturn(connectionSettings);
         lenient().when(config.connectTimeout()).thenReturn(5000);
         lenient().when(config.readTimeout()).thenReturn(10000);
         lenient().when(config.maxRetries()).thenReturn(3);
-
-        // Pagination settings configuration
-        var paginationSettings = mock(ConfluenceConfig.PaginationSettings.class);
-        lenient().when(paginationSettings.pagesLimit()).thenReturn(50);
-        lenient().when(paginationSettings.maxPages()).thenReturn(100);
-        lenient().when(config.paginationSettings()).thenReturn(paginationSettings);
         lenient().when(config.pagesLimit()).thenReturn(50);
         lenient().when(config.maxPages()).thenReturn(100);
 
@@ -77,21 +63,12 @@ class ConfluenceHttpClientAdapterTest {
         final ObjectMapper objectMapper = new ObjectMapper();
 
         // Stub API paths used by service
-        var apiPaths = new ConfluenceConfig.ApiPaths(
-            "/content/",
-            "/content/search",
-            "/space",
-            "/child/attachment",
-            "body.storage,version,metadata,ancestors",
-            "permissions,metadata"
-        );
-        lenient().when(config.apiPaths()).thenReturn(apiPaths);
-        lenient().when(config.contentPath()).thenReturn(apiPaths.contentPath());
-        lenient().when(config.searchContentPath()).thenReturn(apiPaths.searchContentPath());
-        lenient().when(config.spacePath()).thenReturn(apiPaths.spacePath());
-        lenient().when(config.attachmentChildSuffix()).thenReturn(apiPaths.attachmentChildSuffix());
-        lenient().when(config.defaultPageExpands()).thenReturn(apiPaths.defaultPageExpands());
-        lenient().when(config.defaultSpaceExpands()).thenReturn(apiPaths.defaultSpaceExpands());
+        lenient().when(config.contentPath()).thenReturn("/content/");
+        lenient().when(config.searchContentPath()).thenReturn("/content/search");
+        lenient().when(config.spacePath()).thenReturn("/space");
+        lenient().when(config.attachmentChildSuffix()).thenReturn("/child/attachment");
+        lenient().when(config.defaultPageExpands()).thenReturn("body.storage,version,metadata,ancestors");
+        lenient().when(config.defaultSpaceExpands()).thenReturn("permissions,metadata");
 
         // Create service with mocks
         confluenceService = new ConfluenceHttpClientAdapter(config, objectMapper);

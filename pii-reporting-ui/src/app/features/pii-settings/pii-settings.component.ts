@@ -2,12 +2,12 @@ import { Component, computed, EventEmitter, Input, OnInit, Output, signal } from
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import {
-  AbstractControlOptions,
-  FormBuilder,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-  Validators
+    AbstractControlOptions,
+    FormBuilder,
+    FormGroup,
+    FormsModule,
+    ReactiveFormsModule,
+    Validators
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
@@ -19,6 +19,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { MessageModule } from 'primeng/message';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ToastModule } from 'primeng/toast';
+import { TabsModule } from 'primeng/tabs';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
@@ -26,6 +27,7 @@ import { MessageService } from 'primeng/api';
 import { PiiDetectionConfigService } from '../../core/services/pii-detection-config.service';
 import { GroupedPiiTypes, PiiDetectionConfig, PiiTypeConfig } from '../../core/models/pii-detection-config.model';
 import { forkJoin } from 'rxjs';
+import { ConfluenceSettingsComponent } from '../confluence-settings/confluence-settings.component';
 
 /**
  * Settings page for PII detection configuration.
@@ -50,9 +52,11 @@ import { forkJoin } from 'rxjs';
     MessageModule,
     ProgressSpinnerModule,
     ToastModule,
+    TabsModule,
     IconFieldModule,
     InputIconModule,
-    InputTextModule
+    InputTextModule,
+    ConfluenceSettingsComponent
   ],
   providers: [MessageService]
 })

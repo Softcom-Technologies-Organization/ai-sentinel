@@ -43,19 +43,6 @@ armeria:
   internal-services:
     port: 0
 
-# Confluence Configuration for Integration Tests
-# These require valid environment variables to be set:
-# - CONFLUENCE_BASE_URL (e.g., https://your-domain.atlassian.net/wiki)
-# - CONFLUENCE_USERNAME (your Confluence user email)
-# - CONFLUENCE_API_TOKEN (your Confluence API token)
-confluence:
-  base-url: "https://softcomtechnologies.atlassian.net/wiki"
-  username: ${CONFLUENCE_USERNAME:test-user@example.com}
-  api-token: ${CONFLUENCE_API_TOKEN:test-token}
-  connection-settings:
-    connect-timeout: 30000
-    read-timeout: 60000
-
 # Reduce logging noise during tests
 logging:
   level:

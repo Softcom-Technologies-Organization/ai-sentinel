@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import pro.softcom.aisentinel.application.confluence.service.ConfluenceSpaceCacheRefreshService;
-import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfig;
 
 @Component
 @RequiredArgsConstructor
@@ -13,15 +12,13 @@ import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.Confl
 public class ScheduledConfluenceSpaceCacheRefreshJob {
 
     private final ConfluenceSpaceCacheRefreshService refresher;
-    private final ConfluenceConfig confluenceConfig;
 
     @Scheduled(
-        fixedDelayString = "${confluence.cache.refresh-interval-ms:300000}",
-        initialDelayString = "${confluence.cache.initial-delay-ms:5000}"
+        fixedDelayString = "${ai-sentinel.confluence.cache.refresh-interval-ms:300000}",
+        initialDelayString = "${ai-sentinel.confluence.cache.initial-delay-ms:5000}"
     )
     public void refresh() {
-        log.debug("Starting background refresh of Confluence spaces cache (interval: {}ms)",
-            confluenceConfig.cache().refreshIntervalMs());
+        log.debug("Starting background refresh of Confluence spaces cache");
         refresher.saveNewConfluenceSpaces();
     }
 }

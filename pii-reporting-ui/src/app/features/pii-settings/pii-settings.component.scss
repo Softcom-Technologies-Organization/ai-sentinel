@@ -6,6 +6,30 @@
   padding: 2rem;
 }
 
+// Tabs styling
+::ng-deep {
+  .p-tabs {
+    .p-tablist {
+      margin-bottom: 1.5rem;
+    }
+
+    .p-tab {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .p-tabpanels {
+      padding: 0;
+      background: transparent;
+    }
+
+    .p-tabpanel {
+      padding: 0;
+    }
+  }
+}
+
 .settings-header {
   display: flex;
   align-items: center;

@@ -1,0 +1,218 @@
+<p-toast></p-toast>
+
+@if (loading()) {
+  <div class="loading-container">
+    <p-progressSpinner></p-progressSpinner>
+  </div>
+} @else {
+  <div class="confluence-settings-content">
+    <form [formGroup]="configForm">
+
+      <!-- Connection Fieldset -->
+      <p-fieldset [legend]="'settings.confluence.connection.title' | transloco" [toggleable]="true">
+        <div class="form-field">
+          <label for="baseUrl">
+            <span class="field-label">{{ 'settings.confluence.connection.baseUrl' | transloco }}</span>
+          </label>
+          <input
+            id="baseUrl"
+            type="text"
+            pInputText
+            formControlName="baseUrl"
+            [placeholder]="'settings.confluence.placeholders.baseUrl' | transloco"
+            class="field-input" />
+          @if (configForm.get('baseUrl')?.invalid && configForm.get('baseUrl')?.touched) {
+            <small class="field-error">{{ 'settings.confluence.validation.baseUrlRequired' | transloco }}</small>
+          }
+        </div>
+
+        <div class="form-field">
+          <label for="username">
+            <span class="field-label">{{ 'settings.confluence.connection.username' | transloco }}</span>
+          </label>
+          <input
+            id="username"
+            type="text"
+            pInputText
+            formControlName="username"
+            [placeholder]="'settings.confluence.placeholders.username' | transloco"
+            class="field-input" />
+          @if (configForm.get('username')?.invalid && configForm.get('username')?.touched) {
+            <small class="field-error">{{ 'settings.confluence.validation.usernameRequired' | transloco }}</small>
+          }
+        </div>
+
+        <div class="form-field">
+          <label for="apiToken">
+            <span class="field-label">{{ 'settings.confluence.connection.apiToken' | transloco }}</span>
+          </label>
+          <p-password
+            inputId="apiToken"
+            formControlName="apiToken"
+            [placeholder]="currentConfig() ? ('settings.confluence.placeholders.apiTokenExisting' | transloco) : ('settings.confluence.placeholders.apiToken' | transloco)"
+            [toggleMask]="true"
+            [feedback]="false"
+            styleClass="field-input">
+          </p-password>
+          @if (currentConfig()) {
+            <small class="field-hint">
+              {{ 'settings.confluence.connection.apiTokenHint' | transloco }}
+              <span class="token-masked">{{ currentConfig()!.apiTokenMasked }}</span>
+            </small>
+          }
+          @if (configForm.get('apiToken')?.hasError('required') && configForm.get('apiToken')?.touched) {
+            <small class="field-error">{{ 'settings.confluence.validation.apiTokenRequired' | transloco }}</small>
+          }
+        </div>
+      </p-fieldset>
+
+      <!-- Timeouts Fieldset -->
+      <p-fieldset [legend]="'settings.confluence.timeouts.title' | transloco" [toggleable]="true">
+        <div class="form-field">
+          <label for="connectTimeout">
+            <span class="field-label">{{ 'settings.confluence.timeouts.connectTimeout' | transloco }}</span>
+          </label>
+          <p class="field-description">{{ 'settings.confluence.timeouts.connectTimeoutDesc' | transloco }}</p>
+          <p-inputNumber
+            inputId="connectTimeout"
+            formControlName="connectTimeout"
+            [min]="1000"
+            [max]="120000"
+            [step]="1000"
+            suffix=" ms"
+            [showButtons]="true"
+            buttonLayout="horizontal"
+            incrementButtonIcon="pi pi-plus"
+            decrementButtonIcon="pi pi-minus">
+          </p-inputNumber>
+        </div>
+
+        <div class="form-field">
+          <label for="readTimeout">
+            <span class="field-label">{{ 'settings.confluence.timeouts.readTimeout' | transloco }}</span>
+          </label>
+          <p class="field-description">{{ 'settings.confluence.timeouts.readTimeoutDesc' | transloco }}</p>
+          <p-inputNumber
+            inputId="readTimeout"
+            formControlName="readTimeout"
+            [min]="5000"
+            [max]="300000"
+            [step]="5000"
+            suffix=" ms"
+            [showButtons]="true"
+            buttonLayout="horizontal"
+            incrementButtonIcon="pi pi-plus"
+            decrementButtonIcon="pi pi-minus">
+          </p-inputNumber>
+        </div>
+
+        <div class="form-field">
+          <label for="maxRetries">
+            <span class="field-label">{{ 'settings.confluence.timeouts.maxRetries' | transloco }}</span>
+          </label>
+          <p class="field-description">{{ 'settings.confluence.timeouts.maxRetriesDesc' | transloco }}</p>
+          <p-inputNumber
+            inputId="maxRetries"
+            formControlName="maxRetries"
+            [min]="0"
+            [max]="10"
+            [step]="1"
+            [showButtons]="true"
+            buttonLayout="horizontal"
+            incrementButtonIcon="pi pi-plus"
+            decrementButtonIcon="pi pi-minus">
+          </p-inputNumber>
+        </div>
+      </p-fieldset>
+
+      <!-- Pagination Fieldset -->
+      <p-fieldset [legend]="'settings.confluence.pagination.title' | transloco" [toggleable]="true">
+        <div class="form-field">
+          <label for="pagesLimit">
+            <span class="field-label">{{ 'settings.confluence.pagination.pagesLimit' | transloco }}</span>
+          </label>
+          <p class="field-description">{{ 'settings.confluence.pagination.pagesLimitDesc' | transloco }}</p>
+          <p-inputNumber
+            inputId="pagesLimit"
+            formControlName="pagesLimit"
+            [min]="1"
+            [max]="1000"
+            [step]="5"
+            [showButtons]="true"
+            buttonLayout="horizontal"
+            incrementButtonIcon="pi pi-plus"
+            decrementButtonIcon="pi pi-minus">
+          </p-inputNumber>
+        </div>
+
+        <div class="form-field">
+          <label for="maxPages">
+            <span class="field-label">{{ 'settings.confluence.pagination.maxPages' | transloco }}</span>
+          </label>
+          <p class="field-description">{{ 'settings.confluence.pagination.maxPagesDesc' | transloco }}</p>
+          <p-inputNumber
+            inputId="maxPages"
+            formControlName="maxPages"
+            [min]="1"
+            [max]="10000"
+            [step]="100"
+            [showButtons]="true"
+            buttonLayout="horizontal"
+            incrementButtonIcon="pi pi-plus"
+            decrementButtonIcon="pi pi-minus">
+          </p-inputNumber>
+        </div>
+      </p-fieldset>
+
+      <!-- Info Card -->
+      @if (currentConfig()?.updatedAt) {
+        <div class="info-card">
+          <div class="info-content">
+            <div class="info-item">
+              <strong>{{ 'settings.info.lastUpdated' | transloco }}</strong>
+              {{ currentConfig()!.updatedAt | date:'medium' }}
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Action Buttons -->
+      <div class="section-actions">
+        <p-button
+          type="button"
+          [label]="'settings.confluence.buttons.test' | transloco"
+          icon="pi pi-wifi"
+          [loading]="testing()"
+          [disabled]="testing() || saving()"
+          (click)="onTestConnection()"
+          (keydown.enter)="onTestConnection()"
+          styleClass="p-button-outlined">
+        </p-button>
+
+        <div class="actions-right">
+          <p-button
+            type="button"
+            [label]="'settings.confluence.buttons.reset' | transloco"
+            icon="pi pi-undo"
+            [disabled]="!hasUnsavedChanges"
+            (click)="onReset()"
+            (keydown.enter)="onReset()"
+            styleClass="p-button-sm">
+          </p-button>
+
+          <p-button
+            type="button"
+            [label]="'settings.confluence.buttons.save' | transloco"
+            icon="pi pi-save"
+            [loading]="saving()"
+            [disabled]="saving() || testing() || !hasUnsavedChanges"
+            (click)="onSave()"
+            (keydown.enter)="onSave()"
+            styleClass="p-button-success">
+          </p-button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+}

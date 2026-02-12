@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pii-detector"
-version = "1.0.0"
+version = "1.1.0-SNAPSHOT"
 description = "PII Detection gRPC Microservice using Piiranha model with advanced memory management"
 readme = "README.md"
 requires-python = ">=3.9"

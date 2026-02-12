@@ -14,6 +14,7 @@
               [text]="true"
               [rounded]="true"
               (click)="openSettingsDialog()"
+              (keydown.enter)="openSettingsDialog()"
               [pTooltip]="'dashboard.actions.settings' | transloco"
               tooltipPosition="bottom"
               [ariaLabel]="'dashboard.actions.settings' | transloco"
@@ -91,7 +92,7 @@
         </th>
       </tr>
       <tr>
-        <th></th>
+        <th id="col-select-filter"></th>
         <th id="col-toggle-value"></th>
         <th id="col-space-value">
           <div class="space-filters">
@@ -210,7 +211,7 @@
     <ng-template #body let-space let-expanded="expanded">
       <tr class="row-click" tabindex="0" [attr.data-testid]="testIds.spaceRow">
         <td>
-          <p-tableCheckbox [value]="space" (click)="$event.stopPropagation()"></p-tableCheckbox>
+          <p-tableCheckbox [value]="space" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()"></p-tableCheckbox>
         </td>
         <td>
           <p-button type="button"

@@ -116,6 +116,10 @@ public class ManageConfluenceConnectionUseCase implements ManageConfluenceConnec
             log.info("Confluence connection test result: {} (HTTP {})", success ? "SUCCESS" : "FAILED", response.statusCode());
             return success;
 
+        } catch (InterruptedException e) {
+            log.warn("Confluence connection test interrupted: {}", e.getMessage());
+            Thread.currentThread().interrupt();
+            return false;
         } catch (Exception e) {
             log.warn("Confluence connection test failed: {}", e.getMessage());
             return false;

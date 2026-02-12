@@ -26,7 +26,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { MessageService } from 'primeng/api';
 import { PiiDetectionConfigService } from '../../core/services/pii-detection-config.service';
 import { GroupedPiiTypes, PiiDetectionConfig, PiiTypeConfig } from '../../core/models/pii-detection-config.model';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 import { ConfluenceSettingsComponent } from '../confluence-settings/confluence-settings.component';
 
 /**
@@ -433,7 +433,7 @@ export class PiiSettingsComponent implements OnInit {
 
     this.saving.set(true);
 
-    const requests: any[] = [];
+    const requests: Observable<any>[] = [];
     let detectorRequestIndex = -1;
     let typesRequestIndex = -1;
 
@@ -602,7 +602,7 @@ export class PiiSettingsComponent implements OnInit {
     }
 
     // Escape special regex characters
-    const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+    const escapedTerm = term.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
     const regex = new RegExp(`(${escapedTerm})`, 'gi');
 
     // Replace matches with highlighted version

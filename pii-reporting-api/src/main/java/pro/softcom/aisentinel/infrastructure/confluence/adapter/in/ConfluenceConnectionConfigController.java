@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pro.softcom.aisentinel.application.confluence.port.in.ManageConfluenceConnectionPort;
@@ -120,6 +121,7 @@ public class ConfluenceConnectionConfigController {
      */
     @PostMapping("/test")
     @Operation(summary = "Test Confluence connection")
+    @ResponseStatus(HttpStatus.OK)
     public CompletableFuture<ResponseEntity<@NonNull ConnectionTestResultDto>> testConnection(
             @Valid @RequestBody TestConfluenceConnectionRequestDto request) {
 

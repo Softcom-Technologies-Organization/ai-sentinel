@@ -73,8 +73,8 @@ public class ConfluenceConnectionConfigPersistenceAdapter implements ConfluenceC
     private ConfluenceConnectionSettings createDefaultSettings() {
         return new ConfluenceConnectionSettings(
                 CONFIG_ID,
-                "https://confluence.example.com",
-                "admin",
+                "",
+                "",
                 30000,
                 60000,
                 3,

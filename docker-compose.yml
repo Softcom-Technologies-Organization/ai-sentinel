@@ -411,10 +411,7 @@ services:
         
         # Note: The following secrets must be created manually in Infisical UI:
         # - HUGGING_FACE_API_KEY
-        # - CONFLUENCE_BASE_URL
-        # - CONFLUENCE_USERNAME
-        # - CONFLUENCE_API_TOKEN
-        
+
         # Create DB_USER secret with generated value
         echo "[infisical-config]   Creating secret: DB_USER";
         DB_USER=$$(cat /secrets/postgres_user.txt);
@@ -484,9 +481,9 @@ services:
           echo "[infisical-config]   ⚠ Failed to create PII_DATABASE_ENCRYPTION_KEY (HTTP $$HTTP_CODE); continuing";
         fi
 
-        # Create the 4 manually-configured secrets WITHOUT placeholder values
+        # Create the manually-configured secrets WITHOUT placeholder values
         echo "[infisical-config]   Creating empty secrets (to be filled manually)...";
-        for secret_name in "HUGGING_FACE_API_KEY" "CONFLUENCE_BASE_URL" "CONFLUENCE_USERNAME" "CONFLUENCE_API_TOKEN"; do
+        for secret_name in "HUGGING_FACE_API_KEY"; do
           echo "[infisical-config]   Creating secret: $$secret_name";
           curl -sf -X POST "$${INFISICAL_URL}/api/v4/secrets/$$secret_name" \
             -H "Authorization: Bearer $${ADMIN_TOKEN}" \
@@ -527,9 +524,7 @@ services:
         echo "[infisical-config] ";
         echo "[infisical-config] IMPORTANT: Create these secrets manually in Infisical UI:";
         echo "[infisical-config]   ⚠ HUGGING_FACE_API_KEY (required for PII detection)";
-        echo "[infisical-config]   ⚠ CONFLUENCE_BASE_URL (required for Confluence integration)";
-        echo "[infisical-config]   ⚠ CONFLUENCE_USERNAME (required for Confluence integration)";
-        echo "[infisical-config]   ⚠ CONFLUENCE_API_TOKEN (required for Confluence integration)";
+        echo "[infisical-config]   Note: Confluence credentials are now managed via the AI Sentinel Settings UI";
         echo "";
         echo "[infisical-config] Access Infisical UI at: http://localhost:8082";
         echo "[infisical-config] ================================================";
@@ -656,14 +651,6 @@ services:
       PII_DETECTOR_HOST: pii-detector
       PII_DETECTOR_PORT: 50051
       
-      # Non-sensitive Confluence configuration (optional with defaults)
-      CONFLUENCE_ENABLE_PROXY: ${CONFLUENCE_ENABLE_PROXY:-false}
-      CONFLUENCE_PROXY_HOST: ${CONFLUENCE_PROXY_HOST:-}
-      CONFLUENCE_PROXY_PORT: ${CONFLUENCE_PROXY_PORT:-8080}
-      CONFLUENCE_PROXY_USERNAME: ${CONFLUENCE_PROXY_USERNAME:-}
-      CONFLUENCE_CACHE_REFRESH_INTERVAL: ${CONFLUENCE_CACHE_REFRESH_INTERVAL:-300000}
-      CONFLUENCE_CACHE_INITIAL_DELAY: ${CONFLUENCE_CACHE_INITIAL_DELAY:-5000}
-      CONFLUENCE_POLLING_INTERVAL: ${CONFLUENCE_POLLING_INTERVAL:-60000}
     volumes:
       - ./secrets:/secrets:ro
       - ./personally-identifiable-information-scan-results:/personally-identifiable-information-scan-results

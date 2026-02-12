@@ -25,8 +25,6 @@ public class ConfluenceAttachmentHttpDownloaderAdapter implements ConfluenceAtta
     private final ConfluenceConnectionConfig config;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
-    private final String authHeader;
-
     private static final String RESULTS_FIELD = "results";
     private static final String TITLE_FIELD = "title";
     public static final String ACCEPT_HEADER_NAME = "Accept";
@@ -45,8 +43,10 @@ public class ConfluenceAttachmentHttpDownloaderAdapter implements ConfluenceAtta
                 .version(HttpClient.Version.HTTP_2)
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
+    }
 
-        this.authHeader = createAuthHeader(config.username(), config.apiToken());
+    private String getAuthHeader() {
+        return createAuthHeader(config.username(), config.apiToken());
     }
 
     private String createAuthHeader(String username, String apiToken) {
@@ -64,7 +64,7 @@ public class ConfluenceAttachmentHttpDownloaderAdapter implements ConfluenceAtta
         String uriStr = config.getRestApiUrl() + config.contentPath() + pageId + config.attachmentChildSuffix() + "?limit=200&expand=results._links";
         var listReq = HttpRequest.newBuilder()
                 .uri(URI.create(uriStr))
-                .header(AUTHORIZATION_HEADER_NAME, authHeader)
+                .header(AUTHORIZATION_HEADER_NAME, getAuthHeader())
                 .header(ACCEPT_HEADER_NAME, CONTENT_TYPE_HEADER_VALUE)
                 .timeout(Duration.ofMillis(config.readTimeout()))
                 .GET()
@@ -203,7 +203,7 @@ public class ConfluenceAttachmentHttpDownloaderAdapter implements ConfluenceAtta
     private HttpRequest buildDownloadRequest(URI uri) {
         return HttpRequest.newBuilder()
                 .uri(uri)
-                .header(AUTHORIZATION_HEADER_NAME, authHeader)
+                .header(AUTHORIZATION_HEADER_NAME, getAuthHeader())
                 .timeout(Duration.ofMillis(config.readTimeout()))
                 .GET()
                 .build();

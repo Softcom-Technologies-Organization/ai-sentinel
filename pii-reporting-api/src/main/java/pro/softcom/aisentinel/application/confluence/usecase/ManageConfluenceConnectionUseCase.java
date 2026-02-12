@@ -45,6 +45,12 @@ public class ManageConfluenceConnectionUseCase implements ManageConfluenceConnec
     }
 
     @Override
+    public boolean isConfigured() {
+        String encryptedToken = repository.getEncryptedApiToken();
+        return encryptedToken != null && !encryptedToken.isBlank();
+    }
+
+    @Override
     public ConfluenceConnectionSettings updateConnectionSettings(UpdateConfluenceConnectionCommand command) {
         log.info("Updating Confluence connection settings: baseUrl={}, username={}, connectTimeout={}, " +
                         "readTimeout={}, maxRetries={}, pagesLimit={}, maxPages={}",

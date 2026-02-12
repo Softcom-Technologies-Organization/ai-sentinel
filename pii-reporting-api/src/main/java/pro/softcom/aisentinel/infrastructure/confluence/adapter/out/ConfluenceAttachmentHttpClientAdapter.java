@@ -37,7 +37,6 @@ public class ConfluenceAttachmentHttpClientAdapter implements ConfluenceAttachme
     private final ConfluenceConnectionConfig config;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
-    private final String authHeader;
 
     public ConfluenceAttachmentHttpClientAdapter(@Qualifier("confluenceConfig") ConfluenceConnectionConfig config, ObjectMapper objectMapper) {
         this.config = config;
@@ -50,8 +49,10 @@ public class ConfluenceAttachmentHttpClientAdapter implements ConfluenceAttachme
             .version(HttpClient.Version.HTTP_2)
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
+    }
 
-        this.authHeader = createAuthHeader(config.username(), config.apiToken());
+    private String getAuthHeader() {
+        return createAuthHeader(config.username(), config.apiToken());
     }
 
 
@@ -61,7 +62,7 @@ public class ConfluenceAttachmentHttpClientAdapter implements ConfluenceAttachme
         var uri = URI.create(config.getRestApiUrl() + config.contentPath() + pageId + config.attachmentChildSuffix() + "?limit=200&expand=results._links,results.metadata");
 
         var request = HttpRequest.newBuilder().uri(uri)
-            .header(AUTHORIZATION_HEADER_NAME, authHeader)
+            .header(AUTHORIZATION_HEADER_NAME, getAuthHeader())
             .header(ACCEPT_HEADER_NAME, CONTENT_TYPE_HEADER_VALUE)
             .timeout(Duration.ofMillis(config.readTimeout())).GET().build();
 

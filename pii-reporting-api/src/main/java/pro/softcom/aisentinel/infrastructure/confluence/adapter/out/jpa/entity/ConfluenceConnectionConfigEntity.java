@@ -40,7 +40,7 @@ public class ConfluenceConnectionConfigEntity {
     private String username;
 
     @NotNull
-    @Column(name = "api_token_encrypted", nullable = false)
+    @Column(name = "api_token_encrypted", nullable = false, columnDefinition = "TEXT")
     private String apiTokenEncrypted;
 
     @NotNull

@@ -69,6 +69,11 @@ export class PiiSettingsComponent implements OnInit {
   @Input() dialogMode: boolean = false;
 
   /**
+   * Index of the tab to display initially (0 = Detection, 1 = Confluence).
+   */
+  @Input() initialTab: number = 0;
+
+  /**
    * Event emitted when user closes the dialog (only in dialog mode).
    */
   @Output() closeDialog = new EventEmitter<void>();

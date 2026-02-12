@@ -158,14 +158,6 @@ services:
       PII_DETECTOR_HOST: pii-detector
       PII_DETECTOR_PORT: 50051
       
-      # Non-sensitive Confluence configuration (optional with defaults)
-      CONFLUENCE_ENABLE_PROXY: ${CONFLUENCE_ENABLE_PROXY:-false}
-      CONFLUENCE_PROXY_HOST: ${CONFLUENCE_PROXY_HOST:-}
-      CONFLUENCE_PROXY_PORT: ${CONFLUENCE_PROXY_PORT:-8080}
-      CONFLUENCE_PROXY_USERNAME: ${CONFLUENCE_PROXY_USERNAME:-}
-      CONFLUENCE_CACHE_REFRESH_INTERVAL: ${CONFLUENCE_CACHE_REFRESH_INTERVAL:-300000}
-      CONFLUENCE_CACHE_INITIAL_DELAY: ${CONFLUENCE_CACHE_INITIAL_DELAY:-5000}
-      CONFLUENCE_POLLING_INTERVAL: ${CONFLUENCE_POLLING_INTERVAL:-60000}
       PII_DATABASE_ENCRYPTION_KEY_FILE: /secrets/pii_database_encryption_key.txt
     volumes:
       - ./personally-identifiable-information-scan-results:/personally-identifiable-information-scan-results

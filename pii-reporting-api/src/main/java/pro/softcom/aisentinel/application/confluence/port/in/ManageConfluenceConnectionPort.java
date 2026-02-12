@@ -16,6 +16,13 @@ public interface ManageConfluenceConnectionPort {
     ConfluenceConnectionSettings getConnectionSettings();
 
     /**
+     * Checks whether real Confluence credentials have been configured.
+     *
+     * @return true if a non-empty encrypted API token exists in the database
+     */
+    boolean isConfigured();
+
+    /**
      * Updates the Confluence connection configuration.
      *
      * @param command The update command containing new configuration values

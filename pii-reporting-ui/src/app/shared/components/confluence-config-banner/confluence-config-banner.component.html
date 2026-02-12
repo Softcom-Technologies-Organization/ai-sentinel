@@ -1,0 +1,27 @@
+@if (showBanner) {
+  <div class="confluence-config-banner">
+    <i class="pi pi-exclamation-triangle"></i>
+    <span class="banner-message">
+      {{ 'dashboard.notifications.confluenceConfig.message' | transloco }}
+    </span>
+    <button pButton
+            type="button"
+            class="p-button-raised p-button-sm"
+            (click)="onOpenSettings()"
+            (keydown.enter)="onOpenSettings()"
+            (keydown.space)="$event.preventDefault(); onOpenSettings()"
+            [attr.data-testid]="'configure-button'">
+      {{ 'dashboard.notifications.confluenceConfig.settingsButton' | transloco }}
+    </button>
+    <button pButton
+            type="button"
+            class="p-button-text p-button-sm"
+            icon="pi pi-times"
+            (click)="onDismiss()"
+            (keydown.enter)="onDismiss()"
+            (keydown.space)="$event.preventDefault(); onDismiss()"
+            [attr.aria-label]="'dashboard.notifications.confluenceConfig.closeAriaLabel' | transloco"
+            [attr.data-testid]="'dismiss-button'">
+    </button>
+  </div>
+}

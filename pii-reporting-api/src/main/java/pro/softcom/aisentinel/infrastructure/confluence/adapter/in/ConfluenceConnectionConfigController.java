@@ -161,7 +161,8 @@ public class ConfluenceConnectionConfigController {
                 settings.pagesLimit(),
                 settings.maxPages(),
                 settings.updatedAt(),
-                settings.updatedBy()
+                settings.updatedBy(),
+                manageConfluenceConnectionPort.isConfigured()
         );
     }
 

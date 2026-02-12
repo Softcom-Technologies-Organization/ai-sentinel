@@ -59,6 +59,11 @@
       "modifiedOnlyLabel": "Espaces à rescanner"
     },
     "notifications": {
+      "confluenceConfig": {
+        "message": "Les identifiants Confluence ne sont pas configurés. Veuillez configurer vos paramètres de connexion avant de lancer un scan.",
+        "settingsButton": "Configurer",
+        "closeAriaLabel": "Fermer la notification"
+      },
       "newSpaces": {
         "message": "{{count}} nouvel(aux) espace(s) Confluence disponible(s)",
         "refreshButton": "Rafraîchir",

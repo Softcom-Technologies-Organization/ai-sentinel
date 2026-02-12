@@ -59,6 +59,11 @@
       "modifiedOnlyLabel": "Spaces to rescan"
     },
     "notifications": {
+      "confluenceConfig": {
+        "message": "Confluence credentials are not configured. Please configure your connection settings before starting a scan.",
+        "settingsButton": "Configure",
+        "closeAriaLabel": "Close notification"
+      },
       "newSpaces": {
         "message": "{{count}} new Confluence space(s) available",
         "refreshButton": "Refresh",

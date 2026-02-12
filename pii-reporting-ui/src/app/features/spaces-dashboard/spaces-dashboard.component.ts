@@ -25,6 +25,8 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
 import { NewSpacesBannerComponent } from '../../shared/components/new-spaces-banner/new-spaces-banner.component';
+import { ConfluenceConfigBannerComponent } from '../../shared/components/confluence-config-banner/confluence-config-banner.component';
+import { ConfluenceConnectionConfigService } from '../../core/services/confluence-connection-config.service';
 import { SpaceFilteringService } from './services/space-filtering.service';
 import { DashboardUiStateService } from './services/dashboard-ui-state.service';
 import { PiiItemsStorageService } from './services/pii-items-storage.service';
@@ -83,6 +85,7 @@ import { ScanControlService } from './services/scan-control.service';
         TranslocoModule,
         LanguageSelectorComponent,
         NewSpacesBannerComponent,
+        ConfluenceConfigBannerComponent,
         ScanProgressBarComponent,
         NgOptimizedImage
     ],
@@ -97,6 +100,7 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   private readonly piiItemsStorage = inject(PiiItemsStorageService);
   private readonly dataManagement = inject(SpaceDataManagementService);
   private readonly scanControl = inject(ScanControlService);
+  private readonly confluenceConfigService = inject(ConfluenceConnectionConfigService);
 
   // Utility services
   readonly spacesDashboardUtils = inject(SpacesDashboardUtils);
@@ -112,6 +116,10 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
   // Settings dialog visibility
   readonly showSettingsDialog = signal(false);
+  readonly settingsInitialTab = signal(0);
+
+  // Confluence config missing warning
+  readonly confluenceConfigMissing = signal(false);
 
   // ===== Computed signals exposing service state to template =====
 
@@ -158,7 +166,24 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly canResumeScan = computed(() => this.scanControl.canResumeScan());
 
   ngOnInit(): void {
-    // Initialize data loading
+    // Check if Confluence connection is configured before loading data
+    this.confluenceConfigService.getConfig().subscribe({
+      next: (config) => {
+        if (!config.configured) {
+          this.confluenceConfigMissing.set(true);
+          this.dataManagement.isSpacesLoading.set(false);
+          return;
+        }
+        this.initializeDataLoading();
+      },
+      error: () => {
+        this.confluenceConfigMissing.set(true);
+        this.dataManagement.isSpacesLoading.set(false);
+      }
+    });
+  }
+
+  private initializeDataLoading(): void {
     this.dataManagement.fetchSpaces().subscribe();
     this.dataManagement.loadLastScan().subscribe();
     this.dataManagement.loadSpacesUpdateInfo().subscribe();
@@ -333,7 +358,8 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
    * Opens the settings dialog in modal overlay.
    * Preserves component lifecycle to maintain SSE connection.
    */
-  openSettingsDialog(): void {
+  openSettingsDialog(tab: number = 0): void {
+    this.settingsInitialTab.set(tab);
     this.showSettingsDialog.set(true);
   }
 
@@ -342,5 +368,12 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
    */
   closeSettingsDialog(): void {
     this.showSettingsDialog.set(false);
+  }
+
+  /**
+   * Dismisses the Confluence config warning banner.
+   */
+  dismissConfluenceConfigBanner(): void {
+    this.confluenceConfigMissing.set(false);
   }
 }

@@ -39,12 +39,12 @@ public record ConfluenceConnectionSettings(
      * @throws IllegalArgumentException if validation fails
      */
     public ConfluenceConnectionSettings {
-        if (baseUrl == null || baseUrl.isBlank()) {
-            throw new IllegalArgumentException("Base URL cannot be null or blank");
+        if (baseUrl == null) {
+            baseUrl = "";
         }
 
-        if (username == null || username.isBlank()) {
-            throw new IllegalArgumentException("Username cannot be null or blank");
+        if (username == null) {
+            username = "";
         }
 
         if (connectTimeout <= 0) {

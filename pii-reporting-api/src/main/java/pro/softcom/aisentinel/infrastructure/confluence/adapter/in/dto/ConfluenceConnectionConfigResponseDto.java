@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
  * @param maxPages       Maximum total pages to retrieve
  * @param updatedAt      Timestamp of last configuration update
  * @param updatedBy      User who last updated the configuration
+ * @param configured     Whether real credentials have been saved (non-placeholder values)
  */
 public record ConfluenceConnectionConfigResponseDto(
         String baseUrl,
@@ -29,6 +30,7 @@ public record ConfluenceConnectionConfigResponseDto(
         int pagesLimit,
         int maxPages,
         LocalDateTime updatedAt,
-        String updatedBy
+        String updatedBy,
+        boolean configured
 ) {
 }

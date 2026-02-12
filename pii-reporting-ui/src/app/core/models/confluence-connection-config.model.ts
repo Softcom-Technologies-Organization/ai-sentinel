@@ -9,6 +9,7 @@ export interface ConfluenceConnectionConfig {
   maxPages: number;
   updatedAt?: string;
   updatedBy?: string;
+  configured: boolean;
 }
 
 export interface UpdateConfluenceConnectionConfigRequest {

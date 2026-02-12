@@ -60,7 +60,6 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
 
     private final ConfluenceConnectionConfig config;
     private final ObjectMapper objectMapper;
-    private final String authHeader;
     private final ConfluenceApiUrlBuilder urlBuilder;
     private final HttpRetryExecutor retryExecutor;
     private final ConfluencePaginationHandler paginationHandler;
@@ -71,11 +70,14 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
         ObjectMapper objectMapper) {
         this.config = config;
         this.objectMapper = objectMapper;
-        this.authHeader = encodeBasicAuth(config.username(), config.apiToken());
         this.urlBuilder = new ConfluenceApiUrlBuilder(config);
         this.retryExecutor = new HttpRetryExecutor(buildHttpClient(), config.maxRetries());
         this.paginationHandler = new ConfluencePaginationHandler();
         this.responseParser = new ConfluenceResponseParser(objectMapper);
+    }
+
+    private String getAuthHeader() {
+        return encodeBasicAuth(config.username(), config.apiToken());
     }
 
     @Override
@@ -178,7 +180,7 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
     private HttpRequest buildGetRequest(URI uri) {
         return HttpRequest.newBuilder()
             .uri(uri)
-            .header(AUTHORIZATION_HEADER_NAME, authHeader)
+            .header(AUTHORIZATION_HEADER_NAME, getAuthHeader())
             .header(ACCEPT_HEADER_NAME, CONTENT_TYPE_HEADER_VALUE)
             .timeout(Duration.ofMillis(config.readTimeout()))
             .GET()
@@ -326,7 +328,7 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
         var uri = urlBuilder.buildUpdatePageUri(pageId);
         return HttpRequest.newBuilder()
             .uri(uri)
-            .header(AUTHORIZATION_HEADER_NAME, authHeader)
+            .header(AUTHORIZATION_HEADER_NAME, getAuthHeader())
             .header("Content-Type", CONTENT_TYPE_HEADER_VALUE)
             .header(ACCEPT_HEADER_NAME, CONTENT_TYPE_HEADER_VALUE)
             .timeout(Duration.ofMillis(config.readTimeout()))
@@ -363,7 +365,7 @@ public class ConfluenceHttpClientAdapter implements ConfluenceClient {
         var uri = urlBuilder.buildConnectionTestUri();
         return HttpRequest.newBuilder()
             .uri(uri)
-            .header(AUTHORIZATION_HEADER_NAME, authHeader)
+            .header(AUTHORIZATION_HEADER_NAME, getAuthHeader())
             .header(ACCEPT_HEADER_NAME, CONTENT_TYPE_HEADER_VALUE)
             .timeout(Duration.ofSeconds(10))
             .GET()

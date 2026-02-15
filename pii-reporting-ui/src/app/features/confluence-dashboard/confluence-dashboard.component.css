@@ -1,0 +1,630 @@
+
+.page {
+  margin: 0 auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Source header: title + status + action buttons
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.source-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.source-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.source-title {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #0f2b3c;
+}
+
+.source-status-badge {
+  padding: 0.2rem 0.625rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.source-spaces-count {
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.source-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Settings button (outlined) - matches reference "Paramètres" style */
+:host ::ng-deep .source-settings-btn.p-button {
+  background: #fff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+  border-radius: 8px !important;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem !important;
+  height: 2.75rem;
+}
+
+:host ::ng-deep .source-settings-btn.p-button .p-button-icon {
+  color: #334155 !important;
+}
+
+:host ::ng-deep .source-settings-btn.p-button:hover {
+  background: #f8fafb !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Scan action button group - tightly packed gradient bar */
+.scan-actions-group {
+  display: inline-flex;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(52, 211, 153, 0.3);
+}
+
+/* Target p-button host elements inside the group */
+.scan-actions-group > p-button {
+  display: inline-flex;
+}
+
+/* Separator between buttons */
+.scan-actions-group > p-button + p-button {
+  border-left: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+/* Override PrimeNG button styling for all buttons inside the group */
+:host ::ng-deep .scan-actions-group .p-button {
+  border-radius: 0 !important;
+  border: none !important;
+  background: linear-gradient(135deg, #34d399, #06b6d4) !important;
+  color: #fff !important;
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  transition: filter 0.15s;
+}
+
+:host ::ng-deep .scan-actions-group .p-button:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+:host ::ng-deep .scan-actions-group .p-button:disabled {
+  background: #94a3b8 !important;
+  opacity: 0.6;
+}
+
+:host ::ng-deep .scan-actions-group .p-button .p-button-icon {
+  font-size: 1rem;
+  color: #fff !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Table toolbar: search + filter above the table
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+  border-radius: 12px 12px 0 0;
+}
+
+.table-toolbar .search-input {
+  padding: 0.5rem 0.875rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.8125rem;
+  width: 240px;
+  outline: none;
+}
+
+.table-toolbar .toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.row-click {
+  cursor: pointer;
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: 1rem;
+}
+.panel-actions .left { display: flex; align-items: center; gap: .5rem; }
+.panel-actions .right { display: flex; align-items: center; gap: .5rem; }
+
+.bottom-panel {
+  border-top: 1px solid #e0e0e0;
+  padding: 1rem 0;
+  margin-top: 1rem;
+}
+
+.pii-cards { margin-top: .5rem; }
+
+
+/* Row expansion container for per-space details */
+.row-expansion {
+  padding: .75rem 0;
+}
+.row-expansion__header {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .5rem;
+}
+/* Scroll area: show up to ~10 cards, scroll for more */
+.pii-scroll {
+  max-height: 1200px; /* approx 10 cards depending on content */
+  overflow-y: auto;
+  padding-right: .5rem; /* keep scrollbar away from content */
+}
+
+/* Refresh button spinning animation (Phase 1) */
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.new-spaces-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background-color: #e3f2fd;
+  border-left: 4px solid #2196f3;
+  border-radius: 4px;
+  animation: slideDown 300ms ease-out;
+}
+
+.new-spaces-banner i {
+  color: #2196f3;
+  font-size: 1.25rem;
+}
+
+.new-spaces-banner .banner-message {
+  flex: 1;
+  font-weight: 500;
+  color: #1565c0;
+}
+
+.new-spaces-banner button {
+  flex-shrink: 0;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Action buttons - horizontal alignment */
+.action-buttons-container {
+  display: inline-block;
+  /* Ensure consistent height for the container to avoid row jumping */
+  min-height: 3rem;
+  /* Center content vertically if possible, but display:block limits this */
+  /* We use margins on buttons for spacing */
+}
+.divider{
+  width:5px;
+  height:auto;
+  display:inline-block;
+}
+/* Ensure all buttons in action container have consistent height and spacing */
+:host ::ng-deep .action-buttons-container .p-button {
+  height: 2.5rem;
+  white-space: nowrap;
+  display: inline-flex;
+  margin-right: 0.5rem;
+}
+
+:host ::ng-deep .action-buttons-container .p-button:last-child {
+  margin-right: 0;
+}
+
+/* Resume scan button: rotate eject icon 90deg clockwise
+ * We need ::ng-deep to reach into the PrimeNG p-button internal template.
+ */
+:host ::ng-deep .resume-button .p-button-icon.pi-eject {
+  transform: rotate(90deg);
+}
+
+/* Space update indicator (shows when space has been modified since last scan) */
+.space-updated-indicator {
+  display: inline-block;
+  width: 0.5rem; /* small dot */
+  height: 0.5rem;
+  background-color: #f44336; /* red dot */
+  border-radius: 50%;
+  margin-left: 0.375rem; /* reasonable spacing */
+  vertical-align: super; /* placed above the text */
+  cursor: help;
+}
+
+/* Status tags: pill-shaped, consistent sizing */
+.status-tag.p-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 7.5rem;
+  box-sizing: border-box;
+  border-radius: 20px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Status badge customization: running ("En cours") in blue tone */
+.status-running.p-tag {
+  background-color: #2196F3A8; /* light blue, similar tone intensity to existing green */
+  border-color: #2196F3DA; /* primary blue accent */
+  color: #263238; /* readable dark blue text */
+}
+
+/* Status badge customization: paused ("En pause") in neutral blue-grey tone */
+.status-paused.p-tag {
+  background-color: #CFD8D8; /* light grey-blue background */
+  border-color: #90A4AE; /* medium blue-grey border */
+  color: #263238; /* dark text for good readability */
+}
+
+/* Pause button styling aligned with "En pause" status badge. */
+:host ::ng-deep .pause-button.p-button {
+  background-color: #CFD8D8 !important;
+  border-color: #90A4AE !important;
+  color: #263238 !important;
+}
+
+:host ::ng-deep .pause-button.p-button .p-button-icon,
+:host ::ng-deep .pause-button.p-button .p-button-label {
+  color: #263238 !important;
+}
+
+/* Scan status badge - displayed in table filter row */
+.scan-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 0.375rem;
+  transition: all 0.3s ease;
+}
+
+/* Active state: scan in progress (blue with color pulse animation) */
+.scan-status-badge.scanning {
+  color: white;
+  animation: color-pulse 2s ease-in-out infinite;
+}
+
+/* Inactive state: no scan running (grey) */
+.scan-status-badge.inactive {
+  background-color: #CFD8D8;
+  color: #263238;
+}
+
+/* Color pulse animation - progressive color change from light blue to dark blue */
+@keyframes color-pulse {
+  0%, 100% {
+    background-color: #42A5F5; /* Light blue */
+  }
+  50% {
+    background-color: #1565C0; /* Dark blue */
+  }
+}
+
+/* Responsive: smaller badge on mobile */
+@media (max-width: 768px) {
+  .scan-status-badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.5rem;
+    margin-left: 0.5rem;
+  }
+}
+
+/* PII Header Cell - relative positioning for absolute button placement */
+.pii-header-cell {
+  position: relative;
+}
+
+/* PII Help Button - positioned at top-right of header cell */
+:host ::ng-deep .pii-help-button.p-button {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+:host ::ng-deep .pii-help-button.p-button .p-button-icon {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+:host ::ng-deep .pii-help-button.p-button:hover .p-button-icon {
+  color: #3b82f6;
+}
+
+/* PII Help Dialog Styling */
+::ng-deep .pii-help-dialog .p-dialog-content {
+  padding: 1.5rem;
+}
+
+.pii-help-intro {
+  margin-bottom: 1.5rem;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.pii-help-section {
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.pii-help-section h4 {
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.pii-help-section .pii-help-description {
+  margin: 0 0 0.5rem 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.pii-help-section .pii-help-types {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #334155;
+  line-height: 1.5;
+}
+
+/* High severity section - red theme */
+.pii-help-high {
+  background-color: #fef2f2;
+}
+
+.pii-help-high h4 {
+  color: #b91c1c;
+}
+
+/* Medium severity section - orange theme */
+.pii-help-medium {
+  background-color: #fffbeb;
+}
+
+.pii-help-medium h4 {
+  color: #b45309;
+}
+
+/* Low severity section - blue theme */
+.pii-help-low {
+  background-color: #eff6ff;
+}
+
+.pii-help-low h4 {
+  color: #1d4ed8;
+}
+
+/* Severity badge icon in dialog headers */
+::ng-deep .severity-badge-icon.p-badge {
+  width: 1rem;
+  height: 1rem;
+  min-width: 1rem;
+  border-radius: 50%;
+}
+
+/* Prevent text wrapping in buttons */
+.white-space-nowrap {
+  white-space: nowrap;
+}
+
+/* Space filters container - vertical layout */
+.space-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Search input - full width with spacing below, rounded border */
+.space-filters .search-global {
+  width: 100%;
+  height: 2.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.8125rem;
+}
+
+.space-filters .scan-status-badge {
+  width: 100%;
+  height: 2.5rem;
+  margin-left: 0;
+  margin-bottom: 0.5rem;
+  box-sizing: border-box;
+}
+
+.space-filters .filter-item {
+  width: 100%;
+}
+
+.space-filters ::ng-deep p-select {
+  width: 100%;
+}
+
+.space-filters ::ng-deep p-select .p-select {
+  width: 100%;
+}
+
+/* Action buttons container - keep all buttons on a single line */
+:host ::ng-deep #col-actions-value {
+  white-space: nowrap;
+}
+
+:host ::ng-deep #col-actions-value .p-button {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+:host ::ng-deep #col-actions-value .divider {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Table styling to match reference design (rework-ui.txt)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Table container: rounded corners, white background, subtle border */
+:host ::ng-deep .p-datatable {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e8edf2;
+  overflow: hidden;
+}
+
+:host ::ng-deep .p-datatable .p-datatable-table-container {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Table header: light background, muted text */
+:host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
+  background: #f8fafb;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-color: #f1f5f9;
+}
+
+/* Table row borders */
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
+  border-color: #f1f5f9;
+}
+
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr {
+  border-color: #f1f5f9;
+}
+
+/* Space name styling */
+.fw-600 {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+/* Last scan text styling */
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr > td:nth-child(6) {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Status tags: colors matching reference design
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Completed status: green pill */
+:host ::ng-deep .p-tag.p-tag-success,
+:host ::ng-deep .status-tag.p-tag-success {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+/* Pending / waiting status: grey pill */
+:host ::ng-deep .p-tag.p-tag-secondary,
+:host ::ng-deep .status-tag.p-tag-secondary {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * PII Badges: circular badges matching reference design
+ * ═══════════════════════════════════════════════════════════════════════════ */
+:host ::ng-deep .p-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  padding: 0;
+  line-height: 1;
+}
+
+/* Total badge: default (keep PrimeNG primary or override) */
+:host ::ng-deep .p-badge:not(.p-badge-danger):not(.p-badge-warn):not(.p-badge-info):not(.p-badge-success):not(.severity-badge-icon) {
+  background-color: #64748b;
+}
+
+/* High severity: red */
+:host ::ng-deep .p-badge-danger {
+  background-color: #ef4444;
+}
+
+/* Medium severity: orange */
+:host ::ng-deep .p-badge-warn {
+  background-color: #f97316;
+}
+
+/* Low severity: yellow */
+:host ::ng-deep .p-badge-info {
+  background-color: #eab308;
+}
+
+/* Paginator: clean styling */
+:host ::ng-deep .p-paginator {
+  border-top: 1px solid #f1f5f9;
+  background: #fff;
+  border-radius: 0 0 12px 12px;
+}

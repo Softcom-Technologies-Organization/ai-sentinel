@@ -22,6 +22,27 @@
     "fr": "Français",
     "en": "English"
   },
+  "sources": {
+    "confluence": "Confluence",
+    "sharepoint": "SharePoint",
+    "database": "Databases",
+    "status": {
+      "active": "Active",
+      "configured": "Configured",
+      "notConfigured": "Not configured"
+    },
+    "notConfigured": {
+      "title": "Source not configured",
+      "message": "Connect {{source}} to start scanning your content.",
+      "configure": "Configure connection"
+    }
+  },
+  "severity": {
+    "high": "Critical",
+    "medium": "High",
+    "low": "Medium",
+    "total": "Total"
+  },
   "dashboard": {
     "title": "AI Sentinel",
     "table": {
@@ -52,8 +73,10 @@
       "confluenceUnavailable": "URL unavailable (not provided by backend)",
       "settings": "Settings",
       "scanSelected": "Scan Selected Spaces ({{count}})",
-      "scanSelectedLabel": "({{count}})"
+      "scanSelectedLabel": "({{count}})",
+      "piiSettings": "PII Settings"
     },
+    "spacesLabel": "spaces",
     "filters": {
       "modifiedOnly": "Show only modified spaces",
       "modifiedOnlyLabel": "Spaces to rescan"

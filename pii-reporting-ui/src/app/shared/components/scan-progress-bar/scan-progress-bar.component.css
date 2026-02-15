@@ -1,31 +1,24 @@
-/* Styles spécifiques au composant ScanProgressBar si nécessaire */
+/* Progress bar base: thin with rounded corners */
+:host ::ng-deep .p-progressbar {
+  background: #e2e8f0;
+  border-radius: 3px;
+}
 
-/*
- * Harmonise la couleur de la barre de progression avec le badge de statut
- * "En cours" (status-running) lorsque le scan est en cours et non terminé.
- *
- * Note : les éléments internes de PrimeNG ne portent pas l'attribut
- * d'encapsulation Angular de ce composant. On utilise donc ::ng-deep
- * pour cibler correctement les classes générées par PrimeNG lorsque
- * la barre possède la classe scan-progress-running.
- */
+:host ::ng-deep .p-progressbar .p-progressbar-value {
+  border-radius: 3px;
+}
+
+/* Completed: gradient matching the reference design */
+:host ::ng-deep .scan-progress-completed .p-progressbar-value {
+  background: linear-gradient(90deg, #34d399, #06b6d4);
+}
+
+/* Running: blue tone matching the "En cours" badge */
 :host ::ng-deep .scan-progress-running .p-progressbar-value {
-  background: #2196F3A8; /* même bleu que le contour du badge .status-running */
+  background: #2196F3A8;
 }
 
-:host ::ng-deep .scan-progress-running .p-progressbar-label {
-  color: #0d47a1; /* bleu foncé lisible, aligné avec le texte du badge */
-}
-
-/*
- * Harmonise la couleur de la barre de progression avec le badge de statut
- * "En pause" (status-paused) lorsque le scan est en pause.
- */
+/* Paused: grey tone matching the "En pause" badge */
 :host ::ng-deep .scan-progress-paused .p-progressbar-value {
-  background: #CFD8D8; /* même ton que le fond du badge .status-paused */
-  border-color: #90A4AE; /* rappel de la bordure du badge .status-paused */
-}
-
-:host ::ng-deep .scan-progress-paused .p-progressbar-label {
-  color: #263238; /* même couleur que le texte du badge .status-paused */
+  background: #CFD8D8;
 }

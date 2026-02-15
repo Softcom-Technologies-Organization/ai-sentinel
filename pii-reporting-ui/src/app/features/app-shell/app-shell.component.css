@@ -1,0 +1,137 @@
+.app-shell {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Top bar */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  border-bottom: 1px solid #e8edf2;
+}
+
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-logo {
+  height: 3rem;
+  width: auto;
+  mix-blend-mode: multiply;
+}
+
+.app-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  margin: 0;
+  color: #0f2b3c;
+  letter-spacing: -0.3px;
+}
+
+/* Tab icons */
+.tab-icon {
+  margin-right: 0.5rem;
+}
+
+/* Status dot for unconfigured sources */
+.status-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  margin-left: 0.5rem;
+}
+
+.status-dot.not_configured {
+  background-color: #94a3b8;
+}
+
+.status-dot.active {
+  background-color: #10b981;
+}
+
+.status-dot.configured {
+  background-color: #f59e0b;
+}
+
+/* Scan Error Toast Styling */
+::ng-deep .p-toast.p-component {
+  z-index: 9999;
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error {
+  background-color: #ffebee;
+  border-left: 6px solid #f44336;
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.25);
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-message-icon {
+  color: #f44336;
+  font-size: 2rem;
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-summary {
+  font-weight: 600;
+  color: #c62828;
+  font-size: 1.05rem;
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-detail {
+  color: #424242;
+  white-space: pre-line;
+  margin-top: 0.5rem;
+  line-height: 1.6;
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-icon-close {
+  color: #666;
+  transition: color 0.2s;
+}
+
+::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-icon-close:hover {
+  color: #f44336;
+}
+
+/* Settings Fullscreen Dialog Styling */
+::ng-deep .settings-fullscreen-dialog .p-dialog-content {
+  padding: 0;
+  overflow-y: auto;
+  height: 100%;
+}
+
+::ng-deep .settings-fullscreen-dialog .p-dialog {
+  max-height: 95vh;
+}
+
+::ng-deep .settings-fullscreen-dialog .p-dialog-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+@media (max-width: 768px) {
+  .top-bar {
+    padding: 0.5rem;
+  }
+
+  .app-logo {
+    height: 2rem;
+  }
+
+  .app-title {
+    font-size: 1rem;
+  }
+}

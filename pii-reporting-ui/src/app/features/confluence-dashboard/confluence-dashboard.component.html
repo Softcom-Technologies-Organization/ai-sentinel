@@ -1,32 +1,8 @@
-<p-toast key="scan-errors" position="top-right" [baseZIndex]="5000"></p-toast>
-<p-confirmDialog></p-confirmDialog>
-
 <div class="page p-3">
-  <div class="header">
-    <img ngSrc="assets/softcom_logo_1.png" alt="Softcom Logo" class="app-logo" height="696" width="696" />
-    <h2 class="m-0">
-      {{ 'dashboard.title' | transloco }}
-
-    </h2>
-    <div class="spacer"></div>
-    <p-button type="button"
-              icon="pi pi-cog"
-              [text]="true"
-              [rounded]="true"
-              (click)="openSettingsDialog()"
-              (keydown.enter)="openSettingsDialog()"
-              [pTooltip]="'dashboard.actions.settings' | transloco"
-              tooltipPosition="bottom"
-              [ariaLabel]="'dashboard.actions.settings' | transloco"
-              styleClass="settings-button">
-    </p-button>
-    <app-language-selector></app-language-selector>
-  </div>
-
   <!-- Warning: Confluence credentials not configured -->
   <app-confluence-config-banner
     [showBanner]="confluenceConfigMissing()"
-    (openSettings)="openSettingsDialog(1)"
+    (openSettings)="requestOpenSettings(1)"
     (dismiss)="dismissConfluenceConfigBanner()">
   </app-confluence-config-banner>
 
@@ -37,6 +13,48 @@
     (refresh)="refreshSpaces()"
     (dismiss)="dismissNotification()">
   </app-new-spaces-banner>
+
+  <!-- Source header: title + status + action buttons -->
+  <div class="source-header">
+    <div class="source-header-left">
+      <h2 class="source-title">{{ 'sources.confluence' | transloco }}</h2>
+      <span class="source-status-badge">{{ 'sources.status.active' | transloco }}</span>
+      <span class="source-spaces-count">{{ spaces().length }} {{ 'dashboard.spacesLabel' | transloco }}</span>
+    </div>
+    <div class="source-header-right">
+      <p-button icon="pi pi-cog"
+                [label]="'dashboard.actions.piiSettings' | transloco"
+                styleClass="source-settings-btn"
+                (click)="requestOpenSettings(0)"
+                (keydown.enter)="requestOpenSettings(0)" />
+      <div class="scan-actions-group">
+        <p-button type="button"
+                  icon="pi pi-play"
+                  (click)="selectedSpacesCount() > 0 ? startSelected() : startAll()"
+                  [disabled]="!canStartScan()"
+                  [pTooltip]="(selectedSpacesCount() > 0 ? ('dashboard.actions.scanSelected' | transloco: { count: selectedSpacesCount() }) : ('dashboard.actions.startScan' | transloco))"
+                  tooltipPosition="bottom"
+                  [attr.data-testid]="testIds.buttons.startScan" />
+        <p-button type="button"
+                  icon="pi pi-pause"
+                  (click)="pauseScan()"
+                  [disabled]="!isStreaming()"
+                  [pTooltip]="'dashboard.actions.pauseScan' | transloco"
+                  tooltipPosition="bottom"
+                  [attr.data-testid]="testIds.buttons.pauseScan" />
+        <p-button type="button"
+                  icon="pi pi-forward"
+                  (click)="resumeLastScan()"
+                  [disabled]="!canResumeScan()"
+                  [pTooltip]="'dashboard.actions.resumeScan' | transloco"
+                  tooltipPosition="bottom"
+                  [attr.data-testid]="testIds.buttons.resumeScan" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Severity cards -->
+  <app-severity-cards [counts]="globalSeverityCounts()" />
 
   <p-table #dt [value]="sortedSpaces()"
            [(selection)]="selectedSpaces"
@@ -150,62 +168,7 @@
         <th id="col-progress-value"></th>
         <th id="col-last-scan-value"></th>
         <th id="col-pii-value"></th>
-        <th id="col-actions-value">
-          @if (selectedSpacesCount() > 0) {
-            <p-button type="button"
-                      icon="pi pi-play"
-                      styleClass="p-button-raised p-button-info white-space-nowrap scan-selected-button"
-                      (click)="startSelected()"
-                      (keydown.enter)="startSelected()"
-                      (keydown.space)="$event.preventDefault(); startSelected()"
-                      [disabled]="!canStartScan()"
-                      [label]="'dashboard.actions.scanSelectedLabel' | transloco: { count: selectedSpacesCount() }"
-                      [pTooltip]="'dashboard.actions.scanSelected' | transloco: { count: selectedSpacesCount() }"
-                      tooltipPosition="bottom">
-            </p-button>
-            <div class="divider"></div>
-          }
-          @if (selectedSpacesCount() === 0) {
-            <p-button type="button"
-                      icon="pi pi-play"
-                      styleClass="p-button-raised p-button-info"
-                      (click)="startAll()"
-                      (keydown.enter)="startAll()"
-                      (keydown.space)="$event.preventDefault(); startAll()"
-                      [disabled]="!canStartScan()"
-                      [pTooltip]="'dashboard.actions.startScan' | transloco"
-                      tooltipPosition="bottom"
-                      [ariaLabel]="'dashboard.actions.startScan' | transloco"
-                      [attr.data-testid]="testIds.buttons.startScan">
-            </p-button>
-            <div class="divider"></div>
-          }
-          <p-button type="button"
-                    icon="pi pi-pause"
-                    styleClass="p-button-raised pause-button"
-                    (click)="pauseScan()"
-                    (keydown.enter)="pauseScan()"
-                    (keydown.space)="$event.preventDefault(); pauseScan()"
-                    [disabled]="!isStreaming()"
-                    [pTooltip]="'dashboard.actions.pauseScan' | transloco"
-                    tooltipPosition="bottom"
-                    [ariaLabel]="'dashboard.actions.pauseScan' | transloco"
-                    [attr.data-testid]="testIds.buttons.pauseScan">
-          </p-button>
-          <div class="divider"></div>
-          <p-button type="button"
-                    icon="pi pi-eject"
-                    styleClass="p-button-raised p-button-info resume-button"
-                    (click)="resumeLastScan()"
-                    (keydown.enter)="resumeLastScan()"
-                    (keydown.space)="$event.preventDefault(); resumeLastScan()"
-                    [disabled]="!canResumeScan()"
-                    [pTooltip]="'dashboard.actions.resumeScan' | transloco"
-                    tooltipPosition="bottom"
-                    [ariaLabel]="'dashboard.actions.resumeScan' | transloco"
-                    [attr.data-testid]="testIds.buttons.resumeScan">
-          </p-button>
-        </th>
+        <th id="col-actions-value"></th>
       </tr>
     </ng-template>
     <ng-template #body let-space let-expanded="expanded">
@@ -377,22 +340,5 @@
       <p class="pii-help-description">{{ 'piiHelp.score.description' | transloco }}</p>
       <p class="pii-help-calculation"><strong>{{ 'piiHelp.score.calculation' | transloco }}</strong></p>
     </div>
-  </p-dialog>
-
-  <!-- Settings Dialog - Fullscreen modal overlay to preserve SSE connection -->
-  <p-dialog [(visible)]="showSettingsDialog"
-            [modal]="true"
-            [closable]="true"
-            [dismissableMask]="true"
-            [maximizable]="true"
-            [draggable]="false"
-            [resizable]="false"
-            [style]="{width: '95vw', height: '95vh'}"
-            styleClass="settings-fullscreen-dialog"
-            [header]="'settings.title' | transloco">
-    <app-pii-settings [dialogMode]="true"
-                      [initialTab]="settingsInitialTab()"
-                      (closeDialog)="closeSettingsDialog()">
-    </app-pii-settings>
   </p-dialog>
 </div>

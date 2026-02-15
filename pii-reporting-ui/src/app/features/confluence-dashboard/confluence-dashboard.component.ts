@@ -1,11 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
-import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, EventEmitter, inject, OnDestroy, OnInit, Output, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { TranslocoModule } from '@jsverse/transloco';
-import { LanguageSelectorComponent } from '../../core/components/language-selector/language-selector.component';
 import { PiiItemCardComponent } from '../pii-item-card/pii-item-card.component';
-import { PiiSettingsComponent } from '../pii-settings/pii-settings.component';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { BadgeModule } from 'primeng/badge';
@@ -21,8 +19,6 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { ScanProgressBarComponent } from '../../shared/components/scan-progress-bar/scan-progress-bar.component';
 import { SortEvent } from 'primeng/api';
 import { TestIds } from '../test-ids.constants';
-import { ToastModule } from 'primeng/toast';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
 import { NewSpacesBannerComponent } from '../../shared/components/new-spaces-banner/new-spaces-banner.component';
 import { ConfluenceConfigBannerComponent } from '../../shared/components/confluence-config-banner/confluence-config-banner.component';
@@ -32,35 +28,17 @@ import { DashboardUiStateService } from './services/dashboard-ui-state.service';
 import { PiiItemsStorageService } from './services/pii-items-storage.service';
 import { SpaceDataManagementService } from './services/space-data-management.service';
 import { ScanControlService } from './services/scan-control.service';
+import { SeverityCardsComponent } from '../severity-cards/severity-cards.component';
+import { SeverityCounts } from '../../core/models/severity-counts';
 
 /**
- * Dashboard to orchestrate scanning all Confluence spaces sequentially.
+ * Confluence source dashboard - displays spaces table with PII scan results.
  *
- * Business goal:
- * - Allow starting multi-space scan with user confirmation
- * - Follow real-time scan progress via SSE events
- * - Display detected PII items per space with severity counts
- * - Enable scan pause/resume functionality
- * - Detect and notify about new spaces
- * - Indicate spaces modified since last scan
- *
- * Architecture:
- * - Thin orchestration layer delegating to specialized services
- * - Services handle all business logic and state management
- * - Component focuses on template bindings and user interactions
- *
- * Service Responsibilities:
- * - SpaceFilteringService: Filtering and sorting logic
- * - DashboardUiStateService: UI state (expansion, selection, logs)
- * - PiiItemsStorageService: PII items storage and aggregation
- * - SpaceDataManagementService: Space data loading and polling
- * - ScanControlService: Scan lifecycle (start, stop, resume)
- * - SseEventHandlerService: Real-time event routing and processing
- *
- * @since Phase 7 - Component Refactoring
+ * Embedded inside AppShellComponent's Confluence tab panel.
+ * Delegates to specialized services for all business logic.
  */
 @Component({
-  selector: 'app-root',
+  selector: 'app-confluence-dashboard',
   standalone: true,
     imports: [
         CommonModule,
@@ -69,7 +47,6 @@ import { ScanControlService } from './services/scan-control.service';
         ToggleSwitchModule,
         ToggleButtonModule,
         PiiItemCardComponent,
-        PiiSettingsComponent,
         BadgeModule,
         InputTextModule,
         SelectModule,
@@ -79,21 +56,18 @@ import { ScanControlService } from './services/scan-control.service';
         TooltipModule,
         DataViewModule,
         SkeletonModule,
-        ConfirmDialogModule,
         DialogModule,
-        ToastModule,
         TranslocoModule,
-        LanguageSelectorComponent,
         NewSpacesBannerComponent,
         ConfluenceConfigBannerComponent,
         ScanProgressBarComponent,
-        NgOptimizedImage
+        SeverityCardsComponent
     ],
-  templateUrl: './spaces-dashboard.component.html',
-  styleUrl: './spaces-dashboard.component.css',
+  templateUrl: './confluence-dashboard.component.html',
+  styleUrl: './confluence-dashboard.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class SpacesDashboardComponent implements OnInit, OnDestroy {
+export class ConfluenceDashboardComponent implements OnInit, OnDestroy {
   // Service injections - specialized responsibilities
   private readonly filteringService = inject(SpaceFilteringService);
   private readonly uiStateService = inject(DashboardUiStateService);
@@ -105,6 +79,9 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   // Utility services
   readonly spacesDashboardUtils = inject(SpacesDashboardUtils);
 
+  // Output to request settings dialog from parent (AppShellComponent)
+  @Output() openSettings = new EventEmitter<number>();
+
   // Expose test IDs to template for E2E testing
   readonly testIds = TestIds.dashboard;
 
@@ -113,10 +90,6 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
   // PII Help dialog visibility
   readonly showPiiHelpDialog = signal(false);
-
-  // Settings dialog visibility
-  readonly showSettingsDialog = signal(false);
-  readonly settingsInitialTab = signal(0);
 
   // Confluence config missing warning
   readonly confluenceConfigMissing = signal(false);
@@ -165,6 +138,21 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
   readonly canStartScan = computed(() => this.scanControl.canStartScan());
   readonly canResumeScan = computed(() => this.scanControl.canResumeScan());
 
+  // Global severity counts across all displayed spaces
+  readonly globalSeverityCounts = computed<SeverityCounts>(() => {
+    const spaces = this.sortedSpaces();
+    const result = { total: 0, high: 0, medium: 0, low: 0 };
+    for (const s of spaces) {
+      if (s.counts) {
+        result.total += s.counts.total;
+        result.high += s.counts.high;
+        result.medium += s.counts.medium;
+        result.low += s.counts.low;
+      }
+    }
+    return result;
+  });
+
   ngOnInit(): void {
     // Check if Confluence connection is configured before loading data
     this.confluenceConfigService.getConfig().subscribe({
@@ -208,171 +196,85 @@ export class SpacesDashboardComponent implements OnInit, OnDestroy {
 
   // ===== Template event handlers - delegation to services =====
 
-  /**
-   * Initiates global scan with user confirmation.
-   * Delegates to ScanControlService.
-   */
   startAll(): void {
     this.scanControl.startAll();
   }
 
-  /**
-   * Initiates scan for selected spaces with user confirmation.
-   * Delegates to ScanControlService.
-   */
   startSelected(): void {
     const keys = this.selectedSpaces.map(s => s.key);
     this.scanControl.startSelected(keys);
   }
 
-  /**
-   * Pauses current scan and marks as PAUSED for later resume.
-   * Delegates to ScanControlService.
-   */
   pauseScan(): void {
     this.scanControl.pauseScan();
   }
 
-  /**
-   * Resumes paused scan from last checkpoint.
-   * Delegates to ScanControlService.
-   */
   resumeLastScan(): void {
     this.scanControl.resumeLastScan();
   }
 
-  /**
-   * Updates global filter.
-   * Delegates to SpaceFilteringService.
-   */
   onGlobalChange(value: string): void {
     this.filteringService.onGlobalChange(value);
   }
 
-  /**
-   * Updates status filter.
-   * Delegates to SpaceFilteringService.
-   */
   onFilter(field: 'name' | 'status', value: string | null | undefined): void {
     this.filteringService.onFilter(field, value);
   }
 
-  /**
-   * Updates "Modified Only" filter.
-   * Delegates to SpaceFilteringService.
-   */
   onModifiedOnlyChange(value: boolean): void {
     this.filteringService.onModifiedOnlyChange(value);
   }
 
-  /**
-   * Handles custom sort from PrimeNG table.
-   * Delegates to SpaceFilteringService.
-   */
   onCustomSort(event: SortEvent): void {
     this.filteringService.onCustomSort(event);
   }
 
-  /**
-   * Handles row expansion.
-   * Delegates to DashboardUiStateService.
-   */
   onRowExpand(event: { data?: { key?: string } }): void {
     this.uiStateService.onRowExpand(event);
   }
 
-  /**
-   * Handles row collapse.
-   * Delegates to DashboardUiStateService.
-   */
   onRowCollapse(event: { data?: { key?: string } }): void {
     this.uiStateService.onRowCollapse(event);
   }
 
-  /**
-   * Manually refreshes spaces list.
-   * Delegates to SpaceDataManagementService.
-   */
   refreshSpaces(): void {
     this.dataManagement.refreshSpaces();
   }
 
-  /**
-   * Dismisses new spaces notification.
-   * Delegates to SpaceDataManagementService.
-   */
   dismissNotification(): void {
     this.dataManagement.dismissNotification();
   }
 
-  /**
-   * Checks if space has been updated since last scan.
-   * Delegates to SpaceDataManagementService.
-   */
   hasSpaceBeenUpdated(spaceKey: string): boolean {
     return this.dataManagement.hasSpaceBeenUpdated(spaceKey);
   }
 
-  /**
-   * Gets update tooltip for space.
-   * Delegates to SpaceDataManagementService.
-   */
   getSpaceUpdateTooltip(spaceKey: string): string {
     return this.dataManagement.getSpaceUpdateTooltip(spaceKey);
   }
 
   // ===== UI Helper methods =====
 
-  /**
-   * Gets translated status label.
-   * Delegates to DashboardUiStateService.
-   */
   statusLabel(status?: string): string {
     return this.uiStateService.statusLabel(status);
   }
 
-  /**
-   * Gets status severity for styling.
-   * Delegates to DashboardUiStateService.
-   */
   statusStyle(status?: string): 'danger' | 'warning' | 'success' | 'info' | 'secondary' {
     return this.uiStateService.statusStyle(status);
   }
 
-  /**
-   * Opens Confluence space in new tab.
-   * Delegates to SpacesDashboardUtils.
-   */
   openConfluence(space: any): void {
     this.spacesDashboardUtils.openConfluence(space);
   }
 
-  /**
-   * Opens the PII severity help dialog.
-   */
   openPiiHelpDialog(): void {
     this.showPiiHelpDialog.set(true);
   }
 
-  /**
-   * Opens the settings dialog in modal overlay.
-   * Preserves component lifecycle to maintain SSE connection.
-   */
-  openSettingsDialog(tab: number = 0): void {
-    this.settingsInitialTab.set(tab);
-    this.showSettingsDialog.set(true);
+  requestOpenSettings(tab: number = 0): void {
+    this.openSettings.emit(tab);
   }
 
-  /**
-   * Closes the settings dialog.
-   */
-  closeSettingsDialog(): void {
-    this.showSettingsDialog.set(false);
-  }
-
-  /**
-   * Dismisses the Confluence config warning banner.
-   */
   dismissConfluenceConfigBanner(): void {
     this.confluenceConfigMissing.set(false);
   }

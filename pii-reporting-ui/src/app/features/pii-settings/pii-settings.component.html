@@ -1,444 +1,553 @@
-<p-toast xmlns="http://www.w3.org/1999/html"></p-toast>
+<p-toast></p-toast>
 
 <div class="settings-page">
+  <!-- Header (only when not in dialog mode) -->
   @if (!dialogMode) {
     <div class="settings-header">
-      <h2>
-        <i class="pi pi-cog"></i>
-        {{ 'settings.title' | transloco }}
-      </h2>
-      <div class="spacer"></div>
+      <div class="header-title-block">
+        <h2>
+          <i class="pi pi-cog"></i>
+          {{ 'settings.title' | transloco }}
+        </h2>
+        <p class="settings-subtitle">{{ 'settings.subtitle' | transloco }}</p>
+      </div>
       <p-button
         type="button"
         icon="pi pi-arrow-left"
         [text]="true"
         [label]="'settings.back' | transloco"
-        routerLink="/">
+        routerLink="/"
+        [ariaLabel]="'settings.back' | transloco">
       </p-button>
     </div>
   }
 
-  <p-tabs [value]="initialTab">
-    <p-tablist>
-      <p-tab [value]="0">
-        <i class="pi pi-sliders-h"></i>
-        {{ 'settings.tabs.detection' | transloco }}
-      </p-tab>
-      <p-tab [value]="1">
-        <i class="pi pi-link"></i>
-        {{ 'settings.tabs.confluence' | transloco }}
-      </p-tab>
-    </p-tablist>
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="loading-container" role="status" aria-live="polite">
+      <p-progressSpinner></p-progressSpinner>
+    </div>
+  } @else {
+    <div class="settings-body">
+      <!-- Sidebar Navigation -->
+      <nav class="settings-sidebar" aria-label="Settings navigation">
+        <button
+          type="button"
+          class="sidebar-nav-item"
+          [class.active]="activeSection() === 'detectors'"
+          (click)="setActiveSection('detectors')"
+          (keydown.enter)="setActiveSection('detectors')"
+          [ariaLabel]="'settings.nav.detectors' | transloco">
+          <i class="pi pi-bolt"></i>
+          {{ 'settings.nav.detectors' | transloco }}
+        </button>
 
-    <p-tabpanels>
-      <!-- Detection Settings Tab -->
-      <p-tabpanel [value]="0">
-        @if (loading()) {
-          <div class="loading-container">
-            <p-progressSpinner></p-progressSpinner>
-          </div>
-        } @else {
-          <div class="settings-content">
-            <!-- DETECTOR LEVEL CONFIGURATION -->
-            <div class="settings-card">
-              <form [formGroup]="configForm">
-                <h3 class="card-title">
-                  <i class="pi pi-sliders-h"></i>
-                  {{ 'settings.detectorConfig.title' | transloco }}
-                </h3>
+        <button
+          type="button"
+          class="sidebar-nav-item"
+          [class.active]="activeSection() === 'thresholds'"
+          (click)="setActiveSection('thresholds')"
+          (keydown.enter)="setActiveSection('thresholds')"
+          [ariaLabel]="'settings.nav.thresholds' | transloco">
+          <i class="pi pi-cog"></i>
+          {{ 'settings.nav.thresholds' | transloco }}
+        </button>
 
-                <!-- Detectors Section -->
-                <div class="form-section">
-                  <h4 class="section-subtitle">{{ 'settings.sections.detectors' | transloco }}</h4>
+        <button
+          type="button"
+          class="sidebar-nav-item"
+          [class.active]="activeSection() === 'pii_types'"
+          (click)="setActiveSection('pii_types')"
+          (keydown.enter)="setActiveSection('pii_types')"
+          [ariaLabel]="'settings.nav.piiTypes' | transloco">
+          <i class="pi pi-tags"></i>
+          {{ 'settings.nav.piiTypes' | transloco }}
+        </button>
 
-                  <div class="form-field">
-                    <label for="glinerEnabled">
-                      <span class="field-label">{{ 'settings.detectors.gliner.label' | transloco }}</span>
-                      <p-toggleSwitch
-                        inputId="glinerEnabled"
-                        formControlName="glinerEnabled"
-                        [ariaLabel]="'settings.detectors.gliner.label' | transloco">
-                      </p-toggleSwitch>
-                    </label>
-                    <p class="field-description">{{ 'settings.detectors.gliner.description' | transloco }}</p>
+        <button
+          type="button"
+          class="sidebar-nav-item"
+          [class.active]="activeSection() === 'confluence'"
+          (click)="setActiveSection('confluence')"
+          (keydown.enter)="setActiveSection('confluence')"
+          [ariaLabel]="'settings.nav.confluence' | transloco">
+          <i class="pi pi-link"></i>
+          {{ 'settings.nav.confluence' | transloco }}
+        </button>
+      </nav>
+
+      <!-- Content Panel -->
+      <div class="settings-content">
+
+        <!-- ===== SECTION: DETECTORS ===== -->
+        @if (activeSection() === 'detectors') {
+          <form [formGroup]="configForm">
+            <h3 class="section-title">{{ 'settings.sections.detectors' | transloco }}</h3>
+
+            <div class="detector-cards">
+              <!-- GLiNER -->
+              <div class="detector-card gliner"
+                   [class.enabled]="configForm.get('glinerEnabled')?.value"
+                   [class.disabled]="!configForm.get('glinerEnabled')?.value">
+                <div class="detector-avatar gliner"
+                     [class.disabled-avatar]="!configForm.get('glinerEnabled')?.value">GL</div>
+                <div class="detector-info">
+                  <div class="detector-name"
+                       [class.disabled-text]="!configForm.get('glinerEnabled')?.value">
+                    {{ 'settings.detectors.gliner.label' | transloco }}
                   </div>
-
-                  <div class="form-field">
-                    <label for="presidioEnabled">
-                      <span class="field-label">{{ 'settings.detectors.presidio.label' | transloco }}</span>
-                      <p-toggleSwitch
-                        inputId="presidioEnabled"
-                        formControlName="presidioEnabled"
-                        [ariaLabel]="'settings.detectors.presidio.label' | transloco">
-                      </p-toggleSwitch>
-                    </label>
-                    <p class="field-description">{{ 'settings.detectors.presidio.description' | transloco }}</p>
-                  </div>
-
-                  <div class="form-field">
-                    <label for="regexEnabled">
-                      <span class="field-label">{{ 'settings.detectors.regex.label' | transloco }}</span>
-                      <p-toggleSwitch
-                        inputId="regexEnabled"
-                        formControlName="regexEnabled"
-                        [ariaLabel]="'settings.detectors.regex.label' | transloco">
-                      </p-toggleSwitch>
-                    </label>
-                    <p class="field-description">{{ 'settings.detectors.regex.description' | transloco }}</p>
-                  </div>
-
-                  @if (atLeastOneDetectorError) {
-                    <div class="validation-error">
-                      <i class="pi pi-exclamation-circle"></i>
-                      {{ 'settings.validation.atLeastOneDetector' | transloco }}
-                    </div>
-                  }
+                  <div class="detector-desc">{{ 'settings.detectors.gliner.description' | transloco }}</div>
                 </div>
-
-                <!-- Threshold Section -->
-                <div class="form-section">
-                  <h4 class="section-subtitle">{{ 'settings.sections.threshold' | transloco }}</h4>
-
-                  <div class="form-field threshold-field">
-                    <label for="defaultThreshold">
-                      <span class="field-label">{{ 'settings.threshold.label' | transloco }}</span>
-                    </label>
-                    <p class="field-description">{{ 'settings.threshold.description' | transloco }}</p>
-
-                    <div class="threshold-input-group">
-                      <p-inputNumber
-                        inputId="defaultThreshold"
-                        formControlName="defaultThreshold"
-                        [min]="0"
-                        [max]="1"
-                        [step]="0.05"
-                        [minFractionDigits]="2"
-                        [maxFractionDigits]="2"
-                        [showButtons]="true"
-                        buttonLayout="horizontal"
-                        incrementButtonIcon="pi pi-plus"
-                        decrementButtonIcon="pi pi-minus">
-                      </p-inputNumber>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Performance Section -->
-                <div class="form-section">
-                  <h4 class="section-subtitle">{{ 'settings.sections.performance' | transloco }}</h4>
-
-                  <div class="form-field threshold-field">
-                    <label for="nbOfLabelByPass">
-                      <span class="field-label">{{ 'settings.nbLabels.label' | transloco }}</span>
-                    </label>
-                    <p class="field-description">{{ 'settings.nbLabels.description' | transloco }}</p>
-
-                    <div class="threshold-input-group">
-                      <p-inputNumber
-                        inputId="nbOfLabelByPass"
-                        formControlName="nbOfLabelByPass"
-                        [min]="1"
-                        [max]="100"
-                        [step]="1"
-                        [showButtons]="true"
-                        buttonLayout="horizontal"
-                        incrementButtonIcon="pi pi-plus"
-                        decrementButtonIcon="pi pi-minus">
-                      </p-inputNumber>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Detector Config Action Buttons -->
-                <div class="section-actions">
-                  <p-button
-                    type="button"
-                    [label]="'settings.detectorConfig.actions.reset' | transloco"
-                    icon="pi pi-refresh"
-                    [disabled]="!hasDetectorChanges"
-                    (click)="onResetDetectorConfig()"
-                    (keydown.enter)="onResetDetectorConfig()"
-                    styleClass="p-button-sm">
-                  </p-button>
-                </div>
-
-                <!-- Info Card -->
-                @if (currentConfig()) {
-                  <div class="info-card">
-                    <div class="info-content">
-                      <div class="info-item">
-                        <strong>{{ 'settings.info.lastUpdated' | transloco }}</strong>
-                        {{ currentConfig()!.updatedAt | date:'medium' }}
-                      </div>
-                    </div>
-                  </div>
-                }
-              </form>
-            </div>
-
-            <!-- PII TYPE CONFIGURATIONS - HEADER -->
-            <div class="settings-card pii-types-header-card">
-              <h3 class="card-title">
-                <i class="pi pi-list"></i>
-                {{ 'settings.piiTypes.title' | transloco }}
-              </h3>
-
-              <p class="card-description">
-                {{ 'settings.piiTypes.description' | transloco }}
-              </p>
-
-              @if (hasUnsavedTypeChanges()) {
-                <div class="unsaved-changes-banner">
-                  <i class="pi pi-info-circle"></i>
-                  {{ 'settings.piiTypes.unsavedChanges' | transloco: {count: modifiedTypesCount} }}
-                </div>
-              }
-
-              <!-- SEARCH BAR -->
-              <div class="pii-search-container">
-                <p-iconfield iconPosition="left">
-                  <p-inputicon class="pi pi-search"></p-inputicon>
-                  <input
-                    type="text"
-                    pInputText
-                    [placeholder]="'settings.piiTypes.search.placeholder' | transloco"
-                    [(ngModel)]="searchTerm"
-                    (ngModelChange)="onSearchChange($event)"
-                    class="pii-search-input" />
-                </p-iconfield>
-                @if (searchTerm()) {
-                  <p-button
-                    type="button"
-                    icon="pi pi-times"
-                    [text]="true"
-                    [rounded]="true"
-                    (click)="clearSearch()"
-                    (keydown.enter)="clearSearch()"
-                    [ariaLabel]="'settings.piiTypes.search.clear' | transloco"
-                    styleClass="p-button-sm search-clear-btn">
-                  </p-button>
-                }
+                <p-toggleSwitch
+                  formControlName="glinerEnabled"
+                  [ariaLabel]="'settings.detectors.gliner.label' | transloco">
+                </p-toggleSwitch>
               </div>
 
-              <!-- NO RESULTS MESSAGE -->
-              @if (hasNoSearchResults()) {
-                <div class="no-results-message">
-                  <i class="pi pi-search"></i>
-                  <p>{{ 'settings.piiTypes.search.noResults' | transloco: {term: searchTerm()} }}</p>
+              <!-- Presidio -->
+              <div class="detector-card presidio"
+                   [class.enabled]="configForm.get('presidioEnabled')?.value"
+                   [class.disabled]="!configForm.get('presidioEnabled')?.value">
+                <div class="detector-avatar presidio"
+                     [class.disabled-avatar]="!configForm.get('presidioEnabled')?.value">PR</div>
+                <div class="detector-info">
+                  <div class="detector-name"
+                       [class.disabled-text]="!configForm.get('presidioEnabled')?.value">
+                    {{ 'settings.detectors.presidio.label' | transloco }}
+                  </div>
+                  <div class="detector-desc">{{ 'settings.detectors.presidio.description' | transloco }}</div>
                 </div>
-              }
-              <br>
-              <!-- PII TYPE CONFIGURATIONS - GLINER SECTION -->
-              @for (detectorGroup of filteredPiiTypes(); track detectorGroup.detector) {
-                @if (detectorGroup.detector === 'GLINER') {
-                  <div class="settings-card detector-section gliner-section">
-                    <div class="detector-section-header">
-                      <div class="detector-badge gliner-badge">
-                        <i class="pi pi-shield"></i>
-                        <span class="detector-label">
-                        {{ 'settings.piiTypes.detectors.gliner' | transloco }}
-                      </span>
-                      </div>
-                    </div>
+                <p-toggleSwitch
+                  formControlName="presidioEnabled"
+                  [ariaLabel]="'settings.detectors.presidio.label' | transloco">
+                </p-toggleSwitch>
+              </div>
 
-                    <!-- Category Accordions for GLiNER -->
-                    <p-accordion [multiple]="true" class="category-accordion">
-                      @for (categoryGroup of detectorGroup.categories; track categoryGroup.category) {
-                        <p-accordionTab>
-                          <ng-template pTemplate="header">
-                            <div class="category-header">
-                              <i class="pi pi-folder-open"></i>
-                              <span class="category-name">
-                              {{ 'settings.piiTypes.categoryNames.' + categoryGroup.category | transloco }}
-                            </span>
-                            </div>
-                          </ng-template>
-
-                          <!-- PII Types List -->
-                          <div class="pii-types-list">
-                            @for (type of categoryGroup.types; track type.piiType) {
-                              <div class="pii-type-item">
-                                <div class="row align-items-center">
-                                  <div class="col-7 col-md-8">
-                                    <span class="type-name" [innerHTML]="highlightText('', 'settings.piiTypes.typeNames.' + type.piiType)"></span>
-                                    @if (type.countryCode) {
-                                      <span class="type-country">
-                                      ({{ type.countryCode }})
-                                    </span>
-                                    }
-                                    <p class="type-description" [innerHTML]="highlightText('', 'settings.piiTypes.typeDescriptions.' + type.piiType)"></p>
-                                  </div>
-                                  <div class="col-2 text-center">
-                                    <p-toggleSwitch
-                                      [(ngModel)]="type.enabled"
-                                      (ngModelChange)="onPiiTypeToggleChange(type, $event)"
-                                      [ariaLabel]="'settings.piiTypes.toggle' | transloco: {type: ('settings.piiTypes.typeNames.' + type.piiType) | transloco}">
-                                    </p-toggleSwitch>
-                                  </div>
-                                  <div class="col-3 col-md-2">
-                                    @if (type.enabled) {
-                                      <div class="threshold-input-group">
-                                        <p-inputNumber
-                                          [(ngModel)]="type.threshold"
-                                          (ngModelChange)="onPiiTypeThresholdChange(type, $event)"
-                                          [min]="0"
-                                          [max]="1"
-                                          [step]="0.05"
-                                          [minFractionDigits]="2"
-                                          [maxFractionDigits]="2"
-                                          [showButtons]="true"
-                                          buttonLayout="horizontal"
-                                          incrementButtonIcon="pi pi-plus"
-                                          decrementButtonIcon="pi pi-minus">
-                                        </p-inputNumber>
-                                      </div>
-                                    }
-                                  </div>
-                                </div>
-                              </div>
-                            }
-                          </div>
-                        </p-accordionTab>
-                      }
-                    </p-accordion>
+              <!-- Regex -->
+              <div class="detector-card regex"
+                   [class.enabled]="configForm.get('regexEnabled')?.value"
+                   [class.disabled]="!configForm.get('regexEnabled')?.value">
+                <div class="detector-avatar regex"
+                     [class.disabled-avatar]="!configForm.get('regexEnabled')?.value">RE</div>
+                <div class="detector-info">
+                  <div class="detector-name"
+                       [class.disabled-text]="!configForm.get('regexEnabled')?.value">
+                    {{ 'settings.detectors.regex.label' | transloco }}
                   </div>
-                }
-              }
-              <br>
-              <!-- PII TYPE CONFIGURATIONS - PRESIDIO SECTION -->
-              @for (detectorGroup of filteredPiiTypes(); track detectorGroup.detector) {
-                @if (detectorGroup.detector === 'PRESIDIO') {
-                  <div class="settings-card detector-section presidio-section">
-                    <div class="detector-section-header">
-                      <div class="detector-badge presidio-badge">
-                        <i class="pi pi-shield"></i>
-                        <span class="detector-label">
-                        {{ 'settings.piiTypes.detectors.presidio' | transloco }}
-                      </span>
-                      </div>
-                    </div>
-
-                    <!-- Category Accordions for Presidio -->
-                    <p-accordion [multiple]="true" class="category-accordion">
-                      @for (categoryGroup of detectorGroup.categories; track categoryGroup.category) {
-                        <p-accordionTab>
-                          <ng-template pTemplate="header">
-                            <div class="category-header">
-                              <i class="pi pi-folder-open"></i>
-                              <span class="category-name">
-                              {{ 'settings.piiTypes.categoryNames.' + categoryGroup.category | transloco }}
-                            </span>
-                            </div>
-                          </ng-template>
-
-                          <!-- PII Types List -->
-                          <div class="pii-types-list">
-                            @for (type of categoryGroup.types; track type.piiType) {
-                              <div class="pii-type-item">
-                                <div class="row align-items-center">
-                                  <div class="col-7 col-md-8">
-                                    <span class="type-name" [innerHTML]="highlightText('', 'settings.piiTypes.typeNames.' + type.piiType)"></span>
-                                    @if (type.countryCode) {
-                                      <span class="type-country">
-                                      ({{ type.countryCode }})
-                                    </span>
-                                    }
-                                    <p class="type-description" [innerHTML]="highlightText('', 'settings.piiTypes.typeDescriptions.' + type.piiType)"></p>
-                                  </div>
-                                  <div class="col-2 text-center">
-                                    <p-toggleSwitch
-                                      [(ngModel)]="type.enabled"
-                                      (ngModelChange)="onPiiTypeToggleChange(type, $event)"
-                                      [ariaLabel]="'settings.piiTypes.toggle' | transloco: {type: ('settings.piiTypes.typeNames.' + type.piiType) | transloco}">
-                                    </p-toggleSwitch>
-                                  </div>
-                                  <div class="col-3 col-md-2">
-                                    @if (type.enabled) {
-                                      <div class="threshold-input-group">
-                                        <p-inputNumber
-                                          [(ngModel)]="type.threshold"
-                                          (ngModelChange)="onPiiTypeThresholdChange(type, $event)"
-                                          [min]="0"
-                                          [max]="1"
-                                          [step]="0.05"
-                                          [minFractionDigits]="2"
-                                          [maxFractionDigits]="2"
-                                          [showButtons]="true"
-                                          buttonLayout="horizontal"
-                                          incrementButtonIcon="pi pi-plus"
-                                          decrementButtonIcon="pi pi-minus">
-                                        </p-inputNumber>
-                                      </div>
-                                    }
-                                  </div>
-                                </div>
-                              </div>
-                            }
-                          </div>
-                        </p-accordionTab>
-                      }
-                    </p-accordion>
-                  </div>
-                }
-              }
+                  <div class="detector-desc">{{ 'settings.detectors.regex.description' | transloco }}</div>
+                </div>
+                <p-toggleSwitch
+                  formControlName="regexEnabled"
+                  [ariaLabel]="'settings.detectors.regex.label' | transloco">
+                </p-toggleSwitch>
+              </div>
             </div>
 
+            <!-- Validation error: at least one detector -->
+            @if (atLeastOneDetectorError) {
+              <div class="validation-error" role="alert">
+                <i class="pi pi-exclamation-circle"></i>
+                {{ 'settings.validation.atLeastOneDetector' | transloco }}
+              </div>
+            }
+          </form>
+        }
 
+        <!-- ===== SECTION: THRESHOLDS ===== -->
+        @if (activeSection() === 'thresholds') {
+          <form [formGroup]="configForm">
+            <h3 class="section-title">{{ 'settings.sections.threshold' | transloco }}</h3>
 
-            <!-- PII Types Action Buttons -->
-            <div class="settings-card pii-types-actions-card">
-              <div class="section-actions">
+            <!-- Default Threshold Card -->
+            <div class="threshold-card">
+              <div class="threshold-label">{{ 'settings.threshold.label' | transloco }}</div>
+              <div class="threshold-desc">{{ 'settings.threshold.description' | transloco }}</div>
+              <div class="threshold-controls">
+                <p-inputNumber
+                  inputId="defaultThreshold"
+                  formControlName="defaultThreshold"
+                  [min]="0"
+                  [max]="1"
+                  [step]="0.05"
+                  [minFractionDigits]="2"
+                  [maxFractionDigits]="2"
+                  [showButtons]="true"
+                  buttonLayout="horizontal"
+                  incrementButtonIcon="pi pi-plus"
+                  decrementButtonIcon="pi pi-minus">
+                </p-inputNumber>
+                <div class="threshold-gradient-bar">
+                  <div class="threshold-gradient-fill"
+                       [style.width.%]="(configForm.get('defaultThreshold')?.value ?? 0.75) * 100">
+                  </div>
+                </div>
+              </div>
+              <div class="threshold-labels">
+                <span>{{ 'settings.sections.detectors' | transloco }}</span>
+                <span>{{ 'settings.sections.performance' | transloco }}</span>
+              </div>
+            </div>
+
+            <!-- Labels per Pass Card -->
+            <div class="threshold-card">
+              <div class="threshold-label">{{ 'settings.nbLabels.label' | transloco }}</div>
+              <div class="threshold-desc">{{ 'settings.nbLabels.description' | transloco }}</div>
+              <div class="threshold-controls">
+                <p-inputNumber
+                  inputId="nbOfLabelByPass"
+                  formControlName="nbOfLabelByPass"
+                  [min]="1"
+                  [max]="100"
+                  [step]="1"
+                  [showButtons]="true"
+                  buttonLayout="horizontal"
+                  incrementButtonIcon="pi pi-plus"
+                  decrementButtonIcon="pi pi-minus">
+                </p-inputNumber>
+              </div>
+            </div>
+
+            <!-- Info Card -->
+            @if (currentConfig()) {
+              <div class="info-card">
+                <div class="info-content">
+                  <div class="info-item">
+                    <strong>{{ 'settings.info.lastUpdated' | transloco }}</strong>
+                    {{ currentConfig()!.updatedAt | date:'medium' }}
+                  </div>
+                </div>
+              </div>
+            }
+          </form>
+        }
+
+        <!-- ===== SECTION: PII TYPES ===== -->
+        @if (activeSection() === 'pii_types') {
+          <!-- Header with search -->
+          <div class="pii-types-header">
+            <h3 class="section-title">{{ 'settings.piiTypes.title' | transloco }}</h3>
+            <div class="pii-search-group">
+              <p-iconfield iconPosition="left">
+                <p-inputicon class="pi pi-search"></p-inputicon>
+                <input
+                  type="text"
+                  pInputText
+                  [placeholder]="'settings.piiTypes.search.placeholder' | transloco"
+                  [(ngModel)]="searchTerm"
+                  (ngModelChange)="onSearchChange($event)"
+                  class="pii-search-input" />
+              </p-iconfield>
+              @if (searchTerm()) {
                 <p-button
                   type="button"
-                  [label]="'settings.piiTypes.actions.reset' | transloco"
-                  icon="pi pi-refresh"
-                  [disabled]="!hasUnsavedTypeChanges()"
-                  (click)="onResetPiiTypes()"
-                  (keydown.enter)="onResetPiiTypes()"
+                  icon="pi pi-times"
+                  [text]="true"
+                  [rounded]="true"
+                  (click)="clearSearch()"
+                  (keydown.enter)="clearSearch()"
+                  [ariaLabel]="'settings.piiTypes.search.clear' | transloco"
                   styleClass="p-button-sm">
                 </p-button>
-              </div>
-            </div>
-
-            <!-- GLOBAL ACTION BUTTONS -->
-            <div class="global-actions">
-              <p-button
-                type="button"
-                [label]="'settings.actions.saveAll' | transloco"
-                icon="pi pi-save"
-                [disabled]="saving() || !hasUnsavedChanges"
-                [loading]="saving()"
-                (click)="onSaveAll()"
-                (keydown.enter)="onSaveAll()"
-                styleClass="p-button-success">
-              </p-button>
-
-              <p-button
-                type="button"
-                [label]="'settings.actions.resetAll' | transloco"
-                icon="pi pi-replay"
-                [disabled]="!hasUnsavedChanges"
-                (click)="onResetAll()"
-                (keydown.enter)="onResetAll()">
-              </p-button>
-
-              <p-button
-                type="button"
-                [label]="'settings.actions.cancel' | transloco"
-                icon="pi pi-times"
-                (click)="onCancel()"
-                (keydown.enter)="onCancel()"
-                styleClass="p-button-outlined">
-              </p-button>
+              }
             </div>
           </div>
-        }
-      </p-tabpanel>
 
-      <!-- Confluence Connection Tab -->
-      <p-tabpanel [value]="1">
-        <app-confluence-settings></app-confluence-settings>
-      </p-tabpanel>
-    </p-tabpanels>
-  </p-tabs>
+          <p class="section-desc">{{ 'settings.piiTypes.description' | transloco }}</p>
+
+          <!-- Unsaved changes banner -->
+          @if (hasUnsavedTypeChanges()) {
+            <div class="unsaved-changes-banner" role="status">
+              <i class="pi pi-info-circle"></i>
+              {{ 'settings.piiTypes.unsavedChanges' | transloco: {count: modifiedTypesCount} }}
+            </div>
+          }
+
+          <!-- No results message -->
+          @if (hasNoSearchResults()) {
+            <div class="no-results-message">
+              <i class="pi pi-search"></i>
+              <p>{{ 'settings.piiTypes.search.noResults' | transloco: {term: searchTerm()} }}</p>
+            </div>
+          }
+
+          <!-- PII Types grouped by detector -->
+          @for (detectorGroup of filteredPiiTypes(); track detectorGroup.detector) {
+            <div class="detector-group">
+              <!-- Detector group header -->
+              <div class="detector-group-header">
+                <div class="detector-group-left">
+                  <span class="detector-badge"
+                        [class.gliner]="detectorGroup.detector === 'GLINER'"
+                        [class.presidio]="detectorGroup.detector === 'PRESIDIO'">
+                    {{ detectorGroup.detector }}
+                  </span>
+                  @if (detectorGroup.detector === 'GLINER') {
+                    <p-button
+                      type="button"
+                      icon="pi pi-plus"
+                      [label]="'settings.customLabels.addButton' | transloco"
+                      (click)="openAddCustomLabelDialog()"
+                      (keydown.enter)="openAddCustomLabelDialog()"
+                      styleClass="p-button-sm p-button-outlined"
+                      [ariaLabel]="'settings.customLabels.addButton' | transloco">
+                    </p-button>
+                  }
+                </div>
+              </div>
+
+              <!-- Categories -->
+              @for (categoryGroup of detectorGroup.categories; track categoryGroup.category) {
+                <!-- Category sub-header -->
+                <div class="category-subheader">
+                  <i class="pi pi-folder-open"></i>
+                  {{ 'settings.piiTypes.categoryNames.' + categoryGroup.category | transloco }}
+                </div>
+
+                <!-- PII type rows -->
+                @for (type of categoryGroup.types; track type.piiType) {
+                  <div class="pii-type-row" [class.disabled]="!type.enabled">
+                    <div class="pii-type-info">
+                      @if (type.isCustom) {
+                        <span class="custom-badge">{{ 'settings.customLabels.customBadge' | transloco }}</span>
+                      }
+                      @if (type.isCustom && type.detectorLabel) {
+                        <span class="type-name">{{ type.detectorLabel }}</span>
+                        <span class="type-code">({{ type.piiType }})</span>
+                      } @else {
+                        <span class="type-name"
+                              [class.disabled-text]="!type.enabled"
+                              [innerHTML]="highlightText('', 'settings.piiTypes.typeNames.' + type.piiType)"></span>
+                      }
+                      @if (type.countryCode) {
+                        <span class="type-country">({{ type.countryCode }})</span>
+                      }
+                      @if (type.isCustom && type.severity) {
+                        <span class="severity-indicator severity-{{ type.severity | lowercase }}">{{ type.severity }}</span>
+                      }
+                      @if (!(type.isCustom && type.detectorLabel)) {
+                        <p class="type-description" [innerHTML]="highlightText('', 'settings.piiTypes.typeDescriptions.' + type.piiType)"></p>
+                      }
+                    </div>
+
+                    <div class="pii-type-controls">
+                      <p-toggleSwitch
+                        [(ngModel)]="type.enabled"
+                        (ngModelChange)="onPiiTypeToggleChange(type, $event)"
+                        [ariaLabel]="'settings.piiTypes.toggle' | transloco: {type: type.detectorLabel || (('settings.piiTypes.typeNames.' + type.piiType) | transloco)}">
+                      </p-toggleSwitch>
+                      @if (type.enabled) {
+                        <p-inputNumber
+                          [(ngModel)]="type.threshold"
+                          (ngModelChange)="onPiiTypeThresholdChange(type, $event)"
+                          [min]="0"
+                          [max]="1"
+                          [step]="0.05"
+                          [minFractionDigits]="2"
+                          [maxFractionDigits]="2"
+                          [showButtons]="true"
+                          buttonLayout="horizontal"
+                          incrementButtonIcon="pi pi-plus"
+                          decrementButtonIcon="pi pi-minus">
+                        </p-inputNumber>
+                      }
+                      @if (type.isCustom) {
+                        <p-button
+                          type="button"
+                          icon="pi pi-trash"
+                          [rounded]="true"
+                          [text]="true"
+                          severity="danger"
+                          (click)="confirmDeleteCustomType(type)"
+                          (keydown.enter)="confirmDeleteCustomType(type)"
+                          [ariaLabel]="'settings.customLabels.deleteButton' | transloco">
+                        </p-button>
+                      }
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          }
+        }
+
+        <!-- ===== SECTION: CONFLUENCE ===== -->
+        @if (activeSection() === 'confluence') {
+          <app-confluence-settings></app-confluence-settings>
+        }
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="settings-footer">
+      <p-button
+        type="button"
+        [label]="'settings.actions.resetAll' | transloco"
+        icon="pi pi-replay"
+        [disabled]="!hasUnsavedChanges"
+        (click)="onResetAll()"
+        (keydown.enter)="onResetAll()"
+        styleClass="p-button-outlined p-button-sm"
+        [ariaLabel]="'settings.actions.resetAll' | transloco">
+      </p-button>
+      <div class="footer-right">
+        <p-button
+          type="button"
+          [label]="'settings.actions.cancel' | transloco"
+          icon="pi pi-times"
+          (click)="onCancel()"
+          (keydown.enter)="onCancel()"
+          styleClass="p-button-outlined p-button-sm"
+          [ariaLabel]="'settings.actions.cancel' | transloco">
+        </p-button>
+        <p-button
+          type="button"
+          [label]="'settings.actions.saveAll' | transloco"
+          icon="pi pi-save"
+          [disabled]="saving() || !hasUnsavedChanges"
+          [loading]="saving()"
+          (click)="onSaveAll()"
+          (keydown.enter)="onSaveAll()"
+          styleClass="p-button-sm"
+          [ariaLabel]="'settings.actions.saveAll' | transloco">
+        </p-button>
+      </div>
+    </div>
+  }
+
+  <!-- Add Custom Label Dialog (preserved exactly from original) -->
+  <p-dialog
+    [header]="'settings.customLabels.dialogTitle' | transloco"
+    [(visible)]="showAddCustomLabelDialog"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '500px' }"
+    (onHide)="closeAddCustomLabelDialog()"
+    [ariaLabel]="'settings.customLabels.dialogTitle' | transloco">
+
+    <form [formGroup]="customLabelForm" (ngSubmit)="createCustomType()">
+      <!-- Detector Label -->
+      <div class="custom-label-field">
+        <label for="detectorLabel">
+          {{ 'settings.customLabels.fields.detectorLabel' | transloco }}
+          <span class="required-marker" aria-hidden="true">*</span>
+        </label>
+        <input
+          id="detectorLabel"
+          type="text"
+          pInputText
+          formControlName="detectorLabel"
+          (input)="onDetectorLabelChange(customLabelForm.get('detectorLabel')?.value ?? '')"
+          [placeholder]="'settings.customLabels.fields.detectorLabelPlaceholder' | transloco" />
+        @if (customLabelForm.get('detectorLabel')?.invalid && customLabelForm.get('detectorLabel')?.touched) {
+          <small class="field-error">{{ 'settings.customLabels.validation.detectorLabelRequired' | transloco }}</small>
+        }
+      </div>
+
+      <!-- PII Type Code -->
+      <div class="custom-label-field">
+        <label for="piiType">
+          {{ 'settings.customLabels.fields.piiType' | transloco }}
+          <span class="required-marker" aria-hidden="true">*</span>
+        </label>
+        <input
+          id="piiType"
+          type="text"
+          pInputText
+          formControlName="piiType"
+          [placeholder]="'settings.customLabels.fields.piiTypePlaceholder' | transloco" />
+        @if (customLabelForm.get('piiType')?.invalid && customLabelForm.get('piiType')?.touched) {
+          <small class="field-error">{{ 'settings.customLabels.validation.piiTypeInvalid' | transloco }}</small>
+        }
+      </div>
+
+      <!-- Category -->
+      <div class="custom-label-field">
+        <label for="category">
+          {{ 'settings.customLabels.fields.category' | transloco }}
+          <span class="required-marker" aria-hidden="true">*</span>
+        </label>
+        <p-select
+          id="category"
+          formControlName="category"
+          [options]="categoryOptions"
+          optionLabel="label"
+          optionValue="value"
+          [ariaLabel]="'settings.customLabels.fields.category' | transloco">
+        </p-select>
+      </div>
+
+      <!-- Severity -->
+      <div class="custom-label-field">
+        <label for="severity">
+          {{ 'settings.customLabels.fields.severity' | transloco }}
+          <span class="required-marker" aria-hidden="true">*</span>
+        </label>
+        <p-select
+          id="severity"
+          formControlName="severity"
+          [options]="severityOptions"
+          optionLabel="label"
+          optionValue="value"
+          [ariaLabel]="'settings.customLabels.fields.severity' | transloco">
+        </p-select>
+      </div>
+
+      <!-- Threshold -->
+      <div class="custom-label-field">
+        <label for="customThreshold">
+          {{ 'settings.customLabels.fields.threshold' | transloco }}
+        </label>
+        <div class="threshold-input-group">
+          <p-inputNumber
+            inputId="customThreshold"
+            formControlName="threshold"
+            [min]="0"
+            [max]="1"
+            [step]="0.05"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            [showButtons]="true"
+            buttonLayout="horizontal"
+            incrementButtonIcon="pi pi-plus"
+            decrementButtonIcon="pi pi-minus">
+          </p-inputNumber>
+        </div>
+      </div>
+
+      <!-- Country Code -->
+      <div class="custom-label-field">
+        <label for="countryCode">
+          {{ 'settings.customLabels.fields.countryCode' | transloco }}
+        </label>
+        <input
+          id="countryCode"
+          type="text"
+          pInputText
+          formControlName="countryCode"
+          [placeholder]="'settings.customLabels.fields.countryCodePlaceholder' | transloco"
+          maxlength="5" />
+      </div>
+
+      <!-- Dialog Actions -->
+      <div class="dialog-actions">
+        <p-button
+          type="button"
+          [label]="'common.cancel' | transloco"
+          icon="pi pi-times"
+          (click)="closeAddCustomLabelDialog()"
+          (keydown.enter)="closeAddCustomLabelDialog()"
+          styleClass="p-button-outlined">
+        </p-button>
+        <p-button
+          type="submit"
+          [label]="'settings.customLabels.createButton' | transloco"
+          icon="pi pi-check"
+          [disabled]="customLabelForm.invalid || creatingCustomType()"
+          [loading]="creatingCustomType()"
+          styleClass="p-button-success">
+        </p-button>
+      </div>
+    </form>
+  </p-dialog>
 </div>

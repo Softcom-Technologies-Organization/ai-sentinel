@@ -13,7 +13,6 @@ import { Router, RouterLink } from '@angular/router';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { AccordionModule } from 'primeng/accordion';
 import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { MessageModule } from 'primeng/message';
@@ -23,9 +22,17 @@ import { TabsModule } from 'primeng/tabs';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
-import { MessageService } from 'primeng/api';
+import { SelectModule } from 'primeng/select';
+import { DialogModule } from 'primeng/dialog';
+import { SliderModule } from 'primeng/slider';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { PiiDetectionConfigService } from '../../core/services/pii-detection-config.service';
-import { GroupedPiiTypes, PiiDetectionConfig, PiiTypeConfig } from '../../core/models/pii-detection-config.model';
+import {
+  CreatePiiTypeConfigRequest,
+  GroupedPiiTypes,
+  PiiDetectionConfig,
+  PiiTypeConfig
+} from '../../core/models/pii-detection-config.model';
 import { forkJoin, Observable } from 'rxjs';
 import { ConfluenceSettingsComponent } from '../confluence-settings/confluence-settings.component';
 
@@ -46,7 +53,6 @@ import { ConfluenceSettingsComponent } from '../confluence-settings/confluence-s
     TranslocoModule,
     AccordionModule,
     ButtonModule,
-    CardModule,
     ToggleSwitchModule,
     InputNumberModule,
     MessageModule,
@@ -56,9 +62,12 @@ import { ConfluenceSettingsComponent } from '../confluence-settings/confluence-s
     IconFieldModule,
     InputIconModule,
     InputTextModule,
+    SelectModule,
+    DialogModule,
+    SliderModule,
     ConfluenceSettingsComponent
   ],
-  providers: [MessageService]
+  providers: [MessageService, ConfirmationService]
 })
 export class PiiSettingsComponent implements OnInit {
   /**
@@ -87,6 +96,9 @@ export class PiiSettingsComponent implements OnInit {
   groupedPiiTypes = signal<GroupedPiiTypes[]>([]);
   originalPiiTypes = signal<Map<string, PiiTypeConfig>>(new Map());
   modifiedPiiTypes = signal<Map<string, PiiTypeConfig>>(new Map());
+
+  // Sidebar navigation
+  activeSection = signal<'detectors' | 'thresholds' | 'pii_types' | 'confluence'>('detectors');
 
   // Search functionality
   searchTerm = signal<string>('');
@@ -141,15 +153,42 @@ export class PiiSettingsComponent implements OnInit {
   // Computed signal for unsaved changes
   hasUnsavedTypeChanges = computed(() => this.modifiedPiiTypes().size > 0);
 
+  // Custom label management
+  showAddCustomLabelDialog = signal(false);
+  customLabelForm!: FormGroup;
+  creatingCustomType = signal(false);
+
+  categoryOptions = [
+    { label: 'CONTACT', value: 'CONTACT' },
+    { label: 'IDENTITY', value: 'IDENTITY' },
+    { label: 'FINANCIAL', value: 'FINANCIAL' },
+    { label: 'GOVERNMENT_ID', value: 'GOVERNMENT_ID' },
+    { label: 'LOCATION', value: 'LOCATION' },
+    { label: 'SECURITY', value: 'SECURITY' },
+    { label: 'NETWORK', value: 'NETWORK' },
+    { label: 'MEDICAL', value: 'MEDICAL' },
+    { label: 'BUSINESS', value: 'BUSINESS' },
+    { label: 'DIGITAL', value: 'DIGITAL' },
+    { label: 'CUSTOM', value: 'CUSTOM' }
+  ];
+
+  severityOptions = [
+    { label: 'HIGH', value: 'HIGH' },
+    { label: 'MEDIUM', value: 'MEDIUM' },
+    { label: 'LOW', value: 'LOW' }
+  ];
+
   constructor(
     private readonly fb: FormBuilder,
     private readonly configService: PiiDetectionConfigService,
     private readonly messageService: MessageService,
+    private readonly confirmationService: ConfirmationService,
     private readonly translocoService: TranslocoService,
     private readonly router: Router,
     private readonly sanitizer: DomSanitizer
   ) {
     this.initForm();
+    this.initCustomLabelForm();
   }
 
   ngOnInit(): void {
@@ -166,6 +205,129 @@ export class PiiSettingsComponent implements OnInit {
     }, {
       validators: [this.atLeastOneDetectorValidator]
     } as AbstractControlOptions);
+  }
+
+  private initCustomLabelForm(): void {
+    this.customLabelForm = this.fb.group({
+      detectorLabel: ['', [Validators.required, Validators.minLength(2)]],
+      piiType: ['', [Validators.required, Validators.pattern(/^[A-Z][A-Z0-9_]*$/)]],
+      category: ['CUSTOM', [Validators.required]],
+      severity: ['MEDIUM', [Validators.required]],
+      threshold: [0.80, [Validators.required, Validators.min(0), Validators.max(1)]],
+      countryCode: ['']
+    });
+  }
+
+  /**
+   * Auto-generate PII type code from detector label.
+   * "employee badge number" -> "EMPLOYEE_BADGE_NUMBER"
+   * "Numéro de badge" -> "NUMERO_DE_BADGE"
+   */
+  onDetectorLabelChange(label: string): void {
+    const piiType = label
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9\s]/g, '')
+      .replace(/\s+/g, '_');
+    this.customLabelForm.patchValue({ piiType });
+  }
+
+  openAddCustomLabelDialog(): void {
+    this.customLabelForm.reset({
+      detectorLabel: '',
+      piiType: '',
+      category: 'CUSTOM',
+      severity: 'MEDIUM',
+      threshold: 0.80,
+      countryCode: ''
+    });
+    this.showAddCustomLabelDialog.set(true);
+  }
+
+  closeAddCustomLabelDialog(): void {
+    this.showAddCustomLabelDialog.set(false);
+  }
+
+  createCustomType(): void {
+    if (this.customLabelForm.invalid) {
+      this.customLabelForm.markAllAsTouched();
+      return;
+    }
+
+    this.creatingCustomType.set(true);
+    const formValue = this.customLabelForm.value;
+
+    const request: CreatePiiTypeConfigRequest = {
+      piiType: formValue.piiType,
+      detector: 'GLINER',
+      enabled: true,
+      threshold: formValue.threshold,
+      category: formValue.category,
+      detectorLabel: formValue.detectorLabel,
+      severity: formValue.severity,
+      countryCode: formValue.countryCode || undefined
+    };
+
+    this.configService.createPiiTypeConfig(request).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: this.translocoService.translate('common.success'),
+          detail: this.translocoService.translate('settings.customLabels.messages.createSuccess', { label: formValue.detectorLabel }),
+          life: 3000
+        });
+        this.creatingCustomType.set(false);
+        this.showAddCustomLabelDialog.set(false);
+        this.loadAllConfigs();
+      },
+      error: (err) => {
+        console.error('Failed to create custom PII type:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: this.translocoService.translate('common.error'),
+          detail: this.translocoService.translate('settings.customLabels.messages.createError', { error: err.error?.message || err.message || 'Unknown error' }),
+          life: 5000
+        });
+        this.creatingCustomType.set(false);
+      }
+    });
+  }
+
+  confirmDeleteCustomType(type: PiiTypeConfig): void {
+    const typeName = type.detectorLabel || type.piiType;
+    this.confirmationService.confirm({
+      header: this.translocoService.translate('settings.customLabels.deleteConfirm.header'),
+      message: this.translocoService.translate('settings.customLabels.deleteConfirm.message', { label: typeName }),
+      acceptLabel: this.translocoService.translate('common.yes'),
+      rejectLabel: this.translocoService.translate('common.no'),
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => this.deleteCustomType(type)
+    });
+  }
+
+  private deleteCustomType(type: PiiTypeConfig): void {
+    this.configService.deletePiiTypeConfig(type.detector, type.piiType).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: this.translocoService.translate('common.success'),
+          detail: this.translocoService.translate('settings.customLabels.messages.deleteSuccess', { label: type.detectorLabel || type.piiType }),
+          life: 3000
+        });
+        this.loadAllConfigs();
+      },
+      error: (err) => {
+        console.error('Failed to delete custom PII type:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: this.translocoService.translate('common.error'),
+          detail: this.translocoService.translate('settings.customLabels.messages.deleteError', { error: err.error?.message || err.message || 'Unknown error' }),
+          life: 5000
+        });
+      }
+    });
   }
 
   /**
@@ -609,5 +771,12 @@ export class PiiSettingsComponent implements OnInit {
     const highlighted = translatedText.replaceAll(regex, '<mark class="search-highlight">$1</mark>');
 
     return this.sanitizer.bypassSecurityTrustHtml(highlighted);
+  }
+
+  /**
+   * Set the active sidebar section.
+   */
+  setActiveSection(section: 'detectors' | 'thresholds' | 'pii_types' | 'confluence'): void {
+    this.activeSection.set(section);
   }
 }

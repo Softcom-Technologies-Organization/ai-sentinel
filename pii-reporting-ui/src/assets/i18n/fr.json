@@ -51,7 +51,8 @@
         "status": "Statut",
         "progress": "Progression",
         "lastScan": "Dernier scan",
-        "pii": "Niveau de sévérité des Informations Personnelles Identifiables (IPI)",
+        "pii": "Sévérité des détections d'IPI",
+        "riskScore": "Score de risque",
         "actions": "Actions"
       },
       "emptyMessage": "Aucun élément à afficher",
@@ -167,6 +168,13 @@
   "settings": {
     "title": "Paramètres",
     "back": "Retour au tableau de bord",
+    "nav": {
+      "detectors": "Moteurs de d\u00e9tection",
+      "thresholds": "Seuils & Performance",
+      "piiTypes": "Types d'IPI",
+      "confluence": "Connexion Confluence"
+    },
+    "subtitle": "Configurez les moteurs, seuils et types d'informations \u00e0 d\u00e9tecter",
     "tabs": {
       "detection": "Détection d'IPI",
       "confluence": "Connexion Confluence"
@@ -289,7 +297,8 @@
         "Security": "Identifiants de sécurité",
         "Network": "Identifiants réseau",
         "Medical": "Informations médicales",
-        "Business": "Identifiants professionnels"
+        "Business": "Identifiants professionnels",
+        "CUSTOM": "Labels personnalises"
       },
       "typeNames": {
         "EMAIL": "Adresse email",
@@ -603,6 +612,38 @@
         "placeholder": "Rechercher par nom, description ou code pays...",
         "clear": "Effacer la recherche",
         "noResults": "Aucun résultat trouvé pour \"{{term}}\""
+      }
+    },
+    "customLabels": {
+      "addButton": "Ajouter un label personnalise",
+      "deleteButton": "Supprimer le label personnalise",
+      "createButton": "Creer",
+      "customBadge": "Personnalise",
+      "dialogTitle": "Ajouter un label Gliner personnalise",
+      "fields": {
+        "detectorLabel": "Label du detecteur",
+        "detectorLabelPlaceholder": "ex: numero de badge employe",
+        "piiType": "Code du type PII",
+        "piiTypePlaceholder": "ex: NUMERO_BADGE_EMPLOYE",
+        "category": "Categorie",
+        "severity": "Severite",
+        "threshold": "Seuil de confiance",
+        "countryCode": "Code pays (optionnel)",
+        "countryCodePlaceholder": "ex: CH, FR"
+      },
+      "validation": {
+        "detectorLabelRequired": "Le label du detecteur est requis (min. 2 caracteres)",
+        "piiTypeInvalid": "Doit commencer par une lettre, majuscules et underscores uniquement (ex: NUMERO_BADGE)"
+      },
+      "deleteConfirm": {
+        "header": "Supprimer le label personnalise",
+        "message": "Etes-vous sur de vouloir supprimer le label personnalise \"{{label}}\" ? Cette action est irreversible."
+      },
+      "messages": {
+        "createSuccess": "Label personnalise \"{{label}}\" cree avec succes",
+        "createError": "Erreur lors de la creation du label personnalise : {{error}}",
+        "deleteSuccess": "Label personnalise \"{{label}}\" supprime avec succes",
+        "deleteError": "Erreur lors de la suppression du label personnalise : {{error}}"
       }
     },
     "actions": {

@@ -52,6 +52,7 @@
         "progress": "Progress",
         "lastScan": "Last scan",
         "pii": "Personally Identifiable Information Severity Level (PII)",
+        "riskScore": "Risk score",
         "actions": "Actions"
       },
       "emptyMessage": "No items to display",
@@ -167,6 +168,13 @@
   "settings": {
     "title": "Settings",
     "back": "Back to dashboard",
+    "nav": {
+      "detectors": "Detection Engines",
+      "thresholds": "Thresholds & Performance",
+      "piiTypes": "PII Types",
+      "confluence": "Confluence Connection"
+    },
+    "subtitle": "Configure detection engines, thresholds and types of information to detect",
     "tabs": {
       "detection": "PII Detection",
       "confluence": "Confluence Connection"
@@ -289,7 +297,8 @@
         "Security": "Security Credentials",
         "Network": "Network Identifiers",
         "Medical": "Medical Information",
-        "Business": "Business Identifiers"
+        "Business": "Business Identifiers",
+        "CUSTOM": "Custom Labels"
       },
       "typeNames": {
         "EMAIL": "Email Address",
@@ -595,6 +604,38 @@
         "placeholder": "Search by name, description or country code...",
         "clear": "Clear search",
         "noResults": "No results found for \"{{term}}\""
+      }
+    },
+    "customLabels": {
+      "addButton": "Add custom label",
+      "deleteButton": "Delete custom label",
+      "createButton": "Create",
+      "customBadge": "Custom",
+      "dialogTitle": "Add a custom Gliner label",
+      "fields": {
+        "detectorLabel": "Detector Label",
+        "detectorLabelPlaceholder": "e.g. employee badge number",
+        "piiType": "PII Type Code",
+        "piiTypePlaceholder": "e.g. EMPLOYEE_BADGE_NUMBER",
+        "category": "Category",
+        "severity": "Severity",
+        "threshold": "Confidence Threshold",
+        "countryCode": "Country Code (optional)",
+        "countryCodePlaceholder": "e.g. CH, FR"
+      },
+      "validation": {
+        "detectorLabelRequired": "Detector label is required (min. 2 characters)",
+        "piiTypeInvalid": "Must start with a letter, uppercase with underscores only (e.g. EMPLOYEE_BADGE)"
+      },
+      "deleteConfirm": {
+        "header": "Delete custom label",
+        "message": "Are you sure you want to delete the custom label \"{{label}}\"? This action cannot be undone."
+      },
+      "messages": {
+        "createSuccess": "Custom label \"{{label}}\" created successfully",
+        "createError": "Error creating custom label: {{error}}",
+        "deleteSuccess": "Custom label \"{{label}}\" deleted successfully",
+        "deleteError": "Error deleting custom label: {{error}}"
       }
     },
     "actions": {

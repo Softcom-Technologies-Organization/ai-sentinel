@@ -1,4 +1,5 @@
 <p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
 
 <div class="settings-page">
   <!-- Header (only when not in dialog mode) -->
@@ -278,7 +279,8 @@
                 <div class="detector-group-left">
                   <span class="detector-badge"
                         [class.gliner]="detectorGroup.detector === 'GLINER'"
-                        [class.presidio]="detectorGroup.detector === 'PRESIDIO'">
+                        [class.presidio]="detectorGroup.detector === 'PRESIDIO'"
+                        [class.regex]="detectorGroup.detector === 'REGEX'">
                     {{ detectorGroup.detector }}
                   </span>
                   @if (detectorGroup.detector === 'GLINER') {

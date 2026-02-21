@@ -11,20 +11,18 @@ import {
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
-import { AccordionModule } from 'primeng/accordion';
 import { ButtonModule } from 'primeng/button';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { MessageModule } from 'primeng/message';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ToastModule } from 'primeng/toast';
-import { TabsModule } from 'primeng/tabs';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
-import { SliderModule } from 'primeng/slider';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { PiiDetectionConfigService } from '../../core/services/pii-detection-config.service';
 import {
@@ -51,20 +49,18 @@ import { ConfluenceSettingsComponent } from '../confluence-settings/confluence-s
     ReactiveFormsModule,
     RouterLink,
     TranslocoModule,
-    AccordionModule,
     ButtonModule,
     ToggleSwitchModule,
     InputNumberModule,
     MessageModule,
     ProgressSpinnerModule,
     ToastModule,
-    TabsModule,
     IconFieldModule,
     InputIconModule,
     InputTextModule,
     SelectModule,
+    ConfirmDialogModule,
     DialogModule,
-    SliderModule,
     ConfluenceSettingsComponent
   ],
   providers: [MessageService, ConfirmationService]

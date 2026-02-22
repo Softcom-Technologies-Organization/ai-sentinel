@@ -168,7 +168,7 @@ describe('PiiCardCollapsedComponent', () => {
     fixture.componentRef.setInput('item', MOCK_ITEM);
     fixture.detectChanges();
     const card = fixture.nativeElement.querySelector('.collapsed-card');
-    expect(card.getAttribute('role')).toBe('button');
+    expect(card.tagName.toLowerCase()).toBe('button');
     expect(card.getAttribute('tabindex')).toBe('0');
   });
 });

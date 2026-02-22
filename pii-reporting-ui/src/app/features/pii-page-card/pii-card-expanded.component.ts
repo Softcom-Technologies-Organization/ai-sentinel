@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
-import { MultiSelectModule, MultiSelectChangeEvent } from 'primeng/multiselect';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { MultiSelectChangeEvent } from 'primeng/types/multiselect';
 import { PersonallyIdentifiableInformationScanResult } from '../../core/models/personally-identifiable-information-scan-result';
 import { DetectorTagComponent } from '../../shared/detector-tag/detector-tag.component';
 import { ConfidenceIndicatorComponent } from '../../shared/confidence-indicator/confidence-indicator.component';

@@ -23,6 +23,8 @@ const config: Config = {
   moduleNameMapper: {
     '^@app/(.*)$': '<rootDir>/src/app/$1',
     '^@environments/(.*)$': '<rootDir>/src/environments/$1',
+    '^primeng/multiselect$': '<rootDir>/node_modules/primeng/fesm2022/primeng-multiselect.mjs',
+    '^primeng/types/multiselect$': '<rootDir>/node_modules/primeng/fesm2022/primeng-types-multiselect.mjs',
   },
 };
 

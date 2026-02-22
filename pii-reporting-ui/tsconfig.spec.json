@@ -13,6 +13,12 @@
       "@angular/common/http": [
         "node_modules/@angular/common/types/http.d.ts"
       ],
+      "primeng/multiselect": [
+        "node_modules/primeng/types/primeng-multiselect.d.ts"
+      ],
+      "primeng/types/multiselect": [
+        "node_modules/primeng/types/primeng-types-multiselect.d.ts"
+      ],
       "primeng/*": [
         "node_modules/primeng/*"
       ],

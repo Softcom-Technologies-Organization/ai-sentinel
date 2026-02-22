@@ -212,38 +212,38 @@
   flex-shrink: 0;
 
   &.gliner {
-    background: rgba(124, 58, 237, 0.09);
+    background: #f3edfd;
     color: #7c3aed;
-    border: 1px solid rgba(124, 58, 237, 0.19);
+    border: 1px solid #e6dafc;
   }
 
   &.gliner.disabled-avatar {
     background: #f1f5f9;
-    color: #94a3b8;
+    color: #526072;
     border-color: #e2e8f0;
   }
 
   &.presidio {
-    background: rgba(29, 78, 216, 0.09);
+    background: #ebeffb;
     color: #1d4ed8;
-    border: 1px solid rgba(29, 78, 216, 0.19);
+    border: 1px solid #d4ddf8;
   }
 
   &.presidio.disabled-avatar {
     background: #f1f5f9;
-    color: #94a3b8;
+    color: #526072;
     border-color: #e2e8f0;
   }
 
   &.regex {
-    background: rgba(180, 83, 9, 0.09);
-    color: #b45309;
-    border: 1px solid rgba(180, 83, 9, 0.19);
+    background: #f8efe9;
+    color: #92400e;
+    border: 1px solid #f1ded0;
   }
 
   &.regex.disabled-avatar {
     background: #f1f5f9;
-    color: #94a3b8;
+    color: #526072;
     border-color: #e2e8f0;
   }
 }
@@ -295,6 +295,34 @@
   border: 1px solid #e8ecf1;
   background: #fafbfc;
   margin-bottom: 16px;
+
+  // PrimeNG overrides for threshold section steppers
+  ::ng-deep {
+    .p-inputnumber {
+      .p-inputnumber-input {
+        text-align: center;
+        font-weight: 600;
+        font-size: 13px;
+        max-width: 3.5rem;
+        padding: 0.3rem 0.15rem;
+        height: 32px;
+      }
+
+      .p-inputnumber-button-group {
+        display: flex;
+
+        button {
+          width: 2rem;
+          height: 32px;
+          padding: 0;
+
+          .pi {
+            font-size: 0.7rem;
+          }
+        }
+      }
+    }
+  }
 }
 
 .threshold-label {
@@ -338,36 +366,6 @@
   margin-top: 6px;
   font-size: 10px;
   color: #94a3b8;
-}
-
-// PrimeNG overrides for threshold section steppers
-.threshold-card {
-  ::ng-deep {
-    .p-inputnumber {
-      .p-inputnumber-input {
-        text-align: center;
-        font-weight: 600;
-        font-size: 13px;
-        max-width: 3.5rem;
-        padding: 0.3rem 0.15rem;
-        height: 32px;
-      }
-
-      .p-inputnumber-button-group {
-        display: flex;
-
-        button {
-          width: 2rem;
-          height: 32px;
-          padding: 0;
-
-          .pi {
-            font-size: 0.7rem;
-          }
-        }
-      }
-    }
-  }
 }
 
 // ===== INFO CARD =====
@@ -419,6 +417,41 @@
     font-size: 12px;
     padding: 6px 10px 6px 2.2rem;
     height: 32px;
+  }
+
+  // Search highlight
+  mark.search-highlight,
+  .search-highlight {
+    background-color: #fef08a;
+    color: #713f12;
+    padding: 0 0.125rem;
+    border-radius: 2px;
+  }
+
+  // Custom label dialog — strip ALL default chrome, single flat box
+  .custom-label-dialog.p-dialog {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    padding: 0;
+    background: #fff;
+
+    .p-dialog-header {
+      display: none !important;
+    }
+
+    .p-dialog-content {
+      padding: 20px;
+      margin: 0;
+      background: #fff;
+      border: none;
+      border-radius: 0;
+    }
+  }
+
+  .p-dialog-mask {
+    backdrop-filter: blur(2px);
   }
 }
 
@@ -497,6 +530,15 @@
   .detector-group-meta {
     font-size: 11px;
     color: #94a3b8;
+  }
+
+  // PrimeNG overrides for add custom label button (compact)
+  ::ng-deep {
+    .p-button-sm {
+      padding: 4px 10px;
+      font-size: 11px;
+      height: 28px;
+    }
   }
 }
 
@@ -641,6 +683,40 @@
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+
+  // Compact PrimeNG overrides for PII type row steppers
+  ::ng-deep {
+    .p-inputnumber {
+      .p-inputnumber-input {
+        text-align: center;
+        font-weight: 600;
+        max-width: 3.2rem;
+        font-size: 12px;
+        padding: 0.2rem 0.1rem;
+        height: 28px;
+      }
+
+      .p-inputnumber-button-group {
+        display: flex;
+
+        button {
+          width: 1.6rem;
+          height: 28px;
+          padding: 0;
+
+          .pi {
+            font-size: 0.65rem;
+          }
+        }
+      }
+    }
+
+    // Compact toggle switch
+    .p-toggleswitch {
+      transform: scale(0.85);
+      transform-origin: center;
+    }
+  }
 }
 
 // Custom badge and severity
@@ -684,42 +760,6 @@
   }
 }
 
-// Compact PrimeNG overrides for PII type row steppers
-.pii-type-controls {
-  ::ng-deep {
-    .p-inputnumber {
-      .p-inputnumber-input {
-        text-align: center;
-        font-weight: 600;
-        max-width: 3.2rem;
-        font-size: 12px;
-        padding: 0.2rem 0.1rem;
-        height: 28px;
-      }
-
-      .p-inputnumber-button-group {
-        display: flex;
-
-        button {
-          width: 1.6rem;
-          height: 28px;
-          padding: 0;
-
-          .pi {
-            font-size: 0.65rem;
-          }
-        }
-      }
-    }
-
-    // Compact toggle switch
-    .p-toggleswitch {
-      transform: scale(0.85);
-      transform-origin: center;
-    }
-  }
-}
-
 // ===== FOOTER =====
 .settings-footer {
   display: flex;
@@ -730,15 +770,8 @@
   background: #fafbfc;
   border-radius: 0 0 12px 12px;
   flex-shrink: 0;
-}
 
-.footer-right {
-  display: flex;
-  gap: 8px;
-}
-
-// PrimeNG overrides for footer buttons (compact)
-.settings-footer {
+  // PrimeNG overrides for footer buttons (compact)
   ::ng-deep {
     .p-button-sm {
       padding: 6px 14px;
@@ -749,59 +782,15 @@
   }
 }
 
-// PrimeNG overrides for add custom label button (compact)
-.detector-group-header {
-  ::ng-deep {
-    .p-button-sm {
-      padding: 4px 10px;
-      font-size: 11px;
-      height: 28px;
-    }
-  }
+.footer-right {
+  display: flex;
+  gap: 8px;
 }
+
 
 // ===== SEARCH HIGHLIGHT =====
-::ng-deep {
-  mark.search-highlight,
-  .search-highlight {
-    background-color: #fef08a;
-    color: #713f12;
-    padding: 0 0.125rem;
-    border-radius: 2px;
-  }
-}
 
 // ===== CUSTOM LABEL DIALOG =====
-
-// PrimeNG dialog — strip ALL default chrome, single flat box
-::ng-deep {
-  .custom-label-dialog.p-dialog {
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    padding: 0;
-    background: #fff;
-
-    // Kill any residual header space
-    .p-dialog-header {
-      display: none !important;
-    }
-
-    // Content IS the dialog — no inner box
-    .p-dialog-content {
-      padding: 20px;
-      margin: 0;
-      background: #fff;
-      border: none;
-      border-radius: 0;
-    }
-  }
-
-  .p-dialog-mask {
-    backdrop-filter: blur(2px);
-  }
-}
 
 // Custom dialog header (replaces PrimeNG header)
 .dialog-header {

@@ -44,6 +44,7 @@
         <p-button type="button"
                   icon="pi pi-play"
                   (click)="selectedSpacesCount() > 0 ? startSelected() : startAll()"
+                  (keydown.enter)="selectedSpacesCount() > 0 ? startSelected() : startAll()"
                   [disabled]="!canStartScan()"
                   [pTooltip]="(selectedSpacesCount() > 0 ? ('dashboard.actions.scanSelected' | transloco: { count: selectedSpacesCount() }) : ('dashboard.actions.startScan' | transloco))"
                   tooltipPosition="bottom"
@@ -51,6 +52,7 @@
         <p-button type="button"
                   icon="pi pi-pause"
                   (click)="pauseScan()"
+                  (keydown.enter)="pauseScan()"
                   [disabled]="!isStreaming()"
                   [pTooltip]="'dashboard.actions.pauseScan' | transloco"
                   tooltipPosition="bottom"
@@ -58,6 +60,7 @@
         <p-button type="button"
                   icon="pi pi-forward"
                   (click)="resumeLastScan()"
+                  (keydown.enter)="resumeLastScan()"
                   [disabled]="!canResumeScan()"
                   [pTooltip]="'dashboard.actions.resumeScan' | transloco"
                   tooltipPosition="bottom"
@@ -86,9 +89,9 @@
            [attr.data-testid]="testIds.table">
     <ng-template #caption>
       <div class="paginator-nav">
-        <p-button type="button" icon="pi pi-chevron-left" (click)="prevPage()" [disabled]="isFirstPage()" [text]="true" />
-        <p-button type="button" icon="pi pi-refresh" (click)="resetPage()" [text]="true" />
-        <p-button type="button" icon="pi pi-chevron-right" (click)="nextPage()" [disabled]="isLastPage()" [text]="true" />
+        <p-button type="button" icon="pi pi-chevron-left" (click)="prevPage()" (keydown.enter)="prevPage()" [disabled]="isFirstPage()" [text]="true" />
+        <p-button type="button" icon="pi pi-refresh" (click)="resetPage()" (keydown.enter)="resetPage()" [text]="true" />
+        <p-button type="button" icon="pi pi-chevron-right" (click)="nextPage()" (keydown.enter)="nextPage()" [disabled]="isLastPage()" [text]="true" />
       </div>
     </ng-template>
     <ng-template #header>

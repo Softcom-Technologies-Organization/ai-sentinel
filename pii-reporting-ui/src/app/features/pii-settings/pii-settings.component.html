@@ -3,9 +3,9 @@
 
 <!-- Loading -->
 @if (loading()) {
-    <div class="loading-container" role="status" aria-live="polite">
+    <output class="loading-container" aria-live="polite">
         <p-progressSpinner></p-progressSpinner>
-    </div>
+    </output>
 } @else {
     <div class="settings-body">
         <!-- Sidebar Navigation -->
@@ -235,10 +235,10 @@
 
                 <!-- Unsaved changes banner -->
                 @if (hasUnsavedTypeChanges()) {
-                    <div class="unsaved-changes-banner" role="status">
+                    <output class="unsaved-changes-banner">
                         <i class="pi pi-info-circle"></i>
                         {{ 'settings.piiTypes.unsavedChanges' | transloco: {count: modifiedTypesCount} }}
-                    </div>
+                    </output>
                 }
 
                 <!-- No results message -->

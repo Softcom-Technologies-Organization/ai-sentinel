@@ -27,7 +27,7 @@ export function formatEventLog(type: StreamEventType, jsonData: string): string 
 
     switch (type) {
       case 'start': {
-        const pagesTotalPart = o.pagesTotal != null ? ` pagesTotal=${o.pagesTotal}` : '';
+        const pagesTotalPart = o.pagesTotal == null ? '' : ` pagesTotal=${o.pagesTotal}`;
         return `[start]${spacePart}${pagesTotalPart}`;
       }
       case 'pageStart': {

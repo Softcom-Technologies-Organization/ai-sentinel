@@ -25,7 +25,7 @@
 :host ::ng-deep .scan-actions-group .p-button {
   border-radius: 0 !important;
   border: none !important;
-  background: linear-gradient(135deg, #34d399, #06b6d4) !important;
+  background: linear-gradient(135deg, #15804d, #0e7490) !important;
   color: #fff !important;
   width: 2.75rem !important;
   height: 2.75rem !important;
@@ -267,8 +267,8 @@
 
 /* Status badge customization: running ("En cours") in blue tone */
 .status-running.p-tag {
-  background-color: #2196F3A8; /* light blue, similar tone intensity to existing green */
-  border-color: #2196F3DA; /* primary blue accent */
+  background-color: #6DBAF7; /* light blue, opaque equivalent of #2196F3A8 on white */
+  border-color: #41A5F5; /* primary blue accent */
   color: #263238; /* readable dark blue text */
 }
 
@@ -618,14 +618,14 @@
 :host ::ng-deep .p-tag.p-tag-success,
 :host ::ng-deep .status-tag.p-tag-success {
   background-color: #dcfce7;
-  color: #16a34a;
+  color: #15803d;
 }
 
 /* Pending / waiting status: grey pill */
 :host ::ng-deep .p-tag.p-tag-secondary,
 :host ::ng-deep .status-tag.p-tag-secondary {
   background-color: #f1f5f9;
-  color: #94a3b8;
+  color: #475569;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

@@ -294,7 +294,7 @@ export class SseEventHandlerService {
 
       // Use backend-provided severity counts from summary (already calculated per severity)
       // Backend provides Map<String, Integer> with keys: "high", "medium", "low"
-      const summary = payload.nbOfDetectedPIIBySeverity as Record<string, number> | undefined;
+      const summary = payload.nbOfDetectedPIIBySeverity;
       const deltaHigh = summary?.high ?? summary?.HIGH ?? 0;
       const deltaMedium = summary?.medium ?? summary?.MEDIUM ?? 0;
       const deltaLow = summary?.low ?? summary?.LOW ?? 0;

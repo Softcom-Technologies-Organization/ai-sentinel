@@ -1,3 +1,5 @@
+export type DetectorType = 'GLINER' | 'PRESIDIO' | 'REGEX';
+
 /**
  * PII Detection Configuration model matching backend DTO.
  */
@@ -28,7 +30,7 @@ export interface UpdatePiiDetectionConfigRequest {
 export interface PiiTypeConfig {
   id: number;
   piiType: string;
-  detector: 'GLINER' | 'PRESIDIO' | 'REGEX';
+  detector: DetectorType;
   enabled: boolean;
   threshold: number;
   category: string;
@@ -45,7 +47,7 @@ export interface PiiTypeConfig {
  */
 export interface CreatePiiTypeConfigRequest {
   piiType: string;
-  detector: 'GLINER' | 'PRESIDIO' | 'REGEX';
+  detector: DetectorType;
   enabled: boolean;
   threshold: number;
   category: string;
@@ -59,7 +61,7 @@ export interface CreatePiiTypeConfigRequest {
  */
 export interface UpdatePiiTypeConfigRequest {
   piiType: string;
-  detector: 'GLINER' | 'PRESIDIO' | 'REGEX';
+  detector: DetectorType;
   enabled: boolean;
   threshold: number;
 }

@@ -60,12 +60,12 @@ export class PiiPageCardComponent implements OnInit {
 
   onExpand(): void {
     this.expanded.set(true);
-    this.expansionState.setExpanded(this.cardKey(), true);
+    this.expansionState.expand(this.cardKey());
   }
 
   onCollapse(): void {
     this.expanded.set(false);
-    this.expansionState.setExpanded(this.cardKey(), false);
+    this.expansionState.collapse(this.cardKey());
   }
 
   onRevealRequested(): void {

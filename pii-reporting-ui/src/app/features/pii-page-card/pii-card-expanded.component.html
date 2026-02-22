@@ -3,8 +3,7 @@
     <!-- Severity strip -->
     <div class="severity-strip" [style.backgroundColor]="severityStyle().color"></div>
 
-    <div class="expanded-header"
-         role="button"
+    <button type="button" class="expanded-header"
          tabindex="0"
          [attr.aria-label]="'dashboard.table.collapse' | transloco"
          (click)="collapse.emit()"
@@ -55,7 +54,7 @@
           <i class="pi pi-chevron-up"></i>
         </span>
       </div>
-    </div>
+    </button>
   </div>
 
   <!-- Filter bar -->
@@ -82,25 +81,25 @@
     <table class="detail-table">
       <thead>
         <tr>
-          <th class="th-type th-sortable" (click)="onSort('typeLabel')">
+          <th class="th-type th-sortable" tabindex="0" (click)="onSort('typeLabel')" (keydown.enter)="onSort('typeLabel')">
             {{ 'piiPageCard.table.type' | transloco }}
             <span class="sort-indicator" [class.sort-indicator--active]="sortColumn() === 'typeLabel'"
                   [class.sort-indicator--desc]="sortColumn() === 'typeLabel' && sortDirection() === 'desc'"
                   aria-hidden="true">&#x25B4;</span>
           </th>
-          <th class="th-value th-sortable" (click)="onSort('value')">
+          <th class="th-value th-sortable" tabindex="0" (click)="onSort('value')" (keydown.enter)="onSort('value')">
             {{ 'piiPageCard.table.value' | transloco }}
             <span class="sort-indicator" [class.sort-indicator--active]="sortColumn() === 'value'"
                   [class.sort-indicator--desc]="sortColumn() === 'value' && sortDirection() === 'desc'"
                   aria-hidden="true">&#x25B4;</span>
           </th>
-          <th class="th-confidence th-sortable" (click)="onSort('confidence')">
+          <th class="th-confidence th-sortable" tabindex="0" (click)="onSort('confidence')" (keydown.enter)="onSort('confidence')">
             {{ 'piiPageCard.table.confidence' | transloco }}
             <span class="sort-indicator" [class.sort-indicator--active]="sortColumn() === 'confidence'"
                   [class.sort-indicator--desc]="sortColumn() === 'confidence' && sortDirection() === 'desc'"
                   aria-hidden="true">&#x25B4;</span>
           </th>
-          <th class="th-detector th-sortable" (click)="onSort('detector')">
+          <th class="th-detector th-sortable" tabindex="0" (click)="onSort('detector')" (keydown.enter)="onSort('detector')">
             {{ 'piiPageCard.table.detector' | transloco }}
             <span class="sort-indicator" [class.sort-indicator--active]="sortColumn() === 'detector'"
                   [class.sort-indicator--desc]="sortColumn() === 'detector' && sortDirection() === 'desc'"

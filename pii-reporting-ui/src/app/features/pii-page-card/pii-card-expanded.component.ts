@@ -3,7 +3,6 @@ import { FormsModule } from '@angular/forms';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { MultiSelectModule, MultiSelectChangeEvent } from 'primeng/multiselect';
 import { PersonallyIdentifiableInformationScanResult } from '../../core/models/personally-identifiable-information-scan-result';
-import { DetectorSource } from '../../core/models/detected-personally-identifiable-information';
 import { DetectorTagComponent } from '../../shared/detector-tag/detector-tag.component';
 import { ConfidenceIndicatorComponent } from '../../shared/confidence-indicator/confidence-indicator.component';
 import { SEVERITY_STYLES } from './severity.config';
@@ -89,7 +88,7 @@ export class PiiCardExpandedComponent {
 
   /** Unique PII type labels from entity rows. */
   private readonly uniqueTypes = computed(() =>
-    [...new Set(this.entityRows().map(r => r.typeLabel))].sort()
+    [...new Set(this.entityRows().map(r => r.typeLabel))].sort((a, b) => a.localeCompare(b))
   );
 
   /** MultiSelect options: "Tous" first, then each PII type. */
@@ -148,7 +147,7 @@ export class PiiCardExpandedComponent {
         const valB = b[col];
         const cmp = typeof valA === 'string'
           ? valA.localeCompare(valB as string)
-          : (valA as number) - (valB as number);
+          : valA - (valB as number);
         return dir === 'asc' ? cmp : -cmp;
       });
     }

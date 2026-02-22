@@ -211,7 +211,7 @@ export class PiiSettingsComponent implements OnInit {
       piiType: ['', [Validators.required, Validators.pattern(/^[A-Z][A-Z0-9_]*$/)]],
       category: ['CUSTOM', [Validators.required]],
       severity: ['MEDIUM', [Validators.required]],
-      threshold: [0.80, [Validators.required, Validators.min(0), Validators.max(1)]],
+      threshold: [0.8, [Validators.required, Validators.min(0), Validators.max(1)]],
       countryCode: ['']
     });
   }
@@ -225,10 +225,10 @@ export class PiiSettingsComponent implements OnInit {
     const piiType = label
       .trim()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+      .replaceAll(/[\u0300-\u036f]/g, '')
       .toUpperCase()
-      .replace(/[^A-Z0-9\s]/g, '')
-      .replace(/\s+/g, '_');
+      .replaceAll(/[^A-Z0-9\s]/g, '')
+      .replaceAll(/\s+/g, '_');
     this.customLabelForm.patchValue({ piiType });
   }
 
@@ -238,7 +238,7 @@ export class PiiSettingsComponent implements OnInit {
       piiType: '',
       category: 'CUSTOM',
       severity: 'MEDIUM',
-      threshold: 0.80,
+      threshold: 0.8,
       countryCode: ''
     });
     this.showAddCustomLabelDialog.set(true);

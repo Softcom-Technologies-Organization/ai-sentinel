@@ -16,12 +16,12 @@ export class CardExpansionStateService {
     return this.expandedKeys.has(key);
   }
 
-  setExpanded(key: string, expanded: boolean): void {
-    if (expanded) {
-      this.expandedKeys.add(key);
-    } else {
-      this.expandedKeys.delete(key);
-    }
+  expand(key: string): void {
+    this.expandedKeys.add(key);
+  }
+
+  collapse(key: string): void {
+    this.expandedKeys.delete(key);
   }
 
   clear(): void {

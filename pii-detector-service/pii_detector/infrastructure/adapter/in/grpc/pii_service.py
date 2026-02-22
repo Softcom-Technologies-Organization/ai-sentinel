@@ -1101,19 +1101,6 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 pii_entity.end = int(entity['end'])
                 pii_entity.score = float(entity['score'])
 
-                # DIAGNOSTIC: Verify positions against original content
-                e_start = int(entity['start'])
-                e_end = int(entity['end'])
-                e_text = str(entity['text'])
-                actual_slice = content[e_start:e_end] if 0 <= e_start < e_end <= len(content) else "<OUT_OF_BOUNDS>"
-                if actual_slice != e_text:
-                    end_plus1 = content[e_start:e_end+1] if 0 <= e_start < e_end+1 <= len(content) else "<OUT_OF_BOUNDS>"
-                    logger.warning(
-                        f"[{request_id}] GRPC POSITION MISMATCH: type={pii_entity.type} | "
-                        f"entity.text='{e_text}' | content[{e_start}:{e_end}]='{actual_slice}' | "
-                        f"content[{e_start}:{e_end+1}]='{end_plus1}' | "
-                        f"source={entity.get('source', 'UNKNOWN')}"
-                    )
                 # Detection source: Map Domain Enum to Proto Enum
                 domain_source = entity.get('source')
                 if isinstance(domain_source, DetectorSource):

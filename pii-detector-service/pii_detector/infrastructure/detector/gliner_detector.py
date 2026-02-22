@@ -388,7 +388,7 @@ class GLiNERDetector:
         for entity in raw_entities:
             gliner_label = entity.get("label", "")
             pii_type = pii_type_mapping.get(gliner_label, gliner_label.upper())
-            
+
             # Extract actual PII text using start/end positions
             start = entity.get("start", 0)
             end = entity.get("end", 0)

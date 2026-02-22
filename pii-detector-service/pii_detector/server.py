@@ -11,6 +11,7 @@ Note: Before running this script, you need to:
 
 import argparse
 import logging
+import logging.handlers
 import os
 import sys
 from pathlib import Path
@@ -23,9 +24,13 @@ PII_DETECTION_PROTO_FILE_NAME = "pii_detection_pb2.py"
 sys.path.insert(0, str(Path(__file__).parent.parent.absolute()))
 
 # Configure logging
+LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+LOG_DIR = Path(__file__).parent.parent / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format=LOG_FORMAT
 )
 logger = logging.getLogger(__name__)
 

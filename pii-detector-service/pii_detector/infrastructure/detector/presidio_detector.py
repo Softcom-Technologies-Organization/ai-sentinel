@@ -767,11 +767,19 @@ class PresidioDetector:
             
             # Extract text
             entity_text = text[result.start:result.end]
-            
+
+            # DIAGNOSTIC: Verify Presidio raw positions against input text
+            self.logger.info(
+                f"PRESIDIO RAW POSITION: type={result.entity_type} | "
+                f"start={result.start} end={result.end} | "
+                f"text[{result.start}:{result.end}]='{entity_text}' | "
+                f"score={result.score:.3f}"
+            )
+
             # Use original Presidio score (no override)
             # The scoring values are used as minimum thresholds, not score replacements
             score = result.score
-            
+
             # Create PIIEntity with type_label
             entity = PIIEntity(
                 text=entity_text,
@@ -782,7 +790,7 @@ class PresidioDetector:
                 score=score,
                 source=DetectorSource.PRESIDIO
             )
-            
+
             entities.append(entity)
         
         if filtered_count > 0:

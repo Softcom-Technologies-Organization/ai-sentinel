@@ -1065,14 +1065,14 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         logger.debug(f"[{request_id}] Building gRPC response...")
         response = pii_detection_pb2.PIIDetectionResponse()
         
-        self._add_entities_to_response(response, entities, request_id)
+        self._add_entities_to_response(response, entities, request_id, content)
         self._add_summary_to_response(response, entities, request_id)
         self._add_masked_content_to_response(response, content, entities, request_id)
         
         return response
 
     def _add_entities_to_response(
-        self, response: pii_detection_pb2.PIIDetectionResponse, entities: List, request_id: str
+        self, response: pii_detection_pb2.PIIDetectionResponse, entities: List, request_id: str, content: str = ""
     ) -> None:
         """Add detected entities to response, limiting to 1000 to avoid huge responses.
         
@@ -1100,6 +1100,20 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 pii_entity.start = int(entity['start'])
                 pii_entity.end = int(entity['end'])
                 pii_entity.score = float(entity['score'])
+
+                # DIAGNOSTIC: Verify positions against original content
+                e_start = int(entity['start'])
+                e_end = int(entity['end'])
+                e_text = str(entity['text'])
+                actual_slice = content[e_start:e_end] if 0 <= e_start < e_end <= len(content) else "<OUT_OF_BOUNDS>"
+                if actual_slice != e_text:
+                    end_plus1 = content[e_start:e_end+1] if 0 <= e_start < e_end+1 <= len(content) else "<OUT_OF_BOUNDS>"
+                    logger.warning(
+                        f"[{request_id}] GRPC POSITION MISMATCH: type={pii_entity.type} | "
+                        f"entity.text='{e_text}' | content[{e_start}:{e_end}]='{actual_slice}' | "
+                        f"content[{e_start}:{e_end+1}]='{end_plus1}' | "
+                        f"source={entity.get('source', 'UNKNOWN')}"
+                    )
                 # Detection source: Map Domain Enum to Proto Enum
                 domain_source = entity.get('source')
                 if isinstance(domain_source, DetectorSource):

@@ -5,14 +5,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRepository;
+import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
 import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.HIGH;
 import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.LOW;
 import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.MEDIUM;
@@ -21,14 +28,19 @@ import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiable
  * Unit tests for {@link SeverityCalculationService}. Verifies severity classification rules for all
  * 50+ PII types.
  */
+@ExtendWith(MockitoExtension.class)
 @DisplayName("SeverityCalculationService")
 class SeverityCalculationServiceTest {
+
+    @Mock
+    private PiiTypeConfigRepository piiTypeConfigRepository;
 
     private SeverityCalculationService service;
 
     @BeforeEach
     void setUp() {
-        service = new SeverityCalculationService();
+        lenient().when(piiTypeConfigRepository.findAll()).thenReturn(List.of());
+        service = new SeverityCalculationService(piiTypeConfigRepository);
     }
 
     @Nested
@@ -129,20 +141,6 @@ class SeverityCalculationServiceTest {
             "TIME"
         })
         void should_ReturnLowSeverity_When_ContactOrLocationPiiType(String piiType) {
-            PersonallyIdentifiableInformationSeverity result = service.calculateSeverity(piiType);
-
-            assertThat(result)
-                .as("Type %s should be classified as LOW severity", piiType)
-                .isEqualTo(LOW);
-        }
-
-        @ParameterizedTest(name = "{0} should be mapped to LOW severity (temporal)")
-        @CsvSource({
-            "TIMESTAMP",
-            "DATE",
-            "TIME"
-        })
-        void should_ReturnLowSeverity_When_TemporalPiiType(String piiType) {
             PersonallyIdentifiableInformationSeverity result = service.calculateSeverity(piiType);
 
             assertThat(result)
@@ -339,8 +337,8 @@ class SeverityCalculationServiceTest {
             SeverityCounts result = service.aggregateCounts(entities);
 
             SoftAssertions softly = new SoftAssertions();
-            softly.assertThat(result.high()).isEqualTo(1);
-            softly.assertThat(result.medium()).isEqualTo(1);
+            softly.assertThat(result.high()).isOne();
+            softly.assertThat(result.medium()).isOne();
             softly.assertThat(result.low()).isEqualTo(3); // 1 EMAIL + 2 unknown
             softly.assertThat(result.total()).isEqualTo(5);
             softly.assertAll();
@@ -383,6 +381,136 @@ class SeverityCalculationServiceTest {
             softly.assertThat(result.low()).isZero();
             softly.assertThat(result.total()).isEqualTo(3);
             softly.assertAll();
+        }
+    }
+
+    @Nested
+    @DisplayName("Database-Driven Severity")
+    class DbDrivenSeverityTests {
+
+        @Test
+        @DisplayName("Should_ReturnDbSeverity_When_CustomTypeConfiguredInDatabase")
+        void Should_ReturnDbSeverity_When_CustomTypeConfiguredInDatabase() {
+            // Arrange - create a service with DB-configured severity
+            PiiTypeConfig customConfig = PiiTypeConfig.builder()
+                    .piiType("EMPLOYEE_BADGE")
+                    .detector("GLINER")
+                    .enabled(true)
+                    .threshold(0.80)
+                    .category("CUSTOM")
+                    .severity("HIGH")
+                    .custom(true)
+                    .build();
+            when(piiTypeConfigRepository.findAll()).thenReturn(List.of(customConfig));
+
+            SeverityCalculationService dbService = new SeverityCalculationService(piiTypeConfigRepository);
+
+            // Act
+            PersonallyIdentifiableInformationSeverity result = dbService.calculateSeverity("EMPLOYEE_BADGE");
+
+            // Assert
+            assertThat(result)
+                    .as("Custom type configured as HIGH in DB should return HIGH")
+                    .isEqualTo(HIGH);
+        }
+
+        @Test
+        @DisplayName("Should_ReturnDbSeverity_When_SystemTypeHasDbOverride")
+        void Should_ReturnDbSeverity_When_SystemTypeHasDbOverride() {
+            // Arrange - DB says EMAIL is MEDIUM (static rules say LOW)
+            PiiTypeConfig emailConfig = PiiTypeConfig.builder()
+                    .piiType("EMAIL")
+                    .detector("GLINER")
+                    .enabled(true)
+                    .threshold(0.80)
+                    .category("CONTACT")
+                    .severity("MEDIUM")
+                    .build();
+            when(piiTypeConfigRepository.findAll()).thenReturn(List.of(emailConfig));
+
+            SeverityCalculationService dbService = new SeverityCalculationService(piiTypeConfigRepository);
+
+            // Act
+            PersonallyIdentifiableInformationSeverity result = dbService.calculateSeverity("EMAIL");
+
+            // Assert - DB severity takes precedence over static rules
+            assertThat(result)
+                    .as("DB-configured severity should override static rules")
+                    .isEqualTo(MEDIUM);
+        }
+
+        @Test
+        @DisplayName("Should_FallBackToStaticRules_When_NullSeverityInDb")
+        void Should_FallBackToStaticRules_When_NullSeverityInDb() {
+            // Arrange - config exists but severity is null
+            PiiTypeConfig configNoSeverity = PiiTypeConfig.builder()
+                    .piiType("PASSWORD")
+                    .detector("GLINER")
+                    .enabled(true)
+                    .threshold(0.80)
+                    .category("IT_CREDENTIALS")
+                    .severity(null)
+                    .build();
+            when(piiTypeConfigRepository.findAll()).thenReturn(List.of(configNoSeverity));
+
+            SeverityCalculationService dbService = new SeverityCalculationService(piiTypeConfigRepository);
+
+            // Act
+            PersonallyIdentifiableInformationSeverity result = dbService.calculateSeverity("PASSWORD");
+
+            // Assert - falls back to static rules (PASSWORD = HIGH)
+            assertThat(result)
+                    .as("Should fall back to static rules when DB severity is null")
+                    .isEqualTo(HIGH);
+        }
+
+        @Test
+        @DisplayName("Should_ReturnLow_When_UnknownTypeNotInDbOrStaticRules")
+        void Should_ReturnLow_When_UnknownTypeNotInDbOrStaticRules() {
+            // Arrange - empty DB
+            when(piiTypeConfigRepository.findAll()).thenReturn(List.of());
+
+            SeverityCalculationService dbService = new SeverityCalculationService(piiTypeConfigRepository);
+
+            // Act
+            PersonallyIdentifiableInformationSeverity result = dbService.calculateSeverity("COMPLETELY_UNKNOWN_TYPE");
+
+            // Assert
+            assertThat(result)
+                    .as("Unknown type not in DB or static rules should default to LOW")
+                    .isEqualTo(LOW);
+        }
+
+        @Test
+        @DisplayName("Should_RefreshCache_When_RefreshSeverityCacheCalled")
+        void Should_RefreshCache_When_RefreshSeverityCacheCalled() {
+            // Arrange - start with empty DB
+            when(piiTypeConfigRepository.findAll()).thenReturn(List.of());
+            SeverityCalculationService dbService = new SeverityCalculationService(piiTypeConfigRepository);
+
+            // Initially unknown type defaults to LOW
+            assertThat(dbService.calculateSeverity("NEW_CUSTOM_TYPE")).isEqualTo(LOW);
+
+            // Now add it to DB and refresh
+            PiiTypeConfig newConfig = PiiTypeConfig.builder()
+                    .piiType("NEW_CUSTOM_TYPE")
+                    .detector("GLINER")
+                    .enabled(true)
+                    .threshold(0.80)
+                    .category("CUSTOM")
+                    .severity("HIGH")
+                    .custom(true)
+                    .build();
+            when(piiTypeConfigRepository.findAll()).thenReturn(List.of(newConfig));
+            dbService.refreshSeverityCache();
+
+            // Act
+            PersonallyIdentifiableInformationSeverity result = dbService.calculateSeverity("NEW_CUSTOM_TYPE");
+
+            // Assert
+            assertThat(result)
+                    .as("After cache refresh, new DB severity should be used")
+                    .isEqualTo(HIGH);
         }
     }
 

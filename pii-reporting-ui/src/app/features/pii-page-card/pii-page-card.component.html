@@ -1,0 +1,14 @@
+<div [attr.data-testid]="testIds.piiPageCard.card">
+  @if (expanded()) {
+    <app-pii-card-expanded
+      [item]="enrichedItem()"
+      [revealed]="revealed()"
+      [isRevealing]="isRevealing()"
+      (collapse)="onCollapse()"
+      (revealRequested)="onRevealRequested()" />
+  } @else {
+    <app-pii-card-collapsed
+      [item]="enrichedItem()"
+      (expand)="onExpand()" />
+  }
+</div>

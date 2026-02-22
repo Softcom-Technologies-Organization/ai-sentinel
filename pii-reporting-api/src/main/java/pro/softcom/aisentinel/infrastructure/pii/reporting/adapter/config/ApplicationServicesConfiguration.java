@@ -2,13 +2,14 @@ package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRepository;
 import pro.softcom.aisentinel.application.pii.reporting.ScanSeverityCountService;
 import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanSeverityCountRepository;
 
 /**
  * Configuration for application layer services.
- * 
+ *
  * This configuration lives in the infrastructure layer to keep the application layer
  * independent of Spring Framework, following hexagonal architecture principles.
  */
@@ -17,11 +18,11 @@ public class ApplicationServicesConfiguration {
 
     /**
      * Creates the severity calculation service bean.
-     * This service has no dependencies and contains the business rules for PII severity mapping.
+     * Uses DB-configured severity from pii_type_config table, falling back to static rules.
      */
     @Bean
-    public SeverityCalculationService severityCalculationService() {
-        return new SeverityCalculationService();
+    public SeverityCalculationService severityCalculationService(PiiTypeConfigRepository piiTypeConfigRepository) {
+        return new SeverityCalculationService(piiTypeConfigRepository);
     }
 
     /**

@@ -1,0 +1,59 @@
+<div class="collapsed-card"
+     role="button"
+     tabindex="0"
+     [attr.aria-label]="'dashboard.table.expand' | transloco"
+     (click)="onCardClick()"
+     (keydown)="onKeyDown($event)">
+
+  <div class="collapsed-grid">
+    <!-- Severity strip -->
+    <div class="severity-strip" [style.backgroundColor]="severityStyle().color"></div>
+
+    <div class="collapsed-content">
+      <!-- Row 1: Title + attachment + severity badge -->
+      <div class="collapsed-row-1">
+        <div class="title-with-attachment">
+          <h3 class="collapsed-title">{{ item().pageTitle || ('piiItem.fallback.page' | transloco) }}</h3>
+
+          @if (item().attachmentName) {
+            <span class="attachment-badge">
+              <span class="attachment-type"
+                    [class]="'attachment-type--' + (attachmentKind() ?? 'txt')">
+                {{ (attachmentKind() ?? 'txt').toUpperCase() }}
+              </span>
+              {{ item().attachmentName }}
+            </span>
+          }
+        </div>
+
+        <span class="severity-badge"
+              [style.background]="severityStyle().bg"
+              [style.color]="severityStyle().color"
+              [style.borderColor]="severityStyle().border">
+          {{ 'piiItem.severity.label' | transloco:{ value: (severityStyle().labelKey | transloco) } }}
+        </span>
+      </div>
+
+      <!-- Row 2: PII type badges + total + arrow -->
+      <div class="collapsed-row-2">
+        <div class="pii-type-badges">
+          @for (badge of piiTypeBadges(); track badge.label) {
+            <span class="pii-type-badge">
+              <span class="pii-type-label">{{ badge.label }}</span>
+              <span class="pii-type-count">{{ badge.count }}</span>
+            </span>
+          }
+        </div>
+
+        <div class="collapsed-total">
+          <span class="collapsed-total-count">{{ totalDetections() }}</span>
+          <span class="collapsed-total-label">{{ 'piiPageCard.detections' | transloco }}</span>
+        </div>
+
+        <span class="collapsed-chevron" aria-hidden="true">
+          <i class="pi pi-chevron-down"></i>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

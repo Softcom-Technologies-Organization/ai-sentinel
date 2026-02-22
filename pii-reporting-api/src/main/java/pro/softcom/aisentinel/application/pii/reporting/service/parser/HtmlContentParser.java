@@ -1,10 +1,9 @@
 package pro.softcom.aisentinel.application.pii.reporting.service.parser;
 
+import com.google.re2j.Matcher;
+import com.google.re2j.Pattern;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Parser for HTML content where logical lines are delimited by block-level tags.
@@ -25,19 +24,13 @@ public class HtmlContentParser implements ContentParser {
      * Pattern to match HTML block-level tags that create visual line breaks.
      * Jsoup handles all standard HTML tags, but we use regex for position finding.
      */
-    private static final Pattern BLOCK_TAGS = Pattern.compile("""
-        (?ix)                     # i = case-insensitive, x = ignore whitespace/comments
-        </?(?:
-          p|div|section|article|header|footer|nav|aside|
-          blockquote|pre|table|
-          ul|li|ol|dl|dt|dd|
-          tr|td|th|
-          h\\d
-        )[^>]*>                   # up to >
-        | <br/?>                  # or br tag
-        """,
-        Pattern.CASE_INSENSITIVE
+    private static final Pattern BLOCK_TAGS = Pattern.compile(
+        "(?i)</?(?:p|div|section|article|header|footer|nav|aside|blockquote|pre|table|ul|li|ol|dl|dt|dd|tr|td|th|h\\d)[^>]*>|<br/?>"
     );
+
+    private static final Pattern SPACES_AROUND_NEWLINES = Pattern.compile("[ \\t]*\\n[ \\t]*");
+    private static final Pattern MULTIPLE_NEWLINES = Pattern.compile("\\n{2,}");
+    private static final Pattern MULTIPLE_SPACES = Pattern.compile("[ \\t]{2,}");
 
     @Override
     public int findLineStart(String source, int position) {
@@ -67,9 +60,7 @@ public class HtmlContentParser implements ContentParser {
 
         // Find the next block tag or newline after the position
         Matcher matcher = BLOCK_TAGS.matcher(source);
-        matcher.region(safePosition, source.length());
-
-        int nextBlockTag = matcher.find() ? matcher.start() : source.length();
+        int nextBlockTag = matcher.find(safePosition) ? matcher.start() : source.length();
         int nextNewline = source.indexOf('\n', safePosition);
 
         // Return the closest boundary
@@ -137,9 +128,10 @@ public class HtmlContentParser implements ContentParser {
 
             // Normalize whitespace: collapse multiple newlines/spaces into single newline
             // This prevents patterns like "\n \n \n" that confuse PII detection models
-            cleaned = cleaned.replaceAll("[ \\t]*+\\n[ \\t]*+", "\n");  // Remove spaces around newlines (possessive quantifiers prevent ReDoS)
-            cleaned = cleaned.replaceAll("\\n{2,}", "\n\n");            // Max 2 consecutive newlines
-            cleaned = cleaned.replaceAll("[ \\t]{2,}+", " ");           // Collapse multiple spaces/tabs (possessive quantifier)
+            // Uses RE2J (linear-time engine) to guarantee no ReDoS vulnerability
+            cleaned = SPACES_AROUND_NEWLINES.matcher(cleaned).replaceAll("\n");
+            cleaned = MULTIPLE_NEWLINES.matcher(cleaned).replaceAll("\n\n");
+            cleaned = MULTIPLE_SPACES.matcher(cleaned).replaceAll(" ");
 
             return cleaned.trim();
         } catch (Exception _) {

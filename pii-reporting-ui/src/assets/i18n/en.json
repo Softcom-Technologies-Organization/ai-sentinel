@@ -22,21 +22,6 @@
     "fr": "Français",
     "en": "English"
   },
-  "sources": {
-    "confluence": "Confluence",
-    "sharepoint": "SharePoint",
-    "database": "Databases",
-    "status": {
-      "active": "Active",
-      "configured": "Configured",
-      "notConfigured": "Not configured"
-    },
-    "notConfigured": {
-      "title": "Source not configured",
-      "message": "Connect {{source}} to start scanning your content.",
-      "configure": "Configure connection"
-    }
-  },
   "severity": {
     "high": "Critical",
     "medium": "High",
@@ -56,6 +41,7 @@
         "actions": "Actions"
       },
       "emptyMessage": "No items to display",
+      "paginatorReport": "Showing {first} to {last} of {totalRecords} entries",
       "expand": "Expand",
       "collapse": "Collapse"
     },
@@ -74,10 +60,8 @@
       "confluenceUnavailable": "URL unavailable (not provided by backend)",
       "settings": "Settings",
       "scanSelected": "Scan Selected Spaces ({{count}})",
-      "scanSelectedLabel": "({{count}})",
-      "piiSettings": "PII Settings"
+      "scanSelectedLabel": "({{count}})"
     },
-    "spacesLabel": "spaces",
     "filters": {
       "modifiedOnly": "Show only modified spaces",
       "modifiedOnlyLabel": "Spaces to rescan"
@@ -298,6 +282,9 @@
         "Network": "Network Identifiers",
         "Medical": "Medical Information",
         "Business": "Business Identifiers",
+        "Personal": "Personal Information",
+        "LEGAL_ASSET": "Legal Assets",
+        "IT_CREDENTIALS": "IT Credentials",
         "CUSTOM": "Custom Labels"
       },
       "typeNames": {
@@ -656,6 +643,21 @@
       "loadError": "Error loading configuration: {{error}}",
       "saveAllSuccess": "All configurations saved successfully",
       "saveAllError": "Error saving configurations: {{error}}"
+    }
+  },
+  "piiPageCard": {
+    "detections": "detections",
+    "types": "types",
+    "openInConfluence": "Open in Confluence",
+    "filter": {
+      "all": "All",
+      "selectedItems": "{0} types selected"
+    },
+    "table": {
+      "type": "Type",
+      "value": "Value",
+      "confidence": "Confidence",
+      "detector": "Detector"
     }
   },
   "piiItem": {

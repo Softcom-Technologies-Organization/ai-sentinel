@@ -58,6 +58,13 @@
     </properties>
 
     <dependencies>
+        <!-- ReDoS-safe regex engine (linear-time, no backtracking) -->
+        <dependency>
+            <groupId>com.google.re2j</groupId>
+            <artifactId>re2j</artifactId>
+            <version>1.8</version>
+        </dependency>
+
         <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

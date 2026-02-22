@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { TranslocoModule } from '@jsverse/transloco';
-import { PiiItemCardComponent } from '../pii-item-card/pii-item-card.component';
+import { PiiPageCardComponent } from '../pii-page-card/pii-page-card.component';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { BadgeModule } from 'primeng/badge';
@@ -14,7 +14,6 @@ import { TagModule } from 'primeng/tag';
 import { SpacesDashboardUtils } from './spaces-dashboard.utils';
 import { Ripple } from 'primeng/ripple';
 import { TooltipModule } from 'primeng/tooltip';
-import { DataViewModule } from 'primeng/dataview';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ScanProgressBarComponent } from '../../shared/components/scan-progress-bar/scan-progress-bar.component';
 import { SortEvent } from 'primeng/api';
@@ -46,7 +45,7 @@ import { SeverityCounts } from '../../core/models/severity-counts';
         ButtonModule,
         ToggleSwitchModule,
         ToggleButtonModule,
-        PiiItemCardComponent,
+        PiiPageCardComponent,
         BadgeModule,
         InputTextModule,
         SelectModule,
@@ -54,7 +53,6 @@ import { SeverityCounts } from '../../core/models/severity-counts';
         TagModule,
         Ripple,
         TooltipModule,
-        DataViewModule,
         SkeletonModule,
         DialogModule,
         TranslocoModule,
@@ -90,6 +88,10 @@ export class ConfluenceDashboardComponent implements OnInit, OnDestroy {
 
   // PII Help dialog visibility
   readonly showPiiHelpDialog = signal(false);
+
+  // Paginator state
+  first = 0;
+  rows = 20;
 
   // Confluence config missing warning
   readonly confluenceConfigMissing = signal(false);
@@ -277,5 +279,33 @@ export class ConfluenceDashboardComponent implements OnInit, OnDestroy {
 
   dismissConfluenceConfigBanner(): void {
     this.confluenceConfigMissing.set(false);
+  }
+
+  // ===== Paginator navigation =====
+
+  onPageChange(event: { first: number; rows: number }): void {
+    this.first = event.first;
+    this.rows = event.rows;
+  }
+
+  nextPage(): void {
+    this.first = this.first + this.rows;
+  }
+
+  prevPage(): void {
+    this.first = this.first - this.rows;
+  }
+
+  resetPage(): void {
+    this.first = 0;
+  }
+
+  isLastPage(): boolean {
+    const total = this.sortedSpaces().length;
+    return total === 0 || this.first + this.rows >= total;
+  }
+
+  isFirstPage(): boolean {
+    return this.first === 0;
   }
 }

@@ -140,9 +140,19 @@ public class PiiContextExtractor {
         int lineEndInSource = parser.findLineEnd(source, Math.clamp(end, 0, source.length()));
         String lineContext = source.substring(lineStartInSource, lineEndInSource);
 
+        // DIAGNOSTIC: Log positions and content for debugging offset issues
+        if (maskPii) {
+            String piiSlice = (start >= lineStartInSource && end <= lineEndInSource)
+                ? source.substring(start, end) : "<BOUNDS_ERROR>";
+            log.info("MASKING DIAGNOSTIC: type={} | start={} end={} lineStart={} lineEnd={} | source[start:end]='{}' | lineContext.length={}",
+                type, start, end, lineStartInSource, lineEndInSource, piiSlice, lineContext.length());
+        }
+
         // Apply masking if requested
         if (maskPii) {
             lineContext = maskLineWithEntities(lineContext, lineStartInSource, start, end, type, allEntities);
+            // DIAGNOSTIC: Log masked result
+            log.info("MASKED RESULT: type={} | maskedContext='{}'", type, lineContext);
         }
 
         // Note: HTML cleaning is now done BEFORE detection in AbstractStreamConfluenceScanUseCase,

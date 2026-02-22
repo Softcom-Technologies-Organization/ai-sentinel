@@ -44,6 +44,8 @@ ai-sentinel:
 
 # Logging Configuration
 logging:
+  file:
+    path: ${LOG_PATH:pii-reporting-api/logs}
   level:
     pro.softcom.aisentinel.infrastructure.confluence: DEBUG
     pro.softcom.aisentinel.infrastructure.pii: DEBUG

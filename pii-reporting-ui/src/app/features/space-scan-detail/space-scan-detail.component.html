@@ -27,7 +27,7 @@
     <div class="pii-cards">
       <p-dataView [value]="items()" layout="list" [paginator]="true" [rows]="10" [trackBy]="trackByItem">
         <ng-template let-item pTemplate="listItem">
-          <app-pii-item-card [item]="item" [maskByDefault]="true"></app-pii-item-card>
+          <app-pii-page-card [item]="item" [maskByDefault]="true"></app-pii-page-card>
         </ng-template>
       </p-dataView>
     </div>

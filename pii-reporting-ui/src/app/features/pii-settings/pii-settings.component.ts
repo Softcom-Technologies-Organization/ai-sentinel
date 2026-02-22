@@ -9,7 +9,7 @@ import {
     ReactiveFormsModule,
     Validators
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ButtonModule } from 'primeng/button';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
@@ -26,10 +26,10 @@ import { DialogModule } from 'primeng/dialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { PiiDetectionConfigService } from '../../core/services/pii-detection-config.service';
 import {
-  CreatePiiTypeConfigRequest,
-  GroupedPiiTypes,
-  PiiDetectionConfig,
-  PiiTypeConfig
+    CreatePiiTypeConfigRequest,
+    GroupedPiiTypes,
+    PiiDetectionConfig,
+    PiiTypeConfig
 } from '../../core/models/pii-detection-config.model';
 import { forkJoin, Observable } from 'rxjs';
 import { ConfluenceSettingsComponent } from '../confluence-settings/confluence-settings.component';
@@ -43,26 +43,25 @@ import { ConfluenceSettingsComponent } from '../confluence-settings/confluence-s
   templateUrl: './pii-settings.component.html',
   styleUrl: './pii-settings.component.scss',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    ReactiveFormsModule,
-    RouterLink,
-    TranslocoModule,
-    ButtonModule,
-    ToggleSwitchModule,
-    InputNumberModule,
-    MessageModule,
-    ProgressSpinnerModule,
-    ToastModule,
-    IconFieldModule,
-    InputIconModule,
-    InputTextModule,
-    SelectModule,
-    ConfirmDialogModule,
-    DialogModule,
-    ConfluenceSettingsComponent
-  ],
+    imports: [
+        CommonModule,
+        FormsModule,
+        ReactiveFormsModule,
+        TranslocoModule,
+        ButtonModule,
+        ToggleSwitchModule,
+        InputNumberModule,
+        MessageModule,
+        ProgressSpinnerModule,
+        ToastModule,
+        IconFieldModule,
+        InputIconModule,
+        InputTextModule,
+        SelectModule,
+        ConfirmDialogModule,
+        DialogModule,
+        ConfluenceSettingsComponent
+    ],
   providers: [MessageService, ConfirmationService]
 })
 export class PiiSettingsComponent implements OnInit {
@@ -95,6 +94,9 @@ export class PiiSettingsComponent implements OnInit {
 
   // Sidebar navigation
   activeSection = signal<'detectors' | 'thresholds' | 'pii_types' | 'confluence'>('detectors');
+
+  // Collapsible detector groups in PII types section
+  collapsedDetectors = signal<Set<string>>(new Set());
 
   // Search functionality
   searchTerm = signal<string>('');
@@ -774,5 +776,25 @@ export class PiiSettingsComponent implements OnInit {
    */
   setActiveSection(section: 'detectors' | 'thresholds' | 'pii_types' | 'confluence'): void {
     this.activeSection.set(section);
+  }
+
+  /**
+   * Toggle collapse state of a detector group.
+   */
+  toggleDetectorCollapse(detector: string): void {
+    const current = new Set(this.collapsedDetectors());
+    if (current.has(detector)) {
+      current.delete(detector);
+    } else {
+      current.add(detector);
+    }
+    this.collapsedDetectors.set(current);
+  }
+
+  /**
+   * Check if a detector group is collapsed.
+   */
+  isDetectorCollapsed(detector: string): boolean {
+    return this.collapsedDetectors().has(detector);
   }
 }

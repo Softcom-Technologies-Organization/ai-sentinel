@@ -1,0 +1,166 @@
+<div class="expanded-card" [style.borderColor]="severityStyle().border">
+  <div class="expanded-grid">
+    <!-- Severity strip -->
+    <div class="severity-strip" [style.backgroundColor]="severityStyle().color"></div>
+
+    <div class="expanded-header"
+         role="button"
+         tabindex="0"
+         [attr.aria-label]="'dashboard.table.collapse' | transloco"
+         (click)="collapse.emit()"
+         (keydown.enter)="collapse.emit()"
+         (keydown.space)="$event.preventDefault(); collapse.emit()">
+      <!-- Title bar -->
+      <div class="title-bar">
+        <div class="title-section">
+          <h3 class="expanded-title">{{ item().pageTitle || ('piiItem.fallback.page' | transloco) }}</h3>
+
+          @if (item().attachmentName) {
+            <span class="attachment-badge">
+              <span class="attachment-type-badge"
+                    [class]="'attachment-type-badge attachment-type-badge--' + (attachmentKind() ?? 'txt')">
+                {{ (attachmentKind() ?? 'txt').toUpperCase() }}
+              </span>
+              {{ item().attachmentName }}
+            </span>
+          }
+        </div>
+
+        <div class="title-actions">
+          <span class="severity-badge"
+                [style.background]="severityStyle().bg"
+                [style.color]="severityStyle().color"
+                [style.borderColor]="severityStyle().border">
+            {{ 'piiItem.severity.label' | transloco:{ value: (severityStyle().labelKey | transloco) } }}
+          </span>
+        </div>
+      </div>
+
+      <!-- PII type badges (same as collapsed view) -->
+      <div class="badges-row">
+        <div class="pii-type-badges">
+          @for (badge of piiTypeBadges(); track badge.label) {
+            <span class="pii-type-badge">
+              <span class="pii-type-label">{{ badge.label }}</span>
+              <span class="pii-type-count">{{ badge.count }}</span>
+            </span>
+          }
+        </div>
+        <div class="badges-total">
+          <span class="badges-total-count">{{ totalDetections() }}</span>
+          <span class="badges-total-label">{{ 'piiPageCard.detections' | transloco }}</span>
+        </div>
+
+        <span class="collapse-chevron" aria-hidden="true">
+          <i class="pi pi-chevron-up"></i>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  @if (filterOptions().length > 2) {
+    <div class="filter-bar">
+      <p-multiselect
+        [options]="filterOptions()"
+        [ngModel]="selectedFilterValues()"
+        (onChange)="onFilterChanged($event)"
+        optionLabel="label"
+        optionValue="value"
+        [placeholder]="'piiPageCard.filter.all' | transloco"
+        [selectedItemsLabel]="'piiPageCard.filter.selectedItems' | transloco"
+        [maxSelectedLabels]="2"
+        [showToggleAll]="false"
+        appendTo="body"
+        class="pii-type-multiselect">
+      </p-multiselect>
+    </div>
+  }
+
+  <!-- Detail table -->
+  <div class="detail-table-wrapper">
+    <table class="detail-table">
+      <thead>
+        <tr>
+          <th class="th-type th-sortable" (click)="onSort('typeLabel')">
+            {{ 'piiPageCard.table.type' | transloco }}
+            <span class="sort-indicator" [class.sort-indicator--active]="sortColumn() === 'typeLabel'"
+                  [class.sort-indicator--desc]="sortColumn() === 'typeLabel' && sortDirection() === 'desc'"
+                  aria-hidden="true">&#x25B4;</span>
+          </th>
+          <th class="th-value th-sortable" (click)="onSort('value')">
+            {{ 'piiPageCard.table.value' | transloco }}
+            <span class="sort-indicator" [class.sort-indicator--active]="sortColumn() === 'value'"
+                  [class.sort-indicator--desc]="sortColumn() === 'value' && sortDirection() === 'desc'"
+                  aria-hidden="true">&#x25B4;</span>
+          </th>
+          <th class="th-confidence th-sortable" (click)="onSort('confidence')">
+            {{ 'piiPageCard.table.confidence' | transloco }}
+            <span class="sort-indicator" [class.sort-indicator--active]="sortColumn() === 'confidence'"
+                  [class.sort-indicator--desc]="sortColumn() === 'confidence' && sortDirection() === 'desc'"
+                  aria-hidden="true">&#x25B4;</span>
+          </th>
+          <th class="th-detector th-sortable" (click)="onSort('detector')">
+            {{ 'piiPageCard.table.detector' | transloco }}
+            <span class="sort-indicator" [class.sort-indicator--active]="sortColumn() === 'detector'"
+                  [class.sort-indicator--desc]="sortColumn() === 'detector' && sortDirection() === 'desc'"
+                  aria-hidden="true">&#x25B4;</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of filteredAndSortedRows(); track $index) {
+          <tr class="pii-row">
+            <td class="td-type">{{ row.typeLabel }}</td>
+            <td class="td-value" [class.td-value--revealed]="row.isRevealed">
+              @for (part of row.valueParts; track $index) {
+                @if (part.isBadge) {
+                  <span class="masked-badge">{{ part.text }}</span>
+                } @else if (part.isHighlighted) {
+                  <mark class="revealed-highlight">{{ part.text }}</mark>
+                } @else {
+                  {{ part.text }}
+                }
+              }
+            </td>
+            <td class="td-confidence">
+              <app-confidence-indicator [value]="row.confidence" />
+            </td>
+            <td class="td-detector">
+              <app-detector-tag [detector]="row.detector" [small]="true" />
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Footer actions -->
+  <div class="card-footer">
+    @if (sentinelleApi.revealAllowed()) {
+      <button class="btn-reveal"
+              type="button"
+              (click)="revealRequested.emit()"
+              [disabled]="isRevealing()"
+              [attr.aria-label]="revealed()
+                ? ('piiItem.actions.maskAriaLabel' | transloco)
+                : ('piiItem.actions.revealAriaLabel' | transloco)">
+        @if (isRevealing()) {
+          <span class="spinner" aria-hidden="true"></span>
+        }
+        {{ revealed()
+          ? ('piiItem.actions.mask' | transloco)
+          : ('piiItem.actions.reveal' | transloco) }}
+      </button>
+    }
+    @if (item().pageUrl) {
+      <a class="btn-confluence"
+         [href]="item().pageUrl"
+         target="_blank"
+         rel="noopener noreferrer">
+        {{ 'piiPageCard.openInConfluence' | transloco }}
+        <span aria-hidden="true">&#x2197;</span>
+      </a>
+    }
+  </div>
+</div>

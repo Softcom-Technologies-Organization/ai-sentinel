@@ -166,7 +166,7 @@ class ScanReportingUseCaseTest {
         assertThat(latestScan).isPresent();
         LastScanMeta meta = latestScan.orElseThrow();
         assertThat(meta.scanId()).isEqualTo(scanId);
-        assertThat(meta.spacesCount()).isEqualTo(1);
+        assertThat(meta.spacesCount()).isOne();
 
         List<ConfluenceContentScanResult> results = scanReportingUseCase.getLatestSpaceScanResultList();
         assertThat(results).hasSize(1);
@@ -347,8 +347,7 @@ class ScanReportingUseCaseTest {
             .as("SPACE-A pages count from events")
             .isEqualTo(2);
         softly.assertThat(spaceA.attachmentsDone())
-            .as("SPACE-A attachments count from events")
-            .isEqualTo(1);
+            .as("SPACE-A attachments count from events").isOne();
         
         // Find SPACE-B in nbOfDetectedPIIBySeverity
         var spaceB = scanSummary.spaces().stream()
@@ -365,11 +364,9 @@ class ScanReportingUseCaseTest {
         
         // Counters come from events
         softly.assertThat(spaceB.pagesDone())
-            .as("SPACE-B pages count from events")
-            .isEqualTo(1);
+            .as("SPACE-B pages count from events").isOne();
         softly.assertThat(spaceB.attachmentsDone())
-            .as("SPACE-B attachments count from events")
-            .isEqualTo(0);
+            .as("SPACE-B attachments count from events").isZero();
         
         softly.assertAll();
     }
@@ -434,12 +431,12 @@ class ScanReportingUseCaseTest {
         // Space A should be from Scan 1
         var spaceA = globalSummary.spaces().stream().filter(s -> s.spaceKey().equals("SPACE-A")).findFirst().get();
         assertThat(spaceA.status()).isEqualTo("COMPLETED");
-        assertThat(spaceA.pagesDone()).isEqualTo(1);
+        assertThat(spaceA.pagesDone()).isOne();
 
         // Space B should be from Scan 2
         var spaceB = globalSummary.spaces().stream().filter(s -> s.spaceKey().equals("SPACE-B")).findFirst().get();
         assertThat(spaceB.status()).isEqualTo("RUNNING");
-        assertThat(spaceB.pagesDone()).isEqualTo(1);
+        assertThat(spaceB.pagesDone()).isOne();
     }
 
     @Test
@@ -494,18 +491,17 @@ class ScanReportingUseCaseTest {
         List<ConfluenceContentScanResult> items = scanReportingUseCase.getGlobalScanItemsEncrypted();
 
         // Assert
-        assertThat(items).hasSize(2);
-        
-        // Should contain item from Scan 1 (Space A)
-        assertThat(items).anyMatch(i -> 
-            i.scanId().equals(scanId1) && 
-            i.spaceKey().equals("SPACE-A")
-        );
-        
-        // Should contain item from Scan 2 (Space B)
-        assertThat(items).anyMatch(i -> 
-            i.scanId().equals(scanId2) && 
-            i.spaceKey().equals("SPACE-B")
-        );
+        assertThat(items)
+                .hasSize(2)
+                // Should contain item from Scan 1 (Space A)
+                .anyMatch(i ->
+                        i.scanId().equals(scanId1) &&
+                                i.spaceKey().equals("SPACE-A")
+                )
+                // Should contain item from Scan 2 (Space B)
+                .anyMatch(i ->
+                        i.scanId().equals(scanId2) &&
+                                i.spaceKey().equals("SPACE-B")
+                );
     }
 }

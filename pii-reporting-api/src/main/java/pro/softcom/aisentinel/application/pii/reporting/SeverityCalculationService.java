@@ -1,11 +1,14 @@
 package pro.softcom.aisentinel.application.pii.reporting;
 
 import lombok.extern.slf4j.Slf4j;
+import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRepository;
+import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
 import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Map.entry;
 import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity.HIGH;
@@ -36,6 +39,14 @@ import static pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiable
  */
 @Slf4j
 public class SeverityCalculationService {
+
+    private final PiiTypeConfigRepository piiTypeConfigRepository;
+    private final Map<String, PersonallyIdentifiableInformationSeverity> dbSeverityCache = new ConcurrentHashMap<>();
+    private volatile boolean cacheLoaded;
+
+    public SeverityCalculationService(PiiTypeConfigRepository piiTypeConfigRepository) {
+        this.piiTypeConfigRepository = piiTypeConfigRepository;
+    }
 
     /**
      * Static mapping of PII type names to their severity levels.
@@ -223,14 +234,65 @@ public class SeverityCalculationService {
         String normalizedType = normalizeType(piiType);
         log.debug("Calculating severity for PII type '{}' normalized to '{}'", piiType, normalizedType);
 
-        PersonallyIdentifiableInformationSeverity severity = SEVERITY_RULES.get(normalizedType);
-        if (severity != null) {
-            log.debug("Found severity mapping for normalized PII type '{}': {}", normalizedType, severity);
-            return severity;
+        // 1. Check DB-configured severity first (covers custom types and overrides)
+        PersonallyIdentifiableInformationSeverity dbSeverity = getDbSeverity(normalizedType);
+        if (dbSeverity != null) {
+            log.debug("Found DB severity for PII type '{}': {}", normalizedType, dbSeverity);
+            return dbSeverity;
         }
 
-        log.warn("No severity mapping found for normalized PII type '{}', using default severity: {}", normalizedType, LOW);
+        // 2. Fall back to static rules (for legacy type names and backward compatibility)
+        PersonallyIdentifiableInformationSeverity staticSeverity = SEVERITY_RULES.get(normalizedType);
+        if (staticSeverity != null) {
+            log.debug("Found static severity mapping for PII type '{}': {}", normalizedType, staticSeverity);
+            return staticSeverity;
+        }
+
+        log.warn("No severity mapping found for PII type '{}', using default severity: {}", normalizedType, LOW);
         return LOW;
+    }
+
+    /**
+     * Refreshes the DB severity cache. Call this after PII type configs are created/updated/deleted.
+     */
+    public void refreshSeverityCache() {
+        loadDbSeverities();
+    }
+
+    private PersonallyIdentifiableInformationSeverity getDbSeverity(String normalizedType) {
+        if (!cacheLoaded) {
+            loadDbSeverities();
+        }
+        return dbSeverityCache.get(normalizedType);
+    }
+
+    private void loadDbSeverities() {
+        try {
+            List<PiiTypeConfig> configs = piiTypeConfigRepository.findAll();
+            dbSeverityCache.clear();
+            for (PiiTypeConfig config : configs) {
+                if (config.getSeverity() != null && !config.getSeverity().isBlank()) {
+                    String normalizedPiiType = normalizeType(config.getPiiType());
+                    PersonallyIdentifiableInformationSeverity severity = parseSeverity(config.getSeverity());
+                    if (severity != null) {
+                        dbSeverityCache.put(normalizedPiiType, severity);
+                    }
+                }
+            }
+            cacheLoaded = true;
+            log.debug("Loaded {} DB severity mappings", dbSeverityCache.size());
+        } catch (Exception e) {
+            log.warn("Failed to load DB severity mappings, falling back to static rules: {}", e.getMessage());
+        }
+    }
+
+    private PersonallyIdentifiableInformationSeverity parseSeverity(String severity) {
+        try {
+            return PersonallyIdentifiableInformationSeverity.valueOf(severity.trim().toUpperCase());
+        } catch (IllegalArgumentException _) {
+            log.warn("Invalid severity value '{}', ignoring", severity);
+            return null;
+        }
     }
 
     /**

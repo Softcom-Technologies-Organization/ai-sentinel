@@ -3,70 +3,6 @@
   margin: 0 auto;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
- * Source header: title + status + action buttons
- * ═══════════════════════════════════════════════════════════════════════════ */
-.source-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-}
-
-.source-header-left {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.source-title {
-  margin: 0;
-  font-size: 1.375rem;
-  font-weight: 700;
-  color: #0f2b3c;
-}
-
-.source-status-badge {
-  padding: 0.2rem 0.625rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  background-color: #dcfce7;
-  color: #16a34a;
-}
-
-.source-spaces-count {
-  font-size: 0.8125rem;
-  color: #64748b;
-}
-
-.source-header-right {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-/* Settings button (outlined) - matches reference "Paramètres" style */
-:host ::ng-deep .source-settings-btn.p-button {
-  background: #fff !important;
-  border: 1px solid #e2e8f0 !important;
-  color: #334155 !important;
-  border-radius: 8px !important;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  padding: 0.5rem 1rem !important;
-  height: 2.75rem;
-}
-
-:host ::ng-deep .source-settings-btn.p-button .p-button-icon {
-  color: #334155 !important;
-}
-
-:host ::ng-deep .source-settings-btn.p-button:hover {
-  background: #f8fafb !important;
-  border-color: #cbd5e1 !important;
-}
-
 /* Scan action button group - tightly packed gradient bar */
 .scan-actions-group {
   display: inline-flex;
@@ -115,6 +51,32 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+ * Table top bar: filter toggle (left) + scan status badge (right)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.table-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.table-top-bar-left {
+  display: flex;
+  align-items: center;
+}
+
+.table-top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Reset margin-left on badge when placed outside the table */
+.table-top-bar .scan-status-badge {
+  margin-left: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
  * Table toolbar: search + filter above the table
  * ═══════════════════════════════════════════════════════════════════════════ */
 .table-toolbar {
@@ -144,7 +106,16 @@
   color: #94a3b8;
 }
 
-.row-click {
+/* Toggle cell: no padding-right so chevron sits left, not clipped */
+.toggle-cell {
+  cursor: pointer;
+  padding-right: 0 !important;
+  padding-left: 0.25rem !important;
+  overflow: visible !important;
+}
+
+/* Space name cell: clickable for expand/collapse */
+.space-name-cell {
   cursor: pointer;
 }
 
@@ -181,6 +152,7 @@
 .pii-scroll {
   max-height: 1200px; /* approx 10 cards depending on content */
   overflow-y: auto;
+  scrollbar-gutter: stable;
   padding-right: .5rem; /* keep scrollbar away from content */
 }
 
@@ -365,9 +337,10 @@
   }
 }
 
-/* PII Header Cell - relative positioning for absolute button placement */
+/* PII Header Cell - centered text, relative positioning for help button */
 .pii-header-cell {
   position: relative;
+  text-align: center;
 }
 
 /* PII Help Button - positioned at top-right of header cell */
@@ -474,14 +447,15 @@
   gap: 0;
 }
 
-/* Search input - full width with spacing below, rounded border */
-.space-filters .search-global {
+/* Search input - full width, rounded border */
+.search-global {
   width: 100%;
   height: 2.5rem;
-  margin-bottom: 0.5rem;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   font-size: 0.8125rem;
+  padding: 0 0.875rem;
+  box-sizing: border-box;
 }
 
 .space-filters .scan-status-badge {
@@ -496,11 +470,13 @@
   width: 100%;
 }
 
-.space-filters ::ng-deep p-select {
+.space-filters ::ng-deep p-select,
+#col-status-value ::ng-deep p-select {
   width: 100%;
 }
 
-.space-filters ::ng-deep p-select .p-select {
+.space-filters ::ng-deep p-select .p-select,
+#col-status-value ::ng-deep p-select .p-select {
   width: 100%;
 }
 
@@ -520,6 +496,22 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+ * Paginator navigation bar (prev / reset / next)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.paginator-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Caption area inside p-table: match table header background */
+:host ::ng-deep .p-datatable .p-datatable-header {
+  background: #f8fafb;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 0.5rem 1rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
  * Table styling to match reference design (rework-ui.txt)
  * ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -528,21 +520,73 @@
   background: #fff;
   border-radius: 12px;
   border: 1px solid #e8edf2;
+  overflow: visible;
+}
+
+/* Fixed table layout: prevents column widths from shifting on row expand/collapse */
+:host ::ng-deep .p-datatable .p-datatable-table {
+  table-layout: fixed;
+}
+
+/* Prevent text overflow in fixed-width columns */
+:host ::ng-deep .p-datatable .p-datatable-thead > tr > th,
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Allow wrapping in the expanded row */
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr > td[colspan] {
+  white-space: normal;
+  overflow: visible;
 }
 
 :host ::ng-deep .p-datatable .p-datatable-table-container {
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible !important;
 }
 
-/* Table header: light background, muted text */
+/* Table header: sticky + opaque background to hide scrolling content */
 :host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
+  position: sticky;
+  z-index: 10;
   background: #f8fafb;
   color: #64748b;
   font-size: 0.75rem;
   font-weight: 600;
   border-color: #f1f5f9;
+}
+
+/* Fix: establish proper stacking order between thead and tbody.
+   thead z-index > tbody z-index ensures sticky header stays above body rows on scroll. */
+:host ::ng-deep .p-datatable .p-datatable-thead {
+  position: relative;
+  z-index: 2;
+}
+
+:host ::ng-deep .p-datatable .p-datatable-tbody {
+  position: relative;
+  z-index: 1;
+}
+
+:host ::ng-deep .p-datatable .p-datatable-thead > tr:first-child > th {
+  top: 4rem;
+}
+
+/* Filter row: sticky below column headers, white background, no vertical separators */
+:host ::ng-deep .p-datatable .p-datatable-thead > tr:nth-child(2) > th {
+  top: 6.5rem;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-color: transparent !important;
+  border-style: none !important;
+  border-width: 0 !important;
 }
 
 /* Table row borders */
@@ -585,26 +629,56 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
- * PII Badges: circular badges matching reference design
+ * PII Badges: severity (circular) + total (pill)
  * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Severity badges: centered in column */
+.pii-badges-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+/* Circular severity badges */
 :host ::ng-deep .p-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
   border-radius: 50%;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: #fff;
   padding: 0;
   line-height: 1;
 }
 
-/* Total badge: default (keep PrimeNG primary or override) */
-:host ::ng-deep .p-badge:not(.p-badge-danger):not(.p-badge-warn):not(.p-badge-info):not(.p-badge-success):not(.severity-badge-icon) {
-  background-color: #64748b;
+/* Risk score column */
+.risk-score-header-cell {
+  text-align: center;
+}
+
+.risk-score-cell {
+  text-align: center;
+}
+
+/* Total / risk score badge: pill shape */
+.pii-total-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 1.625rem;
+  padding: 0 0.625rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  background-color: #475569;
+  letter-spacing: 0.25px;
 }
 
 /* High severity: red */
@@ -627,4 +701,5 @@
   border-top: 1px solid #f1f5f9;
   background: #fff;
   border-radius: 0 0 12px 12px;
+  font-size: 0.75rem;
 }

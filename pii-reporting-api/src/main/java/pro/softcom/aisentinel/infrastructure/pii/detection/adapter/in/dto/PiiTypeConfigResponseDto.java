@@ -15,6 +15,9 @@ public record PiiTypeConfigResponseDto(
         double threshold,
         String category,
         String countryCode,
+        String detectorLabel,
+        boolean isCustom,
+        String severity,
         LocalDateTime updatedAt,
         String updatedBy
 ) {
@@ -27,6 +30,9 @@ public record PiiTypeConfigResponseDto(
                 config.getThreshold(),
                 config.getCategory(),
                 config.getCountryCode(),
+                config.getDetectorLabel(),
+                config.isCustom(),
+                config.getSeverity(),
                 config.getUpdatedAt(),
                 config.getUpdatedBy()
         );

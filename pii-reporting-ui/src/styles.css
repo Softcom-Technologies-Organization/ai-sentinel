@@ -35,3 +35,46 @@ body {
   color: #666;
   font-size: 12px;
 }
+
+/* ─── PII type MultiSelect dropdown panel (appended to body) ─── */
+.p-multiselect-overlay .p-multiselect-list .p-multiselect-option {
+  font-size: 11px;
+  padding: 5px 10px;
+  gap: 6px;
+}
+
+/* Checkbox size inside MultiSelect dropdown */
+.p-multiselect-overlay .p-checkbox .p-checkbox-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border-color: #94a3b8;
+}
+
+.p-multiselect-overlay .p-checkbox .p-checkbox-box .p-checkbox-icon {
+  font-size: 9px;
+}
+
+/* Black checkbox when checked */
+.p-multiselect-overlay .p-checkbox.p-checkbox-checked .p-checkbox-box,
+.p-multiselect-overlay .p-checkbox-checked .p-checkbox-box {
+  background: #0f172a !important;
+  border-color: #0f172a !important;
+}
+
+/* Header area (filter input, close) */
+.p-multiselect-overlay .p-multiselect-header {
+  padding: 6px 10px;
+}
+
+.p-multiselect-overlay .p-multiselect-header .p-checkbox.p-checkbox-checked .p-checkbox-box,
+.p-multiselect-overlay .p-multiselect-header .p-checkbox-checked .p-checkbox-box {
+  background: #0f172a !important;
+  border-color: #0f172a !important;
+}
+
+.p-multiselect-overlay .p-multiselect-header .p-checkbox .p-checkbox-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}

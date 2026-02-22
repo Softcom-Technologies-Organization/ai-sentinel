@@ -1,6 +1,7 @@
 package pro.softcom.aisentinel.application.pii.reporting.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceUrlProvider;
 import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
 import pro.softcom.aisentinel.application.pii.reporting.usecase.DetectionReportingEventType;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
  * Factory for creating scan event results. Business intent: Centralizes event creation logic to
  * ensure consistency across scan workflows.
  */
+@Slf4j
 @RequiredArgsConstructor
 public class ScanEventFactory {
 
@@ -212,6 +214,19 @@ public class ScanEventFactory {
         if (detection == null || detection.sensitiveDataFound() == null) {
             return List.of();
         }
+        // DIAGNOSTIC: Log content fingerprint to compare with Python side
+        if (content != null) {
+            String first20 = content.length() >= 20 ? content.substring(0, 20) : content;
+            String last20 = content.length() >= 20 ? content.substring(content.length() - 20) : content;
+            log.info("JAVA CONTENT FINGERPRINT: len={} first20='{}' last20='{}'",
+                content.length(), first20, last20);
+            // Check for BOM or leading whitespace
+            if (!content.isEmpty() && (content.charAt(0) == '\uFEFF' || content.charAt(0) == ' '
+                    || content.charAt(0) == '\t' || content.charAt(0) == '\n' || content.charAt(0) == '\r')) {
+                log.warn("JAVA CONTENT STARTS WITH SPECIAL CHAR: codepoint={} char='{}'",
+                    (int) content.charAt(0), content.charAt(0));
+            }
+        }
         return detection.sensitiveDataFound().stream()
             .map(sensitiveData -> this.mapSensitiveDataToEntity(sensitiveData, content, detection))
             .toList();
@@ -220,23 +235,34 @@ public class ScanEventFactory {
     private DetectedPersonallyIdentifiableInformation mapSensitiveDataToEntity(
         ContentPiiDetection.SensitiveData data, String sourceContent,
         ContentPiiDetection detection) {
-        String type = (data.type() != null ? data.type().name() : null);
-        String typeLabel = (data.type() != null ? data.type().getLabel() : null);
+
+        // DIAGNOSTIC: Verify positions against source content
+        if (sourceContent != null && data.position() >= 0 && data.end() <= sourceContent.length()) {
+            String actualSlice = sourceContent.substring(data.position(), data.end());
+            if (!actualSlice.equals(data.value())) {
+                String endPlus1 = data.end() + 1 <= sourceContent.length()
+                    ? sourceContent.substring(data.position(), data.end() + 1) : "<OUT_OF_BOUNDS>";
+                log.warn("JAVA POSITION MISMATCH: type={} | value='{}' | content[{}:{}]='{}' | content[{}:{}]='{}' | matchEndPlus1={} | source={}",
+                    data.type(), data.value(), data.position(), data.end(), actualSlice,
+                    data.position(), data.end() + 1, endPlus1,
+                    endPlus1.equals(data.value()), data.source());
+            } else {
+                log.info("JAVA POSITION OK: type={} | content[{}:{}]='{}' | source={}",
+                    data.type(), data.position(), data.end(), actualSlice, data.source());
+            }
+        }
+
+        String type = data.type();
+        String typeLabel = data.typeLabel();
         // Build a lightweight list of entities to ensure other PIIs in the same line are also masked in context
         List<DetectedPersonallyIdentifiableInformation> all =
             detection == null || detection.sensitiveDataFound() == null ? List.of() :
                 detection.sensitiveDataFound().stream()
-                    .map(sd -> {
-                        String sdType = null;
-                        if (sd.type() != null) {
-                            sdType = sd.type().name();
-                        }
-                        return DetectedPersonallyIdentifiableInformation.builder()
+                    .map(sd -> DetectedPersonallyIdentifiableInformation.builder()
                             .startPosition(sd.position())
                             .endPosition(sd.end())
-                            .piiType(sdType)
-                            .build();
-                    })
+                            .piiType(sd.type())
+                            .build())
                     .toList();
 
         // Extract masked context (for immediate display, stored in clear)

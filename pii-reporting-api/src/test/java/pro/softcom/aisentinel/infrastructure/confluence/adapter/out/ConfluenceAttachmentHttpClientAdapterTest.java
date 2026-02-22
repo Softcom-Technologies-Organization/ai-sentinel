@@ -32,24 +32,18 @@ class ConfluenceAttachmentHttpClientAdapterTest {
 
     private ConfluenceAttachmentClient confluenceAttachmentService;
 
+    ConfluenceConnectionConfig config = mock(ConfluenceConnectionConfig.class);
+
     @BeforeEach
     void setUp() throws Exception {
-        ConfluenceConnectionConfig config = mock(ConfluenceConnectionConfig.class);
-        when(config.baseUrl()).thenReturn("https://confluence.test.com/");
         when(config.username()).thenReturn("testuser");
         when(config.apiToken()).thenReturn("testtoken");
         when(config.getRestApiUrl()).thenReturn("https://confluence.test.com/rest/api");
         when(config.connectTimeout()).thenReturn(10_000);
         when(config.readTimeout()).thenReturn(10_000);
         when(config.maxRetries()).thenReturn(0);
-        when(config.pagesLimit()).thenReturn(50);
-        when(config.maxPages()).thenReturn(5);
         when(config.contentPath()).thenReturn("/content/");
-        when(config.searchContentPath()).thenReturn("/content/search");
-        when(config.spacePath()).thenReturn("/space");
         when(config.attachmentChildSuffix()).thenReturn("/child/attachment");
-        when(config.defaultPageExpands()).thenReturn("body.storage,version,metadata,ancestors");
-        when(config.defaultSpaceExpands()).thenReturn("permissions,metadata");
 
         final ObjectMapper mapper = new ObjectMapper();
         ConfluenceAttachmentHttpClientAdapter service = new ConfluenceAttachmentHttpClientAdapter(config, mapper);
@@ -71,6 +65,8 @@ class ConfluenceAttachmentHttpClientAdapterTest {
         when(r.body()).thenReturn(body);
         when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
             .thenReturn(CompletableFuture.completedFuture(r));
+        when(config.baseUrl()).thenReturn("https://confluence.test.com/");
+
 
         var list = confluenceAttachmentService.getPageAttachments("123").get();
         SoftAssertions softly = new SoftAssertions();
@@ -129,6 +125,8 @@ class ConfluenceAttachmentHttpClientAdapterTest {
             attachment("download/path/file.pdf") // no leading slash
         ));
         var r = mock(HttpResponse.class);
+        when(config.baseUrl()).thenReturn("https://confluence.test.com/");
+
         when(r.statusCode()).thenReturn(200);
         when(r.body()).thenReturn(body);
         when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))

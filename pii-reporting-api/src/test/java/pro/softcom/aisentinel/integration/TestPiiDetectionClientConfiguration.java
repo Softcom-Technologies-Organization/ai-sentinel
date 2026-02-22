@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Primary;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
-import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIdentifiableInformationType;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -62,7 +61,7 @@ public class TestPiiDetectionClientConfiguration {
             Matcher m = EMAIL.matcher(cleanedContent);
             while (m.find()) {
                 items.add(new ContentPiiDetection.SensitiveData(
-                    PersonallyIdentifiableInformationType.EMAIL,
+                    "EMAIL", "Email",
                     m.group(),
                     ctx(m.start(), m.end()),
                     m.start(), m.end(), 0.95, "email", DetectorSource.REGEX));
@@ -73,7 +72,7 @@ public class TestPiiDetectionClientConfiguration {
                 String value = m.group().trim();
                 if (value.length() < 8 || value.contains("@")) continue; // avoid overlaps
                 items.add(new ContentPiiDetection.SensitiveData(
-                    PersonallyIdentifiableInformationType.PHONE,
+                    "PHONE", "Telephone",
                     value,
                     ctx(m.start(), m.end()),
                     m.start(), m.end(), 0.80, "phone", DetectorSource.REGEX));
@@ -82,7 +81,7 @@ public class TestPiiDetectionClientConfiguration {
             m = AVS.matcher(cleanedContent);
             while (m.find()) {
                 items.add(new ContentPiiDetection.SensitiveData(
-                    PersonallyIdentifiableInformationType.AVS,
+                    "AVS", "AVS",
                     m.group(),
                     ctx(m.start(), m.end()),
                     m.start(), m.end(), 0.99, "avs", DetectorSource.REGEX));
@@ -91,7 +90,7 @@ public class TestPiiDetectionClientConfiguration {
             m = URL.matcher(cleanedContent);
             while (m.find()) {
                 items.add(new ContentPiiDetection.SensitiveData(
-                    PersonallyIdentifiableInformationType.ATTACHMENT,
+                    "ATTACHMENT", "Piece jointe",
                     m.group(),
                     ctx(m.start(), m.end()),
                     m.start(), m.end(), 0.70, "url", DetectorSource.REGEX));
@@ -99,7 +98,7 @@ public class TestPiiDetectionClientConfiguration {
             // Simple security hints
             if (cleanedContent.toLowerCase().contains("password") || cleanedContent.toLowerCase().contains("sk-")) {
                 items.add(new ContentPiiDetection.SensitiveData(
-                    PersonallyIdentifiableInformationType.SECURITY,
+                    "SECURITY", "Securite",
                     "***",
                     "Detected security-like token",
                     0, 0, 0.9, "sec", DetectorSource.REGEX));
@@ -107,7 +106,7 @@ public class TestPiiDetectionClientConfiguration {
 
             Map<String, Integer> stats = new HashMap<>();
             for (ContentPiiDetection.SensitiveData sd : items) {
-                stats.merge(sd.type().name(), 1, Integer::sum);
+                stats.merge(sd.type(), 1, Integer::sum);
             }
             if (stats.isEmpty()) stats.put("NONE", 0);
 

@@ -6,6 +6,7 @@ import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -19,10 +20,44 @@ import java.util.stream.Collectors;
  */
 public class ManagePiiTypeConfigsUseCase implements ManagePiiTypeConfigsPort {
 
+    private static final Pattern PII_TYPE_PATTERN = Pattern.compile("^[A-Z][A-Z0-9_]{1,98}$");
+
     private final PiiTypeConfigRepository repository;
 
     public ManagePiiTypeConfigsUseCase(PiiTypeConfigRepository repository) {
         this.repository = repository;
+    }
+
+    @Override
+    public PiiTypeConfig createConfig(CreatePiiTypeConfigCommand command) {
+        validatePiiTypeFormat(command.piiType());
+        validateDetector(command.detector());
+        validateThreshold(command.threshold());
+
+        if ("GLINER".equals(command.detector()) && (command.detectorLabel() == null || command.detectorLabel().isBlank())) {
+            throw new IllegalArgumentException("Detector label is required for GLINER detector");
+        }
+
+        repository.findByPiiTypeAndDetector(command.piiType(), command.detector()).ifPresent(_ -> {
+            throw new IllegalArgumentException(
+                    "Configuration already exists for PII type: " + command.piiType() + " and detector: " + command.detector()
+            );
+        });
+
+        PiiTypeConfig config = PiiTypeConfig.builder()
+                .piiType(command.piiType())
+                .detector(command.detector())
+                .enabled(command.enabled())
+                .threshold(command.threshold())
+                .category(command.category())
+                .detectorLabel(command.detectorLabel())
+                .countryCode(command.countryCode())
+                .custom(true)
+                .severity(command.severity() != null ? command.severity() : "LOW")
+                .updatedBy(command.createdBy())
+                .build();
+
+        return repository.save(config);
     }
 
     @Override
@@ -60,6 +95,22 @@ public class ManagePiiTypeConfigsUseCase implements ManagePiiTypeConfigsPort {
     }
 
     @Override
+    public void deleteConfig(String piiType, String detector) {
+        PiiTypeConfig existing = repository.findByPiiTypeAndDetector(piiType, detector)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Configuration not found for PII type: " + piiType + " and detector: " + detector
+                ));
+
+        if (!existing.isCustom()) {
+            throw new IllegalStateException(
+                    "Cannot delete system-defined PII type: " + piiType + " for detector: " + detector
+            );
+        }
+
+        repository.deleteByPiiTypeAndDetector(piiType, detector);
+    }
+
+    @Override
     public List<PiiTypeConfig> bulkUpdate(List<PiiTypeConfigUpdate> updates, String updatedBy) {
         if (updates == null || updates.isEmpty()) {
             throw new IllegalArgumentException("Updates list cannot be null or empty");
@@ -72,6 +123,14 @@ public class ManagePiiTypeConfigsUseCase implements ManagePiiTypeConfigsPort {
         }
 
         return repository.bulkUpdateAtomically(updates, updatedBy);
+    }
+
+    private void validatePiiTypeFormat(String piiType) {
+        if (piiType == null || !PII_TYPE_PATTERN.matcher(piiType).matches()) {
+            throw new IllegalArgumentException(
+                    "PII type must be UPPER_SNAKE_CASE (2-99 chars, starts with letter). Got: " + piiType
+            );
+        }
     }
 
     private void validateDetector(String detector) {

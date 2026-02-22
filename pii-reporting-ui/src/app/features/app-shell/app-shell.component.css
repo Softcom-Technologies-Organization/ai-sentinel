@@ -42,30 +42,30 @@
   letter-spacing: -0.3px;
 }
 
+/* Header settings button */
+::ng-deep .header-settings-btn.p-button {
+  background: #fff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+  border-radius: 8px !important;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem !important;
+  height: 2.25rem;
+}
+
+::ng-deep .header-settings-btn.p-button .p-button-icon {
+  color: #334155 !important;
+}
+
+::ng-deep .header-settings-btn.p-button:hover {
+  background: #f8fafb !important;
+  border-color: #cbd5e1 !important;
+}
+
 /* Tab icons */
 .tab-icon {
   margin-right: 0.5rem;
-}
-
-/* Status dot for unconfigured sources */
-.status-dot {
-  display: inline-block;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  margin-left: 0.5rem;
-}
-
-.status-dot.not_configured {
-  background-color: #94a3b8;
-}
-
-.status-dot.active {
-  background-color: #10b981;
-}
-
-.status-dot.configured {
-  background-color: #f59e0b;
 }
 
 /* Scan Error Toast Styling */
@@ -107,19 +107,22 @@
 }
 
 /* Settings Fullscreen Dialog Styling */
-::ng-deep .settings-fullscreen-dialog .p-dialog-content {
-  padding: 0;
-  overflow-y: auto;
-  height: 100%;
-}
-
 ::ng-deep .settings-fullscreen-dialog .p-dialog {
   max-height: 95vh;
+  overflow: hidden;
+  border-radius: 12px;
 }
 
 ::ng-deep .settings-fullscreen-dialog .p-dialog-header {
   background-color: #f8f9fa;
   border-bottom: 1px solid #dee2e6;
+  border-radius: 12px 12px 0 0;
+}
+
+::ng-deep .settings-fullscreen-dialog .p-dialog-content {
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
 }
 
 @media (max-width: 768px) {

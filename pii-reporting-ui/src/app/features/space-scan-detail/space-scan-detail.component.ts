@@ -6,7 +6,7 @@ import {
   PersonallyIdentifiableInformationScanResult
 } from '../../core/models/personally-identifiable-information-scan-result';
 import { ProgressMap } from '../../core/models/progress-map';
-import { PiiItemCardComponent } from '../pii-item-card/pii-item-card.component';
+import { PiiPageCardComponent } from '../pii-page-card/pii-page-card.component';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 
 // Keep a local minimal model for UI space to avoid importing private types
@@ -19,7 +19,7 @@ export type UISpaceLike = { key: string; name?: string; status: 'FAILED'|'RUNNIN
 @Component({
   selector: 'app-space-scan-detail',
   standalone: true,
-  imports: [TagModule, DataViewModule, PiiItemCardComponent, TranslocoModule],
+  imports: [TagModule, DataViewModule, PiiPageCardComponent, TranslocoModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './space-scan-detail.component.html',
   styleUrl: './space-scan-detail.component.css',

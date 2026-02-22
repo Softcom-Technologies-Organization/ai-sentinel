@@ -13,7 +13,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import pro.softcom.aisentinel.AiSentinelApplication;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
-import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIdentifiableInformationType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -132,7 +131,7 @@ class DirectPiiDetectionIntegrationTest {
 
         // Check for EMAIL detection
         var emailData = sensitiveData.stream()
-            .filter(data -> data.type() == PersonallyIdentifiableInformationType.EMAIL)
+            .filter(data -> "EMAIL".equals(data.type()))
             .toList();
         assertThat(emailData).isNotEmpty();
         System.out.println("[DEBUG_LOG] Emails detected: " + emailData.size());
@@ -142,7 +141,7 @@ class DirectPiiDetectionIntegrationTest {
 
         // Check for PHONE detection
         var phoneData = sensitiveData.stream()
-            .filter(data -> data.type() == PersonallyIdentifiableInformationType.PHONE)
+            .filter(data -> "PHONE".equals(data.type()))
             .toList();
         assertThat(phoneData).isNotEmpty();
         System.out.println("[DEBUG_LOG] Phones detected: " + phoneData.size());
@@ -152,7 +151,7 @@ class DirectPiiDetectionIntegrationTest {
 
         // Check for ADDRESS detection (includes person names)
         var addressData = sensitiveData.stream()
-            .filter(data -> data.type() == PersonallyIdentifiableInformationType.ADDRESS)
+            .filter(data -> "ADDRESS".equals(data.type()))
             .toList();
         System.out.println("[DEBUG_LOG] Addresses/Names detected: " + addressData.size());
         addressData.forEach(address ->
@@ -161,7 +160,7 @@ class DirectPiiDetectionIntegrationTest {
 
         // Check for AVS detection (financial data)
         var avsData = sensitiveData.stream()
-            .filter(data -> data.type() == PersonallyIdentifiableInformationType.AVS)
+            .filter(data -> "AVS".equals(data.type()))
             .toList();
         System.out.println("[DEBUG_LOG] Financial data detected: " + avsData.size());
         avsData.forEach(avs ->
@@ -170,7 +169,7 @@ class DirectPiiDetectionIntegrationTest {
 
         // Check for SECURITY detection
         var securityData = sensitiveData.stream()
-            .filter(data -> data.type() == PersonallyIdentifiableInformationType.SECURITY)
+            .filter(data -> "SECURITY".equals(data.type()))
             .toList();
         System.out.println("[DEBUG_LOG] Security data detected: " + securityData.size());
         securityData.forEach(security ->
@@ -179,7 +178,7 @@ class DirectPiiDetectionIntegrationTest {
 
         // Check for ATTACHMENT detection (URLs, IPs)
         var attachmentData = sensitiveData.stream()
-            .filter(data -> data.type() == PersonallyIdentifiableInformationType.ATTACHMENT)
+            .filter(data -> "ATTACHMENT".equals(data.type()))
             .toList();
         System.out.println("[DEBUG_LOG] URLs/IPs detected: " + attachmentData.size());
         attachmentData.forEach(attachment ->
@@ -214,7 +213,7 @@ class DirectPiiDetectionIntegrationTest {
         assertThat(sensitiveData).isNotEmpty();
 
         var emailData = sensitiveData.stream()
-            .filter(data -> data.type() == PersonallyIdentifiableInformationType.EMAIL)
+            .filter(data -> "EMAIL".equals(data.type()))
             .toList();
         assertThat(emailData).hasSize(1);
         assertThat(emailData.getFirst().value()).contains("john@example.com");

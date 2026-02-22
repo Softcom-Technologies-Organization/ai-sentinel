@@ -24,13 +24,13 @@ public interface ConfluenceConnectionConfig {
     int pagesLimit();
     int maxPages();
 
-    // API paths
-    String contentPath();
-    String searchContentPath();
-    String spacePath();
-    String attachmentChildSuffix();
-    String defaultPageExpands();
-    String defaultSpaceExpands();
+    // API paths — defaults match Confluence REST API v2 contract
+    default String contentPath() { return "/content/"; }
+    default String searchContentPath() { return "/content/search"; }
+    default String spacePath() { return "/space"; }
+    default String attachmentChildSuffix() { return "/child/attachment"; }
+    default String defaultPageExpands() { return "body.storage,version,metadata,ancestors"; }
+    default String defaultSpaceExpands() { return "permissions,metadata"; }
 
     // Convenience
     default boolean isValid() {

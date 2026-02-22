@@ -100,8 +100,8 @@ export class PiiItemsStorageService {
       return false;
     }
 
-    // Add new item at the beginning (most recent first)
-    const nextItems = [piiItem, ...previous];
+    // Append new item at the end (scan order preserved)
+    const nextItems = [...previous, piiItem];
 
     // Keep max 400 items per space
     if (nextItems.length > 400) {

@@ -17,9 +17,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource.GLINER;
-import static pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource.PRESIDIO;
-import static pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource.REGEX;
+import static pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource.*;
 
 /**
  * Armeria-based implementation of the PII detection client.
@@ -70,7 +68,7 @@ public class GrpcPiiDetectorArmeriaClientAdapter implements PiiDetectorClient {
                     .detectPII(request);
 
             log.debug("[Armeria] PII detection successful for PageId: {}", pageId);
-            return convertToContentAnalysis(pageId, pageTitle, spaceKey, response);
+            return convertToContentAnalysis(pageId, pageTitle, spaceKey, content, response);
         } catch (Exception e) {
             // Do not log and rethrow to avoid duplicate logs (Sonar rule S7717)
             final String errorMessage = String.format("Failed to analyze content for PII for pageId=%s: %s", pageId, e.getMessage());
@@ -81,9 +79,12 @@ public class GrpcPiiDetectorArmeriaClientAdapter implements PiiDetectorClient {
     // --- Mapping helpers (same behavior as the grpc-netty implementation) ---
 
     private ContentPiiDetection convertToContentAnalysis(String pageId, String pageTitle, String spaceKey,
-                                                         PiiDetection.PIIDetectionResponse response) {
+                                                         String content, PiiDetection.PIIDetectionResponse response) {
+        boolean hasSupplementaryChars = content != null
+                && content.length() != content.codePointCount(0, content.length());
+
         List<ContentPiiDetection.SensitiveData> sensitiveDataList = response.getEntitiesList().stream()
-                .map(this::convertToSensitiveData)
+                .map(entity -> convertToSensitiveData(entity, content, hasSupplementaryChars))
                 .toList();
 
         Map<String, Integer> statistics = response.getSummaryMap();
@@ -98,30 +99,53 @@ public class GrpcPiiDetectorArmeriaClientAdapter implements PiiDetectorClient {
                 .build();
     }
 
-    private ContentPiiDetection.SensitiveData convertToSensitiveData(PiiDetection.PIIEntity entity) {
-        PersonallyIdentifiableInformationType dataType;
-        try {
-            pro.softcom.aisentinel.infrastructure.confluence.adapter.out.PersonallyIdentifiableInformationType piiType = pro.softcom.aisentinel.infrastructure.confluence.adapter.out.PersonallyIdentifiableInformationType.valueOf(entity.getType().trim().toUpperCase());
-            dataType = piiType.dataType();
-        } catch (Exception _) {
-            dataType = PersonallyIdentifiableInformationType.UNKNOWN;
-            log.warn("[Armeria] Unknown PII type: {}, mapping to UNKNOWN", entity.getType());
+    private ContentPiiDetection.SensitiveData convertToSensitiveData(PiiDetection.PIIEntity entity,
+                                                                      String content, boolean hasSupplementaryChars) {
+        String piiType = entity.getType().trim().toUpperCase();
+        String typeLabel = resolveTypeLabel(piiType);
+
+        int start = entity.getStart();
+        int end = entity.getEnd();
+
+        if (hasSupplementaryChars) {
+            start = codePointIndexToCodeUnitIndex(content, start);
+            end = codePointIndexToCodeUnitIndex(content, end);
         }
+
         final String context = String.format(Locale.ROOT, "Detected at position %d-%d (confidence: %.2f)",
-                entity.getStart(), entity.getEnd(), entity.getScore());
-        
+                start, end, entity.getScore());
+
         DetectorSource source = convertToDetectorSource(entity.getSource());
-        
+
         return new ContentPiiDetection.SensitiveData(
-                dataType,
+                piiType,
+                typeLabel,
                 entity.getText(),
                 context,
-                entity.getStart(),
-                entity.getEnd(),
+                start,
+                end,
                 (double) entity.getScore(),
                 String.format("pii-entity-%s", entity.getType().toLowerCase()),
                 source
         );
+    }
+
+    /**
+     * Converts a Python code point index to a Java UTF-16 code unit index.
+     * Python's len() counts Unicode code points, while Java's String.length() counts UTF-16 code units.
+     * Supplementary characters (emoji, etc.) use 2 code units in Java but 1 code point in Python.
+     */
+    private int codePointIndexToCodeUnitIndex(String content, int codePointIndex) {
+        return content.offsetByCodePoints(0, codePointIndex);
+    }
+
+    private String resolveTypeLabel(String piiType) {
+        try {
+            return PersonallyIdentifiableInformationType.valueOf(piiType).getLabel();
+        } catch (IllegalArgumentException _) {
+            log.debug("[Armeria] No known label for PII type: {}, using type as label", piiType);
+            return piiType;
+        }
     }
 
     private DetectorSource convertToDetectorSource(PiiDetection.DetectorSource protoSource) {

@@ -10,37 +10,26 @@
     </div>
     <div class="top-bar-right">
       <p-button icon="pi pi-cog"
-                [text]="true"
-                [rounded]="true"
+                [label]="'dashboard.actions.settings' | transloco"
+                styleClass="header-settings-btn"
                 (click)="openSettingsDialog()"
                 (keydown.enter)="openSettingsDialog()"
-                [pTooltip]="'dashboard.actions.settings' | transloco"
-                tooltipPosition="bottom"
                 [ariaLabel]="'dashboard.actions.settings' | transloco" />
       <app-language-selector />
     </div>
   </header>
 
   <!-- Source tabs -->
-  <p-tabs [value]="activeSourceId()" (valueChange)="onSourceChange($event)">
+  <p-tabs [value]="activeSourceId()">
     <p-tablist>
-      @for (source of sources; track source.id) {
-        <p-tab [value]="source.id">
-          <i [class]="source.icon" class="tab-icon"></i>
-          <span>{{ source.labelKey | transloco }}</span>
-          <span class="status-dot" [ngClass]="source.status"></span>
-        </p-tab>
-      }
+      <p-tab value="confluence">
+        <i class="pi pi-globe tab-icon"></i>
+        <span>Confluence</span>
+      </p-tab>
     </p-tablist>
     <p-tabpanels>
       <p-tabpanel value="confluence">
         <app-confluence-dashboard (openSettings)="openSettingsDialog($event)" />
-      </p-tabpanel>
-      <p-tabpanel value="sharepoint">
-        <app-source-empty-state [source]="getSource('sharepoint')" (configure)="openSettingsDialog()" />
-      </p-tabpanel>
-      <p-tabpanel value="database">
-        <app-source-empty-state [source]="getSource('database')" (configure)="openSettingsDialog()" />
       </p-tabpanel>
     </p-tabpanels>
   </p-tabs>

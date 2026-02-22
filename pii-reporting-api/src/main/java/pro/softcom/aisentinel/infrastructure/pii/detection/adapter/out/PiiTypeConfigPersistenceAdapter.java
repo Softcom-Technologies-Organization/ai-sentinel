@@ -5,7 +5,6 @@ import org.springframework.transaction.annotation.Transactional;
 import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiTypeConfigsPort.PiiTypeConfigUpdate;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRepository;
 import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
-import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.PersonallyIdentifiableInformationType;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out.entity.PiiTypeConfigEntity;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out.jpa.PiiTypeConfigJpaRepository;
 
@@ -42,7 +41,7 @@ public class PiiTypeConfigPersistenceAdapter implements PiiTypeConfigRepository 
 
     @Override
     public Optional<PiiTypeConfig> findByPiiTypeAndDetector(String piiType, String detector) {
-        return jpaRepository.findByPiiTypeAndDetector(PersonallyIdentifiableInformationType.valueOf(piiType), detector)
+        return jpaRepository.findByPiiTypeAndDetector(piiType, detector)
                 .map(PiiTypeConfigEntity::toDomain);
     }
 
@@ -65,6 +64,12 @@ public class PiiTypeConfigPersistenceAdapter implements PiiTypeConfigRepository 
     }
 
     @Override
+    @Transactional
+    public void deleteByPiiTypeAndDetector(String piiType, String detector) {
+        jpaRepository.deleteByPiiTypeAndDetector(piiType, detector);
+    }
+
+    @Override
     public boolean exists() {
         return jpaRepository.count() > 0;
     }
@@ -78,7 +83,7 @@ public class PiiTypeConfigPersistenceAdapter implements PiiTypeConfigRepository 
             double threshold,
             String updatedBy
     ) {
-        PiiTypeConfigEntity entity = jpaRepository.findByPiiTypeAndDetector(PersonallyIdentifiableInformationType.valueOf(piiType), detector)
+        PiiTypeConfigEntity entity = jpaRepository.findByPiiTypeAndDetector(piiType, detector)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Configuration not found for PII type: " + piiType + " and detector: " + detector
                 ));
@@ -100,7 +105,7 @@ public class PiiTypeConfigPersistenceAdapter implements PiiTypeConfigRepository 
         List<PiiTypeConfigEntity> entitiesToUpdate = updates.stream()
                 .map(update -> {
                     PiiTypeConfigEntity entity = jpaRepository.findByPiiTypeAndDetector(
-                            PersonallyIdentifiableInformationType.valueOf(update.piiType()),
+                            update.piiType(),
                             update.detector()
                     ).orElseThrow(() -> new IllegalArgumentException(
                             "Configuration not found for PII type: " + update.piiType() +

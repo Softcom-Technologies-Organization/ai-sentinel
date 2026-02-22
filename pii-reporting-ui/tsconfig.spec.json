@@ -10,6 +10,9 @@
       "@angular/core/testing": [
         "node_modules/@angular/core/types/testing.d.ts"
       ],
+      "@angular/common/http": [
+        "node_modules/@angular/common/types/http.d.ts"
+      ],
       "primeng/*": [
         "node_modules/primeng/*"
       ],

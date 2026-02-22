@@ -21,6 +21,7 @@ export const TestIds = {
       progress: 'header-progress',
       lastScan: 'header-last-scan',
       pii: 'header-pii',
+      riskScore: 'header-risk-score',
       actions: 'header-actions'
     },
     badges: {
@@ -30,8 +31,14 @@ export const TestIds = {
       low: 'pii-badge-low'
     }
   },
-  piiItemCard: {
-    card: 'pii-item-card'
+  piiPageCard: {
+    card: 'pii-page-card',
+    collapsed: 'pii-card-collapsed',
+    expanded: 'pii-card-expanded',
+    expandButton: 'pii-card-expand',
+    collapseButton: 'pii-card-collapse',
+    revealButton: 'pii-card-reveal',
+    confluenceLink: 'pii-card-confluence-link',
   }
 } as const;
 

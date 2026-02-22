@@ -22,21 +22,6 @@
     "fr": "Français",
     "en": "English"
   },
-  "sources": {
-    "confluence": "Confluence",
-    "sharepoint": "SharePoint",
-    "database": "Bases de données",
-    "status": {
-      "active": "Actif",
-      "configured": "Configuré",
-      "notConfigured": "Non configuré"
-    },
-    "notConfigured": {
-      "title": "Source non configurée",
-      "message": "Connectez {{source}} pour commencer à scanner vos contenus.",
-      "configure": "Configurer la connexion"
-    }
-  },
   "severity": {
     "high": "Critique",
     "medium": "Élevé",
@@ -56,6 +41,7 @@
         "actions": "Actions"
       },
       "emptyMessage": "Aucun élément à afficher",
+      "paginatorReport": "Affichage de {first} à {last} sur {totalRecords} entrées",
       "expand": "Développer",
       "collapse": "Réduire"
     },
@@ -74,10 +60,8 @@
       "confluenceUnavailable": "URL indisponible (non fournie par le backend)",
       "settings": "Paramètres",
       "scanSelected": "Scanner les espaces sélectionnés ({{count}})",
-      "scanSelectedLabel": "({{count}})",
-      "piiSettings": "Paramètres IPI"
+      "scanSelectedLabel": "({{count}})"
     },
-    "spacesLabel": "espaces",
     "filters": {
       "modifiedOnly": "Afficher uniquement les espaces modifiés depuis le dernier scan",
       "modifiedOnlyLabel": "Espaces à rescanner"
@@ -298,6 +282,9 @@
         "Network": "Identifiants réseau",
         "Medical": "Informations médicales",
         "Business": "Identifiants professionnels",
+        "Personal": "Informations personnelles",
+        "LEGAL_ASSET": "Actifs juridiques",
+        "IT_CREDENTIALS": "Identifiants informatiques",
         "CUSTOM": "Labels personnalises"
       },
       "typeNames": {
@@ -664,6 +651,21 @@
       "loadError": "Erreur lors du chargement de la configuration : {{error}}",
       "saveAllSuccess": "Toutes les configurations enregistrées avec succès",
       "saveAllError": "Erreur lors de l'enregistrement des configurations : {{error}}"
+    }
+  },
+  "piiPageCard": {
+    "detections": "détections",
+    "types": "types",
+    "openInConfluence": "Ouvrir dans Confluence",
+    "filter": {
+      "all": "Tous",
+      "selectedItems": "{0} types sélectionnés"
+    },
+    "table": {
+      "type": "Type",
+      "value": "Valeur",
+      "confidence": "Confiance",
+      "detector": "Détecteur"
     }
   },
   "piiItem": {

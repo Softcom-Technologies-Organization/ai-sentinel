@@ -2,11 +2,13 @@ package pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in;
 
 import jakarta.validation.Valid;
 import org.jspecify.annotations.NonNull;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiTypeConfigsPort;
 import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.CategoryGroupResponseDto;
+import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.CreatePiiTypeConfigRequestDto;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.GroupedPiiTypesResponseDto;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.PiiTypeConfigResponseDto;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.UpdatePiiTypeConfigRequestDto;
@@ -55,6 +57,35 @@ public class PiiTypeConfigController {
     }
 
     /**
+     * Create a new custom PII type configuration.
+     * <p>
+     * POST /api/v1/pii-detection/pii-types
+     *
+     * @param request the creation request
+     * @return the created configuration with HTTP 201
+     */
+    @PostMapping
+    public ResponseEntity<@NonNull PiiTypeConfigResponseDto> createConfig(
+            @Valid @RequestBody CreatePiiTypeConfigRequestDto request
+    ) {
+        var command = new ManagePiiTypeConfigsPort.CreatePiiTypeConfigCommand(
+                request.piiType(),
+                request.detector(),
+                request.enabled(),
+                request.threshold(),
+                request.category(),
+                request.detectorLabel(),
+                request.countryCode(),
+                request.severity(),
+                PLACEHOLDER_USER
+        );
+        PiiTypeConfig created = managePiiTypeConfigsPort.createConfig(command);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(PiiTypeConfigResponseDto.fromDomain(created));
+    }
+
+    /**
      * Get PII type configurations for a specific detector.
      * <p>
      * GET /api/v1/pii-detection/types/{detector}
@@ -94,6 +125,24 @@ public class PiiTypeConfigController {
                 ));
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Delete a custom PII type configuration.
+     * <p>
+     * DELETE /api/v1/pii-detection/pii-types/{detector}/{piiType}
+     *
+     * @param detector the detector name
+     * @param piiType  the PII type identifier
+     * @return 204 No Content on success, 409 Conflict if system type
+     */
+    @DeleteMapping("/{detector}/{piiType}")
+    public ResponseEntity<Void> deleteConfig(
+            @PathVariable String detector,
+            @PathVariable String piiType
+    ) {
+        managePiiTypeConfigsPort.deleteConfig(piiType, detector);
+        return ResponseEntity.noContent().build();
     }
 
     /**

@@ -296,7 +296,6 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         return Mono.just(errorEvent);
     }
 
-    //TODO: refactor to reduce cyclomatic complexity
     private Mono<ConfluenceContentScanResult> handleGrpcError(String scanId, String spaceKey,
                                                               ConfluencePage page,
                                                               AttachmentInfo attachment,
@@ -305,34 +304,23 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         String targetType = attachment != null ? "Attachment" : "Page";
         String targetName = attachment != null ? attachment.name() : page.title();
         String targetIdentifier = attachment != null ? page.id() + "/" + attachment.name() : page.id();
-        
-        if (exception.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
+        boolean isDeadlineExceeded = exception.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED;
+
+        if (isDeadlineExceeded) {
             log.warn("[TIMEOUT][GRPC_DEADLINE_EXCEEDED] Space={}, {}=\"{}\", Identifier={}, gRPC deadline exceeded",
                     spaceKey, targetType, targetName, targetIdentifier);
-            
-            double progress = calculateProgressForCurrentItem(scanProgress);
-            
-            String errorMessage = attachment != null
-                ? "PII detection timeout (gRPC DEADLINE_EXCEEDED) for attachment: " + targetName
-                : "PII detection timeout (gRPC DEADLINE_EXCEEDED) for page: " + targetName;
-            
-            ConfluenceContentScanResult errorEvent = contentScanOrchestrator.createErrorEvent(
-                scanId, spaceKey, page.id(), errorMessage, progress);
-            
-            return Mono.just(errorEvent);
         } else {
             log.error("[ERROR][GRPC] Space={}, {}=\"{}\", Identifier={}, gRPC error: {} - {}",
                     spaceKey, targetType, targetName, targetIdentifier,
                     exception.getStatus().getCode(), exception.getMessage());
-            
-            double progress = calculateProgressForCurrentItem(scanProgress);
-            
-            String errorMessage = "PII detection failed (gRPC " + exception.getStatus().getCode() + ")";
-            ConfluenceContentScanResult errorEvent = contentScanOrchestrator.createErrorEvent(
-                scanId, spaceKey, page.id(), errorMessage, progress);
-            
-            return Mono.just(errorEvent);
         }
+
+        double progress = calculateProgressForCurrentItem(scanProgress);
+        String errorMessage = isDeadlineExceeded
+                ? "PII detection timeout (gRPC DEADLINE_EXCEEDED) for " + targetType.toLowerCase(Locale.ROOT) + ": " + targetName
+                : "PII detection failed (gRPC " + exception.getStatus().getCode() + ")";
+
+        return Mono.just(contentScanOrchestrator.createErrorEvent(scanId, spaceKey, page.id(), errorMessage, progress));
     }
 
     private Mono<ConfluenceContentScanResult> handleDetectionError(String scanId, String spaceKey,

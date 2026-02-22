@@ -144,7 +144,8 @@ public class ConfluenceConnectionConfigController {
 
             } catch (Exception ex) {
                 log.error("Connection test failed: {}", ex.getMessage(), ex);
-                return ResponseEntity.ok(new ConnectionTestResultDto(false, "Connection test failed: " + ex.getMessage()));
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(new ConnectionTestResultDto(false, "Connection test failed: " + ex.getMessage()));
             }
         });
     }

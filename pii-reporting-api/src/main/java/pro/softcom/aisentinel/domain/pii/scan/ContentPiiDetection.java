@@ -177,7 +177,8 @@ public record ContentPiiDetection(
     /**
      * Represents a single sensitive element detected on the page.
      *
-     * @param type business category of the detected element
+     * @param type business category of the detected element (string key, e.g. "EMAIL", "CUSTOM_LABEL")
+     * @param typeLabel human-readable label for the type (e.g. "Email", "Custom Label")
      * @param value raw value as found in the content
      * @param context short surrounding text to help understand the occurrence
      * @param position start index of the occurrence in the content
@@ -187,7 +188,8 @@ public record ContentPiiDetection(
      * @param source source of the detected PII entity (e.g. GLiNER, Presidio)
      */
     public record SensitiveData(
-        PersonallyIdentifiableInformationType type,
+        String type,
+        String typeLabel,
         String value,
         String context,
         int position,

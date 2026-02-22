@@ -22,3 +22,6 @@ secrets/*.txt
 /pii-detector-service/pii-detector-service/pii-detector-service.iml
 
 personally-identifiable-information-scan-results/
+
+# Logs
+**/logs/

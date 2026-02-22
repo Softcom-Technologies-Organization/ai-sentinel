@@ -31,28 +31,28 @@ interface SeverityCard {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 0.75rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
     }
 
     .severity-card {
-      border-radius: 12px;
-      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-radius: 8px;
+      padding: 0.375rem 0.75rem;
       border: 1px solid;
     }
 
     .severity-count {
-      display: block;
-      font-size: 1.75rem;
+      font-size: 1rem;
       font-weight: 700;
-      line-height: 1.2;
+      line-height: 1;
     }
 
     .severity-label {
-      display: block;
       font-size: 0.75rem;
       font-weight: 500;
       opacity: 0.8;
-      margin-top: 0.25rem;
     }
 
     @media (max-width: 768px) {

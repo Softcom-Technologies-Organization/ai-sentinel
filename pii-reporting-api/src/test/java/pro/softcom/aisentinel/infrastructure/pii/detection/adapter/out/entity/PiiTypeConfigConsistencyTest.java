@@ -10,7 +10,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.PersonallyIdentifiableInformationType;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out.jpa.PiiTypeConfigJpaRepository;
 
 import java.util.List;
@@ -45,10 +44,9 @@ class PiiTypeConfigConsistencyTest {
     private PiiTypeConfigJpaRepository repository;
 
     @Test
-    @DisplayName("Should_MapAllDbValuesToEnum_When_LoadingFromDataSql")
-    void Should_MapAllDbValuesToEnum_When_LoadingFromDataSql() {
+    @DisplayName("Should_LoadAllDbValues_When_LoadingFromDataSql")
+    void Should_LoadAllDbValues_When_LoadingFromDataSql() {
         // Act
-        // This will fail if any pii_type string in DB cannot be mapped to the Enum
         List<PiiTypeConfigEntity> allConfigs = repository.findAll();
 
         // Assert
@@ -57,42 +55,36 @@ class PiiTypeConfigConsistencyTest {
                 .isNotEmpty();
 
         // Check that we have coverage for the critical GLiNER detector
-        List<PersonallyIdentifiableInformationType> glinerTypes = allConfigs.stream()
+        List<String> glinerTypes = allConfigs.stream()
                 .filter(config -> "GLINER".equals(config.getDetector()))
                 .map(PiiTypeConfigEntity::getPiiType)
                 .toList();
 
         assertThat(glinerTypes)
                 .as("Should contain basic types")
-                .contains(
-                        PersonallyIdentifiableInformationType.PERSON_NAME,
-                        PersonallyIdentifiableInformationType.EMAIL,
-                        PersonallyIdentifiableInformationType.PHONE_NUMBER
-                );
+                .contains("PERSON_NAME", "EMAIL", "PHONE_NUMBER");
     }
 
     @Test
-    @DisplayName("Should_CoverAllEnumValues_When_CheckingDatabase")
-    void Should_CoverAllEnumValues_When_CheckingDatabase() {
-        // This test ensures that every Enum value has at least one configuration in the DB
-        // This prevents declaring an Enum value but forgetting to add it to data.sql
-
-        // Arrange
-        Set<PersonallyIdentifiableInformationType> allEnumValues = Set.of(PersonallyIdentifiableInformationType.values());
-        
+    @DisplayName("Should_HaveNonBlankPiiType_When_CheckingAllEntries")
+    void Should_HaveNonBlankPiiType_When_CheckingAllEntries() {
         // Act
-        Set<PersonallyIdentifiableInformationType> dbValues = repository.findAll().stream()
+        List<PiiTypeConfigEntity> allConfigs = repository.findAll();
+
+        // Assert - all entries have non-blank piiType
+        assertThat(allConfigs)
+                .as("All config entries should have a non-blank piiType")
+                .allSatisfy(config ->
+                        assertThat(config.getPiiType()).isNotBlank()
+                );
+
+        // Verify we have distinct types for each detector
+        Set<String> distinctTypes = allConfigs.stream()
                 .map(PiiTypeConfigEntity::getPiiType)
                 .collect(Collectors.toSet());
 
-        // Assert
-        // We filter out UNKNOWN
-        Set<PersonallyIdentifiableInformationType> expectedValues = allEnumValues.stream()
-                .filter(t -> t != PersonallyIdentifiableInformationType.UNKNOWN)
-                .collect(Collectors.toSet());
-
-        assertThat(dbValues)
-                .as("Database should contain configuration for all known PII types")
-                .containsAll(expectedValues);
+        assertThat(distinctTypes)
+                .as("Database should contain multiple distinct PII types")
+                .hasSizeGreaterThan(1);
     }
 }

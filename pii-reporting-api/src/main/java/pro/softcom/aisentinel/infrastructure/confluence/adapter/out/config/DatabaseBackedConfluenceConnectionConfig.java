@@ -8,6 +8,8 @@ import pro.softcom.aisentinel.domain.confluence.ConfluenceConnectionSettings;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionMetadata;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionService;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 /**
  * DB-backed implementation of {@link ConfluenceConnectionConfig}.
  * Reads connection settings from the database and decrypts the API token.
@@ -22,18 +24,10 @@ public class DatabaseBackedConfluenceConnectionConfig implements ConfluenceConne
 
     private static final EncryptionMetadata TOKEN_METADATA = new EncryptionMetadata("CONFLUENCE_API_TOKEN", 0, 0);
 
-    // API path constants (previously in application.yml)
-    private static final String CONTENT_PATH = "/content/";
-    private static final String SEARCH_CONTENT_PATH = "/content/search";
-    private static final String SPACE_PATH = "/space";
-    private static final String ATTACHMENT_CHILD_SUFFIX = "/child/attachment";
-    private static final String DEFAULT_PAGE_EXPANDS = "body.storage,version,metadata,ancestors";
-    private static final String DEFAULT_SPACE_EXPANDS = "permissions,metadata";
-
     private final ConfluenceConnectionConfigRepository repository;
     private final EncryptionService encryptionService;
 
-    private volatile ConfluenceConnectionSettings cachedSettings;
+    private final AtomicReference<ConfluenceConnectionSettings> cachedSettings = new AtomicReference<>();
 
     public DatabaseBackedConfluenceConnectionConfig(ConfluenceConnectionConfigRepository repository,
                                                      EncryptionService encryptionService) {
@@ -45,7 +39,7 @@ public class DatabaseBackedConfluenceConnectionConfig implements ConfluenceConne
     @EventListener
     public void onConfigUpdated(ConfluenceConfigUpdatedEvent event) {
         log.info("Confluence configuration updated, invalidating cache");
-        cachedSettings = null;
+        cachedSettings.set(null);
     }
 
     // --- Core connection ---
@@ -126,43 +120,11 @@ public class DatabaseBackedConfluenceConnectionConfig implements ConfluenceConne
         return getSettings().maxPages();
     }
 
-    // --- API paths (hardcoded constants) ---
-
-    @Override
-    public String contentPath() {
-        return CONTENT_PATH;
-    }
-
-    @Override
-    public String searchContentPath() {
-        return SEARCH_CONTENT_PATH;
-    }
-
-    @Override
-    public String spacePath() {
-        return SPACE_PATH;
-    }
-
-    @Override
-    public String attachmentChildSuffix() {
-        return ATTACHMENT_CHILD_SUFFIX;
-    }
-
-    @Override
-    public String defaultPageExpands() {
-        return DEFAULT_PAGE_EXPANDS;
-    }
-
-    @Override
-    public String defaultSpaceExpands() {
-        return DEFAULT_SPACE_EXPANDS;
-    }
-
     private ConfluenceConnectionSettings getSettings() {
-        ConfluenceConnectionSettings settings = cachedSettings;
+        ConfluenceConnectionSettings settings = cachedSettings.get();
         if (settings == null) {
             settings = repository.findConfig();
-            cachedSettings = settings;
+            cachedSettings.set(settings);
         }
         return settings;
     }

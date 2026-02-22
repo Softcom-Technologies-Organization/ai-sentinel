@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
-import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.PersonallyIdentifiableInformationType;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -39,8 +38,7 @@ public class PiiTypeConfigEntity {
     private Long id;
 
     @Column(name = "pii_type", nullable = false, length = 100)
-    @Enumerated(EnumType.STRING)
-    private PersonallyIdentifiableInformationType piiType;
+    private String piiType;
 
     @Column(name = "detector", nullable = false, length = 50)
     private String detector;
@@ -59,6 +57,12 @@ public class PiiTypeConfigEntity {
 
     @Column(name = "detector_label", length = 100)
     private String detectorLabel;
+
+    @Column(name = "is_custom", nullable = false, columnDefinition = "boolean not null default false")
+    private boolean custom;
+
+    @Column(name = "severity", length = 10)
+    private String severity;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -87,13 +91,15 @@ public class PiiTypeConfigEntity {
     public static PiiTypeConfigEntity fromDomain(PiiTypeConfig domain) {
         PiiTypeConfigEntity entity = new PiiTypeConfigEntity();
         entity.id = domain.getId();
-        entity.piiType = PersonallyIdentifiableInformationType.valueOf(domain.getPiiType());
+        entity.piiType = domain.getPiiType();
         entity.detector = domain.getDetector();
         entity.enabled = domain.isEnabled();
         entity.threshold = domain.getThreshold();
         entity.category = domain.getCategory();
         entity.countryCode = domain.getCountryCode();
         entity.detectorLabel = domain.getDetectorLabel();
+        entity.custom = domain.isCustom();
+        entity.severity = domain.getSeverity();
         entity.updatedAt = domain.getUpdatedAt();
         entity.updatedBy = domain.getUpdatedBy();
         return entity;
@@ -103,13 +109,15 @@ public class PiiTypeConfigEntity {
     public PiiTypeConfig toDomain() {
         return PiiTypeConfig.builder()
                 .id(id)
-                .piiType(piiType.name())
+                .piiType(piiType)
                 .detector(detector)
                 .enabled(enabled)
                 .threshold(threshold)
                 .category(category)
                 .countryCode(countryCode)
                 .detectorLabel(detectorLabel)
+                .custom(custom)
+                .severity(severity)
                 .updatedAt(updatedAt)
                 .updatedBy(updatedBy)
                 .build();

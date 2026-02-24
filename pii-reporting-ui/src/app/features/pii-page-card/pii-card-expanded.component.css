@@ -466,3 +466,45 @@ button.expanded-header {
   outline: 2px solid var(--sentinel-focus-ring);
   outline-offset: 2px;
 }
+
+/* ======================================================================
+ * Responsive: progressive column hiding
+ * Hide order: detector → confidence → type
+ * Value column auto-expands to fill remaining width.
+ * ====================================================================== */
+
+@media (max-width: 1100px) {
+  .th-detector,
+  .td-detector {
+    display: none;
+  }
+
+  .th-value,
+  .td-value {
+    width: 70%;
+  }
+}
+
+@media (max-width: 900px) {
+  .th-confidence,
+  .td-confidence {
+    display: none;
+  }
+
+  .th-value,
+  .td-value {
+    width: 85%;
+  }
+}
+
+@media (max-width: 700px) {
+  .th-type,
+  .td-type {
+    display: none;
+  }
+
+  .th-value,
+  .td-value {
+    width: 100%;
+  }
+}

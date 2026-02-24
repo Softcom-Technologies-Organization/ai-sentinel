@@ -571,3 +571,143 @@
 .text-muted {
   color: var(--sentinel-text-muted);
 }
+
+/* ======================================================================
+ * Responsive: progressive column hiding
+ * Hide order: last-scan → progress → risk-score → status → actions
+ *
+ * Uses zero-width technique instead of display:none to preserve the
+ * table column grid. This avoids colspan mismatch when rows are expanded.
+ * Space Name column absorbs remaining width via width:auto.
+ * ====================================================================== */
+
+/* Shared zero-width collapse for hidden columns */
+:host ::ng-deep .col-resp-hidden {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  padding: 0 !important;
+  border-width: 0 !important;
+  overflow: hidden !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+}
+
+/* Collapse any child of a hidden column (PrimeNG tags, badges, inputs…) */
+:host ::ng-deep .col-resp-hidden > * {
+  display: none !important;
+}
+
+@media (max-width: 1200px) {
+  :host ::ng-deep .p-datatable .p-datatable-table {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  :host ::ng-deep #col-space {
+    width: auto !important;
+  }
+
+  :host ::ng-deep #col-last-scan,
+  :host ::ng-deep #col-last-scan-value,
+  :host ::ng-deep .col-last-scan {
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border-width: 0 !important;
+    overflow: hidden !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+  }
+
+  :host ::ng-deep #col-last-scan > *,
+  :host ::ng-deep #col-last-scan-value > *,
+  :host ::ng-deep .col-last-scan > * {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  :host ::ng-deep #col-progress,
+  :host ::ng-deep #col-progress-value,
+  :host ::ng-deep .col-progress {
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border-width: 0 !important;
+    overflow: hidden !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+  }
+
+  :host ::ng-deep #col-progress > *,
+  :host ::ng-deep #col-progress-value > *,
+  :host ::ng-deep .col-progress > * {
+    display: none !important;
+  }
+}
+
+@media (max-width: 960px) {
+  :host ::ng-deep #col-risk-score,
+  :host ::ng-deep #col-risk-score-value,
+  :host ::ng-deep .col-risk-score {
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border-width: 0 !important;
+    overflow: hidden !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+  }
+
+  :host ::ng-deep #col-risk-score > *,
+  :host ::ng-deep #col-risk-score-value > *,
+  :host ::ng-deep .col-risk-score > * {
+    display: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  :host ::ng-deep #col-status,
+  :host ::ng-deep #col-status-value,
+  :host ::ng-deep .col-status {
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border-width: 0 !important;
+    overflow: hidden !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+  }
+
+  :host ::ng-deep #col-status > *,
+  :host ::ng-deep #col-status-value > *,
+  :host ::ng-deep .col-status > * {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  :host ::ng-deep #col-actions,
+  :host ::ng-deep #col-actions-value,
+  :host ::ng-deep .col-actions {
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border-width: 0 !important;
+    overflow: hidden !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+  }
+
+  :host ::ng-deep #col-actions > *,
+  :host ::ng-deep #col-actions-value > *,
+  :host ::ng-deep .col-actions > * {
+    display: none !important;
+  }
+}

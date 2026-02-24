@@ -203,17 +203,17 @@
             }
           </div>
         </td>
-        <td>
+        <td class="col-status">
           <p-tag [value]="statusLabel(space.status)"
                  [severity]="statusStyle(space.status)"
                  [class]="'status-tag ' + (spacesDashboardUtils.statusStyleClass(space.status) || '')"
                  [attr.data-testid]="testIds.spaceStatus"></p-tag>
         </td>
-        <td>
+        <td class="col-progress">
           <app-scan-progress-bar [spaceKey]="space.key" [status]="space.status"></app-scan-progress-bar>
         </td>
-        <td>{{ space.lastScanTs | date:'short' }}</td>
-        <td class="text-center">
+        <td class="col-last-scan">{{ space.lastScanTs | date:'short' }}</td>
+        <td class="text-center col-risk-score">
           <span class="pii-total-badge"
                 [attr.data-testid]="testIds.badges.total">
             {{ space?.counts?.total ?? 0 }}
@@ -229,7 +229,7 @@
                      size="large" [attr.data-testid]="testIds.badges.low"></p-badge>
           </div>
         </td>
-        <td>
+        <td class="col-actions">
           <span
             [pTooltip]="(spacesDashboardUtils.hasConfluenceUrl(space) ? 'dashboard.actions.openInConfluence' : 'dashboard.actions.confluenceUnavailable') | transloco"
             tooltipPosition="top">
@@ -251,19 +251,20 @@
           <td>
             <p-skeleton width="1.5rem" height="1.5rem" shape="circle"></p-skeleton>
           </td>
+          <td></td>
           <td>
             <p-skeleton width="12rem"></p-skeleton>
           </td>
-          <td>
+          <td class="col-status">
             <p-skeleton width="6rem" height="1.5rem"></p-skeleton>
           </td>
-          <td>
+          <td class="col-progress">
             <p-skeleton width="8rem" height="0.75rem"></p-skeleton>
           </td>
-          <td>
+          <td class="col-last-scan">
             <p-skeleton width="9rem"></p-skeleton>
           </td>
-          <td>
+          <td class="col-risk-score">
             <p-skeleton width="2.5rem" height="1.5rem"></p-skeleton>
           </td>
           <td>
@@ -273,7 +274,7 @@
               <p-skeleton width="1.75rem" height="1.75rem" shape="circle"></p-skeleton>
             </div>
           </td>
-          <td>
+          <td class="col-actions">
             <p-skeleton width="7rem"></p-skeleton>
           </td>
         </tr>

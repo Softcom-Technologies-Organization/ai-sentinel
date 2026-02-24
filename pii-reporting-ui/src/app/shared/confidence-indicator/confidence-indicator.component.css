@@ -1,0 +1,60 @@
+.confidence-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.confidence-meter-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.confidence-bar {
+  width: 36px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--sentinel-badge-count-bg);
+}
+
+.confidence-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+}
+
+.confidence-bar-fill.confidence--high {
+  background: var(--sentinel-severity-low-color);
+}
+
+.confidence-bar-fill.confidence--medium {
+  background: var(--sentinel-confidence-medium);
+}
+
+.confidence-bar-fill.confidence--low {
+  background: var(--sentinel-severity-high-dark);
+}
+
+.confidence-pct {
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.confidence-pct.confidence--high {
+  color: var(--sentinel-severity-low-color);
+}
+
+.confidence-pct.confidence--medium {
+  color: var(--sentinel-confidence-medium);
+}
+
+.confidence-pct.confidence--low {
+  color: var(--sentinel-severity-high-dark);
+}

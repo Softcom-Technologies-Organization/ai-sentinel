@@ -1,10 +1,7 @@
 /* Global styles for Sentinelle UI Angular */
+@import "styles/_variables.css";
 @import "primeicons/primeicons.css";
-
-:root {
-  --chip-bg: #eef2f7;
-  --chip-fg: #2b3a4a;
-}
+@import "primeflex/primeflex.css";
 
 html, body {
   height: 100%;
@@ -12,31 +9,26 @@ html, body {
 body {
   margin: 0;
   font-family: Roboto, Arial, Helvetica, sans-serif;
-  background: #f8fafb;
+  background: var(--sentinel-bg-page);
 }
 
 .chip {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--chip-bg);
-  color: var(--chip-fg);
-  border: 1px solid #d6dce5;
+  background: var(--sentinel-chip-bg);
+  color: var(--sentinel-chip-fg);
+  border: 1px solid var(--sentinel-chip-border);
   font-size: 12px;
   margin: 0 4px 4px 0;
 }
 
-.card-header .card-title {
-  display: flex;
-  flex-direction: column;
-}
-
 .meta {
-  color: #666;
+  color: var(--sentinel-meta-text);
   font-size: 12px;
 }
 
-/* ─── PII type MultiSelect dropdown panel (appended to body) ─── */
+/* PII type MultiSelect dropdown panel (appended to body) */
 .p-multiselect-overlay .p-multiselect-list .p-multiselect-option {
   font-size: 11px;
   padding: 5px 10px;
@@ -48,7 +40,7 @@ body {
   width: 14px;
   height: 14px;
   border-radius: 3px;
-  border-color: #94a3b8;
+  border-color: var(--sentinel-text-muted);
 }
 
 .p-multiselect-overlay .p-checkbox .p-checkbox-box .p-checkbox-icon {
@@ -58,8 +50,8 @@ body {
 /* Black checkbox when checked */
 .p-multiselect-overlay .p-checkbox.p-checkbox-checked .p-checkbox-box,
 .p-multiselect-overlay .p-checkbox-checked .p-checkbox-box {
-  background: #0f172a !important;
-  border-color: #0f172a !important;
+  background: var(--sentinel-text-primary) !important;
+  border-color: var(--sentinel-text-primary) !important;
 }
 
 /* Header area (filter input, close) */
@@ -69,8 +61,8 @@ body {
 
 .p-multiselect-overlay .p-multiselect-header .p-checkbox.p-checkbox-checked .p-checkbox-box,
 .p-multiselect-overlay .p-multiselect-header .p-checkbox-checked .p-checkbox-box {
-  background: #0f172a !important;
-  border-color: #0f172a !important;
+  background: var(--sentinel-text-primary) !important;
+  border-color: var(--sentinel-text-primary) !important;
 }
 
 .p-multiselect-overlay .p-multiselect-header .p-checkbox .p-checkbox-box {

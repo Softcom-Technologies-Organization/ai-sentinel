@@ -1,4 +1,4 @@
-<div class="page p-3">
+<div class="mx-auto p-3">
   <!-- Warning: Confluence credentials not configured -->
   <app-confluence-config-banner
     [showBanner]="confluenceConfigMissing()"
@@ -19,7 +19,7 @@
 
   <!-- Table toolbar: filter toggle + scan status + action buttons -->
   <div class="table-top-bar">
-    <div class="table-top-bar-left">
+    <div class="flex align-items-center">
       <p-toggleButton
         [ngModel]="modifiedOnlyFilter()"
         (ngModelChange)="onModifiedOnlyChange($event)"
@@ -88,7 +88,7 @@
            (onSort)="onCustomSort($event)" [customSort]="true"
            [attr.data-testid]="testIds.table">
     <ng-template #caption>
-      <div class="paginator-nav">
+      <div class="flex align-items-center gap-1">
         <p-button type="button" icon="pi pi-chevron-left" (click)="prevPage()" (keydown.enter)="prevPage()" [disabled]="isFirstPage()" [text]="true" />
         <p-button type="button" icon="pi pi-refresh" (click)="resetPage()" (keydown.enter)="resetPage()" [text]="true" />
         <p-button type="button" icon="pi pi-chevron-right" (click)="nextPage()" (keydown.enter)="nextPage()" [disabled]="isLastPage()" [text]="true" />
@@ -113,7 +113,7 @@
         <th id="col-last-scan" style="width: 8rem"
             [attr.data-testid]="testIds.headers.lastScan">{{ 'dashboard.table.headers.lastScan' | transloco }}
         </th>
-        <th id="col-risk-score" style="width: 6rem" class="risk-score-header-cell"
+        <th id="col-risk-score" style="width: 6rem" class="text-center"
             [attr.data-testid]="testIds.headers.riskScore" pSortableColumn="piiCount">
           {{ 'dashboard.table.headers.riskScore' | transloco }}
           <p-sortIcon field="piiCount" />
@@ -193,7 +193,7 @@
           </p-button>
         </td>
         <td class="space-name-cell" [pRowToggler]="space" tabindex="0">
-          <div class="d-flex align-items-center">
+          <div class="flex align-items-center">
             <span class="fw-600" [attr.data-testid]="testIds.spaceName">{{ space.name }}</span>
             @if (hasSpaceBeenUpdated(space.key)) {
               <span class="space-updated-indicator"
@@ -213,14 +213,14 @@
           <app-scan-progress-bar [spaceKey]="space.key" [status]="space.status"></app-scan-progress-bar>
         </td>
         <td>{{ space.lastScanTs | date:'short' }}</td>
-        <td class="risk-score-cell">
+        <td class="text-center">
           <span class="pii-total-badge"
                 [attr.data-testid]="testIds.badges.total">
             {{ space?.counts?.total ?? 0 }}
           </span>
         </td>
         <td>
-          <div class="pii-badges-group">
+          <div class="flex align-items-center justify-content-center gap-1">
             <p-badge [value]="space?.counts?.high ?? 0" severity="danger"
                      size="large" [attr.data-testid]="testIds.badges.high"></p-badge>
             <p-badge [value]="space?.counts?.medium ?? 0" severity="warn"

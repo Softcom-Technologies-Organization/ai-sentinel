@@ -1,0 +1,37 @@
+.detector-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.detector-tag--small {
+  font-size: 9px;
+  padding: 1px 5px;
+}
+
+.detector-gliner {
+  background: var(--sentinel-gliner-bg);
+  color: var(--sentinel-gliner-color-alt);
+  border: 1px solid var(--sentinel-gliner-border);
+}
+
+.detector-presidio {
+  background: var(--sentinel-presidio-bg);
+  color: var(--sentinel-presidio-color);
+  border: 1px solid var(--sentinel-presidio-border);
+}
+
+.detector-regex {
+  background: var(--sentinel-regex-bg);
+  color: var(--sentinel-regex-color-alt);
+  border: 1px solid var(--sentinel-regex-border);
+}
+
+.detector-unknown {
+  background: var(--sentinel-detector-unknown-bg);
+  color: var(--sentinel-detector-unknown-color);
+  border: 1px solid var(--sentinel-detector-unknown-border);
+}

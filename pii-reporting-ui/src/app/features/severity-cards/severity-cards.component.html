@@ -1,0 +1,10 @@
+<div class="severity-grid">
+  @for (card of cards(); track card.labelKey) {
+    <div class="severity-card"
+         [style.background]="card.bg"
+         [style.border-color]="card.color + '33'">
+      <span class="severity-count" [style.color]="card.color">{{ card.count }}</span>
+      <span class="severity-label" [style.color]="card.color">{{ card.labelKey | transloco }}</span>
+    </div>
+  }
+</div>

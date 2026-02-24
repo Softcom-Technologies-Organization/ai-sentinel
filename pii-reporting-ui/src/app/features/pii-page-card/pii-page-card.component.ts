@@ -12,7 +12,7 @@ import { TestIds } from '../test-ids.constants';
   imports: [PiiCardCollapsedComponent, PiiCardExpandedComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pii-page-card.component.html',
-  styleUrls: ['./pii-page-card.component.scss'],
+  styleUrl: './pii-page-card.component.css',
 })
 export class PiiPageCardComponent implements OnInit {
   readonly item = input.required<PersonallyIdentifiableInformationScanResult>();

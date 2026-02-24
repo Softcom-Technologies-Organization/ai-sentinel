@@ -20,7 +20,7 @@ export type SortDirection = 'asc' | 'desc';
   imports: [TranslocoModule, FormsModule, MultiSelectModule, DetectorTagComponent, ConfidenceIndicatorComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pii-card-expanded.component.html',
-  styleUrls: ['./pii-card-expanded.component.scss'],
+  styleUrl: './pii-card-expanded.component.css',
 })
 export class PiiCardExpandedComponent {
   readonly item = input.required<PersonallyIdentifiableInformationScanResult>();

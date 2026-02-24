@@ -7,22 +7,22 @@ button.collapsed-card {
 }
 
 .collapsed-card {
-  background: #fff;
+  background: var(--sentinel-bg-card);
   border-radius: 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--sentinel-border-input);
   cursor: pointer;
   transition: all 0.15s ease;
   overflow: hidden;
+}
 
-  &:hover {
-    border-color: var(--severity-border, #e5e7eb);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  }
+.collapsed-card:hover {
+  border-color: var(--severity-border, var(--sentinel-border-input));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
 
-  &:focus-visible {
-    outline: 2px solid #2563eb;
-    outline-offset: 2px;
-  }
+.collapsed-card:focus-visible {
+  outline: 2px solid var(--sentinel-focus-ring);
+  outline-offset: 2px;
 }
 
 .collapsed-grid {
@@ -60,7 +60,7 @@ button.collapsed-card {
   margin: 0;
   font-size: 13.5px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--sentinel-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -72,9 +72,9 @@ button.collapsed-card {
   gap: 4px;
   font-size: 10px;
   font-weight: 600;
-  color: #526072;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  color: var(--sentinel-text-subtle);
+  background: var(--sentinel-bg-input-disabled);
+  border: 1px solid var(--sentinel-border-medium);
   padding: 2px 8px;
   border-radius: 4px;
   flex-shrink: 0;
@@ -85,12 +85,31 @@ button.collapsed-card {
   font-weight: 700;
   padding: 0 4px;
   border-radius: 2px;
+}
 
-  &--pdf { color: #b91c1c; background: #fef2f2; }
-  &--excel { color: #15803d; background: #f0fdf4; }
-  &--word { color: #2563eb; background: #eff6ff; }
-  &--ppt { color: #c2410c; background: #fff7ed; }
-  &--txt { color: #526072; background: #f1f5f9; }
+.attachment-type--pdf {
+  color: var(--sentinel-attachment-pdf-color);
+  background: var(--sentinel-attachment-pdf-bg);
+}
+
+.attachment-type--excel {
+  color: var(--sentinel-attachment-excel-color);
+  background: var(--sentinel-attachment-excel-bg);
+}
+
+.attachment-type--word {
+  color: var(--sentinel-attachment-word-color);
+  background: var(--sentinel-attachment-word-bg);
+}
+
+.attachment-type--ppt {
+  color: var(--sentinel-attachment-ppt-color);
+  background: var(--sentinel-attachment-ppt-bg);
+}
+
+.attachment-type--txt {
+  color: var(--sentinel-attachment-txt-color);
+  background: var(--sentinel-attachment-txt-bg);
 }
 
 .severity-badge {
@@ -129,9 +148,9 @@ button.collapsed-card {
   font-weight: 500;
   padding: 3px 8px 3px 6px;
   border-radius: 5px;
-  background: #f8fafc;
-  border: 1px solid #eef1f5;
-  color: #334155;
+  background: var(--sentinel-bg-hover);
+  border: 1px solid var(--sentinel-border-badge);
+  color: var(--sentinel-text-body);
 }
 
 .pii-type-label {
@@ -141,8 +160,8 @@ button.collapsed-card {
 .pii-type-count {
   font-size: 10px;
   font-weight: 700;
-  color: #0f172a;
-  background: #e8ecf1;
+  color: var(--sentinel-text-primary);
+  background: var(--sentinel-badge-count-bg);
   border-radius: 4px;
   padding: 0 4px;
   margin-left: 1px;
@@ -154,18 +173,18 @@ button.collapsed-card {
   gap: 4px;
   flex-shrink: 0;
   padding-left: 8px;
-  border-left: 1px solid #e8ecf1;
+  border-left: 1px solid var(--sentinel-badge-count-bg);
 }
 
 .collapsed-total-count {
   font-size: 16px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--sentinel-text-primary);
 }
 
 .collapsed-total-label {
   font-size: 10px;
-  color: #94a3b8;
+  color: var(--sentinel-text-muted);
   line-height: 1.2;
 }
 
@@ -173,13 +192,13 @@ button.collapsed-card {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: var(--sentinel-text-muted);
   font-size: 20px;
   flex-shrink: 0;
   margin-left: 8px;
   transition: color 0.15s ease;
+}
 
-  .collapsed-card:hover & {
-    color: #64748b;
-  }
+.collapsed-card:hover .collapsed-chevron {
+  color: var(--sentinel-text-secondary);
 }

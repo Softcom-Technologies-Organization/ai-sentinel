@@ -11,22 +11,8 @@ import { FormsModule } from '@angular/forms';
   selector: 'app-language-selector',
   standalone: true,
   imports: [TranslocoModule, SelectModule, FormsModule],
-  template: `
-    <p-select
-      [options]="availableLanguages"
-      [(ngModel)]="activeLanguage"
-      (ngModelChange)="changeLanguage($event)"
-      optionLabel="label"
-      optionValue="value"
-      [style]="{ minWidth: '150px' }"
-      aria-label="{{ 'language.select' | transloco }}"
-    />
-  `,
-  styles: [`
-    :host {
-      display: block;
-    }
-  `]
+  templateUrl: './language-selector.component.html',
+  styleUrl: './language-selector.component.css'
 })
 export class LanguageSelectorComponent {
   private readonly translocoService = inject(TranslocoService);

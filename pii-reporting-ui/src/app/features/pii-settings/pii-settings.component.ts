@@ -41,7 +41,7 @@ import { ConfluenceSettingsComponent } from '../confluence-settings/confluence-s
 @Component({
   selector: 'app-pii-settings',
   templateUrl: './pii-settings.component.html',
-  styleUrl: './pii-settings.component.scss',
+  styleUrl: './pii-settings.component.css',
   standalone: true,
     imports: [
         CommonModule,

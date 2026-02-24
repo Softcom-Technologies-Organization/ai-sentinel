@@ -4,21 +4,21 @@
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   margin-bottom: 1rem;
-  background-color: #e3f2fd;
-  border-left: 4px solid #2196f3;
+  background-color: var(--sentinel-info-bg);
+  border-left: 4px solid var(--sentinel-info-border);
   border-radius: 4px;
   animation: slideDown 300ms ease-out;
 }
 
 .new-spaces-banner i {
-  color: #2196f3;
+  color: var(--sentinel-info-border);
   font-size: 1.25rem;
 }
 
 .new-spaces-banner .banner-message {
   flex: 1;
   font-weight: 500;
-  color: #1565c0;
+  color: var(--sentinel-info-text);
 }
 
 .new-spaces-banner button {

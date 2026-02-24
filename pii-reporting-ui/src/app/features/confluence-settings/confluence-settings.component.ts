@@ -20,7 +20,7 @@ import {
 @Component({
   selector: 'app-confluence-settings',
   templateUrl: './confluence-settings.component.html',
-  styleUrl: './confluence-settings.component.scss',
+  styleUrl: './confluence-settings.component.css',
   standalone: true,
   imports: [
     CommonModule,

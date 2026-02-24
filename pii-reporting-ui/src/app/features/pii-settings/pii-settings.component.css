@@ -1,0 +1,1018 @@
+/* PII Detection Settings Page -- 2-Column Sidebar Layout */
+
+/* ===== HOST ===== */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ===== PAGE CONTAINER ===== */
+.settings-page {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--sentinel-bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--sentinel-border-input);
+  overflow: hidden;
+}
+
+/* ===== HEADER ===== */
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--sentinel-border-default);
+}
+
+.settings-header .header-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--sentinel-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-header h2 i {
+  color: var(--primary-color);
+  font-size: 16px;
+}
+
+.settings-header .settings-subtitle {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--sentinel-text-muted);
+}
+
+/* ===== LOADING ===== */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  flex: 1;
+}
+
+/* ===== BODY (sidebar + content) ===== */
+.settings-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ===== SIDEBAR NAVIGATION ===== */
+.settings-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--sentinel-bg-surface);
+  border-right: 1px solid var(--sentinel-border-light);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-nav-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--sentinel-text-secondary);
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.sidebar-nav-item:hover {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--sentinel-text-body);
+}
+
+.sidebar-nav-item:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: -2px;
+}
+
+.sidebar-nav-item i {
+  font-size: 15px;
+  flex-shrink: 0;
+  width: 18px;
+  text-align: center;
+}
+
+.sidebar-nav-item.active {
+  background: var(--sentinel-bg-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  color: var(--sentinel-text-primary);
+  font-weight: 600;
+}
+
+/* ===== CONTENT PANEL ===== */
+.settings-content {
+  flex: 1;
+  overflow: auto;
+  padding: 20px 28px;
+}
+
+/* ===== SECTION TITLES ===== */
+.section-title {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sentinel-text-primary);
+}
+
+.section-desc {
+  font-size: 12px;
+  color: var(--sentinel-text-dark);
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+/* ===== DETECTOR CARDS ===== */
+.detector-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detector-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--sentinel-border-default);
+  background: var(--sentinel-bg-surface);
+  transition: all 0.2s;
+}
+
+/* GLiNER */
+.detector-card.gliner.enabled {
+  border-color: var(--sentinel-gliner-border);
+  background: var(--sentinel-gliner-bg);
+}
+
+.detector-card.gliner.disabled {
+  border-color: var(--sentinel-border-default);
+  background: var(--sentinel-bg-surface);
+}
+
+/* Presidio */
+.detector-card.presidio.enabled {
+  border-color: var(--sentinel-presidio-border);
+  background: var(--sentinel-presidio-bg);
+}
+
+.detector-card.presidio.disabled {
+  border-color: var(--sentinel-border-default);
+  background: var(--sentinel-bg-surface);
+}
+
+/* Regex */
+.detector-card.regex.enabled {
+  border-color: var(--sentinel-regex-border);
+  background: var(--sentinel-regex-bg);
+}
+
+.detector-card.regex.disabled {
+  border-color: var(--sentinel-border-default);
+  background: var(--sentinel-bg-surface);
+}
+
+.detector-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.detector-avatar.gliner {
+  background: var(--sentinel-gliner-avatar-bg);
+  color: var(--sentinel-gliner-color);
+  border: 1px solid var(--sentinel-gliner-avatar-border);
+}
+
+.detector-avatar.gliner.disabled-avatar {
+  background: var(--sentinel-bg-input-disabled);
+  color: var(--sentinel-text-subtle);
+  border-color: var(--sentinel-border-medium);
+}
+
+.detector-avatar.presidio {
+  background: var(--sentinel-presidio-avatar-bg);
+  color: var(--sentinel-presidio-color);
+  border: 1px solid var(--sentinel-presidio-avatar-border);
+}
+
+.detector-avatar.presidio.disabled-avatar {
+  background: var(--sentinel-bg-input-disabled);
+  color: var(--sentinel-text-subtle);
+  border-color: var(--sentinel-border-medium);
+}
+
+.detector-avatar.regex {
+  background: var(--sentinel-regex-avatar-bg);
+  color: var(--sentinel-regex-color-alt);
+  border: 1px solid var(--sentinel-regex-avatar-border);
+}
+
+.detector-avatar.regex.disabled-avatar {
+  background: var(--sentinel-bg-input-disabled);
+  color: var(--sentinel-text-subtle);
+  border-color: var(--sentinel-border-medium);
+}
+
+.detector-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.detector-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sentinel-text-primary);
+}
+
+.detector-name.disabled-text {
+  color: var(--sentinel-text-muted);
+}
+
+.detector-desc {
+  font-size: 12.5px;
+  color: var(--sentinel-text-secondary);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+/* ===== VALIDATION ERROR ===== */
+.validation-error {
+  margin-top: 12px;
+  padding: 0.75rem;
+  background-color: var(--red-50);
+  border-left: 4px solid var(--red-500);
+  border-radius: 4px;
+  color: var(--red-900);
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.validation-error i {
+  color: var(--red-500);
+}
+
+/* ===== THRESHOLD SECTION ===== */
+.threshold-card {
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid var(--sentinel-border-default);
+  background: var(--sentinel-bg-surface);
+  margin-bottom: 16px;
+}
+
+/* ::ng-deep needed: PrimeNG inputnumber internal structure */
+.threshold-card ::ng-deep .p-inputnumber .p-inputnumber-input {
+  text-align: center;
+  font-weight: 600;
+  font-size: 13px;
+  max-width: 3.5rem;
+  padding: 0.3rem 0.15rem;
+  height: 32px;
+}
+
+.threshold-card ::ng-deep .p-inputnumber .p-inputnumber-button-group {
+  display: flex;
+}
+
+.threshold-card ::ng-deep .p-inputnumber .p-inputnumber-button-group button {
+  width: 2rem;
+  height: 32px;
+  padding: 0;
+}
+
+.threshold-card ::ng-deep .p-inputnumber .p-inputnumber-button-group button .pi {
+  font-size: 0.7rem;
+}
+
+.threshold-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sentinel-text-primary);
+  margin-bottom: 4px;
+}
+
+.threshold-desc {
+  font-size: 11px;
+  color: var(--sentinel-text-muted);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.threshold-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.threshold-gradient-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--sentinel-border-medium);
+  overflow: hidden;
+}
+
+.threshold-gradient-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--sentinel-severity-high), var(--sentinel-severity-low), var(--sentinel-severity-total-card));
+  transition: width 0.2s;
+}
+
+.threshold-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--sentinel-text-muted);
+}
+
+/* ===== INFO CARD ===== */
+.info-card {
+  margin-top: 16px;
+  padding: 1rem;
+  background: var(--surface-100);
+  border-radius: 6px;
+  border-left: 4px solid var(--primary-color);
+}
+
+.info-card .info-content {
+  font-size: 0.875rem;
+  color: var(--text-color-secondary);
+  line-height: 1.4;
+}
+
+.info-card .info-content .info-item {
+  margin: 0.25rem 0;
+}
+
+.info-card .info-content .info-item strong {
+  color: var(--text-color);
+}
+
+/* ===== PII TYPES SECTION ===== */
+.pii-types-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.pii-types-header .section-title {
+  margin-bottom: 0;
+}
+
+.pii-types-header .pii-search-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ::ng-deep needed: PrimeNG inputtext internal structure */
+::ng-deep .pii-search-input {
+  width: 220px;
+  font-size: 12px;
+  padding: 6px 10px 6px 2.2rem;
+  height: 32px;
+}
+
+/* Search highlight */
+::ng-deep mark.search-highlight,
+::ng-deep .search-highlight {
+  background-color: var(--sentinel-search-highlight-bg);
+  color: var(--sentinel-search-highlight-color);
+  padding: 0 0.125rem;
+  border-radius: 2px;
+}
+
+/* Custom label dialog -- strip ALL default chrome, single flat box */
+/* ::ng-deep needed: PrimeNG dialog renders its own encapsulated structure */
+::ng-deep .custom-label-dialog.p-dialog {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  padding: 0;
+  background: var(--sentinel-bg-card);
+}
+
+::ng-deep .custom-label-dialog.p-dialog .p-dialog-header {
+  display: none !important;
+}
+
+::ng-deep .custom-label-dialog.p-dialog .p-dialog-content {
+  padding: 20px;
+  margin: 0;
+  background: var(--sentinel-bg-card);
+  border: none;
+  border-radius: 0;
+}
+
+::ng-deep .p-dialog-mask {
+  backdrop-filter: blur(2px);
+}
+
+/* Unsaved Changes Banner */
+.unsaved-changes-banner {
+  margin-bottom: 16px;
+  padding: 0.75rem 1rem;
+  background: var(--blue-50);
+  border-left: 4px solid var(--blue-500);
+  border-radius: 6px;
+  color: var(--blue-900);
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.unsaved-changes-banner i {
+  color: var(--blue-500);
+  font-size: 1rem;
+}
+
+/* No Results Message */
+.no-results-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+  color: var(--text-color-secondary);
+  background: var(--surface-50);
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.no-results-message i {
+  font-size: 2.5rem;
+  color: var(--text-color-secondary);
+  margin-bottom: 0.75rem;
+  opacity: 0.5;
+}
+
+.no-results-message p {
+  font-size: 0.95rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Detector Group (within PII types section) */
+.detector-group {
+  margin-bottom: 20px;
+}
+
+.detector-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--sentinel-border-light);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detector-group-header.collapsed {
+  margin-bottom: 0;
+}
+
+.detector-group-header .detector-group-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.detector-group-header .detector-group-meta {
+  font-size: 11px;
+  color: var(--sentinel-text-muted);
+}
+
+/* ::ng-deep needed: PrimeNG button internal structure */
+.detector-group-header ::ng-deep .p-button-sm {
+  padding: 4px 10px;
+  font-size: 11px;
+  height: 28px;
+}
+
+.collapse-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--sentinel-border-medium);
+  background: var(--sentinel-bg-card);
+  border-radius: 6px;
+  color: var(--sentinel-text-help);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.collapse-toggle:hover {
+  background: var(--sentinel-bg-input-disabled);
+  color: var(--sentinel-text-primary);
+  border-color: var(--sentinel-border-strong);
+}
+
+.collapse-toggle:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: -2px;
+}
+
+.collapse-toggle i {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.detector-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.detector-badge.gliner {
+  background: var(--sentinel-gliner-bg);
+  color: var(--sentinel-gliner-color);
+  border: 1px solid var(--sentinel-gliner-border);
+}
+
+.detector-badge.presidio {
+  background: var(--sentinel-presidio-bg);
+  color: var(--sentinel-presidio-color);
+  border: 1px solid var(--sentinel-presidio-border);
+}
+
+.detector-badge.regex {
+  background: var(--sentinel-regex-bg);
+  color: var(--sentinel-regex-color);
+  border: 1px solid var(--sentinel-regex-border);
+}
+
+/* Category sub-header */
+.category-subheader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sentinel-text-secondary);
+  border-bottom: 1px solid var(--sentinel-border-lightest);
+}
+
+.category-subheader i {
+  font-size: 12px;
+  color: var(--sentinel-text-muted);
+}
+
+/* PII Type Row */
+.pii-type-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-bottom: 1px solid var(--sentinel-border-lightest);
+  transition: background 0.15s;
+}
+
+.pii-type-row:last-child {
+  border-bottom: none;
+}
+
+.pii-type-row:hover {
+  background: var(--sentinel-bg-surface);
+}
+
+.pii-type-row.disabled {
+  opacity: 0.6;
+}
+
+.pii-type-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.type-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--sentinel-text-primary);
+  display: inline;
+}
+
+.type-name.disabled-text {
+  color: var(--sentinel-text-muted);
+}
+
+.type-description {
+  font-size: 12.5px;
+  color: var(--sentinel-text-secondary);
+  line-height: 1.4;
+  margin: 2px 0 0;
+}
+
+.type-country {
+  font-size: 11px;
+  color: var(--sentinel-text-muted);
+  margin-left: 4px;
+}
+
+.type-code {
+  font-size: 10px;
+  color: var(--text-color-secondary);
+  font-family: monospace;
+  margin-left: 4px;
+}
+
+.pii-type-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* ::ng-deep needed: PrimeNG inputnumber and toggleswitch internal structure */
+.pii-type-controls ::ng-deep .p-inputnumber .p-inputnumber-input {
+  text-align: center;
+  font-weight: 600;
+  max-width: 3.2rem;
+  font-size: 12px;
+  padding: 0.2rem 0.1rem;
+  height: 28px;
+}
+
+.pii-type-controls ::ng-deep .p-inputnumber .p-inputnumber-button-group {
+  display: flex;
+}
+
+.pii-type-controls ::ng-deep .p-inputnumber .p-inputnumber-button-group button {
+  width: 1.6rem;
+  height: 28px;
+  padding: 0;
+}
+
+.pii-type-controls ::ng-deep .p-inputnumber .p-inputnumber-button-group button .pi {
+  font-size: 0.65rem;
+}
+
+/* Compact toggle switch */
+.pii-type-controls ::ng-deep .p-toggleswitch {
+  transform: scale(0.85);
+  transform-origin: center;
+}
+
+/* Custom badge and severity */
+.custom-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--teal-700);
+  background: var(--teal-100);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
+.severity-indicator {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.severity-indicator.severity-high {
+  color: var(--red-700);
+  background: var(--red-100);
+}
+
+.severity-indicator.severity-medium {
+  color: var(--orange-700);
+  background: var(--orange-100);
+}
+
+.severity-indicator.severity-low {
+  color: var(--blue-700);
+  background: var(--blue-100);
+}
+
+/* ===== FOOTER ===== */
+.settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-top: 1px solid var(--sentinel-border-default);
+  background: var(--sentinel-bg-surface);
+  border-radius: 0 0 12px 12px;
+  flex-shrink: 0;
+}
+
+/* ::ng-deep needed: PrimeNG button internal structure */
+.settings-footer ::ng-deep .p-button-sm {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  height: 32px;
+}
+
+/* Base layout (flex, gap) handled by PrimeFlex utilities on the element.
+   This class is kept for responsive overrides in media queries. */
+
+/* ===== CUSTOM LABEL DIALOG ===== */
+
+/* Custom dialog header (replaces PrimeNG header) */
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--sentinel-border-default);
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sentinel-text-primary);
+}
+
+.dialog-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--sentinel-text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.dialog-close-btn:hover {
+  background: var(--sentinel-bg-input-disabled);
+  color: var(--sentinel-text-body);
+}
+
+.dialog-close-btn:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: -2px;
+}
+
+.dialog-close-btn i {
+  font-size: 13px;
+}
+
+/* Dialog form fields */
+.custom-label-field {
+  margin-bottom: 0.9rem;
+}
+
+.custom-label-field:last-child {
+  margin-bottom: 0;
+}
+
+.custom-label-field label {
+  display: block;
+  font-weight: 500;
+  font-size: 12.5px;
+  margin-bottom: 0.3rem;
+  color: var(--sentinel-text-primary);
+}
+
+.custom-label-field label .required-marker {
+  color: var(--red-500);
+  margin-left: 0.2rem;
+  font-size: 11px;
+}
+
+.custom-label-field input[type="text"] {
+  width: 100%;
+  font-size: 12.5px;
+  padding: 0.35rem 0.6rem;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--sentinel-border-input);
+  transition: border-color 0.15s;
+}
+
+.custom-label-field input[type="text"]:focus {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 99, 102, 241), 0.1);
+}
+
+.custom-label-field input[type="text"]::placeholder {
+  color: var(--sentinel-text-muted);
+  font-size: 12px;
+}
+
+.custom-label-field .field-error {
+  display: block;
+  color: var(--red-500);
+  font-size: 11px;
+  margin-top: 0.2rem;
+}
+
+/* ::ng-deep needed: PrimeNG inputnumber internal structure */
+.custom-label-field .threshold-input-group ::ng-deep .p-inputnumber .p-inputnumber-input {
+  text-align: center;
+  font-weight: 600;
+  font-size: 13px;
+  max-width: 3.5rem;
+  padding: 0.3rem 0.15rem;
+  height: 32px;
+}
+
+.custom-label-field .threshold-input-group ::ng-deep .p-inputnumber .p-inputnumber-button-group {
+  display: flex;
+}
+
+.custom-label-field .threshold-input-group ::ng-deep .p-inputnumber .p-inputnumber-button-group button {
+  width: 2rem;
+  height: 32px;
+  padding: 0;
+}
+
+.custom-label-field .threshold-input-group ::ng-deep .p-inputnumber .p-inputnumber-button-group button .pi {
+  font-size: 0.7rem;
+}
+
+/* ::ng-deep needed: PrimeNG select internal structure */
+.custom-label-field ::ng-deep p-select.p-select {
+  display: inline-flex;
+  width: 100%;
+  font-size: 12.5px;
+  border-radius: 8px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--sentinel-border-default);
+}
+
+/* ::ng-deep needed: PrimeNG button internal structure */
+.dialog-actions ::ng-deep .p-button {
+  font-size: 12px;
+  padding: 6px 14px;
+  height: 32px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .settings-page {
+    border-radius: 0;
+    border: none;
+  }
+
+  .settings-body {
+    flex-direction: column;
+  }
+
+  .settings-sidebar {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--sentinel-border-light);
+    padding: 8px;
+    gap: 4px;
+  }
+
+  .sidebar-nav-item {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  .settings-content {
+    padding: 16px;
+  }
+
+  .settings-header {
+    padding: 16px;
+  }
+
+  .settings-header h2 {
+    font-size: 15px;
+  }
+
+  .pii-types-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* ::ng-deep needed: PrimeNG inputtext internal structure */
+  ::ng-deep .pii-search-input {
+    width: 100%;
+  }
+
+  .pii-type-row {
+    flex-wrap: wrap;
+  }
+
+  .settings-footer {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-content {
+    padding: 12px;
+  }
+
+  .detector-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .detector-card .detector-avatar {
+    align-self: flex-start;
+  }
+
+  .pii-type-controls {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .threshold-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .settings-footer {
+    flex-direction: column;
+  }
+
+  .settings-footer .footer-right {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

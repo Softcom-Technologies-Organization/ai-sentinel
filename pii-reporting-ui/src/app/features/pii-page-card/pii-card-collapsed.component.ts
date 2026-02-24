@@ -10,7 +10,7 @@ import { PiiItemCardUtils } from '../pii-item-card/pii-item-card.utils';
   imports: [TranslocoModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pii-card-collapsed.component.html',
-  styleUrls: ['./pii-card-collapsed.component.scss'],
+  styleUrl: './pii-card-collapsed.component.css',
 })
 export class PiiCardCollapsedComponent {
   readonly item = input.required<PersonallyIdentifiableInformationScanResult>();

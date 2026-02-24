@@ -14,59 +14,8 @@ interface SeverityCard {
   standalone: true,
   imports: [TranslocoModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="severity-grid">
-      @for (card of cards(); track card.labelKey) {
-        <div class="severity-card"
-             [style.background]="card.bg"
-             [style.border-color]="card.color + '33'">
-          <span class="severity-count" [style.color]="card.color">{{ card.count }}</span>
-          <span class="severity-label" [style.color]="card.color">{{ card.labelKey | transloco }}</span>
-        </div>
-      }
-    </div>
-  `,
-  styles: [`
-    .severity-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.75rem;
-      margin-bottom: 1rem;
-    }
-
-    .severity-card {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      border-radius: 8px;
-      padding: 0.375rem 0.75rem;
-      border: 1px solid;
-    }
-
-    .severity-count {
-      font-size: 1rem;
-      font-weight: 700;
-      line-height: 1;
-    }
-
-    .severity-label {
-      font-size: 0.75rem;
-      font-weight: 500;
-      opacity: 0.8;
-    }
-
-    @media (max-width: 768px) {
-      .severity-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 480px) {
-      .severity-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  `]
+  templateUrl: './severity-cards.component.html',
+  styleUrl: './severity-cards.component.css'
 })
 export class SeverityCardsComponent {
   private readonly _counts = signal<SeverityCounts>({ total: 0, high: 0, medium: 0, low: 0 });

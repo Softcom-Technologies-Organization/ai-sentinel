@@ -12,20 +12,14 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: #fff;
-  border-bottom: 1px solid #e8edf2;
+  background: var(--sentinel-bg-card);
+  border-bottom: 1px solid var(--sentinel-border-top-bar);
 }
 
 .top-bar-left {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-}
-
-.top-bar-right {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 .app-logo {
@@ -38,15 +32,16 @@
   font-size: 1.0625rem;
   font-weight: 700;
   margin: 0;
-  color: #0f2b3c;
+  color: var(--sentinel-text-app-title);
   letter-spacing: -0.3px;
 }
 
-/* Header settings button */
+/* Header settings button
+   ::ng-deep needed: PrimeNG button renders its own internal template */
 ::ng-deep .header-settings-btn.p-button {
-  background: #fff !important;
-  border: 1px solid #e2e8f0 !important;
-  color: #334155 !important;
+  background: var(--sentinel-bg-card) !important;
+  border: 1px solid var(--sentinel-border-medium) !important;
+  color: var(--sentinel-text-body) !important;
   border-radius: 8px !important;
   font-size: 0.8125rem;
   font-weight: 500;
@@ -55,12 +50,12 @@
 }
 
 ::ng-deep .header-settings-btn.p-button .p-button-icon {
-  color: #334155 !important;
+  color: var(--sentinel-text-body) !important;
 }
 
 ::ng-deep .header-settings-btn.p-button:hover {
-  background: #f8fafb !important;
-  border-color: #cbd5e1 !important;
+  background: var(--sentinel-bg-page) !important;
+  border-color: var(--sentinel-border-strong) !important;
 }
 
 /* Tab icons */
@@ -68,45 +63,47 @@
   margin-right: 0.5rem;
 }
 
-/* Scan Error Toast Styling */
+/* Scan Error Toast Styling
+   ::ng-deep needed: PrimeNG toast renders outside component scope */
 ::ng-deep .p-toast.p-component {
   z-index: 9999;
 }
 
 ::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error {
-  background-color: #ffebee;
-  border-left: 6px solid #f44336;
+  background-color: var(--sentinel-error-bg);
+  border-left: 6px solid var(--sentinel-error-border);
   box-shadow: 0 4px 12px rgba(244, 67, 54, 0.25);
 }
 
 ::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-message-icon {
-  color: #f44336;
+  color: var(--sentinel-error-icon);
   font-size: 2rem;
 }
 
 ::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-summary {
   font-weight: 600;
-  color: #c62828;
+  color: var(--sentinel-error-text);
   font-size: 1.05rem;
 }
 
 ::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-detail {
-  color: #424242;
+  color: var(--sentinel-error-detail-text);
   white-space: pre-line;
   margin-top: 0.5rem;
   line-height: 1.6;
 }
 
 ::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-icon-close {
-  color: #666;
+  color: var(--sentinel-error-close);
   transition: color 0.2s;
 }
 
 ::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-icon-close:hover {
-  color: #f44336;
+  color: var(--sentinel-error-icon);
 }
 
-/* Settings Fullscreen Dialog Styling */
+/* Settings Fullscreen Dialog Styling
+   ::ng-deep needed: PrimeNG dialog renders its own encapsulated structure */
 ::ng-deep .settings-fullscreen-dialog .p-dialog {
   max-height: 95vh;
   overflow: hidden;
@@ -114,8 +111,8 @@
 }
 
 ::ng-deep .settings-fullscreen-dialog .p-dialog-header {
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
+  background-color: var(--sentinel-dialog-header-bg);
+  border-bottom: 1px solid var(--sentinel-border-dialog);
   border-radius: 12px 12px 0 0;
 }
 

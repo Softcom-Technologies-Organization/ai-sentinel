@@ -1,0 +1,9 @@
+<p-select
+  [options]="availableLanguages"
+  [(ngModel)]="activeLanguage"
+  (ngModelChange)="changeLanguage($event)"
+  optionLabel="label"
+  optionValue="value"
+  [style]="{ minWidth: '150px' }"
+  aria-label="{{ 'language.select' | transloco }}"
+/>

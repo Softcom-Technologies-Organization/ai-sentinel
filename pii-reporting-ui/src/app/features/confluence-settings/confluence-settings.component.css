@@ -1,0 +1,176 @@
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.confluence-settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.confluence-settings-content ::ng-deep .p-fieldset {
+  margin-bottom: 0;
+}
+
+.confluence-settings-content ::ng-deep .p-fieldset .p-fieldset-legend {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.form-field {
+  margin-bottom: 1rem;
+}
+
+.form-field:last-child {
+  margin-bottom: 0;
+}
+
+.form-field label {
+  display: block;
+  font-weight: 500;
+  font-size: 12.5px;
+  margin-bottom: 0.35rem;
+  color: var(--text-color);
+}
+
+.form-field label .field-label {
+  display: block;
+}
+
+.form-field .field-description {
+  font-size: 11px;
+  color: var(--text-color-secondary);
+  margin-top: 0.15rem;
+  margin-bottom: 0.35rem;
+  line-height: 1.4;
+}
+
+.form-field .field-input {
+  width: 100%;
+}
+
+/* Compact text inputs */
+.form-field ::ng-deep .p-inputtext {
+  font-size: 12.5px;
+  padding: 0.35rem 0.6rem;
+  height: 32px;
+}
+
+/* Compact password */
+.form-field ::ng-deep .p-password {
+  width: 100%;
+}
+
+.form-field ::ng-deep .p-password .p-password-input {
+  width: 100%;
+  font-size: 12.5px;
+  padding: 0.35rem 0.6rem;
+  height: 32px;
+}
+
+/* Compact number inputs (aligned with threshold section) */
+.form-field ::ng-deep .p-inputnumber .p-inputnumber-input {
+  text-align: center;
+  font-weight: 600;
+  font-size: 13px;
+  max-width: 5rem;
+  padding: 0.3rem 0.15rem;
+  height: 32px;
+}
+
+.form-field ::ng-deep .p-inputnumber .p-inputnumber-button-group {
+  display: flex;
+}
+
+.form-field ::ng-deep .p-inputnumber .p-inputnumber-button-group button {
+  width: 2rem;
+  height: 32px;
+  padding: 0;
+}
+
+.form-field ::ng-deep .p-inputnumber .p-inputnumber-button-group button .pi {
+  font-size: 0.7rem;
+}
+
+.form-field .field-error {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--red-500);
+  font-size: 11px;
+}
+
+.form-field .field-hint {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--text-color-secondary);
+  font-size: 11px;
+}
+
+.form-field .field-hint .token-masked {
+  font-family: monospace;
+  background: var(--surface-100);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  margin-left: 0.25rem;
+  font-size: 11px;
+}
+
+.info-card {
+  padding: 0.75rem;
+  background: var(--surface-100);
+  border-radius: 6px;
+  border-left: 4px solid var(--primary-color);
+}
+
+.info-card .info-content {
+  font-size: 11px;
+  color: var(--text-color-secondary);
+  line-height: 1.4;
+}
+
+.info-card .info-content .info-item {
+  margin: 0.15rem 0;
+}
+
+.info-card .info-content .info-item strong {
+  color: var(--text-color);
+  font-size: 11px;
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+}
+
+.section-actions .actions-right {
+  margin-left: auto;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.section-actions ::ng-deep .p-button {
+  font-size: 12px;
+  padding: 6px 14px;
+  height: 32px;
+}
+
+@media (max-width: 768px) {
+  .section-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .section-actions .actions-right {
+    margin-left: 0;
+    flex-direction: column;
+  }
+
+  .section-actions ::ng-deep .p-button {
+    width: 100%;
+  }
+}

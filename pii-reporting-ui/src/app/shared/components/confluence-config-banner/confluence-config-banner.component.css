@@ -4,21 +4,21 @@
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   margin-bottom: 1rem;
-  background-color: #fff3e0;
-  border-left: 4px solid #ff9800;
+  background-color: var(--sentinel-warning-bg);
+  border-left: 4px solid var(--sentinel-warning-border);
   border-radius: 4px;
   animation: slideDown 300ms ease-out;
 }
 
 .confluence-config-banner i {
-  color: #ff9800;
+  color: var(--sentinel-warning-border);
   font-size: 1.25rem;
 }
 
 .confluence-config-banner .banner-message {
   flex: 1;
   font-weight: 500;
-  color: #e65100;
+  color: var(--sentinel-warning-text);
 }
 
 .confluence-config-banner button {

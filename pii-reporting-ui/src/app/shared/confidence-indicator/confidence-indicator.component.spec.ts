@@ -63,14 +63,14 @@ describe('ConfidenceIndicatorComponent', () => {
     expect(pct.classList).toContain('confidence--medium');
   });
 
-  it('Should_HaveAriaAttributes_When_ValueProvided', () => {
+  it('Should_HaveNativeMeterElement_When_ValueProvided', () => {
     fixture = TestBed.createComponent(ConfidenceIndicatorComponent);
     fixture.componentRef.setInput('value', 0.85);
     fixture.detectChanges();
-    const indicator = fixture.nativeElement.querySelector('.confidence-indicator');
-    expect(indicator.getAttribute('role')).toBe('meter');
-    expect(indicator.getAttribute('aria-valuenow')).toBe('85');
-    expect(indicator.getAttribute('aria-valuemin')).toBe('0');
-    expect(indicator.getAttribute('aria-valuemax')).toBe('100');
+    const meter = fixture.nativeElement.querySelector('meter');
+    expect(meter).toBeTruthy();
+    expect(meter.getAttribute('value')).toBe('85');
+    expect(meter.getAttribute('min')).toBe('0');
+    expect(meter.getAttribute('max')).toBe('100');
   });
 });

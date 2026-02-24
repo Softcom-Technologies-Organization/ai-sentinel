@@ -1,0 +1,206 @@
+/* =============================================================================
+   Sentinel Design Tokens
+   =============================================================================
+   Centralized CSS custom properties for all hardcoded colors across the project.
+   Uses :root CSS custom properties for cross-file compatibility.
+
+   Naming convention: --sentinel-{category}-{semantic-name}
+   Categories: text, bg, border, severity, detector, status, banner, ui
+   ============================================================================= */
+
+:root {
+  /* ---------------------------------------------------------------------------
+     Text Colors
+     --------------------------------------------------------------------------- */
+  --sentinel-text-primary: #0f172a;        /* slate-900 -- headings, strong labels */
+  --sentinel-text-body: #334155;           /* slate-700 -- body text, button labels */
+  --sentinel-text-secondary: #64748b;      /* slate-500 -- descriptions, muted text */
+  --sentinel-text-muted: #94a3b8;          /* slate-400 -- placeholders, hints */
+  --sentinel-text-subtle: #526072;         /* custom -- attachment badges, disabled avatars */
+  --sentinel-text-dark: #1e293b;           /* slate-800 -- section descriptions */
+  --sentinel-text-help: #475569;           /* slate-600 -- help dialog intro, collapse toggle */
+  --sentinel-text-app-title: #0f2b3c;      /* custom -- app logo title */
+
+  /* ---------------------------------------------------------------------------
+     Background Colors
+     --------------------------------------------------------------------------- */
+  --sentinel-bg-page: #f8fafb;             /* custom -- page background, table header */
+  --sentinel-bg-surface: #fafbfc;          /* custom -- sidebar, cards, settings footer */
+  --sentinel-bg-card: #fff;                /* white -- cards, dialogs, table rows */
+  --sentinel-bg-hover: #f8fafc;            /* slate-50 -- card/button hover states */
+  --sentinel-bg-input-disabled: #f1f5f9;   /* slate-100 -- disabled avatars, badges */
+
+  /* ---------------------------------------------------------------------------
+     Border Colors
+     --------------------------------------------------------------------------- */
+  --sentinel-border-lightest: #f8fafc;     /* slate-50 -- category subheader, pii-type-row */
+  --sentinel-border-light: #f1f5f9;        /* slate-100 -- table row borders, sidebar border */
+  --sentinel-border-default: #e8ecf1;      /* custom -- cards, header, threshold cards */
+  --sentinel-border-medium: #e2e8f0;       /* slate-200 -- search input, disabled avatar */
+  --sentinel-border-input: #e5e7eb;        /* gray-200 -- form inputs, collapsed cards, buttons */
+  --sentinel-border-badge: #eef1f5;        /* custom -- pii-type-badge, filter bar */
+  --sentinel-border-strong: #cbd5e1;       /* slate-300 -- hover borders */
+  --sentinel-border-dialog: #dee2e6;       /* gray-300 -- dialog header border */
+  --sentinel-border-top-bar: #e8edf2;      /* custom -- top bar border */
+
+  /* ---------------------------------------------------------------------------
+     Badge / Count Backgrounds
+     --------------------------------------------------------------------------- */
+  --sentinel-badge-count-bg: #e8ecf1;      /* custom -- pii-type-count background */
+  --sentinel-chip-bg: #eef2f7;             /* custom -- chip background */
+  --sentinel-chip-fg: #2b3a4a;             /* custom -- chip foreground */
+  --sentinel-chip-border: #d6dce5;         /* custom -- chip border */
+
+  /* ---------------------------------------------------------------------------
+     Severity Colors (PII risk levels)
+     --------------------------------------------------------------------------- */
+  /* High severity -- red */
+  --sentinel-severity-high: #ef4444;       /* red-500 -- badge background */
+  --sentinel-severity-high-dark: #dc2626;  /* red-600 -- expanded card color */
+  --sentinel-severity-high-bg: #fef2f2;    /* red-50 -- help section, severity card */
+  --sentinel-severity-high-text: #b91c1c;  /* red-700 -- help section title */
+  --sentinel-severity-high-border: #fecaca; /* red-200 -- expanded card border */
+
+  /* Medium severity -- orange */
+  --sentinel-severity-medium: #f97316;     /* orange-500 -- badge background */
+  --sentinel-severity-medium-dark: #ea580c; /* orange-600 -- expanded card color */
+  --sentinel-severity-medium-bg: #fffbeb;  /* amber-50 -- help section (regex too) */
+  --sentinel-severity-medium-bg-alt: #fff7ed; /* orange-50 -- severity card */
+  --sentinel-severity-medium-text: #b45309; /* amber-700 -- help section title */
+  --sentinel-severity-medium-border: #fed7aa; /* orange-200 -- expanded card border */
+
+  /* Low severity -- yellow/green */
+  --sentinel-severity-low: #eab308;        /* yellow-500 -- badge background */
+  --sentinel-severity-low-bg: #eff6ff;     /* blue-50 -- help section bg */
+  --sentinel-severity-low-text: #1d4ed8;   /* blue-700 -- help section title */
+  --sentinel-severity-low-color: #16a34a;  /* green-600 -- expanded card color */
+  --sentinel-severity-low-card-bg: #f0fdf4; /* green-50 -- severity card */
+  --sentinel-severity-low-border: #bbf7d0; /* green-200 -- expanded card border */
+
+  /* Total badge */
+  --sentinel-severity-total: #475569;      /* slate-600 -- total badge background */
+  --sentinel-severity-total-card: #22c55e; /* green-500 -- total severity card */
+
+  /* ---------------------------------------------------------------------------
+     Detector Colors (GLiNER, Presidio, Regex)
+     --------------------------------------------------------------------------- */
+  /* GLiNER -- purple */
+  --sentinel-gliner-bg: #f3f0ff;           /* violet-50 -- badge/card background */
+  --sentinel-gliner-color: #7c3aed;        /* violet-600 -- text color */
+  --sentinel-gliner-color-alt: #6d28d9;    /* violet-700 -- detector tag text */
+  --sentinel-gliner-border: #e0d6ff;       /* custom -- border */
+  --sentinel-gliner-avatar-bg: #f3edfd;    /* custom -- avatar background */
+  --sentinel-gliner-avatar-border: #e6dafc; /* custom -- avatar border */
+
+  /* Presidio -- blue */
+  --sentinel-presidio-bg: #eff6ff;         /* blue-50 -- badge/card background */
+  --sentinel-presidio-color: #1d4ed8;      /* blue-700 -- text color */
+  --sentinel-presidio-border: #bfdbfe;     /* blue-200 -- border */
+  --sentinel-presidio-avatar-bg: #ebeffb;  /* custom -- avatar background */
+  --sentinel-presidio-avatar-border: #d4ddf8; /* custom -- avatar border */
+
+  /* Regex -- amber */
+  --sentinel-regex-bg: #fffbeb;            /* amber-50 -- badge/card background */
+  --sentinel-regex-color: #b45309;         /* amber-700 -- text color (settings badge) */
+  --sentinel-regex-color-alt: #92400e;     /* amber-800 -- detector tag text */
+  --sentinel-regex-border: #fde68a;        /* amber-200 -- border */
+  --sentinel-regex-avatar-bg: #f8efe9;     /* custom -- avatar background */
+  --sentinel-regex-avatar-border: #f1ded0; /* custom -- avatar border */
+
+  /* Unknown detector */
+  --sentinel-detector-unknown-bg: #f4f4f5;
+  --sentinel-detector-unknown-color: #71717a;
+  --sentinel-detector-unknown-border: #e4e4e7;
+
+  /* ---------------------------------------------------------------------------
+     Status Colors (scan state)
+     --------------------------------------------------------------------------- */
+  --sentinel-status-success-bg: #dcfce7;   /* green-100 -- completed tag */
+  --sentinel-status-success-text: #15803d; /* green-700 -- completed text */
+  --sentinel-status-pending-bg: #f1f5f9;   /* slate-100 -- pending tag */
+  --sentinel-status-pending-text: #475569; /* slate-600 -- pending text */
+  --sentinel-status-running-bg: #6DBAF7;   /* custom -- running tag */
+  --sentinel-status-running-border: #41A5F5; /* custom -- running border */
+  --sentinel-status-running-text: #263238; /* custom -- running text */
+  --sentinel-status-paused-bg: #CFD8D8;    /* custom -- paused tag/button */
+  --sentinel-status-paused-border: #90A4AE; /* custom -- paused border */
+  --sentinel-status-paused-text: #263238;  /* custom -- paused text */
+
+  /* Scan pulse animation */
+  --sentinel-scan-pulse-light: #42A5F5;    /* light blue -- pulse start/end */
+  --sentinel-scan-pulse-dark: #1565C0;     /* dark blue -- pulse midpoint */
+
+  /* Progress bar */
+  --sentinel-progress-bg: #e2e8f0;         /* slate-200 */
+  --sentinel-progress-completed-start: #34d399; /* emerald-400 */
+  --sentinel-progress-completed-end: #06b6d4;   /* cyan-500 */
+  --sentinel-progress-running: #2196F3A8;  /* blue with alpha */
+  --sentinel-progress-paused: #CFD8D8;     /* grey */
+
+  /* ---------------------------------------------------------------------------
+     Banner Colors (info, warning, error)
+     --------------------------------------------------------------------------- */
+  /* Info banner (blue) -- new spaces */
+  --sentinel-info-bg: #e3f2fd;
+  --sentinel-info-border: #2196f3;
+  --sentinel-info-text: #1565c0;
+
+  /* Warning banner (orange) -- config missing */
+  --sentinel-warning-bg: #fff3e0;
+  --sentinel-warning-border: #ff9800;
+  --sentinel-warning-text: #e65100;
+
+  /* Error toast (red) */
+  --sentinel-error-bg: #ffebee;
+  --sentinel-error-border: #f44336;
+  --sentinel-error-text: #c62828;
+  --sentinel-error-icon: #f44336;
+  --sentinel-error-detail-text: #424242;
+  --sentinel-error-close: #666;
+
+  /* ---------------------------------------------------------------------------
+     UI Accent Colors
+     --------------------------------------------------------------------------- */
+  --sentinel-focus-ring: #2563eb;          /* blue-600 -- focus-visible outlines */
+  --sentinel-link-hover: #3b82f6;          /* blue-500 -- help button hover */
+
+  /* Scan action button gradient */
+  --sentinel-scan-btn-start: #15804d;      /* custom green */
+  --sentinel-scan-btn-end: #0e7490;        /* custom teal */
+  --sentinel-scan-btn-disabled: #94a3b8;   /* slate-400 */
+
+  /* Masked/revealed highlights */
+  --sentinel-masked-bg: #fef3c7;           /* amber-100 */
+  --sentinel-masked-color: #92400e;        /* amber-800 */
+  --sentinel-masked-border: #fde68a;       /* amber-200 */
+  --sentinel-revealed-shadow: #f59e0b;     /* amber-500 */
+
+  /* Search highlight */
+  --sentinel-search-highlight-bg: #fef08a; /* yellow-200 */
+  --sentinel-search-highlight-color: #713f12; /* yellow-900 */
+
+  /* Space updated indicator */
+  --sentinel-space-updated: #f44336;       /* red -- dot indicator */
+
+  /* Settings dialog header */
+  --sentinel-dialog-header-bg: #f8f9fa;    /* gray-100 */
+
+  /* Attachment type badge colors */
+  --sentinel-attachment-pdf-color: #b91c1c;
+  --sentinel-attachment-pdf-bg: #fef2f2;
+  --sentinel-attachment-excel-color: #15803d;
+  --sentinel-attachment-excel-bg: #f0fdf4;
+  --sentinel-attachment-word-color: #2563eb;
+  --sentinel-attachment-word-bg: #eff6ff;
+  --sentinel-attachment-ppt-color: #c2410c;
+  --sentinel-attachment-ppt-bg: #fff7ed;
+  --sentinel-attachment-txt-color: #526072;
+  --sentinel-attachment-txt-bg: #f1f5f9;
+
+  /* Confidence indicator */
+  --sentinel-confidence-medium: #ca8a04;   /* yellow-600 -- medium confidence */
+
+  /* Miscellaneous */
+  --sentinel-border-bottom-panel: #e0e0e0; /* gray-400 -- bottom panel border */
+  --sentinel-meta-text: #666;              /* gray -- meta text */
+}

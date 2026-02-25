@@ -238,7 +238,7 @@
                       (click)="$event.stopPropagation(); openConfluence(space)"
                       (keydown.enter)="$event.stopPropagation(); openConfluence(space)"
                       (keydown.space)="$event.preventDefault(); $event.stopPropagation(); openConfluence(space)"
-                      label="Confluence"></p-button>
+                      [ariaLabel]="'dashboard.actions.openInConfluence' | transloco"></p-button>
           </span>
         </td>
       </tr>

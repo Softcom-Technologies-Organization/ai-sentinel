@@ -28,12 +28,31 @@
   mix-blend-mode: multiply;
 }
 
+:host-context([data-theme="dark"]) .app-logo {
+  mix-blend-mode: normal;
+  filter: brightness(1.2);
+}
+
 .app-title {
   font-size: 1.0625rem;
   font-weight: 700;
   margin: 0;
   color: var(--sentinel-text-app-title);
   letter-spacing: -0.3px;
+}
+
+/* Header theme toggle button */
+::ng-deep .header-theme-btn.p-button {
+  width: 2.25rem;
+  height: 2.25rem;
+  color: var(--sentinel-text-body) !important;
+  border-radius: 8px !important;
+  transition: background 0.2s, color 0.2s;
+}
+
+::ng-deep .header-theme-btn.p-button:hover {
+  background: var(--sentinel-bg-hover) !important;
+  color: var(--sentinel-text-primary) !important;
 }
 
 /* Header settings button

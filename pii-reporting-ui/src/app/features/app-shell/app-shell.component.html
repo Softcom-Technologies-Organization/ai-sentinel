@@ -9,6 +9,12 @@
       <h1 class="app-title">{{ 'common.appTitle' | transloco }}</h1>
     </div>
     <div class="flex align-items-center gap-2">
+      <p-button [icon]="themeService.isDark() ? 'pi pi-sun' : 'pi pi-moon'"
+                styleClass="header-theme-btn"
+                [rounded]="true"
+                [text]="true"
+                (click)="themeService.toggle()"
+                [ariaLabel]="(themeService.isDark() ? 'dashboard.actions.lightMode' : 'dashboard.actions.darkMode') | transloco" />
       <p-button icon="pi pi-cog"
                 [label]="'dashboard.actions.settings' | transloco"
                 styleClass="header-settings-btn"

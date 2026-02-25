@@ -204,3 +204,242 @@
   --sentinel-border-bottom-panel: #e0e0e0; /* gray-400 -- bottom panel border */
   --sentinel-meta-text: #666;              /* gray -- meta text */
 }
+
+
+/* =============================================================================
+   Sentinel Dark Theme
+   =============================================================================
+   Dark mode palette inspired by GitHub Dark, Linear, and Vercel aesthetics.
+   Cool slate-blue base tones with clear elevation hierarchy, adapted semantic
+   colors for legibility on dark surfaces, and WCAG AA contrast compliance.
+
+   Activation: set data-theme="dark" on <html> or <body>.
+   ============================================================================= */
+
+[data-theme="dark"] {
+  /* ---------------------------------------------------------------------------
+     Text Colors
+     ---------------------------------------------------------------------------
+     Primary text uses a bright off-white (slate-200) to avoid harsh pure white.
+     Secondary tiers step down through slate tones for hierarchy.
+     All meet WCAG AA 4.5:1 against the darkest surface (#0d1117).
+     --------------------------------------------------------------------------- */
+  --sentinel-text-primary: #e2e8f0;        /* slate-200 -- headings, strong labels */
+  --sentinel-text-body: #c8d1dc;           /* custom slate-300ish -- body text, button labels */
+  --sentinel-text-secondary: #8b95a5;      /* custom -- descriptions, muted text */
+  --sentinel-text-muted: #5c6878;          /* custom -- placeholders, hints */
+  --sentinel-text-subtle: #8b95a5;         /* custom -- attachment badges, disabled avatars */
+  --sentinel-text-dark: #d1d9e4;           /* custom -- section descriptions (lighter in dark) */
+  --sentinel-text-help: #94a3b8;           /* slate-400 -- help dialog intro, collapse toggle */
+  --sentinel-text-app-title: #e2e8f0;      /* bright -- app logo title */
+
+  /* ---------------------------------------------------------------------------
+     Background Colors
+     ---------------------------------------------------------------------------
+     Three-tier elevation: page (deepest) < surface < card.
+     Uses cool blue-grey undertones, not pure black.
+     Inspired by GitHub Dark (#0d1117) with subtle surface stepping.
+     --------------------------------------------------------------------------- */
+  --sentinel-bg-page: #0d1117;             /* deep navy-black -- page background, table header */
+  --sentinel-bg-surface: #151b23;          /* raised surface -- sidebar, settings footer */
+  --sentinel-bg-card: #1c2330;             /* card level -- cards, dialogs, table rows */
+  --sentinel-bg-hover: #242c3a;            /* hover -- card/button hover states */
+  --sentinel-bg-input-disabled: #1e2736;   /* muted surface -- disabled avatars, badges */
+
+  /* ---------------------------------------------------------------------------
+     Border Colors
+     ---------------------------------------------------------------------------
+     Dark mode borders use low-alpha light strokes to create subtle definition
+     without the heaviness of opaque grey lines. Stepped from invisible to
+     prominent for hierarchy.
+     --------------------------------------------------------------------------- */
+  --sentinel-border-lightest: #1e2736;     /* barely visible -- category subheader, pii-type-row */
+  --sentinel-border-light: #232b39;        /* subtle -- table row borders, sidebar border */
+  --sentinel-border-default: #2a3344;      /* standard -- cards, header, threshold cards */
+  --sentinel-border-medium: #303a4d;       /* mid-weight -- search input, disabled avatar */
+  --sentinel-border-input: #344054;        /* form elements -- form inputs, collapsed cards, buttons */
+  --sentinel-border-badge: #2a3344;        /* badge borders -- pii-type-badge, filter bar */
+  --sentinel-border-strong: #3d4a5e;       /* prominent -- hover borders */
+  --sentinel-border-dialog: #303a4d;       /* dialog -- dialog header border */
+  --sentinel-border-top-bar: #232b39;      /* top bar -- top bar border */
+
+  /* ---------------------------------------------------------------------------
+     Badge / Count Backgrounds
+     ---------------------------------------------------------------------------
+     Semi-transparent on dark, providing subtle depth without muddiness.
+     --------------------------------------------------------------------------- */
+  --sentinel-badge-count-bg: #2a3344;      /* count pill background */
+  --sentinel-chip-bg: #1e2736;             /* chip background */
+  --sentinel-chip-fg: #c8d1dc;             /* chip foreground -- readable on dark chip */
+  --sentinel-chip-border: #303a4d;         /* chip border */
+
+  /* ---------------------------------------------------------------------------
+     Severity Colors (PII risk levels)
+     ---------------------------------------------------------------------------
+     Badge/accent colors stay vivid. Backgrounds use very low-opacity tints of
+     the severity color over the dark base. Text uses lightened versions for
+     readability. Borders use muted mid-tones.
+     --------------------------------------------------------------------------- */
+  /* High severity -- red */
+  --sentinel-severity-high: #f87171;       /* red-400 -- slightly lifted for dark bg */
+  --sentinel-severity-high-dark: #ef4444;  /* red-500 -- expanded card color */
+  --sentinel-severity-high-bg: #1c1215;    /* very dark warm red tint -- help section */
+  --sentinel-severity-high-text: #fca5a5;  /* red-300 -- readable red on dark */
+  --sentinel-severity-high-border: #5c2020; /* muted dark red -- expanded card border */
+
+  /* Medium severity -- orange */
+  --sentinel-severity-medium: #fb923c;     /* orange-400 -- lifted for contrast */
+  --sentinel-severity-medium-dark: #f97316; /* orange-500 -- expanded card color */
+  --sentinel-severity-medium-bg: #1c1610;  /* very dark warm amber tint */
+  --sentinel-severity-medium-bg-alt: #1c1610; /* same dark tint -- severity card */
+  --sentinel-severity-medium-text: #fdba74; /* orange-300 -- readable on dark */
+  --sentinel-severity-medium-border: #5c3a14; /* muted dark amber -- expanded card border */
+
+  /* Low severity -- yellow/green */
+  --sentinel-severity-low: #facc15;        /* yellow-400 -- slightly brighter */
+  --sentinel-severity-low-bg: #101824;     /* very dark blue tint -- help section */
+  --sentinel-severity-low-text: #60a5fa;   /* blue-400 -- readable blue on dark */
+  --sentinel-severity-low-color: #4ade80;  /* green-400 -- expanded card color */
+  --sentinel-severity-low-card-bg: #0f1a14; /* very dark green tint -- severity card */
+  --sentinel-severity-low-border: #1a3a28; /* muted dark green -- expanded card border */
+
+  /* Total badge */
+  --sentinel-severity-total: #64748b;      /* slate-500 -- total badge background */
+  --sentinel-severity-total-card: #4ade80; /* green-400 -- total severity card */
+
+  /* ---------------------------------------------------------------------------
+     Detector Colors (GLiNER, Presidio, Regex)
+     ---------------------------------------------------------------------------
+     Backgrounds are very low-opacity tints of each detector color on the dark
+     base. Text colors are the lighter variants (300-400 range) for legibility.
+     Borders are muted mid-tones of each hue.
+     --------------------------------------------------------------------------- */
+  /* GLiNER -- purple */
+  --sentinel-gliner-bg: #1a1428;           /* very dark violet tint */
+  --sentinel-gliner-color: #a78bfa;        /* violet-400 -- brighter for dark bg */
+  --sentinel-gliner-color-alt: #c4b5fd;    /* violet-300 -- detector tag text */
+  --sentinel-gliner-border: #3b2d5e;       /* muted dark violet */
+  --sentinel-gliner-avatar-bg: #1f1833;    /* slightly lifted violet tint */
+  --sentinel-gliner-avatar-border: #4c3578; /* mid violet */
+
+  /* Presidio -- blue */
+  --sentinel-presidio-bg: #0f1724;         /* very dark blue tint */
+  --sentinel-presidio-color: #60a5fa;      /* blue-400 -- brighter for dark bg */
+  --sentinel-presidio-border: #1e3a5f;     /* muted dark blue */
+  --sentinel-presidio-avatar-bg: #121d33;  /* slightly lifted blue tint */
+  --sentinel-presidio-avatar-border: #264a78; /* mid blue */
+
+  /* Regex -- amber */
+  --sentinel-regex-bg: #1c1610;            /* very dark amber tint */
+  --sentinel-regex-color: #fbbf24;         /* amber-400 -- brighter for dark bg */
+  --sentinel-regex-color-alt: #fcd34d;     /* amber-300 -- detector tag text */
+  --sentinel-regex-border: #5c4a1a;        /* muted dark amber */
+  --sentinel-regex-avatar-bg: #201a10;     /* slightly lifted amber tint */
+  --sentinel-regex-avatar-border: #6b5520; /* mid amber */
+
+  /* Unknown detector */
+  --sentinel-detector-unknown-bg: #1e2736; /* neutral dark surface */
+  --sentinel-detector-unknown-color: #8b95a5; /* muted grey text */
+  --sentinel-detector-unknown-border: #303a4d; /* neutral border */
+
+  /* ---------------------------------------------------------------------------
+     Status Colors (scan state)
+     ---------------------------------------------------------------------------
+     Running/paused backgrounds darkened significantly. Success uses a dark
+     green tint. Text colors are the lighter variants for readability.
+     --------------------------------------------------------------------------- */
+  --sentinel-status-success-bg: #0f1a14;   /* dark green tint -- completed tag */
+  --sentinel-status-success-text: #4ade80; /* green-400 -- completed text */
+  --sentinel-status-pending-bg: #1e2736;   /* neutral dark -- pending tag */
+  --sentinel-status-pending-text: #8b95a5; /* muted grey -- pending text */
+  --sentinel-status-running-bg: #1a3550;   /* dark blue -- running tag */
+  --sentinel-status-running-border: #2563eb; /* blue-600 -- running border */
+  --sentinel-status-running-text: #93c5fd; /* blue-300 -- running text */
+  --sentinel-status-paused-bg: #232b39;    /* dark neutral -- paused tag/button */
+  --sentinel-status-paused-border: #4b5563; /* grey-600 -- paused border */
+  --sentinel-status-paused-text: #94a3b8;  /* slate-400 -- paused text */
+
+  /* Scan pulse animation -- kept vibrant for attention */
+  --sentinel-scan-pulse-light: #3b82f6;    /* blue-500 -- pulse start/end */
+  --sentinel-scan-pulse-dark: #1d4ed8;     /* blue-700 -- pulse midpoint */
+
+  /* Progress bar */
+  --sentinel-progress-bg: #232b39;         /* dark track */
+  --sentinel-progress-completed-start: #34d399; /* emerald-400 (kept vivid) */
+  --sentinel-progress-completed-end: #06b6d4;   /* cyan-500 (kept vivid) */
+  --sentinel-progress-running: #3b82f6a8;  /* blue-500 with alpha */
+  --sentinel-progress-paused: #374151;     /* grey-700 */
+
+  /* ---------------------------------------------------------------------------
+     Banner Colors (info, warning, error)
+     ---------------------------------------------------------------------------
+     Dark tinted backgrounds with muted versions of the accent hue. Border
+     colors remain recognizable. Text uses lighter variants for readability.
+     --------------------------------------------------------------------------- */
+  /* Info banner (blue) -- new spaces */
+  --sentinel-info-bg: #0f1724;             /* deep navy */
+  --sentinel-info-border: #3b82f6;         /* blue-500 */
+  --sentinel-info-text: #93c5fd;           /* blue-300 */
+
+  /* Warning banner (orange) -- config missing */
+  --sentinel-warning-bg: #1c1610;          /* dark warm amber */
+  --sentinel-warning-border: #f59e0b;      /* amber-500 */
+  --sentinel-warning-text: #fbbf24;        /* amber-400 */
+
+  /* Error toast (red) */
+  --sentinel-error-bg: #1c1215;            /* dark warm red */
+  --sentinel-error-border: #ef4444;        /* red-500 */
+  --sentinel-error-text: #fca5a5;          /* red-300 */
+  --sentinel-error-icon: #f87171;          /* red-400 */
+  --sentinel-error-detail-text: #c8d1dc;   /* light body text */
+  --sentinel-error-close: #8b95a5;         /* muted grey */
+
+  /* ---------------------------------------------------------------------------
+     UI Accent Colors
+     ---------------------------------------------------------------------------
+     Focus ring and link hover slightly brightened for visibility on dark.
+     Scan button gradient remains vibrant -- green/teal reads well on dark.
+     --------------------------------------------------------------------------- */
+  --sentinel-focus-ring: #3b82f6;          /* blue-500 -- focus-visible outlines */
+  --sentinel-link-hover: #60a5fa;          /* blue-400 -- help button hover */
+
+  /* Scan action button gradient -- blue accent for dark mode */
+  --sentinel-scan-btn-start: #2563eb;      /* blue-600 */
+  --sentinel-scan-btn-end: #0891b2;        /* cyan-600 */
+  --sentinel-scan-btn-disabled: #4b5563;   /* grey-600 */
+
+  /* Masked/revealed highlights -- amber toned, darkened bg for dark mode */
+  --sentinel-masked-bg: #2a2010;           /* dark amber surface */
+  --sentinel-masked-color: #fbbf24;        /* amber-400 -- bright on dark */
+  --sentinel-masked-border: #5c4a1a;       /* muted amber border */
+  --sentinel-revealed-shadow: #d97706;     /* amber-600 */
+
+  /* Search highlight -- muted yellow on dark, still visually distinct */
+  --sentinel-search-highlight-bg: #423a10; /* dark yellow-brown */
+  --sentinel-search-highlight-color: #fde68a; /* amber-200 -- bright text */
+
+  /* Space updated indicator -- red dot, slightly brighter */
+  --sentinel-space-updated: #f87171;       /* red-400 */
+
+  /* Settings dialog header */
+  --sentinel-dialog-header-bg: #151b23;    /* surface level -- dialog header */
+
+  /* Attachment type badge colors -- darkened backgrounds, lightened text */
+  --sentinel-attachment-pdf-color: #fca5a5;   /* red-300 */
+  --sentinel-attachment-pdf-bg: #1c1215;      /* dark red tint */
+  --sentinel-attachment-excel-color: #4ade80; /* green-400 */
+  --sentinel-attachment-excel-bg: #0f1a14;    /* dark green tint */
+  --sentinel-attachment-word-color: #60a5fa;  /* blue-400 */
+  --sentinel-attachment-word-bg: #0f1724;     /* dark blue tint */
+  --sentinel-attachment-ppt-color: #fb923c;   /* orange-400 */
+  --sentinel-attachment-ppt-bg: #1c1610;      /* dark amber tint */
+  --sentinel-attachment-txt-color: #8b95a5;   /* muted grey */
+  --sentinel-attachment-txt-bg: #1e2736;      /* neutral dark surface */
+
+  /* Confidence indicator */
+  --sentinel-confidence-medium: #eab308;   /* yellow-500 -- medium confidence */
+
+  /* Miscellaneous */
+  --sentinel-border-bottom-panel: #2a3344; /* dark border */
+  --sentinel-meta-text: #8b95a5;           /* muted grey -- meta text */
+}

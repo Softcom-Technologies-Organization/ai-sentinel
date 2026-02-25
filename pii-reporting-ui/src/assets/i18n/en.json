@@ -60,6 +60,8 @@
       "openInConfluence": "Open in Confluence",
       "confluenceUnavailable": "URL unavailable (not provided by backend)",
       "settings": "Settings",
+      "darkMode": "Switch to dark mode",
+      "lightMode": "Switch to light mode",
       "scanSelected": "Scan Selected Spaces ({{count}})",
       "scanSelectedLabel": "({{count}})"
     },

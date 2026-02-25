@@ -10,6 +10,8 @@ body {
   margin: 0;
   font-family: Roboto, Arial, Helvetica, sans-serif;
   background: var(--sentinel-bg-page);
+  color: var(--sentinel-text-body);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .chip {

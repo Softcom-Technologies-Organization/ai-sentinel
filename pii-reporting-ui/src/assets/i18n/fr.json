@@ -60,6 +60,8 @@
       "openInConfluence": "Ouvrir dans Confluence",
       "confluenceUnavailable": "URL indisponible (non fournie par le backend)",
       "settings": "Paramètres",
+      "darkMode": "Activer le mode sombre",
+      "lightMode": "Activer le mode clair",
       "scanSelected": "Scanner les espaces sélectionnés ({{count}})",
       "scanSelectedLabel": "({{count}})"
     },

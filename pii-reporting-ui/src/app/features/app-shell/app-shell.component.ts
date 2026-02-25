@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
 import { TranslocoModule } from '@jsverse/transloco';
 import { ButtonModule } from 'primeng/button';
@@ -10,6 +10,7 @@ import { TabsModule } from 'primeng/tabs';
 import { LanguageSelectorComponent } from '../../core/components/language-selector/language-selector.component';
 import { ConfluenceDashboardComponent } from '../confluence-dashboard/confluence-dashboard.component';
 import { PiiSettingsComponent } from '../pii-settings/pii-settings.component';
+import { ThemeService } from '../../core/services/theme.service';
 
 /**
  * Application shell with top bar and Confluence source tab.
@@ -37,6 +38,7 @@ import { PiiSettingsComponent } from '../pii-settings/pii-settings.component';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppShellComponent {
+  readonly themeService = inject(ThemeService);
   readonly activeSourceId = signal('confluence');
 
   // Settings dialog state

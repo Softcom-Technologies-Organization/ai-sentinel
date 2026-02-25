@@ -43,7 +43,8 @@
       "emptyMessage": "No items to display",
       "paginatorReport": "Showing {first} to {last} of {totalRecords} entries",
       "expand": "Expand",
-      "collapse": "Collapse"
+      "collapse": "Collapse",
+      "pageIndicator": "Page {{current}} of {{total}}"
     },
     "status": {
       "running": "Running",

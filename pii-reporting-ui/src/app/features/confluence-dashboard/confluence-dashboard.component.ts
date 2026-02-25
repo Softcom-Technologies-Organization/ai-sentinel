@@ -308,4 +308,12 @@ export class ConfluenceDashboardComponent implements OnInit, OnDestroy {
   isFirstPage(): boolean {
     return this.first === 0;
   }
+
+  get currentPage(): number {
+    return Math.floor(this.first / this.rows) + 1;
+  }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.sortedSpaces().length / this.rows));
+  }
 }

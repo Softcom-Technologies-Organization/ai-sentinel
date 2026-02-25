@@ -43,7 +43,8 @@
       "emptyMessage": "Aucun élément à afficher",
       "paginatorReport": "Affichage de {first} à {last} sur {totalRecords} entrées",
       "expand": "Développer",
-      "collapse": "Réduire"
+      "collapse": "Réduire",
+      "pageIndicator": "Page {{current}} de {{total}}"
     },
     "status": {
       "running": "En cours",

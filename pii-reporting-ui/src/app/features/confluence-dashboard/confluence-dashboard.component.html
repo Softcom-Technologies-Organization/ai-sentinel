@@ -17,58 +17,6 @@
   <!-- Severity cards -->
   <app-severity-cards [counts]="globalSeverityCounts()" />
 
-  <!-- Table toolbar: filter toggle + scan status + action buttons -->
-  <div class="table-top-bar">
-    <div class="flex align-items-center">
-      <p-toggleButton
-        [ngModel]="modifiedOnlyFilter()"
-        (ngModelChange)="onModifiedOnlyChange($event)"
-        [onLabel]="'dashboard.filters.modifiedOnlyLabel' | transloco"
-        [offLabel]="'dashboard.filters.modifiedOnlyLabel' | transloco"
-        onIcon="pi pi-filter-fill"
-        offIcon="pi pi-filter"
-        class="p-button-sm p-button-outlined modified-filter-button white-space-nowrap"
-        [pTooltip]="'dashboard.filters.modifiedOnly' | transloco"
-        tooltipPosition="top">
-      </p-toggleButton>
-    </div>
-    <div class="table-top-bar-right">
-      <output class="scan-status-badge"
-              [class.scanning]="isStreaming()"
-              [class.inactive]="!isStreaming()"
-              [attr.aria-live]="isStreaming() ? 'polite' : 'off'"
-              [attr.aria-label]="(isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco">
-        {{ (isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco }}
-      </output>
-      <div class="scan-actions-group">
-        <p-button type="button"
-                  icon="pi pi-play"
-                  (click)="selectedSpacesCount() > 0 ? startSelected() : startAll()"
-                  (keydown.enter)="selectedSpacesCount() > 0 ? startSelected() : startAll()"
-                  [disabled]="!canStartScan()"
-                  [pTooltip]="(selectedSpacesCount() > 0 ? ('dashboard.actions.scanSelected' | transloco: { count: selectedSpacesCount() }) : ('dashboard.actions.startScan' | transloco))"
-                  tooltipPosition="bottom"
-                  [attr.data-testid]="testIds.buttons.startScan" />
-        <p-button type="button"
-                  icon="pi pi-pause"
-                  (click)="pauseScan()"
-                  (keydown.enter)="pauseScan()"
-                  [disabled]="!isStreaming()"
-                  [pTooltip]="'dashboard.actions.pauseScan' | transloco"
-                  tooltipPosition="bottom"
-                  [attr.data-testid]="testIds.buttons.pauseScan" />
-        <p-button type="button"
-                  icon="pi pi-forward"
-                  (click)="resumeLastScan()"
-                  (keydown.enter)="resumeLastScan()"
-                  [disabled]="!canResumeScan()"
-                  [pTooltip]="'dashboard.actions.resumeScan' | transloco"
-                  tooltipPosition="bottom"
-                  [attr.data-testid]="testIds.buttons.resumeScan" />
-      </div>
-    </div>
-  </div>
-
   <p-table #dt [value]="sortedSpaces()"
            [(selection)]="selectedSpaces"
            dataKey="key"
@@ -88,10 +36,61 @@
            (onSort)="onCustomSort($event)" [customSort]="true"
            [attr.data-testid]="testIds.table">
     <ng-template #caption>
-      <div class="flex align-items-center gap-1">
-        <p-button type="button" icon="pi pi-chevron-left" (click)="prevPage()" (keydown.enter)="prevPage()" [disabled]="isFirstPage()" [text]="true" />
-        <p-button type="button" icon="pi pi-refresh" (click)="resetPage()" (keydown.enter)="resetPage()" [text]="true" />
-        <p-button type="button" icon="pi pi-chevron-right" (click)="nextPage()" (keydown.enter)="nextPage()" [disabled]="isLastPage()" [text]="true" />
+      <div class="caption-bar">
+        <div class="caption-left">
+          <div class="caption-paginator">
+            <p-button type="button" icon="pi pi-chevron-left" (click)="prevPage()" (keydown.enter)="prevPage()" [disabled]="isFirstPage()" [text]="true" size="small" />
+            <p-button type="button" icon="pi pi-refresh" (click)="resetPage()" (keydown.enter)="resetPage()" [text]="true" size="small" />
+            <p-button type="button" icon="pi pi-chevron-right" (click)="nextPage()" (keydown.enter)="nextPage()" [disabled]="isLastPage()" [text]="true" size="small" />
+            <span class="page-indicator">{{ 'dashboard.table.pageIndicator' | transloco: { current: currentPage, total: totalPages } }}</span>
+          </div>
+          <p-toggleButton
+            [ngModel]="modifiedOnlyFilter()"
+            (ngModelChange)="onModifiedOnlyChange($event)"
+            [onLabel]="'dashboard.filters.modifiedOnlyLabel' | transloco"
+            [offLabel]="'dashboard.filters.modifiedOnlyLabel' | transloco"
+            onIcon="pi pi-filter-fill"
+            offIcon="pi pi-filter"
+            class="p-button-sm p-button-outlined modified-filter-button white-space-nowrap"
+            [pTooltip]="'dashboard.filters.modifiedOnly' | transloco"
+            tooltipPosition="top">
+          </p-toggleButton>
+        </div>
+        <div class="caption-right">
+          <output class="scan-status-badge"
+                  [class.scanning]="isStreaming()"
+                  [class.inactive]="!isStreaming()"
+                  [attr.aria-live]="isStreaming() ? 'polite' : 'off'"
+                  [attr.aria-label]="(isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco">
+            {{ (isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco }}
+          </output>
+          <div class="scan-actions-group">
+            <p-button type="button"
+                      icon="pi pi-play"
+                      (click)="selectedSpacesCount() > 0 ? startSelected() : startAll()"
+                      (keydown.enter)="selectedSpacesCount() > 0 ? startSelected() : startAll()"
+                      [disabled]="!canStartScan()"
+                      [pTooltip]="(selectedSpacesCount() > 0 ? ('dashboard.actions.scanSelected' | transloco: { count: selectedSpacesCount() }) : ('dashboard.actions.startScan' | transloco))"
+                      tooltipPosition="bottom"
+                      [attr.data-testid]="testIds.buttons.startScan" />
+            <p-button type="button"
+                      icon="pi pi-pause"
+                      (click)="pauseScan()"
+                      (keydown.enter)="pauseScan()"
+                      [disabled]="!isStreaming()"
+                      [pTooltip]="'dashboard.actions.pauseScan' | transloco"
+                      tooltipPosition="bottom"
+                      [attr.data-testid]="testIds.buttons.pauseScan" />
+            <p-button type="button"
+                      icon="pi pi-forward"
+                      (click)="resumeLastScan()"
+                      (keydown.enter)="resumeLastScan()"
+                      [disabled]="!canResumeScan()"
+                      [pTooltip]="'dashboard.actions.resumeScan' | transloco"
+                      tooltipPosition="bottom"
+                      [attr.data-testid]="testIds.buttons.resumeScan" />
+          </div>
+        </div>
       </div>
     </ng-template>
     <ng-template #header>

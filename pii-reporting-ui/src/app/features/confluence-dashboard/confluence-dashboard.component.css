@@ -47,23 +47,45 @@
 }
 
 /* ======================================================================
- * Table top bar: filter toggle (left) + scan status badge (right)
+ * Caption bar: filter + paginator (left) + scan controls (right)
+ * Lives inside the p-table #caption template.
  * ====================================================================== */
-.table-top-bar {
+.caption-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
-.table-top-bar-right {
+.caption-left {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
-/* Reset margin-left on badge when placed outside the table */
-.table-top-bar .scan-status-badge {
+.caption-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.caption-paginator {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.page-indicator {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--sentinel-text-secondary);
+  white-space: nowrap;
+  margin-left: 0.25rem;
+}
+
+/* Reset margin-left on badge when placed inside caption */
+.caption-right .scan-status-badge {
   margin-left: 0;
 }
 
@@ -381,12 +403,15 @@
 /* ======================================================================
  * Paginator navigation bar (prev / reset / next)
  * ====================================================================== */
-/* Caption area inside p-table: match table header background
+/* Caption area inside p-table: sticky below app header (top: 4rem)
    ::ng-deep needed: PrimeNG datatable internal structure */
 :host ::ng-deep .p-datatable .p-datatable-header {
   background: var(--sentinel-bg-page);
   border-bottom: 1px solid var(--sentinel-border-light);
   padding: 0.5rem 1rem;
+  position: sticky;
+  top: 4rem;
+  z-index: 11;
 }
 
 /* ======================================================================
@@ -448,12 +473,12 @@
 }
 
 :host ::ng-deep .p-datatable .p-datatable-thead > tr:first-child > th {
-  top: 4rem;
+  top: 7.75rem;
 }
 
 /* Filter row: sticky below column headers, white background, no vertical separators */
 :host ::ng-deep .p-datatable .p-datatable-thead > tr:nth-child(2) > th {
-  top: 6.5rem;
+  top: 10.25rem;
   background: var(--sentinel-bg-card);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
   border: none !important;

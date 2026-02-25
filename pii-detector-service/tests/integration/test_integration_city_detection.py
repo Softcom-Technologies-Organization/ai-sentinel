@@ -39,8 +39,6 @@ class TestIntegrationCityDetection:
 
     @pytest.mark.integration
     @pytest.mark.slow
-    @pytest.mark.skipif(os.environ.get('HUGGING_FACE_API_KEY') is None, 
-                        reason='HUGGING_FACE_API_KEY manquant pour exécuter le modèle réel')
     def test_city_names_not_split_in_addresses(self):
         """Integration test: verifies that city names in diverse addresses are properly detected
         as single entities and not split. Tests various city name formats:

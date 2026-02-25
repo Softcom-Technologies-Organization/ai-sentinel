@@ -213,12 +213,12 @@ else
   echo "[infisical-config-dev]   ⚠ Failed to create PII_DATABASE_ENCRYPTION_KEY (HTTP ${HTTP_CODE}); continuing"
 fi
 
-# Create empty secrets (to be filled manually)
-for secret_name in "HUGGING_FACE_API_KEY" "CONFLUENCE_BASE_URL" "CONFLUENCE_USERNAME" "CONFLUENCE_API_TOKEN"; do
+# Create empty secrets for Confluence (to be filled manually or via Settings UI)
+for secret_name in "CONFLUENCE_BASE_URL" "CONFLUENCE_USERNAME" "CONFLUENCE_API_TOKEN"; do
   curl -sf -X POST "${INFISICAL_URL}/api/v4/secrets/${secret_name}" \
     -H "Authorization: Bearer ${ADMIN_TOKEN}" \
     -H "Content-Type: application/json" \
-    -d "{\"projectId\":\"${PROJECT_ID}\",\"environment\":\"${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"\",\"secretComment\":\"Created empty - must be filled manually with real value\",\"type\":\"shared\"}" \
+    -d "{\"projectId\":\"${PROJECT_ID}\",\"environment\":\"${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"\",\"secretComment\":\"Created empty - configure via AI Sentinel Settings UI\",\"type\":\"shared\"}" \
     > /dev/null 2>&1 && echo "[infisical-config-dev]   ✓ ${secret_name} created (empty)" || echo "[infisical-config-dev]   ⚠ ${secret_name} may already exist"
 done
 

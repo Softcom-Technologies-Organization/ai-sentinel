@@ -409,9 +409,6 @@ services:
         # Step 4: Create required secrets with auto-generated values
         echo "[infisical-config] Step 4/5: Creating required secrets in project...";
         
-        # Note: The following secrets must be created manually in Infisical UI:
-        # - HUGGING_FACE_API_KEY
-
         # Create DB_USER secret with generated value
         echo "[infisical-config]   Creating secret: DB_USER";
         DB_USER=$$(cat /secrets/postgres_user.txt);
@@ -481,18 +478,7 @@ services:
           echo "[infisical-config]   ⚠ Failed to create PII_DATABASE_ENCRYPTION_KEY (HTTP $$HTTP_CODE); continuing";
         fi
 
-        # Create the manually-configured secrets WITHOUT placeholder values
-        echo "[infisical-config]   Creating empty secrets (to be filled manually)...";
-        for secret_name in "HUGGING_FACE_API_KEY"; do
-          echo "[infisical-config]   Creating secret: $$secret_name";
-          curl -sf -X POST "$${INFISICAL_URL}/api/v4/secrets/$$secret_name" \
-            -H "Authorization: Bearer $${ADMIN_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "{\"projectId\":\"$${PROJECT_ID}\",\"environment\":\"$${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"\",\"secretComment\":\"Created empty - must be filled manually with real value\",\"type\":\"shared\"}" \
-            > /dev/null 2>&1 && echo "[infisical-config]   ✓ $$secret_name created (empty)" || echo "[infisical-config]   ⚠ $$secret_name may already exist";
-        done;
-        
-        echo "[infisical-config] ✓ Secrets created with placeholder or real values";
+        echo "[infisical-config] ✓ Secrets created with auto-generated values";
         echo "";
         
         # Step 5: Display success summary
@@ -522,9 +508,7 @@ services:
         echo "[infisical-config]   ✓ PGADMIN_DEFAULT_PASSWORD";
         echo "[infisical-config]   ✓ PII_DATABASE_ENCRYPTION_KEY";
         echo "[infisical-config] ";
-        echo "[infisical-config] IMPORTANT: Create these secrets manually in Infisical UI:";
-        echo "[infisical-config]   ⚠ HUGGING_FACE_API_KEY (required for PII detection)";
-        echo "[infisical-config]   Note: Confluence credentials are now managed via the AI Sentinel Settings UI";
+        echo "[infisical-config] Note: Confluence credentials are managed via the AI Sentinel Settings UI";
         echo "";
         echo "[infisical-config] Access Infisical UI at: http://localhost:8082";
         echo "[infisical-config] ================================================";

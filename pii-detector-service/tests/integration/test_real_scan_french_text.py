@@ -50,7 +50,6 @@ class TestRealScanFrenchText:
 
     @pytest.mark.integration
     @pytest.mark.slow
-    @pytest.mark.skipif(os.environ.get('HUGGING_FACE_API_KEY') is None, reason='HUGGING_FACE_API_KEY manquant pour exécuter le modèle réel')
     def test_scan_demo_page_file_and_verify_expected_pii(self):
         """Integration test: scans tests/resources/page1_demo.txt and verifies expected PII.
         Logs all detected entities by the real model for visibility.

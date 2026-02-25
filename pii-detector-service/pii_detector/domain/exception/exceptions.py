@@ -19,8 +19,3 @@ class ModelNotLoadedError(ValueError):
 class ModelLoadError(PIIDetectionError):
     """Raised when model loading fails."""
     pass
-
-
-class APIKeyError(ValueError):
-    """Raised when Hugging Face API key is missing or invalid."""
-    pass

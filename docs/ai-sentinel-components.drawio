@@ -130,7 +130,7 @@
         <mxCell id="QbP0zrG1yisw16LyJvj7-108" value="SMTP (MailHog)" style="endArrow=block;html=1;strokeColor=#b85450;fontSize=10;" parent="1" source="QbP0zrG1yisw16LyJvj7-93" target="QbP0zrG1yisw16LyJvj7-105" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="QbP0zrG1yisw16LyJvj7-110" value="Secrets (HUGGING_FACE_API_KEY, etc.)" style="endArrow=block;html=1;strokeColor=#9673a6;fontSize=10;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0;entryDx=0;entryDy=0;" parent="1" source="QbP0zrG1yisw16LyJvj7-86" target="QbP0zrG1yisw16LyJvj7-93" edge="1">
+        <mxCell id="QbP0zrG1yisw16LyJvj7-110" value="Secrets (DB credentials, encryption key)" style="endArrow=block;html=1;strokeColor=#9673a6;fontSize=10;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0;entryDx=0;entryDy=0;" parent="1" source="QbP0zrG1yisw16LyJvj7-86" target="QbP0zrG1yisw16LyJvj7-93" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="848" y="287" as="targetPoint" />
           </mxGeometry>

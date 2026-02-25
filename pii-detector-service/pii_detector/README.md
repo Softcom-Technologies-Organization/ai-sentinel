@@ -60,12 +60,7 @@ pii-grpc-service/
    pip install -r requirements.txt
    ```
 
-3. Set up environment variables:
-   ```
-   set HUGGING_FACE_API_KEY=your_api_key  # Windows
-   ```
-
-4. Generate gRPC code:
+3. Generate gRPC code:
    ```
    python -m proto.generate_pb
    ```
@@ -79,7 +74,7 @@ pii-grpc-service/
 Start the traditional gRPC server:
 
 ```
-python server.py --api-key=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
+python server.py
 ```
 
 Server options:
@@ -136,12 +131,11 @@ The project now includes a modern betterproto-based implementation that uses asy
 Start the modern async gRPC server:
 
 ```
-python server_betterproto.py --api-key=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
+python server_betterproto.py
 ```
 
 Server options:
 - `--port PORT`: Port to listen on (default: 50051)
-- `--api-key KEY`: Hugging Face API key
 - `--debug`: Enable debug logging
 
 Example:

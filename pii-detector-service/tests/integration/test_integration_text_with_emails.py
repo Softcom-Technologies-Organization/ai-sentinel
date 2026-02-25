@@ -13,7 +13,6 @@ class TestEmailHeavyFrenchText:
 
     @pytest.mark.integration
     @pytest.mark.slow
-    @pytest.mark.skipif(os.environ.get('HUGGING_FACE_API_KEY') is None, reason='HUGGING_FACE_API_KEY manquant pour exécuter le modèle réel')
     def test_single_llm_vs_multi_llm_email_improvement(self, monkeypatch):
         """Integration test for multi-model PII detection with realistic expectations.
         

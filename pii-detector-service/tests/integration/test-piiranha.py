@@ -38,8 +38,6 @@ class PIIDetector:
 
     def download_model(self):
         """Télécharge les fichiers du modèle depuis Hugging Face"""
-        HUGGING_FACE_API_KEY = os.environ.get("HUGGING_FACE_API_KEY")
-
         filenames = [
             "config.json",
             "model.safetensors",
@@ -52,7 +50,6 @@ class PIIDetector:
             hf_hub_download(
                 repo_id=self.model_id,
                 filename=filename,
-                token=HUGGING_FACE_API_KEY
             )
         print("[OK] Téléchargement terminé")
 

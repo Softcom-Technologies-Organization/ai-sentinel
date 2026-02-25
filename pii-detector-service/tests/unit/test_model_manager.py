@@ -48,19 +48,17 @@ class TestDownloadModel:
         config.model_id = "test-model"
         config.custom_filenames = None
         manager = ModelManager(config)
-        
-        with patch.object(manager, '_get_api_key', return_value="test-key"):
-            with patch.object(manager.logger, 'info'):
-                manager.download_model()
-        
+
+        with patch.object(manager.logger, 'info'):
+            manager.download_model()
+
         expected_files = ["config.json", "model.safetensors", "tokenizer.json", "tokenizer_config.json"]
         assert mock_hf_download.call_count == 4
-        
+
         for i, filename in enumerate(expected_files):
             call_kwargs = mock_hf_download.call_args_list[i][1]
             assert call_kwargs["repo_id"] == "test-model"
             assert call_kwargs["filename"] == filename
-            assert call_kwargs["token"] == "test-key"
     
     @patch('pii_detector.infrastructure.model_management.model_manager.hf_hub_download')
     def test_should_use_custom_filenames_when_provided(self, mock_hf_download):
@@ -72,11 +70,10 @@ class TestDownloadModel:
             "model.safetensors": "custom_model.bin"
         }
         manager = ModelManager(config)
-        
-        with patch.object(manager, '_get_api_key', return_value="test-key"):
-            with patch.object(manager.logger, 'info') as mock_info:
-                manager.download_model()
-        
+
+        with patch.object(manager.logger, 'info') as mock_info:
+            manager.download_model()
+
         # Verify custom filenames were used
         call_filenames = [call[1]["filename"] for call in mock_hf_download.call_args_list]
         assert "custom_config.json" in call_filenames
@@ -95,15 +92,14 @@ class TestDownloadModel:
         
         error = Exception("Network error")
         mock_hf_download.side_effect = error
-        
-        with patch.object(manager, '_get_api_key', return_value="test-key"):
-            with patch.object(manager.logger, 'error') as mock_error:
+
+        with patch.object(manager.logger, 'error') as mock_error:
                 with pytest.raises(Exception) as exc_info:
                     manager.download_model()
                 
                 assert exc_info.value == error
                 mock_error.assert_called_once()
-    
+
     @patch('pii_detector.infrastructure.model_management.model_manager.hf_hub_download')
     def test_should_log_download_progress(self, mock_hf_download):
         """Test that download progress is logged."""
@@ -111,11 +107,10 @@ class TestDownloadModel:
         config.model_id = "test-model"
         config.custom_filenames = None
         manager = ModelManager(config)
-        
-        with patch.object(manager, '_get_api_key', return_value="test-key"):
-            with patch.object(manager.logger, 'info') as mock_info, \
-                 patch.object(manager.logger, 'debug') as mock_debug:
-                manager.download_model()
+
+        with patch.object(manager.logger, 'info') as mock_info, \
+             patch.object(manager.logger, 'debug') as mock_debug:
+            manager.download_model()
         
         # Verify logging
         assert any("Downloading model files" in str(call) for call in mock_info.call_args_list)
@@ -348,10 +343,9 @@ class TestEdgeCases:
         config.model_id = "test-model"
         config.custom_filenames = {"config.json": "my_config.json"}
         manager = ModelManager(config)
-        
-        with patch.object(manager, '_get_api_key', return_value="test-key"):
-            with patch.object(manager.logger, 'info'):
-                manager.download_model()
+
+        with patch.object(manager.logger, 'info'):
+            manager.download_model()
         
         # Check that custom name was used for config but defaults for others
         filenames = [call[1]["filename"] for call in mock_hf_download.call_args_list]

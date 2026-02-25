@@ -3,7 +3,7 @@ Centralized configuration module for PII Detector microservice.
 
 This module provides a unified interface to configuration:
 - Server configuration (gRPC settings)
-- Model configuration (HuggingFace authentication)
+- Model configuration
 - Detection configuration (Multi-detector settings)
 
 Only includes actually used environment variables.
@@ -15,9 +15,6 @@ Usage:
     
     # Access server settings
     print(f"Reflection enabled: {config.server.enable_reflection}")
-    
-    # Access model settings
-    print(f"API key set: {bool(config.model.huggingface_api_key)}")
     
     # Access detection settings
     print(f"Multi-detector enabled: {config.detection.multi_detector_enabled}")

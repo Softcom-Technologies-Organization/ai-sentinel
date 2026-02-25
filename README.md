@@ -18,11 +18,9 @@ https://github.com/user-attachments/assets/d2c633d6-3209-4b2f-b80a-88fe2e41f945
 - [Features](#features)
 - [Architecture](#architecture)
 - [Prerequisites](#prerequisites)
-- [Infisical Installation and Configuration](#infisical-installation-and-configuration)
-  - [Quick Setup Guide (3 Simple Steps)](#quick-setup-guide-3-simple-steps)
-  - [Infisical Troubleshooting](#infisical-troubleshooting)
+- [Installation and Configuration](#installation-and-configuration)
+  - [Quick Setup (2 Steps)](#quick-setup-2-steps)
   - [Optional: Advanced Configuration](#optional-advanced-configuration)
-  - [Security Notes](#security-notes)
   - [AI Models Configuration](#ai-models-configuration)
   - [Installation Troubleshooting](#installation-troubleshooting)
 - [Usage](#usage)
@@ -123,14 +121,10 @@ Before starting, make sure you have:
   docker compose version
   ```
 
-- **Confluence Credentials**: To scan your Confluence spaces (stored in Infisical)
+- **Confluence Credentials**: To scan your Confluence spaces (configured via the Settings UI)
   - Base URL of your Confluence instance
   - Username or email
   - Confluence API token ([How to create a token](https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/))
-
-- **Hugging Face API Key**: (to be stored in Infisical)
-  - Create an account on [Hugging Face](https://huggingface.co/join)
-  - Generate an API key in [Settings > Access Tokens](https://huggingface.co/settings/tokens) _(token type: read)_
 
 - **Download the ai-sentinel docker-compose file from Github**:
 
@@ -151,15 +145,9 @@ Before starting, make sure you have:
 - 16 GB RAM minimum (for AI models)
 - Stable internet connection (model downloads: ~2 GB)
 
-## Infisical Installation and Configuration
+## Installation and Configuration
 
-AI Sentinel uses **Infisical** for secure secrets management. No `.env` files are used.
-
-### ✨ Simplified Setup with Automatic Bootstrapping
-
-**AI Sentinel now automatically configures Infisical for you!** The setup has been greatly simplified thanks to automated bootstrapping.
-
-### Quick Setup Guide (3 Simple Steps)
+### Quick Setup (2 Steps)
 
 #### Step 1: Start AI Sentinel with Docker Compose
 
@@ -173,105 +161,22 @@ docker compose up -d
 docker compose -f docker-compose.dev.yml up -d
 ```
 
-⚠️ **Note for first-time setup:**
+**Note for first-time setup:**
 When running the command for the first time, you will see errors for `pii-reporting-api` container. **This is expected and normal.**
 
 ![Expected Docker Error](docs/screenshots/docker-compose-first-normal-error.png)
 
 **Why does this happen?**
-This service requires secure credentials (like database encryption keys) to start. The `ai-sentinel-infisical-configurator` container needs to run first to generate these credentials and store them in Infisical. Once the configuration is complete (in Step 3), restarting the services will allow 
-them to fetch the credentials and start correctly. `pii-detector-service` also needs to be restarted to load the new secrets even if it doesn't show any errors.
+The `ai-sentinel-infisical-configurator` container needs to run first to generate secure credentials (database encryption keys, etc.) and store them in the internal secrets manager. Once completed, restarting the services will allow them to start correctly.
 
-The `ai-sentinel-infisical-configurator` container will automatically:
-- ✅ Create the Infisical instance
-- ✅ Create a Super Admin account
-- ✅ Create the `ai-sentinel` project
-- ✅ Create the necessary environments (dev/prod)
-- ✅ Create a Machine Identity with credentials
-- ✅ Configure authentication settings
+The bootstrapping automatically:
+- Generates all required encryption keys and database credentials
+- Creates the internal secrets manager project and machine identity
+- Seeds all auto-generated secrets (DB credentials, encryption keys, etc.)
 
-#### Step 2: Retrieve Your Super Admin Credentials
+#### Step 2: Restart Services
 
-Watch the logs to get your Super Admin credentials:
-
-```bash
-# Follow the configurator logs in real-time
-docker logs -f ai-sentinel-infisical-configurator
-```
-
-**Look for these lines in the output:**
-
-```
-[infisical-config] ========================================
-[infisical-config] Super Admin Account:
-[infisical-config]   Email:    admin@ai-sentinel.local
-[infisical-config]   Password: xxxxxxxxxxxxxxxxxxx
-[infisical-config] ========================================
-```
-
-**⚠️ Important:** Save these credentials securely - you'll need them to access the Infisical UI.
-
-**Alternative - View logs after container finished:**
-
-**Linux/macOS:**
-```bash
-# If the container has already stopped
-docker logs ai-sentinel-infisical-configurator 2>&1 | grep -A 3 "Super Admin Account"
-```
-
-**Windows PowerShell:**
-```powershell
-# If the container has already stopped
-docker logs ai-sentinel-infisical-configurator 2>&1 | Select-String -Pattern "Super Admin Account" -Context 0,3
-```
-
-#### Step 3: Configure Your Secrets in Infisical UI
-
-**3.1. Login to Infisical**
-
-- **Development:** Open http://localhost:8082
-- **Production:** Open your Infisical instance URL
-
-Use the Super Admin credentials from Step 2.
-
-![Login to Infisical](docs/screenshots/001-login.png)
-
-**3.2. Join the AI Sentinel Project as Admin**
-
-After login, you'll see the `ai-sentinel` project has been created automatically.
-
-Click **"Join as Admin"** to access the project.
-
-![Join as Admin](docs/screenshots/002-join-as-admin.png)
-
-**3.3. Configure the 4 Required Secrets**
-
-Navigate to the Secrets section and add the following 4 secrets:
-
-![Set Secrets](docs/screenshots/003-set-secrets.png)
-
-| Secret Name | Description                                                | Example                              | Required            |
-|-------------|------------------------------------------------------------|--------------------------------------|---------------------|
-| `CONFLUENCE_BASE_URL` | Your Confluence instance URL                               | `https://company.atlassian.net/wiki` | ✅ Yes               |
-| `CONFLUENCE_USERNAME` | Confluence email or username                               | `user@company.com`                   | ✅ Yes               |
-| `CONFLUENCE_API_TOKEN` | Confluence API token                                       | `ATATT3xFfGF0...`                    | ✅ Yes               |
-| `HUGGING_FACE_API_KEY` | Hugging Face API key (for private models)                  | `hf_...`                             | ✅ Yes               |
-| `PII_DATABASE_ENCRYPTION_KEY` | Database encryption base for stored PII values             | `qdso...=`                           | ✅ Auto generated    |
-| `PII_REPORTING_ALLOW_SECRET_REVEAL` | Define the UI is allowed to reveal the detected PII values | `false`                              | ✅ Has default value |
-
-*Optional but recommended for accessing gated models.
-
-**How to get Confluence credentials:**
-- **Base URL:** Your Confluence instance (Cloud or Server/Data Center)
-- **API Token:** Create at https://id.atlassian.com/manage-profile/security/api-tokens
-
-**How to get Hugging Face API Key:**
-- Create account at https://huggingface.co/join
-- Generate token at https://huggingface.co/settings/tokens (token type: read)
-
-#### Step 4: Restart Application Components
-
-Once you've configured the secrets in Infisical, restart the application containers to load them:
+After the initial bootstrapping completes, restart the application containers:
 
 ```bash
 docker compose up -d --force-recreate pii-detector pii-reporting-api pii-reporting-ui
@@ -282,11 +187,6 @@ docker compose up -d --force-recreate pii-detector pii-reporting-api pii-reporti
 docker compose -f docker-compose.dev.yml up -d --force-recreate pii-detector pii-reporting-api pii-reporting-ui
 ```
 
-The services will now:
-- ✅ Authenticate with Infisical using the auto-generated Machine Identity
-- ✅ Load the secrets you configured
-- ✅ Start successfully with proper configuration
-
 **Verify services are running:**
 ```bash
 docker compose ps
@@ -296,57 +196,21 @@ You should see all services in "Up" status.
 
 ---
 
-### 🎉 That's It!
+### That's It!
 
 Your AI Sentinel instance is now fully configured and ready to use!
 
 Access the application at:
-- 📱 **Web Interface**: http://localhost:4200
-- 🔌 **Backend API**: http://localhost:8080/ai-sentinel
-- 🔐 **Infisical UI**: http://localhost:8082
+- **Web Interface**: http://localhost:4200
+- **Backend API**: http://localhost:8080/ai-sentinel
 
-### Infisical Troubleshooting
+**Configure your Confluence connection** directly in the AI Sentinel Settings UI (http://localhost:4200 > Settings).
 
-**401/403 from Infisical:**
-- Verify the Machine Identity (client ID/secret) is correct
-- Ensure the identity has been added to the project
-- Check the Project ID file contains the correct value
-- Verify the identity has proper permissions (Admin or appropriate role)
-
-**Missing variables at runtime:**
-- Ensure variables exist in the correct Infisical environment (dev/prod)
-- Check the docker-compose service uses the matching `INFISICAL_ENV` value
-- View service logs to see which secrets failed to load:
-  ```bash
-  docker logs pii-reporting-api | grep Infisical
-  ```
-
-**Self-hosted Infisical not starting:**
-- Ensure the internal secrets exist in `secrets/` folder (see `secrets/README.md` for `ENCRYPTION_KEY`, `AUTH_SECRET`, DB password generation)
-- Check Infisical logs: `docker logs infisical`
-- Verify PostgreSQL is healthy: `docker ps --filter name=infisical-db`
-- Restart the infisical service: `docker-compose restart infisical`
-
-**Secrets not loading in application:**
-```bash
-# 1. Verify secret files exist
-ls -la secrets/
-
-# 2. Check secrets are mounted in container
-docker exec pii-reporting-api ls -la /run/secrets/
-
-# 3. Verify Infisical authentication succeeded
-docker logs pii-reporting-api 2>&1 | grep -i "infisical\|secret"
-
-# 4. Check Infisical service health
-curl http://localhost:8082/api/status
-```
-
----
+**AI models** (nvidia/gliner-PII, Presidio, etc.) are public and downloaded automatically on first startup. No API key is required.
 
 ### Optional: Advanced Configuration
 
-If you need to configure additional optional secrets (proxy, advanced settings), add them in Infisical:
+The internal secrets manager (Infisical) is available at http://localhost:8082 for advanced configuration.
 
 **Optional Secrets (Confluence Proxy):**
 
@@ -357,28 +221,6 @@ If you need to configure additional optional secrets (proxy, advanced settings),
 | `CONFLUENCE_PROXY_PORT` | Proxy port | `8080` | No |
 | `CONFLUENCE_PROXY_USERNAME` | Proxy username | - | If proxy auth |
 | `CONFLUENCE_PROXY_PASSWORD` | Proxy password | - | If proxy auth |
-
-**Optional Secrets (Advanced Configuration):**
-
-| Secret Name | Description | Default | Required |
-|-------------|-------------|---------|----------|
-| `CONFLUENCE_CACHE_REFRESH_INTERVAL` | Cache refresh interval (ms) | `300000` | No |
-| `CONFLUENCE_CACHE_INITIAL_DELAY` | Initial delay (ms) | `5000` | No |
-| `CONFLUENCE_POLLING_INTERVAL` | Polling interval (ms) | `60000` | No |
-
-### Security Notes
-
-✅ **Best Practices:**
-- All secrets are automatically encrypted at rest in Infisical
-- Secrets are never stored in `.env` files or version control
-- Machine Identity credentials are generated with strong entropy
-- Use separate environments (dev/prod) for security isolation
-- Rotate secrets regularly (recommended: every 90 days)
-
-⚠️ **Important:**
-- Save your Super Admin credentials securely (password manager recommended)
-- The bootstrapping process runs once - subsequent starts will skip configuration
-- For production deployments, consider using Infisical Cloud for high availability
 
 ### AI Models Configuration
 
@@ -430,32 +272,6 @@ lsof -ti:4200 | xargs kill -9
 ```bash
 # Solution: Check your connection and Docker credentials
 docker login ghcr.io
-```
-
-**Issue: Failed to authenticate with Infisical**
-```bash
-# Solution 1: Verify Infisical secrets exist
-ls -la secrets/
-cat secrets/infisical_project_id.txt
-cat secrets/infisical_dev_client_id.txt
-
-# Solution 2: Check Infisical service is running
-docker compose ps infisical
-docker compose logs infisical
-
-# Solution 3: Verify Machine Identity in Infisical UI
-# Access http://localhost:8082 (dev) or https://app.infisical.com (cloud)
-```
-
-**Issue: Missing secrets at runtime**
-```bash
-# Verify secrets are mounted in containers
-docker exec pii-reporting-api ls -la /run/secrets/
-
-# Check Infisical authentication logs
-docker logs pii-reporting-api | grep Infisical
-
-# Ensure secrets exist in Infisical for the correct environment (dev/prod)
 ```
 
 **Issue: PII Detector service is slow to start**

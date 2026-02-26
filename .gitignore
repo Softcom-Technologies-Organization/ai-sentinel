@@ -1,5 +1,6 @@
 # Environment variables and secrets (sensitive data)
 .env
+.mcp.json
 secrets/*.txt
 
 # IDE and build artifacts
@@ -10,6 +11,7 @@ secrets/*.txt
 /pii-detector-service/.scannerwork/
 /pii-reporting-ui/.scannerwork/
 /.idea/
+/.run/
 /**/.coverage
 /pii-reporting-ui/playwright-report/
 /pii-reporting-ui/test-results/

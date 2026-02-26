@@ -222,4 +222,11 @@ for secret_name in "CONFLUENCE_BASE_URL" "CONFLUENCE_USERNAME" "CONFLUENCE_API_T
     > /dev/null 2>&1 && echo "[infisical-config-dev]   ✓ ${secret_name} created (empty)" || echo "[infisical-config-dev]   ⚠ ${secret_name} may already exist"
 done
 
+# Create PII_REPORTING_ALLOW_SECRET_REVEAL secret (default: true for dev)
+curl -sf -X POST "${INFISICAL_URL}/api/v4/secrets/PII_REPORTING_ALLOW_SECRET_REVEAL" \
+  -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "{\"projectId\":\"${PROJECT_ID}\",\"environment\":\"${ENV_NAME}\",\"secretPath\":\"/\",\"secretValue\":\"true\",\"secretComment\":\"Allow revealing decrypted PII values (default: true)\",\"type\":\"shared\"}" \
+  > /dev/null 2>&1 && echo "[infisical-config-dev]   ✓ PII_REPORTING_ALLOW_SECRET_REVEAL created" || echo "[infisical-config-dev]   ⚠ PII_REPORTING_ALLOW_SECRET_REVEAL may already exist"
+
 echo "[infisical-config-dev] ✓ Config complete"

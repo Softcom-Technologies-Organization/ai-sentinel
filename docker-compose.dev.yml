@@ -41,7 +41,7 @@ services:
 
   # ============================================================================
   # DATABASE SERVICE - DEV
-  # Mirrors prod configuration but publishes Postgres to localhost:5433 for dev tools.
+  # Mirrors prod configuration but publishes Postgres to localhost:5435 for dev tools.
   # ============================================================================
   postgres:
     image: postgres:18
@@ -56,7 +56,7 @@ services:
         exec docker-entrypoint.sh postgres
       '
     ports:
-      - "127.0.0.1:5433:5432"
+      - "127.0.0.1:5435:5432"
     volumes:
       - postgres-data:/var/lib/postgresql
       - ./pii-reporting-api/init-scripts:/docker-entrypoint-initdb.d

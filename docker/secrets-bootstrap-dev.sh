@@ -37,4 +37,4 @@ fi;
 [ -f /secrets/infisical_dev_client_secret.txt ] || touch /secrets/infisical_dev_client_secret.txt;
 [ -f /secrets/infisical_project_id.txt ] || touch /secrets/infisical_project_id.txt;
 
-echo "[secrets-bootstrap-dev] ✓ Secrets directory ready";
+echo "[secrets-bootstrap-dev] Secrets directory ready";

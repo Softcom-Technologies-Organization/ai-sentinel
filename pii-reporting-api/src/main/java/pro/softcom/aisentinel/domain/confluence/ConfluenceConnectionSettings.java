@@ -1,6 +1,6 @@
 package pro.softcom.aisentinel.domain.confluence;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Domain model for Confluence connection configuration.
@@ -30,7 +30,7 @@ public record ConfluenceConnectionSettings(
         int maxRetries,
         int pagesLimit,
         int maxPages,
-        LocalDateTime updatedAt,
+        Instant updatedAt,
         String updatedBy) {
 
     /**

@@ -2,6 +2,8 @@ package pro.softcom.aisentinel.application.confluence.port.in;
 
 import pro.softcom.aisentinel.domain.confluence.ConfluenceConnectionSettings;
 
+import java.util.Objects;
+
 /**
  * Port IN for managing Confluence connection configuration.
  * Defines use cases for retrieving, updating, and testing Confluence connection settings.
@@ -63,6 +65,11 @@ public interface ManageConfluenceConnectionPort {
             int maxPages,
             String updatedBy
     ) {
+        public UpdateConfluenceConnectionCommand {
+            Objects.requireNonNull(baseUrl, "baseUrl must not be null");
+            Objects.requireNonNull(username, "username must not be null");
+            Objects.requireNonNull(updatedBy, "updatedBy must not be null");
+        }
     }
 
     /**
@@ -77,5 +84,9 @@ public interface ManageConfluenceConnectionPort {
             String username,
             String apiToken
     ) {
+        public TestConfluenceConnectionCommand {
+            Objects.requireNonNull(baseUrl, "baseUrl must not be null");
+            Objects.requireNonNull(username, "username must not be null");
+        }
     }
 }

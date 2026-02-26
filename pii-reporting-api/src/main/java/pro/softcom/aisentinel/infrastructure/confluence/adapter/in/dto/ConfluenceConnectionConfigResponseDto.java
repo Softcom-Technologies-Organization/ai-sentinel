@@ -1,6 +1,6 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.in.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * DTO representing Confluence connection configuration for REST API responses.
@@ -29,7 +29,7 @@ public record ConfluenceConnectionConfigResponseDto(
         int maxRetries,
         int pagesLimit,
         int maxPages,
-        LocalDateTime updatedAt,
+        Instant updatedAt,
         String updatedBy,
         boolean configured
 ) {

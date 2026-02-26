@@ -13,7 +13,11 @@ import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiabl
 import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -214,17 +218,15 @@ public class ScanEventFactory {
         if (detection == null || detection.sensitiveDataFound() == null) {
             return List.of();
         }
-        // DIAGNOSTIC: Log content fingerprint to compare with Python side
+        // DIAGNOSTIC: Log content fingerprint (hash only, no raw content)
         if (content != null) {
-            String first20 = content.length() >= 20 ? content.substring(0, 20) : content;
-            String last20 = content.length() >= 20 ? content.substring(content.length() - 20) : content;
-            log.info("JAVA CONTENT FINGERPRINT: len={} first20='{}' last20='{}'",
-                content.length(), first20, last20);
+            log.debug("JAVA CONTENT FINGERPRINT: len={} sha256={}",
+                content.length(), truncatedSha256(content));
             // Check for BOM or leading whitespace
             if (!content.isEmpty() && (content.charAt(0) == '\uFEFF' || content.charAt(0) == ' '
                     || content.charAt(0) == '\t' || content.charAt(0) == '\n' || content.charAt(0) == '\r')) {
-                log.warn("JAVA CONTENT STARTS WITH SPECIAL CHAR: codepoint={} char='{}'",
-                    (int) content.charAt(0), content.charAt(0));
+                log.warn("JAVA CONTENT STARTS WITH SPECIAL CHAR: codepoint={}",
+                    (int) content.charAt(0));
             }
         }
         return detection.sensitiveDataFound().stream()
@@ -236,19 +238,17 @@ public class ScanEventFactory {
         ContentPiiDetection.SensitiveData data, String sourceContent,
         ContentPiiDetection detection) {
 
-        // DIAGNOSTIC: Verify positions against source content
+        // DIAGNOSTIC: Verify positions against source content (redacted values only)
         if (sourceContent != null && data.position() >= 0 && data.end() <= sourceContent.length()) {
             String actualSlice = sourceContent.substring(data.position(), data.end());
             if (!actualSlice.equals(data.value())) {
-                String endPlus1 = data.end() + 1 <= sourceContent.length()
-                    ? sourceContent.substring(data.position(), data.end() + 1) : "<OUT_OF_BOUNDS>";
-                log.warn("JAVA POSITION MISMATCH: type={} | value='{}' | content[{}:{}]='{}' | content[{}:{}]='{}' | matchEndPlus1={} | source={}",
-                    data.type(), data.value(), data.position(), data.end(), actualSlice,
-                    data.position(), data.end() + 1, endPlus1,
-                    endPlus1.equals(data.value()), data.source());
+                log.debug("JAVA POSITION MISMATCH: type={} | value={} | content[{}:{}]={} | source={}",
+                    data.type(), PiiContextExtractor.redactValue(data.value()),
+                    data.position(), data.end(), PiiContextExtractor.redactValue(actualSlice),
+                    data.source());
             } else {
-                log.info("JAVA POSITION OK: type={} | content[{}:{}]='{}' | source={}",
-                    data.type(), data.position(), data.end(), actualSlice, data.source());
+                log.debug("JAVA POSITION OK: type={} | position=[{}:{}] | source={}",
+                    data.type(), data.position(), data.end(), data.source());
             }
         }
 
@@ -359,6 +359,16 @@ public class ScanEventFactory {
             }
         }
         return highest; // Returns "HIGH", "MEDIUM", or "LOW"
+    }
+
+    private static String truncatedSha256(String content) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(content.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash).substring(0, 16);
+        } catch (NoSuchAlgorithmException _) {
+            return "<unavailable>";
+        }
     }
 
     private String buildPageUrl(String pageId) {

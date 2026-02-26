@@ -49,7 +49,7 @@ class ModelManager:
                 self.logger.debug(f"Downloaded {filename}")
             except Exception as e:
                 self.logger.error(f"Error downloading {filename}: {str(e)}")
-                raise e
+                raise ModelLoadError(f"Failed to download model file {filename}: {e}") from e
 
         self.logger.info("Model download completed successfully")
 

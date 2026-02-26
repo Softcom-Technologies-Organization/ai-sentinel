@@ -8,7 +8,7 @@ import pro.softcom.aisentinel.domain.confluence.ConfluenceConnectionSettings;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.jpa.ConfluenceConnectionConfigJpaRepository;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.jpa.entity.ConfluenceConnectionConfigEntity;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Persistence adapter for Confluence connection configuration.
@@ -80,7 +80,7 @@ public class ConfluenceConnectionConfigPersistenceAdapter implements ConfluenceC
                 3,
                 50,
                 100,
-                LocalDateTime.now(),
+                Instant.now(),
                 "system"
         );
     }
@@ -117,7 +117,7 @@ public class ConfluenceConnectionConfigPersistenceAdapter implements ConfluenceC
                 .maxRetries(settings.maxRetries())
                 .pagesLimit(settings.pagesLimit())
                 .maxPages(settings.maxPages())
-                .updatedAt(settings.updatedAt() != null ? settings.updatedAt() : LocalDateTime.now())
+                .updatedAt(settings.updatedAt() != null ? settings.updatedAt() : Instant.now())
                 .updatedBy(settings.updatedBy())
                 .build();
     }

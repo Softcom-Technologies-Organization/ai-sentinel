@@ -17,6 +17,7 @@ import pro.softcom.aisentinel.infrastructure.confluence.adapter.in.dto.Confluenc
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.in.dto.TestConfluenceConnectionRequestDto;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.in.dto.UpdateConfluenceConnectionConfigRequestDto;
 
+import java.security.Principal;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -33,8 +34,8 @@ import java.util.concurrent.CompletableFuture;
 @Tag(name = "Confluence Connection Config", description = "Manage Confluence connection configuration")
 public class ConfluenceConnectionConfigController {
 
-    public static final String ADMIN_USERNAME = "admin";
     private static final String MASKED_TOKEN = "***";
+    private static final String SYSTEM_USER = "system";
 
     private final ManageConfluenceConnectionPort manageConfluenceConnectionPort;
 
@@ -75,14 +76,15 @@ public class ConfluenceConnectionConfigController {
     @PutMapping
     @Operation(summary = "Update Confluence connection configuration")
     public CompletableFuture<ResponseEntity<@NonNull ConfluenceConnectionConfigResponseDto>> updateConfig(
-            @Valid @RequestBody UpdateConfluenceConnectionConfigRequestDto request) {
+            @Valid @RequestBody UpdateConfluenceConnectionConfigRequestDto request,
+            Principal principal) {
 
-        log.info("PUT /api/v1/confluence/connection-config - Updating configuration: baseUrl={}, username={}",
-                request.baseUrl(), request.username());
+        String updatedBy = principal != null ? principal.getName() : SYSTEM_USER;
+        log.info("PUT /api/v1/confluence/connection-config - Updating configuration: baseUrl={}, username={}, updatedBy={}",
+                request.baseUrl(), request.username(), updatedBy);
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                String updatedBy = ADMIN_USERNAME;
 
                 UpdateConfluenceConnectionCommand command = new UpdateConfluenceConnectionCommand(
                         request.baseUrl(),

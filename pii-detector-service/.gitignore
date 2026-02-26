@@ -49,3 +49,4 @@ logs/
 
 # Distribution / packaging
 # Already included in Python section above
+/tests/unit/coverage.xml

@@ -13,7 +13,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Base64;
 
 /**
@@ -66,7 +66,7 @@ public class ManageConfluenceConnectionUseCase implements ManageConfluenceConnec
                 command.maxRetries(),
                 command.pagesLimit(),
                 command.maxPages(),
-                LocalDateTime.now(),
+                Instant.now(),
                 command.updatedBy()
         );
 

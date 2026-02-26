@@ -23,9 +23,9 @@
     "en": "English"
   },
   "severity": {
-    "high": "Critical",
-    "medium": "High",
-    "low": "Medium",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
     "total": "Total"
   },
   "dashboard": {
@@ -601,7 +601,7 @@
       "deleteButton": "Delete custom label",
       "createButton": "Create",
       "customBadge": "Custom",
-      "dialogTitle": "Add a custom Gliner label",
+      "dialogTitle": "Add a custom label",
       "fields": {
         "detectorLabel": "Detector Label",
         "detectorLabelPlaceholder": "e.g. employee badge number",

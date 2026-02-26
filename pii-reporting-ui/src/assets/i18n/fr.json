@@ -23,9 +23,9 @@
     "en": "English"
   },
   "severity": {
-    "high": "Critique",
-    "medium": "Élevé",
-    "low": "Moyen",
+    "high": "Élevée",
+    "medium": "Moyenne",
+    "low": "Faible",
     "total": "Total"
   },
   "dashboard": {
@@ -288,7 +288,7 @@
         "Personal": "Informations personnelles",
         "LEGAL_ASSET": "Actifs juridiques",
         "IT_CREDENTIALS": "Identifiants informatiques",
-        "CUSTOM": "Labels personnalises"
+        "CUSTOM": "Labels personnalisés"
       },
       "typeNames": {
         "EMAIL": "Adresse email",
@@ -605,35 +605,35 @@
       }
     },
     "customLabels": {
-      "addButton": "Ajouter un label personnalise",
-      "deleteButton": "Supprimer le label personnalise",
-      "createButton": "Creer",
-      "customBadge": "Personnalise",
-      "dialogTitle": "Ajouter un label Gliner personnalise",
+      "addButton": "Ajouter un label personnalisé",
+      "deleteButton": "Supprimer le label personnalisé",
+      "createButton": "Créer",
+      "customBadge": "Personnalisé",
+      "dialogTitle": "Ajouter un label personnalisé",
       "fields": {
-        "detectorLabel": "Label du detecteur",
-        "detectorLabelPlaceholder": "ex: numero de badge employe",
+        "detectorLabel": "Label du détecteur",
+        "detectorLabelPlaceholder": "ex: numéro de badge employé",
         "piiType": "Code du type PII",
         "piiTypePlaceholder": "ex: NUMERO_BADGE_EMPLOYE",
-        "category": "Categorie",
-        "severity": "Severite",
+        "category": "Catégorie",
+        "severity": "Sévérité",
         "threshold": "Seuil de confiance",
         "countryCode": "Code pays (optionnel)",
         "countryCodePlaceholder": "ex: CH, FR"
       },
       "validation": {
-        "detectorLabelRequired": "Le label du detecteur est requis (min. 2 caracteres)",
+        "detectorLabelRequired": "Le label du détecteur est requis (min. 2 caractères)",
         "piiTypeInvalid": "Doit commencer par une lettre, majuscules et underscores uniquement (ex: NUMERO_BADGE)"
       },
       "deleteConfirm": {
-        "header": "Supprimer le label personnalise",
-        "message": "Etes-vous sur de vouloir supprimer le label personnalise \"{{label}}\" ? Cette action est irreversible."
+        "header": "Supprimer le label personnalisé",
+        "message": "Êtes-vous sûr de vouloir supprimer le label personnalisé \"{{label}}\" ? Cette action est irréversible."
       },
       "messages": {
-        "createSuccess": "Label personnalise \"{{label}}\" cree avec succes",
-        "createError": "Erreur lors de la creation du label personnalise : {{error}}",
-        "deleteSuccess": "Label personnalise \"{{label}}\" supprime avec succes",
-        "deleteError": "Erreur lors de la suppression du label personnalise : {{error}}"
+        "createSuccess": "Label personnalisé \"{{label}}\" créé avec succès",
+        "createError": "Erreur lors de la création du label personnalisé : {{error}}",
+        "deleteSuccess": "Label personnalisé \"{{label}}\" supprimé avec succès",
+        "deleteError": "Erreur lors de la suppression du label personnalisé : {{error}}"
       }
     },
     "actions": {

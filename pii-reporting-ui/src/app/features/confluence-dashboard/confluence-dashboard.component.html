@@ -193,7 +193,7 @@
         </td>
         <td class="space-name-cell" [pRowToggler]="space" tabindex="0">
           <div class="flex align-items-center">
-            <span class="fw-600" [attr.data-testid]="testIds.spaceName">{{ space.name }}</span>
+            <span class="fw-500" [attr.data-testid]="testIds.spaceName">{{ space.name }}</span>
             @if (hasSpaceBeenUpdated(space.key)) {
               <span class="space-updated-indicator"
                     [pTooltip]="getSpaceUpdateTooltip(space.key)"
@@ -205,7 +205,7 @@
         <td class="col-status">
           <p-tag [value]="statusLabel(space.status)"
                  [severity]="statusStyle(space.status)"
-                 [class]="'status-tag ' + (spacesDashboardUtils.statusStyleClass(space.status) || '')"
+                 [styleClass]="'status-tag ' + (spacesDashboardUtils.statusStyleClass(space.status) || '')"
                  [attr.data-testid]="testIds.spaceStatus"></p-tag>
         </td>
         <td class="col-progress">
@@ -300,7 +300,8 @@
 
   <!-- PII Severity Help Dialog -->
   <p-dialog [header]="'piiHelp.dialogTitle' | transloco"
-            [(visible)]="showPiiHelpDialog"
+            [visible]="showPiiHelpDialog()"
+            (onHide)="showPiiHelpDialog.set(false)"
             [modal]="true"
             [closable]="true"
             [dismissableMask]="true"

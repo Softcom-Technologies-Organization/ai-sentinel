@@ -7,7 +7,7 @@
   background-color: var(--sentinel-warning-bg);
   border-left: 4px solid var(--sentinel-warning-border);
   border-radius: 4px;
-  animation: slideDown 300ms ease-out;
+  animation: slide-down 300ms ease-out;
 }
 
 .confluence-config-banner i {
@@ -25,7 +25,7 @@
   flex-shrink: 0;
 }
 
-@keyframes slideDown {
+@keyframes slide-down {
   from {
     opacity: 0;
     transform: translateY(-20px);

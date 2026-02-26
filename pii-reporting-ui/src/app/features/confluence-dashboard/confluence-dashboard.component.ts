@@ -293,7 +293,7 @@ export class ConfluenceDashboardComponent implements OnInit, OnDestroy {
   }
 
   prevPage(): void {
-    this.first = this.first - this.rows;
+    this.first = Math.max(0, this.first - this.rows);
   }
 
   resetPage(): void {

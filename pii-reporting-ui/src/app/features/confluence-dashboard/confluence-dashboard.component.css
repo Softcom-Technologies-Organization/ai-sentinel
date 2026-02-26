@@ -260,7 +260,7 @@
 
 /* PII Help Dialog Styling
    ::ng-deep needed: PrimeNG dialog renders content in its own encapsulation */
-::ng-deep .pii-help-dialog .p-dialog-content {
+:host ::ng-deep .pii-help-dialog .p-dialog-content {
   padding: 1.5rem;
 }
 
@@ -336,7 +336,7 @@
 
 /* Severity badge icon in dialog headers
    ::ng-deep needed: PrimeNG badge internal rendering */
-::ng-deep .severity-badge-icon.p-badge {
+:host ::ng-deep .severity-badge-icon.p-badge {
   width: 1rem;
   height: 1rem;
   min-width: 1rem;
@@ -501,7 +501,7 @@
 }
 
 /* Space name styling */
-.fw-600 {
+.fw-500 {
   font-weight: 500;
   color: var(--sentinel-text-dark);
 }

@@ -41,8 +41,9 @@
   letter-spacing: -0.3px;
 }
 
-/* Header theme toggle button */
-::ng-deep .header-theme-btn.p-button {
+/* Header theme toggle button
+   ::ng-deep needed: PrimeNG button renders its own internal template */
+:host ::ng-deep .header-theme-btn.p-button {
   width: 2.25rem;
   height: 2.25rem;
   color: var(--sentinel-text-body) !important;
@@ -50,14 +51,14 @@
   transition: background 0.2s, color 0.2s;
 }
 
-::ng-deep .header-theme-btn.p-button:hover {
+:host ::ng-deep .header-theme-btn.p-button:hover {
   background: var(--sentinel-bg-hover) !important;
   color: var(--sentinel-text-primary) !important;
 }
 
 /* Header settings button
    ::ng-deep needed: PrimeNG button renders its own internal template */
-::ng-deep .header-settings-btn.p-button {
+:host ::ng-deep .header-settings-btn.p-button {
   background: var(--sentinel-bg-card) !important;
   border: 1px solid var(--sentinel-border-medium) !important;
   color: var(--sentinel-text-body) !important;
@@ -68,11 +69,11 @@
   height: 2.25rem;
 }
 
-::ng-deep .header-settings-btn.p-button .p-button-icon {
+:host ::ng-deep .header-settings-btn.p-button .p-button-icon {
   color: var(--sentinel-text-body) !important;
 }
 
-::ng-deep .header-settings-btn.p-button:hover {
+:host ::ng-deep .header-settings-btn.p-button:hover {
   background: var(--sentinel-bg-page) !important;
   border-color: var(--sentinel-border-strong) !important;
 }
@@ -84,60 +85,60 @@
 
 /* Scan Error Toast Styling
    ::ng-deep needed: PrimeNG toast renders outside component scope */
-::ng-deep .p-toast.p-component {
+:host ::ng-deep .p-toast.p-component[key="scan-errors"] {
   z-index: 9999;
 }
 
-::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error {
+:host ::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error {
   background-color: var(--sentinel-error-bg);
   border-left: 6px solid var(--sentinel-error-border);
   box-shadow: 0 4px 12px rgba(244, 67, 54, 0.25);
 }
 
-::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-message-icon {
+:host ::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-message-icon {
   color: var(--sentinel-error-icon);
   font-size: 2rem;
 }
 
-::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-summary {
+:host ::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-summary {
   font-weight: 600;
   color: var(--sentinel-error-text);
   font-size: 1.05rem;
 }
 
-::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-detail {
+:host ::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-detail {
   color: var(--sentinel-error-detail-text);
   white-space: pre-line;
   margin-top: 0.5rem;
   line-height: 1.6;
 }
 
-::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-icon-close {
+:host ::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-icon-close {
   color: var(--sentinel-error-close);
   transition: color 0.2s;
 }
 
-::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-icon-close:hover {
+:host ::ng-deep .p-toast[key="scan-errors"] .p-toast-message-error .p-toast-icon-close:hover {
   color: var(--sentinel-error-icon);
 }
 
 /* Settings Fullscreen Dialog Styling
    ::ng-deep needed: PrimeNG dialog renders its own encapsulated structure */
-::ng-deep .settings-fullscreen-dialog .p-dialog {
+:host ::ng-deep .settings-fullscreen-dialog .p-dialog {
   max-height: 95vh;
   overflow: hidden;
   border-radius: 12px;
 }
 
-::ng-deep .settings-fullscreen-dialog .p-dialog-header {
+:host ::ng-deep .settings-fullscreen-dialog .p-dialog-header {
   background-color: var(--sentinel-dialog-header-bg);
   border-bottom: 1px solid var(--sentinel-border-dialog);
   border-radius: 12px 12px 0 0;
 }
 
-::ng-deep .settings-fullscreen-dialog .p-dialog-content {
+:host ::ng-deep .settings-fullscreen-dialog .p-dialog-content {
   padding: 0;
-  overflow: hidden;
+  overflow-y: auto;
   height: 100%;
 }
 

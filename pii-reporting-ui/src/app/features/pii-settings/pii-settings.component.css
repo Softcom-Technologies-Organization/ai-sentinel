@@ -408,7 +408,7 @@
 }
 
 /* ::ng-deep needed: PrimeNG inputtext internal structure */
-::ng-deep .pii-search-input {
+:host ::ng-deep .pii-search-input {
   width: 220px;
   font-size: 12px;
   padding: 6px 10px 6px 2.2rem;
@@ -416,8 +416,8 @@
 }
 
 /* Search highlight */
-::ng-deep mark.search-highlight,
-::ng-deep .search-highlight {
+:host ::ng-deep mark.search-highlight,
+:host ::ng-deep .search-highlight {
   background-color: var(--sentinel-search-highlight-bg);
   color: var(--sentinel-search-highlight-color);
   padding: 0 0.125rem;
@@ -426,7 +426,7 @@
 
 /* Custom label dialog -- strip ALL default chrome, single flat box */
 /* ::ng-deep needed: PrimeNG dialog renders its own encapsulated structure */
-::ng-deep .custom-label-dialog.p-dialog {
+:host ::ng-deep .custom-label-dialog.p-dialog {
   border: none;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
@@ -435,11 +435,11 @@
   background: var(--sentinel-bg-card);
 }
 
-::ng-deep .custom-label-dialog.p-dialog .p-dialog-header {
+:host ::ng-deep .custom-label-dialog.p-dialog .p-dialog-header {
   display: none !important;
 }
 
-::ng-deep .custom-label-dialog.p-dialog .p-dialog-content {
+:host ::ng-deep .custom-label-dialog.p-dialog .p-dialog-content {
   padding: 20px;
   margin: 0;
   background: var(--sentinel-bg-card);
@@ -447,7 +447,7 @@
   border-radius: 0;
 }
 
-::ng-deep .p-dialog-mask {
+:host ::ng-deep .p-dialog-mask {
   backdrop-filter: blur(2px);
 }
 
@@ -967,7 +967,7 @@
   }
 
   /* ::ng-deep needed: PrimeNG inputtext internal structure */
-  ::ng-deep .pii-search-input {
+  :host ::ng-deep .pii-search-input {
     width: 100%;
   }
 

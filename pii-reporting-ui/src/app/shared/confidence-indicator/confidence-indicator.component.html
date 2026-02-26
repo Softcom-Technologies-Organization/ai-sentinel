@@ -1,5 +1,5 @@
 <div class="confidence-indicator">
-  <meter [value]="percentage()" min="0" max="100" class="confidence-meter-sr">
+  <meter [value]="percentage()" min="0" max="100" class="confidence-meter-sr" aria-label="Confidence level">
     {{ percentage() }}%
   </meter>
   <div class="confidence-bar" aria-hidden="true">

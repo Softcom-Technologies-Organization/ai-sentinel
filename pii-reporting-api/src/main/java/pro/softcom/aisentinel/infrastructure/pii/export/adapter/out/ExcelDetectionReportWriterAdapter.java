@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import pro.softcom.aisentinel.application.pii.export.dto.DetectionReportEntry;
 import pro.softcom.aisentinel.application.pii.export.port.out.WriteDetectionReportPort;
 import pro.softcom.aisentinel.domain.pii.export.ExportContext;
+import pro.softcom.aisentinel.domain.pii.export.SourceType;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -31,13 +32,14 @@ public class ExcelDetectionReportWriterAdapter implements WriteDetectionReportPo
     private String exportDirectory;
 
     @Override
-    public ReportSession openReportSession(String scanId, ExportContext exportContext) throws IOException {
-        return new ExcelSession(scanId, exportContext, exportDirectory);
+    public ReportSession openReportSession(String scanId, ExportContext exportContext, SourceType sourceType) throws IOException {
+        return new ExcelSession(scanId, exportContext, exportDirectory, sourceType);
     }
 
     private static class ExcelSession implements ReportSession {
         private final String scanId;
         private final ExportContext exportContext;
+        private final SourceType sourceType;
         private final SXSSFWorkbook workbook;
         private final Path reportPath;
         private OutputStream outputStream;
@@ -50,13 +52,15 @@ public class ExcelDetectionReportWriterAdapter implements WriteDetectionReportPo
         private CellStyle urlStyle;
         private CellStyle decimalStyle;
 
-        public ExcelSession(String scanId, ExportContext exportContext, String exportDirectory) {
+        public ExcelSession(String scanId, ExportContext exportContext, String exportDirectory, SourceType sourceType) {
             this.scanId = scanId;
             this.exportContext = exportContext;
+            this.sourceType = sourceType;
             this.workbook = new SXSSFWorkbook();
 
+            String sourceSubDir = sourceType.getValue().toLowerCase();
             String safeFileName = sanitizeForFileName(exportContext.reportName(), ".xlsx");
-            this.reportPath = Path.of(exportDirectory, safeFileName);
+            this.reportPath = Path.of(exportDirectory, sourceSubDir, safeFileName);
         }
 
         @Override
@@ -105,7 +109,8 @@ public class ExcelDetectionReportWriterAdapter implements WriteDetectionReportPo
         }
 
         private void populateSummarySheet() {
-            summarySheet = workbook.createSheet("Space Summary");
+            String summarySheetName = sourceType == SourceType.JIRA ? "Project Summary" : "Space Summary";
+            summarySheet = workbook.createSheet(summarySheetName);
 
             AtomicInteger rowIndex = new AtomicInteger();
 
@@ -184,7 +189,9 @@ public class ExcelDetectionReportWriterAdapter implements WriteDetectionReportPo
             try {
                 workbook.close();
             } finally {
-                outputStream.close();
+                if (outputStream != null) {
+                    outputStream.close();
+                }
             }
         }
 

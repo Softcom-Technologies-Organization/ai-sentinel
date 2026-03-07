@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.application.pii.reporting.ScanSeverityCountService;
 import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanEventStore;
+import pro.softcom.aisentinel.domain.pii.export.SourceType;
 import pro.softcom.aisentinel.domain.pii.reporting.ContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
@@ -139,7 +140,7 @@ class ContentScanOrchestratorTest {
                     .thenReturn(calculatedCounts);
 
             // When
-            orchestrator.persistEventAsyncOperations(event);
+            orchestrator.persistEventAsyncOperations(event, SourceType.CONFLUENCE);
 
             // Then
             verifyNoInteractions(scanCheckpointService); // Checkpoint NOT persisted here
@@ -163,7 +164,7 @@ class ContentScanOrchestratorTest {
                     .build();
 
             // When
-            orchestrator.persistEventAsyncOperations(event);
+            orchestrator.persistEventAsyncOperations(event, SourceType.CONFLUENCE);
 
             // Then
             verifyNoInteractions(scanCheckpointService);

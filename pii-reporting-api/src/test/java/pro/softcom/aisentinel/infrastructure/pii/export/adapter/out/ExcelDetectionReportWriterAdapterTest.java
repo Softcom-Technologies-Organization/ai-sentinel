@@ -10,6 +10,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.test.util.ReflectionTestUtils;
 import pro.softcom.aisentinel.domain.pii.export.ExportContext;
+import pro.softcom.aisentinel.domain.pii.export.SourceType;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -42,10 +43,10 @@ class ExcelDetectionReportWriterAdapterTest {
         ExportContext context = createExportContext(reportName);
 
         // When
-        try (var session = adapter.openReportSession("scan-123", context)) {
+        try (var session = adapter.openReportSession("scan-123", context, SourceType.CONFLUENCE)) {
             session.startReport();
             // Then
-            try (var filesStream = Files.list(tempDir)) {
+            try (var filesStream = Files.walk(tempDir)) {
                 List<Path> files = filesStream
                         .filter(p -> p.toString().endsWith(".xlsx"))
                         .toList();
@@ -82,10 +83,10 @@ class ExcelDetectionReportWriterAdapterTest {
         ExportContext context = createExportContext("<>:\"/\\|?*");
 
         // When
-        try (var session = adapter.openReportSession("scan-123", context)) {
+        try (var session = adapter.openReportSession("scan-123", context, SourceType.CONFLUENCE)) {
             session.startReport();
             // Then
-            try (var filesStream = Files.list(tempDir)) {
+            try (var filesStream = Files.walk(tempDir)) {
                 List<Path> files = filesStream
                         .filter(p -> p.toString().endsWith(".xlsx"))
                         .toList();
@@ -116,10 +117,10 @@ class ExcelDetectionReportWriterAdapterTest {
         ExportContext context = createExportContext(longName);
 
         // When
-        try (var session = adapter.openReportSession("scan-123", context)) {
+        try (var session = adapter.openReportSession("scan-123", context, SourceType.CONFLUENCE)) {
             session.startReport();
             // Then
-            try (var files = Files.list(tempDir)) {
+            try (var files = Files.walk(tempDir)) {
                 var filteredFiles = files.filter(p -> p.toString().endsWith(".xlsx"))
                         .toList();
 
@@ -137,10 +138,10 @@ class ExcelDetectionReportWriterAdapterTest {
         ExportContext context = createExportContext("Valid-Space_Name123");
 
         // When
-        try (var session = adapter.openReportSession("scan-123", context)) {
+        try (var session = adapter.openReportSession("scan-123", context, SourceType.CONFLUENCE)) {
             session.startReport();
             // Then
-            try (var filesStream = Files.list(tempDir)) {
+            try (var filesStream = Files.walk(tempDir)) {
                 List<Path> files = filesStream
                         .filter(p -> p.toString().endsWith(".xlsx"))
                         .toList();
@@ -159,7 +160,7 @@ class ExcelDetectionReportWriterAdapterTest {
         ExportContext context = createExportContext(reportName);
 
         // When & Then - Should not throw exception
-        try (var session = adapter.openReportSession("scan-123", context)) {
+        try (var session = adapter.openReportSession("scan-123", context, SourceType.CONFLUENCE)) {
             session.startReport();
             assertThat(session).isNotNull();
         }
@@ -183,10 +184,10 @@ class ExcelDetectionReportWriterAdapterTest {
         ExportContext context = createExportContext("  Test Space : 2024  ");
 
         // When
-        try (var session = adapter.openReportSession("scan-123", context)) {
+        try (var session = adapter.openReportSession("scan-123", context, SourceType.CONFLUENCE)) {
             session.startReport();
             // Then
-            try (var filesStream = Files.list(tempDir)) {
+            try (var filesStream = Files.walk(tempDir)) {
                 List<Path> files = filesStream
                         .filter(p -> p.toString().endsWith(".xlsx"))
                         .toList();

@@ -4,7 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.AfterCommitExecutionPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.PublishEventPort;
-import pro.softcom.aisentinel.domain.pii.scan.SpaceScanCompleted;
+import pro.softcom.aisentinel.domain.pii.export.SourceType;
+import pro.softcom.aisentinel.domain.pii.scan.SourceScanCompleted;
 
 /**
  * Orchestrates publication of domain events related to scan lifecycle.
@@ -28,7 +29,7 @@ public class ScanEventDispatcher {
         });
     }
 
-    public void publishAfterCommit(String scanId, String spaceKey) {
-        scheduleAfterCommit(() -> publishEventPort.publishCompleteEvent(new SpaceScanCompleted(scanId, spaceKey)));
+    public void publishAfterCommit(String scanId, String sourceKey, SourceType sourceType) {
+        scheduleAfterCommit(() -> publishEventPort.publishCompleteEvent(new SourceScanCompleted(scanId, sourceKey, sourceType)));
     }
 }

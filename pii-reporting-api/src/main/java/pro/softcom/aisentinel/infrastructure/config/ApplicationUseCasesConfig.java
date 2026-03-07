@@ -57,8 +57,14 @@ import pro.softcom.aisentinel.application.pii.security.PiiAccessAuditService;
 import pro.softcom.aisentinel.application.pii.security.ScanResultEncryptor;
 import pro.softcom.aisentinel.application.pii.security.port.out.SavePiiAuditPort;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionService;
+import pro.softcom.aisentinel.domain.pii.export.SourceType;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfigUpdatedEvent;
+
+import java.util.Map;
 import pro.softcom.aisentinel.infrastructure.jira.adapter.out.DelegatingJiraClient;
+import pro.softcom.aisentinel.infrastructure.pii.export.adapter.out.ConfluenceExportContextAdapter;
+import pro.softcom.aisentinel.infrastructure.pii.export.adapter.out.DelegatingExportContextAdapter;
+import pro.softcom.aisentinel.infrastructure.pii.export.adapter.out.JiraExportContextAdapter;
 import pro.softcom.aisentinel.infrastructure.jira.adapter.out.JiraCloudHttpClientAdapter;
 import pro.softcom.aisentinel.infrastructure.jira.adapter.out.JiraDataCenterHttpClientAdapter;
 import pro.softcom.aisentinel.infrastructure.jira.adapter.out.config.DatabaseBackedJiraConnectionConfig;
@@ -238,6 +244,30 @@ public class ApplicationUseCasesConfig {
     @Bean
     public DetectionReportMapper detectionReportMapper() {
         return new DetectionReportMapper();
+    }
+
+    @Bean
+    public ConfluenceExportContextAdapter confluenceExportContextAdapter(
+            ConfluenceSpaceRepository confluenceSpaceRepository,
+            ConfluenceClient confluenceClient) {
+        return new ConfluenceExportContextAdapter(confluenceSpaceRepository, confluenceClient);
+    }
+
+    @Bean
+    public JiraExportContextAdapter jiraExportContextAdapter(
+            JiraClient jiraClient,
+            JiraUrlProvider jiraUrlProvider) {
+        return new JiraExportContextAdapter(jiraClient, jiraUrlProvider);
+    }
+
+    @Bean
+    public ReadExportContextPort readExportContextPort(
+            ConfluenceExportContextAdapter confluenceAdapter,
+            JiraExportContextAdapter jiraAdapter) {
+        return new DelegatingExportContextAdapter(Map.of(
+                SourceType.CONFLUENCE, confluenceAdapter,
+                SourceType.JIRA, jiraAdapter
+        ));
     }
 
     @Bean

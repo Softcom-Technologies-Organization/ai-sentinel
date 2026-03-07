@@ -15,6 +15,7 @@ import pro.softcom.aisentinel.application.pii.export.dto.DetectionReportEntry;
 import pro.softcom.aisentinel.application.pii.export.port.out.WriteDetectionReportPort;
 import pro.softcom.aisentinel.domain.pii.export.DataSourceContact;
 import pro.softcom.aisentinel.domain.pii.export.ExportContext;
+import pro.softcom.aisentinel.domain.pii.export.SourceType;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -47,7 +48,7 @@ class ExcelDetectionReportWriterAdapterContentTest {
         ExportContext context = createExportContext(List.of());
 
         // When
-        try (WriteDetectionReportPort.ReportSession session = adapter.openReportSession("scan-123", context)) {
+        try (WriteDetectionReportPort.ReportSession session = adapter.openReportSession("scan-123", context, SourceType.CONFLUENCE)) {
             session.startReport();
             session.finishReport();
         }
@@ -67,7 +68,7 @@ class ExcelDetectionReportWriterAdapterContentTest {
         ExportContext context = createExportContext(contacts);
 
         // When
-        try (WriteDetectionReportPort.ReportSession session = adapter.openReportSession("scan-456", context)) {
+        try (WriteDetectionReportPort.ReportSession session = adapter.openReportSession("scan-456", context, SourceType.CONFLUENCE)) {
             session.startReport();
             session.finishReport();
         }
@@ -117,7 +118,7 @@ class ExcelDetectionReportWriterAdapterContentTest {
         ExportContext context = createExportContext(List.of());
 
         // When
-        try (WriteDetectionReportPort.ReportSession session = adapter.openReportSession("scan-multi", context)) {
+        try (WriteDetectionReportPort.ReportSession session = adapter.openReportSession("scan-multi", context, SourceType.CONFLUENCE)) {
             session.startReport();
 
             for (int i = 1; i <= count; i++) {
@@ -152,7 +153,7 @@ class ExcelDetectionReportWriterAdapterContentTest {
         DetectionReportEntry entry = createDetectionEntry(dateValue, "Test Page", "EMAIL");
 
         // When
-        try (WriteDetectionReportPort.ReportSession session = adapter.openReportSession("scan-date", context)) {
+        try (WriteDetectionReportPort.ReportSession session = adapter.openReportSession("scan-date", context, SourceType.CONFLUENCE)) {
             session.startReport();
             session.writeReportEntry(entry);
             session.finishReport();
@@ -195,7 +196,7 @@ class ExcelDetectionReportWriterAdapterContentTest {
                 .build();
 
         // When
-        try (WriteDetectionReportPort.ReportSession session = adapter.openReportSession("scan-url", context)) {
+        try (WriteDetectionReportPort.ReportSession session = adapter.openReportSession("scan-url", context, SourceType.CONFLUENCE)) {
             session.startReport();
             session.writeReportEntry(entry);
             session.finishReport();
@@ -221,7 +222,7 @@ class ExcelDetectionReportWriterAdapterContentTest {
         DetectionReportEntry entry = createDetectionEntry("2024-01-15T10:00:00Z", "Test", "EMAIL");
 
         // When
-        try (WriteDetectionReportPort.ReportSession session = adapter.openReportSession("scan-style", context)) {
+        try (WriteDetectionReportPort.ReportSession session = adapter.openReportSession("scan-style", context, SourceType.CONFLUENCE)) {
             session.startReport();
             session.writeReportEntry(entry);
             session.finishReport();
@@ -246,7 +247,7 @@ class ExcelDetectionReportWriterAdapterContentTest {
         ReflectionTestUtils.setField(adapter, "exportDirectory", nonExistentDir.toString());
 
         // When
-        try (WriteDetectionReportPort.ReportSession session = adapter.openReportSession("scan", createExportContext(List.of()))) {
+        try (WriteDetectionReportPort.ReportSession session = adapter.openReportSession("scan", createExportContext(List.of()), SourceType.CONFLUENCE)) {
             session.startReport();
             session.finishReport();
         }
@@ -282,7 +283,7 @@ class ExcelDetectionReportWriterAdapterContentTest {
     }
 
     private Workbook openWorkbook() throws IOException {
-        try (var filesStream = Files.list(tempDir)) {
+        try (var filesStream = Files.walk(tempDir)) {
             List<Path> files = filesStream.filter(p -> p.toString().endsWith(".xlsx")).toList();
             assertThat(files).hasSize(1);
             return new XSSFWorkbook(new FileInputStream(files.get(0).toFile()));

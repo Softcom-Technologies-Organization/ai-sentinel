@@ -2,7 +2,6 @@ package pro.softcom.aisentinel.infrastructure.pii.export.adapter.out;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 import pro.softcom.aisentinel.application.confluence.exception.ConfluenceSpaceNotFoundException;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceSpaceRepository;
@@ -23,7 +22,6 @@ import java.util.Map;
  * Adapts Confluence spaces to export contexts.
  * This adapter converts Confluence-specific domain objects into platform-agnostic export contexts.
  */
-@Component
 @RequiredArgsConstructor
 @Slf4j
 public class ConfluenceExportContextAdapter implements ReadExportContextPort {

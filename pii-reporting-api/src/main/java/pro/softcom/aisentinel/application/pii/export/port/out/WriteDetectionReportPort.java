@@ -2,6 +2,7 @@ package pro.softcom.aisentinel.application.pii.export.port.out;
 
 import pro.softcom.aisentinel.application.pii.export.dto.DetectionReportEntry;
 import pro.softcom.aisentinel.domain.pii.export.ExportContext;
+import pro.softcom.aisentinel.domain.pii.export.SourceType;
 
 import java.io.IOException;
 
@@ -16,10 +17,11 @@ public interface WriteDetectionReportPort {
      *
      * @param scanId the unique identifier of the scan
      * @param exportContext the context containing metadata for the report
+     * @param sourceType the type of data source (used for file organization)
      * @return a report session for writing entries
      * @throws IOException if an I/O error occurs
      */
-    ReportSession openReportSession(String scanId, ExportContext exportContext) throws IOException;
+    ReportSession openReportSession(String scanId, ExportContext exportContext, SourceType sourceType) throws IOException;
 
     interface ReportSession extends AutoCloseable {
         void startReport() throws IOException;

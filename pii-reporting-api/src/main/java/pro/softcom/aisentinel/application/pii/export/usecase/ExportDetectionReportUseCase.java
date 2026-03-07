@@ -44,7 +44,7 @@ public class ExportDetectionReportUseCase implements ExportDetectionReportPort {
         validateExportParameters(scanId, sourceType, sourceIdentifier);
 
         ExportContext exportContext = readExportContextPort.findContext(sourceType, sourceIdentifier);
-        exportDetectionReport(scanId, sourceIdentifier, exportContext);
+        exportDetectionReport(scanId, sourceIdentifier, exportContext, sourceType);
     }
 
     private void validateExportParameters(String scanId, SourceType sourceType, String sourceIdentifier) {
@@ -59,8 +59,8 @@ public class ExportDetectionReportUseCase implements ExportDetectionReportPort {
         }
     }
 
-    private void exportDetectionReport(String scanId, String sourceIdentifier, ExportContext exportContext) {
-        try (var reportSession = writeDetectionReportPort.openReportSession(scanId, exportContext)) {
+    private void exportDetectionReport(String scanId, String sourceIdentifier, ExportContext exportContext, SourceType sourceType) {
+        try (var reportSession = writeDetectionReportPort.openReportSession(scanId, exportContext, sourceType)) {
             reportSession.startReport();
             writeReportEntries(reportSession, scanId, sourceIdentifier);
             reportSession.finishReport();

@@ -107,7 +107,7 @@ class ExcelExportFullScanIntegrationTest {
     void cleanupExportDirectory() throws IOException {
         Path exportDir = Path.of(exportDirectory);
         if (Files.exists(exportDir)) {
-            try (Stream<Path> files = Files.list(exportDir)) {
+            try (Stream<Path> files = Files.walk(exportDir)) {
                 files.filter(path -> path.toString().endsWith(".xlsx"))
                      .forEach(path -> {
                          try {
@@ -202,7 +202,7 @@ class ExcelExportFullScanIntegrationTest {
         
         Path exportDir = Path.of(exportDirectory);
         List<Path> excelFiles;
-        try (Stream<Path> files = Files.list(exportDir)) {
+        try (Stream<Path> files = Files.walk(exportDir)) {
             excelFiles = files
                 .filter(path -> path.toString().endsWith(".xlsx"))
                 .toList();

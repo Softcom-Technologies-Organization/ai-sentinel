@@ -11,7 +11,8 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.PublishEventPort;
-import pro.softcom.aisentinel.domain.pii.scan.SpaceScanCompleted;
+import pro.softcom.aisentinel.domain.pii.export.SourceType;
+import pro.softcom.aisentinel.domain.pii.scan.SourceScanCompleted;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,7 +28,7 @@ class ScanEventDispatcherTest {
     private PublishEventPort publishEventPort;
 
     @Captor
-    private ArgumentCaptor<SpaceScanCompleted> eventCaptor;
+    private ArgumentCaptor<SourceScanCompleted> eventCaptor;
 
     private ScanEventDispatcher dispatcher;
 
@@ -99,14 +100,15 @@ class ScanEventDispatcherTest {
     @DisplayName("Should_PublishEventImmediately_When_NoTransactionActive")
     void Should_PublishEventImmediately_When_NoTransactionActive(String scanId, String spaceKey) {
         // When
-        dispatcher.publishAfterCommit(scanId, spaceKey);
+        dispatcher.publishAfterCommit(scanId, spaceKey, SourceType.CONFLUENCE);
 
         // Then
         verify(publishEventPort).publishCompleteEvent(eventCaptor.capture());
-        SpaceScanCompleted event = eventCaptor.getValue();
+        SourceScanCompleted event = eventCaptor.getValue();
         assertThatCode(() -> {
             org.assertj.core.api.Assertions.assertThat(event.scanId()).isEqualTo(scanId);
-            org.assertj.core.api.Assertions.assertThat(event.spaceKey()).isEqualTo(spaceKey);
+            org.assertj.core.api.Assertions.assertThat(event.sourceKey()).isEqualTo(spaceKey);
+            org.assertj.core.api.Assertions.assertThat(event.sourceType()).isEqualTo(SourceType.CONFLUENCE);
         }).doesNotThrowAnyException();
     }
 
@@ -123,7 +125,7 @@ class ScanEventDispatcherTest {
         ScanEventDispatcher txDispatcher = new ScanEventDispatcher(publishEventPort, action -> stored[0] = action);
 
         // When
-        txDispatcher.publishAfterCommit(scanId, spaceKey);
+        txDispatcher.publishAfterCommit(scanId, spaceKey, SourceType.CONFLUENCE);
 
         // Then - event should not be published immediately
         verify(publishEventPort, never()).publishCompleteEvent(any());
@@ -133,10 +135,11 @@ class ScanEventDispatcherTest {
 
         // Then - event should be published after commit
         verify(publishEventPort).publishCompleteEvent(eventCaptor.capture());
-        SpaceScanCompleted event = eventCaptor.getValue();
+        SourceScanCompleted event = eventCaptor.getValue();
         assertThatCode(() -> {
             org.assertj.core.api.Assertions.assertThat(event.scanId()).isEqualTo(scanId);
-            org.assertj.core.api.Assertions.assertThat(event.spaceKey()).isEqualTo(spaceKey);
+            org.assertj.core.api.Assertions.assertThat(event.sourceKey()).isEqualTo(spaceKey);
+            org.assertj.core.api.Assertions.assertThat(event.sourceType()).isEqualTo(SourceType.CONFLUENCE);
         }).doesNotThrowAnyException();
     }
 
@@ -151,7 +154,7 @@ class ScanEventDispatcherTest {
         doThrow(new RuntimeException("Publish failed")).when(publishEventPort).publishCompleteEvent(any());
 
         // When
-        txDispatcher.publishAfterCommit(scanId, spaceKey);
+        txDispatcher.publishAfterCommit(scanId, spaceKey, SourceType.CONFLUENCE);
 
         // Then - should not throw when executing deferred publish
         assertThatCode(stored[0]::run).doesNotThrowAnyException();

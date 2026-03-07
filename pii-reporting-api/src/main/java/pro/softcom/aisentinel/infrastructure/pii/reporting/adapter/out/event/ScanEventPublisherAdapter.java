@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.PublishEventPort;
-import pro.softcom.aisentinel.domain.pii.scan.SpaceScanCompleted;
+import pro.softcom.aisentinel.domain.pii.scan.SourceScanCompleted;
 
 /**
  * Infrastructure adapter for publishing scan events.
@@ -18,8 +18,9 @@ public class ScanEventPublisherAdapter implements PublishEventPort {
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
-    public void publishCompleteEvent(SpaceScanCompleted spaceScanCompleted) {
-        applicationEventPublisher.publishEvent(spaceScanCompleted);
-        log.debug("Published scanId={}, spaceKey={}", spaceScanCompleted.scanId(), spaceScanCompleted.spaceKey());
+    public void publishCompleteEvent(SourceScanCompleted sourceScanCompleted) {
+        applicationEventPublisher.publishEvent(sourceScanCompleted);
+        log.debug("Published scanId={}, sourceKey={}, sourceType={}",
+                sourceScanCompleted.scanId(), sourceScanCompleted.sourceKey(), sourceScanCompleted.sourceType());
     }
 }

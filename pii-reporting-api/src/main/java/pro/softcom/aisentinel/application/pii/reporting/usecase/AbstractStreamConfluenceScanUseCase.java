@@ -13,6 +13,7 @@ import pro.softcom.aisentinel.application.pii.reporting.service.parser.HtmlConte
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
+import pro.softcom.aisentinel.domain.pii.export.SourceType;
 import pro.softcom.aisentinel.domain.pii.reporting.ContentScanResult;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ScanProgress;
@@ -75,7 +76,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                     
                     // Async operations (severity counts, event store) can safely continue in background
                     // These are additive operations that won't cause issues if the SSE disconnects
-                    Mono.fromRunnable(() -> contentScanOrchestrator.persistEventAsyncOperations(event))
+                    Mono.fromRunnable(() -> contentScanOrchestrator.persistEventAsyncOperations(event, SourceType.CONFLUENCE))
                         .subscribeOn(Schedulers.boundedElastic())
                         .retryWhen(Retry.backoff(3, Duration.ofMillis(100)))
                         .onErrorResume(e -> {

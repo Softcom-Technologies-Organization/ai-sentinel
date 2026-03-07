@@ -101,7 +101,7 @@ class ExportDetectionReportUseCaseTest {
         DetectionReportEntry entry = createDetectionReportEntry();
 
         when(readExportContextPort.findContext(SourceType.CONFLUENCE, "TEST")).thenReturn(exportContext);
-        when(writeDetectionReportPort.openReportSession("scan-123", exportContext)).thenReturn(reportSession);
+        when(writeDetectionReportPort.openReportSession("scan-123", exportContext, SourceType.CONFLUENCE)).thenReturn(reportSession);
         when(readScanEventsPort.streamByScanIdAndSpaceKey("scan-123", "TEST")).thenReturn(Stream.of(
             confluenceContentScanResult));
         when(detectionReportMapper.toDetectionReportEntries(
@@ -131,7 +131,7 @@ class ExportDetectionReportUseCaseTest {
         DetectionReportEntry entry2 = createDetectionReportEntry();
 
         when(readExportContextPort.findContext(SourceType.CONFLUENCE, "TEST")).thenReturn(exportContext);
-        when(writeDetectionReportPort.openReportSession("scan-123", exportContext)).thenReturn(reportSession);
+        when(writeDetectionReportPort.openReportSession("scan-123", exportContext, SourceType.CONFLUENCE)).thenReturn(reportSession);
         when(readScanEventsPort.streamByScanIdAndSpaceKey("scan-123", "TEST"))
                 .thenReturn(Stream.of(confluenceContentScanResult1, confluenceContentScanResult2));
         when(detectionReportMapper.toDetectionReportEntries(
@@ -155,7 +155,7 @@ class ExportDetectionReportUseCaseTest {
         WriteDetectionReportPort.ReportSession reportSession = mock(WriteDetectionReportPort.ReportSession.class);
 
         when(readExportContextPort.findContext(SourceType.CONFLUENCE, "TEST")).thenReturn(exportContext);
-        when(writeDetectionReportPort.openReportSession("scan-123", exportContext)).thenReturn(reportSession);
+        when(writeDetectionReportPort.openReportSession("scan-123", exportContext, SourceType.CONFLUENCE)).thenReturn(reportSession);
         when(readScanEventsPort.streamByScanIdAndSpaceKey("scan-123", "TEST")).thenReturn(Stream.empty());
 
         // When
@@ -176,7 +176,7 @@ class ExportDetectionReportUseCaseTest {
         WriteDetectionReportPort.ReportSession reportSession = mock(WriteDetectionReportPort.ReportSession.class);
 
         when(readExportContextPort.findContext(SourceType.CONFLUENCE, "TEST")).thenReturn(exportContext);
-        when(writeDetectionReportPort.openReportSession("scan-123", exportContext)).thenReturn(reportSession);
+        when(writeDetectionReportPort.openReportSession("scan-123", exportContext, SourceType.CONFLUENCE)).thenReturn(reportSession);
         doThrow(new IOException("Write failed")).when(reportSession).startReport();
 
         // When & Then
@@ -198,7 +198,7 @@ class ExportDetectionReportUseCaseTest {
         DetectionReportEntry entry = createDetectionReportEntry();
 
         when(readExportContextPort.findContext(SourceType.CONFLUENCE, "TEST")).thenReturn(exportContext);
-        when(writeDetectionReportPort.openReportSession("scan-123", exportContext)).thenReturn(reportSession);
+        when(writeDetectionReportPort.openReportSession("scan-123", exportContext, SourceType.CONFLUENCE)).thenReturn(reportSession);
         when(readScanEventsPort.streamByScanIdAndSpaceKey("scan-123", "TEST")).thenReturn(Stream.of(
             confluenceContentScanResult));
         when(detectionReportMapper.toDetectionReportEntries(
@@ -225,7 +225,7 @@ class ExportDetectionReportUseCaseTest {
         DetectionReportEntry entry3 = createDetectionReportEntry();
 
         when(readExportContextPort.findContext(SourceType.CONFLUENCE, "TEST")).thenReturn(exportContext);
-        when(writeDetectionReportPort.openReportSession("scan-123", exportContext)).thenReturn(reportSession);
+        when(writeDetectionReportPort.openReportSession("scan-123", exportContext, SourceType.CONFLUENCE)).thenReturn(reportSession);
         when(readScanEventsPort.streamByScanIdAndSpaceKey("scan-123", "TEST")).thenReturn(Stream.of(
             confluenceContentScanResult));
         when(detectionReportMapper.toDetectionReportEntries(confluenceContentScanResult))

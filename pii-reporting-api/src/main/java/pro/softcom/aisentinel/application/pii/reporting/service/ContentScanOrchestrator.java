@@ -6,6 +6,7 @@ import pro.softcom.aisentinel.application.pii.reporting.ScanSeverityCountService
 import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanEventStore;
 import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
+import pro.softcom.aisentinel.domain.pii.export.SourceType;
 import pro.softcom.aisentinel.domain.pii.reporting.ContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
@@ -102,20 +103,20 @@ public class ContentScanOrchestrator {
      * 
      * @param event the scan event to process
      */
-    public void persistEventAsyncOperations(ContentScanResult event) {
+    public void persistEventAsyncOperations(ContentScanResult event, SourceType sourceType) {
         // Calculate and persist severity counts if event contains PII detections
         if (event.detectedPIIList() != null && !event.detectedPIIList().isEmpty()) {
             SeverityCounts counts = severityCalculationService.aggregateCounts(event.detectedPIIList());
             scanSeverityCountService.incrementCounts(event.scanId(), event.sourceId(), counts);
         }
-        
+
         if (scanEventStore != null) {
             scanEventStore.append(event);
 
             // Has findings?
             if (shouldPublishEvent(event)) {
                 // Publish the event only if transaction successfully committed
-                scanEventDispatcher.publishAfterCommit(event.scanId(), event.sourceId());
+                scanEventDispatcher.publishAfterCommit(event.scanId(), event.sourceId(), sourceType);
             }
         }
     }

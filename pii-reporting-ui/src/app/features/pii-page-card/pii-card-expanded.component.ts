@@ -9,6 +9,7 @@ import { ConfidenceIndicatorComponent } from '../../shared/confidence-indicator/
 import { SEVERITY_STYLES } from './severity.config';
 import { PiiEntityRow, ValuePart } from './pii-type-row.model';
 import { PiiItemCardUtils } from '../pii-item-card/pii-item-card.utils';
+import { PiiTypeTranslationService } from '../../shared/utils/pii-type-translation.service';
 import { SentinelleApiService } from '../../core/services/sentinelle-api.service';
 
 export type SortColumn = 'typeLabel' | 'value' | 'confidence' | 'detector';
@@ -34,6 +35,7 @@ export class PiiCardExpandedComponent {
   readonly sentinelleApi = inject(SentinelleApiService);
   private readonly translocoService = inject(TranslocoService);
   private readonly piiItemCardUtils = inject(PiiItemCardUtils);
+  private readonly piiTypeTranslation = inject(PiiTypeTranslationService);
 
   readonly severityStyle = computed(() => SEVERITY_STYLES[this.item().severity] ?? SEVERITY_STYLES.low);
 
@@ -53,7 +55,7 @@ export class PiiCardExpandedComponent {
         : (entity.maskedContext || '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022');
 
       return {
-        typeLabel: this.translatePiiType(label),
+        typeLabel: this.piiTypeTranslation.translatePiiType(label),
         value: displayValue,
         valueParts: hasRevealedValue
           ? this.parseRevealedParts(entity.sensitiveContext, entity.sensitiveValue!)
@@ -65,17 +67,9 @@ export class PiiCardExpandedComponent {
     });
   });
 
-  readonly piiTypeBadges = computed(() => {
-    const counts = new Map<string, number>();
-    for (const entity of this.item().detectedPersonallyIdentifiableInformationList ?? []) {
-      const label = entity.piiTypeLabel || entity.piiType || 'UNKNOWN';
-      counts.set(label, (counts.get(label) ?? 0) + 1);
-    }
-    return Array.from(counts.entries()).map(([type, count]) => ({
-      label: this.translatePiiType(type),
-      count,
-    }));
-  });
+  readonly piiTypeBadges = computed(() =>
+    this.piiTypeTranslation.computePiiTypeBadges(this.item().detectedPersonallyIdentifiableInformationList ?? [])
+  );
 
   readonly attachmentKind = computed(() =>
     this.piiItemCardUtils.attachmentKind(this.item().attachmentType)
@@ -166,19 +160,7 @@ export class PiiCardExpandedComponent {
   }
 
   private translatePiiType(key: string): string {
-    if (!key) return 'Unknown';
-
-    let cleanKey = key;
-    if (key.toLowerCase().startsWith('piitype')) {
-      const parts = key.split('.');
-      cleanKey = parts.length > 1 ? parts.at(-1)! : key;
-    }
-
-    const normalizedKey = cleanKey.toUpperCase();
-    const translationKey = `piiTypes.${normalizedKey}`;
-    const translated = this.translocoService.translate(translationKey);
-    const isMissing = translated === translationKey || translated.includes('piiTypes.');
-    return isMissing ? this.formatFallback(cleanKey) : translated;
+    return this.piiTypeTranslation.translatePiiType(key);
   }
 
   private parseRevealedParts(sensitiveContext: string | undefined, sensitiveValue: string): ValuePart[] {
@@ -224,10 +206,4 @@ export class PiiCardExpandedComponent {
     return parts.length > 0 ? parts : [{ text: value, isBadge: false }];
   }
 
-  private formatFallback(key: string): string {
-    return key
-      .split('_')
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-      .join(' ');
-  }
 }

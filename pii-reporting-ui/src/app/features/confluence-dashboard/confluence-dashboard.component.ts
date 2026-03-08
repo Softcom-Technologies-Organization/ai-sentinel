@@ -30,7 +30,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { ScanProgressBarComponent } from '../../shared/components/scan-progress-bar/scan-progress-bar.component';
 import { SortEvent } from 'primeng/api';
 import { TestIds } from '../test-ids.constants';
-import { DialogModule } from 'primeng/dialog';
+import { PiiHelpDialogComponent } from '../../shared/components/pii-help-dialog/pii-help-dialog.component';
 import { NewSpacesBannerComponent } from '../../shared/components/new-spaces-banner/new-spaces-banner.component';
 import {
     ConfluenceConfigBannerComponent
@@ -68,7 +68,7 @@ import { SeverityCounts } from '../../core/models/severity-counts';
         Ripple,
         TooltipModule,
         SkeletonModule,
-        DialogModule,
+        PiiHelpDialogComponent,
         TranslocoModule,
         NewSpacesBannerComponent,
         ConfluenceConfigBannerComponent,

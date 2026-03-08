@@ -2,6 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { SortEvent } from 'primeng/api';
 import { SpacesDashboardUtils } from '../spaces-dashboard.utils';
 import { SpaceDataManagementService } from './space-data-management.service';
+import { sortByFieldAndOrder } from '../../../shared/utils/dashboard-sort.util';
 
 /**
  * Service responsible for filtering and sorting spaces in the dashboard.
@@ -51,49 +52,9 @@ export class SpaceFilteringService {
     return spaces;
   });
 
-  /**
-   * Sorted spaces based on current sort field and order.
-   * Supports sorting by:
-   * - name: alphabetical order
-   * - piiCount: by priority - high first, then medium, then low
-   */
-  readonly sortedSpaces = computed(() => {
-    const spaces = [...this.filteredSpaces()];
-    const field = this.sortField();
-    const order = this.sortOrder();
-
-    if (!field) {
-      return spaces;
-    }
-
-    return spaces.sort((a, b) => {
-      let compareValue = 0;
-
-      if (field === 'name') {
-        // Aligner le tri "par nom" avec l'ordre Confluence (ordre backend)
-        // en s'appuyant sur l'index d'origine fourni par le backend.
-        // Cela garantit que le tri par défaut reflète exactement l'ordre Confluence.
-        const idxA = (a as any).originalIndex ?? 0;
-        const idxB = (b as any).originalIndex ?? 0;
-        compareValue = idxA - idxB;
-      } else if (field === 'piiCount') {
-        // Sort by priority: high > medium > low (descending for each)
-        const priorities = ['high', 'medium', 'low'] as const;
-
-        for (const priority of priorities) {
-          const countA = a.counts?.[priority] ?? 0;
-          const countB = b.counts?.[priority] ?? 0;
-
-          if (countA !== countB) {
-            compareValue = countB - countA;
-            break;
-          }
-        }
-      }
-
-      return compareValue * order;
-    });
-  });
+  readonly sortedSpaces = computed(() =>
+    sortByFieldAndOrder(this.filteredSpaces(), this.sortField(), this.sortOrder())
+  );
 
   /**
    * Available status options for filtering.

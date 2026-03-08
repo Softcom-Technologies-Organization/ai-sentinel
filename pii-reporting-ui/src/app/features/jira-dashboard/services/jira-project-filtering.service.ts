@@ -2,6 +2,7 @@ import { computed, Injectable, inject, signal } from '@angular/core';
 import { SortEvent } from 'primeng/api';
 import { JiraProjectsDashboardUtils } from '../jira-projects-dashboard.utils';
 import { JiraProjectDataManagementService } from './jira-project-data-management.service';
+import { sortByFieldAndOrder } from '../../../shared/utils/dashboard-sort.util';
 
 @Injectable({
   providedIn: 'root'
@@ -20,37 +21,9 @@ export class JiraProjectFilteringService {
     return this.dashboardUtils.filteredProjects();
   });
 
-  readonly sortedProjects = computed(() => {
-    const projects = [...this.filteredProjects()];
-    const field = this.sortField();
-    const order = this.sortOrder();
-
-    if (!field) {
-      return projects;
-    }
-
-    return projects.sort((a, b) => {
-      let compareValue = 0;
-
-      if (field === 'name') {
-        const idxA = a.originalIndex ?? 0;
-        const idxB = b.originalIndex ?? 0;
-        compareValue = idxA - idxB;
-      } else if (field === 'piiCount') {
-        const priorities = ['high', 'medium', 'low'] as const;
-        for (const priority of priorities) {
-          const countA = a.counts?.[priority] ?? 0;
-          const countB = b.counts?.[priority] ?? 0;
-          if (countA !== countB) {
-            compareValue = countB - countA;
-            break;
-          }
-        }
-      }
-
-      return compareValue * order;
-    });
-  });
+  readonly sortedProjects = computed(() =>
+    sortByFieldAndOrder(this.filteredProjects(), this.sortField(), this.sortOrder())
+  );
 
   readonly statusOptions = computed(() => {
     return this.dashboardUtils.statusOptions();

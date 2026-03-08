@@ -27,7 +27,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ScanProgressBarComponent } from '../../shared/components/scan-progress-bar/scan-progress-bar.component';
 import { SortEvent } from 'primeng/api';
-import { DialogModule } from 'primeng/dialog';
+import { PiiHelpDialogComponent } from '../../shared/components/pii-help-dialog/pii-help-dialog.component';
 import { SeverityCardsComponent } from '../severity-cards/severity-cards.component';
 import { SeverityCounts } from '../../core/models/severity-counts';
 import { JiraConnectionConfigService } from '../../core/services/jira-connection-config.service';
@@ -55,7 +55,7 @@ import { JiraProjectsDashboardUtils } from './jira-projects-dashboard.utils';
     Ripple,
     TooltipModule,
     SkeletonModule,
-    DialogModule,
+    PiiHelpDialogComponent,
     TranslocoModule,
     ScanProgressBarComponent,
     SeverityCardsComponent

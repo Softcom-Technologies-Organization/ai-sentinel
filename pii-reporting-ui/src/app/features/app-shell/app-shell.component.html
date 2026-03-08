@@ -14,6 +14,7 @@
                 [rounded]="true"
                 [text]="true"
                 (click)="themeService.toggle()"
+                (keydown.enter)="themeService.toggle()"
                 [ariaLabel]="(themeService.isDark() ? 'dashboard.actions.lightMode' : 'dashboard.actions.darkMode') | transloco" />
       <p-button icon="pi pi-cog"
                 [label]="'dashboard.actions.settings' | transloco"

@@ -83,17 +83,14 @@ public class StreamDatabaseScanUseCase implements StreamDatabaseScanPort {
 
     private Mono<ContentScanResult> processContentItem(String scanId, String sourceId, ScannableContent content,
                                                        AtomicInteger processedCount, int total) {
-        return Mono.fromCallable(() -> {
-                    String text = content.getContentBody();
-                    if (text == null) text = "";
-                    return piiDetectorClient.analyzeContent(text);
-                })
+        String text = content.getContentBody() != null ? content.getContentBody() : "";
+        return Mono.fromCallable(() -> piiDetectorClient.analyzeContent(text))
                 .subscribeOn(Schedulers.boundedElastic())
                 .timeout(scanTimeOutConfig.getPiiDetection())
                 .map(detection -> {
                     int current = processedCount.incrementAndGet();
                     double progress = contentScanOrchestrator.calculateProgress(current, total);
-                    return contentScanOrchestrator.createContentItemEvent(scanId, sourceId, content, content.getContentBody(), detection, progress);
+                    return contentScanOrchestrator.createContentItemEvent(scanId, sourceId, content, text, detection, progress);
                 })
                 .onErrorResume(e -> {
                     int current = processedCount.incrementAndGet();

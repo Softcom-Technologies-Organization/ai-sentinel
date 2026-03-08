@@ -189,6 +189,10 @@ public abstract class AbstractJiraHttpClientAdapter implements JiraClient {
             var merged = new ArrayList<>(accumulated);
             merged.addAll(batch);
 
+            if (merged.size() > config.maxIssues()) {
+                return CompletableFuture.completedFuture(merged.subList(0, config.maxIssues()));
+            }
+
             var total = root.has(FIELD_NAME_TOTAL) ? root.get(FIELD_NAME_TOTAL).asInt() : 0;
             if (merged.size() < total && merged.size() < config.maxIssues()) {
                 return collectAllIssuesRecursively(jql, startAt + issues.size(), merged);

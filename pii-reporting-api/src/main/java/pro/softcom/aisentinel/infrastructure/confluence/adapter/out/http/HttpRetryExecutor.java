@@ -39,7 +39,14 @@ public class HttpRetryExecutor {
 
     private <T> CompletableFuture<HttpResponse<T>> executeRequestWithRetry(HttpRequest request, HttpResponse.BodyHandler<T> bodyHandler, int retriesLeft) {
         return httpClient.sendAsync(request, bodyHandler)
-            .thenCompose(response -> retryIfNeeded(response, request, bodyHandler, retriesLeft));
+            .thenCompose(response -> retryIfNeeded(response, request, bodyHandler, retriesLeft))
+            .exceptionallyCompose(ex -> {
+                if (retriesLeft > 0) {
+                    log.warn("Network error, retrying ({} left): {}", retriesLeft, ex.getMessage());
+                    return retryAfterDelay(request, bodyHandler, retriesLeft);
+                }
+                return CompletableFuture.failedFuture(ex);
+            });
     }
 
     private <T> CompletableFuture<HttpResponse<T>> retryIfNeeded(

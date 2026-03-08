@@ -42,9 +42,8 @@ public class JiraConnectionConfigPersistenceAdapter implements JiraConnectionCon
             throw new IllegalArgumentException("Configuration cannot be null");
         }
 
-        log.info("Saving Jira connection configuration: baseUrl={}, email={}, " +
+        log.info("Saving Jira connection configuration: " +
                         "connectTimeout={}, readTimeout={}, maxRetries={}, issuesLimit={}, maxIssues={}, updatedBy={}",
-                settings.baseUrl(), settings.email(),
                 settings.connectTimeout(), settings.readTimeout(),
                 settings.maxRetries(), settings.issuesLimit(), settings.maxIssues(),
                 settings.updatedBy());

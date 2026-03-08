@@ -192,9 +192,7 @@ export class ConfluenceDashboardComponent implements OnInit, OnDestroy {
       takeUntilDestroyed(this.destroyRef)
     ).subscribe(() => {
       this.confluenceConfigMissing.set(false);
-      if (this.spaces().length === 0) {
-        this.initializeDataLoading();
-      }
+      this.initializeDataLoading();
     });
   }
 

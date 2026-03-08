@@ -371,6 +371,7 @@ class PresidioDetector:
 
         try:
             nlp_engine, supported_langs = self._build_nlp_engine()
+            self._languages = supported_langs
 
             self._analyzer = AnalyzerEngine(
                 nlp_engine=nlp_engine,

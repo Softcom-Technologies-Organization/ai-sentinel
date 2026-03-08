@@ -142,7 +142,9 @@ export class JiraDashboardComponent implements OnInit, OnDestroy {
           this.dataManagement.isProjectsLoading.set(false);
           return;
         }
-        this.dataManagement.fetchProjects().subscribe();
+        this.dataManagement.fetchProjects().subscribe({
+          error: (err) => console.error('Failed to fetch Jira projects', err)
+        });
       },
       error: () => {
         this.jiraConfigMissing.set(true);
@@ -154,9 +156,9 @@ export class JiraDashboardComponent implements OnInit, OnDestroy {
       takeUntilDestroyed(this.destroyRef)
     ).subscribe(() => {
       this.jiraConfigMissing.set(false);
-      if (this.projects().length === 0) {
-        this.dataManagement.fetchProjects().subscribe();
-      }
+      this.dataManagement.fetchProjects().subscribe({
+        error: (err) => console.error('Failed to fetch Jira projects after config save', err)
+      });
     });
   }
 

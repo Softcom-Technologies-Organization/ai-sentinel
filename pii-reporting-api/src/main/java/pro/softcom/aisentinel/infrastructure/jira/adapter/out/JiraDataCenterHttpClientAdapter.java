@@ -209,15 +209,26 @@ public class JiraDataCenterHttpClientAdapter extends AbstractJiraHttpClientAdapt
             log.error("Cannot validate attachment URL: base URL not configured");
             return false;
         }
-        var expectedHost = URI.create(config.baseUrl()).getHost();
+        var expectedUri = URI.create(config.baseUrl());
+        var expectedHost = expectedUri.getHost();
         if (expectedHost == null) {
             log.error("Cannot validate attachment URL: unable to parse host from base URL");
             return false;
         }
         var contentUri = URI.create(contentUrl);
+        if (!contentUri.getScheme().equalsIgnoreCase(expectedUri.getScheme())) {
+            log.error("Attachment content URL scheme mismatch: expected {}, got {}",
+                expectedUri.getScheme(), contentUri.getScheme());
+            return false;
+        }
         if (!contentUri.getHost().equalsIgnoreCase(expectedHost)) {
             log.error("Attachment content URL host mismatch: expected {}, got {}",
                 expectedHost, contentUri.getHost());
+            return false;
+        }
+        if (contentUri.getPort() != expectedUri.getPort()) {
+            log.error("Attachment content URL port mismatch: expected {}, got {}",
+                expectedUri.getPort(), contentUri.getPort());
             return false;
         }
         return true;

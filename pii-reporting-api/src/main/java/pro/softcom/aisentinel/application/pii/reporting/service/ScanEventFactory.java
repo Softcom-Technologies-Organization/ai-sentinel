@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -207,7 +208,7 @@ public class ScanEventFactory {
             .eventType(DetectionReportingEventType.ERROR.getLabel())
             .contentId(contentId)
             .message(errorMessage)
-            .contentUrl(buildConfluencePageUrl(contentId))
+            .contentUrl(resolveErrorContentUrl(contentId))
             .emittedAt(Instant.now().toString())
             .analysisProgressPercentage(progress)
             .scanStatus(ScanStatus.FAILED)
@@ -387,6 +388,18 @@ public class ScanEventFactory {
             return buildJiraIssueUrl(jiraIssue.key());
         }
         return null;
+    }
+
+    private static final Pattern JIRA_ISSUE_KEY_PATTERN = Pattern.compile("[A-Z][A-Z0-9_]+-\\d+");
+
+    private String resolveErrorContentUrl(String contentId) {
+        if (contentId == null) {
+            return null;
+        }
+        if (JIRA_ISSUE_KEY_PATTERN.matcher(contentId).matches()) {
+            return buildJiraIssueUrl(contentId);
+        }
+        return buildConfluencePageUrl(contentId);
     }
 
     private String buildConfluencePageUrl(String contentId) {

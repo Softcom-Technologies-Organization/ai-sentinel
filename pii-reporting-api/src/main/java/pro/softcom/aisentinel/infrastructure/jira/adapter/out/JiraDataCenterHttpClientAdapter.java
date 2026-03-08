@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.regex.Pattern;
 
 /**
  * HTTP Adapter for Jira Server/Data Center REST API v2.
@@ -41,14 +40,18 @@ public class JiraDataCenterHttpClientAdapter extends AbstractJiraHttpClientAdapt
     private static final String BEARER_AUTH_PREFIX = "Bearer ";
     private static final DateTimeFormatter JIRA_DC_DATE_PARSER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-    private static final Pattern ISSUE_KEY_PATTERN = Pattern.compile("[A-Z][A-Z0-9_]+-\\d+");
     private static final int MAX_COMMENTS_PER_ISSUE = 500;
 
     private final ExecutorService httpExecutor;
 
     public JiraDataCenterHttpClientAdapter(JiraConnectionConfig config, ObjectMapper objectMapper) {
-        super(config, objectMapper, buildRetryExecutor(config));
-        this.httpExecutor = Executors.newVirtualThreadPerTaskExecutor();
+        this(config, objectMapper, Executors.newVirtualThreadPerTaskExecutor());
+    }
+
+    private JiraDataCenterHttpClientAdapter(JiraConnectionConfig config, ObjectMapper objectMapper,
+                                            ExecutorService sharedExecutor) {
+        super(config, objectMapper, buildRetryExecutor(config, sharedExecutor));
+        this.httpExecutor = sharedExecutor;
     }
 
     JiraDataCenterHttpClientAdapter(JiraConnectionConfig config, ObjectMapper objectMapper,
@@ -57,8 +60,7 @@ public class JiraDataCenterHttpClientAdapter extends AbstractJiraHttpClientAdapt
         this.httpExecutor = null;
     }
 
-    private static HttpRetryExecutor buildRetryExecutor(JiraConnectionConfig config) {
-        var executor = Executors.newVirtualThreadPerTaskExecutor();
+    private static HttpRetryExecutor buildRetryExecutor(JiraConnectionConfig config, ExecutorService executor) {
         var client = buildHttpClient(config, executor);
         return new HttpRetryExecutor(client, config.maxRetries());
     }
@@ -138,21 +140,6 @@ public class JiraDataCenterHttpClientAdapter extends AbstractJiraHttpClientAdapt
         } catch (Exception e) {
             log.error("Error parsing projects response", e);
             return List.of();
-        }
-    }
-
-    // --- DC-specific: issue key validation on getAllComments ---
-
-    @Override
-    public CompletableFuture<List<JiraComment>> getAllComments(String issueKey) {
-        validateIssueKey(issueKey);
-        log.info("Retrieving all comments for issue: {}", issueKey);
-        return collectAllCommentsRecursively(issueKey, 0, new ArrayList<>());
-    }
-
-    private static void validateIssueKey(String issueKey) {
-        if (issueKey == null || !ISSUE_KEY_PATTERN.matcher(issueKey).matches()) {
-            throw new IllegalArgumentException("Invalid Jira issue key: " + issueKey);
         }
     }
 

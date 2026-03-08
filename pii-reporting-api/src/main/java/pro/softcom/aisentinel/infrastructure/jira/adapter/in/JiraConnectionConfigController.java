@@ -18,7 +18,6 @@ import pro.softcom.aisentinel.infrastructure.jira.adapter.in.dto.TestJiraConnect
 import pro.softcom.aisentinel.infrastructure.jira.adapter.in.dto.UpdateJiraConnectionConfigRequestDto;
 
 import java.security.Principal;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * REST API endpoint for managing Jira connection configuration.
@@ -41,96 +40,89 @@ public class JiraConnectionConfigController {
 
     @GetMapping
     @Operation(summary = "Get current Jira connection configuration")
-    public CompletableFuture<ResponseEntity<@NonNull JiraConnectionConfigResponseDto>> getConfig() {
+    public ResponseEntity<@NonNull JiraConnectionConfigResponseDto> getConfig() {
         log.debug("GET /api/v1/jira/connection-config - Retrieving current configuration");
 
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                JiraConnectionSettings settings = manageJiraConnectionPort.getConnectionSettings();
-                JiraConnectionConfigResponseDto response = toResponseDto(settings);
+        try {
+            JiraConnectionSettings settings = manageJiraConnectionPort.getConnectionSettings();
+            JiraConnectionConfigResponseDto response = toResponseDto(settings);
 
-                log.debug("Configuration retrieved successfully");
-                return ResponseEntity.ok(response);
+            log.debug("Configuration retrieved successfully");
+            return ResponseEntity.ok(response);
 
-            } catch (Exception ex) {
-                log.error("Failed to retrieve Jira connection configuration: {}", ex.getMessage(), ex);
-                return ResponseEntity.internalServerError().<JiraConnectionConfigResponseDto>build();
-            }
-        });
+        } catch (Exception ex) {
+            log.error("Failed to retrieve Jira connection configuration: {}", ex.getMessage(), ex);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PutMapping
     @Operation(summary = "Update Jira connection configuration")
-    public CompletableFuture<ResponseEntity<@NonNull JiraConnectionConfigResponseDto>> updateConfig(
+    public ResponseEntity<@NonNull JiraConnectionConfigResponseDto> updateConfig(
             @Valid @RequestBody UpdateJiraConnectionConfigRequestDto request,
             Principal principal) {
 
         String updatedBy = principal != null ? principal.getName() : SYSTEM_USER;
-        log.info("PUT /api/v1/jira/connection-config - Updating configuration: baseUrl={}, email={}, updatedBy={}",
-                request.baseUrl(), request.email(), updatedBy);
+        log.info("PUT /api/v1/jira/connection-config - Updating configuration by user: {}", updatedBy);
 
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                UpdateJiraConnectionCommand command = new UpdateJiraConnectionCommand(
-                        request.baseUrl(),
-                        request.email(),
-                        request.apiToken(),
-                        request.connectTimeout(),
-                        request.readTimeout(),
-                        request.maxRetries(),
-                        request.issuesLimit(),
-                        request.maxIssues(),
-                        request.deploymentType(),
-                        updatedBy
-                );
+        try {
+            UpdateJiraConnectionCommand command = new UpdateJiraConnectionCommand(
+                    request.baseUrl(),
+                    request.email(),
+                    request.apiToken(),
+                    request.connectTimeout(),
+                    request.readTimeout(),
+                    request.maxRetries(),
+                    request.issuesLimit(),
+                    request.maxIssues(),
+                    request.deploymentType(),
+                    updatedBy
+            );
 
-                JiraConnectionSettings updatedSettings = manageJiraConnectionPort.updateConnectionSettings(command);
-                JiraConnectionConfigResponseDto response = toResponseDto(updatedSettings);
+            JiraConnectionSettings updatedSettings = manageJiraConnectionPort.updateConnectionSettings(command);
+            JiraConnectionConfigResponseDto response = toResponseDto(updatedSettings);
 
-                log.info("Configuration updated successfully by user: {}", updatedBy);
-                return ResponseEntity.ok(response);
+            log.info("Configuration updated successfully by user: {}", updatedBy);
+            return ResponseEntity.ok(response);
 
-            } catch (IllegalArgumentException ex) {
-                log.warn("Invalid configuration request: {}", ex.getMessage());
-                return ResponseEntity.badRequest().<JiraConnectionConfigResponseDto>build();
+        } catch (IllegalArgumentException ex) {
+            log.warn("Invalid configuration request: {}", ex.getMessage());
+            return ResponseEntity.badRequest().build();
 
-            } catch (Exception ex) {
-                log.error("Failed to update Jira connection configuration: {}", ex.getMessage(), ex);
-                return ResponseEntity.internalServerError().<JiraConnectionConfigResponseDto>build();
-            }
-        });
+        } catch (Exception ex) {
+            log.error("Failed to update Jira connection configuration: {}", ex.getMessage(), ex);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PostMapping("/test")
     @Operation(summary = "Test Jira connection")
     @ResponseStatus(HttpStatus.OK)
-    public CompletableFuture<ResponseEntity<@NonNull ConnectionTestResultDto>> testConnection(
+    public ResponseEntity<@NonNull ConnectionTestResultDto> testConnection(
             @Valid @RequestBody TestJiraConnectionRequestDto request) {
 
-        log.info("POST /api/v1/jira/connection-config/test - Testing connection to: {}", request.baseUrl());
+        log.info("POST /api/v1/jira/connection-config/test - Testing connection");
 
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                TestJiraConnectionCommand command = new TestJiraConnectionCommand(
-                        request.baseUrl(),
-                        request.email(),
-                        request.apiToken(),
-                        request.deploymentType()
-                );
+        try {
+            TestJiraConnectionCommand command = new TestJiraConnectionCommand(
+                    request.baseUrl(),
+                    request.email(),
+                    request.apiToken(),
+                    request.deploymentType()
+            );
 
-                boolean success = manageJiraConnectionPort.testConnection(command);
-                String message = success
-                        ? "Connection to Jira established successfully"
-                        : "Failed to connect to Jira";
+            boolean success = manageJiraConnectionPort.testConnection(command);
+            String message = success
+                    ? "Connection to Jira established successfully"
+                    : "Failed to connect to Jira";
 
-                return ResponseEntity.ok(new ConnectionTestResultDto(success, message));
+            return ResponseEntity.ok(new ConnectionTestResultDto(success, message));
 
-            } catch (Exception ex) {
-                log.error("Connection test failed: {}", ex.getMessage(), ex);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(new ConnectionTestResultDto(false, "Connection test failed: " + ex.getMessage()));
-            }
-        });
+        } catch (Exception ex) {
+            log.error("Connection test failed: {}", ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ConnectionTestResultDto(false, "Connection test failed: " + ex.getMessage()));
+        }
     }
 
     private JiraConnectionConfigResponseDto toResponseDto(JiraConnectionSettings settings) {

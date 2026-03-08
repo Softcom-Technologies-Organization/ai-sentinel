@@ -57,42 +57,15 @@
           </p-toggleButton>
         </div>
         <div class="caption-right">
-          <output class="scan-status-badge"
-                  [class.scanning]="isStreaming()"
-                  [class.inactive]="!isStreaming()"
-                  [attr.aria-live]="isStreaming() ? 'polite' : 'off'"
-                  [attr.aria-label]="(isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco">
-            {{ (isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco }}
-          </output>
-          <div class="scan-actions-group">
-            <p-button type="button"
-                      icon="pi pi-play"
-                      (click)="selectedSpacesCount() > 0 ? startSelected() : startAll()"
-                      (keydown.enter)="selectedSpacesCount() > 0 ? startSelected() : startAll()"
-                      [disabled]="!canStartScan()"
-                      [pTooltip]="(selectedSpacesCount() > 0 ? ('dashboard.actions.scanSelected' | transloco: { count: selectedSpacesCount() }) : ('dashboard.actions.startScan' | transloco))"
-                      tooltipPosition="bottom"
-                      [ariaLabel]="(selectedSpacesCount() > 0 ? ('dashboard.actions.scanSelected' | transloco: { count: selectedSpacesCount() }) : ('dashboard.actions.startScan' | transloco))"
-                      [attr.data-testid]="testIds.buttons.startScan" />
-            <p-button type="button"
-                      icon="pi pi-pause"
-                      (click)="pauseScan()"
-                      (keydown.enter)="pauseScan()"
-                      [disabled]="!isStreaming()"
-                      [pTooltip]="'dashboard.actions.pauseScan' | transloco"
-                      tooltipPosition="bottom"
-                      [ariaLabel]="'dashboard.actions.pauseScan' | transloco"
-                      [attr.data-testid]="testIds.buttons.pauseScan" />
-            <p-button type="button"
-                      icon="pi pi-forward"
-                      (click)="resumeLastScan()"
-                      (keydown.enter)="resumeLastScan()"
-                      [disabled]="!canResumeScan()"
-                      [pTooltip]="'dashboard.actions.resumeScan' | transloco"
-                      tooltipPosition="bottom"
-                      [ariaLabel]="'dashboard.actions.resumeScan' | transloco"
-                      [attr.data-testid]="testIds.buttons.resumeScan" />
-          </div>
+          <app-scan-controls
+            [isStreaming]="isStreaming()"
+            [canStartScan]="canStartScan()"
+            [canResumeScan]="canResumeScan()"
+            [selectedCount]="selectedSpacesCount()"
+            (startAll)="startAll()"
+            (startSelected)="startSelected()"
+            (pauseScan)="pauseScan()"
+            (resumeScan)="resumeLastScan()" />
         </div>
       </div>
     </ng-template>

@@ -296,7 +296,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration combine.self="override">
-                            <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+                            <argLine>@{argLine} --enable-preview -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
                             <includes>
                                 <include>**/Test*.java</include>
                                 <include>**/*Test.java</include>
@@ -325,7 +325,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                          <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+                          <argLine>@{argLine} --enable-preview -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
                             <excludes>
                                 <exclude>**/integration/*.java</exclude>
                             </excludes>
@@ -347,7 +347,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                          <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+                          <argLine>@{argLine} --enable-preview -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
                             <excludes>
                                 <exclude>**/integration/*.java</exclude>
                             </excludes>
@@ -617,7 +617,7 @@
                         <exclude>**/integration/*.java</exclude>
                     </excludes>
                     <!-- Enable dynamic agent loading for Mockito with Java 25 -->
-                  <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+                  <argLine>@{argLine} --enable-preview -XX:+EnableDynamicAgentLoading -XX:+IgnoreUnrecognizedVMOptions --add-opens java.base/sun.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
                 </configuration>
             </plugin>
             <plugin>

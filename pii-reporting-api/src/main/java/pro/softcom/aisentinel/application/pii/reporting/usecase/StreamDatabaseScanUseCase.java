@@ -9,7 +9,6 @@ import pro.softcom.aisentinel.application.pii.scan.port.out.LoadContentPort;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.pii.export.SourceType;
 import pro.softcom.aisentinel.domain.pii.reporting.ContentScanResult;
-import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.model.ScanSourceConfig;
 import pro.softcom.aisentinel.domain.pii.scan.model.ScannableContent;
 import reactor.core.publisher.Flux;

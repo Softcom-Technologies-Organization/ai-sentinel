@@ -51,31 +51,15 @@
           </div>
         </div>
         <div class="caption-right">
-          <output class="scan-status-badge"
-                  [class.scanning]="isStreaming()"
-                  [class.inactive]="!isStreaming()"
-                  [attr.aria-live]="isStreaming() ? 'polite' : 'off'"
-                  [attr.aria-label]="(isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco">
-            {{ (isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco }}
-          </output>
-          <div class="scan-actions-group">
-            <p-button type="button"
-                      icon="pi pi-play"
-                      (click)="selectedProjectsCount() > 0 ? startSelected() : startAll()"
-                      (keydown.enter)="selectedProjectsCount() > 0 ? startSelected() : startAll()"
-                      [disabled]="!canStartScan()"
-                      [pTooltip]="(selectedProjectsCount() > 0 ? ('dashboard.actions.scanSelected' | transloco: { count: selectedProjectsCount() }) : ('dashboard.actions.startScan' | transloco))"
-                      tooltipPosition="bottom"
-                      [ariaLabel]="(selectedProjectsCount() > 0 ? ('dashboard.actions.scanSelected' | transloco: { count: selectedProjectsCount() }) : ('dashboard.actions.startScan' | transloco))" />
-            <p-button type="button"
-                      icon="pi pi-pause"
-                      (click)="pauseScan()"
-                      (keydown.enter)="pauseScan()"
-                      [disabled]="!isStreaming()"
-                      [pTooltip]="'dashboard.actions.pauseScan' | transloco"
-                      tooltipPosition="bottom"
-                      [ariaLabel]="'dashboard.actions.pauseScan' | transloco" />
-          </div>
+          <app-scan-controls
+            [isStreaming]="isStreaming()"
+            [canStartScan]="canStartScan()"
+            [canResumeScan]="canResumeScan()"
+            [selectedCount]="selectedProjectsCount()"
+            (startAll)="startAll()"
+            (startSelected)="startSelected()"
+            (pauseScan)="pauseScan()"
+            (resumeScan)="resumeLastScan()" />
         </div>
       </div>
     </ng-template>
@@ -169,7 +153,8 @@
         </td>
         <td class="col-status">
           <p-tag [value]="statusLabel(project.status)"
-                 [severity]="statusStyle(project.status)"></p-tag>
+                 [severity]="statusStyle(project.status)"
+                 [styleClass]="'status-tag ' + (statusStyleClass(project.status) || '')"></p-tag>
         </td>
         <td class="col-progress">
           <app-scan-progress-bar [spaceKey]="project.key" [status]="project.status"></app-scan-progress-bar>

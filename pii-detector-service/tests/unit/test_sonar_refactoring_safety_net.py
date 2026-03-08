@@ -599,9 +599,8 @@ class TestPresidioLoadModel:
 
         with patch.dict("sys.modules", {"spacy": mock_spacy}), \
              patch(
-                 "pii_detector.infrastructure.detector.presidio_detector.SpacyNlpEngine",
+                 "presidio_analyzer.nlp_engine.SpacyNlpEngine",
                  mock_spacy_nlp_engine,
-                 create=True,
              ), \
              patch(
                  "pii_detector.infrastructure.detector.presidio_detector.AnalyzerEngine"
@@ -688,9 +687,8 @@ class TestPresidioLoadModel:
 
         with patch.dict("sys.modules", {"spacy": mock_spacy}), \
              patch(
-                 "pii_detector.infrastructure.detector.presidio_detector.SpacyNlpEngine",
+                 "presidio_analyzer.nlp_engine.SpacyNlpEngine",
                  mock_spacy_nlp_engine,
-                 create=True,
              ), \
              patch(
                  "pii_detector.infrastructure.detector.presidio_detector.AnalyzerEngine"
@@ -880,7 +878,7 @@ class TestPresidioConvertAndFilterResults:
         ]
         entities = detector._convert_and_filter_results(text, results)
         # Score should be original Presidio score, not overridden
-        assert entities[0].score == 0.95
+        assert abs(entities[0].score - 0.95) < 1e-9
 
 
 # ===========================================================================

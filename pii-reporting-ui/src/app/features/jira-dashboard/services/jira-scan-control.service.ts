@@ -189,6 +189,55 @@ export class JiraScanControlService {
     this.isStreaming.set(false);
   }
 
+  resumeLastScan(): void {
+    const meta = this.dataManagement.lastScanMeta();
+    if (!meta || this.isStreaming() || this.isResuming()) {
+      return;
+    }
+
+    this.isResuming.set(true);
+    this.uiStateService.append(
+      this.translocoService.translate('dashboard.logs.resumeRequest', {
+        scanId: meta.scanId
+      })
+    );
+
+    this.sentinelleApiService.resumeScan(meta.scanId).subscribe({
+      next: () => {
+        this.isResuming.set(false);
+        this.uiStateService.append(
+          this.translocoService.translate('dashboard.logs.resumeAccepted')
+        );
+
+        this.isStreaming.set(true);
+        this.sseSubscription = this.sentinelleApiService.startAllJiraProjectsStream(meta.scanId).subscribe({
+          next: (ev) => {
+            this.sseEventHandler.routeStreamEvent(ev.type as StreamEventType, ev.data);
+          },
+          complete: () => {
+            this.isStreaming.set(false);
+          },
+          error: (err) => {
+            this.uiStateService.append(
+              this.translocoService.translate('dashboard.logs.sseError', {
+                error: err?.message ?? err
+              })
+            );
+            this.isStreaming.set(false);
+          }
+        });
+      },
+      error: (e) => {
+        this.isResuming.set(false);
+        this.uiStateService.append(
+          this.translocoService.translate('dashboard.logs.resumeError', {
+            error: e?.message ?? e
+          })
+        );
+      }
+    });
+  }
+
   reset(): void {
     this.disconnectSse();
     this.isResuming.set(false);

@@ -28,6 +28,7 @@ import { Ripple } from 'primeng/ripple';
 import { TooltipModule } from 'primeng/tooltip';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ScanProgressBarComponent } from '../../shared/components/scan-progress-bar/scan-progress-bar.component';
+import { ScanControlsComponent } from '../../shared/components/scan-controls/scan-controls.component';
 import { SortEvent } from 'primeng/api';
 import { TestIds } from '../test-ids.constants';
 import { PiiHelpDialogComponent } from '../../shared/components/pii-help-dialog/pii-help-dialog.component';
@@ -73,6 +74,7 @@ import { SeverityCounts } from '../../core/models/severity-counts';
         NewSpacesBannerComponent,
         ConfluenceConfigBannerComponent,
         ScanProgressBarComponent,
+        ScanControlsComponent,
         SeverityCardsComponent
     ],
   templateUrl: './confluence-dashboard.component.html',

@@ -1,5 +1,6 @@
 package pro.softcom.aisentinel.infrastructure.jira.adapter.in;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,20 +40,21 @@ class JiraConnectionConfigControllerTest {
 
     @Test
     @DisplayName("Should_ReturnConfig_When_GetConfigSucceeds")
-    void Should_ReturnConfig_When_GetConfigSucceeds() throws Exception {
+    void Should_ReturnConfig_When_GetConfigSucceeds() {
         // Arrange
         JiraConnectionSettings settings = createSettings();
         when(manageJiraConnectionPort.getConnectionSettings()).thenReturn(settings);
         when(manageJiraConnectionPort.isConfigured()).thenReturn(true);
 
         // Act
-        ResponseEntity<JiraConnectionConfigResponseDto> response = controller.getConfig().get();
+        ResponseEntity<JiraConnectionConfigResponseDto> response = controller.getConfig();
 
         // Assert
         assertSoftly(softly -> {
             softly.assertThat(response.getStatusCode().value()).isEqualTo(200);
             JiraConnectionConfigResponseDto body = response.getBody();
             softly.assertThat(body).isNotNull();
+            Assertions.assertNotNull(body);
             softly.assertThat(body.baseUrl()).isEqualTo("https://test.atlassian.net");
             softly.assertThat(body.email()).isEqualTo("user@test.com");
             softly.assertThat(body.apiToken()).isEqualTo("***");
@@ -64,12 +66,12 @@ class JiraConnectionConfigControllerTest {
 
     @Test
     @DisplayName("Should_Return500_When_GetConfigThrows")
-    void Should_Return500_When_GetConfigThrows() throws Exception {
+    void Should_Return500_When_GetConfigThrows() {
         // Arrange
         when(manageJiraConnectionPort.getConnectionSettings()).thenThrow(new RuntimeException("DB error"));
 
         // Act
-        ResponseEntity<JiraConnectionConfigResponseDto> response = controller.getConfig().get();
+        ResponseEntity<JiraConnectionConfigResponseDto> response = controller.getConfig();
 
         // Assert
         assertThat(response.getStatusCode().value()).isEqualTo(500);
@@ -79,7 +81,7 @@ class JiraConnectionConfigControllerTest {
 
     @Test
     @DisplayName("Should_ReturnUpdatedConfig_When_UpdateSucceeds")
-    void Should_ReturnUpdatedConfig_When_UpdateSucceeds() throws Exception {
+    void Should_ReturnUpdatedConfig_When_UpdateSucceeds() {
         // Arrange
         JiraConnectionSettings updatedSettings = createSettings();
         when(manageJiraConnectionPort.updateConnectionSettings(any())).thenReturn(updatedSettings);
@@ -91,19 +93,20 @@ class JiraConnectionConfigControllerTest {
         );
 
         // Act
-        ResponseEntity<JiraConnectionConfigResponseDto> response = controller.updateConfig(request, null).get();
+        ResponseEntity<JiraConnectionConfigResponseDto> response = controller.updateConfig(request, null);
 
         // Assert
         assertSoftly(softly -> {
             softly.assertThat(response.getStatusCode().value()).isEqualTo(200);
             softly.assertThat(response.getBody()).isNotNull();
+            Assertions.assertNotNull(response.getBody());
             softly.assertThat(response.getBody().baseUrl()).isEqualTo("https://test.atlassian.net");
         });
     }
 
     @Test
     @DisplayName("Should_Return400_When_UpdateWithInvalidData")
-    void Should_Return400_When_UpdateWithInvalidData() throws Exception {
+    void Should_Return400_When_UpdateWithInvalidData() {
         // Arrange
         when(manageJiraConnectionPort.updateConnectionSettings(any()))
                 .thenThrow(new IllegalArgumentException("Invalid baseUrl"));
@@ -114,7 +117,7 @@ class JiraConnectionConfigControllerTest {
         );
 
         // Act
-        ResponseEntity<JiraConnectionConfigResponseDto> response = controller.updateConfig(request, null).get();
+        ResponseEntity<JiraConnectionConfigResponseDto> response = controller.updateConfig(request, null);
 
         // Assert
         assertThat(response.getStatusCode().value()).isEqualTo(400);
@@ -124,7 +127,7 @@ class JiraConnectionConfigControllerTest {
 
     @Test
     @DisplayName("Should_ReturnSuccess_When_TestConnectionSucceeds")
-    void Should_ReturnSuccess_When_TestConnectionSucceeds() throws Exception {
+    void Should_ReturnSuccess_When_TestConnectionSucceeds() {
         // Arrange
         when(manageJiraConnectionPort.testConnection(any())).thenReturn(true);
 
@@ -134,12 +137,13 @@ class JiraConnectionConfigControllerTest {
 
         // Act
         ResponseEntity<JiraConnectionConfigController.ConnectionTestResultDto> response =
-                controller.testConnection(request).get();
+                controller.testConnection(request);
 
         // Assert
         assertSoftly(softly -> {
             softly.assertThat(response.getStatusCode().value()).isEqualTo(200);
             softly.assertThat(response.getBody()).isNotNull();
+            Assertions.assertNotNull(response.getBody());
             softly.assertThat(response.getBody().success()).isTrue();
             softly.assertThat(response.getBody().message()).contains("successfully");
         });
@@ -147,7 +151,7 @@ class JiraConnectionConfigControllerTest {
 
     @Test
     @DisplayName("Should_ReturnFailure_When_TestConnectionFails")
-    void Should_ReturnFailure_When_TestConnectionFails() throws Exception {
+    void Should_ReturnFailure_When_TestConnectionFails() {
         // Arrange
         when(manageJiraConnectionPort.testConnection(any())).thenReturn(false);
 
@@ -157,12 +161,13 @@ class JiraConnectionConfigControllerTest {
 
         // Act
         ResponseEntity<JiraConnectionConfigController.ConnectionTestResultDto> response =
-                controller.testConnection(request).get();
+                controller.testConnection(request);
 
         // Assert
         assertSoftly(softly -> {
             softly.assertThat(response.getStatusCode().value()).isEqualTo(200);
             softly.assertThat(response.getBody()).isNotNull();
+            Assertions.assertNotNull(response.getBody());
             softly.assertThat(response.getBody().success()).isFalse();
             softly.assertThat(response.getBody().message()).contains("Failed");
         });
@@ -170,7 +175,7 @@ class JiraConnectionConfigControllerTest {
 
     @Test
     @DisplayName("Should_Return500_When_TestConnectionThrows")
-    void Should_Return500_When_TestConnectionThrows() throws Exception {
+    void Should_Return500_When_TestConnectionThrows() {
         // Arrange
         when(manageJiraConnectionPort.testConnection(any())).thenThrow(new RuntimeException("Connection refused"));
 
@@ -180,7 +185,7 @@ class JiraConnectionConfigControllerTest {
 
         // Act
         ResponseEntity<JiraConnectionConfigController.ConnectionTestResultDto> response =
-                controller.testConnection(request).get();
+                controller.testConnection(request);
 
         // Assert
         assertSoftly(softly -> {

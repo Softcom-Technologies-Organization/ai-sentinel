@@ -1,0 +1,33 @@
+<output class="scan-status-badge"
+        [class.scanning]="isStreaming()"
+        [class.inactive]="!isStreaming()"
+        [attr.aria-live]="isStreaming() ? 'polite' : 'off'"
+        [attr.aria-label]="(isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco">
+  {{ (isStreaming() ? 'dashboard.scanStatus.active' : 'dashboard.scanStatus.inactive') | transloco }}
+</output>
+<div class="scan-actions-group">
+  <p-button type="button"
+            icon="pi pi-play"
+            (click)="onPlayClick()"
+            (keydown.enter)="onPlayClick()"
+            [disabled]="!canStartScan()"
+            [pTooltip]="(selectedCount() > 0 ? ('dashboard.actions.scanSelected' | transloco: { count: selectedCount() }) : ('dashboard.actions.startScan' | transloco))"
+            tooltipPosition="bottom"
+            [ariaLabel]="(selectedCount() > 0 ? ('dashboard.actions.scanSelected' | transloco: { count: selectedCount() }) : ('dashboard.actions.startScan' | transloco))" />
+  <p-button type="button"
+            icon="pi pi-pause"
+            (click)="pauseScan.emit()"
+            (keydown.enter)="pauseScan.emit()"
+            [disabled]="!isStreaming()"
+            [pTooltip]="'dashboard.actions.pauseScan' | transloco"
+            tooltipPosition="bottom"
+            [ariaLabel]="'dashboard.actions.pauseScan' | transloco" />
+  <p-button type="button"
+            icon="pi pi-forward"
+            (click)="resumeScan.emit()"
+            (keydown.enter)="resumeScan.emit()"
+            [disabled]="!canResumeScan()"
+            [pTooltip]="'dashboard.actions.resumeScan' | transloco"
+            tooltipPosition="bottom"
+            [ariaLabel]="'dashboard.actions.resumeScan' | transloco" />
+</div>

@@ -124,10 +124,14 @@ public class StreamJiraScanUseCase implements StreamJiraScanPort {
                             .concatMap(issue -> {
                                 int currentIndex = index.incrementAndGet();
                                 ScanProgress progress = new ScanProgress(currentIndex, 0, total, total);
-                                return processIssue(scanId, project.key(), issue, progress);
-                            })
-                            .onErrorContinue((exception, ignoredElement) -> log.error(
-                                    "[JIRA-SCAN] Error processing issue: {}", exception.getMessage(), exception));
+                                return processIssue(scanId, project.key(), issue, progress)
+                                        .onErrorResume(exception -> {
+                                            log.error("[JIRA-SCAN] Error processing issue {}: {}",
+                                                    issue.key(), exception.getMessage(), exception);
+                                            return errorEvent(scanId, project.key(),
+                                                    "Error processing issue " + issue.key() + ": " + exception.getMessage());
+                                        });
+                            });
 
                     Flux<ContentScanResult> completeEvent = Flux.just(
                             contentScanOrchestrator.createCompleteEvent(scanId, project.key()));

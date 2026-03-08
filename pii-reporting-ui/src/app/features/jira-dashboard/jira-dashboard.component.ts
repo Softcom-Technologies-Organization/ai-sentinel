@@ -26,6 +26,7 @@ import { Ripple } from 'primeng/ripple';
 import { TooltipModule } from 'primeng/tooltip';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ScanProgressBarComponent } from '../../shared/components/scan-progress-bar/scan-progress-bar.component';
+import { ScanControlsComponent } from '../../shared/components/scan-controls/scan-controls.component';
 import { SortEvent } from 'primeng/api';
 import { PiiHelpDialogComponent } from '../../shared/components/pii-help-dialog/pii-help-dialog.component';
 import { SeverityCardsComponent } from '../severity-cards/severity-cards.component';
@@ -58,6 +59,7 @@ import { JiraProjectsDashboardUtils } from './jira-projects-dashboard.utils';
     PiiHelpDialogComponent,
     TranslocoModule,
     ScanProgressBarComponent,
+    ScanControlsComponent,
     SeverityCardsComponent
   ],
   templateUrl: './jira-dashboard.component.html',
@@ -175,6 +177,10 @@ export class JiraDashboardComponent implements OnInit, OnDestroy {
     this.scanControl.pauseScan();
   }
 
+  resumeLastScan(): void {
+    this.scanControl.resumeLastScan();
+  }
+
   onGlobalChange(value: string): void {
     this.filteringService.onGlobalChange(value);
   }
@@ -205,6 +211,10 @@ export class JiraDashboardComponent implements OnInit, OnDestroy {
 
   statusStyle(status?: string): 'danger' | 'warning' | 'success' | 'info' | 'secondary' {
     return this.uiStateService.statusStyle(status);
+  }
+
+  statusStyleClass(status?: string): string | undefined {
+    return this.uiStateService.statusStyleClass(status);
   }
 
   openJira(project: { url?: string }): void {

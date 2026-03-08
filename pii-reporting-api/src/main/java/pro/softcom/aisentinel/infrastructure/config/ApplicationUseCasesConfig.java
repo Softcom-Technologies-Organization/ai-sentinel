@@ -56,19 +56,20 @@ import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointReposi
 import pro.softcom.aisentinel.application.pii.security.PiiAccessAuditService;
 import pro.softcom.aisentinel.application.pii.security.ScanResultEncryptor;
 import pro.softcom.aisentinel.application.pii.security.port.out.SavePiiAuditPort;
-import pro.softcom.aisentinel.domain.pii.security.EncryptionService;
 import pro.softcom.aisentinel.domain.pii.export.SourceType;
+import pro.softcom.aisentinel.domain.pii.security.EncryptionService;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.config.ConfluenceConfigUpdatedEvent;
-
-import java.util.Map;
 import pro.softcom.aisentinel.infrastructure.jira.adapter.out.DelegatingJiraClient;
-import pro.softcom.aisentinel.infrastructure.pii.export.adapter.out.ConfluenceExportContextAdapter;
-import pro.softcom.aisentinel.infrastructure.pii.export.adapter.out.DelegatingExportContextAdapter;
-import pro.softcom.aisentinel.infrastructure.pii.export.adapter.out.JiraExportContextAdapter;
 import pro.softcom.aisentinel.infrastructure.jira.adapter.out.JiraCloudHttpClientAdapter;
 import pro.softcom.aisentinel.infrastructure.jira.adapter.out.JiraDataCenterHttpClientAdapter;
 import pro.softcom.aisentinel.infrastructure.jira.adapter.out.config.DatabaseBackedJiraConnectionConfig;
 import pro.softcom.aisentinel.infrastructure.jira.adapter.out.config.JiraConnectionConfig;
+import pro.softcom.aisentinel.infrastructure.pii.export.adapter.out.ConfluenceExportContextAdapter;
+import pro.softcom.aisentinel.infrastructure.pii.export.adapter.out.DatabaseExportContextAdapter;
+import pro.softcom.aisentinel.infrastructure.pii.export.adapter.out.DelegatingExportContextAdapter;
+import pro.softcom.aisentinel.infrastructure.pii.export.adapter.out.JiraExportContextAdapter;
+
+import java.util.Map;
 
 /**
  * Spring configuration that wires application use cases as beans from the infrastructure layer.
@@ -261,12 +262,19 @@ public class ApplicationUseCasesConfig {
     }
 
     @Bean
+    public DatabaseExportContextAdapter databaseExportContextAdapter() {
+        return new DatabaseExportContextAdapter();
+    }
+
+    @Bean
     public ReadExportContextPort readExportContextPort(
             ConfluenceExportContextAdapter confluenceAdapter,
-            JiraExportContextAdapter jiraAdapter) {
+            JiraExportContextAdapter jiraAdapter,
+            DatabaseExportContextAdapter databaseAdapter) {
         return new DelegatingExportContextAdapter(Map.of(
                 SourceType.CONFLUENCE, confluenceAdapter,
-                SourceType.JIRA, jiraAdapter
+                SourceType.JIRA, jiraAdapter,
+                SourceType.DATABASE, databaseAdapter
         ));
     }
 

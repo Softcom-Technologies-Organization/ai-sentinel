@@ -96,6 +96,12 @@ export class JiraDashboardUiStateService {
     return 'success';
   }
 
+  statusStyleClass(status?: string): string | undefined {
+    if (status === 'RUNNING') return 'status-running';
+    if (status === 'PAUSED') return 'status-paused';
+    return undefined;
+  }
+
   reset(): void {
     this.expandedRowKeys.set({});
     this.selectedProjectKey.set(null);

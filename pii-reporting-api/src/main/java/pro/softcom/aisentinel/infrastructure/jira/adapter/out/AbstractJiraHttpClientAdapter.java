@@ -44,6 +44,7 @@ public abstract class AbstractJiraHttpClientAdapter implements JiraClient {
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.of("UTC"));
 
     protected static final Pattern PROJECT_KEY_PATTERN = Pattern.compile("[A-Z][A-Z0-9_]+");
+    protected static final Pattern ISSUE_KEY_PATTERN = Pattern.compile("[A-Z][A-Z0-9_]+-\\d+");
 
     protected static final String ISSUE_FIELD_DESCRIPTION = "description";
     protected static final String ISSUE_FIELD_COMMENT = "comment";
@@ -120,12 +121,14 @@ public abstract class AbstractJiraHttpClientAdapter implements JiraClient {
 
     @Override
     public CompletableFuture<List<JiraComment>> getAllComments(String issueKey) {
+        validateIssueKey(issueKey);
         log.info("Retrieving all comments for issue: {}", issueKey);
         return collectAllCommentsRecursively(issueKey, 0, new ArrayList<>());
     }
 
     @Override
     public CompletableFuture<List<JiraAttachmentInfo>> getAttachments(String issueKey) {
+        validateIssueKey(issueKey);
         log.info("Retrieving attachments for issue: {}", issueKey);
         var jql = "key = " + issueKey;
         var body = buildSearchBody(jql, 0, 1, List.of(ISSUE_FIELD_ATTACHMENT));
@@ -140,6 +143,12 @@ public abstract class AbstractJiraHttpClientAdapter implements JiraClient {
     protected static void validateProjectKey(String projectKey) {
         if (projectKey == null || !PROJECT_KEY_PATTERN.matcher(projectKey).matches()) {
             throw new IllegalArgumentException("Invalid Jira project key: " + projectKey);
+        }
+    }
+
+    protected static void validateIssueKey(String issueKey) {
+        if (issueKey == null || !ISSUE_KEY_PATTERN.matcher(issueKey).matches()) {
+            throw new IllegalArgumentException("Invalid Jira issue key: " + issueKey);
         }
     }
 

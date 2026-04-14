@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import pro.softcom.aisentinel.domain.pii.reporting.PiiTyped;
 import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 
@@ -389,7 +390,6 @@ class SeverityCalculationServiceTest {
     /**
      * Simple test entity to represent a detected PII.
      */
-    private record PiiEntity(String piiType) {
-
+    private record PiiEntity(String piiType) implements PiiTyped {
     }
 }

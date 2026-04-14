@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 
+import pro.softcom.aisentinel.domain.pii.reporting.PiiTyped;
+
 import java.util.List;
 import java.util.Map;
 
@@ -250,19 +252,15 @@ public class SeverityCalculationService {
      * }</pre>
      * 
      * @param entities List of entities with PII type information
-     * @param <T> Entity type that implements a {@code piiType()} method (typically a record)
      * @return Aggregated severity counts. Returns {@link SeverityCounts#zero()} for empty list.
      */
-    public <T> SeverityCounts aggregateCounts(List<T> entities) {
+    public SeverityCounts aggregateCounts(List<? extends PiiTyped> entities) {
         int highCount = 0;
         int mediumCount = 0;
         int lowCount = 0;
 
-        for (T entity : entities) {
-            // Use reflection-free approach - assumes entity has piiType() method
-            // This works with records and any class with a piiType() getter
-            String piiType = extractPiiType(entity);
-            PersonallyIdentifiableInformationSeverity severity = calculateSeverity(piiType);
+        for (PiiTyped entity : entities) {
+            PersonallyIdentifiableInformationSeverity severity = calculateSeverity(entity.piiType());
 
             switch (severity) {
                 case HIGH -> highCount++;
@@ -294,26 +292,4 @@ public class SeverityCalculationService {
         return piiType.trim().toUpperCase();
     }
 
-    /**
-     * Extracts the PII type from an entity using its piiType() method.
-     * 
-     * <p>This method uses Java reflection to call the piiType() method on any entity type.
-     * It's designed to work with records and POJOs that follow the convention of having
-     * a {@code piiType()} accessor method.
-     * 
-     * @param entity The entity to extract the PII type from
-     * @param <T> Entity type
-     * @return The PII type string, or empty string if extraction fails
-     */
-    private <T> String extractPiiType(T entity) {
-        try {
-            // Use reflection to call piiType() method
-            var method = entity.getClass().getMethod("piiType");
-            Object result = method.invoke(entity);
-            return result != null ? result.toString() : "";
-        } catch (Exception _) {
-            // Fallback: try to use toString() or return empty string
-            return "";
-        }
-    }
 }

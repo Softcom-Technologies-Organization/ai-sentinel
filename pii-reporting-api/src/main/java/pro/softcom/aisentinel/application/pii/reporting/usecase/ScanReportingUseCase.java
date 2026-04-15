@@ -161,31 +161,27 @@ public class ScanReportingUseCase implements ScanReportingPort {
                 scanIds.add(cp.scanId());
             }
 
-            // 3) Load counters for these scanIds
-            Map<String, List<ScanResultQuery.SpaceCounter>> countersByScan = new HashMap<>();
+            // 3) Load counters for these scanIds, indexed scanId -> spaceKey -> counter
+            //    so step 4 can fetch the counter for a (scanId, spaceKey) pair in O(1)
+            //    instead of scanning the per-scan list for each checkpoint.
+            Map<String, Map<String, ScanResultQuery.SpaceCounter>> countersByScan = new HashMap<>();
             for (String scanId : scanIds) {
-                countersByScan.put(scanId, scanResultQuery.getSpaceCounters(scanId));
+                Map<String, ScanResultQuery.SpaceCounter> bySpace = new HashMap<>();
+                for (ScanResultQuery.SpaceCounter sc : scanResultQuery.getSpaceCounters(scanId)) {
+                    bySpace.put(sc.spaceKey(), sc);
+                }
+                countersByScan.put(scanId, bySpace);
             }
 
             // 4) Build space summaries
             List<SpaceSummary> spaces = new ArrayList<>();
             for (ScanCheckpoint cp : latestCheckpoints) {
-                List<ScanResultQuery.SpaceCounter> scanCounters = countersByScan.get(cp.scanId());
+                Map<String, ScanResultQuery.SpaceCounter> bySpace = countersByScan.get(cp.scanId());
+                ScanResultQuery.SpaceCounter sc = bySpace != null ? bySpace.get(cp.spaceKey()) : null;
 
-                long pagesDone = 0;
-                long attachmentsDone = 0;
-                Instant lastEventTs = null;
-
-                if (scanCounters != null) {
-                    for (ScanResultQuery.SpaceCounter sc : scanCounters) {
-                        if (sc.spaceKey().equals(cp.spaceKey())) {
-                            pagesDone = sc.pagesDone();
-                            attachmentsDone = sc.attachmentsDone();
-                            lastEventTs = sc.lastEventTs();
-                            break;
-                        }
-                    }
-                }
+                long pagesDone = sc != null ? sc.pagesDone() : 0;
+                long attachmentsDone = sc != null ? sc.attachmentsDone() : 0;
+                Instant lastEventTs = sc != null ? sc.lastEventTs() : null;
 
                 spaces.add(new SpaceSummary(
                     cp.spaceKey(),

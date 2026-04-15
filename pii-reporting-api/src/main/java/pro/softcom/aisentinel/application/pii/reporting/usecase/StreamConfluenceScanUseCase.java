@@ -15,8 +15,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -170,14 +172,17 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
     }
 
     private Flux<ConfluenceContentScanResult> buildSelectedSpaceScanFluxBody(String scanId, List<String> spaceKeys) {
+        // Build an O(1) index up front to avoid an O(allSpaces × spaceKeys) List.contains
+        // when filtering. Confluence instances can expose hundreds of spaces.
+        Set<String> selectedKeys = new HashSet<>(spaceKeys);
         // Asynchronous retrieval of all spaces (Future -> Mono)
         // Optimization: We could fetch only specific spaces if the API supported it, but filtering is safe.
         return Mono.fromFuture(confluenceAccessor.getAllSpaces())
             // Then unfold into Flux<ScanResult>
             .flatMapMany(allSpaces -> {
-                // Filter spaces based on provided keys
+                // Filter spaces based on provided keys (O(1) lookup per space)
                 List<ConfluenceSpace> selectedSpaces = allSpaces.stream()
-                    .filter(space -> spaceKeys.contains(space.key()))
+                    .filter(space -> selectedKeys.contains(space.key()))
                     .toList();
 
                 // If the list is empty, generate a small error Flux. Otherwise, create the scan Flux.

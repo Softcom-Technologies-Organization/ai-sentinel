@@ -318,6 +318,10 @@ class PIIDetector:
             return []
 
         all_entities: List[PIIEntity] = []
+        # O(1) dedupe index keyed by (start, end, pii_type) — mirrors
+        # _is_duplicate_entity's equality but avoids scanning the growing list
+        # (O(n²) → O(n) across all segments).
+        seen_keys: set = set()
         for segment_text, start_char, _ in segments:
             with torch.no_grad():
                 raw = self.pipeline(segment_text)
@@ -332,7 +336,9 @@ class PIIDetector:
                     end=e.end + start_char,
                     score=e.score
                 )
-                if not self._is_duplicate_entity(adjusted, all_entities):
+                key = (adjusted.start, adjusted.end, adjusted.pii_type)
+                if key not in seen_keys:
+                    seen_keys.add(key)
                     all_entities.append(adjusted)
 
         # Use normalized text for post-processing to ensure position alignment
@@ -405,10 +411,14 @@ class PIIDetector:
         fixed = self._split_zipcode_and_city(text, fixed)
         fixed = self._merge_adjacent_entities(text, fixed)
 
-        # De-duplicate by (type, start, end)
+        # De-duplicate by (type, start, end) using a set for O(n) complexity
+        # instead of O(n²) via _is_duplicate_entity's linear scan.
         unique: List[PIIEntity] = []
+        seen_keys: set = set()
         for e in fixed:
-            if not self._is_duplicate_entity(e, unique):
+            key = (e.start, e.end, e.pii_type)
+            if key not in seen_keys:
+                seen_keys.add(key)
                 unique.append(e)
         return unique
 

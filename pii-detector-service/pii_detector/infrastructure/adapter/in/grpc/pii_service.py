@@ -1297,6 +1297,9 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         logger.info(f"[{request_id}] Starting streaming detection: len={len(content)}, step={step}, total_chunks={total_chunks}")
 
         all_entities = []
+        # O(1) dedupe index mirroring _is_duplicate_entity's equality (start,
+        # end, pii_type). Kept in sync with all_entities by _add_unique_entities.
+        seen_keys: set = set()
         chunk_index = 0
 
         for start in range(0, len(content), step):
@@ -1304,13 +1307,13 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 return
 
             chunk_entities = self._process_stream_chunk(content, start, cfg.chunk_size, threshold)
-            added_in_chunk = self._add_unique_entities(chunk_entities, start, all_entities)
-            
+            added_in_chunk = self._add_unique_entities(chunk_entities, start, all_entities, seen_keys)
+
             yield self._create_chunk_update(added_in_chunk, chunk_index, total_chunks)
-            
+
             self._cleanup_chunk_resources()
             chunk_index += 1
-        
+
         # Store all_entities for final update
         self._stream_all_entities = all_entities
     
@@ -1329,8 +1332,20 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         raw_results = self.detector.pipeline(chunk)
         return self.detector.entity_processor.process_entities(raw_results, threshold)
     
-    def _add_unique_entities(self, chunk_entities: List, start: int, all_entities: List) -> List:
-        """Add unique entities from chunk to all_entities, adjusting positions."""
+    def _add_unique_entities(
+        self,
+        chunk_entities: List,
+        start: int,
+        all_entities: List,
+        seen_keys: Optional[set] = None,
+    ) -> List:
+        """Add unique entities from chunk to all_entities, adjusting positions.
+
+        When ``seen_keys`` is provided, it acts as an O(1) dedupe index and is
+        updated in place. When absent, the method falls back to the legacy
+        linear scan via ``_is_duplicate_entity`` (slower but preserves backward
+        compatibility for any external caller).
+        """
         added_in_chunk = []
         for e in chunk_entities:
             adj = DetectedPIIEntity(
@@ -1341,10 +1356,17 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 end=e.end + start,
                 score=e.score,
             )
-            if not self.detector._is_duplicate_entity(adj, all_entities):
+            if seen_keys is not None:
+                key = (adj.start, adj.end, adj.pii_type)
+                if key in seen_keys:
+                    continue
+                seen_keys.add(key)
                 all_entities.append(adj)
                 added_in_chunk.append(adj)
-        
+            elif not self.detector._is_duplicate_entity(adj, all_entities):
+                all_entities.append(adj)
+                added_in_chunk.append(adj)
+
         return added_in_chunk
     
     def _create_chunk_update(self, added_entities: List, chunk_index: int, total_chunks: int):

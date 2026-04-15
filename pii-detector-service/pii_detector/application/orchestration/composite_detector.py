@@ -21,18 +21,16 @@ from pii_detector.domain.port.pii_detector_protocol import PIIDetectorProtocol
 from pii_detector.domain.service.detection_merger import DetectionMerger
 from pii_detector.infrastructure.detector.regex_detector import RegexDetector
 
+logger = logging.getLogger(__name__)
+
 try:
     from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
     PRESIDIO_AVAILABLE = True
-    print("[PRESIDIO_IMPORT] SUCCESS - PresidioDetector imported successfully")
+    logger.info("PresidioDetector import: SUCCESS")
 except ImportError as e:
     PRESIDIO_AVAILABLE = False
     PresidioDetector = None
-    print(f"[PRESIDIO_IMPORT] FAILED - ImportError: {e}")
-    print(f"[PRESIDIO_IMPORT] PRESIDIO_AVAILABLE set to False")
-
-
-logger = logging.getLogger(__name__)
+    logger.warning("PresidioDetector import: FAILED (%s) — Presidio detection disabled", e)
 
 
 class CompositePIIDetector:

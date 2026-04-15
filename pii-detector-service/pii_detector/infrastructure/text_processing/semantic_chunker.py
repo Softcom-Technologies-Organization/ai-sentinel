@@ -133,11 +133,11 @@ class SemanticTextChunker:
                 # Move position forward for next search
                 current_pos = end
             
-            self.logger.debug(
-                f"Chunked {len(text)} chars into {len(results)} semantic chunks"
-            )
             elapsed_time = time.time() - start_time
-            print(f"[chunk_text] Chunking text completed in {elapsed_time:.2f}s")
+            self.logger.debug(
+                f"Chunked {len(text)} chars into {len(results)} semantic chunks "
+                f"in {elapsed_time:.2f}s"
+            )
             return results
             
         except Exception as e:

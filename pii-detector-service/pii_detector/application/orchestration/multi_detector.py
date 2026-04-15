@@ -251,13 +251,37 @@ class MultiModelPIIDetector:
 
     def mask_pii(self, text: str, threshold: Optional[float] = None) -> Tuple[str, List[PIIEntity]]:
         entities = self.detect_pii(text, threshold)
-        # Apply masking in descending order of start index to preserve spans
-        entities_sorted = sorted(entities, key=lambda x: x.start, reverse=True)
-        masked_text = text
-        for entity in entities_sorted:
-            mask = f"[{entity.pii_type}]"
-            masked_text = masked_text[: entity.start] + mask + masked_text[entity.end :]
+        masked_text = self._apply_masks(text, entities)
         return masked_text, entities
+
+    def _apply_masks(self, text: str, entities: List[PIIEntity]) -> str:
+        """Rebuild masked text in a single O(n + len(text)) pass.
+
+        Previously the method rewrote ``masked_text`` inside a loop using
+        ``masked_text[:a] + mask + masked_text[b:]``. Python strings are
+        immutable so every iteration allocated a fresh string the size of
+        the whole document — O(n · len(text)) for n detected entities.
+
+        Build a list of slices and masks instead, joined once at the end.
+        Overlapping entities are defensively skipped; ``DetectionMerger``
+        already removes them upstream, so this is purely a safety net.
+        """
+        if not entities:
+            return text
+
+        entities_sorted = sorted(entities, key=lambda x: x.start)
+
+        parts: List[str] = []
+        last_pos = 0
+        for entity in entities_sorted:
+            if entity.start < last_pos:
+                continue
+            parts.append(text[last_pos:entity.start])
+            parts.append(f"[{entity.pii_type}]")
+            last_pos = entity.end
+
+        parts.append(text[last_pos:])
+        return "".join(parts)
 
     @property
     def model_id(self) -> str:

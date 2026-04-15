@@ -209,47 +209,45 @@ class CompositePIIDetector:
             detectors_str = ', '.join(active_detectors) if active_detectors else 'NONE'
             self.logger.debug("Detecting PII with active detectors: %s", detectors_str)
         
-        # Collect results from all detectors
+        # Collect results from all detectors and track per-detector counts
+        # at the source — avoids a post-hoc linear scan and also fixes the
+        # earlier ml_count bug that read from `results_per_detector[0]`
+        # (which was only ML when `use_ml` was True).
         results_per_detector: List[Tuple[PIIDetectorProtocol, List[PIIEntity]]] = []
-        
+        ml_count = 0
+        regex_count = 0
+        presidio_count = 0
+
         # Execute ML detection
         if use_ml and self.ml_detector:
             ml_entities = self._run_ml_detection(text, threshold, pii_type_configs, chunk_size)
             results_per_detector.append((self.ml_detector, ml_entities))
-        
+            ml_count = len(ml_entities)
+
         # Execute regex detection
         if use_regex and self.regex_detector:
             regex_entities = self._run_regex_detection(text, threshold)
             results_per_detector.append((self.regex_detector, regex_entities))
-        
+            regex_count = len(regex_entities)
+
         # Execute Presidio detection
         if use_presidio and self.presidio_detector:
             presidio_entities = self._run_presidio_detection(text, threshold)
             results_per_detector.append((self.presidio_detector, presidio_entities))
-        
+            presidio_count = len(presidio_entities)
+
         # Merge results
         if not results_per_detector:
             self.logger.warning("No detectors available")
             return []
-        
+
         merged_entities = self._merger.merge(results_per_detector)
-        
-        # Count entities per detector for logging
-        ml_count = len(results_per_detector[0][1]) if self.ml_detector else 0
-        regex_count = 0
-        presidio_count = 0
-        
-        for detector, entities in results_per_detector:
-            if detector == self.regex_detector:
-                regex_count = len(entities)
-            elif detector == self.presidio_detector:
-                presidio_count = len(entities)
-        
+
         self.logger.info(
             f"Composite detection complete: {len(merged_entities)} entities "
             f"(ML: {ml_count}, Regex: {regex_count}, Presidio: {presidio_count})"
         )
-        
+
         return merged_entities
     
     def mask_pii(

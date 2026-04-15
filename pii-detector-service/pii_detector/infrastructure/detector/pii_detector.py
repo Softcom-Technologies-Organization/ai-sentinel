@@ -370,15 +370,40 @@ class PIIDetector:
             return [[] for _ in batch]
 
     def _apply_masks(self, text: str, entities: List[PIIEntity]) -> str:
-        """Apply masks to detected PII entities."""
-        entities_sorted = sorted(entities, key=lambda x: x.start, reverse=True)
-        masked_text = text
+        """Apply masks to detected PII entities.
 
+        Builds the output in a single left-to-right pass with a parts buffer
+        joined at the end. The previous implementation sliced and
+        concatenated ``masked_text`` inside a loop, which is O(n × len(text))
+        because Python strings are immutable — each iteration allocates a new
+        string the size of the full text. This variant is O(n + len(text))
+        and also matches the implementation already used in
+        ``gliner_detector.py``.
+
+        Overlapping entities (``entity.start < last_pos``) are skipped instead
+        of corrupting the output, making the method safer than the previous
+        right-to-left slicing which silently dropped masks when indices
+        shifted.
+        """
+        if not entities:
+            return text
+
+        entities_sorted = sorted(entities, key=lambda x: x.start)
+
+        parts: List[str] = []
+        last_pos = 0
         for entity in entities_sorted:
-            mask = f"[{entity.pii_type}]"
-            masked_text = masked_text[:entity.start] + mask + masked_text[entity.end:]
+            if entity.start < last_pos:
+                # Overlap with the previous accepted entity — skip to avoid
+                # corrupt output. Dedupe (_post_process_entities) should
+                # normally prevent this case.
+                continue
+            parts.append(text[last_pos:entity.start])
+            parts.append(f"[{entity.pii_type}]")
+            last_pos = entity.end
 
-        return masked_text
+        parts.append(text[last_pos:])
+        return "".join(parts)
 
     def _is_duplicate_entity(self, entity: PIIEntity, existing_entities: List[PIIEntity]) -> bool:
         """Check if an entity with the same span and type already exists."""

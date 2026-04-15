@@ -11,10 +11,12 @@ import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.config.En
 
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
@@ -57,6 +59,38 @@ public class AesGcmEncryptionAdapter implements EncryptionService {
 
     // HKDF context
     private static final byte[] HKDF_INFO_DEK = "pii-encryption-dek".getBytes(StandardCharsets.UTF_8);
+
+    /**
+     * Per-thread cached {@link Cipher} instance for {@value #CIPHER_ALGORITHM}.
+     * <p>The JCA {@code Cipher.getInstance} lookup traverses the registered
+     * security providers and is non-trivial in the encrypt/decrypt hot path
+     * (called once per detected PII entity). Cipher is not thread-safe, so a
+     * static singleton is unsound — {@link ThreadLocal} is the canonical JCA
+     * pattern. Each {@code init(...)} call fully resets the internal state,
+     * so no secret or cryptographic material leaks between invocations.</p>
+     */
+    private static final ThreadLocal<Cipher> CIPHER_POOL = ThreadLocal.withInitial(() -> {
+        try {
+            return Cipher.getInstance(CIPHER_ALGORITHM);
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+            throw new IllegalStateException(
+                "JCA provider does not support " + CIPHER_ALGORITHM, e);
+        }
+    });
+
+    /**
+     * Per-thread cached {@link Mac} instance for {@value #HKDF_MAC_ALGORITHM}.
+     * Same reasoning as {@link #CIPHER_POOL}: {@code Mac} is not thread-safe
+     * and is re-initialized with a fresh key on every use.
+     */
+    private static final ThreadLocal<Mac> MAC_POOL = ThreadLocal.withInitial(() -> {
+        try {
+            return Mac.getInstance(HKDF_MAC_ALGORITHM);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(
+                "JCA provider does not support " + HKDF_MAC_ALGORITHM, e);
+        }
+    });
 
     private final SecretKey key;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -127,7 +161,7 @@ public class AesGcmEncryptionAdapter implements EncryptionService {
     private byte[] hkdf(byte[] ikm, byte[] salt) throws CryptographicOperationException {
         try {
             // Extract: PRK = HMAC(salt, IKM)
-            Mac mac = Mac.getInstance(HKDF_MAC_ALGORITHM);
+            Mac mac = MAC_POOL.get();
             mac.init(new SecretKeySpec(salt, HKDF_MAC_ALGORITHM));
             byte[] prk = mac.doFinal(ikm);
 
@@ -179,7 +213,7 @@ public class AesGcmEncryptionAdapter implements EncryptionService {
      */
     private byte[] encryptWithGcm(byte[] dek, byte[] iv, byte[] aad, String plaintext) throws CryptographicOperationException {
         try {
-            Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
+            Cipher cipher = CIPHER_POOL.get();
             GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
             SecretKey dekKey = new SecretKeySpec(dek, "AES");
             cipher.init(Cipher.ENCRYPT_MODE, dekKey, spec);
@@ -195,7 +229,7 @@ public class AesGcmEncryptionAdapter implements EncryptionService {
      */
     private byte[] decryptWithGcm(byte[] dek, byte[] iv, byte[] aad, byte[] ciphertext) throws CryptographicOperationException {
         try {
-            Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
+            Cipher cipher = CIPHER_POOL.get();
             GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
             SecretKey dekKey = new SecretKeySpec(dek, "AES");
             cipher.init(Cipher.DECRYPT_MODE, dekKey, spec);

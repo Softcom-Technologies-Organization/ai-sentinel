@@ -191,48 +191,61 @@ class DetectionMerger:
 
     def _resolve_overlaps_for_type(self, entities: List[PIIEntity]) -> List[PIIEntity]:
         """
-        Resolve overlaps for a single entity type using sweep-line algorithm.
-        
+        Resolve overlaps for a single entity type using a true sweep-line scan.
+
+        Algorithm (O(n log n) total — sort + linear scan):
+
+        1. Sort by ``(start ASC, -length DESC, -score DESC)``.
+        2. Keep only the entity that ends the latest among those started so far.
+
+        Why a single comparison against the last kept entity is sufficient:
+
+        - After sorting by ``start`` ascending, every entity processed has
+          ``start >= last_kept.start``. An "earlier" kept entity can only
+          conflict with the current one if it overlaps it, but if such an
+          earlier entity were "active" we would have used it as a comparison
+          point — instead the sort guarantees the most recently kept entity
+          covers the right-most accepted region.
+        - The ``-length`` tiebreaker means that for entities sharing a start,
+          the longest comes first. The ``current_contains_kept`` branch in
+          the previous implementation was therefore unreachable: a later
+          entity at the same start cannot be longer.
+
+        Result: behaviour is preserved (validated by existing
+        ``test_detection_merger.py`` cases) but the inner O(n) scan over
+        ``kept`` is replaced by an O(1) check, dropping the worst case from
+        O(n²) to O(n log n) — matching the docstring that has always claimed
+        sweep-line complexity.
+
         Args:
             entities: List of entities of the same type
-            
+
         Returns:
             List of non-overlapping entities with best spans kept
         """
         if len(entities) <= 1:
             return entities
-        
-        # Sort by start position, then by span length (longest first), then by score (highest first)
+
         sorted_entities = sorted(
             entities,
             key=lambda e: (e.start, -(e.end - e.start), -e.score)
         )
-        
+
         kept: List[PIIEntity] = []
         for current in sorted_entities:
-            should_keep = True
-            remove_indices = []
-            
-            for i, kept_entity in enumerate(kept):
-                overlap_type = self._check_overlap(kept_entity, current)
-                
-                if overlap_type == 'none':
-                    continue
-                elif overlap_type == 'current_contains_kept':
-                    # Current entity is larger and contains a kept entity - replace it
-                    remove_indices.append(i)
-                elif overlap_type in ('kept_contains_current', 'partial'):
-                    # Kept entity is larger or they partially overlap - skip current
-                    should_keep = False
-                    break
-            
-            # Remove kept entities that are contained in the current larger entity
-            for idx in reversed(remove_indices):
-                kept.pop(idx)
-            
-            if should_keep:
+            if not kept:
                 kept.append(current)
-        
+                continue
+
+            last = kept[-1]
+            # Sort guarantees `current.start >= last.start`. The two entities
+            # are disjoint iff the previous one ends before this one starts.
+            if current.start >= last.end:
+                kept.append(current)
+            # Otherwise the current entity is either contained in `last` (sort
+            # key forbids it from extending further right when starts tie) or
+            # partially overlaps; in both cases the earlier-kept entity wins.
+
         return kept
 
     def _check_overlap(self, e1: PIIEntity, e2: PIIEntity) -> str:

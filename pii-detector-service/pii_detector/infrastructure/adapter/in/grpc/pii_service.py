@@ -76,6 +76,14 @@ except Exception:  # pragma: no cover - safe import guard
     create_composite_detector = None  # type: ignore
     should_use_composite_detector = None  # type: ignore
 
+# Presidio detector — imported at module scope so the per-request
+# _pass_fresh_configs_to_presidio path no longer pays import-machinery cost.
+# Same try/except pattern as the other optional detectors above.
+try:
+    from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
+except Exception:  # pragma: no cover - safe import guard
+    PresidioDetector = None  # type: ignore
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -779,11 +787,14 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         if not pii_type_configs:
             logger.debug(f"[{request_id}] No fresh configs to pass to Presidio")
             return
-        
+
+        if PresidioDetector is None:
+            logger.debug(
+                f"[{request_id}] PresidioDetector module unavailable; skipping fresh configs hand-off"
+            )
+            return
+
         try:
-            # Import here to avoid circular dependencies
-            from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
-            
             # Case 1: Direct PresidioDetector
             if isinstance(self.detector, PresidioDetector):
                 logger.info(

@@ -7,6 +7,7 @@ for memory usage when processing large volumes of data.
 
 import atexit
 import gc
+import inspect
 import logging
 import os
 import threading
@@ -14,7 +15,7 @@ import time
 from concurrent import futures
 from logging.handlers import QueueHandler, QueueListener
 from queue import Queue
-from typing import Dict, List, Optional
+from typing import Dict, FrozenSet, List, Optional
 
 import grpc
 import psutil
@@ -310,10 +311,32 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         
         # Use singleton detector instance
         self.detector = get_detector_instance()
-        
+
+        # Introspect detector.detect_pii ONCE at construction to avoid calling
+        # inspect.signature() on every gRPC request (it is expensive: source
+        # parsing + AST walk). The resulting frozenset is checked cheaply via
+        # membership tests on the request hot path.
+        self._detector_detect_pii_params = self._introspect_detector_params()
+
         # Start memory monitoring thread if enabled
         if self.enable_memory_monitoring:
             self._start_memory_monitoring()
+
+    def _introspect_detector_params(self) -> FrozenSet[str]:
+        """Return the set of keyword parameter names accepted by ``detector.detect_pii``.
+
+        Cached once in ``__init__`` because :func:`inspect.signature` is costly
+        (unlike, for instance, ``hasattr``). An empty frozenset is returned when
+        the detector is absent or lacks a ``detect_pii`` method.
+        """
+        detector = getattr(self, 'detector', None)
+        if detector is None or not hasattr(detector, 'detect_pii'):
+            return frozenset()
+        try:
+            return frozenset(inspect.signature(detector.detect_pii).parameters.keys())
+        except (TypeError, ValueError):
+            # Builtins or C-extensions may not expose a signature; fall back to empty.
+            return frozenset()
     
     def _load_log_throughput_config(self) -> bool:
         """
@@ -697,23 +720,22 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         # Pass fresh configs to Presidio detector if available
         self._pass_fresh_configs_to_presidio(pii_type_configs, request_id)
         
+        # Use the cached set of detector parameters (computed once in __init__)
+        # instead of calling inspect.signature() on every request.
+        supported_params = self._detector_detect_pii_params
+        supports_detect_pii = hasattr(self.detector, 'detect_pii')
+        supports_chunk_size = 'chunk_size' in supported_params
+        supports_dynamic_config = 'enable_ml' in supported_params
+        supports_pii_configs = 'pii_type_configs' in supported_params
+
         # Determine if we should pass chunk_size
         kwargs = {}
-        if hasattr(self.detector, 'detect_pii'):
-            import inspect
-            sig = inspect.signature(self.detector.detect_pii)
-            if 'chunk_size' in sig.parameters and chunk_size is not None:
-                kwargs['chunk_size'] = chunk_size
-                logger.debug(f"[{request_id}] Passing chunk_size={chunk_size} to detector")
+        if supports_detect_pii and supports_chunk_size and chunk_size is not None:
+            kwargs['chunk_size'] = chunk_size
+            logger.debug(f"[{request_id}] Passing chunk_size={chunk_size} to detector")
 
         # Apply detector flags if available (for CompositePIIDetector)
-        if detector_flags and hasattr(self.detector, 'detect_pii'):
-            # Check if detector supports dynamic configuration (CompositePIIDetector)
-            import inspect
-            sig = inspect.signature(self.detector.detect_pii)
-            supports_dynamic_config = 'enable_ml' in sig.parameters
-            supports_pii_configs = 'pii_type_configs' in sig.parameters
-            
+        if detector_flags and supports_detect_pii:
             if supports_dynamic_config:
                 logger.debug(
                     f"[{request_id}] Applying dynamic detector flags: "
@@ -721,7 +743,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                     f"Presidio={detector_flags.get('presidio_enabled')}, "
                     f"Regex={detector_flags.get('regex_enabled')}"
                 )
-                
+
                 # Combine flags and configs
                 call_kwargs = {
                     'enable_ml': detector_flags.get('gliner_enabled'),
@@ -729,29 +751,26 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                     'enable_regex': detector_flags.get('regex_enabled'),
                     **kwargs
                 }
-                
+
                 # Pass pii_type_configs if detector supports it
                 if supports_pii_configs:
                     call_kwargs['pii_type_configs'] = pii_type_configs
-                
+
                 entities = self.detector.detect_pii(content, threshold, **call_kwargs)
             else:
                 # Simple detector - check if it supports pii_type_configs
                 call_kwargs = {**kwargs}
                 if supports_pii_configs:
                     call_kwargs['pii_type_configs'] = pii_type_configs
-                
+
                 entities = self.detector.detect_pii(content, threshold, **call_kwargs)
         else:
             # No detector flags - check if detector supports pii_type_configs
-            if hasattr(self.detector, 'detect_pii'):
-                import inspect
-                sig = inspect.signature(self.detector.detect_pii)
-                
+            if supports_detect_pii:
                 call_kwargs = {**kwargs}
-                if 'pii_type_configs' in sig.parameters:
+                if supports_pii_configs:
                     call_kwargs['pii_type_configs'] = pii_type_configs
-                
+
                 entities = self.detector.detect_pii(content, threshold, **call_kwargs)
             else:
                 entities = self.detector.detect_pii(content, threshold)

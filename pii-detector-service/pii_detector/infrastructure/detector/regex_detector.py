@@ -450,22 +450,40 @@ class RegexDetector:
     def _apply_masks(self, text: str, entities: List[PIIEntity]) -> str:
         """
         Apply masks to detected entities.
-        
+
+        Builds the output in a single left-to-right pass with a parts buffer
+        joined at the end. The previous implementation sliced and concatenated
+        ``masked_text`` inside a loop, which is O(n × len(text)) because
+        Python strings are immutable — each iteration allocates a fresh
+        string the size of the full text. This variant is O(n + len(text))
+        and matches the implementation already used in
+        ``GLiNERDetector._apply_masks`` / ``PIIDetector._apply_masks``.
+
+        Overlapping entities (``entity.start < last_pos``) are defensively
+        skipped. ``_resolve_overlaps`` normally guarantees no overlap, but a
+        skip is safer than the previous right-to-left slicing which silently
+        dropped masks when indices shifted.
+
         Args:
             text: Original text
             entities: Detected entities
-            
+
         Returns:
             Masked text
         """
-        # Sort by position (reverse order for replacement)
-        sorted_entities = sorted(entities, key=lambda x: x.start, reverse=True)
-        
-        masked_text = text
+        if not entities:
+            return text
+
+        sorted_entities = sorted(entities, key=lambda x: x.start)
+
+        parts: List[str] = []
+        last_pos = 0
         for entity in sorted_entities:
-            mask = f"[{entity.pii_type}]"
-            masked_text = (
-                masked_text[:entity.start] + mask + masked_text[entity.end:]
-            )
-        
-        return masked_text
+            if entity.start < last_pos:
+                continue
+            parts.append(text[last_pos:entity.start])
+            parts.append(f"[{entity.pii_type}]")
+            last_pos = entity.end
+
+        parts.append(text[last_pos:])
+        return "".join(parts)

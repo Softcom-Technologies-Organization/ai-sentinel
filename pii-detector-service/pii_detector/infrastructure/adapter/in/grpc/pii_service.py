@@ -1064,36 +1064,50 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         """
         logger.debug(f"[{request_id}] Building gRPC response...")
         response = pii_detection_pb2.PIIDetectionResponse()
-        
-        self._add_entities_to_response(response, entities, request_id)
-        self._add_summary_to_response(response, entities, request_id)
+
+        self._populate_entities_and_summary(response, entities, request_id)
         self._add_masked_content_to_response(response, content, entities, request_id)
-        
+
         return response
 
-    def _add_entities_to_response(
+    _MAX_RESPONSE_ENTITIES = 1000
+
+    def _populate_entities_and_summary(
         self, response: pii_detection_pb2.PIIDetectionResponse, entities: List, request_id: str
     ) -> None:
-        """Add detected entities to response, limiting to 1000 to avoid huge responses.
-        
-        Business rule: Convert all numeric values to native Python types to ensure
-        Protobuf compatibility (numpy types cause serialization errors).
-        PII types are normalized to match Java PiiType enum expectations.
-        
-        Args:
-            response: Response object to populate
-            entities: Detected entities
-            request_id: Request identifier for logging
+        """Populate response entities (capped) and severity summary in a single pass.
+
+        Business rules:
+        - ``response.entities`` is capped at ``_MAX_RESPONSE_ENTITIES`` to avoid huge payloads.
+        - ``response.summary`` reflects **all** detected entities (no cap) so downstream
+          counts stay accurate even when the entity list is truncated.
+        - Numeric values are coerced to native Python types for Protobuf compatibility
+          (numpy types from Presidio/other detectors would otherwise fail serialization).
+        - PII types are normalized exactly once per entity to match the Java ``PiiType`` enum.
+
+        Consolidating the previous two loops saves one full pass over ``entities`` and
+        halves the number of ``_normalize_pii_type_for_grpc`` calls on the hot path.
         """
-        entities_to_add = min(len(entities), 1000)
+        max_entities = self._MAX_RESPONSE_ENTITIES
+        total = len(entities)
+        entities_to_add = min(total, max_entities)
         logger.debug(f"[{request_id}] Adding {entities_to_add} entities to response")
-        
-        for entity in entities[:1000]:
+
+        summary: Dict[str, int] = {}
+
+        for index, entity in enumerate(entities):
+            # Normalize exactly once per entity — reused for both the response entity
+            # and the summary bucket below.
+            pii_type = _normalize_pii_type_for_grpc(entity.get('type'))
+            summary[pii_type] = summary.get(pii_type, 0) + 1
+
+            if index >= max_entities:
+                continue
+
             try:
                 pii_entity = response.entities.add()
                 pii_entity.text = str(entity['text'])
-                # Normalize PII type to match Java enum (EMAIL not PIIType.EMAIL)
-                pii_entity.type = _normalize_pii_type_for_grpc(entity.get('type'))
+                pii_entity.type = pii_type
                 pii_entity.type_label = str(entity['type_label'])
                 # Convert to native Python types for Protobuf compatibility
                 # (numpy.int64/float64 from Presidio/other detectors cause errors)
@@ -1103,45 +1117,34 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 # Detection source: Map Domain Enum to Proto Enum
                 domain_source = entity.get('source')
                 if isinstance(domain_source, DetectorSource):
-                    # Map directly using name if names match
-                    pii_entity.source = getattr(pii_detection_pb2.DetectorSource, domain_source.name, pii_detection_pb2.DetectorSource.UNKNOWN_SOURCE)
+                    pii_entity.source = getattr(
+                        pii_detection_pb2.DetectorSource,
+                        domain_source.name,
+                        pii_detection_pb2.DetectorSource.UNKNOWN_SOURCE,
+                    )
                 else:
-                    # Fallback for string or unknown
                     source_str = str(domain_source or entity.get('detector') or 'UNKNOWN').upper()
                     if source_str == 'UNKNOWN':
                         source_str = 'UNKNOWN_SOURCE'
-                    pii_entity.source = getattr(pii_detection_pb2.DetectorSource, source_str, pii_detection_pb2.DetectorSource.UNKNOWN_SOURCE)
+                    pii_entity.source = getattr(
+                        pii_detection_pb2.DetectorSource,
+                        source_str,
+                        pii_detection_pb2.DetectorSource.UNKNOWN_SOURCE,
+                    )
             except (ValueError, TypeError) as e:
                 logger.error(
-                    f"[{request_id}] Failed to convert entity to protobuf: {e}. "
-                    f"Entity: {entity}"
+                    f"[{request_id}] Failed to convert entity to protobuf: {e}. Entity: {entity}"
                 )
                 raise
-        
-        if len(entities) > 1000:
-            logger.warning(f"[{request_id}] Truncated entities list from {len(entities)} to 1000")
 
-    def _add_summary_to_response(
-        self, response: pii_detection_pb2.PIIDetectionResponse, entities: List, request_id: str
-    ) -> None:
-        """Add entity type nbOfDetectedPIIBySeverity to response.
-        
-        Business rule: Summary keys are normalized to match Java PiiType enum.
-        Uses the same normalization as entities to ensure consistency.
-        
-        Args:
-            response: Response object to populate
-            entities: Detected entities
-            request_id: Request identifier for logging
-        """
-        logger.debug(f"[{request_id}] Creating response nbOfDetectedPIIBySeverity...")
-        summary = {}
-        for entity in entities:
-            # Use same normalization function as entities (EMAIL not PIIType.EMAIL)
-            pii_type = _normalize_pii_type_for_grpc(entity.get('type'))
-            summary[pii_type] = summary.get(pii_type, 0) + 1
-        
-        logger.debug(f"[{request_id}] Adding nbOfDetectedPIIBySeverity to response: {dict(summary)}")
+        if total > max_entities:
+            logger.warning(
+                f"[{request_id}] Truncated entities list from {total} to {max_entities}"
+            )
+
+        logger.debug(
+            f"[{request_id}] Adding nbOfDetectedPIIBySeverity to response: {dict(summary)}"
+        )
         for pii_type, count in summary.items():
             response.summary[pii_type] = count
 

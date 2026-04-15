@@ -3,6 +3,9 @@ package pro.softcom.aisentinel.application.pii.reporting.service.parser;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,45 +42,85 @@ public class HtmlContentParser implements ContentParser {
         Pattern.CASE_INSENSITIVE
     );
 
+    /**
+     * Per-thread cache of line boundaries for the most recent source. When a
+     * batch of PII entities is enriched against the same source, we would
+     * otherwise rerun the block-tag regex (and a full newline scan) for every
+     * entity via {@link #findLineStart} / {@link #findLineEnd}.
+     * <p>
+     * The cache stores the source by <em>reference identity</em> (no hashing,
+     * no retention of arbitrary strings) and is bounded to a single entry per
+     * thread: whenever a different source shows up, the previous entry is
+     * replaced. This makes the index lookup O(log K) per call against a
+     * precomputed breakpoint table of size K, instead of O(|source|).
+     */
+    private final ThreadLocal<LineIndex> lineIndexCache = new ThreadLocal<>();
+
     @Override
     public int findLineStart(String source, int position) {
         int safePosition = Math.clamp(position, 0, source.length());
+        LineIndex index = indexFor(source);
 
-        // Find the last block tag or newline before the position
-        int lastBreak = 0;
-
-        // Check for block tags
-        Matcher matcher = BLOCK_TAGS.matcher(source);
-        while (matcher.find() && matcher.end() <= safePosition) {
-            lastBreak = matcher.end();
+        // Largest breakpoint <= safePosition, or 0 if none exists.
+        int idx = Arrays.binarySearch(index.lineStartAfter, safePosition);
+        if (idx < 0) {
+            idx = -idx - 2;
         }
-
-        // Also consider newline characters
-        int lastNewline = source.lastIndexOf('\n', safePosition);
-        if (lastNewline >= 0 && lastNewline + 1 > lastBreak) {
-            lastBreak = lastNewline + 1;
-        }
-
-        return lastBreak;
+        return idx < 0 ? 0 : index.lineStartAfter[idx];
     }
 
     @Override
     public int findLineEnd(String source, int position) {
         int safePosition = Math.clamp(position, 0, source.length());
+        LineIndex index = indexFor(source);
 
-        // Find the next block tag or newline after the position
+        // Smallest breakpoint >= safePosition, or source.length() if none exists.
+        int idx = Arrays.binarySearch(index.lineEndAt, safePosition);
+        if (idx < 0) {
+            idx = -idx - 1;
+        }
+        return idx >= index.lineEndAt.length ? source.length() : index.lineEndAt[idx];
+    }
+
+    private LineIndex indexFor(String source) {
+        LineIndex cached = lineIndexCache.get();
+        if (cached != null && cached.source == source) {
+            return cached;
+        }
+        LineIndex fresh = computeLineIndex(source);
+        lineIndexCache.set(fresh);
+        return fresh;
+    }
+
+    /**
+     * Scans the source once to collect every position that acts as a line
+     * start (end of a block tag, or the character after a newline) and every
+     * position that acts as a line end (start of a block tag, or the newline
+     * character itself). The resulting arrays are sorted so that subsequent
+     * lookups can use {@link Arrays#binarySearch}.
+     */
+    private static LineIndex computeLineIndex(String source) {
+        List<Integer> starts = new ArrayList<>();
+        List<Integer> ends = new ArrayList<>();
+
         Matcher matcher = BLOCK_TAGS.matcher(source);
-        matcher.region(safePosition, source.length());
-
-        int nextBlockTag = matcher.find() ? matcher.start() : source.length();
-        int nextNewline = source.indexOf('\n', safePosition);
-
-        // Return the closest boundary
-        if (nextNewline >= 0 && nextNewline < nextBlockTag) {
-            return nextNewline;
+        while (matcher.find()) {
+            ends.add(matcher.start());
+            starts.add(matcher.end());
         }
 
-        return nextBlockTag;
+        for (int p = source.indexOf('\n'); p >= 0; p = source.indexOf('\n', p + 1)) {
+            ends.add(p);
+            starts.add(p + 1);
+        }
+
+        return new LineIndex(source, toSortedArray(starts), toSortedArray(ends));
+    }
+
+    private static int[] toSortedArray(List<Integer> values) {
+        int[] arr = values.stream().mapToInt(Integer::intValue).toArray();
+        Arrays.sort(arr);
+        return arr;
     }
 
     @Override
@@ -151,5 +194,21 @@ public class HtmlContentParser implements ContentParser {
     @Override
     public ContentType getContentType() {
         return ContentType.HTML;
+    }
+
+    /**
+     * Precomputed line boundary table for a given source.
+     * Retained by reference identity to enable fast cache hit/miss checks.
+     */
+    private static final class LineIndex {
+        private final String source;
+        private final int[] lineStartAfter;
+        private final int[] lineEndAt;
+
+        LineIndex(String source, int[] lineStartAfter, int[] lineEndAt) {
+            this.source = source;
+            this.lineStartAfter = lineStartAfter;
+            this.lineEndAt = lineEndAt;
+        }
     }
 }

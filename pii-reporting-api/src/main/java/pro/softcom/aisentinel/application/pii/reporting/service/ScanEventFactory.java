@@ -206,43 +206,49 @@ public class ScanEventFactory {
 
     /**
      * Maps PII detection results to entity list for event payload.
+     * <p>
+     * Builds a lightweight view of all detected PIIs once up front so that
+     * each call to {@link #mapSensitiveDataToEntity} can reuse it for
+     * cross-line context masking — avoiding a quadratic allocation that
+     * rebuilt the same N-element list for every one of the N detected PIIs.
      */
     private List<DetectedPersonallyIdentifiableInformation> mapToEntityList(
         ContentPiiDetection detection, String content) {
         if (detection == null || detection.sensitiveDataFound() == null) {
             return List.of();
         }
-        return detection.sensitiveDataFound().stream()
-            .map(sensitiveData -> this.mapSensitiveDataToEntity(sensitiveData, content, detection))
+        List<DetectedPersonallyIdentifiableInformation> lightweightAll = detection.sensitiveDataFound().stream()
+            .map(ScanEventFactory::toLightweightEntity)
             .toList();
+        return detection.sensitiveDataFound().stream()
+            .map(sensitiveData -> this.mapSensitiveDataToEntity(sensitiveData, content, lightweightAll))
+            .toList();
+    }
+
+    /**
+     * Lightweight projection used when masking other PIIs that share the same
+     * line as the principal one: only positions and type are needed.
+     */
+    private static DetectedPersonallyIdentifiableInformation toLightweightEntity(
+        ContentPiiDetection.SensitiveData sd) {
+        String sdType = sd.type() != null ? sd.type().name() : null;
+        return DetectedPersonallyIdentifiableInformation.builder()
+            .startPosition(sd.position())
+            .endPosition(sd.end())
+            .piiType(sdType)
+            .build();
     }
 
     private DetectedPersonallyIdentifiableInformation mapSensitiveDataToEntity(
         ContentPiiDetection.SensitiveData data, String sourceContent,
-        ContentPiiDetection detection) {
+        List<DetectedPersonallyIdentifiableInformation> lightweightAll) {
         String type = (data.type() != null ? data.type().name() : null);
         String typeLabel = (data.type() != null ? data.type().getLabel() : null);
-        // Build a lightweight list of entities to ensure other PIIs in the same line are also masked in context
-        List<DetectedPersonallyIdentifiableInformation> all =
-            detection == null || detection.sensitiveDataFound() == null ? List.of() :
-                detection.sensitiveDataFound().stream()
-                    .map(sd -> {
-                        String sdType = null;
-                        if (sd.type() != null) {
-                            sdType = sd.type().name();
-                        }
-                        return DetectedPersonallyIdentifiableInformation.builder()
-                            .startPosition(sd.position())
-                            .endPosition(sd.end())
-                            .piiType(sdType)
-                            .build();
-                    })
-                    .toList();
 
         // Extract masked context (for immediate display, stored in clear)
         String maskedContext = piiContextExtractor.extractMaskedContext(sourceContent,
                                                                         data.position(), data.end(),
-                                                                        type, all);
+                                                                        type, lightweightAll);
 
         // Extract real context (contains actual PII values, will be encrypted)
         String sensitiveContext = piiContextExtractor.extractSensitiveContext(sourceContent,

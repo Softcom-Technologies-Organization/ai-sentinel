@@ -1,0 +1,77 @@
+// POC Dev Container ai-sentinel — mode natif IntelliJ 2025.3+
+// Voir .devcontainer/README.md pour usage et limitations.
+{
+  "name": "ai-sentinel-dev",
+  "dockerComposeFile": "docker-compose.dev.yml",
+  "service": "workspace",
+  "workspaceFolder": "/workspaces/ai-sentinel",
+  "shutdownAction": "stopCompose",
+
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "25",
+      "installMaven": "true",
+      "mavenVersion": "3.9.9"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.13",
+      "installTools": true
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+  },
+
+  // forwardPorts s'applique au service `workspace` (où tournent les apps lancées par IntelliJ).
+  // Postgres et pgAdmin sont des services compose distincts — leurs ports sont gérés directement
+  // dans docker-compose.dev.yml (pgAdmin sur 5050 hôte, postgres en réseau interne uniquement).
+  "forwardPorts": [8080, 50051, 4200],
+  "portsAttributes": {
+    "8080": { "label": "Spring Boot API (pii-reporting-api)" },
+    "50051": { "label": "gRPC PII Detector" },
+    "4200": { "label": "Angular UI (pii-reporting-ui)" }
+  },
+
+  "containerEnv": {
+    "JAVA_HOME": "/usr/lib/jvm/msopenjdk-current",
+    "DB_HOST": "postgres",
+    "DB_PORT": "5433",
+    "DB_USER": "postgres",
+    "DB_PASSWORD": "postgres",
+    "DB_NAME": "ai-sentinel",
+    "POSTGRES_DB": "ai-sentinel",
+    "PII_DATABASE_ENCRYPTION_KEY": "changeme",
+    "PII_REPORTING_ALLOW_SECRET_REVEAL": "true",
+    // Pointe HuggingFace sur le cache monté depuis ../.model-cache (cf. docker-compose.dev.yml).
+    // Sans ça, snapshot_download retombe sur ~/.cache/huggingface vide et tente un download
+    // qui échoue pour les modèles gated (nvidia/gliner-PII) ou en l'absence d'accès Hub.
+    "HF_HOME": "/home/vscode/.cache/huggingface"
+  },
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  // Purge à chaque démarrage les chemins absolus de l'hôte (Windows/Scoop) que
+  // IntelliJ desktop a pu écrire dans .idea/workspace.xml hors dev container.
+  // Évite les erreurs "Invalid npm/yarn package: no such file or directory".
+  "postStartCommand": "bash .devcontainer/purge-host-paths.sh",
+
+  "customizations": {
+    "jetbrains": {
+      "plugins": [
+        "NodeJS",
+        "JavaScriptDebugger",
+        "PythonCore",
+        "AngularJS",
+        "com.intellij.lang.jsgraphql",
+        // Indispensable : sans ces plugins, Gateway ignore silencieusement les run configs
+        // de type SpringBootApplicationConfigurationType (PROD, PROD-initial, etc.).
+        "com.intellij.spring",
+        "com.intellij.spring.boot"
+      ]
+    }
+  },
+
+  "remoteUser": "vscode"
+}

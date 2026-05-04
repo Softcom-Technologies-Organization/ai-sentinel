@@ -23,6 +23,9 @@ secrets/*.txt
 /.run/run/run.iml
 /pii-detector-service/pii-detector-service/pii-detector-service.iml
 
+# Cache HuggingFace partagé hôte/dev container (modèles ML, peut peser plusieurs Go)
+.model-cache/
+
 personally-identifiable-information-scan-results/
 
 # Logs

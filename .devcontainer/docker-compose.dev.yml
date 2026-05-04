@@ -1,0 +1,91 @@
+# Dev container compose — overlay dédié dev. Indépendant du docker-compose.yml prod-like.
+# Lancé automatiquement par IntelliJ 2025.3+ quand on ouvre le projet en mode Dev Container natif.
+#
+# Stratégie : workspace (où l'IDE s'attache) + infra minimale (postgres + pgadmin).
+# Les apps métier (pii-detector, pii-reporting-api, pii-reporting-ui) sont lancées DEPUIS IntelliJ
+# via les .run/*.xml — elles tournent dans le service `workspace` et accèdent à postgres via DNS.
+
+services:
+  workspace:
+    image: mcr.microsoft.com/devcontainers/base:bookworm
+    volumes:
+      - ../:/workspaces/ai-sentinel:cached
+      # Volumes nommés pour persistance des caches outils (gain au rebuild)
+      - ai-sentinel-claude:/home/vscode/.claude
+      - ai-sentinel-maven:/home/vscode/.m2
+      - ai-sentinel-npm:/home/vscode/.npm
+      - ai-sentinel-pip:/home/vscode/.cache/pip
+      - ai-sentinel-node-modules:/workspaces/ai-sentinel/pii-reporting-ui/node_modules
+      # Cache HF partagé avec l'hôte. Évite de re-télécharger nvidia/gliner-PII et autres modèles
+      # à chaque rebuild — et permet de bypasser le gating quand le token n'est pas dans le conteneur.
+      # Le contenu (hub/, xet/) est géré par huggingface_hub côté hôte ou conteneur indistinctement.
+      - ../.model-cache:/home/vscode/.cache/huggingface:cached
+    command: sleep infinity
+    networks:
+      - ai-sentinel-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5433"
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: ai-sentinel
+      POSTGRES_DB: ai-sentinel
+      # Requis par pii-reporting-api/src/main/resources/application.yml — sinon les placeholders
+      # ne sont pas résolus et Spring Boot échoue avant même de joindre la DB.
+      PII_DATABASE_ENCRYPTION_KEY: changeme
+      PII_REPORTING_ALLOW_SECRET_REVEAL: "true"
+
+  postgres:
+    image: postgres:16-alpine
+    # Postgres écoute sur 5433 (interne ET côté hôte) pour rester aligné avec
+    # les .run/*.xml du projet qui imposent DB_PORT=5433.
+    command: ["postgres", "-p", "5433"]
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ai-sentinel
+    volumes:
+      - ai-sentinel-pgdata:/var/lib/postgresql/data
+    # Pas de port mapping hôte : le port 5433 est déjà pris par le container `ai-sentinel-db`
+    # du compose racine. L'app y accède via DNS interne `postgres:5433` depuis le workspace.
+    # Pour un accès hôte ponctuel, utiliser pgAdmin embarqué (port 5050).
+    networks:
+      - ai-sentinel-dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ai-sentinel -p 5433"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    volumes:
+      - ai-sentinel-pgadmin:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    networks:
+      - ai-sentinel-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+networks:
+  ai-sentinel-dev:
+    driver: bridge
+
+volumes:
+  ai-sentinel-claude:
+  ai-sentinel-maven:
+  ai-sentinel-npm:
+  ai-sentinel-pip:
+  ai-sentinel-node-modules:
+  ai-sentinel-pgdata:
+  ai-sentinel-pgadmin:

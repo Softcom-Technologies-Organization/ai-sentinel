@@ -1,6 +1,6 @@
 # Docker Compose override for DGNSI deployment
 # - Injects the corporate CA so SSL verification works behind the DGNSI proxy.
-# - Pins the images to a self-built ":dgnsi" tag, loaded from a tar (offline,
+# - Pins the images to a self-built ":v1.2.0-rc.1" tag, loaded from a tar (offline,
 #   no GHCR pull) — see the deployment folder README.
 #
 # Prerequisites (in the run directory):
@@ -15,7 +15,7 @@ services:
   # PII DETECTOR (Python/gRPC) — corporate CA for outbound HTTPS / model download
   # ============================================================================
   pii-detector:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-pii-detector:dgnsi
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-pii-detector:v1.2.0-rc.1
     pull_policy: never
     environment:
       REQUESTS_CA_BUNDLE: /etc/ssl/certs/corporate-ca.pem
@@ -29,7 +29,7 @@ services:
   # (Confluence, SharePoint, Jira connectors)
   # ============================================================================
   pii-reporting-api:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-api:dgnsi
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-api:v1.2.0-rc.1
     pull_policy: never
     environment:
       # Replaces the JVM default truststore, so ./certs/cacerts MUST be a full
@@ -45,5 +45,5 @@ services:
   # PII REPORTING UI (Angular + Nginx) — pinned to the self-built tag
   # ============================================================================
   pii-reporting-ui:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-ui:dgnsi
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-ui:v1.2.0-rc.1
     pull_policy: never

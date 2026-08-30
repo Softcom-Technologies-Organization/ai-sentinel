@@ -1,14 +1,14 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="PROD" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
     <envs>
-        <env name="DB_PORT" value="5433" />
-        <env name="PII_REPORTING_ALLOW_SECRET_REVEAL" value="true" />
-        <env name="PII_DATABASE_ENCRYPTION_KEY" value="0VbKF4QQonigye2zwYnk4suDB4CV9YqM9w53EM/kKqY=" />
-        <env name="DB_USER" value="postgres" />
-        <env name="DB_PASSWORD" value="postgres" />
+      <env name="DB_PORT" value="5433" />
+      <env name="PII_REPORTING_ALLOW_SECRET_REVEAL" value="true" />
+      <env name="PII_DATABASE_ENCRYPTION_KEY" value="0VbKF4QQonigye2zwYnk4suDB4CV9YqM9w53EM/kKqY=" />
+      <env name="DB_USER" value="postgres" />
+      <env name="DB_PASSWORD" value="postgres" />
+      <env name="PII_REPORTING_API_EXPORT_DIR" value="$PROJECT_DIR$/personally-identifiable-information-scan-results" />
     </envs>
     <module name="ai-sentinel" />
-    <option name="SHORTEN_COMMAND_LINE" value="ARGS_FILE" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="pro.softcom.aisentinel.AiSentinelApplication" />
     <method v="2">
       <option name="Make" enabled="true" />

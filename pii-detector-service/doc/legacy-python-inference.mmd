@@ -1,0 +1,169 @@
+---
+title: ai-sentinel — Inférence PII 100% Python (avant la bascule LM Studio)
+---
+flowchart TD
+
+%% ===========================================================
+%% PHASE 0 — DEMARRAGE DU SERVICE (une seule fois, au boot)
+%% ===========================================================
+subgraph BOOT["🚀 PHASE 0 — Démarrage du service gRPC, une seule fois"]
+    direction TB
+    HUB["🤗 Hugging Face Hub<br/><i>hf_hub_download / snapshot_download</i><br/>config.json · model.safetensors<br/>tokenizer.json · tokenizer_config.json<br/>→ cache local HF_HOME"]
+    TOK["🔤 TOKENIZER<br/><i>AutoTokenizer.from_pretrained</i><br/>vocabulaire sous-mots + règles de découpe<br/>Rôle : texte ⇄ suite d'entiers"]
+    MDL["🧠 MODELE<br/><i>AutoModelForTokenClassification.from_pretrained</i><br/>encodeur Transformer + tête de classification<br/>ex. iiiorg/piiranha-v1, nvidia/gliner-PII"]
+    OPT["⚙️ PREPARATION POUR L'INFERENCE<br/><i>model.to(device)</i> → CPU ou CUDA<br/><i>model.eval()</i> → désactive dropout<br/><i>requires_grad = False</i> → pas de gradients<br/>dtype float16 sur GPU / float32 sur CPU"]
+    PIPE["🔧 PIPELINE TRANSFORMERS<br/><i>pipeline 'token-classification'</i><br/>emballe tokenizer + modèle + décodage<br/><i>aggregation_strategy='simple'</i>"]
+    MEM["🧹 MEMORY MANAGER<br/>TOKENIZERS_PARALLELISM=false<br/>OMP_NUM_THREADS / torch.set_num_threads<br/>gc.collect · torch.cuda.empty_cache"]
+    POOL["👷 POOL DE WORKERS<br/>N processus <i>multiprocessing</i><br/>fork APRES préchargement des poids<br/>→ 1 seule copie en RAM, copy-on-write<br/>warmup du 1er forward dans chaque worker"]
+
+    HUB --> TOK --> MDL --> OPT --> PIPE --> MEM --> POOL
+end
+
+%% ===========================================================
+%% PHASE 1 — ARRIVEE D'UNE REQUETE
+%% ===========================================================
+subgraph REQ["📥 PHASE 1 — Une requête gRPC DetectPII"]
+    direction TB
+    IN["Texte brut d'une page Confluence<br/>quelques centaines à ~50 000 caractères"]
+    CFG["🗄️ Configuration fraîche depuis PostgreSQL<br/>table pii_type_config<br/>enabled · threshold · detector_label · type_label"]
+    NFC["🔣 NORMALISATION UNICODE NFC<br/>é précomposé ≠ e + accent combinant<br/>évite que le tokenizer coupe dans les diacritiques"]
+    IN --> NFC
+    CFG -.->|labels et seuils| NFC
+end
+
+POOL -->|worker libre| IN
+
+%% ===========================================================
+%% PHASE 2 — DECOUPAGE (CHUNKING)
+%% ===========================================================
+subgraph CHUNK["✂️ PHASE 2 — Chunking : le modèle a une fenêtre de contexte FINIE"]
+    direction TB
+    Q{"Nombre de TOKENS du texte<br/>&gt; max_len du modèle ?<br/>256 Piiranha · 384 à 768 GLiNER"}
+    ENC["🔤 Encodage avec métadonnées<br/><i>tokenizer(text,<br/>return_offsets_mapping=True,<br/>return_overflowing_tokens=True,<br/>stride=overlap)</i>"]
+    OFF["📐 OFFSET MAPPING<br/>pour chaque token : sa position<br/>caractère exacte dans le texte source<br/>→ c'est la clé pour rendre des spans justes"]
+    WIN["🪟 N FENETRES GLISSANTES<br/>taille = max_len, recouvrement = stride<br/>ex. 384 tokens / 128 de chevauchement<br/>Pourquoi le chevauchement : une entité à<br/>cheval sur 2 fenêtres est entière dans l'une"]
+    ONE["🪟 Une seule fenêtre"]
+
+    Q -->|oui| ENC --> OFF --> WIN
+    Q -->|non| ONE
+end
+
+NFC --> Q
+
+%% ===========================================================
+%% PHASE 3 — INFERENCE
+%% ===========================================================
+subgraph INF["🧮 PHASE 3 — Inférence : le forward pass"]
+    direction TB
+    PAR["🧵 ThreadPoolExecutor<br/>les chunks sont traités en parallèle<br/><i>as_completed</i> → agrégation au fil de l'eau"]
+    IDS["🔢 input_ids + attention_mask<br/>tenseurs d'entiers, un par token<br/>+ tokens spéciaux CLS / SEP"]
+    EMB["📊 EMBEDDINGS<br/>chaque token id → vecteur dense<br/>puis N couches d'attention<br/>= chaque token voit son contexte"]
+    LOG["🎯 LOGITS<br/><i>with torch.no_grad(): model(input_ids)</i><br/>matrice tokens × labels<br/>1 score brut par label et par token"]
+    SM["📈 SOFTMAX<br/>logits → probabilités 0 à 1<br/>c'est le 'score' de confiance"]
+
+    PAR --> IDS --> EMB --> LOG --> SM
+end
+
+WIN --> PAR
+ONE --> PAR
+
+%% ===========================================================
+%% PHASE 4 — DECODAGE DES SPANS
+%% ===========================================================
+subgraph DEC["🧩 PHASE 4 — Décodage : des tokens vers des spans lisibles"]
+    direction TB
+    BIO["🏷️ ETIQUETAGE BIO / BIOES<br/>B-EMAIL = début, I-EMAIL = intérieur<br/>O = rien. BIOES ajoute End et Single<br/>Le modèle classe des TOKENS, pas des entités"]
+    AGG["🔗 AGREGATION<br/><i>aggregation_strategy='simple'</i><br/>ou décodeur Viterbi natif du modèle<br/>→ regroupe B + I + I en UN span<br/>sortie : entity_group, start, end, score, word"]
+    ZS["🪄 VARIANTE ZERO-SHOT (GLiNER)<br/>les labels sont passés EN ENTREE<br/>en langage naturel : 'iban', 'passport number'<br/><i>model.predict_entities(chunk, labels, threshold)</i><br/>→ pas de ré-entraînement pour un nouveau type"]
+
+    BIO --> AGG
+end
+
+SM --> BIO
+SM -.->|GLiNER| ZS
+
+%% ===========================================================
+%% PHASE 5 — RECONSTRUCTION ET FILTRAGE
+%% ===========================================================
+subgraph POST["🧷 PHASE 5 — Post-traitement : recoller la réalité"]
+    direction TB
+    REBASE["📍 REBASE DES OFFSETS<br/>span.start += chunk.start<br/>les offsets étaient LOCAUX au chunk,<br/>ils redeviennent GLOBAUX"]
+    FRAG["🧵 FUSION DES FRAGMENTS SOUS-MOTS<br/>'Rod' + 'ri' + 'gue' → 'Rodrigue'<br/>'Tr0ub4dor!202' + '4' → 'Tr0ub4dor!2024'<br/>Cause : le tokenizer coupe en sous-mots"]
+    DEDUP["♻️ DEDUPLICATION DU CHEVAUCHEMENT<br/>même label + spans qui se recouvrent<br/>→ on garde le plus large, puis le mieux scoré"]
+    HEUR["🩹 HEURISTIQUES METIER<br/>expansion d'un EMAIL tronqué jusqu'au domaine<br/>scission ZIPCODE + CITY"]
+    MAP["🗺️ MAPPING LABEL → TYPE METIER<br/>detector_label du modèle → pii_type canonique<br/>'credit card number' → CARD_NUMBER<br/>Un label inconnu de la config est ignoré"]
+    THR["🚦 SEUILS DE CONFIANCE<br/>1. seuil global permissif<br/>2. seuil PAR TYPE depuis la DB<br/>→ le curseur précision / rappel"]
+
+    REBASE --> FRAG --> DEDUP --> HEUR --> MAP --> THR
+end
+
+AGG --> REBASE
+ZS --> REBASE
+
+%% ===========================================================
+%% PHASE 6 — ENSEMBLE MULTI-DETECTEURS
+%% ===========================================================
+subgraph ENS["🎼 PHASE 6 — Ensemble : le modèle n'est qu'une voix"]
+    direction TB
+    RGX["🔎 REGEX<br/>formats stricts : IBAN, AVS, MAC"]
+    PRE["🧰 PRESIDIO<br/>reconnaisseurs + checksums"]
+    MRG["🤝 MERGE + CONFLICT RESOLVER<br/>spans qui se recouvrent entre détecteurs<br/>arbitrage par priorité et par score"]
+    RGX --> MRG
+    PRE --> MRG
+end
+
+THR --> MRG
+
+%% ===========================================================
+%% PHASE 7 — JUGE LLM GENERATIF LOCAL
+%% ===========================================================
+subgraph JUDGE["⚖️ PHASE 7 — Juge LLM génératif, en local dans le process Python"]
+    direction TB
+    GGUF["📦 MODELE GGUF QUANTIFIE<br/>ex. gemma-4-E4B-it-Q4_K_M.gguf<br/>Quantification : poids 16 bits → 4 bits<br/>≈ 4x moins de RAM, léger coût en qualité"]
+    LC["🦙 LLAMA-CPP-PYTHON<br/><i>Llama(model_path, n_ctx=4096,<br/>n_gpu_layers=-1)</i><br/>moteur C++ : pas de PyTorch ici<br/>n_gpu_layers = couches déportées sur GPU"]
+    PR["📝 PROMPT<br/>entité + ±200 caractères de contexte<br/>batch de ~20 entités par appel<br/>si le prompt dépasse n_ctx → split récursif"]
+    GEN["🎲 GENERATION AUTOREGRESSIVE<br/><i>create_chat_completion</i><br/>temperature=0.0 → déterministe<br/>max_tokens=200 → borne la sortie<br/>Ici le modèle ECRIT du texte, il ne classe pas"]
+    PARSE["🔍 PARSING DU VERDICT<br/>regex sur 'idx: TRUE_POSITIVE'<br/>ou 'idx: FALSE_POSITIVE'<br/>Fragilité : le texte libre doit être re-structuré"]
+    FO["🛡️ FAIL-OPEN<br/>timeout, crash ou modèle absent<br/>→ on garde les entités, on ne perd rien"]
+
+    GGUF --> LC --> PR --> GEN --> PARSE
+    GEN -.->|erreur| FO
+end
+
+MRG --> GGUF
+
+%% ===========================================================
+%% SORTIE
+%% ===========================================================
+OUT["📤 Réponse gRPC<br/>liste de PIIEntity<br/>text · pii_type · start · end · score · source"]
+PARSE --> OUT
+FO --> OUT
+
+%% ===========================================================
+%% CE QUI A REMPLACE TOUT CA
+%% ===========================================================
+subgraph TODAY["🔄 AUJOURD'HUI — délégation de l'inférence à LM Studio"]
+    direction TB
+    T1["Plus de chargement de poids en Python<br/>plus de tokenizer, plus de PyTorch dans le service"]
+    T2["Appel HTTP <i>POST /v1/chat/completions</i><br/>compatible OpenAI, via httpx"]
+    T3["<i>response_format: json_schema strict</i><br/>la sortie est CONTRAINTE par un schéma<br/>→ plus de parsing regex fragile"]
+    T4["LM Studio gère : chargement, quantification,<br/>batching, KV-cache, GPU Metal/CUDA<br/>Le chunking et le mapping restent chez nous"]
+    T1 --> T2 --> T3 --> T4
+end
+
+OUT -.->|évolution| T1
+
+%% ===========================================================
+%% STYLES
+%% ===========================================================
+classDef concept fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+classDef infra fill:#f3e5f5,stroke:#6a1b9a,stroke-width:1px,color:#4a148c
+classDef biz fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px,color:#1b5e20
+classDef warn fill:#fff3e0,stroke:#ef6c00,stroke-width:1px,color:#e65100
+classDef today fill:#eceff1,stroke:#455a64,stroke-width:1px,color:#263238
+
+class TOK,MDL,PIPE,EMB,LOG,SM,BIO,AGG,ZS,GGUF,LC,GEN concept
+class HUB,OPT,MEM,POOL,PAR,IDS,ENC,OFF,WIN,ONE infra
+class CFG,MAP,THR,HEUR,RGX,PRE,MRG,OUT biz
+class NFC,FRAG,DEDUP,REBASE,PARSE,FO,PR warn
+class T1,T2,T3,T4 today

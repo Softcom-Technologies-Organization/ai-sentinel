@@ -5,13 +5,7 @@
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-        <env name="DB_PORT" value="5433" />
-        <env name="DB_NAME" value="ai-sentinel" />
-        <env name="DB_HOST" value="localhost" />
-        <env name="PII_DATABASE_ENCRYPTION_KEY" value="0VbKF4QQonigye2zwYnk4suDB4CV9YqM9w53EM/kKqY=" />
-        <env name="DB_USER" value="postgres" />
-        <env name="DB_PASSWORD" value="postgres" />
+      <env name="PYTHONUNBUFFERED" value="1" />
       <env name="DB_PORT" value="5433" />
       <env name="DB_NAME" value="ai-sentinel" />
       <env name="DB_HOST" value="localhost" />
@@ -19,8 +13,8 @@
       <env name="DB_USER" value="postgres" />
       <env name="DB_PASSWORD" value="postgres" />
     </envs>
-    <option name="SDK_HOME" value="$PROJECT_DIR$/pii-detector-service/.venv/Scripts/python.exe" />
-    <option name="SDK_NAME" value="Python 3.13 (pii-detector-service)" />
+    <option name="SDK_HOME" value="$PROJECT_DIR$/pii-detector-service/.venv/bin/python" />
+    <option name="SDK_NAME" value="~/Workspace/ai-sentinel/pii-detector-service/.venv" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/pii-detector-service/pii_detector" />
     <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />

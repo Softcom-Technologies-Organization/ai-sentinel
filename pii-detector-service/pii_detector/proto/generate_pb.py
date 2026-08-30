@@ -42,7 +42,9 @@ def generate_grpc_code():
         logger.info(f"Output directory: {output_dir}")
 
         # Command to generate Python code
-        cmd = f'python -m grpc_tools.protoc -I"{proto_dir}" --python_out="{output_dir}" --grpc_python_out="{output_dir}" "{proto_file}"'
+        # sys.executable rather than "python": the interpreter running this script is
+        # the one holding grpc_tools, and a bare "python" is not on PATH at all on macOS.
+        cmd = f'"{sys.executable}" -m grpc_tools.protoc -I"{proto_dir}" --python_out="{output_dir}" --grpc_python_out="{output_dir}" "{proto_file}"'
 
         logger.info(f"Generating gRPC code from {proto_file}")
         logger.info(f"Command: {cmd}")

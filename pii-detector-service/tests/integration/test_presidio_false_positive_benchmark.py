@@ -414,6 +414,8 @@ def test_presidio_false_positive_benchmark(presidio_analyzer):
     print("=" * 100)
 
     results: List[EntityResult] = []
+    unsupported: List[str] = []
+    supported_entities = set(presidio_analyzer.get_supported_entities(language="en"))
     total_start = time.time()
 
     for idx, (pii_type, config) in enumerate(PRESIDIO_ENTITIES.items(), 1):
@@ -422,6 +424,11 @@ def test_presidio_false_positive_benchmark(presidio_analyzer):
         country = config.get("country")
 
         print(f"   [{idx:2}/{len(PRESIDIO_ENTITIES)}] Testing '{entity}'...", end="", flush=True)
+
+        if entity not in supported_entities:
+            unsupported.append(entity)
+            print(" SKIPPED (no recognizer for 'en')")
+            continue
 
         result = _run_single_entity(
             analyzer=presidio_analyzer,
@@ -437,6 +444,9 @@ def test_presidio_false_positive_benchmark(presidio_analyzer):
 
     total_elapsed = time.time() - total_start
     print(f"\nBenchmark completed in {total_elapsed:.1f}s")
+
+    if unsupported:
+        print(f"Entities without an 'en' recognizer (not benchmarked): {', '.join(unsupported)}")
 
     _print_report(results)
 

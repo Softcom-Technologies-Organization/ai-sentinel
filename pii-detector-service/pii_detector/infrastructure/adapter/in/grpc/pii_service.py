@@ -491,6 +491,84 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         finally:
             self._cleanup_request_resources(request_id, start_time)
 
+    def CheckDetectorsHealth(self, request, context):
+        """Implement the CheckDetectorsHealth RPC method.
+
+        Business process:
+        1. Read the enabled detectors and the LM Studio endpoint from the database
+        2. Ask the composite detector whether each enabled detector can run
+        3. Return one entry per enabled detector
+
+        The probe deliberately runs here rather than in the backend: the LM Studio
+        host/port are configured from THIS service's network standpoint, so probing
+        anywhere else could report a reachable endpoint the detectors cannot
+        actually use.
+
+        Returns:
+            DetectorsHealthResponse with one DetectorHealth per enabled detector,
+            empty when the configuration cannot be read.
+        """
+        request_id = self._generate_request_id(time.time())
+        response = pii_detection_pb2.DetectorsHealthResponse()
+
+        detector_flags = self._fetch_detector_flags(request_id)
+        if detector_flags is None:
+            # Claiming every detector is healthy would be a lie, and claiming they
+            # are all down would block scans over a configuration read failure the
+            # detection path already reports on its own. Report nothing instead.
+            logger.warning(
+                f"[{request_id}] Detector health check skipped: "
+                "detector configuration unavailable"
+            )
+            return response
+
+        # A probe failure must not escape as a gRPC error: the backend treats an
+        # unusable health check as "cannot tell" and starts the scan anyway, so an
+        # escaping exception would buy nothing while losing the reason. Report
+        # nothing, exactly like an unreadable configuration above.
+        probe = getattr(self.detector, "check_detectors_health", None)
+        if probe is None:
+            logger.warning(
+                f"[{request_id}] Detector health check skipped: "
+                "detector does not support health probing"
+            )
+            return response
+        try:
+            probed = probe(
+                enable_regex=detector_flags.get('regex_enabled'),
+                enable_presidio=detector_flags.get('presidio_enabled'),
+                enable_ministral=detector_flags.get('ministral_enabled'),
+                lm_studio_host=detector_flags.get('lm_studio_host'),
+                lm_studio_port=detector_flags.get('lm_studio_port'),
+            )
+        except Exception as exc:
+            logger.error(
+                f"[{request_id}] Detector health check failed: "
+                f"{type(exc).__name__}: {exc}"
+            )
+            return response
+
+        for health in probed:
+            entry = response.detectors.add()
+            source = health["source"]
+            entry.source = getattr(
+                pii_detection_pb2.DetectorSource, source.name,
+                pii_detection_pb2.DetectorSource.UNKNOWN_SOURCE,
+            )
+            entry.reachable = bool(health["reachable"])
+            entry.endpoint = str(health.get("endpoint") or "")
+            entry.error = str(health.get("error") or "")
+            entry.error_code = str(health.get("error_code") or "")
+            for name, value in (health.get("error_params") or {}).items():
+                entry.error_params[str(name)] = str(value)
+
+        unreachable = sum(1 for entry in response.detectors if not entry.reachable)
+        logger.info(
+            f"[{request_id}] Detector health: {len(response.detectors)} enabled, "
+            f"{unreachable} unreachable"
+        )
+        return response
+
     def _generate_request_id(self, start_time: float) -> str:
         """Generate unique request identifier for logging.
         
@@ -586,30 +664,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             # Extract threshold from database config
             threshold = float(db_config.get('default_threshold', default_threshold))
 
-            # Extract detector flags for dynamic activation.
-            detector_flags = {
-                'presidio_enabled': db_config.get('presidio_enabled', True),
-                'regex_enabled': db_config.get('regex_enabled', False),
-                'ministral_enabled': db_config.get('ministral_enabled', False),
-                # Ministral-PII chunking knobs, threaded by _build_detection_kwargs
-                # into the composite's detect_pii_with_stats and routed on to the
-                # Ministral detector's detect_pii.
-                'ministral_chunk_size': db_config.get('ministral_chunk_size'),
-                'ministral_overlap': db_config.get('ministral_overlap'),
-                'postfilter_enabled': db_config.get('postfilter_enabled', False),
-                # LM Studio endpoint (host/port) serving the Ministral-PII model,
-                # threaded by _build_detection_kwargs into the composite and routed
-                # on to the Ministral detector so an operator can retarget the
-                # endpoint without a service restart. Re-read on every scan/resume
-                # (fetch_config_from_db is set per request by the backend).
-                'lm_studio_host': db_config.get('lm_studio_host'),
-                'lm_studio_port': db_config.get('lm_studio_port'),
-                # Number of chunk prompts the Ministral detector sends to LM Studio
-                # concurrently (DB column ministral_concurrency, auto-tuned at
-                # startup). Threaded by _build_detection_kwargs into the composite
-                # and on to the Ministral detector's chunk loop.
-                'ministral_concurrency': db_config.get('ministral_concurrency'),
-            }
+            detector_flags = self._extract_detector_flags(db_config)
 
             logger.info(
                 f"[{request_id}] Applied database config: threshold={threshold}, "
@@ -633,6 +688,61 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 f"Using default threshold {default_threshold}"
             )
             return default_threshold, None, None
+
+    @staticmethod
+    def _extract_detector_flags(db_config: dict) -> dict:
+        """Map a ``pii_detection_config`` row to the detector activation flags.
+
+        Returns:
+            Dictionary with presidio_enabled, regex_enabled, ministral_enabled,
+            the Ministral chunking/concurrency knobs, the LM Studio endpoint and
+            postfilter_enabled.
+        """
+        return {
+            'presidio_enabled': db_config.get('presidio_enabled', True),
+            'regex_enabled': db_config.get('regex_enabled', False),
+            'ministral_enabled': db_config.get('ministral_enabled', False),
+            # Ministral-PII chunking knobs, threaded by _build_detection_kwargs
+            # into the composite's detect_pii_with_stats and routed on to the
+            # Ministral detector's detect_pii.
+            'ministral_chunk_size': db_config.get('ministral_chunk_size'),
+            'ministral_overlap': db_config.get('ministral_overlap'),
+            'postfilter_enabled': db_config.get('postfilter_enabled', False),
+            # LM Studio endpoint (host/port) serving the Ministral-PII model,
+            # threaded by _build_detection_kwargs into the composite and routed
+            # on to the Ministral detector so an operator can retarget the
+            # endpoint without a service restart. Re-read on every scan/resume
+            # (fetch_config_from_db is set per request by the backend).
+            'lm_studio_host': db_config.get('lm_studio_host'),
+            'lm_studio_port': db_config.get('lm_studio_port'),
+            # Number of chunk prompts the Ministral detector sends to LM Studio
+            # concurrently (DB column ministral_concurrency, auto-tuned at
+            # startup). Threaded by _build_detection_kwargs into the composite
+            # and on to the Ministral detector's chunk loop.
+            'ministral_concurrency': db_config.get('ministral_concurrency'),
+        }
+
+    def _fetch_detector_flags(self, request_id: str) -> Optional[dict]:
+        """Read only the detector activation flags from the database.
+
+        Lighter counterpart of :meth:`_fetch_and_apply_config` for the health
+        pre-flight, which needs the flags and the LM Studio endpoint but not the
+        per-type configs. Returns ``None`` when the configuration is unreadable.
+        """
+        try:
+            from pii_detector.infrastructure.adapter.out.database_config_adapter import (
+                get_database_config_adapter,
+            )
+
+            db_config = get_database_config_adapter().fetch_config()
+            if db_config is None:
+                return None
+            return self._extract_detector_flags(db_config)
+        except Exception as e:
+            logger.warning(
+                f"[{request_id}] Failed to fetch detector flags from database: {e}"
+            )
+            return None
 
     def _validate_content(self, content: str, request_id: str) -> Optional[str]:
         """Validate content against business rules.
@@ -1216,8 +1326,10 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         """Add per-detector run stats to ``detector_stats``.
 
         Each item is a dict ``{"source": DetectorSource, "duration_ms": int,
-        "entities_found": int}`` produced by the composite detector (one entry
-        per detector that actually ran for this request).
+        "entities_found": int, "error": str}`` produced by the composite detector
+        (one entry per detector that actually ran for this request). A non-empty
+        ``error`` is what lets the backend report a detector that could not run
+        instead of silently treating its absence of findings as a clean result.
 
         Args:
             response: Response object to populate
@@ -1242,6 +1354,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 proto_stat.duration_ms = int(stat.get("duration_ms", 0))
                 proto_stat.entities_found = int(stat.get("entities_found", 0))
                 proto_stat.entities_discarded = int(stat.get("entities_discarded", 0))
+                proto_stat.error = str(stat.get("error") or "")
             except (ValueError, TypeError) as e:
                 # Observability payload only: never fail the response because a
                 # single stats entry cannot be serialized.

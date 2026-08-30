@@ -24,8 +24,11 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 
+from pii_detector.domain.entity.detector_failure import DetectorFailureCode
 from pii_detector.domain.entity.detector_source import DetectorSource
+from pii_detector.domain.exception.exceptions import DetectorUnavailableError
 from pii_detector.infrastructure.detector.ministral_detector import (
+    MINISTRAL_DEFAULT_MODEL_ID,
     MinistralDetector,
     _LabelResolver,
     _normalize_label,
@@ -294,6 +297,63 @@ class TestFailOpenPerChunk:
         )
         assert {e.pii_type for e in entities} == {"ID"}
 
+    def test_Should_RaiseUnavailable_When_EveryChunkFails(self):
+        """All chunks failing means the endpoint is down, not that the text is clean.
+
+        Returning an empty list here would report a document with no PII, which is
+        exactly the silent degradation this escalation exists to prevent.
+        """
+        detector = MinistralDetector()
+        detector._get_tokenizer = lambda: None
+        client = MagicMock()
+        client.post = MagicMock(side_effect=httpx.ConnectError("endpoint unreachable"))
+        detector._client = client
+        configs = _configs(("PERSON", "PERSON", 0.0))
+
+        with pytest.raises(DetectorUnavailableError) as failure:
+            detector.detect_pii(
+                "AAA name BB id99", pii_type_configs=configs, chunk_size=2, overlap=0,
+                lm_studio_host="lmstudio", lm_studio_port=1234,
+            )
+
+        # The message must be diagnosable: which endpoint, and why.
+        assert "http://lmstudio:1234/v1" in str(failure.value)
+        assert "endpoint unreachable" in str(failure.value)
+
+
+class TestCheckHealth:
+    def test_Should_ReportNoError_When_EndpointAnswersAndServesTheModel(self):
+        detector = MinistralDetector()
+        client = MagicMock()
+        # Answering is not enough since the model-state check was added: the endpoint
+        # must also report the configured model as loaded.
+        model_state = MagicMock()
+        model_state.json.return_value = {
+            "data": [{"id": MINISTRAL_DEFAULT_MODEL_ID, "state": "loaded"}]
+        }
+        client.get = MagicMock(
+            side_effect=lambda url, **_: model_state if "/api/v0/models" in url else _chat_response([])
+        )
+        detector._client = client
+
+        endpoint, error = detector.check_health("lmstudio", 1234)
+
+        assert endpoint == "http://lmstudio:1234/v1"
+        assert error is None
+        assert client.get.call_args_list[0][0][0] == "http://lmstudio:1234/v1/models"
+
+    def test_Should_ReportError_When_EndpointUnreachable(self):
+        detector = MinistralDetector()
+        client = MagicMock()
+        client.get = MagicMock(side_effect=httpx.ConnectError("connection refused"))
+        detector._client = client
+
+        endpoint, failure = detector.check_health("lmstudio", 1234)
+
+        assert endpoint == "http://lmstudio:1234/v1"
+        assert failure.code is DetectorFailureCode.ENDPOINT_UNREACHABLE
+        assert "connection refused" in failure.params["cause"]
+
 
 class TestTolerantJsonParsing:
     def test_Should_ParseArray_When_WrappedInMarkdownFenceAndProse(self):
@@ -538,3 +598,202 @@ class TestLabelResolver:
         dropped = [label for label in _LOGGED_MINISTRAL_LABELS
                    if not resolver.resolve(label)]
         assert dropped == [], f"{len(dropped)} logged label(s) dropped: {dropped}"
+
+
+class TestDeadEndpointDoesNotHang:
+    """An endpoint that dies mid-request must be reported, not waited on forever.
+
+    Closing LM Studio while a chunk is in flight leaves the socket open with no
+    answer coming. Without a bounded read the scan hangs indefinitely with nothing
+    reported to the operator, which is exactly the silent stall this guards against.
+    """
+
+    def test_Should_ConfigureBoundedReadTimeout_When_ClientIsBuilt(self):
+        detector = MinistralDetector()
+
+        client = detector._get_client()
+
+        assert client.timeout.connect is not None
+        assert client.timeout.read is not None, (
+            "an unbounded read makes a dead endpoint hang the scan forever"
+        )
+
+    def test_Should_ReportFailure_When_EndpointAcceptsThenNeverAnswers(self):
+        import socket
+        import threading
+
+        # Server that completes the TCP handshake then stays silent — the shape of a
+        # host whose LLM process vanished without closing the connection.
+        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        listener.bind(("127.0.0.1", 0))
+        listener.listen(1)
+        port = listener.getsockname()[1]
+        accepted: List[Any] = []
+
+        def _accept_and_stay_silent() -> None:
+            try:
+                conn, _ = listener.accept()
+                accepted.append(conn)
+            except OSError:
+                pass
+
+        thread = threading.Thread(target=_accept_and_stay_silent, daemon=True)
+        thread.start()
+
+        detector = MinistralDetector()
+        detector._client = httpx.Client(
+            http2=False,
+            trust_env=False,
+            timeout=httpx.Timeout(None, connect=5.0, read=1.0),
+        )
+
+        try:
+            with pytest.raises((httpx.HTTPError, httpx.TimeoutException)):
+                detector._extract_chunk("Jean Dupont", base_url=f"http://127.0.0.1:{port}/v1")
+        finally:
+            # Order matters: the listener thread can still append to `accepted`, so it
+            # must be done running before that list is drained, or a socket survives
+            # the test and leaks into the rest of the suite.
+            detector._client.close()
+            listener.close()
+            thread.join(timeout=5)
+            for conn in accepted:
+                conn.close()
+
+
+class TestHealthRequiresServedModel:
+    """A reachable endpoint is not a working detector.
+
+    LM Studio lists every model it has on disk, loaded or not, so a server left
+    running with the model unloaded passes a reachability check and then fails
+    every request — the scan starts and finds nothing.
+    """
+
+    @staticmethod
+    def _detector_with_responses(v1_ok: bool, v0_payload: Any, v0_status: int = 200):
+        detector = MinistralDetector()
+        client = MagicMock()
+
+        def _get(url: str, **_: Any):
+            response = MagicMock()
+            if "/api/v0/models" in url:
+                response.status_code = v0_status
+                response.json.return_value = v0_payload
+                if v0_status >= 400:
+                    response.raise_for_status.side_effect = httpx.HTTPStatusError(
+                        "not found", request=MagicMock(), response=MagicMock()
+                    )
+                return response
+            if not v1_ok:
+                raise httpx.ConnectError("refused")
+            response.status_code = 200
+            return response
+
+        client.get.side_effect = _get
+        detector._client = client
+        return detector
+
+    def test_Should_ReportReady_When_ConfiguredModelIsLoaded(self):
+        detector = self._detector_with_responses(
+            True, {"data": [{"id": MINISTRAL_DEFAULT_MODEL_ID, "state": "loaded"}]}
+        )
+
+        _, error = detector.check_health("localhost", 1234)
+
+        assert error is None
+
+    def test_Should_RefuseScan_When_ModelIsPresentButUnloaded(self):
+        detector = self._detector_with_responses(
+            True, {"data": [{"id": MINISTRAL_DEFAULT_MODEL_ID, "state": "not-loaded"}]}
+        )
+
+        _, failure = detector.check_health("localhost", 1234)
+
+        assert failure.code is DetectorFailureCode.MODEL_NOT_LOADED
+        assert failure.params["state"] == "not-loaded"
+        assert failure.params["model"] == MINISTRAL_DEFAULT_MODEL_ID
+
+    def test_Should_RefuseScan_When_ModelIsAbsentFromEndpoint(self):
+        detector = self._detector_with_responses(
+            True, {"data": [{"id": "some/other-model", "state": "loaded"}]}
+        )
+
+        _, failure = detector.check_health("localhost", 1234)
+
+        assert failure.code is DetectorFailureCode.MODEL_NOT_AVAILABLE
+        assert failure.params["loadedModels"] == "some/other-model"
+
+    def test_Should_StayPermissive_When_EndpointHasNoModelStateApi(self):
+        # Any other OpenAI-compatible backend: no /api/v0, so no verdict to give.
+        detector = self._detector_with_responses(True, {}, v0_status=404)
+
+        _, error = detector.check_health("localhost", 1234)
+
+        assert error is None
+
+    def test_Should_StayPermissive_When_ModelStateApiReturnsUnexpectedShape(self):
+        # A payload that cannot be read is the same situation as no state API at all:
+        # staying silent beats refusing a scan over a misread response.
+        for payload in (["not", "a", "mapping"], {"data": ["not-an-entry"]}, {"data": None}):
+            detector = self._detector_with_responses(True, payload)
+
+            _, error = detector.check_health("localhost", 1234)
+
+            assert error is None, f"unexpected refusal for payload {payload!r}"
+
+    def test_Should_RefuseScan_When_EndpointServesNoModelAtAll(self):
+        # An empty list is understood and conclusive, unlike an unreadable payload.
+        detector = self._detector_with_responses(True, {"data": []})
+
+        _, failure = detector.check_health("localhost", 1234)
+
+        assert failure.code is DetectorFailureCode.MODEL_NOT_AVAILABLE
+        assert failure.params["loadedModels"] == ""
+
+
+class TestHttp200ErrorPayloadIsNotACleanResult:
+    """An HTTP 200 carrying an error body must never read as "no PII found".
+
+    Observed in production: the endpoint answered
+    `200 OK` with `{"error": "Unexpected endpoint or method. (GET /v1/chat/completions)"}`.
+    Since raise_for_status() does not fire on 200, the body was parsed as an empty
+    completion and every chunk was reported as a success with zero entities — the
+    scan ran to the end and declared the documents clean.
+    """
+
+    @staticmethod
+    def _error_body_response() -> MagicMock:
+        response = MagicMock()
+        response.raise_for_status = MagicMock()  # 200 OK: nothing raised
+        response.json = MagicMock(return_value={
+            "error": "Unexpected endpoint or method. (GET /v1/chat/completions)"
+        })
+        return response
+
+    def test_Should_RaiseUnavailable_When_BodyCarriesAnErrorInsteadOfCompletion(self):
+        detector = _build_detector([self._error_body_response()])
+        configs = _configs(("EMAIL", "EMAIL", 0.0))
+
+        with pytest.raises(DetectorUnavailableError) as failure:
+            detector.detect_pii("Contact: john@acme.com", pii_type_configs=configs)
+
+        assert "Unexpected endpoint or method" in str(failure.value)
+
+    def test_Should_RaiseUnavailable_When_BodyHasNoChoicesAtAll(self):
+        response = MagicMock()
+        response.raise_for_status = MagicMock()
+        response.json = MagicMock(return_value={"object": "list", "data": []})
+        detector = _build_detector([response])
+        configs = _configs(("EMAIL", "EMAIL", 0.0))
+
+        with pytest.raises(DetectorUnavailableError):
+            detector.detect_pii("Contact: john@acme.com", pii_type_configs=configs)
+
+    def test_Should_ReportNoEntities_When_ModelGenuinelyReturnsAnEmptyArray(self):
+        # The legitimate "nothing found" case must stay a success, not an outage:
+        # a well-formed completion whose content is an empty JSON array.
+        detector = _build_detector([_chat_response([])])
+        configs = _configs(("EMAIL", "EMAIL", 0.0))
+
+        assert detector.detect_pii("nothing sensitive here", pii_type_configs=configs) == []

@@ -9,6 +9,10 @@ from unittest.mock import Mock, patch
 import pytest
 
 from pii_detector.application.orchestration.composite_detector import CompositePIIDetector
+from pii_detector.domain.entity.detector_failure import (
+    DetectorFailure,
+    DetectorFailureCode,
+)
 from pii_detector.domain.entity.pii_entity import PIIEntity
 
 
@@ -353,3 +357,101 @@ class TestCompositePIIDetectorIntegration:
         # Should detect the AWS key with the real regex detector
         pii_types = {e.pii_type for e in entities}
         assert "API_KEY" in pii_types
+
+
+class TestLocalDetectorHealth:
+    """Readiness of in-process detectors reported before a scan starts.
+
+    A detector reported ready but unable to run contributes zero findings, which
+    reads exactly like clean content — so readiness must reflect more than the
+    detector object existing.
+    """
+
+    def test_Should_ReportUnreachable_When_DetectorNotInstantiated(self):
+        composite = CompositePIIDetector(
+            regex_detector=None, enable_regex=False,
+            presidio_detector=None, enable_presidio=False,
+        )
+        composite.enable_presidio = True
+
+        health = composite.check_detectors_health(
+            enable_regex=False, enable_presidio=True, enable_ministral=False
+        )
+
+        assert len(health) == 1
+        assert health[0]["reachable"] is False
+        assert "not instantiated" in health[0]["error"]
+
+    def test_Should_ReportUnreachable_When_LazyModelsFailToLoad(self):
+        # Presidio builds its AnalyzerEngine on first use: an engine that cannot be
+        # built would pass a presence-only check, then find nothing.
+        presidio = Mock()
+        presidio.check_health = Mock(return_value=("", DetectorFailure(
+            code=DetectorFailureCode.INIT_FAILED,
+            message="Presidio analyzer could not be initialized",
+        )))
+        composite = CompositePIIDetector(
+            regex_detector=Mock(), enable_regex=False,
+            presidio_detector=presidio, enable_presidio=True,
+        )
+
+        health = composite.check_detectors_health(
+            enable_regex=False, enable_presidio=True, enable_ministral=False
+        )
+
+        assert health[0]["reachable"] is False
+        assert health[0]["error"] == "Presidio analyzer could not be initialized"
+        assert health[0]["error_code"] == DetectorFailureCode.INIT_FAILED.value
+        presidio.check_health.assert_called_once()
+
+    def test_Should_ReportReachable_When_LazyModelsLoad(self):
+        presidio = Mock()
+        presidio.check_health = Mock(return_value=("", None))
+        composite = CompositePIIDetector(
+            regex_detector=Mock(), enable_regex=False,
+            presidio_detector=presidio, enable_presidio=True,
+        )
+
+        health = composite.check_detectors_health(
+            enable_regex=False, enable_presidio=True, enable_ministral=False
+        )
+
+        assert health[0]["reachable"] is True
+        assert health[0]["error"] == ""
+
+    def test_Should_ReportReachable_When_DetectorOffersNoProbe(self):
+        # Regex has nothing to load: absent a probe, being instantiated is readiness.
+        regex = Mock(spec=["model_id", "download_model", "load_model", "detect_pii"])
+        composite = CompositePIIDetector(
+            regex_detector=regex, enable_regex=True,
+            presidio_detector=None, enable_presidio=False,
+        )
+
+        health = composite.check_detectors_health(
+            enable_regex=True, enable_presidio=False, enable_ministral=False
+        )
+
+        assert health[0]["reachable"] is True
+        assert health[0]["error"] == ""
+
+    def test_Should_ReportUnreachable_When_PresidioDisabledInModelConfig(self):
+        # The database flag and the TOML model config are independent switches: a Presidio
+        # enabled in the database but disabled in its own config finds nothing, silently.
+        from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
+
+        presidio = Mock(spec=PresidioDetector)
+        presidio.check_health = Mock(return_value=("", DetectorFailure(
+            code=DetectorFailureCode.DISABLED_IN_CONFIG,
+            message="Presidio detector is disabled in its model configuration",
+        )))
+        composite = CompositePIIDetector(
+            regex_detector=Mock(), enable_regex=False,
+            presidio_detector=presidio, enable_presidio=True,
+        )
+
+        health = composite.check_detectors_health(
+            enable_regex=False, enable_presidio=True, enable_ministral=False
+        )
+
+        assert health[0]["reachable"] is False
+        assert health[0]["error_code"] == DetectorFailureCode.DISABLED_IN_CONFIG.value

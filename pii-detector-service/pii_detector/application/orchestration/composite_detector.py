@@ -18,6 +18,10 @@ import logging
 import time
 from typing import Dict, List, Optional, Tuple
 
+from pii_detector.domain.entity.detector_failure import (
+    DetectorFailure,
+    DetectorFailureCode,
+)
 from pii_detector.domain.entity.detector_source import DetectorSource
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.port.pii_detector_protocol import PIIDetectorProtocol
@@ -233,7 +237,12 @@ class CompositePIIDetector:
         entry per detector that actually ran (even with 0 detections). Each
         stats entry is a plain dict (picklable across the worker-pool boundary)::
 
-            {"source": DetectorSource, "duration_ms": int, "entities_found": int}
+            {"source": DetectorSource, "duration_ms": int, "entities_found": int,
+             "error": str}
+
+        ``error`` is empty when the detector ran normally and carries the failure
+        reason otherwise, so a detector that could not run is never mistaken for
+        one that found no PII.
 
         Stats are returned by value (never stored on the instance) because the
         composite is a singleton shared across concurrent gRPC worker threads;
@@ -263,6 +272,108 @@ class CompositePIIDetector:
         merged_entities = self._merger.merge(results_per_detector)
         self._log_detection_summary(results_per_detector, merged_entities)
         return merged_entities, stats
+
+    def check_detectors_health(
+        self,
+        enable_regex: Optional[bool] = None,
+        enable_presidio: Optional[bool] = None,
+        enable_ministral: Optional[bool] = None,
+        lm_studio_host: Optional[str] = None,
+        lm_studio_port: Optional[int] = None,
+    ) -> List[Dict]:
+        """Report whether each ENABLED detector can actually run right now.
+
+        Answers the pre-flight question "will the detectors the operator switched
+        on really contribute?". Only enabled detectors are reported: a detector
+        deliberately turned off is not a problem to warn about. Each entry is a
+        plain dict::
+
+            {"source": DetectorSource, "reachable": bool, "endpoint": str,
+             "error": str, "error_code": str, "error_params": Dict[str, str]}
+
+        ``error`` is a diagnostic detail for the logs; ``error_code`` is what the
+        dashboard translates into the operator's language.
+
+        Local detectors (Regex, Presidio) are ready as soon as they were
+        instantiated — an enabled-but-missing instance is itself a fault worth
+        reporting, since it silently contributes nothing. The remote Ministral
+        endpoint is probed over the network.
+        """
+        use_regex, use_presidio, use_ministral = self._resolve_detector_flags(
+            enable_regex, enable_presidio, enable_ministral
+        )
+        health: List[Dict] = []
+        if use_regex:
+            health.append(self._local_health(DetectorSource.REGEX, self.regex_detector))
+        if use_presidio:
+            health.append(
+                self._local_health(DetectorSource.PRESIDIO, self.presidio_detector)
+            )
+        if use_ministral:
+            health.append(self._ministral_health(lm_studio_host, lm_studio_port))
+        return health
+
+    @staticmethod
+    def _local_health(
+        source: DetectorSource, detector: Optional[PIIDetectorProtocol]
+    ) -> Dict:
+        """Health of an in-process detector.
+
+        An enabled-but-missing instance is itself a fault worth reporting, since it
+        silently contributes nothing. Beyond that, a detector whose models load
+        lazily is only truly ready once they loaded, so it gets a chance to say so
+        through the optional ``check_health`` probe — the same escape hatch the
+        remote detectors use, kept out of PIIDetectorProtocol so a detector that
+        never claimed to support probing is not blocked on it.
+        """
+        if detector is None:
+            return CompositePIIDetector._not_instantiated_health(source)
+        probe = getattr(detector, "check_health", None)
+        if probe is None:
+            return CompositePIIDetector._health_entry(source, "", None)
+        endpoint, failure = probe()
+        return CompositePIIDetector._health_entry(source, endpoint, failure)
+
+    def _ministral_health(
+        self, lm_studio_host: Optional[str], lm_studio_port: Optional[int]
+    ) -> Dict:
+        """Probe the remote Ministral endpoint for the configured host/port."""
+        if self.ministral_detector is None:
+            return self._not_instantiated_health(DetectorSource.MINISTRAL)
+        # check_health is not part of PIIDetectorProtocol: a detector that cannot
+        # be probed is reported as ready rather than blocking a scan on a check it
+        # never claimed to support.
+        probe = getattr(self.ministral_detector, "check_health", None)
+        if probe is None:
+            return self._health_entry(DetectorSource.MINISTRAL, "", None)
+        endpoint, failure = probe(lm_studio_host, lm_studio_port)
+        return self._health_entry(DetectorSource.MINISTRAL, endpoint, failure)
+
+    @staticmethod
+    def _not_instantiated_health(source: DetectorSource) -> Dict:
+        """Health of a detector switched on but never built."""
+        return CompositePIIDetector._health_entry(
+            source,
+            "",
+            DetectorFailure(
+                code=DetectorFailureCode.NOT_INSTANTIATED,
+                message=f"{source.name} detector not instantiated",
+            ),
+        )
+
+    @staticmethod
+    def _health_entry(
+        source: DetectorSource, endpoint: str, failure: Optional[DetectorFailure]
+    ) -> Dict:
+        """Health entry for one detector, reachable when there is no failure."""
+        return {
+            "source": source,
+            "reachable": failure is None,
+            "endpoint": endpoint or "",
+            "error": failure.message if failure else "",
+            "error_code": failure.code.value if failure else "",
+            "error_params": dict(failure.params) if failure else {},
+        }
 
     def _resolve_detector_flags(
         self,
@@ -311,18 +422,24 @@ class CompositePIIDetector:
         ``_run_*_detection`` call is the real busy time of that detector for
         this request. Returns the (detector, entities) tuples used by the merger
         and a parallel list of stats dicts (one per detector that actually ran).
+
+        A detector that blows up degrades gracefully (the others still run and the
+        request still succeeds) but never silently: its failure reason is recorded
+        in its stats entry, so callers can tell "found nothing" apart from "could
+        not run".
         """
         results: List[Tuple[PIIDetectorProtocol, List[PIIEntity]]] = []
         stats: List[Dict] = []
 
         def _run(detector: PIIDetectorProtocol, source: DetectorSource, fn) -> None:
             started = time.perf_counter()
-            entities = fn()
+            entities, error = self._run_detector_safely(source, fn)
             duration_ms = int((time.perf_counter() - started) * 1000)
             stats.append({
                 "source": source,
                 "duration_ms": duration_ms,
                 "entities_found": len(entities),
+                "error": error,
             })
             results.append((detector, entities))
 
@@ -339,6 +456,25 @@ class CompositePIIDetector:
                      ministral_overlap, lm_studio_host, lm_studio_port,
                      ministral_concurrency))
         return results, stats
+
+    def _run_detector_safely(
+        self, source: DetectorSource, fn
+    ) -> Tuple[List[PIIEntity], str]:
+        """Run one detector, converting a failure into ``([], reason)``.
+
+        Isolating the failure keeps the other detectors and the request itself
+        alive, while the returned reason travels in the detector's stats entry up
+        to the caller. Returning it instead of only logging it is the whole point:
+        a log line on the detector host is invisible to the operator reading the
+        scan report.
+        """
+        try:
+            return fn(), ""
+        except Exception as exc:
+            self.logger.error(
+                "%s_DETECTION_FAILED: %s", source.name, exc, exc_info=True
+            )
+            return [], f"{type(exc).__name__}: {exc}"
 
     def _log_detection_summary(
         self,
@@ -418,24 +554,19 @@ class CompositePIIDetector:
         self, text: str, threshold: Optional[float]
     ) -> List[PIIEntity]:
         """
-        Run regex-based detection with error handling.
+        Run regex-based detection.
+
+        Failures are handled by :meth:`_run_detector_safely`, which records them
+        in this detector's stats entry.
 
         Args:
             text: Text to analyze
             threshold: Optional confidence threshold
 
         Returns:
-            List of detected entities (empty if detection fails)
+            List of detected entities
         """
-        try:
-            return self.regex_detector.detect_pii(text, threshold)
-        except Exception as e:
-            self.logger.error(
-                "REGEX_DETECTION_FAILED text_len=%d threshold=%s: %s",
-                len(text) if text else 0, threshold, e,
-                exc_info=True
-            )
-            return []
+        return self.regex_detector.detect_pii(text, threshold)
 
     def _run_ministral_detection(
         self,
@@ -448,64 +579,54 @@ class CompositePIIDetector:
         lm_studio_port: Optional[int] = None,
         concurrency: Optional[int] = None,
     ) -> List[PIIEntity]:
-        """Run Ministral-PII detection with graceful degradation.
+        """Run Ministral-PII detection.
 
-        Returns an empty list (never raises) so a Ministral failure (e.g. the
-        remote LM Studio endpoint being unreachable) does not bring down the
-        whole request. ``chunk_size``/``overlap`` here are the Ministral-specific
-        chunking knobs (DB columns ministral_chunk_size / ministral_overlap);
+        Failures (e.g. the remote LM Studio endpoint being unreachable) are
+        handled by :meth:`_run_detector_safely`: the request survives without
+        Ministral's contribution, and the reason is recorded in this detector's
+        stats entry so the caller can report a degraded scan.
+
+        ``chunk_size``/``overlap`` here are the Ministral-specific chunking knobs
+        (DB columns ministral_chunk_size / ministral_overlap);
         ``lm_studio_host``/``lm_studio_port`` locate the LM Studio endpoint (DB
         columns lm_studio_host / lm_studio_port). They and ``pii_type_configs``
         are forwarded only when the detector's ``detect_pii`` declares them
         (signature inspection).
         """
-        try:
-            import inspect
-            sig = inspect.signature(self.ministral_detector.detect_pii)
-            kwargs: dict = {}
-            if 'pii_type_configs' in sig.parameters:
-                kwargs['pii_type_configs'] = pii_type_configs
-            if 'chunk_size' in sig.parameters and chunk_size is not None:
-                kwargs['chunk_size'] = chunk_size
-            if 'overlap' in sig.parameters and overlap is not None:
-                kwargs['overlap'] = overlap
-            if 'lm_studio_host' in sig.parameters and lm_studio_host is not None:
-                kwargs['lm_studio_host'] = lm_studio_host
-            if 'lm_studio_port' in sig.parameters and lm_studio_port is not None:
-                kwargs['lm_studio_port'] = lm_studio_port
-            if 'concurrency' in sig.parameters and concurrency is not None:
-                kwargs['concurrency'] = concurrency
-            return self.ministral_detector.detect_pii(text, threshold, **kwargs)
-        except Exception as e:
-            self.logger.error(
-                "MINISTRAL_DETECTION_FAILED text_len=%d threshold=%s: %s",
-                len(text) if text else 0, threshold, e,
-                exc_info=True,
-            )
-            return []
+        import inspect
+        sig = inspect.signature(self.ministral_detector.detect_pii)
+        kwargs: dict = {}
+        if 'pii_type_configs' in sig.parameters:
+            kwargs['pii_type_configs'] = pii_type_configs
+        if 'chunk_size' in sig.parameters and chunk_size is not None:
+            kwargs['chunk_size'] = chunk_size
+        if 'overlap' in sig.parameters and overlap is not None:
+            kwargs['overlap'] = overlap
+        if 'lm_studio_host' in sig.parameters and lm_studio_host is not None:
+            kwargs['lm_studio_host'] = lm_studio_host
+        if 'lm_studio_port' in sig.parameters and lm_studio_port is not None:
+            kwargs['lm_studio_port'] = lm_studio_port
+        if 'concurrency' in sig.parameters and concurrency is not None:
+            kwargs['concurrency'] = concurrency
+        return self.ministral_detector.detect_pii(text, threshold, **kwargs)
 
     def _run_presidio_detection(
         self, text: str, threshold: Optional[float]
     ) -> List[PIIEntity]:
         """
-        Run Presidio-based detection with error handling.
+        Run Presidio-based detection.
+
+        Failures are handled by :meth:`_run_detector_safely`, which records them
+        in this detector's stats entry.
 
         Args:
             text: Text to analyze
             threshold: Optional confidence threshold
 
         Returns:
-            List of detected entities (empty if detection fails)
+            List of detected entities
         """
-        try:
-            return self.presidio_detector.detect_pii(text, threshold)
-        except Exception as e:
-            self.logger.error(
-                "PRESIDIO_DETECTION_FAILED text_len=%d threshold=%s: %s",
-                len(text) if text else 0, threshold, e,
-                exc_info=True
-            )
-            return []
+        return self.presidio_detector.detect_pii(text, threshold)
 
     def _apply_masks(self, text: str, entities: List[PIIEntity]) -> str:
         """

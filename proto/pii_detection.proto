@@ -6,6 +6,15 @@ package pii_detection;
 service PIIDetectionService {
   // Analyzes text content for PII and returns detailed results
   rpc DetectPII (PIIDetectionRequest) returns (PIIDetectionResponse) {}
+
+  // Reports whether each currently-enabled detector can actually run.
+  //
+  // Callers use this as a pre-flight before starting a scan: a detector an
+  // operator enabled but whose backing endpoint is unreachable would otherwise
+  // contribute zero findings indistinguishably from "found nothing", producing a
+  // silently incomplete report. The probe runs inside this service so it
+  // measures the network path the detectors really use.
+  rpc CheckDetectorsHealth (DetectorsHealthRequest) returns (DetectorsHealthResponse) {}
 }
 
 // Request message containing the text content to analyze
@@ -74,6 +83,53 @@ message DetectorRunStats {
   // Number of PII the stage discarded. Always 0 for real detectors; for the
   // PREFILTER post-filter it is the count of PII it rejected.
   int32 entities_discarded = 4;
+
+  // Short technical reason why this detector produced nothing usable for this
+  // request (e.g. its remote endpoint was unreachable). Empty when the detector
+  // ran normally. Without it, a failed detector is indistinguishable from one
+  // that legitimately found no PII, which hides an incomplete scan.
+  string error = 5;
+}
+
+// Request for CheckDetectorsHealth. Empty: the service resolves which detectors
+// are enabled, and where their endpoints live, from the same database
+// configuration the detection path reads.
+message DetectorsHealthRequest {}
+
+// Health of every currently-enabled detector
+message DetectorsHealthResponse {
+  // One entry per ENABLED detector. Disabled detectors are omitted: an operator
+  // who turned a detector off does not need to be warned it is down.
+  repeated DetectorHealth detectors = 1;
+}
+
+// Whether one enabled detector can actually run right now
+message DetectorHealth {
+  // The detector these health facts belong to
+  DetectorSource source = 1;
+
+  // True when the detector is ready to run. Local detectors (Regex, Presidio)
+  // are reachable as soon as they are instantiated; remote ones (Ministral) are
+  // probed over the network.
+  bool reachable = 2;
+
+  // Where the detector was probed, for a diagnosable error message (e.g.
+  // "http://host.docker.internal:1234/v1"). Empty for local detectors.
+  string endpoint = 3;
+
+  // Short technical reason the detector is not reachable. Empty when reachable.
+  // Kept as a diagnostic detail for logs: the operator-facing wording comes from
+  // error_code below, which is what the dashboard translates.
+  string error = 4;
+
+  // Machine-readable reason the detector cannot run, e.g. MODEL_NOT_LOADED.
+  // Empty when reachable. The dashboard turns it into a translated sentence, so
+  // no English wording built here ever reaches the operator.
+  string error_code = 5;
+
+  // Values the translated message interpolates (model id, state, cause...).
+  // Technical by nature and left untranslated.
+  map<string, string> error_params = 6;
 }
 
 // A PII entity rejected by the deterministic precision post-filter, with the

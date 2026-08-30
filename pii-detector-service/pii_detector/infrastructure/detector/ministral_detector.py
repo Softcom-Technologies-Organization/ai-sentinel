@@ -18,7 +18,10 @@ char-ratio :class:`FallbackChunker` only when the tokenizer cannot be loaded
 (offline / no HF cache). Either way each chunk carries exact character offsets,
 so per-chunk entity offsets are rebased to **global** coordinates via
 ``chunk.start``. A per-chunk failure (timeout / HTTP error) is logged and skipped
-(fail-open partial) so one bad chunk never sinks the whole detection.
+(fail-open partial) so one bad chunk never sinks the whole detection — but when
+**every** chunk fails the endpoint is down, not the content, so
+:class:`DetectorUnavailableError` is raised rather than reporting an empty result
+that would read like "no PII here".
 
 Per-type thresholds and the Ministral label -> canonical ``pii_type`` mapping are
 resolved from the ``pii_type_config`` DB rows (detector='MINISTRAL'). Because the
@@ -49,9 +52,16 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx
 
 from pii_detector.application.config.detection_policy import DetectionConfig
+from pii_detector.domain.entity.detector_failure import (
+    DetectorFailure,
+    DetectorFailureCode,
+)
 from pii_detector.domain.entity.detector_source import DetectorSource
 from pii_detector.domain.entity.pii_entity import PIIEntity
-from pii_detector.domain.exception.exceptions import PIIDetectionError
+from pii_detector.domain.exception.exceptions import (
+    DetectorUnavailableError,
+    PIIDetectionError,
+)
 from pii_detector.infrastructure.text_processing.semantic_chunker import (
     FallbackChunker,
     MinistralTokenChunker,
@@ -93,13 +103,27 @@ CHARS_PER_TOKEN = 4
 MINISTRAL_TOKENIZER_REPO = "OpenMed/Ministral-3B-PII-Preview"
 
 # Connect timeout (seconds) for a chat/completions call: fail fast only when the
-# LM Studio endpoint is unreachable. There is deliberately NO read timeout on the
-# inference itself — a single dense chunk can legitimately take minutes on a slow
-# or contended host, and production documents are large, so any fixed read
-# timeout would silently drop that chunk's findings through the fail-open path. A
-# dead mid-stream endpoint still surfaces as a broken TCP connection. Override the
-# connect timeout via env if ever needed.
+# LM Studio endpoint is unreachable. Override via env if ever needed.
 CONNECT_TIMEOUT_SECONDS = float(os.getenv("LLM_MINISTRAL_CONNECT_TIMEOUT", "30"))
+# Read timeout (seconds) for the inference itself. Generous on purpose: a single
+# dense chunk can legitimately take minutes on a slow or contended host, and
+# cutting it off would lose that chunk's findings.
+#
+# It is nonetheless bounded, because an endpoint that dies mid-request does NOT
+# reliably break the TCP connection: closing LM Studio while a chunk is in flight
+# leaves the socket open with no answer coming, so an unbounded read makes the
+# scan hang for good with nothing reported. A bounded read turns that into a
+# failed chunk, which pauses the scan and names the cause.
+#
+# The default is ~40x the slowest chunk measured on the reference host (chunks run
+# between 0.1s and 1.5s there), which keeps a genuinely slow inference safe while
+# surfacing a dead endpoint within a minute. Raise it for hosts where inference is
+# known to be much slower.
+READ_TIMEOUT_SECONDS = float(os.getenv("LLM_MINISTRAL_READ_TIMEOUT", "60"))
+# Total budget for the liveness probe (GET /models). Short on purpose: the probe
+# gates a scan start, so an operator must get the verdict in seconds, not after
+# the generous inference connect timeout above.
+PROBE_TIMEOUT_SECONDS = float(os.getenv("LLM_MINISTRAL_PROBE_TIMEOUT", "5"))
 # Generation budget large enough to absorb a JSON array over a full chunk.
 MAX_TOKENS = 2048
 
@@ -178,6 +202,19 @@ _MODEL_LABEL_ALIASES: Dict[str, str] = {
     "username": "user_name",
     "imei": "device_identifier",
 }
+
+
+@dataclass(frozen=True)
+class _ChunkOutcome:
+    """One chunk's extraction result, carrying its failure reason when it failed.
+
+    Keeping the reason alongside the (empty) entity list is what lets
+    :meth:`MinistralDetector._merge_chunk_outcomes` tell "this chunk held no PII"
+    apart from "this chunk never reached the endpoint".
+    """
+
+    entities: List[PIIEntity]
+    error: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -270,6 +307,96 @@ class MinistralDetector:
 
     def load_model(self) -> None:
         """No-op: nothing to load locally (remote inference endpoint)."""
+        return None
+
+    def check_health(
+        self,
+        lm_studio_host: Optional[str] = None,
+        lm_studio_port: Optional[int] = None,
+    ) -> Tuple[str, Optional[DetectorFailure]]:
+        """Probe the LM Studio endpoint; return ``(endpoint, failure)``.
+
+        ``failure`` is ``None`` when the endpoint answered. Probing with ``GET
+        /models`` rather than a real completion keeps the check cheap enough to run
+        before every scan while still exercising the same host/port, HTTP/1.1 and
+        no-proxy client the detection path uses.
+        """
+        base_url = self._resolve_base_url(lm_studio_host, lm_studio_port)
+        try:
+            response = self._get_client().get(
+                f"{base_url}/models", timeout=PROBE_TIMEOUT_SECONDS
+            )
+            response.raise_for_status()
+        except (httpx.HTTPError, httpx.TimeoutException) as exc:
+            self.logger.warning(
+                "MINISTRAL_ENDPOINT_UNREACHABLE base_url=%s: %s", base_url, exc
+            )
+            return base_url, DetectorFailure(
+                code=DetectorFailureCode.ENDPOINT_UNREACHABLE,
+                params={"cause": f"{type(exc).__name__}: {exc}"},
+                message=f"{type(exc).__name__}: {exc}",
+            )
+
+        return base_url, self._model_not_served_reason(base_url)
+
+    def _model_not_served_reason(self, base_url: str) -> Optional[DetectorFailure]:
+        """Why the configured model cannot answer, or ``None`` when it is ready.
+
+        A reachable endpoint is not a working detector: LM Studio answers
+        ``GET /models`` with every model it has on disk, loaded or not, so a server
+        left running with the model unloaded passes a reachability check and then
+        fails every request. The model state lives on LM Studio's own
+        ``/api/v0/models``; a server that does not expose it (any other
+        OpenAI-compatible backend) is left alone rather than refused on a check it
+        never claimed to support.
+        """
+        root = base_url[: -len("/v1")] if base_url.endswith("/v1") else base_url
+        try:
+            response = self._get_client().get(
+                f"{root}/api/v0/models", timeout=PROBE_TIMEOUT_SECONDS
+            )
+            response.raise_for_status()
+            payload = response.json()
+        except (httpx.HTTPError, httpx.TimeoutException, ValueError):
+            return None
+
+        # A verdict is only given on a payload actually understood. An unexpected
+        # shape means this backend does not answer the question asked, which is the
+        # same situation as not exposing the endpoint at all — staying silent beats
+        # refusing a scan over a response misread. An empty list, on the other hand,
+        # is understood and conclusive: the server serves no model at all.
+        if not isinstance(payload, dict):
+            return None
+        listed = payload.get("data")
+        if not isinstance(listed, list):
+            return None
+        models = [m for m in listed if isinstance(m, dict)]
+        if listed and not models:
+            return None
+
+        entry = next((m for m in models if m.get("id") == self._model_id), None)
+        if entry is None:
+            loaded = [m.get("id") for m in models if m.get("state") == "loaded"]
+            return DetectorFailure(
+                code=DetectorFailureCode.MODEL_NOT_AVAILABLE,
+                params={
+                    "model": str(self._model_id),
+                    "loadedModels": ", ".join(str(model) for model in loaded),
+                },
+                message=(
+                    f"model {self._model_id} is not available on the endpoint "
+                    f"(loaded models: {loaded or 'none'})"
+                ),
+            )
+        state = entry.get("state")
+        if state != "loaded":
+            return DetectorFailure(
+                code=DetectorFailureCode.MODEL_NOT_LOADED,
+                params={"model": str(self._model_id), "state": str(state)},
+                message=(
+                    f"model {self._model_id} is present but not loaded (state: {state})"
+                ),
+            )
         return None
 
     def detect_pii(
@@ -369,7 +496,8 @@ class MinistralDetector:
         text spans are located inside the chunk (chunk-local offsets) and then
         shifted by ``chunk.start`` so the final ``PIIEntity`` carries GLOBAL
         character offsets. A per-chunk HTTP/timeout failure is logged and skipped
-        (fail-open partial).
+        (fail-open partial); an all-chunks failure raises
+        :class:`DetectorUnavailableError` (see :meth:`_merge_chunk_outcomes`).
 
         ``concurrency`` controls how many chunk prompts are in flight against the
         LM Studio endpoint at once. ``<= 1`` keeps the historical sequential loop
@@ -385,15 +513,38 @@ class MinistralDetector:
         chunks = chunker.chunk_text(text)
         workers = max(1, int(concurrency)) if concurrency else 1
         if workers <= 1 or len(chunks) <= 1:
-            entities: List[PIIEntity] = []
-            for chunk in chunks:
-                entities.extend(
-                    self._extract_one_chunk(chunk, resolver, type_labels, base_url)
-                )
-            return entities
-        return self._extract_chunks_concurrently(
-            chunks, resolver, type_labels, base_url, workers
-        )
+            outcomes = [
+                self._extract_one_chunk(chunk, resolver, type_labels, base_url)
+                for chunk in chunks
+            ]
+        else:
+            outcomes = self._extract_chunks_concurrently(
+                chunks, resolver, type_labels, base_url, workers
+            )
+        return self._merge_chunk_outcomes(outcomes, base_url)
+
+    def _merge_chunk_outcomes(
+        self, outcomes: List[_ChunkOutcome], base_url: str
+    ) -> List[PIIEntity]:
+        """Flatten per-chunk outcomes, escalating a total failure to unavailable.
+
+        Every chunk failing means the endpoint is down, not that the document is
+        clean, so returning ``[]`` here would silently degrade the scan. A partial
+        failure keeps the fail-open contract but is logged with its ratio so the
+        loss is traceable.
+        """
+        failures = [outcome.error for outcome in outcomes if outcome.error]
+        if failures and len(failures) == len(outcomes):
+            raise DetectorUnavailableError(
+                f"Ministral endpoint unreachable at {base_url} "
+                f"({len(failures)}/{len(outcomes)} chunks failed): {failures[0]}"
+            )
+        if failures:
+            self.logger.warning(
+                "MINISTRAL_PARTIAL_FAILURE failed_chunks=%d/%d base_url=%s: %s",
+                len(failures), len(outcomes), base_url, failures[0],
+            )
+        return [entity for outcome in outcomes for entity in outcome.entities]
 
     def _extract_one_chunk(
         self,
@@ -401,24 +552,25 @@ class MinistralDetector:
         resolver: _LabelResolver,
         type_labels: Dict[str, str],
         base_url: str,
-    ) -> List[PIIEntity]:
+    ) -> _ChunkOutcome:
         """Extract one chunk's entities (global offsets); fail-open on HTTP/timeout.
 
-        A per-chunk HTTP/timeout error is logged and yields no entities so one bad
-        chunk never sinks the whole detection. Any other exception propagates (it
+        A per-chunk HTTP/timeout error is logged and reported as a failed outcome
+        so one bad chunk never sinks the whole detection, while still letting the
+        caller see how many chunks were lost. Any other exception propagates (it
         is a real bug, surfaced by ``detect_pii`` as ``PIIDetectionError``).
         """
         try:
             raw_pairs = self._extract_chunk(chunk.text, base_url)
-        except (httpx.HTTPError, httpx.TimeoutException) as exc:
+        except (httpx.HTTPError, httpx.TimeoutException, DetectorUnavailableError) as exc:
             self.logger.warning(
                 "MINISTRAL_CHUNK_FAILED start=%d len=%d: %s",
                 chunk.start, len(chunk.text), exc,
             )
-            return []
-        return self._pairs_to_entities(
+            return _ChunkOutcome(entities=[], error=f"{type(exc).__name__}: {exc}")
+        return _ChunkOutcome(entities=self._pairs_to_entities(
             raw_pairs, chunk.text, chunk.start, resolver, type_labels,
-        )
+        ))
 
     def _extract_chunks_concurrently(
         self,
@@ -427,7 +579,7 @@ class MinistralDetector:
         type_labels: Dict[str, str],
         base_url: str,
         workers: int,
-    ) -> List[PIIEntity]:
+    ) -> List[_ChunkOutcome]:
         """Extract chunks across a bounded thread pool over the shared client.
 
         The pool is capped at ``min(workers, len(chunks))`` — never more threads
@@ -442,7 +594,6 @@ class MinistralDetector:
         # creation race between worker threads).
         self._get_client()
         max_workers = min(workers, len(chunks))
-        entities: List[PIIEntity] = []
         with ThreadPoolExecutor(
             max_workers=max_workers, thread_name_prefix="ministral-chunk"
         ) as pool:
@@ -452,9 +603,7 @@ class MinistralDetector:
                 )
                 for chunk in chunks
             ]
-            for future in futures:
-                entities.extend(future.result())
-        return entities
+            return [future.result() for future in futures]
 
     # ------------------------------------------------------------------
     # Chunker selection + lazy tokenizer
@@ -586,9 +735,11 @@ class MinistralDetector:
             self._client = httpx.Client(
                 http2=False,
                 trust_env=False,
-                # Connect timeout only; read/write/pool unbounded so a legitimately
-                # slow chunk inference is never cut off (see CONNECT_TIMEOUT_SECONDS).
-                timeout=httpx.Timeout(None, connect=CONNECT_TIMEOUT_SECONDS),
+                # Bounded read so a dead endpoint is reported instead of hanging the
+                # scan; write/pool stay unbounded (see READ_TIMEOUT_SECONDS).
+                timeout=httpx.Timeout(
+                    None, connect=CONNECT_TIMEOUT_SECONDS, read=READ_TIMEOUT_SECONDS
+                ),
             )
         return self._client
 
@@ -627,10 +778,26 @@ class MinistralDetector:
 
     @staticmethod
     def _extract_content(response_json: Dict[str, Any]) -> str:
-        """Read ``choices[0].message.content`` (fallback ``reasoning_content``)."""
+        """Read ``choices[0].message.content`` (fallback ``reasoning_content``).
+
+        A body without ``choices`` is NOT an empty result: an OpenAI-compatible
+        server that answers HTTP 200 with an error payload (wrong endpoint, model
+        not served, an intercepting proxy) would otherwise be read as "this text
+        holds no personal data" — an error silently turned into a clean report.
+        Raising here makes it a failed chunk, which pauses the scan and names the
+        cause.
+        """
+        if not isinstance(response_json, dict):
+            raise DetectorUnavailableError(
+                f"endpoint returned a non-object body: {type(response_json).__name__}"
+            )
         choices = response_json.get("choices") or []
         if not choices:
-            return ""
+            reported = response_json.get("error") or response_json.get("detail")
+            raise DetectorUnavailableError(
+                "endpoint answered without a completion"
+                + (f": {reported}" if reported else f" (keys: {sorted(response_json)})")
+            )
         message = choices[0].get("message") or {}
         return str(message.get("content") or message.get("reasoning_content") or "")
 

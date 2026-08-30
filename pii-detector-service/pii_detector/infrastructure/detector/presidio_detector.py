@@ -16,12 +16,16 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import toml
 from presidio_analyzer import AnalyzerEngine
 from presidio_analyzer.nlp_engine import NlpEngineProvider, NerModelConfiguration
 
+from pii_detector.domain.entity.detector_failure import (
+    DetectorFailure,
+    DetectorFailureCode,
+)
 from pii_detector.domain.entity.detector_source import DetectorSource
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.entity.pii_type import PIIType
@@ -377,6 +381,44 @@ class PresidioDetector:
         """
         self.logger.info("Presidio uses built-in recognizers, no download needed")
     
+    def check_health(self) -> Tuple[str, Optional[DetectorFailure]]:
+        """Force the lazy analyzer to load; return ``("", failure)``.
+
+        ``failure`` is ``None`` when the analyzer is usable. Being instantiated says
+        nothing about readiness here: the AnalyzerEngine is only built on the first
+        detection, so an engine that cannot be built at all would pass a
+        presence-only check and then contribute zero findings — indistinguishable
+        from clean content. Loading is local and idempotent (``load_model`` returns
+        at once when already loaded and falls back to a basic engine on failure),
+        so probing before a scan costs one initialisation at most.
+
+        The empty endpoint mirrors the remote detectors' contract, where it carries
+        the probed URL.
+        """
+        # Two independent switches: the caller enabled Presidio from the database, while
+        # this flag comes from the TOML model config. When they disagree, detect_pii
+        # returns an empty list without a word, which is the failure being guarded against.
+        if not self._enabled:
+            return "", DetectorFailure(
+                code=DetectorFailureCode.DISABLED_IN_CONFIG,
+                message="Presidio detector is disabled in its model configuration",
+            )
+        try:
+            self.load_model()
+        except Exception as e:
+            return "", DetectorFailure(
+                code=DetectorFailureCode.INIT_FAILED,
+                params={"cause": f"{type(e).__name__}: {e}"},
+                message=f"{type(e).__name__}: {e}",
+            )
+        if self._analyzer is None:
+            return "", DetectorFailure(
+                code=DetectorFailureCode.INIT_FAILED,
+                params={"cause": "analyzer engine could not be built"},
+                message="Presidio analyzer could not be initialized",
+            )
+        return "", None
+
     def load_model(self) -> None:
         """
         Load Presidio analyzer with configuration.

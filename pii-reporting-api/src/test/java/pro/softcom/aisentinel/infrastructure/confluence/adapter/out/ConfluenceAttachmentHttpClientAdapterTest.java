@@ -32,7 +32,8 @@ class ConfluenceAttachmentHttpClientAdapterTest {
 
     private ConfluenceAttachmentClient confluenceAttachmentService;
 
-    ConfluenceConnectionConfig config = mock(ConfluenceConnectionConfig.class);
+    @Mock
+    private ConfluenceConnectionConfig config;
 
     @BeforeEach
     void setUp() throws Exception {

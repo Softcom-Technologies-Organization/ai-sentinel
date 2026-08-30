@@ -14,7 +14,7 @@ Protocole d'execution obligatoire : [RUNBOOK.md](RUNBOOK.md).
 
 | Vague | Perimetre | Issues | Statut |
 |-------|-----------|--------|--------|
-| **A** | Tests — mecanique pure | 87 | 🔄 en cours |
+| **A** | Tests — mecanique pure | 87 | ✅ terminee et verifiee |
 | **B** | Production — mecanique locale | 50 | ⬜ a faire |
 | **C** | Accessibilite UI — modifie le DOM rendu | 16 | ⬜ a faire |
 | **D** | Jugement requis — lire le RUNBOOK avant | 25 | ⬜ a faire |
@@ -159,7 +159,7 @@ Aucun fichier de production touche. Une regression ici ne peut venir que du test
 
 **Correction** : Remplacer le mock construit a la main par un champ `@Mock`, l'extension Mockito etant deja active.
 
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/confluence/adapter/out/ConfluenceAttachmentHttpClientAdapterTest.java:35` — Use "@Mock" annotation instead of "mock()" for field declaration. <!-- 4f3f6489 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/confluence/adapter/out/ConfluenceAttachmentHttpClientAdapterTest.java:35` — Use "@Mock" annotation instead of "mock()" for field declaration. <!-- 4f3f6489 -->
 
 ---
 

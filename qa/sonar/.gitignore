@@ -1,0 +1,7 @@
+# Test-run artefacts: the reference lists (*.failures) are versioned, the noise is not.
+baseline/*.log
+baseline/*.current
+baseline/ui-report.json
+raw-*.json
+rules.json
+hotspots-*.json

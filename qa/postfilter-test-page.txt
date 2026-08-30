@@ -1,0 +1,155 @@
+========================================================================
+PAGE DE TEST — VALIDATION DU POST-FILTRAGE DETERMINISTE (AI-Sentinel)
+========================================================================
+Objectif : verifier que le post-filtre de precision (postfilter_enabled)
+est bien applique en fin de pipeline.
+
+========================================================================
+PARTIE A — FAUX POSITIFS QUI DOIVENT ETRE ELIMINES
+========================================================================
+
+--- A1. Artefacts techniques (denylist transverse, tous labels) ---
+
+Identifiant de correlation de la requete : 3f2504e0-4f89-11d3-9a0c-0305e82c3301
+      [DROP artefact technique : uuid]
+
+Identifiant client interne du referentiel : 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+      [DROP artefact technique : uuid]
+
+Identifiant du document MongoDB : 507f1f77bcf86cd799439011
+      [DROP artefact technique : mongodb-objectid (hex-24)]
+
+Empreinte MD5 du fichier livre : d41d8cd98f00b204e9800998ecf8427e
+      [DROP artefact technique : md5-digest (hex-32)]
+
+Empreinte SHA1 du commit de reference : da39a3ee5e6b4b0d3255bfef95601890afd80709
+      [DROP artefact technique : sha1-digest (hex-40)]
+
+Empreinte SHA256 de l'archive : e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+      [DROP artefact technique : sha256-digest (hex-64)]
+
+En-tete de tracage distribue W3C : 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+      [DROP artefact technique : w3c traceparent]
+
+Numero de licence du composant embarque : v2.14.3
+      [DROP artefact technique : version string]
+
+Vignette encodee dans le manifeste :
+data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ
+      [DROP artefact technique : base64-encoded image]
+
+Cle d'API illustree par une image encodee :
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==
+      [DROP artefact technique : base64-encoded image]
+
+
+--- A2. Adresses IP invalides (strategie IP_ADDRESS) ---
+
+Adresse IP du frontal applicatif : 192.168.1.256
+      [DROP ip_address parse failed]
+
+Adresse IP de la sonde de supervision : 10.0.0.999
+      [DROP ip_address parse failed]
+
+Adresse IPv4 du reverse proxy : 172.16.300.1
+      [DROP ip_address parse failed]
+
+
+--- A3. Adresses MAC invalides (strategie MAC_ADDRESS) ---
+
+Plage horaire relevee dans le journal reseau : 13:56:49-13:56:52
+      [DROP separateurs ':' et '-' melanges (pas une MAC)]
+
+Adresse MAC relevee sur le switch : 00:1A:2B-3C:4D:5E
+      [DROP separateurs ':' et '-' melanges (pas une MAC)]
+
+
+--- A4. Coordonnees bancaires invalides ---
+
+IBAN du compte de remboursement : CH88 0076 2011 6238 5295 7
+      [DROP iban mod-97 / length failed]
+
+IBAN du fournisseur etranger : FR76 3000 6000 0112 3456 7890 188
+      [DROP iban mod-97 / length failed]
+
+Code SWIFT/BIC de la banque partenaire : ZZZZZZ99
+      [DROP swift_bic structure failed]
+
+
+--- A5. Numero d'identification d'entreprise invalide ---
+
+Numero IDE/UID de l'entite mandante : CHE-105.822.117
+      [DROP swiss_uid mod-11 check digit failed]
+
+
+--- A6. Mentions de secrets (et non des secrets) ---
+
+Mot de passe applicatif : password
+      [DROP credential keyword literal]
+
+Cle de configuration a renseigner : spring.datasource.password
+      [DROP configuration property key]
+
+Parametre du webservice : webservice.password=*****
+      [DROP placeholder : masked assignment value]
+
+Valeur a substituer au deploiement : ${DB_PASSWORD}
+      [DROP placeholder : templated secret]
+
+Gabarit de compte fourni par l'editeur : your_password_here
+      [DROP placeholder : credential word without digit or symbol]
+
+Champ non renseigne dans le formulaire : ZZZZZZZZ
+      [DROP placeholder : repeated character]
+
+Le mot de passe est communique par le responsable de la plateforme.
+      [DROP natural-language credential mention]
+
+Valeur temporaire du compte de recette : changeme
+      [DROP dictionary word (zxcvbn)]
+
+========================================================================
+PARTIE B — TEMOINS QUI DOIVENT RESTER DANS LES FINDINGS
+========================================================================
+Ces valeurs sont valides : si l'une d'elles disparait, le post-filtre
+sur-filtre et fait perdre du rappel.
+
+Adresse IP du serveur d'application : 192.168.0.1                [KEEP]
+Adresse IPv4 du resolveur DNS : 8.8.8.8                          [KEEP]
+Adresse MAC de la carte reseau : 98:e7:43:a6:3f:0a               [KEEP]
+IBAN du compte principal : CH56 0483 5012 3456 7800 9            [KEEP]
+Code SWIFT/BIC du siege : BCVLCH2LXXX                            [KEEP]
+Numero IDE/UID de l'entreprise : CHE-105.822.116                 [KEEP]
+Mot de passe du compte technique : Xf7$kL9!pQ2wRt                [KEEP]
+Mot de passe historique du compte batch : Tr0ub4dor&3            [KEEP]
+Cle d'API du service de cartographie : AIzaSyD-1234567890abcdefghijklmnopqrstu   [KEEP]
+Jeton d'acces emis par la passerelle :
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U
+                                                                  [KEEP]
+
+========================================================================
+PARTIE C — CAS ROUGES CONNUS (a observer, pas des criteres de succes)
+========================================================================
+Ces valeurs documentent des ecarts identifies a l'analyse du code. Elles
+sont volontairement presentes pour rendre les ecarts visibles dans le scan.
+
+C1. Numero AVS valide au format pointe : 756.9217.0769.85
+    Attendu metier : KEEP (vrai positif). Comportement actuel : rejete par
+    la denylist comme "version string" -> perte de rappel sur du vrai PII.
+
+C2. Numero de telephone au format pointe : 021.316.1111
+    Attendu metier : KEEP. Comportement actuel : rejete comme "version string".
+
+C3. Carte de paiement dont la cle de Luhn est fausse : 4532 0151 1283 0367
+    Attendu : DROP. Comportement actuel : conservee, car le label emis par
+    le detecteur (CREDIT_DEBIT_CARD) n'est pas une cle du registre de
+    strategies (CARD_NUMBER / CREDIT_CARD / PAYMENT_CARD).
+
+========================================================================
+NOTE SUR LES METRIQUES DU SCAN
+========================================================================
+Le pseudo-detecteur du post-filtre remonte aujourd'hui sous le libelle
+UNKNOWN_SOURCE : la valeur POSTFILTER n'existe pas dans l'enumeration
+DetectorSource du contrat gRPC (elle s'y appelle encore PREFILTER), donc
+la conversion retombe sur UNKNOWN_SOURCE. La ligne reste exploitable :
+c'est celle dont la colonne "rejetees" est non nulle.

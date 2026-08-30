@@ -78,31 +78,31 @@ Aucun fichier de production touche. Une regression ici ne peut venir que du test
 
 **Correction** : Remplacer `Mockito.when(...)` par `when(...)` et ajouter l'import statique. Purement syntaxique.
 
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/confluence/service/ConfluenceSpaceCacheRefreshServiceTest.java:100` — Use a static import for "mock". <!-- 6c752164 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/service/ContentScanOrchestratorTest.java:110` — Use a static import for "doThrow". <!-- a9377739 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/service/ScanCheckpointServiceInterruptionTest.java:99` — Use a static import for "never". <!-- 704a36f8 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceResumeScanUseCaseTest.java:100` — Use a static import for "mock". <!-- a79b5106 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceResumeScanUseCaseTest.java:121` — Use a static import for "mock". <!-- 19c35507 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceResumeScanUseCaseTest.java:365` — Use a static import for "mock". <!-- bd43a5c1 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:115` — Use a static import for "mock". <!-- 3f3e1899 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:136` — Use a static import for "mock". <!-- c7915db8 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:669` — Use a static import for "mock". <!-- 073973ad -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:673` — Use a static import for "mock". <!-- 3e6cb8bf -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:702` — Use a static import for "mock". <!-- d840c8c6 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:742` — Use a static import for "mock". <!-- c8297d21 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:771` — Use a static import for "mock". <!-- 63a2193f -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:1198` — Use a static import for "mock". <!-- 1cdd2357 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/JpaScanEventStoreAdapterTest.java:122` — Use a static import for "times". <!-- 9c90afec -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/ScanCheckpointPersistenceAdapterTest.java:116` — Use a static import for "never". <!-- 8fe4d4b7 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/ScanCheckpointPersistenceAdapterTest.java:141` — Use a static import for "never". <!-- f98c7d9e -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/ScanCheckpointPersistenceAdapterTest.java:215` — Use a static import for "never". <!-- 0e8bdb58 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/ScanCheckpointPersistenceAdapterTest.java:252` — Use a static import for "never". <!-- 8a27ff2c -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/integration/ExcelExportFullScanIntegrationTest.java:517` — Use a static import for "mock". <!-- a19c73f8 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/integration/ExcelExportFullScanIntegrationTest.java:523` — Use a static import for "mock". <!-- 61ad4204 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/integration/ExcelExportFullScanIntegrationTest.java:529` — Use a static import for "mock". <!-- 1b98f92e -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/integration/ExcelExportFullScanIntegrationTest.java:535` — Use a static import for "mock". <!-- 851f3504 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/integration/ExcelExportFullScanIntegrationTest.java:541` — Use a static import for "mock". <!-- 2399cb78 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/integration/ExcelExportFullScanIntegrationTest.java:547` — Use a static import for "mock". <!-- f36476d0 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/confluence/service/ConfluenceSpaceCacheRefreshServiceTest.java:100` — Use a static import for "mock". <!-- 6c752164 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/service/ContentScanOrchestratorTest.java:110` — Use a static import for "doThrow". <!-- a9377739 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/service/ScanCheckpointServiceInterruptionTest.java:99` — Use a static import for "never". <!-- 704a36f8 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceResumeScanUseCaseTest.java:100` — Use a static import for "mock". <!-- a79b5106 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceResumeScanUseCaseTest.java:121` — Use a static import for "mock". <!-- 19c35507 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceResumeScanUseCaseTest.java:365` — Use a static import for "mock". <!-- bd43a5c1 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:115` — Use a static import for "mock". <!-- 3f3e1899 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:136` — Use a static import for "mock". <!-- c7915db8 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:669` — Use a static import for "mock". <!-- 073973ad -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:673` — Use a static import for "mock". <!-- 3e6cb8bf -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:702` — Use a static import for "mock". <!-- d840c8c6 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:742` — Use a static import for "mock". <!-- c8297d21 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:771` — Use a static import for "mock". <!-- 63a2193f -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:1198` — Use a static import for "mock". <!-- 1cdd2357 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/JpaScanEventStoreAdapterTest.java:122` — Use a static import for "times". <!-- 9c90afec -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/ScanCheckpointPersistenceAdapterTest.java:116` — Use a static import for "never". <!-- 8fe4d4b7 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/ScanCheckpointPersistenceAdapterTest.java:141` — Use a static import for "never". <!-- f98c7d9e -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/ScanCheckpointPersistenceAdapterTest.java:215` — Use a static import for "never". <!-- 0e8bdb58 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/ScanCheckpointPersistenceAdapterTest.java:252` — Use a static import for "never". <!-- 8a27ff2c -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/integration/ExcelExportFullScanIntegrationTest.java:517` — Use a static import for "mock". <!-- a19c73f8 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/integration/ExcelExportFullScanIntegrationTest.java:523` — Use a static import for "mock". <!-- 61ad4204 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/integration/ExcelExportFullScanIntegrationTest.java:529` — Use a static import for "mock". <!-- 1b98f92e -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/integration/ExcelExportFullScanIntegrationTest.java:535` — Use a static import for "mock". <!-- 851f3504 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/integration/ExcelExportFullScanIntegrationTest.java:541` — Use a static import for "mock". <!-- 2399cb78 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/integration/ExcelExportFullScanIntegrationTest.java:547` — Use a static import for "mock". <!-- f36476d0 -->
 
 ### Lot `typescript:S5906` — 16 issue(s)
 

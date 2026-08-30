@@ -22,7 +22,6 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -123,7 +122,7 @@ class JpaFindingRemediationAdapterTest {
         @Test
         @DisplayName("Should_FilterByStatusNames_When_StatusesProvided")
         void Should_FilterByStatusNames_When_StatusesProvided() {
-            when(repository.findBySpaceKeyAndStatusIn(eq(SPACE_KEY), eq(Set.of("REDACTED"))))
+            when(repository.findBySpaceKeyAndStatusIn(SPACE_KEY, Set.of("REDACTED")))
                     .thenReturn(List.of());
 
             List<FindingRemediation> result =

@@ -136,14 +136,14 @@ Aucun fichier de production touche. Une regression ici ne peut venir que du test
 
 **Correction** : Renommer la variable locale qui masque un champ. Renommage local uniquement, jamais le champ.
 
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:684` — Rename "confluenceAccessor" which hides the field declared at line 104. <!-- 78a401e8 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:685` — Rename "contentScanOrchestrator" which hides the field declared at line 105. <!-- 1314b59d -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:689` — Rename "attachmentProcessor" which hides the field declared at line 106. <!-- d3ff3d1a -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:693` — Rename "htmlContentParser" which hides the field declared at line 107. <!-- cc5f6c1b -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:753` — Rename "confluenceAccessor" which hides the field declared at line 104. <!-- c1344909 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:754` — Rename "contentScanOrchestrator" which hides the field declared at line 105. <!-- ad96fcf6 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:758` — Rename "attachmentProcessor" which hides the field declared at line 106. <!-- 92fa236b -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:762` — Rename "htmlContentParser" which hides the field declared at line 107. <!-- b3835310 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:684` — Rename "confluenceAccessor" which hides the field declared at line 104. <!-- 78a401e8 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:685` — Rename "contentScanOrchestrator" which hides the field declared at line 105. <!-- 1314b59d -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:689` — Rename "attachmentProcessor" which hides the field declared at line 106. <!-- d3ff3d1a -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:693` — Rename "htmlContentParser" which hides the field declared at line 107. <!-- cc5f6c1b -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:753` — Rename "confluenceAccessor" which hides the field declared at line 104. <!-- c1344909 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:754` — Rename "contentScanOrchestrator" which hides the field declared at line 105. <!-- ad96fcf6 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:758` — Rename "attachmentProcessor" which hides the field declared at line 106. <!-- 92fa236b -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:762` — Rename "htmlContentParser" which hides the field declared at line 107. <!-- b3835310 -->
 
 ### Lot `java:S6068` — 1 issue(s)
 

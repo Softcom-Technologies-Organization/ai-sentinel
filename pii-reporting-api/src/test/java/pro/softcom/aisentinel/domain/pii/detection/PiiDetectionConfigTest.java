@@ -170,9 +170,10 @@ class PiiDetectionConfigTest {
     @Test
     void Should_ThrowException_When_MinistralChunkSizeBelowMinimum() {
         LocalDateTime now = LocalDateTime.now();
+        BigDecimal defaultThreshold = new BigDecimal("0.75");
         // Arrange & Act & Assert
         assertThatThrownBy(() -> new PiiDetectionConfig(
-            1, true, false, false, 255, 128, new BigDecimal("0.75"), false, "localhost", 1234, 1, true, null, now, "testuser"
+            1, true, false, false, 255, 128, defaultThreshold, false, "localhost", 1234, 1, true, null, now, "testuser"
         ))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Ministral chunk size");
@@ -181,9 +182,10 @@ class PiiDetectionConfigTest {
     @Test
     void Should_ThrowException_When_MinistralChunkSizeAboveMaximum() {
         LocalDateTime now = LocalDateTime.now();
+        BigDecimal defaultThreshold = new BigDecimal("0.75");
         // Arrange & Act & Assert
         assertThatThrownBy(() -> new PiiDetectionConfig(
-            1, true, false, false, 4097, 128, new BigDecimal("0.75"), false, "localhost", 1234, 1, true, null, now, "testuser"
+            1, true, false, false, 4097, 128, defaultThreshold, false, "localhost", 1234, 1, true, null, now, "testuser"
         ))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Ministral chunk size");
@@ -192,9 +194,10 @@ class PiiDetectionConfigTest {
     @Test
     void Should_ThrowException_When_MinistralChunkSizeIsNull() {
         LocalDateTime now = LocalDateTime.now();
+        BigDecimal defaultThreshold = new BigDecimal("0.75");
         // Arrange & Act & Assert
         assertThatThrownBy(() -> new PiiDetectionConfig(
-            1, true, false, false, null, 128, new BigDecimal("0.75"), false, "localhost", 1234, 1, true, null, now, "testuser"
+            1, true, false, false, null, 128, defaultThreshold, false, "localhost", 1234, 1, true, null, now, "testuser"
         ))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Ministral chunk size");
@@ -203,9 +206,10 @@ class PiiDetectionConfigTest {
     @Test
     void Should_ThrowException_When_MinistralOverlapNegative() {
         LocalDateTime now = LocalDateTime.now();
+        BigDecimal defaultThreshold = new BigDecimal("0.75");
         // Arrange & Act & Assert
         assertThatThrownBy(() -> new PiiDetectionConfig(
-            1, true, false, false, 1024, -1, new BigDecimal("0.75"), false, "localhost", 1234, 1, true, null, now, "testuser"
+            1, true, false, false, 1024, -1, defaultThreshold, false, "localhost", 1234, 1, true, null, now, "testuser"
         ))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Ministral overlap");
@@ -214,9 +218,10 @@ class PiiDetectionConfigTest {
     @Test
     void Should_ThrowException_When_MinistralOverlapNotLessThanChunkSize() {
         LocalDateTime now = LocalDateTime.now();
+        BigDecimal defaultThreshold = new BigDecimal("0.75");
         // Arrange & Act & Assert
         assertThatThrownBy(() -> new PiiDetectionConfig(
-            1, true, false, false, 1024, 1024, new BigDecimal("0.75"), false, "localhost", 1234, 1, true, null, now, "testuser"
+            1, true, false, false, 1024, 1024, defaultThreshold, false, "localhost", 1234, 1, true, null, now, "testuser"
         ))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Ministral overlap");
@@ -239,9 +244,10 @@ class PiiDetectionConfigTest {
     @Test
     void Should_ThrowException_When_MinistralConcurrencyIsNull() {
         LocalDateTime now = LocalDateTime.now();
+        BigDecimal defaultThreshold = new BigDecimal("0.75");
         // Arrange & Act & Assert
         assertThatThrownBy(() -> new PiiDetectionConfig(
-            1, true, false, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, true, null, now, "testuser"
+            1, true, false, false, 1024, 128, defaultThreshold, false, "localhost", 1234, null, true, null, now, "testuser"
         ))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Ministral concurrency");
@@ -250,9 +256,10 @@ class PiiDetectionConfigTest {
     @Test
     void Should_ThrowException_When_MinistralConcurrencyBelowMinimum() {
         LocalDateTime now = LocalDateTime.now();
+        BigDecimal defaultThreshold = new BigDecimal("0.75");
         // Arrange & Act & Assert
         assertThatThrownBy(() -> new PiiDetectionConfig(
-            1, true, false, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, 0, true, null, now, "testuser"
+            1, true, false, false, 1024, 128, defaultThreshold, false, "localhost", 1234, 0, true, null, now, "testuser"
         ))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Ministral concurrency");
@@ -261,9 +268,10 @@ class PiiDetectionConfigTest {
     @Test
     void Should_ThrowException_When_MinistralConcurrencyAboveMaximum() {
         LocalDateTime now = LocalDateTime.now();
+        BigDecimal defaultThreshold = new BigDecimal("0.75");
         // Arrange & Act & Assert
         assertThatThrownBy(() -> new PiiDetectionConfig(
-            1, true, false, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, 17, true, null, now, "testuser"
+            1, true, false, false, 1024, 128, defaultThreshold, false, "localhost", 1234, 17, true, null, now, "testuser"
         ))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Ministral concurrency");

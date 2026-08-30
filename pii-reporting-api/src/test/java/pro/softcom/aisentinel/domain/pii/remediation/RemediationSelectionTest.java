@@ -23,7 +23,9 @@ class RemediationSelectionTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_SpaceKeyIsMissing")
         void Should_RejectConstruction_When_SpaceKeyIsMissing() {
-            assertThatThrownBy(() -> RemediationSelection.builder().build())
+            var builder = RemediationSelection.builder();
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("spaceKey");
         }
@@ -31,7 +33,9 @@ class RemediationSelectionTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_SpaceKeyIsBlank")
         void Should_RejectConstruction_When_SpaceKeyIsBlank() {
-            assertThatThrownBy(() -> RemediationSelection.builder().spaceKey(" ").build())
+            var builder = RemediationSelection.builder().spaceKey(" ");
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("spaceKey");
         }
@@ -51,10 +55,11 @@ class RemediationSelectionTest {
         @Test
         @DisplayName("Should_RejectAttachmentName_When_PageIdIsMissing")
         void Should_RejectAttachmentName_When_PageIdIsMissing() {
-            assertThatThrownBy(() -> RemediationSelection.builder()
+            var builder = RemediationSelection.builder()
                     .spaceKey("SPACE")
-                    .attachmentName("report.pdf")
-                    .build())
+                    .attachmentName("report.pdf");
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("pageId");
         }
@@ -74,7 +79,9 @@ class RemediationSelectionTest {
         @Test
         @DisplayName("Should_RejectBlankPageId_When_Provided")
         void Should_RejectBlankPageId_When_Provided() {
-            assertThatThrownBy(() -> RemediationSelection.builder().spaceKey("SPACE").pageId(" ").build())
+            var builder = RemediationSelection.builder().spaceKey("SPACE").pageId(" ");
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("pageId");
         }
@@ -82,11 +89,12 @@ class RemediationSelectionTest {
         @Test
         @DisplayName("Should_RejectBlankAttachmentName_When_Provided")
         void Should_RejectBlankAttachmentName_When_Provided() {
-            assertThatThrownBy(() -> RemediationSelection.builder()
+            var builder = RemediationSelection.builder()
                     .spaceKey("SPACE")
                     .pageId("12345")
-                    .attachmentName(" ")
-                    .build())
+                    .attachmentName(" ");
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("attachmentName");
         }

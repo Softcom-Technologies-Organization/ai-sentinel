@@ -41,3 +41,14 @@ ${PROJECT_DIR}/
 # Top-level coverage / benchmark scratch artefacts produced by test runs
 /coverage.xml
 /bench-pii-scan.tsv
+/test-reports/e2e/2026-08-27_gestion-erreur-scan/screenshots/CTX-01_etat-initial.png
+/test-reports/e2e/2026-08-27_gestion-erreur-scan/screenshots/RG-01a_scan-en-pause-panneau.png
+/test-reports/e2e/2026-08-27_gestion-erreur-scan/screenshots/RG-01b_termine-malgre-coupure-reseau.png
+/test-reports/e2e/2026-08-27_gestion-erreur-scan/screenshots/RG-02_notification-pause-detecteur.png
+/test-reports/e2e/2026-08-27_gestion-erreur-scan/screenshots/RG-02b_pause-detecteur-en-cours.png
+/test-reports/e2e/2026-08-27_gestion-erreur-scan/screenshots/RG-03_stats-items-en-echec.png
+/test-reports/e2e/2026-08-27_gestion-erreur-scan/screenshots/RG-05_apres-reprise-termine.png
+/test-reports/e2e/2026-08-27_gestion-erreur-scan/screenshots/TAB-01_ligne-en-pause-sans-retry.png
+/test-reports/e2e/2026-08-27_gestion-erreur-scan/videos/gestion-erreur-scan.webm
+/test-reports/e2e/2026-08-27_gestion-erreur-scan/report.md
+/test-reports/e2e/2026-08-27_gestion-erreur-scan/test-plan.md

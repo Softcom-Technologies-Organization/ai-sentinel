@@ -83,7 +83,9 @@ class ObfuscationJobTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_IdIsBlank")
         void Should_RejectConstruction_When_IdIsBlank() {
-            assertThatThrownBy(() -> job().id(" ").build())
+            var builder = job().id(" ");
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("id");
         }
@@ -91,7 +93,9 @@ class ObfuscationJobTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_SpaceKeyIsBlank")
         void Should_RejectConstruction_When_SpaceKeyIsBlank() {
-            assertThatThrownBy(() -> job().spaceKey("").build())
+            var builder = job().spaceKey("");
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("spaceKey");
         }
@@ -99,7 +103,9 @@ class ObfuscationJobTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_StatusIsMissing")
         void Should_RejectConstruction_When_StatusIsMissing() {
-            assertThatThrownBy(() -> job().status(null).build())
+            var builder = job().status(null);
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("status");
         }
@@ -107,7 +113,9 @@ class ObfuscationJobTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_SubmittedSelectionIsMissing")
         void Should_RejectConstruction_When_SubmittedSelectionIsMissing() {
-            assertThatThrownBy(() -> job().submittedSelection(null).build())
+            var builder = job().submittedSelection(null);
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("submittedSelection");
         }
@@ -115,7 +123,9 @@ class ObfuscationJobTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_ProcessedIsNegative")
         void Should_RejectConstruction_When_ProcessedIsNegative() {
-            assertThatThrownBy(() -> job().processed(-1).build())
+            var builder = job().processed(-1);
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("processed");
         }
@@ -123,7 +133,9 @@ class ObfuscationJobTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_TotalIsNegative")
         void Should_RejectConstruction_When_TotalIsNegative() {
-            assertThatThrownBy(() -> job().total(-1).build())
+            var builder = job().total(-1);
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("total");
         }

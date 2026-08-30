@@ -135,8 +135,9 @@ class JpaObfuscationJobAdapterTest {
         void Should_TranslateConstraintViolation_When_RunningJobAlreadyExistsForSpace() {
             when(repository.saveAndFlush(any(ObfuscationJobEntity.class)))
                     .thenThrow(runningJobUniqueViolation());
+            var job = domainJob();
 
-            assertThatThrownBy(() -> adapter.create(domainJob()))
+            assertThatThrownBy(() -> adapter.create(job))
                     .isInstanceOf(ObfuscationJobAlreadyRunningException.class)
                     .hasMessageContaining(SPACE_KEY);
         }
@@ -149,8 +150,9 @@ class JpaObfuscationJobAdapterTest {
                     new ConstraintViolationException("actor must not be null",
                             new SQLException("null value"), "pii_redaction_job_actor_not_null"));
             when(repository.saveAndFlush(any(ObfuscationJobEntity.class))).thenThrow(other);
+            var job = domainJob();
 
-            assertThatThrownBy(() -> adapter.create(domainJob()))
+            assertThatThrownBy(() -> adapter.create(job))
                     .isInstanceOf(DataIntegrityViolationException.class)
                     .isNotInstanceOf(ObfuscationJobAlreadyRunningException.class);
         }

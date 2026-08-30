@@ -46,8 +46,9 @@ class PlanObfuscationUseCaseTest {
     @DisplayName("Should_ThrowRemediationDisabled_When_FeatureFlagIsOff")
     void Should_ThrowRemediationDisabled_When_FeatureFlagIsOff() {
         when(remediationConfigPort.isRemediationEnabled()).thenReturn(false);
+        var selection = selection();
 
-        assertThatThrownBy(() -> useCase.plan(selection()))
+        assertThatThrownBy(() -> useCase.plan(selection))
                 .isInstanceOf(RemediationDisabledException.class);
     }
 

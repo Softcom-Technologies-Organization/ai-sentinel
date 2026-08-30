@@ -107,7 +107,9 @@ class FindingReferenceTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_SpaceKeyIsBlank")
         void Should_RejectConstruction_When_SpaceKeyIsBlank() {
-            assertThatThrownBy(() -> reference().spaceKey(" ").build())
+            var builder = reference().spaceKey(" ");
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("spaceKey");
         }
@@ -115,7 +117,9 @@ class FindingReferenceTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_PageIdIsMissing")
         void Should_RejectConstruction_When_PageIdIsMissing() {
-            assertThatThrownBy(() -> reference().pageId(null).build())
+            var builder = reference().pageId(null);
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("pageId");
         }
@@ -123,7 +127,9 @@ class FindingReferenceTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_DetectorIsMissing")
         void Should_RejectConstruction_When_DetectorIsMissing() {
-            assertThatThrownBy(() -> reference().detector(null).build())
+            var builder = reference().detector(null);
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("detector");
         }
@@ -131,7 +137,9 @@ class FindingReferenceTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_PiiTypeIsMissing")
         void Should_RejectConstruction_When_PiiTypeIsMissing() {
-            assertThatThrownBy(() -> reference().piiType(null).build())
+            var builder = reference().piiType(null);
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("piiType");
         }
@@ -139,7 +147,9 @@ class FindingReferenceTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_SeverityIsMissing")
         void Should_RejectConstruction_When_SeverityIsMissing() {
-            assertThatThrownBy(() -> reference().severity(null).build())
+            var builder = reference().severity(null);
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("severity");
         }
@@ -147,7 +157,9 @@ class FindingReferenceTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_ValueFingerprintIsBlank")
         void Should_RejectConstruction_When_ValueFingerprintIsBlank() {
-            assertThatThrownBy(() -> reference().valueFingerprint("").build())
+            var builder = reference().valueFingerprint("");
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("valueFingerprint");
         }
@@ -161,7 +173,9 @@ class FindingReferenceTest {
         @Test
         @DisplayName("Should_RejectBlankAttachmentName_When_Provided")
         void Should_RejectBlankAttachmentName_When_Provided() {
-            assertThatThrownBy(() -> reference().attachmentName(" ").build())
+            var builder = reference().attachmentName(" ");
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("attachmentName");
         }

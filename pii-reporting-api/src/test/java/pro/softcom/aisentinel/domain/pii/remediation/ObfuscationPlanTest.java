@@ -75,7 +75,9 @@ class ObfuscationPlanTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_SelectionChecksumIsBlank")
         void Should_RejectConstruction_When_SelectionChecksumIsBlank() {
-            assertThatThrownBy(() -> plan().selectionChecksum(" ").build())
+            var builder = plan().selectionChecksum(" ");
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("selectionChecksum");
         }
@@ -110,10 +112,9 @@ class ObfuscationPlanTest {
         @Test
         @DisplayName("Should_ExposeImmutableSeverityBreakdown_When_Constructed")
         void Should_ExposeImmutableSeverityBreakdown_When_Constructed() {
-            ObfuscationPlan obfuscationPlan = plan().build();
+            var bySeverity = plan().build().bySeverity();
 
-            assertThatThrownBy(() -> obfuscationPlan.bySeverity()
-                    .put(PersonallyIdentifiableInformationSeverity.LOW, 1))
+            assertThatThrownBy(() -> bySeverity.put(PersonallyIdentifiableInformationSeverity.LOW, 1))
                     .isInstanceOf(UnsupportedOperationException.class);
         }
     }

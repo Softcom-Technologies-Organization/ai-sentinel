@@ -72,7 +72,9 @@ class FindingRemediationTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_FindingIdIsBlank")
         void Should_RejectConstruction_When_FindingIdIsBlank() {
-            assertThatThrownBy(() -> remediation().findingId(" ").build())
+            var builder = remediation().findingId(" ");
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("findingId");
         }
@@ -80,7 +82,9 @@ class FindingRemediationTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_StatusIsMissing")
         void Should_RejectConstruction_When_StatusIsMissing() {
-            assertThatThrownBy(() -> remediation().status(null).build())
+            var builder = remediation().status(null);
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("status");
         }
@@ -88,7 +92,9 @@ class FindingRemediationTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_SeverityIsMissing")
         void Should_RejectConstruction_When_SeverityIsMissing() {
-            assertThatThrownBy(() -> remediation().severity(null).build())
+            var builder = remediation().severity(null);
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("severity");
         }
@@ -96,7 +102,9 @@ class FindingRemediationTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_OccurredAtIsMissing")
         void Should_RejectConstruction_When_OccurredAtIsMissing() {
-            assertThatThrownBy(() -> remediation().occurredAt(null).build())
+            var builder = remediation().occurredAt(null);
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("occurredAt");
         }
@@ -104,7 +112,9 @@ class FindingRemediationTest {
         @Test
         @DisplayName("Should_RejectConstruction_When_ActorIsBlank")
         void Should_RejectConstruction_When_ActorIsBlank() {
-            assertThatThrownBy(() -> remediation().actor("").build())
+            var builder = remediation().actor("");
+
+            assertThatThrownBy(builder::build)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("actor");
         }

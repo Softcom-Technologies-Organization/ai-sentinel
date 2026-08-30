@@ -11,12 +11,12 @@ L'agent `sonar-fixer` (`.claude/agents/sonar-fixer.md`) execute ce runbook.
 ## Le contexte qui change tout
 
 L'analyse Sonar est publiee sous le nom de branche `main`, mais elle ne decrit **pas** le commit
-`main` : elle decrit la branche de travail `chore/improve-error-handling`, dont le contenu est
+`main` : elle decrit la branche de travail `chore/improve-error-handling-with-sonar-fixes`, dont le contenu est
 desormais fige dans le commit **`abf6f721`**. Verifie : l'issue `java:S8491` pointe
 `ContentScanOrchestrator.java:179`, une ligne qui n'existe pas sur `main` (le fichier y fait
 moins de 176 lignes) mais qui est bien la sur la branche de travail.
 
-**Consequence** : partir de `chore/improve-error-handling`, jamais de `main`. Sur cette base les
+**Consequence** : partir de `chore/improve-error-handling-with-sonar-fixes`, jamais de `main`. Sur cette base les
 numeros de ligne sont exacts — verifie sur `ContentScanOrchestrator.java:179` et
 `pii_service.py:190`.
 

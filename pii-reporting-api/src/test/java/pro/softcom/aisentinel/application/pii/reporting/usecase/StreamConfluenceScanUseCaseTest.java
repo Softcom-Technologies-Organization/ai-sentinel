@@ -688,24 +688,24 @@ class StreamConfluenceScanUseCaseTest {
                                                                           Runnable::run);
 
         // Create parameter objects
-        ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService, spaceRepository);
-        ContentScanOrchestrator contentScanOrchestrator = new ContentScanOrchestrator(
+        ConfluenceAccessor accessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService, spaceRepository);
+        ContentScanOrchestrator orchestrator = new ContentScanOrchestrator(
                 eventFactory, progressCalculator, checkpointService, jpaScanEventStoreAdapter, scanEventDispatcher,
                 severityCalculationService, scanSeverityCountService, scanPiiTypeCountService
         );
-        AttachmentProcessor attachmentProcessor = new AttachmentProcessor(
+        AttachmentProcessor processor = new AttachmentProcessor(
                 confluenceDownloadService,
                 attachmentTextExtractionService
         );
-        HtmlContentParser htmlContentParser = new HtmlContentParser();
+        HtmlContentParser contentParser = new HtmlContentParser();
 
         ScanPipelineDependencies pipelineDependencies = new ScanPipelineDependencies(
-            confluenceAccessor,
+            accessor,
             piiDetectorClient,
-            contentScanOrchestrator,
-            attachmentProcessor,
+            orchestrator,
+            processor,
             scanTimeoutConfig,
-            htmlContentParser,
+            contentParser,
             mock(ScanSpaceStatsCollector.class)
         );
         StreamConfluenceScanUseCase svc = new StreamConfluenceScanUseCase(
@@ -757,24 +757,24 @@ class StreamConfluenceScanUseCaseTest {
                                                                           Runnable::run);
 
         // Create parameter objects
-        ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService, spaceRepository);
-        ContentScanOrchestrator contentScanOrchestrator = new ContentScanOrchestrator(
+        ConfluenceAccessor accessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService, spaceRepository);
+        ContentScanOrchestrator orchestrator = new ContentScanOrchestrator(
                 eventFactory, progressCalculator, checkpointService, jpaScanEventStoreAdapter, scanEventDispatcher,
                 severityCalculationService, scanSeverityCountService, scanPiiTypeCountService
         );
-        AttachmentProcessor attachmentProcessor = new AttachmentProcessor(
+        AttachmentProcessor processor = new AttachmentProcessor(
                 confluenceDownloadService,
                 attachmentTextExtractionService
         );
-        HtmlContentParser htmlContentParser = new HtmlContentParser();
+        HtmlContentParser contentParser = new HtmlContentParser();
 
         ScanPipelineDependencies pipelineDependencies = new ScanPipelineDependencies(
-            confluenceAccessor,
+            accessor,
             piiDetectorClient,
-            contentScanOrchestrator,
-            attachmentProcessor,
+            orchestrator,
+            processor,
             scanTimeoutConfig,
-            htmlContentParser,
+            contentParser,
             mock(ScanSpaceStatsCollector.class)
         );
         StreamConfluenceScanUseCase svc = new StreamConfluenceScanUseCase(

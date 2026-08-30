@@ -1,5 +1,7 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { MessageService } from 'primeng/api';
+import { TranslocoService } from '@jsverse/transloco';
+import { toTranslocoKey } from './error-notification.service';
 
 export interface ErrorToastData {
   scanId: string;
@@ -7,22 +9,36 @@ export interface ErrorToastData {
   pageId?: string;
   pageTitle?: string;
   attachmentName?: string;
-  errorMessage: string;
-  errorType: 'TIMEOUT_REACTOR' | 'TIMEOUT_GRPC' | 'ERROR_GRPC' | 'ERROR_GENERAL';
+  /** Translation key the backend sent, e.g. 'error.scan.detector_model_not_loaded'. */
+  errorKey?: string;
+  /** Technical values the translated sentence interpolates. */
+  errorParams?: Record<string, string>;
 }
+
+/** Key used when the backend sent an error event without naming which error it was. */
+const UNKNOWN_ERROR_KEY = 'error.scan.unexpected';
+
+/**
+ * Keys the backend uses to refuse a scan before it starts, because a detector the
+ * operator enabled cannot run. They all share one consequence for the dashboard:
+ * nothing was scanned, so the optimistic "scan starting" state must be released.
+ */
+const DETECTOR_REFUSAL_PREFIX = 'error.scan.detector_';
+
+/** Keys meaning the scan stopped on an outage and waits on the Resume button. */
+const SCAN_PAUSED_KEYS: readonly string[] = ['error.scan.paused_detector', 'error.scan.paused_network'];
 
 @Injectable()
 export class ToastService {
+  private readonly translocoService = inject(TranslocoService);
+
   constructor(readonly messageService: MessageService) {}
 
   showScanError(data: ErrorToastData): void {
-    const summary = this.formatSummary(data);
-    const detail = this.formatDetail(data);
-
     this.messageService.add({
       severity: 'error',
-      summary,
-      detail,
+      summary: this.translate(data, 'title'),
+      detail: this.formatDetail(data),
       sticky: true,
       life: undefined,
       key: 'scan-errors',
@@ -34,67 +50,74 @@ export class ToastService {
     this.messageService.clear('scan-errors');
   }
 
-  private formatSummary(data: ErrorToastData): string {
-    const typeLabels: Record<ErrorToastData['errorType'], string> = {
-      'TIMEOUT_REACTOR': 'Reactor Timeout',
-      'TIMEOUT_GRPC': 'gRPC Timeout',
-      'ERROR_GRPC': 'Analyse du contenu impossible',
-      'ERROR_GENERAL': 'Scan error'
-    };
-    return typeLabels[data.errorType];
+  /**
+   * Whether this error stopped the scan, as opposed to failing one item.
+   *
+   * <p>Drives a distinct notification: the operator has something to do (restore the
+   * detector or the network, then press Resume) rather than an item to note.
+   */
+  isScanPaused(errorKey: string | undefined): boolean {
+    return errorKey !== undefined && SCAN_PAUSED_KEYS.includes(errorKey);
   }
 
+  /**
+   * Whether this error refused the scan before a single page was opened.
+   *
+   * <p>Told apart from a paused scan because there is nothing to resume: the
+   * dashboard drops its optimistic "starting" state instead of offering Resume.
+   */
+  isScanRefused(errorKey: string | undefined): boolean {
+    return errorKey !== undefined && errorKey.startsWith(DETECTOR_REFUSAL_PREFIX);
+  }
+
+  /**
+   * Renders one side of an error message in the operator's language.
+   *
+   * <p>Falls back to a generic wording rather than showing a raw key: a backend
+   * newer than this dashboard must still produce a readable notification.
+   */
+  private translate(data: ErrorToastData, part: 'title' | 'detail'): string {
+    const key = `${toTranslocoKey(data.errorKey ?? UNKNOWN_ERROR_KEY)}.${part}`;
+    const translated = this.translocoService.translate(key, data.errorParams ?? {});
+    return translated === key
+      ? this.translocoService.translate(`${toTranslocoKey(UNKNOWN_ERROR_KEY)}.${part}`, data.errorParams ?? {})
+      : translated;
+  }
+
+  /**
+   * The detail line, plus what to do about it when the scan can be resumed.
+   *
+   * <p>A scan-wide failure names no page: it is neither caused by nor limited to the
+   * one being analysed when it struck. An item failure adds where it happened.
+   */
   private formatDetail(data: ErrorToastData): string {
-    const parts: string[] = [];
+    const detail = this.translate(data, 'detail');
 
-    // Message user-friendly pour erreurs gRPC
-    if (data.errorType === 'ERROR_GRPC') {
-      parts.push('Service d\'analyse indisponible');
+    if (this.isScanPaused(data.errorKey)) {
+      return `${detail}\n${this.translocoService.translate('errors.scan.resumeHint')}`;
+    }
+    if (this.isScanRefused(data.errorKey)) {
+      return detail;
     }
 
-    // Espace Confluence (libellé amélioré pour gRPC)
-    if (data.errorType === 'ERROR_GRPC') {
-      parts.push(`Espace confluence: ${data.spaceKey}`);
-    } else {
-      parts.push(`Space: ${data.spaceKey}`);
-    }
+    const location = [
+      data.spaceKey ? this.translocoService.translate('errors.scan.location.space', { space: data.spaceKey }) : null,
+      this.formatItemLocation(data)
+    ].filter(Boolean);
 
-    // Page info (identique pour tous)
-    if (data.pageTitle) {
-      parts.push(`Page: "${data.pageTitle}"`);
-    } else if (data.pageId) {
-      parts.push(`Page ID: ${data.pageId}`);
-    }
-
-    // Attachement (si applicable)
-    if (data.attachmentName) {
-      parts.push(`Pièce jointe: "${data.attachmentName}"`);
-    }
-
-    // Message technique uniquement pour non-gRPC errors
-    if (data.errorType !== 'ERROR_GRPC') {
-      parts.push(`Message: ${data.errorMessage}`);
-    }
-
-    return parts.join('\n');
+    return location.length === 0 ? detail : `${detail}\n${location.join('\n')}`;
   }
 
-  detectErrorType(errorMessage: string): ErrorToastData['errorType'] {
-    const lowerMsg = errorMessage.toLowerCase();
-
-    if (lowerMsg.includes('timeout') && lowerMsg.includes('reactor')) {
-      return 'TIMEOUT_REACTOR';
+  private formatItemLocation(data: ErrorToastData): string | null {
+    if (data.attachmentName) {
+      return this.translocoService.translate('errors.scan.location.attachment', { attachment: data.attachmentName });
     }
-    if (lowerMsg.includes('timeout') && lowerMsg.includes('grpc')) {
-      return 'TIMEOUT_GRPC';
+    if (data.pageTitle) {
+      return this.translocoService.translate('errors.scan.location.page', { page: data.pageTitle });
     }
-    if (lowerMsg.includes('deadline_exceeded')) {
-      return 'TIMEOUT_GRPC';
+    if (data.pageId) {
+      return this.translocoService.translate('errors.scan.location.pageId', { pageId: data.pageId });
     }
-    if (lowerMsg.includes('grpc')) {
-      return 'ERROR_GRPC';
-    }
-
-    return 'ERROR_GENERAL';
+    return null;
   }
 }

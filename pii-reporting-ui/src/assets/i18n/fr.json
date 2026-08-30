@@ -13,7 +13,6 @@
     "no": "Non",
     "loading": "Chargement...",
     "noData": "Aucune donnée disponible",
-    "error": "Erreur",
     "success": "Succès",
     "warning": "Attention",
     "info": "Information"
@@ -165,6 +164,7 @@
       "rateUnit": "car/s",
       "busy": "Temps cumulé",
       "postfilterLabel": "Post-filtre",
+      "detectorFailed": "{{count}} échec(s) — analyse incomplète",
       "busyNote": "Le temps par détecteur est un temps de calcul cumulé ; il peut dépasser la durée totale du scan en raison du parallélisme. Le débit est exprimé en caractères par seconde."
     },
     "logs": {
@@ -237,13 +237,13 @@
     "title": "Paramètres",
     "back": "Retour au tableau de bord",
     "nav": {
-      "detectors": "Moteurs de d\u00e9tection",
+      "detectors": "Moteurs de détection",
       "thresholds": "Seuils & Performance",
       "piiTypes": "Types d'IPI",
       "lmStudio": "LM Studio",
       "confluence": "Connexion Confluence"
     },
-    "subtitle": "Configurez les moteurs, seuils et types d'informations \u00e0 d\u00e9tecter",
+    "subtitle": "Configurez les moteurs, seuils et types d'informations à détecter",
     "tabs": {
       "detection": "Détection d'IPI",
       "confluence": "Connexion Confluence"
@@ -588,10 +588,8 @@
         "HOSTNAME": "Nom d'hôte",
         "DEVICE_ID": "Identifiant d'appareil",
         "ACCESS_TOKEN": "Jeton d'accès",
-        "PASSPORT_NUMBER": "Numéro de passeport",
         "SOFTWARE_LICENSE": "Clé de licence logicielle",
         "CLIENT_SECRET": "Secret client (OAuth)",
-        "GITHUB_TOKEN": "Jeton GitHub",
         "SECRET_KEY": "Clé secrète",
         "SESSION_ID": "Identifiant de session",
         "CASE_NUMBER": "Numéro de dossier",
@@ -753,7 +751,7 @@
         "PASSWORD": "Mots de passe de compte, codes PIN et identifiants d'authentification",
         "API_KEY": "Clés API et jetons de service",
         "JWT_TOKEN": "Jetons Web JSON pour l'authentification",
-        "GITHUB_TOKEN": "Jetons d'accès personnel GitHub",
+        "GITHUB_TOKEN": "Jeton d'accès personnel GitHub",
         "AWS_KEY": "Clés d'accès Amazon Web Services",
         "IP_ADDRESS": "Adresses réseau IPv4 et IPv6",
         "IPADDRESS": "Adresses réseau IPv4 et IPv6",
@@ -815,17 +813,15 @@
         "TAX_ID": "Numéro d'identification fiscale",
         "SALARY": "Information sur le salaire ou la rémunération",
         "NATIONAL_ID": "Numéro d'identification nationale",
-        "PASSPORT_NUMBER": "Numéro de passeport",
+        "PASSPORT_NUMBER": "Numéro de passeport de voyage",
         "DRIVER_LICENSE_NUMBER": "Numéro de permis de conduire",
         "DATE_OF_BIRTH": "Date de naissance",
         "NATIONALITY": "Nationalité ou citoyenneté",
         "HOSTNAME": "Nom d'hôte réseau ou de serveur",
         "DEVICE_ID": "Identifiant unique d'appareil",
         "ACCESS_TOKEN": "Jeton d'accès pour l'authentification",
-        "PASSPORT_NUMBER": "Numéro de passeport de voyage",
         "SOFTWARE_LICENSE": "Clé de licence ou d'activation logicielle",
         "CLIENT_SECRET": "Secret client OAuth / identifiant d'application",
-        "GITHUB_TOKEN": "Jeton d'accès personnel GitHub",
         "SECRET_KEY": "Clé secrète ou cryptographique",
         "SESSION_ID": "Identifiant de session web ou application",
         "CASE_NUMBER": "Numéro de dossier juridique ou administratif",
@@ -1021,7 +1017,8 @@
       "detectionConnectionFailed": "Le service d'analyse PII est inaccessible. Vérifiez que le service est démarré.",
       "detectionServiceError": "Erreur du service d'analyse PII.",
       "detectionTimeout": "Le service d'analyse PII n'a pas répondu dans le délai imparti.",
-      "detectorError": "Erreur lors de la détection PII."
+      "detectorError": "Erreur lors de la détection PII.",
+      "pageSecretsNotFound": "Aucune donnée sensible à révéler pour cette page."
     },
     "encryption": {
       "failed": "Erreur de chiffrement. Contactez l'administrateur."
@@ -1034,7 +1031,101 @@
     },
     "scan": {
       "invalidStatusTransition": "Transition de statut de scan invalide.",
-      "notFound": "Le scan demandé est introuvable."
+      "notFound": "Le scan demandé est introuvable.",
+      "statsNotFound": "Aucune statistique de scan pour cet espace.",
+      "resumeHint": "La progression est conservée : corrigez la cause puis cliquez sur « Reprendre ».",
+      "location": {
+        "space": "Espace : {{space}}",
+        "page": "Page : « {{page}} »",
+        "pageId": "Page (identifiant) : {{pageId}}",
+        "attachment": "Pièce jointe : « {{attachment}} »"
+      },
+      "detectorNotInstantiated": {
+        "title": "Détecteur activé indisponible — scan non démarré",
+        "detail": "Le détecteur {{detector}} est activé mais n'a pas pu être créé par le service de détection. Il ne trouverait rien, ce qui rendrait le rapport faussement propre."
+      },
+      "detectorDisabledInConfig": {
+        "title": "Détecteur activé mais désactivé dans sa configuration — scan non démarré",
+        "detail": "Le détecteur {{detector}} est activé dans les paramètres, mais désactivé dans sa propre configuration de modèle. Activez-le des deux côtés, ou désactivez-le dans les paramètres."
+      },
+      "detectorInitFailed": {
+        "title": "Détecteur activé non initialisable — scan non démarré",
+        "detail": "Le détecteur {{detector}} n'a pas pu démarrer : {{cause}}"
+      },
+      "detectorEndpointUnreachable": {
+        "title": "Détecteur activé injoignable — scan non démarré",
+        "detail": "Le détecteur {{detector}} est activé mais son service ne répond pas sur {{endpoint}}. Cause technique : {{cause}}"
+      },
+      "detectorModelNotAvailable": {
+        "title": "Modèle du détecteur absent — scan non démarré",
+        "detail": "Le service répond sur {{endpoint}}, mais le modèle {{model}} du détecteur {{detector}} n'y est pas disponible. Modèles actuellement chargés : {{loadedModels}}"
+      },
+      "detectorModelNotLoaded": {
+        "title": "Modèle du détecteur non chargé — scan non démarré",
+        "detail": "Le modèle {{model}} du détecteur {{detector}} est présent sur {{endpoint}} mais n'est pas chargé (état : {{state}}). Chargez-le, puis relancez le scan."
+      },
+      "detectorUnusable": {
+        "title": "Détecteur activé inutilisable — scan non démarré",
+        "detail": "Le détecteur {{detector}} ne peut pas fonctionner sur {{endpoint}}. Cause technique : {{cause}}"
+      },
+      "pausedDetector": {
+        "title": "Scan mis en pause — détecteur devenu injoignable",
+        "detail": "Un détecteur activé est tombé pendant le scan : {{cause}}"
+      },
+      "pausedNetwork": {
+        "title": "Scan mis en pause — source de données injoignable",
+        "detail": "La source de données n'est plus joignable : {{cause}}"
+      },
+      "pageTimeout": {
+        "title": "Analyse de page interrompue — délai dépassé",
+        "detail": "L'analyse de la page « {{page}} » a dépassé le délai imparti. Le scan continue sans elle."
+      },
+      "attachmentTimeout": {
+        "title": "Analyse de pièce jointe interrompue — délai dépassé",
+        "detail": "L'analyse de la pièce jointe « {{attachment}} » a dépassé le délai imparti. Le scan continue sans elle."
+      },
+      "detectionTimeout": {
+        "title": "Détection interrompue — délai dépassé",
+        "detail": "Le service d'analyse n'a pas terminé « {{item}} » dans le délai imparti. Le scan continue sans cet élément."
+      },
+      "detectionFailed": {
+        "title": "Analyse du contenu impossible",
+        "detail": "Le service d'analyse a refusé cet élément (statut {{status}}). Le scan continue."
+      },
+      "pageFailed": {
+        "title": "Page non analysée",
+        "detail": "La page « {{page}} » n'a pas pu être analysée : {{cause}}"
+      },
+      "attachmentFailed": {
+        "title": "Pièce jointe non analysée",
+        "detail": "La pièce jointe « {{attachment}} » n'a pas pu être analysée : {{cause}}"
+      },
+      "spaceNotFound": {
+        "title": "Espace introuvable",
+        "detail": "L'espace {{space}} n'existe pas dans la source de données."
+      },
+      "noSpaceFound": {
+        "title": "Aucun espace à scanner",
+        "detail": "La source de données n'expose aucun espace accessible."
+      },
+      "unexpected": {
+        "title": "Erreur de scan",
+        "detail": "Une erreur inattendue est survenue pendant le scan : {{cause}}"
+      }
+    },
+    "remediation": {
+      "disabled": "La remédiation est désactivée. Activez-la dans les paramètres pour effectuer cette opération.",
+      "invalidStatusTransition": "Transition de statut invalide pour cette occurrence.",
+      "attachmentNotSupported": "L'anonymisation n'est pas supportée pour ce type de pièce jointe.",
+      "selectionOutdated": "La sélection n'est plus à jour. Rafraîchissez la page et réessayez.",
+      "jobAlreadyRunning": "Une anonymisation est déjà en cours. Attendez qu'elle se termine.",
+      "jobNotFound": "L'anonymisation demandée est introuvable.",
+      "plaintextUnavailable": "Valeur d'origine indisponible dans les résultats du scan",
+      "valueNotFound": "Valeur introuvable dans le contenu actuel de la page",
+      "pageStale": "Page modifiée pendant l'anonymisation",
+      "pageRedactionFailed": "L'anonymisation de la page a échoué",
+      "findingNotFound": "Occurrence absente du dernier scan",
+      "redactedStatusReserved": "Le statut « anonymisé » est réservé aux traitements d'anonymisation"
     },
     "export": {
       "failed": "Erreur lors de l'export du rapport. Réessayez.",
@@ -1111,12 +1202,14 @@
       "ariaLabel": "Actions groupées",
       "selectedForObf": "sélectionnés à caviarder",
       "fpSignaled": "{{count}} faux positif(s) signalé(s)",
+      "attachmentsExcluded": "{{count}} pièce(s) jointe(s) sélectionnée(s), exclue(s) du caviardage automatique",
       "clear": "Effacer",
       "markTreated": "Marquer traité",
       "markTreatedHint": "Marquer la sélection comme traitée manuellement",
       "markFp": "Signaler faux positif",
       "markFpHint": "Signaler la sélection comme faux positif",
-      "obfuscateN": "Caviarder ({{count}})"
+      "obfuscateN": "Caviarder ({{count}})",
+      "obfuscateHint": "Caviarder les occurrences sélectionnées dans le corps des pages — les pièces jointes ne peuvent pas être caviardées automatiquement"
     },
     "confirm": {
       "title": "Caviarder {{count}} finding(s) ?",
@@ -1157,7 +1250,8 @@
       "skipped": "Ignorés"
     },
     "ineligible": {
-      "attachment": "Pièce jointe non caviardable ({{kind}})"
+      "attachment": "Pièce jointe non caviardable ({{kind}})",
+      "selectHint": "Pièce jointe : caviardage automatique impossible. La sélection sert uniquement à signaler un faux positif ou à marquer comme traité."
     },
     "featureDisabled": "Le caviardage automatique est désactivé pour cette instance."
   },

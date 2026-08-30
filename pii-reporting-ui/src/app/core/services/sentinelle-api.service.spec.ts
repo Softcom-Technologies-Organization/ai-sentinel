@@ -43,7 +43,7 @@ describe('SentinelleApiService.getSpaceScanStats', () => {
       attachmentsFailed: 2,
       attachmentChars: 530000,
       failedItems: [{ itemType: 'PAGE', title: 'Ma page' }],
-      detectorStats: [{ detector: 'PRESIDIO', detections: 12, charsProcessed: 1730000, busyMs: 520000, charsPerSecond: 3326.9, discarded: 0 }]
+      detectorStats: [{ detector: 'PRESIDIO', detections: 12, charsProcessed: 1730000, busyMs: 520000, charsPerSecond: 3326.9, discarded: 0, failedRequests: 0, lastError: null }]
     };
     request.flush(payload);
 

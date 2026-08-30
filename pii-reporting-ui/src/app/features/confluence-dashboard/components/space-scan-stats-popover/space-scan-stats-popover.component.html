@@ -106,12 +106,19 @@
                   </thead>
                   <tbody>
                     @for (detector of data.detectorStats; track detector.detector) {
-                      <tr>
+                      <tr [class.scan-stats-detector-failed]="detector.failedRequests > 0">
                         <th scope="row">
                           @if (isPrefilter(detector.detector)) {
                             {{ 'dashboard.scanStats.postfilterLabel' | transloco }}
                           } @else {
                             {{ detector.detector }}
+                          }
+                          @if (detector.failedRequests > 0) {
+                            <span class="scan-stats-detector-warning"
+                                  [title]="detector.lastError ?? ''">
+                              <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                              {{ 'dashboard.scanStats.detectorFailed' | transloco: { count: detector.failedRequests } }}
+                            </span>
                           }
                         </th>
                         <td>{{ detector.detections }}</td>

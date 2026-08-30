@@ -30,6 +30,7 @@ const FR_TRANSLATIONS = {
       rateUnit: 'car/s',
       busy: 'Temps cumulé',
       prefilterLabel: 'Pré-filtre',
+      detectorFailed: '{{count}} échec(s) — analyse incomplète',
       busyNote: 'Temps de calcul cumulé.'
     }
   }
@@ -49,8 +50,8 @@ const COMPLETED_STATS: SpaceScanStatsDto = {
   attachmentChars: 530000,
   failedItems: [{ itemType: 'PAGE', title: 'Ma page' }],
   detectorStats: [
-    { detector: 'PRESIDIO', detections: 12, charsProcessed: 1730000, busyMs: 520000, charsPerSecond: 3326.9, discarded: 0 },
-    { detector: 'PREFILTER', detections: 50, charsProcessed: 0, busyMs: 12, charsPerSecond: null, discarded: 5 }
+    { detector: 'PRESIDIO', detections: 12, charsProcessed: 1730000, busyMs: 520000, charsPerSecond: 3326.9, discarded: 0, failedRequests: 0, lastError: null },
+    { detector: 'PREFILTER', detections: 50, charsProcessed: 0, busyMs: 12, charsPerSecond: null, discarded: 5, failedRequests: 0, lastError: null }
   ]
 };
 
@@ -164,5 +165,35 @@ describe('SpaceScanStatsPopoverComponent', () => {
     const loaded = fixture.componentInstance.stats();
     const prefilter = loaded?.detectorStats.find((d) => d.detector === 'PREFILTER');
     expect(prefilter?.discarded).toBe(5);
+  });
+
+  it('Should_ExposeFailureCountAndReason_When_DetectorCouldNotRun', () => {
+    apiMock.getSpaceScanStats.mockReturnValue(of({
+      ...COMPLETED_STATS,
+      detectorStats: [{
+        detector: 'MINISTRAL', detections: 0, charsProcessed: 12000, busyMs: 90000,
+        charsPerSecond: 133.3, discarded: 0, failedRequests: 7,
+        lastError: 'ConnectError: connection refused'
+      }]
+    }));
+    createComponent();
+
+    fixture.componentInstance.onShow();
+
+    // Zero detections alone would read as a clean space; the template drives its
+    // warning off these two fields, which the popover must carry through.
+    const ministral = fixture.componentInstance.stats()?.detectorStats[0];
+    expect(ministral?.detections).toBe(0);
+    expect(ministral?.failedRequests).toBe(7);
+    expect(ministral?.lastError).toBe('ConnectError: connection refused');
+  });
+
+  it('Should_ReportNoFailure_When_DetectorsRanNormally', () => {
+    createComponent();
+
+    fixture.componentInstance.onShow();
+
+    const loaded = fixture.componentInstance.stats();
+    expect(loaded?.detectorStats.every((d) => d.failedRequests === 0)).toBe(true);
   });
 });

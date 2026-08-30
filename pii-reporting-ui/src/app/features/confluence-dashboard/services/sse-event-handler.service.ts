@@ -85,15 +85,34 @@ export class SseEventHandlerService {
    * - Errors are NON-FATAL - scan continues after errors
    * - Space remains in RUNNING status
    * - Error displayed as sticky toast notification
+   *
+   * A detector-availability refusal is scan-wide rather than space-bound, so it is
+   * notified even without a space key — dropping it would put the operator back in
+   * front of a scan that produces nothing with no explanation.
    */
   private handleStreamError(payload: ConfluenceContentPersonallyIdentifiableInformationScanResult): void {
-    const spaceKey = coerceSpaceKey(payload) ?? this.uiStateService.activeSpaceKey();
-    if (!spaceKey) return;
+    const errorKey = payload.errorKey;
+    const errorParams = payload.errorParams;
+    // Diagnostic line for the event log, which is a technical trail: the backend's own
+    // wording is the most useful thing there, and the key identifies it when absent.
+    const errorMessage = payload.message ?? payload.errorKey
+      ?? this.translocoService.translate<string>('errors.unknownError');
 
-    const errorMessage = (payload as Record<string, unknown>)?.['message'] as string
-      ?? (payload as Record<string, unknown>)?.['errorMessage'] as string
-      ?? this.translocoService.translate('errors.unknownError');
-    const errorType = this.toastService.detectErrorType(errorMessage);
+    // An outage stopped the whole scan, so it is reported once with its cause instead of
+    // being attributed to the page that happened to hit it first. The paused state itself
+    // comes from status polling, which turns the Resume button back on.
+    if (this.toastService.isScanPaused(errorKey)) {
+      this.notifyScanWide(payload, errorMessage);
+      return;
+    }
+
+    const spaceKey = coerceSpaceKey(payload) ?? this.uiStateService.activeSpaceKey();
+    if (!spaceKey) {
+      if (this.toastService.isScanRefused(errorKey)) {
+        this.notifyScanWide(payload, errorMessage);
+      }
+      return;
+    }
 
     this.toastService.showScanError({
       scanId: payload.scanId ?? '',
@@ -101,8 +120,8 @@ export class SseEventHandlerService {
       pageId: payload.pageId == null ? undefined : String(payload.pageId),
       pageTitle: payload.pageTitle,
       attachmentName: (payload as Record<string, unknown>)?.['attachmentName'] as string | undefined,
-      errorMessage,
-      errorType
+      errorKey,
+      errorParams
     });
 
     // DO NOT mark space as FAILED - errors are non-fatal
@@ -117,5 +136,25 @@ export class SseEventHandlerService {
         error: errorMessage
       })
     );
+  }
+
+  /**
+   * Notifies a failure that stopped or refused the whole run, once.
+   *
+   * <p>Reported without a space key on purpose: the cause is the detector or the network,
+   * not the space being scanned when it struck, and one notification per remaining item
+   * would bury the single thing the operator has to act on.
+   */
+  private notifyScanWide(
+    payload: ConfluenceContentPersonallyIdentifiableInformationScanResult,
+    errorMessage: string
+  ): void {
+    this.toastService.showScanError({
+      scanId: payload.scanId ?? '',
+      spaceKey: '',
+      errorKey: payload.errorKey,
+      errorParams: payload.errorParams
+    });
+    this.uiStateService.append(errorMessage);
   }
 }

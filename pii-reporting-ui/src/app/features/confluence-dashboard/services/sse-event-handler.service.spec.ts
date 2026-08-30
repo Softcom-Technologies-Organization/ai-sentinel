@@ -11,14 +11,22 @@ import { SpacesDashboardUtils } from '../spaces-dashboard.utils';
 describe('SseEventHandlerService', () => {
   let service: SseEventHandlerService;
   let translocoMock: { translate: ReturnType<typeof vi.fn> };
-  let toastMock: { showScanError: ReturnType<typeof vi.fn>; detectErrorType: ReturnType<typeof vi.fn> };
+  let toastMock: {
+    showScanError: ReturnType<typeof vi.fn>;
+    isScanPaused: ReturnType<typeof vi.fn>;
+    isScanRefused: ReturnType<typeof vi.fn>;
+  };
   let storageMock: { addPiiItemToSpace: ReturnType<typeof vi.fn> };
   let uiStateMock: { append: ReturnType<typeof vi.fn>; activeSpaceKey: ReturnType<typeof signal> };
   let utilsMock: { updateSpace: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     translocoMock = { translate: vi.fn((key: string) => key) };
-    toastMock = { showScanError: vi.fn(), detectErrorType: vi.fn().mockReturnValue('ERROR_GENERAL') };
+    toastMock = {
+      showScanError: vi.fn(),
+      isScanPaused: vi.fn().mockReturnValue(false),
+      isScanRefused: vi.fn().mockReturnValue(false)
+    };
     storageMock = { addPiiItemToSpace: vi.fn().mockReturnValue(true) };
     uiStateMock = { append: vi.fn(), activeSpaceKey: signal('ACTIVE-SPACE') };
     utilsMock = { updateSpace: vi.fn() };
@@ -88,19 +96,25 @@ describe('SseEventHandlerService', () => {
   // ========== scanError events ==========
 
   it('Should_ShowToast_When_ScanError', () => {
-    const payload = { spaceKey: 'SPACE1', scanId: 'scan-1', message: 'Connection timeout in reactor pipeline' } as any;
+    const payload = {
+      spaceKey: 'SPACE1',
+      scanId: 'scan-1',
+      errorKey: 'error.scan.page_timeout',
+      errorParams: { page: 'Budget' }
+    } as any;
 
     service.routeStreamEvent('scanError', payload);
 
-    expect(toastMock.detectErrorType).toHaveBeenCalledWith('Connection timeout in reactor pipeline');
     expect(toastMock.showScanError).toHaveBeenCalledWith(expect.objectContaining({
       spaceKey: 'SPACE1',
-      scanId: 'scan-1'
+      scanId: 'scan-1',
+      errorKey: 'error.scan.page_timeout',
+      errorParams: { page: 'Budget' }
     }));
   });
 
   it('Should_UpdateTimestamp_When_ScanError', () => {
-    const payload = { spaceKey: 'SPACE1', message: 'Error' } as any;
+    const payload = { spaceKey: 'SPACE1', errorKey: 'error.scan.page_failed' } as any;
 
     service.routeStreamEvent('scanError', payload);
 
@@ -110,7 +124,7 @@ describe('SseEventHandlerService', () => {
   });
 
   it('Should_FallbackToActiveSpaceKey_When_ErrorMissingSpaceKey', () => {
-    const payload = { message: 'Error' } as any;
+    const payload = { errorKey: 'error.scan.page_failed' } as any;
 
     service.routeStreamEvent('scanError', payload);
 
@@ -121,27 +135,84 @@ describe('SseEventHandlerService', () => {
 
   it('Should_SkipError_When_NoSpaceKeyAndNoActiveSpace', () => {
     uiStateMock.activeSpaceKey.set(null);
-    const payload = { message: 'Error' } as any;
+    const payload = { errorKey: 'error.scan.page_failed' } as any;
 
     service.routeStreamEvent('scanError', payload);
 
     expect(toastMock.showScanError).not.toHaveBeenCalled();
   });
 
-  it('Should_UseErrorMessageField_When_NoMessageField', () => {
-    const payload = { spaceKey: 'SPACE1', errorMessage: 'gRPC timeout' } as any;
+  it('Should_StillNotify_When_DetectorUnreachableAndNoSpaceKey', () => {
+    // A multi-space scan refusal carries no space key; dropping it would put the
+    // operator back in front of an unexplained empty scan.
+    uiStateMock.activeSpaceKey.set(null);
+    toastMock.isScanRefused.mockReturnValue(true);
+    const payload = {
+      scanId: 'scan-9',
+      errorKey: 'error.scan.detector_endpoint_unreachable',
+      errorParams: { detector: 'MINISTRAL' }
+    } as any;
 
     service.routeStreamEvent('scanError', payload);
 
-    expect(toastMock.detectErrorType).toHaveBeenCalledWith('gRPC timeout');
+    expect(toastMock.showScanError).toHaveBeenCalledWith(expect.objectContaining({
+      scanId: 'scan-9',
+      errorKey: 'error.scan.detector_endpoint_unreachable'
+    }));
   });
 
-  it('Should_UseFallback_When_NoErrorMessage', () => {
-    const payload = { spaceKey: 'SPACE1' } as any;
+  it('Should_LogTheBackendWording_When_ErrorCarriesOne', () => {
+    // The event log is a technical trail, so it keeps the backend's own diagnostic line.
+    const payload = { spaceKey: 'SPACE1', message: 'error.scan.detection_failed {status=UNAVAILABLE}' } as any;
 
     service.routeStreamEvent('scanError', payload);
 
-    expect(toastMock.detectErrorType).toHaveBeenCalledWith('errors.unknownError');
+    expect(uiStateMock.append).toHaveBeenCalledWith(
+      expect.stringContaining('error.scan.detection_failed'));
+  });
+
+  it('Should_NotifyOnceWithoutPageDetails_When_ScanWasPausedByOutage', () => {
+    toastMock.isScanPaused.mockReturnValue(true);
+    const payload = {
+      spaceKey: 'SPACE1',
+      scanId: 'scan-1',
+      pageId: 'page-7',
+      pageTitle: 'Page 7',
+      errorKey: 'error.scan.paused_detector',
+      errorParams: { cause: 'Detector MINISTRAL could not run' }
+    } as any;
+
+    service.routeStreamEvent('scanError', payload);
+
+    // Reported as one scan-wide outage: attributing it to the page that happened to hit
+    // it first would read as an isolated item failure.
+    expect(toastMock.showScanError).toHaveBeenCalledTimes(1);
+    const notified = toastMock.showScanError.mock.calls[0][0];
+    expect(notified.errorKey).toBe('error.scan.paused_detector');
+    expect(notified.pageId).toBeUndefined();
+    expect(notified.pageTitle).toBeUndefined();
+  });
+
+  it('Should_NotMarkSpaceActivity_When_ScanWasPausedByOutage', () => {
+    toastMock.isScanPaused.mockReturnValue(true);
+    const payload = { spaceKey: 'SPACE1', errorKey: 'error.scan.paused_network' } as any;
+
+    service.routeStreamEvent('scanError', payload);
+
+    // Nothing was scanned: refreshing the space activity timestamp would suggest otherwise.
+    expect(utilsMock.updateSpace).not.toHaveBeenCalled();
+  });
+
+  it('Should_NotifyPausedScan_When_NoSpaceKeyIsKnown', () => {
+    uiStateMock.activeSpaceKey.set(null);
+    toastMock.isScanPaused.mockReturnValue(true);
+    const payload = { errorKey: 'error.scan.paused_network' } as any;
+
+    service.routeStreamEvent('scanError', payload);
+
+    // The cause is the network, not a space: dropping it for lack of a space key would
+    // leave the operator with a stopped scan and no explanation.
+    expect(toastMock.showScanError).toHaveBeenCalledTimes(1);
   });
 
   // ========== Status events (ignored by SSE handler) ==========

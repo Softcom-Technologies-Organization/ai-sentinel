@@ -5,7 +5,9 @@
     "types": ["vitest/globals", "node"],
     "esModuleInterop": true,
     "moduleResolution": "bundler",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    // Lets tests assert against the real translation files rather than a copy of them.
+    "resolveJsonModule": true
   },
   "include": [
     "src/**/*.spec.ts",

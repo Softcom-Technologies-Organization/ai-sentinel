@@ -332,6 +332,7 @@ export class ScanControlService {
   private subscribeSse(stream$: Observable<StreamEvent>): void {
     this.sseSubscription = stream$.subscribe({
       next: (ev) => {
+        this.releaseOptimisticUiIfScanStopped(ev);
         this.sseEventHandler.routeStreamEvent(ev.type as StreamEventType, ev.data);
       },
       error: (err) => {
@@ -346,6 +347,42 @@ export class ScanControlService {
         this.isStreaming.set(false);
       }
     });
+  }
+
+  /**
+   * Releases the optimistic "scan starting" state when the backend says the scan is not running.
+   *
+   * Business purpose: pressing Start sets the spaces to PENDING and starts polling, on the
+   * assumption that the scan will report RUNNING shortly. A scan refused before it began — an
+   * enabled detector unreachable, LM Studio closed — never reports RUNNING, so without this the
+   * panel stays on "SCAN EN COURS" forever with Start disabled, and the operator believes a scan
+   * is running while nothing happens.
+   *
+   * Two distinct outcomes:
+   * - refused before starting: polling is stopped, because as long as it runs with no space
+   *   RUNNING or PAUSED the panel keeps reporting a scan in progress (see isTransitioning);
+   * - paused mid-scan: polling is kept, since it is what reads the PAUSED status back and turns
+   *   the Resume button on.
+   */
+  private releaseOptimisticUiIfScanStopped(event: StreamEvent): void {
+    if (event.type !== 'scanError') {
+      return;
+    }
+    const errorKey = (event.data as Record<string, unknown> | undefined)?.['errorKey'] as string | undefined;
+    const refusedBeforeStarting = this.toastService.isScanRefused(errorKey);
+    if (!refusedBeforeStarting && !this.toastService.isScanPaused(errorKey)) {
+      return;
+    }
+
+    this.statusPolling.actionPending.set(false);
+    this.isStreaming.set(false);
+    if (refusedBeforeStarting) {
+      this.statusPolling.stop();
+      this.disconnectSse();
+      this.dataManagement.queue.set([]);
+    }
+    // Reapplies the backend statuses over the optimistic PENDING ones.
+    void this.statusPolling.forceRefresh();
   }
 
   /**

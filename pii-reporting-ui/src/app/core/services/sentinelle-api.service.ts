@@ -94,6 +94,14 @@ export interface ScanDetectorStatDto {
   charsPerSecond: number | null;
   /** PII discarded by this stage (0 for real detectors; >0 for the PREFILTER post-filter). */
   discarded: number;
+  /**
+   * Analysis requests this detector could not serve (e.g. its endpoint was
+   * unreachable). Non-zero means the scan is incomplete for this detector, which
+   * its detection count alone cannot reveal.
+   */
+  failedRequests: number;
+  /** Latest failure reason, null when the detector never failed. */
+  lastError: string | null;
 }
 
 export interface SpaceScanStatsDto {

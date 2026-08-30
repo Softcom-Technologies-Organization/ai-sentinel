@@ -1,7 +1,10 @@
 import { TestBed } from '@angular/core/testing';
+import { TranslocoService, TranslocoTestingModule } from '@jsverse/transloco';
 import { vi } from 'vitest';
-import { ToastService, ErrorToastData } from './toast.service';
+import { ToastService } from './toast.service';
 import { MessageService } from 'primeng/api';
+import fr from '../../../assets/i18n/fr.json';
+import en from '../../../assets/i18n/en.json';
 
 describe('ToastService', () => {
   let service: ToastService;
@@ -10,7 +13,16 @@ describe('ToastService', () => {
   beforeEach(() => {
     msgMock = { add: vi.fn(), clear: vi.fn() };
 
+    // The real translation files: what the operator actually reads is the thing under test,
+    // so a copy inlined here would pass while the shipped dashboard shows a raw key.
     TestBed.configureTestingModule({
+      imports: [
+        TranslocoTestingModule.forRoot({
+          translocoConfig: { defaultLang: 'fr', availableLangs: ['fr', 'en'] },
+          preloadLangs: true,
+          langs: { fr, en }
+        })
+      ],
       providers: [
         ToastService,
         { provide: MessageService, useValue: msgMock }
@@ -19,116 +31,167 @@ describe('ToastService', () => {
     service = TestBed.inject(ToastService);
   });
 
-  // ========== showScanError ==========
+  const lastToast = () => msgMock.add.mock.calls[0][0];
 
   it('Should_AddStickyError_When_ShowScanError', () => {
-    const data: ErrorToastData = {
+    service.showScanError({
       scanId: 'scan-1',
       spaceKey: 'SPACE1',
       pageTitle: 'Test Page',
-      errorMessage: 'Connection timeout',
-      errorType: 'TIMEOUT_REACTOR'
-    };
-
-    service.showScanError(data);
+      errorKey: 'error.scan.page_timeout',
+      errorParams: { page: 'Test Page' }
+    });
 
     expect(msgMock.add).toHaveBeenCalledWith(expect.objectContaining({
       severity: 'error',
-      summary: 'Reactor Timeout',
       sticky: true,
       key: 'scan-errors'
     }));
   });
-
-  it('Should_FormatGrpcError_When_ErrorTypeIsGrpc', () => {
-    const data: ErrorToastData = {
-      scanId: 'scan-1',
-      spaceKey: 'SPACE1',
-      pageTitle: 'Page A',
-      errorMessage: 'gRPC call failed',
-      errorType: 'ERROR_GRPC'
-    };
-
-    service.showScanError(data);
-
-    const call = msgMock.add.mock.calls[0][0];
-    expect(call.summary).toBe('Analyse du contenu impossible');
-    expect(call.detail).toContain('Service d\'analyse indisponible');
-    expect(call.detail).toContain('Espace confluence: SPACE1');
-    expect(call.detail).not.toContain('gRPC call failed'); // No tech details for gRPC
-  });
-
-  it('Should_IncludeAttachmentName_When_Present', () => {
-    const data: ErrorToastData = {
-      scanId: 'scan-1',
-      spaceKey: 'SPACE1',
-      attachmentName: 'report.pdf',
-      errorMessage: 'Timeout',
-      errorType: 'ERROR_GENERAL'
-    };
-
-    service.showScanError(data);
-
-    const call = msgMock.add.mock.calls[0][0];
-    expect(call.detail).toContain('Pièce jointe: "report.pdf"');
-  });
-
-  it('Should_ShowPageId_When_NoPageTitle', () => {
-    const data: ErrorToastData = {
-      scanId: 'scan-1',
-      spaceKey: 'SPACE1',
-      pageId: '12345',
-      errorMessage: 'Error',
-      errorType: 'ERROR_GENERAL'
-    };
-
-    service.showScanError(data);
-
-    const call = msgMock.add.mock.calls[0][0];
-    expect(call.detail).toContain('Page ID: 12345');
-  });
-
-  // ========== clearScanErrors ==========
 
   it('Should_ClearScanErrors_When_ClearScanErrors', () => {
     service.clearScanErrors();
     expect(msgMock.clear).toHaveBeenCalledWith('scan-errors');
   });
 
-  // ========== detectErrorType ==========
-
-  it('Should_DetectReactorTimeout_When_MessageContainsReactorTimeout', () => {
-    expect(service.detectErrorType('Connection timeout in reactor pipeline')).toBe('TIMEOUT_REACTOR');
-  });
-
-  it('Should_DetectGrpcTimeout_When_MessageContainsGrpcTimeout', () => {
-    expect(service.detectErrorType('gRPC timeout exceeded')).toBe('TIMEOUT_GRPC');
-  });
-
-  it('Should_DetectGrpcTimeout_When_DeadlineExceeded', () => {
-    expect(service.detectErrorType('DEADLINE_EXCEEDED')).toBe('TIMEOUT_GRPC');
-  });
-
-  it('Should_DetectGrpcError_When_MessageContainsGrpc', () => {
-    expect(service.detectErrorType('gRPC call failed')).toBe('ERROR_GRPC');
-  });
-
-  it('Should_DetectGeneralError_When_NoSpecificPattern', () => {
-    expect(service.detectErrorType('Something went wrong')).toBe('ERROR_GENERAL');
-  });
-
-  // ========== All error type labels ==========
-
-  it('Should_MapAllErrorTypes_When_ShowScanError', () => {
-    const types: ErrorToastData['errorType'][] = ['TIMEOUT_REACTOR', 'TIMEOUT_GRPC', 'ERROR_GRPC', 'ERROR_GENERAL'];
-    const expectedSummaries = ['Reactor Timeout', 'gRPC Timeout', 'Analyse du contenu impossible', 'Scan error'];
-
-    types.forEach((type, i) => {
-      msgMock.add.mockClear();
-      service.showScanError({
-        scanId: 'scan-1', spaceKey: 'SPACE1', errorMessage: 'err', errorType: type
-      });
-      expect(msgMock.add.mock.calls[0][0].summary).toBe(expectedSummaries[i]);
+  it('Should_ShowFrenchSentence_When_DetectorModelIsNotLoaded', () => {
+    service.showScanError({
+      scanId: 'scan-1',
+      spaceKey: '',
+      errorKey: 'error.scan.detector_model_not_loaded',
+      errorParams: {
+        detector: 'MINISTRAL',
+        endpoint: 'http://localhost:1234/v1',
+        model: 'ministral-3b-pii-preview@q8_0',
+        state: 'not-loaded'
+      }
     });
+
+    const toast = lastToast();
+    expect(toast.summary).toBe('Modèle du détecteur non chargé — scan non démarré');
+    expect(toast.detail).toContain('ministral-3b-pii-preview@q8_0');
+    expect(toast.detail).toContain('http://localhost:1234/v1');
+    expect(toast.detail).toContain('not-loaded');
+    // No English sentence built by the backend ever reaches the operator.
+    expect(toast.detail).not.toContain('is present but not loaded');
+  });
+
+  it('Should_ShowEnglishSentence_When_LanguageIsEnglish', () => {
+    TestBed.inject(TranslocoService).setActiveLang('en');
+
+    service.showScanError({
+      scanId: 'scan-1',
+      spaceKey: '',
+      errorKey: 'error.scan.detector_model_not_loaded',
+      errorParams: {
+        detector: 'MINISTRAL',
+        endpoint: 'http://localhost:1234/v1',
+        model: 'ministral-3b-pii-preview@q8_0',
+        state: 'not-loaded'
+      }
+    });
+
+    const toast = lastToast();
+    expect(toast.summary).toBe('Detector model not loaded — scan not started');
+    expect(toast.detail).toContain('ministral-3b-pii-preview@q8_0');
+  });
+
+  it('Should_FallBackToGenericWording_When_KeyIsUnknownToThisDashboard', () => {
+    // A backend newer than this dashboard must still produce a readable notification
+    // rather than showing the operator a raw translation key.
+    service.showScanError({
+      scanId: 'scan-1',
+      spaceKey: 'SPACE1',
+      errorKey: 'error.scan.some_future_failure',
+      errorParams: { cause: 'quota exhausted' }
+    });
+
+    const toast = lastToast();
+    expect(toast.summary).toBe('Erreur de scan');
+    expect(toast.detail).toContain('quota exhausted');
+    expect(toast.detail).not.toContain('error.scan');
+  });
+
+  it('Should_FallBackToGenericWording_When_NoKeyWasSent', () => {
+    service.showScanError({ scanId: 'scan-1', spaceKey: 'SPACE1' });
+
+    expect(lastToast().summary).toBe('Erreur de scan');
+  });
+
+  it('Should_TellOperatorToResume_When_ScanWasPaused', () => {
+    service.showScanError({
+      scanId: 'scan-1',
+      spaceKey: 'SPACE1',
+      errorKey: 'error.scan.paused_network',
+      errorParams: { cause: 'Unable to connect to the data source.' }
+    });
+
+    const toast = lastToast();
+    expect(toast.summary).toBe('Scan mis en pause — source de données injoignable');
+    expect(toast.detail).toContain('Unable to connect to the data source.');
+    // The actionable part: progress is kept, so Resume picks the scan back up.
+    expect(toast.detail).toContain('Reprendre');
+  });
+
+  it('Should_NotNamePageOrSpace_When_FailureIsScanWide', () => {
+    // A refusal caused by a detector belongs to no page: naming one would send the
+    // operator looking at content that has nothing to do with it.
+    service.showScanError({
+      scanId: 'scan-1',
+      spaceKey: 'SPACE1',
+      pageTitle: 'Budget 2026',
+      errorKey: 'error.scan.detector_endpoint_unreachable',
+      errorParams: { detector: 'MINISTRAL', endpoint: 'http://lmstudio:1234/v1', cause: 'connection refused' }
+    });
+
+    const toast = lastToast();
+    expect(toast.detail).not.toContain('Budget 2026');
+    expect(toast.detail).not.toContain('SPACE1');
+  });
+
+  it('Should_NameTheItem_When_FailureIsBoundToOneItem', () => {
+    service.showScanError({
+      scanId: 'scan-1',
+      spaceKey: 'SPACE1',
+      attachmentName: 'report.pdf',
+      errorKey: 'error.scan.attachment_timeout',
+      errorParams: { attachment: 'report.pdf' }
+    });
+
+    const toast = lastToast();
+    expect(toast.detail).toContain('report.pdf');
+    expect(toast.detail).toContain('SPACE1');
+  });
+
+  it('Should_ShowPageId_When_NoPageTitle', () => {
+    service.showScanError({
+      scanId: 'scan-1',
+      spaceKey: 'SPACE1',
+      pageId: '12345',
+      errorKey: 'error.scan.page_failed',
+      errorParams: { page: '', cause: 'boom' }
+    });
+
+    expect(lastToast().detail).toContain('12345');
+  });
+
+  it('Should_ReportPausedScan_When_OutageStoppedIt', () => {
+    expect(service.isScanPaused('error.scan.paused_detector')).toBe(true);
+    expect(service.isScanPaused('error.scan.paused_network')).toBe(true);
+  });
+
+  it('Should_NotReportPausedScan_When_OnlyOneItemFailed', () => {
+    // An expected item failure must never be presented as a stopped scan.
+    expect(service.isScanPaused('error.scan.detection_timeout')).toBe(false);
+    expect(service.isScanPaused('error.scan.page_failed')).toBe(false);
+    expect(service.isScanPaused(undefined)).toBe(false);
+  });
+
+  it('Should_ReportRefusedScan_When_AnEnabledDetectorCannotRun', () => {
+    expect(service.isScanRefused('error.scan.detector_model_not_loaded')).toBe(true);
+    expect(service.isScanRefused('error.scan.detector_endpoint_unreachable')).toBe(true);
+    // A detector that went down MID-scan is a pause, not a refusal: there is something to resume.
+    expect(service.isScanRefused('error.scan.paused_detector')).toBe(false);
+    expect(service.isScanRefused(undefined)).toBe(false);
   });
 });

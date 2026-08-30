@@ -38,6 +38,13 @@ export interface ConfluenceContentPersonallyIdentifiableInformationScanResult {
   attachmentName?: string;
   attachmentType?: string;
   attachmentUrl?: string;
+  // Diagnostic wording from the backend, for the event log. What the operator reads
+  // comes from errorKey, translated here.
+  message?: string;
+  // Translation key naming the error, e.g. 'error.scan.detector_model_not_loaded'
+  errorKey?: string;
+  // Technical values the translated sentence interpolates (endpoint, model, status...)
+  errorParams?: Record<string, string>;
   // Scan status from backend (e.g., 'RUNNING', 'COMPLETED', 'FAILED')
   status?: string;
   // Pre-calculated severity from backend (HIGH/MEDIUM/LOW)

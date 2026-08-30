@@ -93,3 +93,17 @@
   font-style: italic;
   color: var(--p-text-muted-color, #6b7280);
 }
+
+.scan-stats-detector-failed {
+  background: var(--p-red-50, #fdf2f0);
+}
+
+.scan-stats-detector-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--p-red-500, #d4351c);
+}

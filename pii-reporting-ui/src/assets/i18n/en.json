@@ -13,7 +13,6 @@
     "no": "No",
     "loading": "Loading...",
     "noData": "No data available",
-    "error": "Error",
     "success": "Success",
     "warning": "Warning",
     "info": "Information"
@@ -165,6 +164,7 @@
       "rateUnit": "char/s",
       "busy": "Cumulative time",
       "postfilterLabel": "Post-filter",
+      "detectorFailed": "{{count}} failure(s) — incomplete analysis",
       "busyNote": "Per-detector time is cumulative compute time; it may exceed the total scan duration due to parallelism. Throughput is in characters per second."
     },
     "logs": {
@@ -588,10 +588,8 @@
         "HOSTNAME": "Hostname",
         "DEVICE_ID": "Device ID",
         "ACCESS_TOKEN": "Access Token",
-        "PASSPORT_NUMBER": "Passport Number",
         "SOFTWARE_LICENSE": "Software License Key",
         "CLIENT_SECRET": "Client Secret (OAuth)",
-        "GITHUB_TOKEN": "GitHub Token",
         "SECRET_KEY": "Secret Key",
         "SESSION_ID": "Session ID",
         "CASE_NUMBER": "Case Number",
@@ -753,7 +751,7 @@
         "PASSWORD": "Account passwords, PIN codes and authentication credentials",
         "API_KEY": "API keys and service tokens",
         "JWT_TOKEN": "JSON Web Tokens for authentication",
-        "GITHUB_TOKEN": "GitHub personal access tokens",
+        "GITHUB_TOKEN": "GitHub personal access token",
         "AWS_KEY": "Amazon Web Services access keys",
         "IP_ADDRESS": "IPv4 and IPv6 network addresses",
         "IPADDRESS": "IPv4 and IPv6 network addresses",
@@ -808,17 +806,15 @@
         "TAX_ID": "Tax identification number",
         "SALARY": "Salary or remuneration information",
         "NATIONAL_ID": "National identification number",
-        "PASSPORT_NUMBER": "Passport number",
+        "PASSPORT_NUMBER": "Travel passport number",
         "DRIVER_LICENSE_NUMBER": "Driver license number",
         "DATE_OF_BIRTH": "Date of birth",
         "NATIONALITY": "Nationality or citizenship",
         "HOSTNAME": "Network hostname or server name",
         "DEVICE_ID": "Unique device identifier",
         "ACCESS_TOKEN": "Access token for authentication",
-        "PASSPORT_NUMBER": "Travel passport number",
         "SOFTWARE_LICENSE": "Software license or activation key",
         "CLIENT_SECRET": "OAuth client secret / application credential",
-        "GITHUB_TOKEN": "GitHub personal access token",
         "SECRET_KEY": "Secret or cryptographic key",
         "SESSION_ID": "Session identifier for web or app",
         "CASE_NUMBER": "Legal or administrative case number",
@@ -1021,7 +1017,8 @@
       "detectionConnectionFailed": "The PII analysis service is unreachable. Verify that the service is running.",
       "detectionServiceError": "PII analysis service error.",
       "detectionTimeout": "The PII analysis service did not respond in time.",
-      "detectorError": "Error during PII detection."
+      "detectorError": "Error during PII detection.",
+      "pageSecretsNotFound": "No sensitive data to reveal for this page."
     },
     "encryption": {
       "failed": "Encryption error. Contact the administrator."
@@ -1034,7 +1031,101 @@
     },
     "scan": {
       "invalidStatusTransition": "Invalid scan status transition.",
-      "notFound": "The requested scan was not found."
+      "notFound": "The requested scan was not found.",
+      "statsNotFound": "No scan statistics for this space.",
+      "resumeHint": "Progress is kept: fix the cause, then click “Resume”.",
+      "location": {
+        "space": "Space: {{space}}",
+        "page": "Page: “{{page}}”",
+        "pageId": "Page ID: {{pageId}}",
+        "attachment": "Attachment: “{{attachment}}”"
+      },
+      "detectorNotInstantiated": {
+        "title": "Enabled detector unavailable — scan not started",
+        "detail": "Detector {{detector}} is enabled but the detection service could not create it. It would find nothing, making the report look clean."
+      },
+      "detectorDisabledInConfig": {
+        "title": "Detector enabled but off in its own configuration — scan not started",
+        "detail": "Detector {{detector}} is enabled in the settings but disabled in its own model configuration. Enable it on both sides, or turn it off in the settings."
+      },
+      "detectorInitFailed": {
+        "title": "Enabled detector failed to start — scan not started",
+        "detail": "Detector {{detector}} could not start: {{cause}}"
+      },
+      "detectorEndpointUnreachable": {
+        "title": "Enabled detector unreachable — scan not started",
+        "detail": "Detector {{detector}} is enabled but its service does not answer at {{endpoint}}. Technical cause: {{cause}}"
+      },
+      "detectorModelNotAvailable": {
+        "title": "Detector model missing — scan not started",
+        "detail": "The service answers at {{endpoint}}, but model {{model}} of detector {{detector}} is not available there. Currently loaded models: {{loadedModels}}"
+      },
+      "detectorModelNotLoaded": {
+        "title": "Detector model not loaded — scan not started",
+        "detail": "Model {{model}} of detector {{detector}} is present at {{endpoint}} but not loaded (state: {{state}}). Load it, then start the scan again."
+      },
+      "detectorUnusable": {
+        "title": "Enabled detector unusable — scan not started",
+        "detail": "Detector {{detector}} cannot run at {{endpoint}}. Technical cause: {{cause}}"
+      },
+      "pausedDetector": {
+        "title": "Scan paused — detector became unreachable",
+        "detail": "An enabled detector went down during the scan: {{cause}}"
+      },
+      "pausedNetwork": {
+        "title": "Scan paused — data source unreachable",
+        "detail": "The data source can no longer be reached: {{cause}}"
+      },
+      "pageTimeout": {
+        "title": "Page analysis stopped — timed out",
+        "detail": "Analysing page “{{page}}” took longer than allowed. The scan carries on without it."
+      },
+      "attachmentTimeout": {
+        "title": "Attachment analysis stopped — timed out",
+        "detail": "Analysing attachment “{{attachment}}” took longer than allowed. The scan carries on without it."
+      },
+      "detectionTimeout": {
+        "title": "Detection stopped — timed out",
+        "detail": "The detection service did not finish “{{item}}” in time. The scan carries on without this item."
+      },
+      "detectionFailed": {
+        "title": "Content could not be analysed",
+        "detail": "The detection service refused this item (status {{status}}). The scan carries on."
+      },
+      "pageFailed": {
+        "title": "Page not analysed",
+        "detail": "Page “{{page}}” could not be analysed: {{cause}}"
+      },
+      "attachmentFailed": {
+        "title": "Attachment not analysed",
+        "detail": "Attachment “{{attachment}}” could not be analysed: {{cause}}"
+      },
+      "spaceNotFound": {
+        "title": "Space not found",
+        "detail": "Space {{space}} does not exist in the data source."
+      },
+      "noSpaceFound": {
+        "title": "No space to scan",
+        "detail": "The data source exposes no accessible space."
+      },
+      "unexpected": {
+        "title": "Scan error",
+        "detail": "An unexpected error occurred during the scan: {{cause}}"
+      }
+    },
+    "remediation": {
+      "disabled": "Remediation is disabled. Enable it in the settings to perform this operation.",
+      "invalidStatusTransition": "Invalid status transition for this finding.",
+      "attachmentNotSupported": "Redaction is not supported for this attachment type.",
+      "selectionOutdated": "The selection is out of date. Refresh the page and try again.",
+      "jobAlreadyRunning": "A redaction job is already running. Wait for it to finish.",
+      "jobNotFound": "The requested redaction job was not found.",
+      "plaintextUnavailable": "Original value unavailable in the scan results",
+      "valueNotFound": "Value not found in the current page content",
+      "pageStale": "Page changed while it was being anonymised",
+      "pageRedactionFailed": "Anonymising the page failed",
+      "findingNotFound": "Occurrence missing from the latest scan",
+      "redactedStatusReserved": "The “anonymised” status is reserved for anonymisation jobs"
     },
     "export": {
       "failed": "Report export failed. Please try again.",
@@ -1111,12 +1202,14 @@
       "ariaLabel": "Bulk actions",
       "selectedForObf": "selected to obfuscate",
       "fpSignaled": "{{count}} false positive(s) flagged",
+      "attachmentsExcluded": "{{count}} attachment finding(s) selected, excluded from automatic obfuscation",
       "clear": "Clear",
       "markTreated": "Mark handled",
       "markTreatedHint": "Mark selection as handled manually",
       "markFp": "Flag false positive",
       "markFpHint": "Flag selection as false positive",
-      "obfuscateN": "Obfuscate ({{count}})"
+      "obfuscateN": "Obfuscate ({{count}})",
+      "obfuscateHint": "Obfuscate the selected occurrences in page bodies — attachments cannot be obfuscated automatically"
     },
     "confirm": {
       "title": "Obfuscate {{count}} finding(s)?",
@@ -1157,7 +1250,8 @@
       "skipped": "Skipped"
     },
     "ineligible": {
-      "attachment": "Attachment cannot be obfuscated ({{kind}})"
+      "attachment": "Attachment cannot be obfuscated ({{kind}})",
+      "selectHint": "Attachment: automatic obfuscation is not supported. Selecting it only allows flagging a false positive or marking it handled."
     },
     "featureDisabled": "Automatic obfuscation is disabled for this instance."
   },

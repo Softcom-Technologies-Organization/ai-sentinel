@@ -151,7 +151,7 @@ Aucun fichier de production touche. Une regression ici ne peut venir que du test
 
 **Correction** : Simplifier l'appel Mockito indique (ex. `verify(x, times(1))` -> `verify(x)`).
 
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/remediation/adapter/out/JpaFindingRemediationAdapterTest.java:126` — Remove this and every subsequent useless "eq(...)" invocation; pass the values directly. <!-- b500c241 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/remediation/adapter/out/JpaFindingRemediationAdapterTest.java:126` — Remove this and every subsequent useless "eq(...)" invocation; pass the values directly. <!-- b500c241 -->
 
 ### Lot `java:S9015` — 1 issue(s)
 

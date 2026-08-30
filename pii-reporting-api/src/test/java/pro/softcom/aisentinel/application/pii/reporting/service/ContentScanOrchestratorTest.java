@@ -19,6 +19,7 @@ import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource
 import java.util.List;
 import java.util.Map;
 
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -107,7 +108,7 @@ class ContentScanOrchestratorTest {
                     .eventType("pageComplete")
                     .build();
 
-            org.mockito.Mockito.doThrow(new RuntimeException("DB error"))
+            doThrow(new RuntimeException("DB error"))
                     .when(scanCheckpointService).persistCheckpoint(event);
 
             // When & Then - should not throw

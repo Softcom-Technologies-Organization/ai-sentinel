@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -119,7 +120,7 @@ class JpaScanEventStoreAdapterTest {
         adapter.append(result);
 
         // Assert
-        verify(eventRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        verify(eventRepository, times(2)).save(captor.capture());
         assertThat(captor.getAllValues().get(0).getEventSeq()).isEqualTo(1L);
         assertThat(captor.getAllValues().get(1).getEventSeq()).isEqualTo(2L);
     }

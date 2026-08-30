@@ -52,6 +52,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -113,7 +114,7 @@ class StreamConfluenceScanUseCaseTest {
         final ConfluenceUrlProvider confluenceUrlProvider = stubDataCenterUrlProvider("http://confluence.example");
 
         // Create service instances
-        var applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
+        var applicationEventPublisher = mock(ApplicationEventPublisher.class);
         var parserFactory = new ContentParserFactory(new PlainTextParser(), new HtmlContentParser());
         var piiContextExtractor = new PiiContextExtractor(parserFactory);
         ScanProgressCalculator progressCalculator = new ScanProgressCalculator();
@@ -134,7 +135,7 @@ class StreamConfluenceScanUseCaseTest {
                 attachmentTextExtractionService
         );
         htmlContentParser = new HtmlContentParser();
-        scanSpaceStatsCollector = Mockito.mock(ScanSpaceStatsCollector.class);
+        scanSpaceStatsCollector = mock(ScanSpaceStatsCollector.class);
 
         ScanPipelineDependencies pipelineDependencies = new ScanPipelineDependencies(
                 confluenceAccessor,
@@ -672,11 +673,11 @@ class StreamConfluenceScanUseCaseTest {
     @DisplayName("buildPageUrl - null when baseUrl is blank")
     void Should_UseNullPageUrl_When_BaseUrlIsBlank() {
         // Blank base URL -> provider returns null for every URL (mimics adapter behavior).
-        final ConfluenceUrlProvider blankUrlProvider = Mockito.mock(ConfluenceUrlProvider.class);
+        final ConfluenceUrlProvider blankUrlProvider = mock(ConfluenceUrlProvider.class);
         Mockito.lenient().when(blankUrlProvider.baseUrl()).thenReturn("   ");
 
         // Create service instances
-        var applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
+        var applicationEventPublisher = mock(ApplicationEventPublisher.class);
         var parserFactory = new ContentParserFactory(new PlainTextParser(), new HtmlContentParser());
         var piiContextExtractor = new PiiContextExtractor(parserFactory);
         ScanProgressCalculator progressCalculator = new ScanProgressCalculator();
@@ -705,7 +706,7 @@ class StreamConfluenceScanUseCaseTest {
             attachmentProcessor,
             scanTimeoutConfig,
             htmlContentParser,
-            Mockito.mock(ScanSpaceStatsCollector.class)
+            mock(ScanSpaceStatsCollector.class)
         );
         StreamConfluenceScanUseCase svc = new StreamConfluenceScanUseCase(
             pipelineDependencies,
@@ -745,7 +746,7 @@ class StreamConfluenceScanUseCaseTest {
         final ConfluenceUrlProvider confluenceUrlProvider = stubDataCenterUrlProvider("http://confluence.example/");
 
         // Create service instances
-        var applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
+        var applicationEventPublisher = mock(ApplicationEventPublisher.class);
         var parserFactory = new ContentParserFactory(new PlainTextParser(), new HtmlContentParser());
         var piiContextExtractor = new PiiContextExtractor(parserFactory);
         ScanProgressCalculator progressCalculator = new ScanProgressCalculator();
@@ -774,7 +775,7 @@ class StreamConfluenceScanUseCaseTest {
             attachmentProcessor,
             scanTimeoutConfig,
             htmlContentParser,
-            Mockito.mock(ScanSpaceStatsCollector.class)
+            mock(ScanSpaceStatsCollector.class)
         );
         StreamConfluenceScanUseCase svc = new StreamConfluenceScanUseCase(
             pipelineDependencies,
@@ -1202,7 +1203,7 @@ class StreamConfluenceScanUseCaseTest {
      */
     private static ConfluenceUrlProvider stubDataCenterUrlProvider(String rawBaseUrl) {
         String normalizedBase = normalizeBaseUrl(rawBaseUrl);
-        ConfluenceUrlProvider provider = Mockito.mock(ConfluenceUrlProvider.class);
+        ConfluenceUrlProvider provider = mock(ConfluenceUrlProvider.class);
         Mockito.lenient().when(provider.baseUrl()).thenReturn(rawBaseUrl);
         Mockito.lenient().when(provider.pageUrl(any(), any())).thenAnswer(invocation -> {
             String pageId = invocation.getArgument(1);

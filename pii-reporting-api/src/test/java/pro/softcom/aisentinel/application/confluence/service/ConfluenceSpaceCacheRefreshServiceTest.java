@@ -3,7 +3,6 @@ package pro.softcom.aisentinel.application.confluence.service;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -27,6 +26,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
@@ -97,7 +97,7 @@ class ConfluenceSpaceCacheRefreshServiceTest {
         @Bean
         @Primary
         ConfluenceClient confluenceClient() {
-            return Mockito.mock(ConfluenceClient.class);
+            return mock(ConfluenceClient.class);
         }
     }
 }

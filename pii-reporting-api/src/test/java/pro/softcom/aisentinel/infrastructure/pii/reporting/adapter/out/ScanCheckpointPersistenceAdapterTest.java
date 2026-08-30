@@ -18,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -113,7 +114,7 @@ class ScanCheckpointPersistenceAdapterTest {
         adapter.save(null);
 
         // Then
-        verify(jpaRepository, org.mockito.Mockito.never()).upsertCheckpoint(
+        verify(jpaRepository, never()).upsertCheckpoint(
             anyString(),
             anyString(),
             anyString(),
@@ -138,7 +139,7 @@ class ScanCheckpointPersistenceAdapterTest {
         adapter.save(checkpoint);
 
         // Then
-        verify(jpaRepository, org.mockito.Mockito.never()).upsertCheckpoint(
+        verify(jpaRepository, never()).upsertCheckpoint(
             anyString(),
             anyString(),
             anyString(),
@@ -212,7 +213,7 @@ class ScanCheckpointPersistenceAdapterTest {
     void Should_NotCallDelete_When_DeleteByScanWithBlankId() {
         adapter.deleteByScan("");
 
-        verify(jpaRepository, org.mockito.Mockito.never()).deleteByScanId(anyString());
+        verify(jpaRepository, never()).deleteByScanId(anyString());
     }
 
     @Test
@@ -249,6 +250,6 @@ class ScanCheckpointPersistenceAdapterTest {
     void Should_ReturnZero_When_DeleteAllCheckpointsForSpacesWithEmptyList() {
         adapter.deleteAllCheckpointsForSpaces(List.of());
 
-        verify(jpaRepository, org.mockito.Mockito.never()).deleteAllCheckpointsForSpaces(any());
+        verify(jpaRepository, never()).deleteAllCheckpointsForSpaces(any());
     }
 }

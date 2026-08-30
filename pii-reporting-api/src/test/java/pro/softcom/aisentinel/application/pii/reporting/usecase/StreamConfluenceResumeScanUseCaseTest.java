@@ -42,6 +42,7 @@ import java.util.concurrent.CompletableFuture;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -97,7 +98,7 @@ class StreamConfluenceResumeScanUseCaseTest {
         final ConfluenceUrlProvider confluenceUrlProvider = stubDataCenterUrlProvider();
         
         // Create service instances
-        var applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
+        var applicationEventPublisher = mock(ApplicationEventPublisher.class);
         var parserFactory = new ContentParserFactory(new PlainTextParser(), new HtmlContentParser());
         var piiContextExtractor = new PiiContextExtractor(parserFactory);
         ScanProgressCalculator progressCalculator = new ScanProgressCalculator();
@@ -118,7 +119,7 @@ class StreamConfluenceResumeScanUseCaseTest {
                 attachmentTextExtractionService
         );
         HtmlContentParser htmlContentParser = new HtmlContentParser();
-        ScanSpaceStatsCollector scanSpaceStatsCollector = Mockito.mock(ScanSpaceStatsCollector.class);
+        ScanSpaceStatsCollector scanSpaceStatsCollector = mock(ScanSpaceStatsCollector.class);
         ScanPipelineDependencies pipelineDependencies = new ScanPipelineDependencies(
                 confluenceAccessor,
                 piiDetectorClient,
@@ -362,7 +363,7 @@ class StreamConfluenceResumeScanUseCaseTest {
      */
     private static ConfluenceUrlProvider stubDataCenterUrlProvider() {
         String normalizedBase = normalizeBaseUrl();
-        ConfluenceUrlProvider provider = Mockito.mock(ConfluenceUrlProvider.class);
+        ConfluenceUrlProvider provider = mock(ConfluenceUrlProvider.class);
         Mockito.lenient().when(provider.baseUrl()).thenReturn("http://confluence.example");
         Mockito.lenient().when(provider.pageUrl(any(), any())).thenAnswer(invocation -> {
             String pageId = invocation.getArgument(1);

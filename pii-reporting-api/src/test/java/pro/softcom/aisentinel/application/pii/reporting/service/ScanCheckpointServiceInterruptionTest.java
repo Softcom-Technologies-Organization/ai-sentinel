@@ -13,6 +13,7 @@ import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -96,7 +97,7 @@ class ScanCheckpointServiceInterruptionTest {
         scanCheckpointService.persistCheckpoint(null);
 
         // Then: No interaction with repository
-        verify(scanCheckpointRepository, org.mockito.Mockito.never()).save(any());
+        verify(scanCheckpointRepository, never()).save(any());
 
         // And: Thread interruption flag should not be cleared
         assertThat(Thread.interrupted()).isTrue();

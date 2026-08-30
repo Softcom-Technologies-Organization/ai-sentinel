@@ -7,7 +7,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,6 +48,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
@@ -514,37 +514,37 @@ class ExcelExportFullScanIntegrationTest {
         @Bean
         @Primary
         ConfluenceClient confluenceClient() {
-            return Mockito.mock(ConfluenceClient.class);
+            return mock(ConfluenceClient.class);
         }
 
         @Bean
         @Primary
         ConfluenceAttachmentClient confluenceAttachmentClient() {
-            return Mockito.mock(ConfluenceAttachmentClient.class);
+            return mock(ConfluenceAttachmentClient.class);
         }
 
         @Bean
         @Primary
         ConfluenceAttachmentDownloader confluenceAttachmentDownloader() {
-            return Mockito.mock(ConfluenceAttachmentDownloader.class);
+            return mock(ConfluenceAttachmentDownloader.class);
         }
 
         @Bean
         @Primary
         ConfluenceUrlProvider confluenceUrlProvider() {
-            return Mockito.mock(ConfluenceUrlProvider.class);
+            return mock(ConfluenceUrlProvider.class);
         }
 
         @Bean
         @Primary
         AttachmentTextExtractor attachmentTextExtractor() {
-            return Mockito.mock(AttachmentTextExtractor.class);
+            return mock(AttachmentTextExtractor.class);
         }
 
         @Bean
         @Primary
         ReadExportContextPort readExportContextPort() {
-            ReadExportContextPort mock = Mockito.mock(ReadExportContextPort.class);
+            ReadExportContextPort mock = mock(ReadExportContextPort.class);
             
             // Mock the export context for TEST space
             ExportContext testSpaceContext = ExportContext.builder()

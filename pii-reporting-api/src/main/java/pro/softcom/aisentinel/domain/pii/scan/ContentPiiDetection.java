@@ -382,13 +382,27 @@ public record ContentPiiDetection(
      * @param entitiesFound for real detectors, raw entities found (pre-merge); for the
      *                      post-filter, the number of PII examined
      * @param entitiesDiscarded number of PII the stage discarded (0 for real detectors)
+     * @param error short technical reason why this detector produced nothing usable
+     *              (e.g. its remote endpoint was unreachable), empty when it ran
+     *              normally; without it a failed detector is indistinguishable from
+     *              one that legitimately found no PII
      */
     public record DetectorRunStat(
         DetectorSource source,
         long durationMs,
         int entitiesFound,
-        int entitiesDiscarded
+        int entitiesDiscarded,
+        String error
     ) {
+
+        /**
+         * Whether this detector failed to run for the analysed content.
+         *
+         * @return true when a failure reason was reported
+         */
+        public boolean failed() {
+            return error != null && !error.isBlank();
+        }
     }
 
     /**

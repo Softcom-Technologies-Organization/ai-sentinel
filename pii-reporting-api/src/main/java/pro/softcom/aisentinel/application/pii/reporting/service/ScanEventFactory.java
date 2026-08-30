@@ -13,6 +13,7 @@ import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.DetectedPersonallyIdentifiableInformation;
 import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
+import pro.softcom.aisentinel.domain.pii.scan.TranslatableError;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -197,21 +198,44 @@ public class ScanEventFactory {
     }
 
     /**
-     * Creates an error event.
+     * Creates an error event the dashboard can word in the operator's language.
+     *
+     * @param error the failure as a translation key and the values it interpolates
      */
     public ConfluenceContentScanResult createErrorEvent(String scanId, String spaceKey, String pageId,
-                                                        String errorMessage, double progress) {
+                                                        TranslatableError error, double progress) {
         return ConfluenceContentScanResult.builder()
             .scanId(scanId)
             .spaceKey(spaceKey)
             .eventType(DetectionReportingEventType.ERROR.getLabel())
             .pageId(pageId)
-            .message(errorMessage)
+            .message(describeForLogs(error))
+            .errorKey(error == null ? null : error.key())
+            .errorParams(error == null ? null : error.params())
             .pageUrl(buildPageUrl(spaceKey, pageId))
             .emittedAt(Instant.now().toString())
             .analysisProgressPercentage(progress)
             .scanStatus(ScanStatus.FAILED)
             .build();
+    }
+
+    /**
+     * Renders an error for the service logs and the support trail.
+     *
+     * <p>Deliberately not a sentence: the operator-facing wording lives in the
+     * frontend translation files, and duplicating an English version here would be
+     * one more place to keep in sync for no reader.
+     *
+     * @param error the failure to describe, may be null
+     * @return the key followed by its parameters
+     */
+    public static String describeForLogs(TranslatableError error) {
+        if (error == null) {
+            return "";
+        }
+        return error.params().isEmpty()
+            ? error.key()
+            : error.key() + " " + error.params();
     }
 
     /**

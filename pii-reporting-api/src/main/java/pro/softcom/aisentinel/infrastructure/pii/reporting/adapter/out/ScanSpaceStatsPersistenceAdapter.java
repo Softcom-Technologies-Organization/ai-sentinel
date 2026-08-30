@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanSpaceStatsRepository;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanDetectorStat;
+import pro.softcom.aisentinel.domain.pii.reporting.ScanDetectorStatDelta;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanSpaceStats;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.ScanDetectorStatsJpaRepository;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.ScanSpaceStatsJpaRepository;
@@ -59,9 +60,10 @@ public class ScanSpaceStatsPersistenceAdapter implements ScanSpaceStatsRepositor
     }
 
     @Override
-    public void accumulateDetectorStat(String scanId, String spaceKey, String detector,
-                                       long busyMs, long chars, int detections, int discarded) {
-        detectorStatsRepository.accumulate(scanId, spaceKey, detector, busyMs, chars, detections, discarded);
+    public void accumulateDetectorStat(String scanId, String spaceKey, ScanDetectorStatDelta delta) {
+        detectorStatsRepository.accumulate(scanId, spaceKey, delta.detector(), delta.busyMs(),
+            delta.chars(), delta.detections(), delta.discarded(), delta.failedRequests(),
+            delta.lastError());
     }
 
     @Override
@@ -103,6 +105,8 @@ public class ScanSpaceStatsPersistenceAdapter implements ScanSpaceStatsRepositor
             entity.getDetections(),
             entity.getCharsProcessed(),
             entity.getBusyMs(),
-            entity.getDiscarded());
+            entity.getDiscarded(),
+            entity.getFailedRequests() != null ? entity.getFailedRequests() : 0,
+            entity.getLastError());
     }
 }

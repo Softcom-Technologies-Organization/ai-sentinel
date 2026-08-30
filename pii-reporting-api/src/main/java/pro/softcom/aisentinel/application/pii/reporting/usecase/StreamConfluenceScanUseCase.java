@@ -3,14 +3,21 @@ package pro.softcom.aisentinel.application.pii.reporting.usecase;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.StreamConfluenceScanPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.PersonallyIdentifiableInformationScanExecutionOrchestratorPort;
+import pro.softcom.aisentinel.application.pii.reporting.service.ScanErrorClassifier;
+import pro.softcom.aisentinel.application.pii.reporting.service.ScanEventFactory;
+import pro.softcom.aisentinel.application.pii.reporting.service.ScanRunState;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
+import pro.softcom.aisentinel.domain.pii.scan.ScanErrorKeys;
+import pro.softcom.aisentinel.domain.pii.scan.TranslatableError;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -52,40 +59,59 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
         // Unique identifier to trace and group all events of the same scan
         String scanId = UUID.randomUUID().toString();
 
-        // Build the scan flux
-        Flux<ConfluenceContentScanResult> scanFlux = Mono.fromFuture(confluenceAccessor.getSpace(spaceKey))
-            // Transform Mono<Optional<ConfluenceSpace>> into Flux<ScanResult>
-            .flatMapMany(confluenceSpaceOpt -> {
-                // Case 1: space not found → return a small Flux with a single error event
-                if (confluenceSpaceOpt.isEmpty()) {
-                    return Flux.just(ConfluenceContentScanResult.builder()
-                                         .scanId(scanId)
-                                         .spaceKey(spaceKey)
-                                         .eventType(DetectionReportingEventType.ERROR.getLabel())
-                                         .message("Space not found")
-                                         .emittedAt(Instant.now().toString())
-                                         .build());
-                }
-                // Case 2: space found → retrieve all its pages then start the scan stream
-                return Mono.fromFuture(confluenceAccessor.getAllPagesInSpace(spaceKey))
-                    // runScanFlux(...) already returns a Flux<ScanResult> representing the full progression
-                    .flatMapMany(pages -> runScanFlux(scanId, spaceKey, pages, 0, pages.size()));
-            })
-            // Global safety net: transform any exception into a UI-consumable error event
-            .onErrorResume(exception -> {
-                log.error("[USECASE] Error in webflux: {}", exception.getMessage(), exception);
-                return Flux.just(ConfluenceContentScanResult.builder()
-                                     .scanId(scanId)
-                                     .spaceKey(spaceKey)
-                                     .eventType(DetectionReportingEventType.ERROR.getLabel())
-                                     .message(resolveErrorMessage(exception))
-                                     .emittedAt(Instant.now().toString())
-                                     .build());
-            });
+        // Refuse the scan when a detector the operator enabled cannot be reached:
+        // it would contribute no finding, making an incomplete report look clean.
+        List<ConfluenceContentScanResult> preflightFailures = detectorPreflightFailures(scanId, spaceKey);
+        Flux<ConfluenceContentScanResult> scanFlux = preflightFailures.isEmpty()
+            ? buildSpaceScanFlux(new ScanRunState(scanId), spaceKey)
+            : Flux.fromIterable(preflightFailures);
 
         // Start independent scan task and return subscription flux
         personallyIdentifiableInformationScanExecutionOrchestratorPort.startScan(scanId, scanFlux);
         return personallyIdentifiableInformationScanExecutionOrchestratorPort.subscribeScan(scanId);
+    }
+
+    private Flux<ConfluenceContentScanResult> buildSpaceScanFlux(ScanRunState run, String spaceKey) {
+        String scanId = run.scanId();
+        return Mono.fromFuture(confluenceAccessor.getSpace(spaceKey))
+            // Transform Mono<Optional<ConfluenceSpace>> into Flux<ScanResult>
+            .flatMapMany(confluenceSpaceOpt -> {
+                // Case 1: space not found → return a small Flux with a single error event
+                if (confluenceSpaceOpt.isEmpty()) {
+                    return Flux.just(errorEvent(scanId, spaceKey,
+                        new TranslatableError(ScanErrorKeys.SPACE_NOT_FOUND, Map.of("space", spaceKey))));
+                }
+                // Case 2: space found → retrieve all its pages then start the scan stream
+                return Mono.fromFuture(confluenceAccessor.getAllPagesInSpace(spaceKey))
+                    // runScanFlux(...) already returns a Flux<ScanResult> representing the full progression
+                    .flatMapMany(pages -> runScanFlux(run, spaceKey, pages, 0, pages.size()));
+            })
+            // Global safety net: transform any exception into a UI-consumable error event
+            .onErrorResume(exception -> {
+                log.error("[USECASE] Error in webflux: {}", exception.getMessage(), exception);
+                run.requestPause(ScanErrorClassifier.classify(exception), resolveErrorMessage(exception));
+                persistPauseIfNeeded(run);
+                return Flux.just(errorEvent(scanId, spaceKey,
+                    pausedErrorOr(run, resolveErrorMessage(exception))));
+            });
+    }
+
+    /**
+     * Builds an error event for a failure that belongs to the run rather than to one page.
+     *
+     * @param error what went wrong, as the dashboard will word it for the operator
+     */
+    private static ConfluenceContentScanResult errorEvent(String scanId, String spaceKey,
+                                                          TranslatableError error) {
+        return ConfluenceContentScanResult.builder()
+            .scanId(scanId)
+            .spaceKey(spaceKey)
+            .eventType(DetectionReportingEventType.ERROR.getLabel())
+            .message(ScanEventFactory.describeForLogs(error))
+            .errorKey(error.key())
+            .errorParams(error.params())
+            .emittedAt(Instant.now().toString())
+            .build();
     }
 
     /**
@@ -111,18 +137,32 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
         // Always create a new scanId for a fresh scan (Start button behavior)
         String scanCorrelationId = UUID.randomUUID().toString();
         log.info("[SCAN] Creating new scan with scanId: {}", scanCorrelationId);
-        
-        // Purge previous scan data to ensure clean state
-        contentScanOrchestrator.purgePreviousScanData();
+        ScanRunState run = new ScanRunState(scanCorrelationId);
+
+        // Checked BEFORE the purge below: a refused scan must leave the previous
+        // results intact rather than wiping them for a run that never happens.
+        List<ConfluenceContentScanResult> preflightFailures =
+            detectorPreflightFailures(scanCorrelationId, null);
 
         // Opening segment: a single "MULTI_START" event
         Flux<ConfluenceContentScanResult> header = buildAllSpaceScanFluxHeader(scanCorrelationId);
 
-        // Main segment: iterate over spaces and perform scans sequentially
-        Flux<ConfluenceContentScanResult> body = buildAllSpaceScanFluxBody(scanCorrelationId);
+        // Main segment: iterate over spaces and perform scans sequentially, unless an
+        // enabled detector is unreachable — then the error events are the body.
+        Flux<ConfluenceContentScanResult> body;
+        if (preflightFailures.isEmpty()) {
+            // Purge previous scan data to ensure clean state
+            contentScanOrchestrator.purgePreviousScanData();
+            body = buildAllSpaceScanFluxBody(run);
+        } else {
+            body = Flux.fromIterable(preflightFailures);
+        }
 
-        // Closing segment: a single "MULTI_COMPLETE" event
-        Flux<ConfluenceContentScanResult> footer = buildAllSpaceScanFluxFooter(scanCorrelationId);
+        // Closing segment: a single "MULTI_COMPLETE" event, dropped for a refused scan —
+        // announcing completion for a run that never opened a space would read as a clean base.
+        Flux<ConfluenceContentScanResult> footer = preflightFailures.isEmpty()
+            ? buildAllSpaceScanFluxFooter(run)
+            : Flux.empty();
 
         // Sequential and ordered concatenation of segments
         Flux<ConfluenceContentScanResult> scanFlux = Flux.concat(header, body, footer);
@@ -137,18 +177,32 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
         // Always create a new scanId for a fresh scan
         String scanCorrelationId = UUID.randomUUID().toString();
         log.info("[SCAN] Creating new selected spaces scan with scanId: {}", scanCorrelationId);
+        ScanRunState run = new ScanRunState(scanCorrelationId);
 
-        // Purge previous scan data for selected spaces to ensure clean state
-        contentScanOrchestrator.purgePreviousScanDataForSpaces(spaceKeys);
+        // Checked BEFORE the purge below: a refused scan must leave the previous
+        // results intact rather than wiping them for a run that never happens.
+        List<ConfluenceContentScanResult> preflightFailures =
+            detectorPreflightFailures(scanCorrelationId, null);
 
         // Opening segment: a single "MULTI_START" event
         Flux<ConfluenceContentScanResult> header = buildAllSpaceScanFluxHeader(scanCorrelationId);
 
-        // Main segment: iterate over selected spaces and perform scans sequentially
-        Flux<ConfluenceContentScanResult> body = buildSelectedSpaceScanFluxBody(scanCorrelationId, spaceKeys);
+        // Main segment: iterate over selected spaces and perform scans sequentially, unless
+        // an enabled detector is unreachable — then the error events are the body.
+        Flux<ConfluenceContentScanResult> body;
+        if (preflightFailures.isEmpty()) {
+            // Purge previous scan data for selected spaces to ensure clean state
+            contentScanOrchestrator.purgePreviousScanDataForSpaces(spaceKeys);
+            body = buildSelectedSpaceScanFluxBody(run, spaceKeys);
+        } else {
+            body = Flux.fromIterable(preflightFailures);
+        }
 
-        // Closing segment: a single "MULTI_COMPLETE" event
-        Flux<ConfluenceContentScanResult> footer = buildAllSpaceScanFluxFooter(scanCorrelationId);
+        // Closing segment: a single "MULTI_COMPLETE" event, dropped for a refused scan —
+        // announcing completion for a run that never opened a space would read as a clean base.
+        Flux<ConfluenceContentScanResult> footer = preflightFailures.isEmpty()
+            ? buildAllSpaceScanFluxFooter(run)
+            : Flux.empty();
 
         // Sequential and ordered concatenation of segments
         Flux<ConfluenceContentScanResult> scanFlux = Flux.concat(header, body, footer);
@@ -158,13 +212,13 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
         return personallyIdentifiableInformationScanExecutionOrchestratorPort.subscribeScan(scanCorrelationId);
     }
 
-    private Flux<ConfluenceContentScanResult> buildSelectedSpaceScanFluxBody(String scanId, List<String> spaceKeys) {
+    private Flux<ConfluenceContentScanResult> buildSelectedSpaceScanFluxBody(ScanRunState run, List<String> spaceKeys) {
+        String scanId = run.scanId();
         // Asynchronous retrieval of all spaces (Future -> Mono)
         // Optimization: We could fetch only specific spaces if the API supported it, but filtering is safe.
         return Mono.fromFuture(confluenceAccessor.getAllSpaces())
             // Then unfold into Flux<ScanResult>
             .flatMapMany(allSpaces -> {
-                // Filter spaces based on provided keys
                 List<ConfluenceSpace> selectedSpaces = allSpaces.stream()
                     .filter(space -> spaceKeys.contains(space.key()))
                     .toList();
@@ -175,34 +229,42 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
 
                 // If the list is empty, generate a small error Flux. Otherwise, create the scan Flux.
                 Flux<ConfluenceContentScanResult> errorScanResultsFlux = createErrorScanResultIfNoSpace(scanId, selectedSpaces);
-                return Objects.requireNonNullElseGet(errorScanResultsFlux, () -> createScanResultFlux(scanId, selectedSpaces));
+                return Objects.requireNonNullElseGet(errorScanResultsFlux, () -> createScanResultFlux(run, selectedSpaces));
             })
             // Global error handling: map any exception to a readable business event
             .onErrorResume(exception -> {
                 log.error("[USECASE] Error in the webflux of selected spaces: {}",
                     exception.getMessage(),
                     exception);
-                return Flux.just(ConfluenceContentScanResult.builder()
-                    .scanId(scanId)
-                    .eventType(DetectionReportingEventType.ERROR.getLabel())
-                    .message(resolveErrorMessage(exception))
-                    .emittedAt(Instant.now().toString())
-                    .build());
+                return Flux.just(errorEvent(scanId, null, new TranslatableError(
+                    ScanErrorKeys.UNEXPECTED, Map.of("cause", resolveErrorMessage(exception)))));
             });
     }
 
-    private static Flux<ConfluenceContentScanResult> buildAllSpaceScanFluxFooter(String scanId) {
-        return Flux.just(ConfluenceContentScanResult.builder()
-                             .scanId(scanId)
-                             .eventType(DetectionReportingEventType.MULTI_COMPLETE.getLabel())
-                             .emittedAt(Instant.now().toString())
-                             .build());
+    /**
+     * Closing MULTI_COMPLETE event, suppressed when an outage paused the scan.
+     *
+     * <p>Announcing completion for a run that stopped early would tell the operator the
+     * whole Confluence base was covered while spaces were never opened.
+     */
+    private Flux<ConfluenceContentScanResult> buildAllSpaceScanFluxFooter(ScanRunState run) {
+        return Flux.defer(() -> {
+            // Also covers the outage that struck while listing a space's pages: that space
+            // never reached the per-space closing step, so this is where its pause is written.
+            persistPauseIfNeeded(run);
+            return run.mustPause()
+                ? Flux.empty()
+                : Flux.just(ConfluenceContentScanResult.builder()
+                                .scanId(run.scanId())
+                                .eventType(DetectionReportingEventType.MULTI_COMPLETE.getLabel())
+                                .emittedAt(Instant.now().toString())
+                                .build());
+        });
     }
 
-    private Flux<ConfluenceContentScanResult> buildAllSpaceScanFluxBody(String scanId) {
-        // Asynchronous retrieval of all spaces (Future -> Mono)
+    private Flux<ConfluenceContentScanResult> buildAllSpaceScanFluxBody(ScanRunState run) {
+        String scanId = run.scanId();
         return Mono.fromFuture(confluenceAccessor.getAllSpaces())
-            // Then unfold into Flux<ScanResult>
             .flatMapMany(spaces -> {
                 // Persist the scan scope (NOT_STARTED checkpoints) BEFORE any space is scanned,
                 // so a paused scan can later be resumed within this exact scope.
@@ -212,25 +274,26 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
                 // Note: createErrorScanResultIfNoSpace(...) returns null when everything is fine, which allows us
                 // to use Objects.requireNonNullElseGet(...) to fall back to the processing Flux.
                 Flux<ConfluenceContentScanResult> errrorScanResultsFlux = createErrorScanResultIfNoSpace(scanId, spaces);
-                return Objects.requireNonNullElseGet(errrorScanResultsFlux, () -> createScanResultFlux(scanId, spaces));
+                return Objects.requireNonNullElseGet(errrorScanResultsFlux, () -> createScanResultFlux(run, spaces));
             })
             // Global error handling: map any exception to a readable business event
             .onErrorResume(exception -> {
                 log.error("[USECASE] Error in the multi-space webflux: {}",
                           exception.getMessage(),
                           exception);
-                return Flux.just(ConfluenceContentScanResult.builder()
-                                     .scanId(scanId)
-                                     .eventType(DetectionReportingEventType.ERROR.getLabel())
-                                     .message(resolveErrorMessage(exception))
-                                     .emittedAt(Instant.now().toString())
-                                     .build());
+                return Flux.just(errorEvent(scanId, null, new TranslatableError(
+                    ScanErrorKeys.UNEXPECTED, Map.of("cause", resolveErrorMessage(exception)))));
             });
     }
 
-    private Flux<ConfluenceContentScanResult> createScanResultFlux(String scanId, List<ConfluenceSpace> spaces) {
+    private Flux<ConfluenceContentScanResult> createScanResultFlux(ScanRunState run, List<ConfluenceSpace> spaces) {
         // Flux over the list of spaces to process
         return Flux.fromIterable(spaces)
+            // An outage is scan-wide, so the spaces queued behind must not be opened: they
+            // would fail identically, and each one started would leave a checkpoint claiming
+            // it was visited. Untouched spaces keep their NOT_STARTED checkpoint and are
+            // scanned in full on resume.
+            .takeWhile(space -> !run.mustPause())
             // concatMap => sequential processing (important to keep a predictable order and limit memory pressure).
             // Unlike flatMap, concatMap waits for the previous stream to complete before moving to the next.
             .concatMap(
@@ -238,7 +301,7 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
                         confluenceAccessor.getAllPagesInSpace(space.key()))
                     // Then start the scan stream for this space
                     .flatMapMany(
-                        pages -> runScanFlux(scanId,
+                        pages -> runScanFlux(run,
                                              space.key(),
                                              pages, 0,
                                              pages.size()))
@@ -249,14 +312,11 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
                             space.key(),
                             exception.getMessage(),
                             exception);
-                        return Flux.just(
-                            ConfluenceContentScanResult.builder()
-                                .scanId(scanId)
-                                .spaceKey(space.key())
-                                .eventType(DetectionReportingEventType.ERROR.getLabel())
-                                .message(resolveErrorMessage(exception))
-                                .emittedAt(Instant.now().toString())
-                                .build());
+                        // Listing a space's pages is a Confluence call: a dropped network or VPN
+                        // surfaces here, and must stop the scan instead of skipping space after space.
+                        run.requestPause(ScanErrorClassifier.classify(exception), resolveErrorMessage(exception));
+                        return Flux.just(errorEvent(run.scanId(), space.key(),
+                            pausedErrorOr(run, resolveErrorMessage(exception))));
                     }));
     }
 
@@ -269,12 +329,7 @@ public class StreamConfluenceScanUseCase extends AbstractStreamConfluenceScanUse
 
     private static Flux<ConfluenceContentScanResult> createErrorScanResultIfNoSpace(String scanId, List<ConfluenceSpace> spaces) {
         if (spaces == null || spaces.isEmpty()) {
-            return Flux.just(ConfluenceContentScanResult.builder()
-                                 .scanId(scanId)
-                                 .eventType(DetectionReportingEventType.ERROR.getLabel())
-                                 .message("No space found")
-                                 .emittedAt(Instant.now().toString())
-                                 .build());
+            return Flux.just(errorEvent(scanId, null, TranslatableError.of(ScanErrorKeys.NO_SPACE_FOUND)));
         }
         return null;
     }

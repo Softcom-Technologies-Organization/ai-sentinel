@@ -11,6 +11,7 @@ import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorRunStat;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIdentifiableInformationType;
+import pro.softcom.aisentinel.domain.pii.scan.DetectorHealth;
 import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.config.PiiDetectorConfig;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -47,6 +48,14 @@ public class GrpcPiiDetectorArmeriaClientAdapter implements PiiDetectorClient {
     public static final String TAG_PHASE = "phase";
     public static final String TAG_PHASE_GRPC_CLIENT = "grpc.client";
 
+    /**
+     * Deadline for the health pre-flight, deliberately NOT the detection timeout
+     * (30 min): this call gates a scan launch, so an unresponsive detection service
+     * must surface in seconds instead of freezing the start. Comfortably above the
+     * service-side endpoint probe budget.
+     */
+    private static final long HEALTH_CHECK_TIMEOUT_MS = 15_000L;
+
     private final PiiDetectorConfig config;
     private final PIIDetectionServiceGrpc.PIIDetectionServiceBlockingStub blockingStub;
     private final MeterRegistry meterRegistry;
@@ -58,6 +67,31 @@ public class GrpcPiiDetectorArmeriaClientAdapter implements PiiDetectorClient {
         this.blockingStub = blockingStub;
         this.meterRegistry = meterRegistry;
         log.info("PII Detection Service (Armeria) initialized - Host: {}, Port: {}", config.host(), config.port());
+    }
+
+    @Override
+    public List<DetectorHealth> checkDetectorsHealth() {
+        try {
+            PiiDetection.DetectorsHealthResponse response = blockingStub
+                    .withDeadlineAfter(HEALTH_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                    .checkDetectorsHealth(PiiDetection.DetectorsHealthRequest.getDefaultInstance());
+            return response.getDetectorsList().stream()
+                    .map(this::convertToDetectorHealth)
+                    .toList();
+        } catch (Exception e) {
+            final String errorMessage = String.format("Failed to check detectors health: %s", e.getMessage());
+            throw PiiDetectionException.serviceError(errorMessage, e);
+        }
+    }
+
+    private DetectorHealth convertToDetectorHealth(PiiDetection.DetectorHealth health) {
+        return new DetectorHealth(
+                convertToDetectorSource(health.getSource()),
+                health.getReachable(),
+                health.getEndpoint(),
+                health.getError(),
+                health.getErrorCode(),
+                health.getErrorParamsMap());
     }
 
     @Override
@@ -172,7 +206,8 @@ public class GrpcPiiDetectorArmeriaClientAdapter implements PiiDetectorClient {
                 convertToDetectorSource(stats.getSource()),
                 stats.getDurationMs(),
                 stats.getEntitiesFound(),
-                stats.getEntitiesDiscarded());
+                stats.getEntitiesDiscarded(),
+                stats.getError());
     }
 
     private ContentPiiDetection.DiscardedSensitiveData convertToDiscardedSensitiveData(

@@ -9,14 +9,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanSpaceStatsRepository;
 import pro.softcom.aisentinel.application.pii.reporting.usecase.DetectionReportingEventType;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
+import pro.softcom.aisentinel.domain.pii.reporting.ScanDetectorStatDelta;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorRunStat;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
+import pro.softcom.aisentinel.domain.pii.scan.ScanErrorKeys;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -114,19 +117,72 @@ class ScanSpaceStatsCollectorTest {
     }
 
     @Test
+    @DisplayName("Should_CountNoFailedItem_When_ErrorIsScanWide")
+    void Should_CountNoFailedItem_When_ErrorIsScanWide() {
+        // An outage that paused the scan names no page: counting it as a failed page would
+        // report a failure on a space whose pages were never opened.
+        collector.recordEvent(event(DetectionReportingEventType.ERROR)
+            .errorKey(ScanErrorKeys.PAUSED_DETECTOR)
+            .build());
+
+        verify(repository, never()).incrementPageFailed(any(), any());
+        verify(repository, never()).incrementAttachmentFailed(any(), any());
+    }
+
+    @Test
     @DisplayName("Should_AccumulateOnePerDetector_When_ItemEventCarriesDetectorStats")
     void Should_AccumulateOnePerDetector_When_ItemEventCarriesDetectorStats() {
         ConfluenceContentScanResult ev = event(DetectionReportingEventType.ITEM)
             .sourceContent("1234567890")
             .detectorRunStats(List.of(
-                new DetectorRunStat(DetectorSource.MINISTRAL, 520L, 12, 0),
-                new DetectorRunStat(DetectorSource.POSTFILTER, 1_400L, 12, 4)))
+                new DetectorRunStat(DetectorSource.MINISTRAL, 520L, 12, 0, ""),
+                new DetectorRunStat(DetectorSource.POSTFILTER, 1_400L, 12, 4, "")))
             .build();
 
         collector.recordEvent(ev);
 
-        verify(repository).accumulateDetectorStat(SCAN_ID, SPACE_KEY, "MINISTRAL", 520L, 10L, 12, 0);
-        verify(repository).accumulateDetectorStat(SCAN_ID, SPACE_KEY, "POSTFILTER", 1_400L, 10L, 12, 4);
+        verify(repository).accumulateDetectorStat(SCAN_ID, SPACE_KEY,
+            new ScanDetectorStatDelta("MINISTRAL", 520L, 10L, 12, 0, 0, ""));
+        verify(repository).accumulateDetectorStat(SCAN_ID, SPACE_KEY,
+            new ScanDetectorStatDelta("POSTFILTER", 1_400L, 10L, 12, 4, 0, ""));
+    }
+
+    @Test
+    @DisplayName("Should_RecordFailedRequestAndReason_When_DetectorCouldNotRun")
+    void Should_RecordFailedRequestAndReason_When_DetectorCouldNotRun() {
+        ConfluenceContentScanResult ev = event(DetectionReportingEventType.ITEM)
+            .sourceContent("1234567890")
+            .detectorRunStats(List.of(
+                new DetectorRunStat(DetectorSource.MINISTRAL, 30_000L, 0, 0,
+                    "ConnectError: connection refused")))
+            .build();
+
+        collector.recordEvent(ev);
+
+        // Zero detections alone would look like a clean page; the failure counter and
+        // reason are what make the degraded scan visible afterwards.
+        verify(repository).accumulateDetectorStat(SCAN_ID, SPACE_KEY,
+            new ScanDetectorStatDelta("MINISTRAL", 30_000L, 10L, 0, 0, 1,
+                "ConnectError: connection refused"));
+    }
+
+    @Test
+    @DisplayName("Should_TruncateFailureReason_When_LongerThanTheStoredColumn")
+    void Should_TruncateFailureReason_When_LongerThanTheStoredColumn() {
+        String verboseReason = "HTTPStatusError: " + "x".repeat(500);
+        ConfluenceContentScanResult ev = event(DetectionReportingEventType.ITEM)
+            .sourceContent("1234567890")
+            .detectorRunStats(List.of(
+                new DetectorRunStat(DetectorSource.MINISTRAL, 10L, 0, 0, verboseReason)))
+            .build();
+
+        collector.recordEvent(ev);
+
+        // Overflowing the column would abort the stats insert and lose the failure
+        // record entirely, putting us back to a silent degradation.
+        verify(repository).accumulateDetectorStat(eq(SCAN_ID), eq(SPACE_KEY),
+            argThat(delta -> delta.lastError().length() == ScanDetectorStatDelta.MAX_ERROR_LENGTH
+                && verboseReason.startsWith(delta.lastError())));
     }
 
     @Test
@@ -134,8 +190,7 @@ class ScanSpaceStatsCollectorTest {
     void Should_NotAccumulateDetectors_When_StatsAbsent() {
         collector.recordEvent(event(DetectionReportingEventType.ITEM).sourceContent("x").build());
 
-        verify(repository, never()).accumulateDetectorStat(any(), any(), any(), anyLong(), anyLong(),
-            org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyInt());
+        verify(repository, never()).accumulateDetectorStat(any(), any(), any());
     }
 
     @Test

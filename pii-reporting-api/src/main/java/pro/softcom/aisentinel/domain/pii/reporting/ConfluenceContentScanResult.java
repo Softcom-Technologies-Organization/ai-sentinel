@@ -23,7 +23,11 @@ public record ConfluenceContentScanResult(
     Map<String, Integer> detectedPiiCountByType,// PII type-based counts (EMAIL, CREDIT_CARD, etc.) for item details
     @JsonIgnore String sourceContent,
     String maskedContent,
+    // Diagnostic wording for the logs. What the operator reads comes from errorKey below,
+    // which the dashboard renders in their language.
     String message,
+    String errorKey,
+    Map<String, String> errorParams,
     String pageUrl,
     String emittedAt,
     String attachmentName,

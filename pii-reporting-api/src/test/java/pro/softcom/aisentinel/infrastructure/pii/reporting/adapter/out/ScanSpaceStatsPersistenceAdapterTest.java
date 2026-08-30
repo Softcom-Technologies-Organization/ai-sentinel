@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanDetectorStat;
+import pro.softcom.aisentinel.domain.pii.reporting.ScanDetectorStatDelta;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanSpaceStats;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.ScanDetectorStatsJpaRepository;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.ScanSpaceStatsJpaRepository;
@@ -53,9 +54,11 @@ class ScanSpaceStatsPersistenceAdapterTest {
     @Test
     @DisplayName("Should_DelegateDetectorAccumulation_When_AccumulateDetectorStat")
     void Should_DelegateDetectorAccumulation_When_AccumulateDetectorStat() {
-        adapter.accumulateDetectorStat(SCAN_ID, SPACE_KEY, "MINISTRAL", 520L, 1000L, 12, 0);
+        adapter.accumulateDetectorStat(SCAN_ID, SPACE_KEY,
+            new ScanDetectorStatDelta("MINISTRAL", 520L, 1000L, 12, 0, 1, "ConnectError: refused"));
 
-        verify(detectorStatsRepository).accumulate(SCAN_ID, SPACE_KEY, "MINISTRAL", 520L, 1000L, 12, 0);
+        verify(detectorStatsRepository).accumulate(SCAN_ID, SPACE_KEY, "MINISTRAL", 520L, 1000L, 12, 0,
+            1, "ConnectError: refused");
     }
 
     @Test
@@ -98,6 +101,7 @@ class ScanSpaceStatsPersistenceAdapterTest {
         ScanDetectorStatsEntity entity = ScanDetectorStatsEntity.builder()
             .id(ScanDetectorStatsId.builder().scanId(SCAN_ID).spaceKey(SPACE_KEY).detector("REGEX").build())
             .busyMs(3L).charsProcessed(1000L).detections(0).discarded(0)
+            .failedRequests(2).lastError("ConnectError: refused")
             .updatedAt(Instant.now())
             .build();
         when(detectorStatsRepository.findById_ScanIdAndId_SpaceKeyOrderById_Detector(SCAN_ID, SPACE_KEY))
@@ -105,6 +109,7 @@ class ScanSpaceStatsPersistenceAdapterTest {
 
         List<ScanDetectorStat> stats = adapter.findDetectorStats(SCAN_ID, SPACE_KEY);
 
-        assertThat(stats).containsExactly(new ScanDetectorStat("REGEX", 0, 1000L, 3L, 0));
+        assertThat(stats).containsExactly(
+            new ScanDetectorStat("REGEX", 0, 1000L, 3L, 0, 2, "ConnectError: refused"));
     }
 }

@@ -14,6 +14,8 @@ import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
+import pro.softcom.aisentinel.domain.pii.scan.ScanErrorKeys;
+import pro.softcom.aisentinel.domain.pii.scan.TranslatableError;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.application.pii.reporting.service.parser.ContentParserFactory;
 import pro.softcom.aisentinel.application.pii.reporting.service.parser.HtmlContentParser;
@@ -23,6 +25,7 @@ import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInforma
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
@@ -359,14 +362,21 @@ class ScanEventFactoryTest {
         void Should_ReturnErrorEventWithFailedStatus_When_Called() {
             // Act
             ConfluenceContentScanResult result = factory.createErrorEvent(
-                    SCAN_ID, SPACE_KEY, "page-err", "Connection refused", 30.0);
+                    SCAN_ID, SPACE_KEY, "page-err",
+                    new TranslatableError(ScanErrorKeys.PAGE_FAILED,
+                                          Map.of("page", "Budget", "cause", "Connection refused")),
+                    30.0);
 
             // Assert
             assertSoftly(softly -> {
                 softly.assertThat(result.eventType()).isEqualTo("scanError");
                 softly.assertThat(result.scanStatus()).isEqualTo(ScanStatus.FAILED);
                 softly.assertThat(result.pageId()).isEqualTo("page-err");
-                softly.assertThat(result.message()).isEqualTo("Connection refused");
+                // The operator reads what the dashboard renders from the key; the message
+                // field only has to stay diagnosable in the logs.
+                softly.assertThat(result.errorKey()).isEqualTo(ScanErrorKeys.PAGE_FAILED);
+                softly.assertThat(result.errorParams()).containsEntry("cause", "Connection refused");
+                softly.assertThat(result.message()).contains(ScanErrorKeys.PAGE_FAILED, "Connection refused");
                 softly.assertThat(result.pageUrl()).contains("page-err");
             });
         }
@@ -380,7 +390,8 @@ class ScanEventFactoryTest {
         @DisplayName("Should_ReturnNull_When_PageIdIsNull")
         void Should_ReturnNull_When_PageIdIsNull() {
             // Act
-            ConfluenceContentScanResult result = factory.createErrorEvent(SCAN_ID, SPACE_KEY, null, "error", 0.0);
+            ConfluenceContentScanResult result = factory.createErrorEvent(
+                    SCAN_ID, SPACE_KEY, null, TranslatableError.of(ScanErrorKeys.UNEXPECTED), 0.0);
 
             // Assert
             assertThat(result.pageUrl()).isNull();

@@ -12,6 +12,7 @@ import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.SeverityCounts;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ScanEventType;
+import pro.softcom.aisentinel.domain.pii.scan.TranslatableError;
 
 /**
  * Orchestrates scan event lifecycle: creation, progress tracking, and persistence.
@@ -69,12 +70,30 @@ public class ContentScanOrchestrator {
     }
 
     public ConfluenceContentScanResult createErrorEvent(String scanId, String spaceKey, String pageId,
-                                                        String message, double progress) {
-        return scanEventFactory.createErrorEvent(scanId, spaceKey, pageId, message, progress);
+                                                        TranslatableError error, double progress) {
+        return scanEventFactory.createErrorEvent(scanId, spaceKey, pageId, error, progress);
     }
 
     public double calculateProgress(int analyzed, int total) {
         return scanProgressCalculator.calculateProgress(analyzed, total);
+    }
+
+    /**
+     * Pauses a scan stopped by an outage, so the Resume button can pick it up.
+     *
+     * <p>Failures are swallowed on purpose: the scan is already stopping, and an
+     * exception here would replace a diagnosable "scan paused" message with an
+     * unrelated persistence error.
+     *
+     * @param scanId the scan to pause
+     */
+    public void pauseScanAfterOutage(String scanId) {
+        try {
+            int paused = scanCheckpointService.pauseRunningCheckpoints(scanId);
+            log.warn("[SCAN] Scan {} paused after an outage: {} checkpoint(s) moved to PAUSED", scanId, paused);
+        } catch (Exception exception) {
+            log.error("[SCAN] Failed to pause scan {} after an outage: {}", scanId, exception.getMessage());
+        }
     }
 
     /**

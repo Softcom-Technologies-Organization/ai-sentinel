@@ -9,6 +9,9 @@ package pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto;
  * @param busyMs         cumulated busy time of this detector in milliseconds
  * @param charsPerSecond throughput in characters per second, or null when no busy time
  * @param discarded      total PII discarded by this stage (0 for real detectors)
+ * @param failedRequests analysis requests this detector could not serve; non-zero means
+ *                       the scan is incomplete for this detector
+ * @param lastError      latest failure reason, null when the detector never failed
  */
 public record ScanDetectorStatDto(
     String detector,
@@ -16,5 +19,7 @@ public record ScanDetectorStatDto(
     long charsProcessed,
     long busyMs,
     Double charsPerSecond,
-    int discarded
+    int discarded,
+    int failedRequests,
+    String lastError
 ) { }

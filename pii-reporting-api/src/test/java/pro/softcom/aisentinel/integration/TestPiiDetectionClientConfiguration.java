@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Primary;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
+import pro.softcom.aisentinel.domain.pii.scan.DetectorHealth;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -34,6 +35,13 @@ public class TestPiiDetectionClientConfiguration {
         private static final Pattern PHONE = Pattern.compile("(?:\\+\\d{2}\\s?)?(?:\\d{2,3}\\s?){3,5}");
         private static final Pattern URL = Pattern.compile("(https?://\\S+)|(\\b\\d{1,3}(?:\\.\\d{1,3}){3}\\b)");
         private static final Pattern AVS = Pattern.compile("\\b756\\.\\d{4}\\.\\d{4}\\.\\d{2}\\b");
+
+        @Override
+        public List<DetectorHealth> checkDetectorsHealth() {
+            // The fake detector is always in-process and ready, so the scan pre-flight
+            // never blocks integration tests.
+            return List.of(new DetectorHealth(DetectorSource.REGEX, true, "", "", "", Map.of()));
+        }
 
         @Override
         public ContentPiiDetection analyzeContent(String content) {

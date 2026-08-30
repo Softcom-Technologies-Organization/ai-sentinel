@@ -16,13 +16,19 @@ import java.math.RoundingMode;
  * @param charsProcessed total characters submitted to this detector
  * @param busyMs         cumulated busy time of this detector in milliseconds
  * @param discarded      total PII discarded by this stage (0 for real detectors)
+ * @param failedRequests number of analysis requests this detector could not serve
+ *                       (e.g. its endpoint was unreachable); a non-zero value means
+ *                       the scan is incomplete for this detector
+ * @param lastError      latest failure reason, null when the detector never failed
  */
 public record ScanDetectorStat(
     String detector,
     int detections,
     long charsProcessed,
     long busyMs,
-    int discarded
+    int discarded,
+    int failedRequests,
+    String lastError
 ) {
 
     /**

@@ -87,7 +87,7 @@ class GetScanSpaceStatsUseCaseTest {
     void Should_AggregateStatsDetectorsAndFailedItems_When_StatsExist() {
         when(checkpointRepository.findLatestBySpace(SPACE_KEY)).thenReturn(Optional.of(checkpoint()));
         when(statsRepository.findStats(SCAN_ID, SPACE_KEY)).thenReturn(Optional.of(baseStats()));
-        List<ScanDetectorStat> detectors = List.of(new ScanDetectorStat("MINISTRAL", 12, 1_730_000L, 520_000L, 0));
+        List<ScanDetectorStat> detectors = List.of(new ScanDetectorStat("MINISTRAL", 12, 1_730_000L, 520_000L, 0, 0, null));
         when(statsRepository.findDetectorStats(SCAN_ID, SPACE_KEY)).thenReturn(detectors);
         List<FailedScanItem> failed = List.of(new FailedScanItem(ItemType.PAGE, "Broken page"));
         when(failedScanItemQuery.findFailedItems(SCAN_ID, SPACE_KEY, GetScanSpaceStatsUseCase.MAX_FAILED_ITEMS))

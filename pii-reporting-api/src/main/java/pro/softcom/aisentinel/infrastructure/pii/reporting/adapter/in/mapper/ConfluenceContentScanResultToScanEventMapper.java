@@ -49,6 +49,8 @@ public class ConfluenceContentScanResultToScanEventMapper {
                 .detectedPiiCountBySeverity(confluenceContentScanResult.detectedPiiCountBySeverity())
                 .detectedPiiCountByType(confluenceContentScanResult.detectedPiiCountByType())
                 .message(confluenceContentScanResult.message())
+                .errorKey(confluenceContentScanResult.errorKey())
+                .errorParams(confluenceContentScanResult.errorParams())
                 .pageUrl(confluenceContentScanResult.pageUrl())
                 .emittedAt(confluenceContentScanResult.emittedAt())
                 .attachmentName(confluenceContentScanResult.attachmentName())

@@ -1,5 +1,7 @@
 package pro.softcom.aisentinel.application.pii.reporting.usecase;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,6 +30,8 @@ import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
+import pro.softcom.aisentinel.domain.pii.scan.DetectorHealth;
+import pro.softcom.aisentinel.domain.pii.scan.ScanErrorKeys;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanEventType;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.JpaScanEventStoreAdapter;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.event.ScanEventPublisherAdapter;
@@ -220,6 +224,54 @@ class StreamConfluenceScanUseCaseTest {
                 .block();
 
         assertThat(pageStartOrder).containsExactly("p-1", "p-2", "p-3", "p-4", "p-5");
+    }
+
+    @Test
+    @DisplayName("streamSpace - an enabled but unreachable detector refuses the scan with an explicit error")
+    void streamSpace_unreachableDetector_refusesScan() {
+        String spaceKey = "S-DETECTOR-DOWN";
+        when(piiDetectorClient.checkDetectorsHealth()).thenReturn(List.of(
+            new DetectorHealth(DetectorSource.MINISTRAL, false, "http://lmstudio:1234/v1",
+                "ConnectError: connection refused", "ENDPOINT_UNREACHABLE",
+                Map.of("cause", "ConnectError: connection refused"))));
+
+        Flux<ConfluenceContentScanResult> flux = streamConfluenceScanUseCase.streamSpace(spaceKey)
+            .timeout(Duration.ofSeconds(5));
+
+        StepVerifier.create(flux)
+            .assertNext(ev -> {
+                assertThat(ev.eventType()).isEqualTo(ScanEventType.ERROR.toJson());
+                // The dashboard words the refusal from the key, so the event must name the
+                // detector and where it was probed rather than carry an English sentence.
+                assertThat(ev.errorKey()).isEqualTo(ScanErrorKeys.DETECTOR_ENDPOINT_UNREACHABLE);
+                assertThat(ev.errorParams())
+                    .containsEntry("detector", "MINISTRAL")
+                    .containsEntry("endpoint", "http://lmstudio:1234/v1")
+                    .containsEntry("cause", "ConnectError: connection refused");
+            })
+            .verifyComplete();
+
+        // No page is analysed: a scan that would silently skip the enabled detector
+        // must not run at all.
+        verify(confluenceService, never()).getAllPagesInSpace(anyString());
+    }
+
+    @Test
+    @DisplayName("streamSpace - an unverifiable detector health does not block the scan")
+    void streamSpace_healthCheckFailure_scanProceeds() {
+        String spaceKey = "S-HEALTH-UNKNOWN";
+        when(piiDetectorClient.checkDetectorsHealth())
+            .thenThrow(new IllegalStateException("health RPC unavailable"));
+        when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.empty()));
+
+        Flux<ConfluenceContentScanResult> flux = streamConfluenceScanUseCase.streamSpace(spaceKey)
+            .timeout(Duration.ofSeconds(5));
+
+        // Falls through to the normal path (here: space not found), rather than turning an
+        // unverifiable pre-flight into an unexplained refusal.
+        StepVerifier.create(flux)
+            .assertNext(ev -> assertThat(ev.errorKey()).isEqualTo(ScanErrorKeys.SPACE_NOT_FOUND))
+            .verifyComplete();
     }
 
     @Test
@@ -839,8 +891,8 @@ class StreamConfluenceScanUseCaseTest {
     }
 
     @Test
-    @DisplayName("streamAllSpaces - ConnectException with null message emits descriptive error, not null")
-    void Should_EmitDescriptiveErrorMessage_When_ConnectExceptionHasNullMessage() {
+    @DisplayName("streamAllSpaces - unreachable data source pauses the scan instead of completing it")
+    void Should_PauseScanWithoutCompleting_When_DataSourceIsUnreachable() {
         ConfluenceSpace space = new ConfluenceSpace("id", "CCAEI", "t", "http://test.com", "d",
             ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
         when(spaceRepository.findAll()).thenReturn(List.of());
@@ -852,18 +904,24 @@ class StreamConfluenceScanUseCaseTest {
 
         Flux<ConfluenceContentScanResult> flux = streamConfluenceScanUseCase.streamAllSpaces().timeout(Duration.ofSeconds(5));
 
+        // No MULTI_COMPLETE: announcing completion would tell the operator the base was
+        // covered while the scan actually stopped on an unreachable data source.
         StepVerifier.create(flux)
             .expectNextMatches(ev -> ScanEventType.MULTI_START.toJson().equals(ev.eventType()))
             .assertNext(ev -> {
                 assertThat(ev.eventType()).isEqualTo(ScanEventType.ERROR.toJson());
                 assertThat(ev.spaceKey()).isEqualTo("CCAEI");
-                assertThat(ev.message())
+                // The key is what lets the dashboard name the cause and offer Resume, in the
+                // operator's language; the cause rides along as a technical parameter.
+                assertThat(ev.errorKey()).isEqualTo(ScanErrorKeys.PAUSED_NETWORK);
+                assertThat(ev.errorParams().get("cause"))
                         .isNotEmpty()
                         .doesNotContain("null")
                         .containsIgnoringCase("connect");
             })
-            .expectNextMatches(ev -> ScanEventType.MULTI_COMPLETE.toJson().equals(ev.eventType()))
             .verifyComplete();
+
+        verify(scanCheckpointRepository).pauseAllRunningCheckpoints(anyString());
     }
 
     @Test
@@ -997,6 +1055,144 @@ class StreamConfluenceScanUseCaseTest {
             cp != null && "SEL1".equals(cp.spaceKey()) && cp.scanStatus() == ScanStatus.NOT_STARTED));
         verify(scanCheckpointRepository, never()).save(argThat(cp ->
             cp != null && "SEL2".equals(cp.spaceKey()) && cp.scanStatus() == ScanStatus.NOT_STARTED));
+    }
+
+    @Test
+    @DisplayName("streamAllSpaces - a refused scan never announces completion")
+    void Should_NotAnnounceCompletion_When_ScanIsRefusedByPreflight() {
+        when(piiDetectorClient.checkDetectorsHealth()).thenReturn(List.of(
+            new DetectorHealth(DetectorSource.MINISTRAL, false, "http://lmstudio:1234/v1",
+                "ConnectError: connection refused", "ENDPOINT_UNREACHABLE",
+                Map.of("cause", "ConnectError: connection refused"))));
+
+        List<ConfluenceContentScanResult> events = streamConfluenceScanUseCase.streamAllSpaces()
+            .timeout(Duration.ofSeconds(5))
+            .collectList()
+            .block();
+
+        assertThat(events).isNotNull();
+        // MULTI_COMPLETE on a scan that never opened a space would tell the operator the whole
+        // base was covered and came back clean.
+        assertThat(eventTypes(events)).doesNotContain(ScanEventType.MULTI_COMPLETE.toJson());
+        assertThat(events.getLast().errorKey()).isEqualTo(ScanErrorKeys.DETECTOR_ENDPOINT_UNREACHABLE);
+
+        // The refusal must also leave the previous results untouched.
+        verify(confluenceService, never()).getAllSpaces();
+    }
+
+    @Test
+    @DisplayName("streamSpace - a detector going down mid-scan pauses the scan and holds the page back")
+    void Should_PauseAndHoldPageBack_When_DetectorFailsMidScan() {
+        String spaceKey = "S-DETECTOR-LOST";
+        List<ConfluencePage> pages = twoScannablePages(spaceKey);
+        stubSpaceWithPages(spaceKey, pages);
+
+        // The call succeeds, but Ministral reports it could not run: the page would be
+        // recorded as analysed while the LLM never saw it.
+        when(piiDetectorClient.analyzeContent(any())).thenReturn(ContentPiiDetection.builder()
+            .statistics(Map.of())
+            .sensitiveDataFound(List.of())
+            .detectorRunStats(List.of(
+                new ContentPiiDetection.DetectorRunStat(DetectorSource.REGEX, 5, 0, 0, ""),
+                new ContentPiiDetection.DetectorRunStat(DetectorSource.MINISTRAL, 0, 0, 0,
+                                                        "LM Studio endpoint unreachable")))
+            .build());
+
+        List<ConfluenceContentScanResult> events = streamConfluenceScanUseCase.streamSpace(spaceKey)
+            .timeout(Duration.ofSeconds(10))
+            .collectList()
+            .block();
+
+        assertThat(events).isNotNull();
+
+        // The page that hit the outage must NOT be marked complete: its pageComplete would
+        // advance the checkpoint and make the resume skip content nobody analysed.
+        assertThat(eventTypes(events)).doesNotContain(ScanEventType.PAGE_COMPLETE.toJson());
+
+        // Nor are its partial findings emitted: they would be persisted, then counted a
+        // second time when the resume re-scans the page.
+        assertThat(eventTypes(events)).doesNotContain(ScanEventType.ITEM.toJson());
+
+        // No space completion either — a COMPLETED space is skipped on resume for good.
+        assertThat(eventTypes(events)).doesNotContain(ScanEventType.COMPLETE.toJson());
+
+        // The second page is never opened: it would fail the same way.
+        assertThat(events.stream().filter(ev -> ScanEventType.PAGE_START.toJson().equals(ev.eventType())))
+            .hasSize(1);
+
+        assertThat(events.getLast().eventType()).isEqualTo(ScanEventType.ERROR.toJson());
+        assertThat(events.getLast().errorKey()).isEqualTo(ScanErrorKeys.PAUSED_DETECTOR);
+        assertThat(events.getLast().errorParams().get("cause"))
+            .contains("MINISTRAL", "LM Studio endpoint unreachable");
+
+        verify(scanCheckpointRepository).pauseAllRunningCheckpoints(anyString());
+    }
+
+    @Test
+    @DisplayName("streamSpace - a detection timeout fails the item only and lets the scan finish")
+    void Should_KeepScanningAndComplete_When_DetectionTimesOutOnOneItem() {
+        String spaceKey = "S-SLOW-PAGE";
+        List<ConfluencePage> pages = twoScannablePages(spaceKey);
+        stubSpaceWithPages(spaceKey, pages);
+
+        // First page outruns the detection deadline, second one is analysed normally. Such
+        // timeouts are expected on a full scan, so they must never stop it.
+        when(piiDetectorClient.analyzeContent(any()))
+            .thenThrow(new StatusRuntimeException(Status.DEADLINE_EXCEEDED))
+            .thenReturn(ContentPiiDetection.builder()
+                .statistics(Map.of())
+                .sensitiveDataFound(List.of())
+                .build());
+
+        List<ConfluenceContentScanResult> events = streamConfluenceScanUseCase.streamSpace(spaceKey)
+            .timeout(Duration.ofSeconds(10))
+            .collectList()
+            .block();
+
+        assertThat(events).isNotNull();
+
+        // Both pages are opened and both are marked complete: holding the failed one back
+        // would have it re-scanned on resume, double-counting the findings of the retry.
+        assertThat(events.stream().filter(ev -> ScanEventType.PAGE_START.toJson().equals(ev.eventType())))
+            .hasSize(2);
+        assertThat(events.stream().filter(ev -> ScanEventType.PAGE_COMPLETE.toJson().equals(ev.eventType())))
+            .hasSize(2);
+
+        // The space still completes, and the failed item is reported for the operator.
+        assertThat(eventTypes(events)).contains(ScanEventType.COMPLETE.toJson());
+        assertThat(events.stream().filter(ev -> ScanEventType.ERROR.toJson().equals(ev.eventType())))
+            .hasSize(1);
+        assertThat(events.stream()
+            .filter(ev -> ScanEventType.ERROR.toJson().equals(ev.eventType()))
+            .findFirst().orElseThrow().message())
+            .doesNotStartWith("SCAN_PAUSED");
+
+        verify(scanCheckpointRepository, never()).pauseAllRunningCheckpoints(anyString());
+    }
+
+    private List<ConfluencePage> twoScannablePages(String spaceKey) {
+        return List.of(
+            ConfluencePage.builder().id("p-1").title("T1").spaceKey(spaceKey)
+                .content(new ConfluencePage.HtmlContent("content of page one")).build(),
+            ConfluencePage.builder().id("p-2").title("T2").spaceKey(spaceKey)
+                .content(new ConfluencePage.HtmlContent("content of page two")).build());
+    }
+
+    private void stubSpaceWithPages(String spaceKey, List<ConfluencePage> pages) {
+        ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t", "http://test.com", "d",
+            ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
+        when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
+        when(confluenceService.getAllPagesInSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(pages));
+        // Lenient: a scan paused on the first page never opens the second one, so its
+        // attachment stub legitimately goes unused.
+        pages.forEach(page -> Mockito.lenient()
+            .when(confluenceAttachmentService.getPageAttachments(page.id()))
+            .thenReturn(CompletableFuture.completedFuture(List.of())));
+        when(scanTimeoutConfig.getPiiDetectionTimeout()).thenReturn(Duration.ofSeconds(30));
+    }
+
+    private static List<String> eventTypes(List<ConfluenceContentScanResult> events) {
+        return events.stream().map(ConfluenceContentScanResult::eventType).toList();
     }
 
     /**

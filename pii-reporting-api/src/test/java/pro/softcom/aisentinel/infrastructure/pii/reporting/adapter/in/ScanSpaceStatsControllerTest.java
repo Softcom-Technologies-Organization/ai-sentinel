@@ -41,7 +41,7 @@ class ScanSpaceStatsControllerTest {
             "uuid", "KEY",
             Instant.parse("2026-06-07T10:00:00Z"), Instant.parse("2026-06-07T10:12:34Z"),
             42, 1, 1_200_000L, 7, 2, 530_000L,
-            List.of(new ScanDetectorStat("MINISTRAL", 12, 1_730_000L, 520_000L, 0)),
+            List.of(new ScanDetectorStat("MINISTRAL", 12, 1_730_000L, 520_000L, 0, 0, null)),
             List.of(new FailedScanItem(ItemType.ATTACHMENT, "file.pdf")));
         when(getScanSpaceStatsPort.getLatestSpaceStats("KEY")).thenReturn(Optional.of(stats));
 

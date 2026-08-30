@@ -1,6 +1,7 @@
 package pro.softcom.aisentinel.application.pii.reporting.port.out;
 
 import pro.softcom.aisentinel.domain.pii.reporting.ScanDetectorStat;
+import pro.softcom.aisentinel.domain.pii.reporting.ScanDetectorStatDelta;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanSpaceStats;
 
 import java.time.Instant;
@@ -77,17 +78,11 @@ public interface ScanSpaceStatsRepository {
     /**
      * Atomically accumulates per-detector stats from a single analysis request.
      *
-     * @param scanId    unique scan identifier
-     * @param spaceKey  Confluence space key
-     * @param detector  detector identifier (e.g. MINISTRAL)
-     * @param busyMs    busy time of this detector for the request, in milliseconds
-     * @param chars     characters submitted to this detector for the request
-     * @param detections raw entities found by this detector for the request (or examined
-     *                   count for the POSTFILTER post-filter)
-     * @param discarded  PII discarded by this stage for the request (0 for real detectors)
+     * @param scanId   unique scan identifier
+     * @param spaceKey Confluence space key
+     * @param delta    this request's contribution for one detector
      */
-    void accumulateDetectorStat(String scanId, String spaceKey, String detector,
-                                long busyMs, long chars, int detections, int discarded);
+    void accumulateDetectorStat(String scanId, String spaceKey, ScanDetectorStatDelta delta);
 
     /**
      * Reads the aggregated stats row for a (scan, space) pair.

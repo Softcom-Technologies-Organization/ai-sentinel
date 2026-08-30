@@ -27,7 +27,11 @@ public record ConfluenceContentScanResultEventDto(
         List<DetectedPersonallyIdentifiableInformation> detectedPIIs,
         Map<String, Integer> detectedPiiCountBySeverity,
         Map<String, Integer> detectedPiiCountByType,
+        // Diagnostic wording, kept for support and logs. The dashboard shows the
+        // sentence it renders from errorKey, in the operator's own language.
         String message,
+        String errorKey,
+        Map<String, String> errorParams,
         String pageUrl,
         String emittedAt,
         String attachmentName,

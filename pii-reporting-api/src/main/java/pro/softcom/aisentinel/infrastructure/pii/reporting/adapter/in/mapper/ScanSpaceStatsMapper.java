@@ -59,7 +59,9 @@ public class ScanSpaceStatsMapper {
                 stat.charsProcessed(),
                 stat.busyMs(),
                 stat.charsPerSecond(),
-                stat.discarded()))
+                stat.discarded(),
+                stat.failedRequests(),
+                stat.lastError()))
             .toList();
     }
 }

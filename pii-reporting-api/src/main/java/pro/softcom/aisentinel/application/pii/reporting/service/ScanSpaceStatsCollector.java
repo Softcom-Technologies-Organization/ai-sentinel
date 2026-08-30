@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanSpaceStatsRepository;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
+import pro.softcom.aisentinel.domain.pii.reporting.ScanDetectorStatDelta;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorRunStat;
 import pro.softcom.aisentinel.domain.pii.scan.ScanEventType;
 
@@ -75,7 +76,12 @@ public class ScanSpaceStatsCollector {
     private void recordFailure(ConfluenceContentScanResult event) {
         if (event.attachmentName() != null) {
             repository.incrementAttachmentFailed(event.scanId(), event.spaceKey());
-        } else {
+            return;
+        }
+        // Scan-wide errors (a detector outage pausing the scan, a pre-flight refusal) carry no
+        // page: counting them as a failed page would inflate the failure count of a space whose
+        // pages were never even opened.
+        if (event.pageId() != null) {
             repository.incrementPageFailed(event.scanId(), event.spaceKey());
         }
     }
@@ -87,14 +93,14 @@ public class ScanSpaceStatsCollector {
         }
         long chars = contentLength(event);
         for (DetectorRunStat stat : stats) {
+            if (stat.failed()) {
+                log.warn("[SPACE_STATS] Detector {} failed for scan={} space={}: {}",
+                    stat.source(), event.scanId(), event.spaceKey(), stat.error());
+            }
             repository.accumulateDetectorStat(
                 event.scanId(),
                 event.spaceKey(),
-                stat.source().name(),
-                stat.durationMs(),
-                chars,
-                stat.entitiesFound(),
-                stat.entitiesDiscarded());
+                ScanDetectorStatDelta.from(stat, chars));
         }
     }
 

@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import pii_detection.PIIDetectionServiceGrpc;
 import pii_detection.PiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
+import pro.softcom.aisentinel.domain.pii.scan.DetectorHealth;
 import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.GrpcPiiDetectorArmeriaClientAdapter;
 import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.config.PiiDetectorConfig;
 
@@ -166,6 +167,80 @@ class GrpcPiiDetectorArmeriaClientAdapterTest {
         assertThat(result.discoveredLabels())
                 .containsEntry("VEHICLE_COLOR", 3)
                 .containsEntry("PET_NAME", 1);
+    }
+
+    @Test
+    @DisplayName("Should_MapDetectorRunStatFailure_When_DetectorReportsAnError")
+    void Should_MapDetectorRunStatFailure_When_DetectorReportsAnError() {
+        // Given - Ministral ran for 30s, found nothing, and said why
+        PiiDetection.PIIDetectionResponse response = PiiDetection.PIIDetectionResponse.newBuilder()
+                .addDetectorStats(PiiDetection.DetectorRunStats.newBuilder()
+                        .setSource(PiiDetection.DetectorSource.MINISTRAL)
+                        .setDurationMs(30_000L)
+                        .setEntitiesFound(0)
+                        .setError("ConnectError: connection refused")
+                        .build())
+                .addDetectorStats(PiiDetection.DetectorRunStats.newBuilder()
+                        .setSource(PiiDetection.DetectorSource.REGEX)
+                        .setDurationMs(12L)
+                        .setEntitiesFound(0)
+                        .build())
+                .build();
+
+        when(stub.withDeadlineAfter(anyLong(), any())).thenReturn(stub);
+        when(stub.detectPII(any())).thenReturn(response);
+
+        GrpcPiiDetectorArmeriaClientAdapter service =
+            new GrpcPiiDetectorArmeriaClientAdapter(config, stub, meterRegistry);
+
+        // When
+        ContentPiiDetection result = service.analyzePageContent("p", "t", "s", "payload");
+
+        // Then - both found zero entities, but only Ministral is reported as failed
+        assertSoftly(softly -> {
+            ContentPiiDetection.DetectorRunStat ministral = result.detectorRunStats().getFirst();
+            softly.assertThat(ministral.failed()).isTrue();
+            softly.assertThat(ministral.error()).isEqualTo("ConnectError: connection refused");
+            softly.assertThat(result.detectorRunStats().get(1).failed()).isFalse();
+        });
+    }
+
+    @Test
+    @DisplayName("Should_MapUnreachableDetector_When_CheckDetectorsHealth")
+    void Should_MapUnreachableDetector_When_CheckDetectorsHealth() {
+        // Given
+        PiiDetection.DetectorsHealthResponse response = PiiDetection.DetectorsHealthResponse.newBuilder()
+                .addDetectors(PiiDetection.DetectorHealth.newBuilder()
+                        .setSource(PiiDetection.DetectorSource.MINISTRAL)
+                        .setReachable(false)
+                        .setEndpoint("http://lmstudio:1234/v1")
+                        .setError("ConnectError: connection refused")
+                        .build())
+                .addDetectors(PiiDetection.DetectorHealth.newBuilder()
+                        .setSource(PiiDetection.DetectorSource.REGEX)
+                        .setReachable(true)
+                        .build())
+                .build();
+
+        when(stub.withDeadlineAfter(anyLong(), any())).thenReturn(stub);
+        when(stub.checkDetectorsHealth(any())).thenReturn(response);
+
+        GrpcPiiDetectorArmeriaClientAdapter service =
+            new GrpcPiiDetectorArmeriaClientAdapter(config, stub, meterRegistry);
+
+        // When
+        List<DetectorHealth> health = service.checkDetectorsHealth();
+
+        // Then
+        assertSoftly(softly -> {
+            softly.assertThat(health).hasSize(2);
+            DetectorHealth ministral = health.getFirst();
+            softly.assertThat(ministral.source()).isEqualTo(ContentPiiDetection.DetectorSource.MINISTRAL);
+            softly.assertThat(ministral.reachable()).isFalse();
+            softly.assertThat(ministral.describeFailure())
+                .contains("MINISTRAL", "http://lmstudio:1234/v1", "connection refused");
+            softly.assertThat(health.get(1).reachable()).isTrue();
+        });
     }
 
     @Test

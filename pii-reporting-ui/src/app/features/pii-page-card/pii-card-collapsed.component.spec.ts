@@ -140,7 +140,7 @@ describe('PiiCardCollapsedComponent', () => {
     fixture.componentRef.setInput('item', MOCK_ITEM);
     fixture.detectChanges();
     const badges = fixture.nativeElement.querySelectorAll('.pii-type-badge');
-    expect(badges.length).toBe(2); // Email + IBAN
+    expect(badges).toHaveLength(2); // Email + IBAN
     const labels = Array.from(badges).map((b: any) => b.querySelector('.pii-type-label')?.textContent?.trim());
     expect(labels).toContain('Email');
     expect(labels).toContain('IBAN');

@@ -117,7 +117,7 @@ describe('DashboardUiStateService', () => {
       service.append(`Line ${i}`);
     }
 
-    expect(service.lines().length).toBe(1000);
+    expect(service.lines()).toHaveLength(1000);
     expect(service.lines()[0]).toBe('Line 2');
   });
 

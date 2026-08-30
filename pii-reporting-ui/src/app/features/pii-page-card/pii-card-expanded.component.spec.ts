@@ -121,7 +121,7 @@ describe('PiiCardExpandedComponent', () => {
     fixture.componentRef.setInput('isRevealing', false);
     fixture.detectChanges();
     const rows = fixture.nativeElement.querySelectorAll('.pii-row');
-    expect(rows.length).toBe(4); // One row per entity
+    expect(rows).toHaveLength(4); // One row per entity
   });
 
   it('Should_EmitCollapse_When_CloseButtonClicked', () => {
@@ -156,7 +156,7 @@ describe('PiiCardExpandedComponent', () => {
     expect(topReveal).toBeTruthy();
     // Both the top duplicate and the footer button are present
     const allReveal = fixture.nativeElement.querySelectorAll('.btn-reveal');
-    expect(allReveal.length).toBe(2);
+    expect(allReveal).toHaveLength(2);
   });
 
   it('Should_EmitRevealRequested_When_TopRevealClicked', () => {
@@ -351,7 +351,7 @@ describe('PiiCardExpandedComponent', () => {
     component.selectedFilterValues.set(['IBAN']);
 
     const rows = component.filteredAndSortedRows();
-    expect(rows.length).toBe(1);
+    expect(rows).toHaveLength(1);
     expect(rows[0].typeLabel).toBe('IBAN');
   });
 

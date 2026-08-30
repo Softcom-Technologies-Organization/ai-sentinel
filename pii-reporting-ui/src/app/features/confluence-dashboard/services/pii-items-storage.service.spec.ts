@@ -42,7 +42,7 @@ describe('PiiItemsStorageService', () => {
     const result = service.addPiiItemToSpace('SPACE1', createPayload() as any);
 
     expect(result).toBe(true);
-    expect(service.itemsBySpace()['SPACE1'].length).toBe(1);
+    expect(service.itemsBySpace()['SPACE1']).toHaveLength(1);
     expect(service.itemsBySpace()['SPACE1'][0].pageId).toBe('page-1');
   });
 
@@ -58,14 +58,14 @@ describe('PiiItemsStorageService', () => {
     const result = service.addPiiItemToSpace('SPACE1', createPayload() as any);
 
     expect(result).toBe(false);
-    expect(service.itemsBySpace()['SPACE1'].length).toBe(1);
+    expect(service.itemsBySpace()['SPACE1']).toHaveLength(1);
   });
 
   it('Should_AddDistinctItems_When_DifferentPages', () => {
     service.addPiiItemToSpace('SPACE1', createPayload({ pageId: 'page-1' }) as any);
     service.addPiiItemToSpace('SPACE1', createPayload({ pageId: 'page-2' }) as any);
 
-    expect(service.itemsBySpace()['SPACE1'].length).toBe(2);
+    expect(service.itemsBySpace()['SPACE1']).toHaveLength(2);
   });
 
   it('Should_NormalizeSeverity_When_UpperCase', () => {
@@ -84,7 +84,7 @@ describe('PiiItemsStorageService', () => {
     service.addPiiItemToSpace('SPACE1', createPayload() as any);
 
     const item = service.itemsBySpace()['SPACE1'][0];
-    expect(item.detectedPersonallyIdentifiableInformationList.length).toBe(1);
+    expect(item.detectedPersonallyIdentifiableInformationList).toHaveLength(1);
     expect(item.detectedPersonallyIdentifiableInformationList[0].piiType).toBe('EMAIL');
     expect(item.detectedPersonallyIdentifiableInformationList[0].confidence).toBe(0.95);
   });
@@ -94,7 +94,7 @@ describe('PiiItemsStorageService', () => {
       service.addPiiItemToSpace('SPACE1', createPayload({ pageId: `page-${i}` }) as any);
     }
 
-    expect(service.itemsBySpace()['SPACE1'].length).toBe(400);
+    expect(service.itemsBySpace()['SPACE1']).toHaveLength(400);
   });
 
   // ========== clearAllItems ==========

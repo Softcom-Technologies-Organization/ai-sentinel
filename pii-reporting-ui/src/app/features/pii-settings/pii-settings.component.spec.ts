@@ -408,7 +408,7 @@ describe('PiiSettingsComponent', () => {
     // Then - only the Presidio row renders a threshold input; the Ministral group
     // shows the explanatory note instead.
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelectorAll('p-inputnumber').length).toBe(1);
+    expect(el.querySelectorAll('p-inputnumber')).toHaveLength(1);
     expect(el.querySelector('.ministral-no-threshold-hint')).not.toBeNull();
   });
 
@@ -464,7 +464,7 @@ describe('PiiSettingsComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('#ministralConcurrency')).toBeNull();
     const readonlyValues = el.querySelectorAll('.concurrency-readonly');
-    expect(readonlyValues.length).toBe(2);
+    expect(readonlyValues).toHaveLength(2);
     expect(readonlyValues[0].textContent).toContain('4');
     expect(readonlyValues[1].textContent).toContain('pas encore réglé');
   });

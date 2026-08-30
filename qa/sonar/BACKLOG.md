@@ -15,7 +15,7 @@ Protocole d'execution obligatoire : [RUNBOOK.md](RUNBOOK.md).
 | Vague | Perimetre | Issues | Statut |
 |-------|-----------|--------|--------|
 | **A** | Tests — mecanique pure | 87 | ✅ terminee et verifiee |
-| **B** | Production — mecanique locale | 50 | ⬜ a faire |
+| **B** | Production — mecanique locale | 50 | 🔄 en cours |
 | **C** | Accessibilite UI — modifie le DOM rendu | 16 | ⬜ a faire |
 | **D** | Jugement requis — lire le RUNBOOK avant | 25 | ⬜ a faire |
 
@@ -173,27 +173,27 @@ Modifie du code de production, mais chaque correction est locale et sans effet d
 
 **Correction** : Dans un bloc `except`, remplacer `logging.error(...)` / `logger.error(...)` par `logger.exception(...)` et supprimer un eventuel `exc_info=True` devenu redondant. Ajoute la stacktrace au log : verifier qu'aucun test n'asserte le texte exact du log.
 
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/in/grpc/pii_service.py:190` — Use "logging.exception()" instead. <!-- 07542618 -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/in/grpc/pii_service.py:213` — Use "logging.exception()" instead. <!-- 40a3f8ac -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/in/grpc/pii_service.py:264` — Use "logging.exception()" instead. <!-- b54d28e6 -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/in/grpc/pii_service.py:545` — Use "logging.exception()" instead. <!-- 94303c43 -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/in/grpc/pii_service.py:1384` — Use "logging.exception()" instead. <!-- 1276b81b -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:182` — Use "logging.exception()" instead. <!-- 7e003740 -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:190` — Use "logging.exception()" instead. <!-- 02c6c930 -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:197` — Use "logging.exception()" instead. <!-- 37ab53e5 -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:290` — Use "logging.exception()" instead. <!-- bd9ceb1e -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:298` — Use "logging.exception()" instead. <!-- 1106d9ca -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:305` — Use "logging.exception()" instead. <!-- 1462a846 -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:363` — Use "logging.exception()" instead. <!-- 9f6b9392 -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:368` — Use "logging.exception()" instead. <!-- be00fd6d -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:401` — Use "logging.exception()" instead. <!-- ab12db97 -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:406` — Use "logging.exception()" instead. <!-- 14ff3b0d -->
-- [ ] `pii-detector-service/pii_detector/proto/generate_pb.py:93` — Use "logging.exception()" instead. <!-- 8d3cf2f8 -->
-- [ ] `pii-detector-service/pii_detector/server.py:66` — Use "logging.exception()" instead. <!-- 9d1022e3 -->
-- [ ] `pii-detector-service/pii_detector/server.py:226` — Use "logging.exception()" instead. <!-- 20c76b6e -->
-- [ ] `pii-detector-service/pii_detector/server.py:255` — Use "logging.exception()" instead. <!-- 3e8ef13b -->
-- [ ] `pii-detector-service/pii_detector/server.py:283` — Use "logging.exception()" instead. <!-- d85aab34 -->
-- [ ] `pii-detector-service/pii_detector/server.py:293` — Use "logging.exception()" instead. <!-- 0c855297 -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/in/grpc/pii_service.py:190` — Use "logging.exception()" instead. <!-- 07542618 -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/in/grpc/pii_service.py:213` — Use "logging.exception()" instead. <!-- 40a3f8ac -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/in/grpc/pii_service.py:264` — Use "logging.exception()" instead. <!-- b54d28e6 -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/in/grpc/pii_service.py:545` — Use "logging.exception()" instead. <!-- 94303c43 -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/in/grpc/pii_service.py:1384` — Use "logging.exception()" instead. <!-- 1276b81b -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:182` — Use "logging.exception()" instead. <!-- 7e003740 -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:190` — Use "logging.exception()" instead. <!-- 02c6c930 -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:197` — Use "logging.exception()" instead. <!-- 37ab53e5 -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:290` — Use "logging.exception()" instead. <!-- bd9ceb1e -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:298` — Use "logging.exception()" instead. <!-- 1106d9ca -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:305` — Use "logging.exception()" instead. <!-- 1462a846 -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:363` — Use "logging.exception()" instead. <!-- 9f6b9392 -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:368` — Use "logging.exception()" instead. <!-- be00fd6d -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:401` — Use "logging.exception()" instead. <!-- ab12db97 -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/out/database_config_adapter.py:406` — Use "logging.exception()" instead. <!-- 14ff3b0d -->
+- [x] `pii-detector-service/pii_detector/proto/generate_pb.py:93` — Use "logging.exception()" instead. <!-- 8d3cf2f8 -->
+- [x] `pii-detector-service/pii_detector/server.py:66` — Use "logging.exception()" instead. <!-- 9d1022e3 -->
+- [x] `pii-detector-service/pii_detector/server.py:226` — Use "logging.exception()" instead. <!-- 20c76b6e -->
+- [x] `pii-detector-service/pii_detector/server.py:255` — Use "logging.exception()" instead. <!-- 3e8ef13b -->
+- [x] `pii-detector-service/pii_detector/server.py:283` — Use "logging.exception()" instead. <!-- d85aab34 -->
+- [x] `pii-detector-service/pii_detector/server.py:293` — Use "logging.exception()" instead. <!-- 0c855297 -->
 
 ### Lot `java:S1128` — 6 issue(s)
 

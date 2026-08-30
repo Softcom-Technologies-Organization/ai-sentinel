@@ -31,9 +31,8 @@ def _load_module():
     spec = importlib.util.spec_from_file_location(
         "scripts_parse_throughput_logs", _SCRIPT_PATH
     )
-    assert spec is not None and spec.loader is not None, (
-        f"Cannot locate script at {_SCRIPT_PATH}"
-    )
+    assert spec is not None, f"Cannot locate script at {_SCRIPT_PATH}"
+    assert spec.loader is not None, f"Cannot locate script at {_SCRIPT_PATH}"
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)

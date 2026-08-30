@@ -273,7 +273,8 @@ def test_ondemand_forces_bench_reports_progress_and_persists(
     server.reset()
     outcome = _run_poller_once(detector, adapter)
 
-    assert outcome is not None and outcome.ran, "on-demand must force a bench"
+    assert outcome is not None, "on-demand must force a bench"
+    assert outcome.ran, "on-demand must force a bench"
     assert adapter.claim_calls == 1
 
     # Progress reported multiple times, non-decreasing percent, "<c>/4" messages.
@@ -287,7 +288,8 @@ def test_ondemand_forces_bench_reports_progress_and_persists(
     assert adapter.failed == []
     assert len(adapter.completed) == 1
     chosen, signature = adapter.completed[0]
-    assert isinstance(chosen, int) and chosen >= 1
+    assert isinstance(chosen, int)
+    assert chosen >= 1
     assert chosen == outcome.chosen
     assert signature == f"127.0.0.1:{server.port}|{detector._model_id}"
 

@@ -264,7 +264,8 @@ class TestOffsetRebasingAcrossChunks:
             text, pii_type_configs=configs, chunk_size=2, overlap=0
         )
         by_type = {e.pii_type: e for e in entities}
-        assert "PERSON" in by_type and "ID" in by_type
+        assert "PERSON" in by_type
+        assert "ID" in by_type
         # Global offsets must match the actual positions in the FULL text.
         assert text[by_type["PERSON"].start: by_type["PERSON"].end] == "name"
         assert text[by_type["ID"].start: by_type["ID"].end] == "id99"
@@ -455,7 +456,8 @@ class TestTokenChunkerOffsetRebasing:
             text, pii_type_configs=configs, chunk_size=3, overlap=0
         )
         by_type = {e.pii_type: e for e in entities}
-        assert "PERSON" in by_type and "IBAN" in by_type
+        assert "PERSON" in by_type
+        assert "IBAN" in by_type
         # Global offsets must index back to the exact spans in the FULL text.
         assert text[by_type["PERSON"].start: by_type["PERSON"].end] == "PERSON_Jean"
         assert text[by_type["IBAN"].start: by_type["IBAN"].end] == "IBAN_CH99"

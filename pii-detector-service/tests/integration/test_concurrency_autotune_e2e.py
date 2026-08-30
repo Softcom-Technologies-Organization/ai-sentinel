@@ -206,7 +206,8 @@ def test_autotuner_benches_and_persists_concurrency(fake_server, monkeypatch):
     fake_server.reset()
     chosen = run_startup_autotune(detector)
 
-    assert chosen is not None and chosen >= 2, f"expected concurrency >= 2, got {chosen}"
+    assert chosen is not None, "expected a concurrency to be chosen"
+    assert chosen >= 2, f"expected concurrency >= 2, got {chosen}"
     assert len(adapter.update_calls) == 1, "concurrency must be persisted exactly once"
 
     persisted_concurrency, persisted_signature = adapter.update_calls[0]

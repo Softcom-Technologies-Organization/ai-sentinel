@@ -201,12 +201,12 @@ Modifie du code de production, mais chaque correction est locale et sans effet d
 
 **Correction** : Supprimer l'import inutilise. Verifier qu'il n'est pas utilise uniquement dans un Javadoc.
 
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/in/PiiAccessController.java:14` — Remove this unused import 'org.springframework.web.bind.annotation.RequestParam'. <!-- 0a20db75 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/remediation/usecase/ExecuteObfuscationUseCaseTest.java:34` — Remove this unused import 'org.assertj.core.api.Assertions.assertThat'. <!-- ff45c38d -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/service/ScanSpaceStatsCollectorTest.java:20` — Remove this unused import 'org.mockito.ArgumentMatchers.anyLong'. <!-- eef2bd38 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/detection/adapter/in/DiscoveredLabelControllerTest.java:17` — Remove this unused import 'pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.PiiTypeConfigResponseDto'. <!-- 9089cf43 -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/remediation/adapter/in/PiiRemediationControllerTest.java:57` — Remove this unused import 'org.assertj.core.api.Assertions.assertThat'. <!-- 14f155ff -->
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/in/PiiAccessControllerTest.java:27` — Remove this unused import 'org.assertj.core.api.Assertions.assertThat'. <!-- 7de5ac30 -->
+- [x] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/in/PiiAccessController.java:14` — Remove this unused import 'org.springframework.web.bind.annotation.RequestParam'. <!-- 0a20db75 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/remediation/usecase/ExecuteObfuscationUseCaseTest.java:34` — Remove this unused import 'org.assertj.core.api.Assertions.assertThat'. <!-- ff45c38d -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/service/ScanSpaceStatsCollectorTest.java:20` — Remove this unused import 'org.mockito.ArgumentMatchers.anyLong'. <!-- eef2bd38 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/detection/adapter/in/DiscoveredLabelControllerTest.java:17` — Remove this unused import 'pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.PiiTypeConfigResponseDto'. <!-- 9089cf43 -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/remediation/adapter/in/PiiRemediationControllerTest.java:57` — Remove this unused import 'org.assertj.core.api.Assertions.assertThat'. <!-- 14f155ff -->
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/in/PiiAccessControllerTest.java:27` — Remove this unused import 'org.assertj.core.api.Assertions.assertThat'. <!-- 7de5ac30 -->
 
 ### Lot `python:S9073` — 6 issue(s)
 

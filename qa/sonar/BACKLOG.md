@@ -227,11 +227,11 @@ Modifie du code de production, mais chaque correction est locale et sans effet d
 
 **Correction** : Ne garder que l'appel qui leve dans le bloc `pytest.raises`. Le reste remonte au-dessus.
 
-- [ ] `pii-detector-service/tests/unit/test_regex_detector_branches.py:41` — Refactor this exception test to have only one invocation possibly throwing an exception. <!-- 361bbdd0 -->
-- [ ] `pii-detector-service/tests/unit/test_regex_detector_branches.py:58` — Refactor this exception test to have only one invocation possibly throwing an exception. <!-- 8146d82b -->
-- [ ] `pii-detector-service/tests/unit/test_semantic_chunker.py:224` — Refactor this exception test to have only one invocation possibly throwing an exception. <!-- f6295519 -->
-- [ ] `pii-detector-service/tests/unit/test_semantic_chunker.py:230` — Refactor this exception test to have only one invocation possibly throwing an exception. <!-- bd2b9156 -->
-- [ ] `pii-detector-service/tests/unit/test_semantic_chunker.py:236` — Refactor this exception test to have only one invocation possibly throwing an exception. <!-- 87c72831 -->
+- [x] `pii-detector-service/tests/unit/test_regex_detector_branches.py:41` — Refactor this exception test to have only one invocation possibly throwing an exception. <!-- 361bbdd0 -->
+- [x] `pii-detector-service/tests/unit/test_regex_detector_branches.py:58` — Refactor this exception test to have only one invocation possibly throwing an exception. <!-- 8146d82b -->
+- [x] `pii-detector-service/tests/unit/test_semantic_chunker.py:224` — Refactor this exception test to have only one invocation possibly throwing an exception. <!-- f6295519 -->
+- [x] `pii-detector-service/tests/unit/test_semantic_chunker.py:230` — Refactor this exception test to have only one invocation possibly throwing an exception. <!-- bd2b9156 -->
+- [x] `pii-detector-service/tests/unit/test_semantic_chunker.py:236` — Refactor this exception test to have only one invocation possibly throwing an exception. <!-- 87c72831 -->
 
 ### Lot `java:S7467` — 2 issue(s)
 

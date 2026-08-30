@@ -38,8 +38,9 @@ def _write_patterns_toml(tmp_path: Path, body: str) -> Path:
 class TestLoadingErrors:
     def test_Should_RaiseFileNotFound_When_ConfigPathMissing(self, tmp_path: Path) -> None:
         missing = tmp_path / "does-not-exist.toml"
+        config = _config()
         with pytest.raises(FileNotFoundError, match="Regex patterns config not found"):
-            RegexDetector(config=_config(), config_path=missing)
+            RegexDetector(config=config, config_path=missing)
 
     def test_Should_RaiseValueError_When_PatternsConfigMalformed(
         self, tmp_path: Path
@@ -55,8 +56,9 @@ class TestLoadingErrors:
             priority = "high"
             """,
         )
+        config = _config()
         with pytest.raises(ValueError, match="Failed to load regex patterns"):
-            RegexDetector(config=_config(), config_path=path)
+            RegexDetector(config=config, config_path=path)
 
     def test_Should_SkipDisabledPatterns_When_EnabledFalse(self, tmp_path: Path) -> None:
         path = _write_patterns_toml(

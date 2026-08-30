@@ -221,22 +221,19 @@ class TestMinistralTokenChunker:
     """Token-window chunker driven by the Ministral HF tokenizer offsets."""
 
     def test_Should_RaiseValueError_When_ChunkSizeIsZero(self):
+        tokenizer = _WhitespaceFakeTokenizer()
         with pytest.raises(ValueError, match="chunk_size"):
-            MinistralTokenChunker(
-                tokenizer=_WhitespaceFakeTokenizer(), chunk_size=0, overlap=0
-            )
+            MinistralTokenChunker(tokenizer=tokenizer, chunk_size=0, overlap=0)
 
     def test_Should_RaiseValueError_When_OverlapNegative(self):
+        tokenizer = _WhitespaceFakeTokenizer()
         with pytest.raises(ValueError, match="overlap"):
-            MinistralTokenChunker(
-                tokenizer=_WhitespaceFakeTokenizer(), chunk_size=2048, overlap=-1
-            )
+            MinistralTokenChunker(tokenizer=tokenizer, chunk_size=2048, overlap=-1)
 
     def test_Should_RaiseValueError_When_OverlapGreaterOrEqualChunkSize(self):
+        tokenizer = _WhitespaceFakeTokenizer()
         with pytest.raises(ValueError, match="overlap"):
-            MinistralTokenChunker(
-                tokenizer=_WhitespaceFakeTokenizer(), chunk_size=100, overlap=100
-            )
+            MinistralTokenChunker(tokenizer=tokenizer, chunk_size=100, overlap=100)
 
     def test_Should_ReturnEmptyList_When_TextIsEmpty(self):
         chunker = MinistralTokenChunker(

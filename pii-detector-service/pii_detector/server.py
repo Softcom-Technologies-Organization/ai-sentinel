@@ -63,7 +63,7 @@ def verify_dependencies(debug: bool = False) -> None:
             logger.debug(f"Transformers module file: {getattr(transformers, '__file__', 'unknown')}")
     except Exception as e:
         logger.error("Dependency preflight failed while importing transformers/pipeline.")
-        logger.error(f"Details: {e}")
+        logger.exception(f"Details: {e}")
         logger.info("Troubleshooting steps (Windows PowerShell):")
         logger.info("  1) Ensure you're using the intended interpreter (venv vs system Python).")
         logger.info("  2) Reinstall deps: py -m pip install -U pip && py -m pip install -r requirements.txt")
@@ -223,7 +223,7 @@ def check_environment():
     try:
         _verify_grpc_generated_code()
     except Exception as e:
-        logger.error(f"gRPC code not found: {str(e)}")
+        logger.exception(f"gRPC code not found: {str(e)}")
         logger.error("Please run: python -m proto.generate_pb")
         sys.exit(1)
 
@@ -252,7 +252,7 @@ def main():
     try:
         verify_dependencies(debug=args.debug)
     except ImportError as e:
-        logger.error(str(e))
+        logger.exception(str(e))
         sys.exit(1)
 
     # Check if the environment is properly set up
@@ -280,7 +280,7 @@ def main():
             logger.info("Server stopped gracefully")
 
     except ImportError as e:
-        logger.error(f"Error importing server module: {str(e)}")
+        logger.exception(f"Error importing server module: {str(e)}")
         msg = str(e).lower()
         if 'pipeline' in msg:
             logger.error("Hint: This often indicates an issue with the Hugging Face 'transformers' installation or a shadowed module named 'pipeline'.")
@@ -290,7 +290,7 @@ def main():
             logger.error("Please make sure all dependencies are installed (py -m pip install -r requirements.txt)")
         sys.exit(1)
     except Exception as e:
-        logger.error(f"Error starting server: {str(e)}")
+        logger.exception(f"Error starting server: {str(e)}")
         sys.exit(1)
 
 

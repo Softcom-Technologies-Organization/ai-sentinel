@@ -179,7 +179,7 @@ class DatabaseConfigAdapter:
             return config
 
         except psycopg2.OperationalError as e:
-            logger.error(
+            logger.exception(
                 f"Database connection failed: {e}. "
                 "Check DB_HOST, DB_PORT, DB_USER, DB_PASSWORD environment variables. "
                 "Will use default configuration from TOML file."
@@ -187,14 +187,14 @@ class DatabaseConfigAdapter:
             return None
 
         except psycopg2.Error as e:
-            logger.error(
+            logger.exception(
                 f"Database query failed: {e}. "
                 "Will use default configuration from TOML file."
             )
             return None
 
         except Exception as e:
-            logger.error(
+            logger.exception(
                 f"Unexpected error fetching config: {e}. "
                 "Will use default configuration from TOML file."
             )
@@ -287,7 +287,7 @@ class DatabaseConfigAdapter:
             return configs
 
         except psycopg2.OperationalError as e:
-            logger.error(
+            logger.exception(
                 f"Database connection failed fetching PII type configs: {e}. "
                 "Check DB_HOST, DB_PORT, DB_USER, DB_PASSWORD environment variables. "
                 "Will use default TOML configuration."
@@ -295,14 +295,14 @@ class DatabaseConfigAdapter:
             return None
 
         except psycopg2.Error as e:
-            logger.error(
+            logger.exception(
                 f"Database query failed fetching PII type configs: {e}. "
                 "Will use default TOML configuration."
             )
             return None
 
         except Exception as e:
-            logger.error(
+            logger.exception(
                 f"Unexpected error fetching PII type configs: {e}. "
                 "Will use default TOML configuration."
             )
@@ -360,12 +360,12 @@ class DatabaseConfigAdapter:
                 )
             return updated
         except psycopg2.Error as e:
-            logger.error("Failed to persist auto-tuned concurrency: %s", e)
+            logger.exception("Failed to persist auto-tuned concurrency: %s", e)
             if connection:
                 connection.rollback()
             return False
         except Exception as e:  # pragma: no cover - defensive
-            logger.error("Unexpected error persisting concurrency: %s", e)
+            logger.exception("Unexpected error persisting concurrency: %s", e)
             if connection:
                 connection.rollback()
             return False
@@ -398,12 +398,12 @@ class DatabaseConfigAdapter:
             if quiet_conn_errors:
                 logger.debug("DB unavailable (poller, quiet): %s", e)
             else:
-                logger.error("DB write failed (connection): %s", e)
+                logger.exception("DB write failed (connection): %s", e)
             if connection:
                 connection.rollback()
             return -1
         except psycopg2.Error as e:
-            logger.error("DB write failed: %s", e)
+            logger.exception("DB write failed: %s", e)
             if connection:
                 connection.rollback()
             return -1

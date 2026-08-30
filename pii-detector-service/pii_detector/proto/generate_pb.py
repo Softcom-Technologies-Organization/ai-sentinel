@@ -92,7 +92,7 @@ def generate_grpc_code():
             logger.info(f"Created {init_file}")
 
     except Exception as e:
-        logger.error(f"Error generating gRPC code: {str(e)}")
+        logger.exception(f"Error generating gRPC code: {str(e)}")
         sys.exit(1)
 
 if __name__ == "__main__":

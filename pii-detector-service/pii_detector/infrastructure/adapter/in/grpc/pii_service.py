@@ -187,7 +187,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                             "[AUTOTUNE] on-demand benchmark failed: %s", outcome.reason
                         )
             except Exception:  # pragma: no cover - defensive
-                logger.error("[AUTOTUNE] bench poller iteration failed", exc_info=True)
+                logger.exception("[AUTOTUNE] bench poller iteration failed")
             time.sleep(poll_seconds)
 
     def _init_worker_pool(self) -> None:
@@ -210,9 +210,9 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         except Exception:
             # Defensive: a pool failure must never prevent the service from
             # starting — fall back to the historical single-detector path.
-            logger.error(
+            logger.exception(
                 "Failed to start inference worker pool; falling back to "
-                "in-process detection", exc_info=True)
+                "in-process detection")
             self._worker_pool = None
     
     def _run_startup_concurrency_autotune(self) -> None:
@@ -261,7 +261,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 self._check_and_log_memory()
                 time.sleep(30)  # Check every 30 seconds
             except Exception as e:
-                logger.error(f"Error in memory monitoring: {str(e)}")
+                logger.exception(f"Error in memory monitoring: {str(e)}")
                 time.sleep(30)
     
     def _check_and_log_memory(self):
@@ -542,7 +542,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 lm_studio_port=detector_flags.get('lm_studio_port'),
             )
         except Exception as exc:
-            logger.error(
+            logger.exception(
                 f"[{request_id}] Detector health check failed: "
                 f"{type(exc).__name__}: {exc}"
             )
@@ -1384,7 +1384,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             try:
                 self._populate_proto_entity(response.entities.add(), entity)
             except (ValueError, TypeError) as e:
-                logger.error(
+                logger.exception(
                     f"[{request_id}] Failed to convert entity to protobuf: {e} "
                     f"(type={entity.get('type')})"
                 )

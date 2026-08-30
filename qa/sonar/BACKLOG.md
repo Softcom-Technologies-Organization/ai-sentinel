@@ -214,12 +214,12 @@ Modifie du code de production, mais chaque correction est locale et sans effet d
 
 **Correction** : Scinder l'assertion composite (`assert a and b`) en deux assertions distinctes. Meme conditions, meme resultat.
 
-- [ ] `pii-detector-service/tests/integration/test_concurrency_autotune_e2e.py:209` — Split this composite assertion into separate assertions. <!-- e1618a2c -->
-- [ ] `pii-detector-service/tests/integration/test_ondemand_benchmark_e2e.py:276` — Split this composite assertion into separate assertions. <!-- 838c0911 -->
-- [ ] `pii-detector-service/tests/integration/test_ondemand_benchmark_e2e.py:290` — Split this composite assertion into separate assertions. <!-- edb4ca10 -->
-- [ ] `pii-detector-service/tests/unit/scripts/test_parse_throughput_logs.py:34` — Split this composite assertion into separate assertions. <!-- 8609fc00 -->
-- [ ] `pii-detector-service/tests/unit/test_ministral_detector.py:266` — Split this composite assertion into separate assertions. <!-- 9cd5881f -->
-- [ ] `pii-detector-service/tests/unit/test_ministral_detector.py:456` — Split this composite assertion into separate assertions. <!-- 9d1fd2be -->
+- [x] `pii-detector-service/tests/integration/test_concurrency_autotune_e2e.py:209` — Split this composite assertion into separate assertions. <!-- e1618a2c -->
+- [x] `pii-detector-service/tests/integration/test_ondemand_benchmark_e2e.py:276` — Split this composite assertion into separate assertions. <!-- 838c0911 -->
+- [x] `pii-detector-service/tests/integration/test_ondemand_benchmark_e2e.py:290` — Split this composite assertion into separate assertions. <!-- edb4ca10 -->
+- [x] `pii-detector-service/tests/unit/scripts/test_parse_throughput_logs.py:34` — Split this composite assertion into separate assertions. <!-- 8609fc00 -->
+- [x] `pii-detector-service/tests/unit/test_ministral_detector.py:266` — Split this composite assertion into separate assertions. <!-- 9cd5881f -->
+- [x] `pii-detector-service/tests/unit/test_ministral_detector.py:456` — Split this composite assertion into separate assertions. <!-- 9d1fd2be -->
 
 ### Lot `python:S5778` — 5 issue(s)
 

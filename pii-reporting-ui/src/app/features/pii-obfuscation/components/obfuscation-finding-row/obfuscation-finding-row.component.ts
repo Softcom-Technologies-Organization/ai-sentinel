@@ -71,13 +71,11 @@ export class ObfuscationFindingRowComponent {
     this.itemCardUtils.attachmentKind(this.finding().attachmentName)
   );
 
+  // Findings that cannot be auto-redacted (attachments) stay selectable: the checkbox
+  // is also the false-positive gesture, and reviewers must be able to flag them.
   readonly checkboxDisabled = computed(() => {
     const current = this.finding();
-    return (
-      current.status === 'REDACTED' ||
-      current.status === 'MANUALLY_HANDLED' ||
-      !current.eligibleForRedaction
-    );
+    return current.status === 'REDACTED' || current.status === 'MANUALLY_HANDLED';
   });
 
   readonly treated = computed(

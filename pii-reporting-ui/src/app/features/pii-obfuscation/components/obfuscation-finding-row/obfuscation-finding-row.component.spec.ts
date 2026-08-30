@@ -26,6 +26,7 @@ const FR_TRANSLATIONS = {
     },
     ineligible: {
       attachment: 'Pièce jointe non caviardable ({{kind}})',
+      selectHint: 'Pièce jointe : caviardage automatique impossible.',
     },
   },
 };
@@ -153,7 +154,7 @@ describe('ObfuscationFindingRowComponent', () => {
     expect(value?.textContent).not.toContain('[EMAIL]');
   });
 
-  it('Should_GreyOutAndExplain_When_ApiSaysIneligible', () => {
+  it('Should_KeepCheckboxEnabledAndExplain_When_ApiSaysIneligible', () => {
     createComponent(
       finding({
         eligibleForRedaction: false,
@@ -162,12 +163,18 @@ describe('ObfuscationFindingRowComponent', () => {
       })
     );
 
-    const root = query('obfuscation-row');
-    expect(root?.className).toContain('ob-occ--ineligible');
-    expect(query<HTMLInputElement>('obfuscation-row-checkbox')?.disabled).toBe(true);
+    const checkbox = query<HTMLInputElement>('obfuscation-row-checkbox');
+    expect(checkbox?.disabled).toBe(false);
+    expect(checkbox?.title).toContain('caviardage automatique impossible');
     expect(query('obfuscation-row-ineligible')?.textContent).toContain(
       'Pièce jointe non caviardable (pdf)'
     );
+  });
+
+  it('Should_NotShowSelectHint_When_FindingIsRedactable', () => {
+    createComponent(finding());
+
+    expect(query<HTMLInputElement>('obfuscation-row-checkbox')?.title).toBe('');
   });
 
   it('Should_ShowRawReason_When_IneligibleWithoutAttachment', () => {

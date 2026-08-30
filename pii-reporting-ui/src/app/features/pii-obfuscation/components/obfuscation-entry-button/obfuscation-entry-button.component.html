@@ -1,15 +1,17 @@
 @if (remediationConfig.enabled()) {
-  <button type="button"
-          class="obfuscation-entry-btn"
-          [class.obfuscation-entry-btn--labeled]="labeled()"
-          [attr.data-testid]="testId()"
-          [attr.aria-label]="labelKey() | transloco"
-          [pTooltip]="labeled() ? undefined : (labelKey() | transloco)"
-          tooltipPosition="top"
-          (click)="openObfuscation($event)">
+  <a class="obfuscation-entry-btn"
+     [class.obfuscation-entry-btn--labeled]="labeled()"
+     [routerLink]="['/obfuscation']"
+     [queryParams]="queryParams()"
+     target="_blank"
+     [attr.data-testid]="testId()"
+     [attr.aria-label]="labelKey() | transloco"
+     [pTooltip]="labeled() ? undefined : (labelKey() | transloco)"
+     tooltipPosition="top"
+     (click)="$event.stopPropagation()">
     <i class="pi pi-eye-slash" aria-hidden="true"></i>
     @if (labeled()) {
       <span>{{ labelKey() | transloco }}</span>
     }
-  </button>
+  </a>
 }

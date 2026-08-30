@@ -89,6 +89,7 @@ export const TestIds = {
       root: 'obfuscation-bulk-bar',
       counter: 'obfuscation-bulk-counter',
       fpNote: 'obfuscation-bulk-fp-note',
+      attachmentNote: 'obfuscation-bulk-attachment-note',
       chip: 'obfuscation-bulk-chip',
       moreChip: 'obfuscation-bulk-more-chip',
       clear: 'obfuscation-bulk-clear',

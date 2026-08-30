@@ -2,7 +2,6 @@
   class="ob-occ"
   [class.ob-occ--selected]="finding().selected"
   [class.ob-occ--treated]="treated()"
-  [class.ob-occ--ineligible]="!finding().eligibleForRedaction"
   [attr.data-testid]="testIds.root"
 >
   <input
@@ -12,6 +11,9 @@
     [checked]="finding().selected"
     [disabled]="checkboxDisabled()"
     (change)="toggled.emit()"
+    [title]="
+      finding().eligibleForRedaction ? '' : ('obfuscation.ineligible.selectHint' | transloco)
+    "
     [attr.aria-label]="'obfuscation.select' | transloco"
     [attr.data-testid]="testIds.checkbox"
   />

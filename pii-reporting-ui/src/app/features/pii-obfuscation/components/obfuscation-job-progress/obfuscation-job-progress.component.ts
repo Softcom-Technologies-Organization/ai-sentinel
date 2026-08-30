@@ -10,11 +10,12 @@ import {
   signal
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { TranslocoModule } from '@jsverse/transloco';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { timer } from 'rxjs';
 import { switchMap, takeWhile } from 'rxjs/operators';
 import { ObfuscationJobDto } from '../../../../core/models/remediation.model';
 import { RemediationApiService } from '../../../../core/services/remediation-api.service';
+import { toTranslocoKey } from '../../../../core/services/error-notification.service';
 import { TestIds } from '../../../test-ids.constants';
 
 export const JOB_POLL_INTERVAL_MS = 1500;
@@ -36,6 +37,7 @@ export class ObfuscationJobProgressComponent implements OnInit {
   readonly completed = output<ObfuscationJobDto>();
 
   private readonly remediationApi = inject(RemediationApiService);
+  private readonly translocoService = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly testIds = TestIds.obfuscation.jobProgress;
@@ -62,6 +64,19 @@ export class ObfuscationJobProgressComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((job) => this.applyJobUpdate(job));
+  }
+
+  /**
+   * The wording explaining why one finding was not anonymised.
+   *
+   * <p>The backend names the reason with a key rather than a sentence, so the same
+   * job reads in French or English depending on who opens it. An unknown key is
+   * shown as-is: hiding it would leave an outcome with no explanation at all.
+   */
+  reasonLabel(reason: string): string {
+    const key = toTranslocoKey(reason);
+    const translated = this.translocoService.translate(key);
+    return translated === key ? reason : translated;
   }
 
   private applyJobUpdate(job: ObfuscationJobDto): void {

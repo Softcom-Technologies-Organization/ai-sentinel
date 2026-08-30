@@ -187,7 +187,7 @@ describe('PiiCardExpandedComponent', () => {
     fixture.componentRef.setInput('revealed', false);
     fixture.componentRef.setInput('isRevealing', false);
     fixture.detectChanges();
-    const entry = fixture.nativeElement.querySelector('app-obfuscation-entry-button button');
+    const entry = fixture.nativeElement.querySelector('app-obfuscation-entry-button a');
     expect(entry).toBeFalsy();
   });
 

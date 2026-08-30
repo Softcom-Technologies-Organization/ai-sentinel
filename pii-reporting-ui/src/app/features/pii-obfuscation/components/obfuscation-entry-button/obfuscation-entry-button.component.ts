@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { Params, Router } from '@angular/router';
+import { Params, RouterLink } from '@angular/router';
 import { TranslocoModule } from '@jsverse/transloco';
 import { TooltipModule } from 'primeng/tooltip';
 import { RemediationConfigService } from '../../../../core/services/remediation-config.service';
@@ -13,7 +13,7 @@ import { TestIds } from '../../../test-ids.constants';
 @Component({
   selector: 'app-obfuscation-entry-button',
   standalone: true,
-  imports: [TranslocoModule, TooltipModule],
+  imports: [TranslocoModule, TooltipModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './obfuscation-entry-button.component.html',
   styleUrl: './obfuscation-entry-button.component.css',
@@ -25,7 +25,6 @@ export class ObfuscationEntryButtonComponent {
   readonly labeled = input(false);
 
   readonly remediationConfig = inject(RemediationConfigService);
-  private readonly router = inject(Router);
 
   readonly labelKey = computed(() => {
     if (this.attachmentName()) {
@@ -41,12 +40,7 @@ export class ObfuscationEntryButtonComponent {
     return this.pageId() ? TestIds.obfuscation.entryButtons.page : TestIds.obfuscation.entryButtons.space;
   });
 
-  openObfuscation(event: Event): void {
-    event.stopPropagation();
-    this.router.navigate(['/obfuscation'], { queryParams: this.buildQueryParams() });
-  }
-
-  private buildQueryParams(): Params {
+  readonly queryParams = computed<Params>(() => {
     const params: Params = { spaceKey: this.spaceKey() };
     const pageId = this.pageId();
     if (pageId) {
@@ -58,5 +52,5 @@ export class ObfuscationEntryButtonComponent {
     }
     params['preselect'] = 'true';
     return params;
-  }
+  });
 }

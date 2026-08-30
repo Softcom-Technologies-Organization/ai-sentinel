@@ -1,5 +1,5 @@
 @if (plan(); as currentPlan) {
-  @if (currentPlan.totalFindings > 0) {
+  @if (currentPlan.totalFindings > 0 || currentPlan.attachmentExclusions > 0) {
     <div
       class="ob-bulkbar"
       role="region"
@@ -17,6 +17,14 @@
               {{
                 'obfuscation.bulk.fpSignaled'
                   | transloco: { count: currentPlan.falsePositivesReported }
+              }}
+            </small>
+          }
+          @if (currentPlan.attachmentExclusions > 0) {
+            <small [attr.data-testid]="testIds.attachmentNote">
+              {{
+                'obfuscation.bulk.attachmentsExcluded'
+                  | transloco: { count: currentPlan.attachmentExclusions }
               }}
             </small>
           }
@@ -60,6 +68,8 @@
           type="button"
           class="ob-btn ob-btn--primary"
           (click)="obfuscate.emit()"
+          [disabled]="currentPlan.totalFindings === 0"
+          [title]="'obfuscation.bulk.obfuscateHint' | transloco"
           [attr.data-testid]="testIds.obfuscate"
         >
           <i class="pi pi-eye-slash" aria-hidden="true"></i>

@@ -10,12 +10,16 @@ const FR_TRANSLATIONS = {
       ariaLabel: 'Actions groupées',
       selectedForObf: 'sélectionnés à caviarder',
       fpSignaled: '{{count}} faux positif(s) signalé(s)',
+      attachmentsExcluded:
+        '{{count}} pièce(s) jointe(s) sélectionnée(s), exclue(s) du caviardage automatique',
       clear: 'Effacer',
       markTreated: 'Marquer traité',
       markTreatedHint: 'Marquer la sélection comme traitée manuellement',
       markFp: 'Signaler faux positif',
       markFpHint: 'Signaler la sélection comme faux positif',
       obfuscateN: 'Caviarder ({{count}})',
+      obfuscateHint:
+        'Caviarder les occurrences sélectionnées dans le corps des pages — les pièces jointes ne peuvent pas être caviardées automatiquement',
     },
   },
 };
@@ -73,6 +77,28 @@ describe('ObfuscationBulkBarComponent', () => {
     createComponent(plan({ totalFindings: 0 }));
 
     expect(query('obfuscation-bulk-bar')).toBeFalsy();
+  });
+
+  it('Should_StayVisibleWithObfuscationDisabled_When_OnlyAttachmentsSelected', () => {
+    createComponent(plan({ totalFindings: 0, attachmentExclusions: 2 }));
+
+    expect(query('obfuscation-bulk-bar')).toBeTruthy();
+    expect(query('obfuscation-bulk-report-fp')).toBeTruthy();
+    expect(query<HTMLButtonElement>('obfuscation-bulk-obfuscate')?.disabled).toBe(true);
+  });
+
+  it('Should_ShowAttachmentNoteFromPlan_When_AttachmentsExcluded', () => {
+    createComponent(plan({ attachmentExclusions: 2 }));
+
+    expect(query('obfuscation-bulk-attachment-note')?.textContent).toContain(
+      '2 pièce(s) jointe(s) sélectionnée(s)'
+    );
+  });
+
+  it('Should_HideAttachmentNote_When_NoAttachmentExcluded', () => {
+    createComponent(plan({ attachmentExclusions: 0 }));
+
+    expect(query('obfuscation-bulk-attachment-note')).toBeFalsy();
   });
 
   it('Should_RenderPlanCounterVerbatim_When_ChipsWouldImplyAnotherTotal', () => {

@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ObfuscationEntryButtonComponent } from './obfuscation-entry-button.component';
@@ -19,11 +19,9 @@ const FR_TRANSLATIONS = {
 describe('ObfuscationEntryButtonComponent', () => {
   let fixture: ComponentFixture<ObfuscationEntryButtonComponent>;
   let remediationConfigMock: { enabled: ReturnType<typeof signal<boolean>> };
-  let routerMock: { navigate: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     remediationConfigMock = { enabled: signal(false) };
-    routerMock = { navigate: vi.fn() };
 
     await TestBed.configureTestingModule({
       imports: [
@@ -36,7 +34,7 @@ describe('ObfuscationEntryButtonComponent', () => {
       ],
       providers: [
         { provide: RemediationConfigService, useValue: remediationConfigMock },
-        { provide: Router, useValue: routerMock },
+        provideRouter([]),
       ],
     }).compileComponents();
   });
@@ -56,7 +54,7 @@ describe('ObfuscationEntryButtonComponent', () => {
   it('Should_HideButton_When_RemediationDisabled', () => {
     createComponent({ spaceKey: 'SPACE' });
 
-    expect(fixture.nativeElement.querySelector('button')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('a')).toBeFalsy();
   });
 
   it('Should_ShowButton_When_RemediationEnabled', () => {
@@ -68,39 +66,39 @@ describe('ObfuscationEntryButtonComponent', () => {
     expect(button).toBeTruthy();
   });
 
-  it('Should_NavigateWithSpaceScopeAndPreselect_When_SpaceEntryClicked', () => {
+  it('Should_LinkToSpaceScopeWithPreselect_When_SpaceEntryRendered', () => {
     remediationConfigMock.enabled.set(true);
     createComponent({ spaceKey: 'SPACE' });
 
-    fixture.nativeElement.querySelector('button').click();
+    const link = fixture.nativeElement.querySelector('[data-testid="btn-obfuscate-space"]');
 
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/obfuscation'], {
-      queryParams: { spaceKey: 'SPACE', preselect: 'true' },
-    });
+    expect(link.getAttribute('href')).toBe('/obfuscation?spaceKey=SPACE&preselect=true');
   });
 
-  it('Should_NavigateWithPageScope_When_PageEntryClicked', () => {
+  it('Should_LinkToPageScope_When_PageEntryRendered', () => {
     remediationConfigMock.enabled.set(true);
     createComponent({ spaceKey: 'SPACE', pageId: 'p1' });
 
-    const button = fixture.nativeElement.querySelector('[data-testid="btn-obfuscate-page"]');
-    button.click();
+    const link = fixture.nativeElement.querySelector('[data-testid="btn-obfuscate-page"]');
 
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/obfuscation'], {
-      queryParams: { spaceKey: 'SPACE', pageId: 'p1', preselect: 'true' },
-    });
+    expect(link.getAttribute('href')).toBe('/obfuscation?spaceKey=SPACE&pageId=p1&preselect=true');
   });
 
-  it('Should_NavigateWithAttachmentScope_When_AttachmentEntryClicked', () => {
+  it('Should_LinkToAttachmentScope_When_AttachmentEntryRendered', () => {
     remediationConfigMock.enabled.set(true);
     createComponent({ spaceKey: 'SPACE', pageId: 'p1', attachmentName: 'doc.pdf' });
 
-    const button = fixture.nativeElement.querySelector('[data-testid="btn-obfuscate-attachment"]');
-    button.click();
+    const link = fixture.nativeElement.querySelector('[data-testid="btn-obfuscate-attachment"]');
 
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/obfuscation'], {
-      queryParams: { spaceKey: 'SPACE', pageId: 'p1', attachmentName: 'doc.pdf', preselect: 'true' },
-    });
+    expect(link.getAttribute('href'))
+      .toBe('/obfuscation?spaceKey=SPACE&pageId=p1&attachmentName=doc.pdf&preselect=true');
+  });
+
+  it('Should_OpenInNewTab_When_EntryRendered', () => {
+    remediationConfigMock.enabled.set(true);
+    createComponent({ spaceKey: 'SPACE' });
+
+    expect(fixture.nativeElement.querySelector('a').getAttribute('target')).toBe('_blank');
   });
 
   it('Should_StopEventPropagation_When_Clicked', () => {
@@ -109,7 +107,7 @@ describe('ObfuscationEntryButtonComponent', () => {
 
     const rowClickSpy = vi.fn();
     fixture.nativeElement.addEventListener('click', rowClickSpy);
-    fixture.nativeElement.querySelector('button').click();
+    fixture.nativeElement.querySelector('a').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(rowClickSpy).not.toHaveBeenCalled();
   });
@@ -118,7 +116,7 @@ describe('ObfuscationEntryButtonComponent', () => {
     remediationConfigMock.enabled.set(true);
     createComponent({ spaceKey: 'SPACE' });
 
-    const button = fixture.nativeElement.querySelector('button');
-    expect(button.getAttribute('aria-label')).toBe("Caviarder l'espace");
+    const link = fixture.nativeElement.querySelector('a');
+    expect(link.getAttribute('aria-label')).toBe("Caviarder l'espace");
   });
 });

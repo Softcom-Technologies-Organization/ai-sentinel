@@ -176,6 +176,9 @@ describe('PiiObfuscationComponent', () => {
     // The shared app header pulls in ThemeService, which probes matchMedia at
     // construction; jsdom does not implement it.
     globalThis.matchMedia ??= vi.fn().mockReturnValue({ matches: false }) as unknown as typeof globalThis.matchMedia;
+    // ThemeService also reads localStorage: Node 22+ shadows the jsdom one with an
+    // undefined accessor unless --localstorage-file is passed.
+    globalThis.localStorage ??= { getItem: () => null, setItem: () => {} } as unknown as Storage;
     // The header's data source tabs (PrimeNG TabList) observe resize; jsdom lacks it.
     globalThis.ResizeObserver ??= class {
       observe(): void {}

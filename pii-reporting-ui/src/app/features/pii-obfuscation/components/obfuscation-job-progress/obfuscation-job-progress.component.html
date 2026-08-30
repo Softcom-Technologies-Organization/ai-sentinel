@@ -21,7 +21,7 @@
             <span class="ob-job-outcome-type">{{ outcome.piiType }}</span>
             <span class="ob-job-outcome-code">{{ outcome.outcome }}</span>
             @if (outcome.reason) {
-              <span class="ob-job-outcome-reason">{{ outcome.reason }}</span>
+              <span class="ob-job-outcome-reason">{{ reasonLabel(outcome.reason) }}</span>
             }
           </li>
         }

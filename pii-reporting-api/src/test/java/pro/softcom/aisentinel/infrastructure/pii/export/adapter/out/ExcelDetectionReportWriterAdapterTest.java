@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 @DisplayName("Excel file and sheet name sanitization tests")
 class ExcelDetectionReportWriterAdapterTest {
@@ -204,6 +205,32 @@ class ExcelDetectionReportWriterAdapterTest {
                 });
             }
         }
+    }
+
+    @Test
+    @DisplayName("Should_ReportOnlyTheOriginalFailure_When_StartReportFailsBeforeOpeningTheStream")
+    void Should_ReportOnlyTheOriginalFailure_When_StartReportFailsBeforeOpeningTheStream() throws IOException {
+        // Given
+        Path regularFileUsedAsParentDirectory = Files.createFile(tempDir.resolve("not-a-directory"));
+        ReflectionTestUtils.setField(adapter, "exportDirectory", regularFileUsedAsParentDirectory.resolve("nested").toString());
+        ExportContext context = createExportContext("Any-Space");
+
+        // When
+        Throwable thrown = catchThrowable(() -> {
+            try (var session = adapter.openReportSession("scan-123", context)) {
+                session.startReport();
+            }
+        });
+
+        // Then
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(thrown)
+                    .as("The directory creation failure must surface")
+                    .isInstanceOf(IOException.class);
+            softly.assertThat(thrown)
+                    .as("Closing a session that never opened its stream must not add a NullPointerException")
+                    .hasNoSuppressedExceptions();
+        });
     }
 
     private ExportContext createExportContext(String reportName) {

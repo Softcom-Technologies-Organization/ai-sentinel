@@ -10,6 +10,8 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pro.softcom.aisentinel.application.confluence.exception.ConfluencePageNotFoundException;
+import pro.softcom.aisentinel.application.confluence.exception.ConfluenceSpaceNotFoundException;
 import pro.softcom.aisentinel.application.confluence.port.in.ConfluenceSpacePort;
 import pro.softcom.aisentinel.application.confluence.port.in.ConfluenceSpaceUpdateInfoPort;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
@@ -44,13 +46,13 @@ public class ConfluenceController {
     public CompletableFuture<ResponseEntity<@NonNull ConfluenceHealthCheckResponse>> checkHealth() {
         return confluenceSpacePort.testConnection()
                 .thenApply(isConnected -> {
-                    var response = new ConfluenceHealthCheckResponse(
-                            Boolean.TRUE.equals(isConnected) ? "UP" : "DOWN",
-                            Boolean.TRUE.equals(isConnected) ? "Connection to Confluence established" : "Confluence not accessible"
-                    );
-                    return Boolean.TRUE.equals(isConnected)
-                            ? ResponseEntity.ok(response)
-                            : ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+                    if (Boolean.TRUE.equals(isConnected)) {
+                        return ResponseEntity.ok(new ConfluenceHealthCheckResponse(
+                                "UP", "Connection to Confluence established", null));
+                    }
+                    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                            .body(new ConfluenceHealthCheckResponse(
+                                    "DOWN", "Confluence not accessible", "error.confluence.connection.failed"));
                 });
     }
 
@@ -68,7 +70,7 @@ public class ConfluenceController {
                         optionalPage
                                 .map(ConfluenceApiMapper::toDto)
                                 .map(ResponseEntity::ok)
-                                .orElse(ResponseEntity.notFound().build())
+                                .orElseThrow(() -> new ConfluencePageNotFoundException(pageId))
                 );
     }
 
@@ -105,7 +107,7 @@ public class ConfluenceController {
                         optionalSpace
                                 .map(ConfluenceApiMapper::toDto)
                                 .map(ResponseEntity::ok)
-                                .orElse(ResponseEntity.notFound().build())
+                                .orElseThrow(() -> new ConfluenceSpaceNotFoundException(spaceKey))
                 );
     }
 
@@ -121,9 +123,7 @@ public class ConfluenceController {
         return confluenceSpacePort.getSpace(spaceKey)
                 .thenCompose(optionalSpace -> {
                     if (optionalSpace.isEmpty()) {
-                        return CompletableFuture.completedFuture(
-                                ResponseEntity.notFound().build()
-                        );
+                        throw new ConfluenceSpaceNotFoundException(spaceKey);
                     }
 
                     return confluenceSpacePort.getAllPagesInSpace(spaceKey)
@@ -138,11 +138,7 @@ public class ConfluenceController {
         log.info("GET request /spaces");
 
         return confluenceSpacePort.getAllSpaces()
-            .thenApply(spaces -> ResponseEntity.ok(ConfluenceApiMapper.toDtoSpaces(spaces)))
-            .exceptionally(ex -> {
-                log.error("Error retrieving spaces", ex);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-            });
+            .thenApply(spaces -> ResponseEntity.ok(ConfluenceApiMapper.toDtoSpaces(spaces)));
     }
 
     @GetMapping("/spaces/update-info")
@@ -160,10 +156,6 @@ public class ConfluenceController {
                     ? updateInfos.stream().filter(SpaceUpdateInfo::hasBeenUpdated).toList()
                     : updateInfos;
                 return ResponseEntity.ok(ConfluenceApiMapper.toDtoSpaceUpdateInfos(filteredInfos));
-            })
-            .exceptionally(ex -> {
-                log.error("Error retrieving spaces update info", ex);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
             });
     }
 
@@ -181,13 +173,9 @@ public class ConfluenceController {
                 optionalUpdateInfo
                     .map(ConfluenceApiMapper::toDto)
                     .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build())
-            )
-            .exceptionally(ex -> {
-                log.error("Error retrieving update info for space {}", spaceKey, ex);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-            });
+                    .orElseThrow(() -> new ConfluenceSpaceNotFoundException(spaceKey))
+            );
     }
 
-    public record ConfluenceHealthCheckResponse(String status, String message) { }
+    public record ConfluenceHealthCheckResponse(String status, String message, String errorKey) { }
 }

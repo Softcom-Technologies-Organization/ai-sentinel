@@ -4,9 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.RevealPiiSecretsPort;
-import pro.softcom.aisentinel.domain.pii.security.PiiAccessDeniedException;
+import pro.softcom.aisentinel.domain.pii.security.PageSecretsNotFoundException;
 
 import java.util.List;
 
@@ -28,7 +26,6 @@ import java.util.List;
 @RequestMapping("/api/v1/pii")
 @Tag(name = "PII Access Control", description = "Control of access to sensitive PII data")
 @RequiredArgsConstructor
-@Slf4j
 public class PiiAccessController {
 
     private final RevealPiiSecretsPort revealPiiSecretsPort;
@@ -50,17 +47,9 @@ public class PiiAccessController {
     public ResponseEntity<@NonNull PageSecretsResponseDto> revealPageSecrets(
             @RequestBody PageRevealRequest request
     ) {
-        try {
-            return revealPiiSecretsPort.revealPageSecrets(request.scanId(), request.pageId())
-                    .map(response -> ResponseEntity.ok(mapper.toDto(response)))
-                    .orElseGet(() -> {
-                        log.warn("[PII_ACCESS] No results found for pageId={}", request.pageId());
-                        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-                    });
-        } catch (PiiAccessDeniedException e) {
-            log.warn("[PII_ACCESS] Reveal attempt denied: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
+        return revealPiiSecretsPort.revealPageSecrets(request.scanId(), request.pageId())
+                .map(response -> ResponseEntity.ok(mapper.toDto(response)))
+                .orElseThrow(() -> new PageSecretsNotFoundException(request.scanId(), request.pageId()));
     }
 
     /**

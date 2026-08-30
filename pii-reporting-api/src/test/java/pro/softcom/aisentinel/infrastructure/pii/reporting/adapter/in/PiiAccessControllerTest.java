@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.RevealPiiSecretsPort;
 import pro.softcom.aisentinel.domain.pii.reporting.PageSecretsResponse;
+import pro.softcom.aisentinel.domain.pii.security.PageSecretsNotFoundException;
 import pro.softcom.aisentinel.domain.pii.security.PiiAccessDeniedException;
 import pro.softcom.aisentinel.domain.pii.reporting.RevealedSecret;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.PiiAccessController.PageRevealRequest;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
@@ -114,34 +116,30 @@ class PiiAccessControllerTest {
         private static final String PAGE_TITLE = "Test Page";
 
         @Test
-        @DisplayName("Should_ReturnForbidden_When_PiiAccessDeniedExceptionThrown")
-        void Should_ReturnForbidden_When_PiiAccessDeniedExceptionThrown() {
+        @DisplayName("Should_PropagateAccessDenied_When_PortDeniesReveal")
+        void Should_PropagateAccessDenied_When_PortDeniesReveal() {
             // Given
             when(revealPiiSecretsPort.revealPageSecrets(any(), any()))
                     .thenThrow(new PiiAccessDeniedException("Not allowed"));
             PageRevealRequest request = new PageRevealRequest(SCAN_ID, PAGE_ID);
 
-            // When
-            ResponseEntity<@NonNull PageSecretsResponseDto> response = controller.revealPageSecrets(request);
-
-            // Then
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+            // When / Then
+            assertThatThrownBy(() -> controller.revealPageSecrets(request))
+                    .isInstanceOf(PiiAccessDeniedException.class);
             verify(revealPiiSecretsPort).revealPageSecrets(SCAN_ID, PAGE_ID);
         }
 
         @Test
-        @DisplayName("Should_ReturnNotFound_When_PortReturnsEmpty")
-        void Should_ReturnNotFound_When_PortReturnsEmpty() {
+        @DisplayName("Should_ThrowPageSecretsNotFound_When_PortReturnsEmpty")
+        void Should_ThrowPageSecretsNotFound_When_PortReturnsEmpty() {
             // Given
             when(revealPiiSecretsPort.revealPageSecrets(SCAN_ID, PAGE_ID))
                     .thenReturn(Optional.empty());
             PageRevealRequest request = new PageRevealRequest(SCAN_ID, PAGE_ID);
 
-            // When
-            ResponseEntity<@NonNull PageSecretsResponseDto> response = controller.revealPageSecrets(request);
-
-            // Then
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+            // When / Then
+            assertThatThrownBy(() -> controller.revealPageSecrets(request))
+                    .isInstanceOf(PageSecretsNotFoundException.class);
             verify(revealPiiSecretsPort).revealPageSecrets(SCAN_ID, PAGE_ID);
         }
 
@@ -248,7 +246,8 @@ class PiiAccessControllerTest {
             PageRevealRequest request = new PageRevealRequest(SCAN_ID, PAGE_ID);
 
             // When
-            controller.revealPageSecrets(request);
+            assertThatThrownBy(() -> controller.revealPageSecrets(request))
+                    .isInstanceOf(PageSecretsNotFoundException.class);
 
             // Then
             verify(revealPiiSecretsPort).revealPageSecrets(SCAN_ID, PAGE_ID);

@@ -41,17 +41,11 @@ public class ConcurrencyBenchmarkController {
     public ResponseEntity<@NonNull ConcurrencyBenchStatusResponseDto> runBenchmark() {
         log.info("POST /api/v1/pii-detection/concurrency-benchmark/run - Requesting benchmark run");
 
-        try {
-            manageConcurrencyBenchmarkPort.requestBenchmark();
-            ConcurrencyBenchStatus status = manageConcurrencyBenchmarkPort.getBenchStatus();
+        manageConcurrencyBenchmarkPort.requestBenchmark();
+        ConcurrencyBenchStatus status = manageConcurrencyBenchmarkPort.getBenchStatus();
 
-            log.info("Concurrency benchmark run requested successfully");
-            return ResponseEntity.accepted().body(toResponseDto(status));
-
-        } catch (Exception ex) {
-            log.error("Failed to request concurrency benchmark run: {}", ex.getMessage(), ex);
-            return ResponseEntity.internalServerError().build();
-        }
+        log.info("Concurrency benchmark run requested successfully");
+        return ResponseEntity.accepted().body(toResponseDto(status));
     }
 
     /**
@@ -64,14 +58,8 @@ public class ConcurrencyBenchmarkController {
     public ResponseEntity<@NonNull ConcurrencyBenchStatusResponseDto> getStatus() {
         log.debug("GET /api/v1/pii-detection/concurrency-benchmark/status - Retrieving benchmark status");
 
-        try {
-            ConcurrencyBenchStatus status = manageConcurrencyBenchmarkPort.getBenchStatus();
-            return ResponseEntity.ok(toResponseDto(status));
-
-        } catch (Exception ex) {
-            log.error("Failed to retrieve concurrency benchmark status: {}", ex.getMessage(), ex);
-            return ResponseEntity.internalServerError().build();
-        }
+        ConcurrencyBenchStatus status = manageConcurrencyBenchmarkPort.getBenchStatus();
+        return ResponseEntity.ok(toResponseDto(status));
     }
 
     /**

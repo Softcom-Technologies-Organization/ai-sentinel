@@ -21,6 +21,7 @@ import pro.softcom.aisentinel.application.pii.remediation.port.in.PlanObfuscatio
 import pro.softcom.aisentinel.application.pii.remediation.port.in.QueryRemediationFindingsPort;
 import pro.softcom.aisentinel.application.pii.remediation.port.in.RemediationFindingsResult;
 import pro.softcom.aisentinel.application.pii.remediation.port.in.TrackObfuscationJobPort;
+import pro.softcom.aisentinel.domain.pii.remediation.ObfuscationJobNotFoundException;
 import pro.softcom.aisentinel.domain.pii.remediation.ObfuscationPlan;
 import pro.softcom.aisentinel.domain.pii.remediation.RemediationSelection;
 import pro.softcom.aisentinel.infrastructure.pii.remediation.adapter.in.dto.FindingStatusChangeRequestDto;
@@ -145,6 +146,6 @@ public class PiiRemediationController {
     public ResponseEntity<@NonNull ObfuscationJobStatusDto> getJob(@PathVariable("id") String id) {
         return trackObfuscationJobPort.findJob(id)
                 .map(job -> ResponseEntity.ok(jobMapper.toDto(job)))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseThrow(() -> new ObfuscationJobNotFoundException(id));
     }
 }

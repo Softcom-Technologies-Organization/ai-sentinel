@@ -47,11 +47,11 @@ import java.util.stream.Stream;
 @Slf4j
 public class ObfuscationJobRunner {
 
-    private static final String REASON_PLAINTEXT_UNAVAILABLE = "plaintext value unavailable in scan events";
-    private static final String REASON_VALUE_NOT_FOUND = "value not found in current page content";
-    private static final String REASON_PAGE_STALE = "page changed concurrently during redaction";
-    private static final String REASON_PAGE_FAILED = "page redaction failed";
-    private static final String REASON_ATTACHMENT = "attachment redaction is not supported";
+    private static final String REASON_PLAINTEXT_UNAVAILABLE = "error.remediation.plaintext_unavailable";
+    private static final String REASON_VALUE_NOT_FOUND = "error.remediation.value_not_found";
+    private static final String REASON_PAGE_STALE = "error.remediation.page_stale";
+    private static final String REASON_PAGE_FAILED = "error.remediation.page_redaction_failed";
+    private static final String REASON_ATTACHMENT = "error.remediation.attachment_not_supported";
 
     private final ScanResultQuery scanResultQuery;
     private final FindingRemediationStore findingRemediationStore;

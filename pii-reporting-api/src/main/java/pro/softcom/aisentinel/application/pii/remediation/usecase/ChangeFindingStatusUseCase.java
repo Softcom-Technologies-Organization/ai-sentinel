@@ -56,8 +56,9 @@ import java.util.stream.Stream;
 @Slf4j
 public class ChangeFindingStatusUseCase implements ChangeFindingStatusPort {
 
-    private static final String REASON_UNKNOWN_FINDING = "finding not found in latest scan";
-    private static final String REASON_REDACTED_RESERVED = "REDACTED is reserved for redaction jobs";
+    private static final String REASON_UNKNOWN_FINDING = "error.remediation.finding_not_found";
+    private static final String REASON_REDACTED_RESERVED = "error.remediation.redacted_status_reserved";
+    private static final String REASON_ILLEGAL_TRANSITION = "error.remediation.invalid_status_transition";
 
     private final RemediationConfigPort remediationConfigPort;
     private final ScanResultQuery scanResultQuery;
@@ -159,8 +160,7 @@ public class ChangeFindingStatusUseCase implements ChangeFindingStatusPort {
 
     private Outcome transitionExisting(FindingRemediation row, StatusChange change, String actor) {
         if (!row.status().canTransitionTo(change.targetStatus())) {
-            return Outcome.rejected(change.findingId(),
-                    illegalTransitionReason(row.status(), change.targetStatus()));
+            return Outcome.rejected(change.findingId(), REASON_ILLEGAL_TRANSITION);
         }
         return Outcome.applied(row.toBuilder()
                 .status(change.targetStatus())
@@ -176,8 +176,7 @@ public class ChangeFindingStatusUseCase implements ChangeFindingStatusPort {
             return Outcome.rejected(change.findingId(), REASON_UNKNOWN_FINDING);
         }
         if (!FindingRemediationStatus.PENDING.canTransitionTo(change.targetStatus())) {
-            return Outcome.rejected(change.findingId(),
-                    illegalTransitionReason(FindingRemediationStatus.PENDING, change.targetStatus()));
+            return Outcome.rejected(change.findingId(), REASON_ILLEGAL_TRANSITION);
         }
         return Outcome.applied(newRow(finding, context.scanId(), change.targetStatus(), actor));
     }
@@ -226,10 +225,6 @@ public class ChangeFindingStatusUseCase implements ChangeFindingStatusPort {
                         event.scanId(), event.spaceKey(), failure.getMessage());
             }
         }
-    }
-
-    private static String illegalTransitionReason(FindingRemediationStatus from, FindingRemediationStatus to) {
-        return "illegal transition from %s to %s".formatted(from, to);
     }
 
     private record BatchContext(Map<String, FindingRemediation> rows,

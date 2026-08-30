@@ -164,7 +164,7 @@ class ChangeFindingStatusUseCaseTest {
                 softly.assertThat(result.rejected()).hasSize(1);
                 softly.assertThat(result.rejected().getFirst().findingId()).isEqualTo("unknown-id");
                 softly.assertThat(result.rejected().getFirst().reason())
-                        .isEqualTo("finding not found in latest scan");
+                        .isEqualTo("error.remediation.finding_not_found");
             });
             verify(findingRemediationStore, never()).upsertAll(anyCollection());
         }
@@ -181,7 +181,7 @@ class ChangeFindingStatusUseCaseTest {
                     new StatusChange(emailFindingId, FindingRemediationStatus.PENDING)));
 
             assertThat(result.rejected().getFirst().reason())
-                    .isEqualTo("illegal transition from PENDING to PENDING");
+                    .isEqualTo("error.remediation.invalid_status_transition");
         }
     }
 
@@ -221,7 +221,7 @@ class ChangeFindingStatusUseCaseTest {
             assertSoftly(softly -> {
                 softly.assertThat(result.applied()).isEmpty();
                 softly.assertThat(result.rejected().getFirst().reason())
-                        .isEqualTo("illegal transition from REDACTED to PENDING");
+                        .isEqualTo("error.remediation.invalid_status_transition");
             });
             verify(findingRemediationStore, never()).upsertAll(anyCollection());
         }
@@ -243,7 +243,7 @@ class ChangeFindingStatusUseCaseTest {
             assertSoftly(softly -> {
                 softly.assertThat(result.applied()).isEmpty();
                 softly.assertThat(result.rejected().getFirst().reason())
-                        .isEqualTo("REDACTED is reserved for redaction jobs");
+                        .isEqualTo("error.remediation.redacted_status_reserved");
             });
             verify(findingRemediationStore, never()).upsertAll(anyCollection());
         }

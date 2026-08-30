@@ -184,7 +184,9 @@ public class ExcelDetectionReportWriterAdapter implements WriteDetectionReportPo
             try {
                 workbook.close();
             } finally {
-                outputStream.close();
+                if (outputStream != null) {
+                    outputStream.close();
+                }
             }
         }
 

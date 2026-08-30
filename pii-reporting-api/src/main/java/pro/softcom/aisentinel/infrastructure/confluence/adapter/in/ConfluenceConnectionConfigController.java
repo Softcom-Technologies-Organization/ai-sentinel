@@ -50,17 +50,11 @@ public class ConfluenceConnectionConfigController {
         log.debug("GET /api/v1/confluence/connection-config - Retrieving current configuration");
 
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                ConfluenceConnectionSettings settings = manageConfluenceConnectionPort.getConnectionSettings();
-                ConfluenceConnectionConfigResponseDto response = toResponseDto(settings);
+            ConfluenceConnectionSettings settings = manageConfluenceConnectionPort.getConnectionSettings();
+            ConfluenceConnectionConfigResponseDto response = toResponseDto(settings);
 
-                log.debug("Configuration retrieved successfully");
-                return ResponseEntity.ok(response);
-
-            } catch (Exception ex) {
-                log.error("Failed to retrieve Confluence connection configuration: {}", ex.getMessage(), ex);
-                return ResponseEntity.internalServerError().build();
-            }
+            log.debug("Configuration retrieved successfully");
+            return ResponseEntity.ok(response);
         });
     }
 
@@ -83,35 +77,24 @@ public class ConfluenceConnectionConfigController {
                 request.baseUrl(), request.username(), updatedBy);
 
         return CompletableFuture.supplyAsync(() -> {
-            try {
+            UpdateConfluenceConnectionCommand command = new UpdateConfluenceConnectionCommand(
+                    request.baseUrl(),
+                    request.username(),
+                    request.apiToken(),
+                    request.connectTimeout(),
+                    request.readTimeout(),
+                    request.maxRetries(),
+                    request.pagesLimit(),
+                    request.maxPages(),
+                    request.deploymentType(),
+                    updatedBy
+            );
 
-                UpdateConfluenceConnectionCommand command = new UpdateConfluenceConnectionCommand(
-                        request.baseUrl(),
-                        request.username(),
-                        request.apiToken(),
-                        request.connectTimeout(),
-                        request.readTimeout(),
-                        request.maxRetries(),
-                        request.pagesLimit(),
-                        request.maxPages(),
-                        request.deploymentType(),
-                        updatedBy
-                );
+            ConfluenceConnectionSettings updatedSettings = manageConfluenceConnectionPort.updateConnectionSettings(command);
+            ConfluenceConnectionConfigResponseDto response = toResponseDto(updatedSettings);
 
-                ConfluenceConnectionSettings updatedSettings = manageConfluenceConnectionPort.updateConnectionSettings(command);
-                ConfluenceConnectionConfigResponseDto response = toResponseDto(updatedSettings);
-
-                log.info("Configuration updated successfully by user: {}", updatedBy);
-                return ResponseEntity.ok(response);
-
-            } catch (IllegalArgumentException ex) {
-                log.warn("Invalid configuration request: {}", ex.getMessage());
-                return ResponseEntity.badRequest().build();
-
-            } catch (Exception ex) {
-                log.error("Failed to update Confluence connection configuration: {}", ex.getMessage(), ex);
-                return ResponseEntity.internalServerError().build();
-            }
+            log.info("Configuration updated successfully by user: {}", updatedBy);
+            return ResponseEntity.ok(response);
         });
     }
 
@@ -130,26 +113,19 @@ public class ConfluenceConnectionConfigController {
         log.info("POST /api/v1/confluence/connection-config/test - Testing connection to: {}", request.baseUrl());
 
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                TestConfluenceConnectionCommand command = new TestConfluenceConnectionCommand(
-                        request.baseUrl(),
-                        request.username(),
-                        request.apiToken(),
-                        request.deploymentType()
-                );
+            TestConfluenceConnectionCommand command = new TestConfluenceConnectionCommand(
+                    request.baseUrl(),
+                    request.username(),
+                    request.apiToken(),
+                    request.deploymentType()
+            );
 
-                boolean success = manageConfluenceConnectionPort.testConnection(command);
-                String message = success
-                        ? "Connection to Confluence established successfully"
-                        : "Failed to connect to Confluence";
+            boolean success = manageConfluenceConnectionPort.testConnection(command);
+            String message = success
+                    ? "Connection to Confluence established successfully"
+                    : "Failed to connect to Confluence";
 
-                return ResponseEntity.ok(new ConnectionTestResultDto(success, message));
-
-            } catch (Exception ex) {
-                log.error("Connection test failed: {}", ex.getMessage(), ex);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(new ConnectionTestResultDto(false, "Connection test failed: " + ex.getMessage()));
-            }
+            return ResponseEntity.ok(new ConnectionTestResultDto(success, message));
         });
     }
 

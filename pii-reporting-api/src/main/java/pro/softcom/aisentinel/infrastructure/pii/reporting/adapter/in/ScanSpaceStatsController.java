@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.GetScanSpaceStatsPort;
+import pro.softcom.aisentinel.domain.pii.scan.ScanSpaceStatsNotFoundException;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.dto.ScanSpaceStatsDto;
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.in.mapper.ScanSpaceStatsMapper;
 
@@ -33,6 +34,6 @@ public class ScanSpaceStatsController {
         return getScanSpaceStatsPort.getLatestSpaceStats(spaceKey)
             .map(scanSpaceStatsMapper::toDto)
             .map(ResponseEntity::ok)
-            .orElseGet(() -> ResponseEntity.notFound().build());
+            .orElseThrow(() -> new ScanSpaceStatsNotFoundException(spaceKey));
     }
 }

@@ -26,6 +26,7 @@ import pro.softcom.aisentinel.application.pii.remediation.port.in.SelectionStatu
 import pro.softcom.aisentinel.application.pii.remediation.port.in.TrackObfuscationJobPort;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediationStatus;
 import pro.softcom.aisentinel.domain.pii.remediation.ObfuscationJob;
+import pro.softcom.aisentinel.domain.pii.remediation.ObfuscationJobNotFoundException;
 import pro.softcom.aisentinel.domain.pii.remediation.ObfuscationJobStatus;
 import pro.softcom.aisentinel.domain.pii.remediation.ObfuscationPlan;
 import pro.softcom.aisentinel.domain.pii.remediation.RemediationDisabledException;
@@ -333,13 +334,12 @@ class PiiRemediationControllerTest {
         }
 
         @Test
-        @DisplayName("Should_ReturnNotFound_When_JobUnknown")
-        void Should_ReturnNotFound_When_JobUnknown() {
+        @DisplayName("Should_ThrowObfuscationJobNotFound_When_JobUnknown")
+        void Should_ThrowObfuscationJobNotFound_When_JobUnknown() {
             when(trackObfuscationJobPort.findJob("unknown")).thenReturn(Optional.empty());
 
-            ResponseEntity<@NonNull ObfuscationJobStatusDto> response = controller.getJob("unknown");
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+            assertThatThrownBy(() -> controller.getJob("unknown"))
+                    .isInstanceOf(ObfuscationJobNotFoundException.class);
         }
     }
 

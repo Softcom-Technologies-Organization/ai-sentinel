@@ -41,17 +41,11 @@ public class PiiDetectionConfigController {
     public ResponseEntity<@NonNull PiiDetectionConfigResponseDto> getConfig() {
         log.debug("GET /api/v1/pii-detection/config - Retrieving current configuration");
         
-        try {
-            PiiDetectionConfig config = managePiiDetectionConfigPort.getConfig();
-            PiiDetectionConfigResponseDto response = toResponseDto(config);
-            
-            log.debug("Configuration retrieved successfully");
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception ex) {
-            log.error("Failed to retrieve PII detection configuration: {}", ex.getMessage(), ex);
-            return ResponseEntity.internalServerError().build();
-        }
+        PiiDetectionConfig config = managePiiDetectionConfigPort.getConfig();
+        PiiDetectionConfigResponseDto response = toResponseDto(config);
+
+        log.debug("Configuration retrieved successfully");
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -73,39 +67,29 @@ public class PiiDetectionConfigController {
                 request.presidioEnabled(), request.regexEnabled(), request.ministralEnabled(),
                 request.defaultThreshold(), request.postfilterEnabledOrDefault());
 
-        try {
-            String updatedBy = ADMIN_USERNAME;
+        String updatedBy = ADMIN_USERNAME;
 
-            UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-                request.presidioEnabled(),
-                request.regexEnabled(),
-                request.ministralEnabled(),
-                request.ministralChunkSizeOrDefault(),
-                request.ministralOverlapOrDefault(),
-                request.defaultThreshold(),
-                request.postfilterEnabledOrDefault(),
-                request.lmStudioHost(),
-                request.lmStudioPort(),
-                request.ministralConcurrency(),
-                request.ministralConcurrencyAuto(),
-                request.ministralConcurrencyTunedSignature(),
-                updatedBy
-            );
-            
-            PiiDetectionConfig updatedConfig = managePiiDetectionConfigPort.updateConfig(command);
-            PiiDetectionConfigResponseDto response = toResponseDto(updatedConfig);
-            
-            log.info("Configuration updated successfully by user: {}", updatedBy);
-            return ResponseEntity.ok(response);
-            
-        } catch (IllegalArgumentException ex) {
-            log.warn("Invalid configuration request: {}", ex.getMessage());
-            return ResponseEntity.badRequest().build();
-            
-        } catch (Exception ex) {
-            log.error("Failed to update PII detection configuration: {}", ex.getMessage(), ex);
-            return ResponseEntity.internalServerError().build();
-        }
+        UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
+            request.presidioEnabled(),
+            request.regexEnabled(),
+            request.ministralEnabled(),
+            request.ministralChunkSizeOrDefault(),
+            request.ministralOverlapOrDefault(),
+            request.defaultThreshold(),
+            request.postfilterEnabledOrDefault(),
+            request.lmStudioHost(),
+            request.lmStudioPort(),
+            request.ministralConcurrency(),
+            request.ministralConcurrencyAuto(),
+            request.ministralConcurrencyTunedSignature(),
+            updatedBy
+        );
+
+        PiiDetectionConfig updatedConfig = managePiiDetectionConfigPort.updateConfig(command);
+        PiiDetectionConfigResponseDto response = toResponseDto(updatedConfig);
+
+        log.info("Configuration updated successfully by user: {}", updatedBy);
+        return ResponseEntity.ok(response);
     }
 
     /**

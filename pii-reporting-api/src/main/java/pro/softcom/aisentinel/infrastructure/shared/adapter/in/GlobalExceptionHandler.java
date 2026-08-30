@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import pro.softcom.aisentinel.application.confluence.exception.ConfluencePageNotFoundException;
 import pro.softcom.aisentinel.application.confluence.exception.ConfluenceSpaceCacheException;
 import pro.softcom.aisentinel.application.confluence.exception.ConfluenceSpaceNotFoundException;
 import pro.softcom.aisentinel.application.pii.export.exception.ExportContextNotFoundException;
@@ -23,12 +24,15 @@ import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorException
 import pro.softcom.aisentinel.domain.pii.remediation.AttachmentRedactionUnsupportedException;
 import pro.softcom.aisentinel.domain.pii.remediation.IllegalStatusTransitionException;
 import pro.softcom.aisentinel.domain.pii.remediation.ObfuscationJobAlreadyRunningException;
+import pro.softcom.aisentinel.domain.pii.remediation.ObfuscationJobNotFoundException;
 import pro.softcom.aisentinel.domain.pii.remediation.RemediationDisabledException;
 import pro.softcom.aisentinel.domain.pii.remediation.SelectionOutdatedException;
 import pro.softcom.aisentinel.domain.pii.scan.IllegalScanStatusTransitionException;
 import pro.softcom.aisentinel.domain.pii.scan.ScanNotFoundException;
+import pro.softcom.aisentinel.domain.pii.scan.ScanSpaceStatsNotFoundException;
 import pro.softcom.aisentinel.domain.pii.security.CryptographicOperationException;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionException;
+import pro.softcom.aisentinel.domain.pii.security.PageSecretsNotFoundException;
 import pro.softcom.aisentinel.domain.pii.security.PiiAccessDeniedException;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.ConfluenceApiException;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.ConfluenceAuthenticationException;
@@ -46,8 +50,6 @@ import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.PiiDetectionEx
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
-
-    // ========== Confluence sealed subclasses (5) ==========
 
     @ExceptionHandler(ConfluenceAuthenticationException.class)
     ProblemDetail handleConfluenceAuth(ConfluenceAuthenticationException ex) {
@@ -84,7 +86,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "error.confluence.date.parse_failed");
     }
 
-    // ========== Standalone Confluence exceptions (3) ==========
+    @ExceptionHandler(ConfluencePageNotFoundException.class)
+    ProblemDetail handleConfluencePageNotFound(ConfluencePageNotFoundException ex) {
+        log.warn("[ERROR_HANDLER] Confluence page not found: {}", ex.getMessage());
+        return problemWith(HttpStatus.NOT_FOUND, "Confluence Page Not Found",
+                "error.confluence.resource.not_found");
+    }
 
     @ExceptionHandler(ConfluenceDeserializationException.class)
     ProblemDetail handleConfluenceDeserialization(ConfluenceDeserializationException ex) {
@@ -107,8 +114,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "error.confluence.space.cache_error");
     }
 
-    // ========== PiiDetectionException inner classes (3) ==========
-
     @ExceptionHandler(PiiDetectionException.PiiDetectionConnectionException.class)
     ProblemDetail handlePiiDetectionConnection(PiiDetectionException.PiiDetectionConnectionException ex) {
         log.error("[ERROR_HANDLER] PII detection connection failed: {}", ex.getMessage());
@@ -129,8 +134,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problemWith(HttpStatus.GATEWAY_TIMEOUT, "PII Detection Timeout",
                 "error.pii.detection.timeout");
     }
-
-    // ========== PII / Encryption / Security (4) ==========
 
     @ExceptionHandler(PiiDetectorException.class)
     ProblemDetail handlePiiDetector(PiiDetectorException ex) {
@@ -160,7 +163,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "error.access.denied");
     }
 
-    // ========== Scan exceptions (2) ==========
+    @ExceptionHandler(PageSecretsNotFoundException.class)
+    ProblemDetail handlePageSecretsNotFound(PageSecretsNotFoundException ex) {
+        log.warn("[ERROR_HANDLER] Page secrets not found: {}", ex.getMessage());
+        return problemWith(HttpStatus.NOT_FOUND, "Page Secrets Not Found",
+                "error.pii.page_secrets_not_found");
+    }
 
     @ExceptionHandler(IllegalScanStatusTransitionException.class)
     ProblemDetail handleIllegalScanStatusTransition(IllegalScanStatusTransitionException ex) {
@@ -176,7 +184,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "error.scan.not_found");
     }
 
-    // ========== Remediation exceptions (4) ==========
+    @ExceptionHandler(ScanSpaceStatsNotFoundException.class)
+    ProblemDetail handleScanSpaceStatsNotFound(ScanSpaceStatsNotFoundException ex) {
+        log.warn("[ERROR_HANDLER] Scan space stats not found: {}", ex.getMessage());
+        return problemWith(HttpStatus.NOT_FOUND, "Scan Space Stats Not Found",
+                "error.scan.stats_not_found");
+    }
 
     @ExceptionHandler(RemediationDisabledException.class)
     ProblemDetail handleRemediationDisabled(RemediationDisabledException ex) {
@@ -213,7 +226,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "error.remediation.job_already_running");
     }
 
-    // ========== Export exceptions (3) ==========
+    @ExceptionHandler(ObfuscationJobNotFoundException.class)
+    ProblemDetail handleObfuscationJobNotFound(ObfuscationJobNotFoundException ex) {
+        log.warn("[ERROR_HANDLER] Obfuscation job not found: {}", ex.getMessage());
+        return problemWith(HttpStatus.NOT_FOUND, "Obfuscation Job Not Found",
+                "error.remediation.job_not_found");
+    }
 
     @ExceptionHandler(ExportException.class)
     ProblemDetail handleExport(ExportException ex) {
@@ -235,8 +253,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problemWith(HttpStatus.BAD_REQUEST, "Unsupported Source Type",
                 "error.export.unsupported_source_type");
     }
-
-    // ========== Validation / JDK exceptions (4) ==========
 
     @ExceptionHandler(IllegalArgumentException.class)
     ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
@@ -271,8 +287,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "error.validation.malformed_request");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(pd);
     }
-
-    // ========== Catch-all (1) ==========
 
     @ExceptionHandler(Exception.class)
     ProblemDetail handleAll(Exception ex) {

@@ -34,12 +34,7 @@ public class ScanPurgeController {
     @Transactional
     public ResponseEntity<@NonNull Void> purgeAll() {
         log.info("[PURGE] Deleting all scan_events and scan_checkpoints before starting a new scan");
-        try {
-            purgeDetectionDataPort.purgeAll();
-            return ResponseEntity.accepted().build();
-        } catch (RuntimeException ex) {
-            log.error("[PURGE] Failed to purge previous scan data: {}", ex.getMessage(), ex);
-            return ResponseEntity.internalServerError().build();
-        }
+        purgeDetectionDataPort.purgeAll();
+        return ResponseEntity.accepted().build();
     }
 }

@@ -11,10 +11,10 @@ const FR_TRANSLATIONS = {
   obfuscation: {
     select: 'Sélectionner',
     nOccurrences: '{{count}} occurrences',
-    redactedValue: 'Caviardé',
+    redactedValue: 'Valeur supprimée',
     status: {
       pending: 'À traiter',
-      redacted: 'Caviardé',
+      redacted: 'Supprimé de la source',
       manual: 'Traité (manuel)',
       fp: 'Faux positif',
     },
@@ -25,8 +25,8 @@ const FR_TRANSLATIONS = {
       restore: 'Rétablir',
     },
     ineligible: {
-      attachment: 'Pièce jointe non caviardable ({{kind}})',
-      selectHint: 'Pièce jointe : caviardage automatique impossible.',
+      attachment: 'Pièce jointe : suppression impossible ({{kind}})',
+      selectHint: 'Pièce jointe : suppression automatique impossible.',
     },
   },
 };
@@ -150,7 +150,7 @@ describe('ObfuscationFindingRowComponent', () => {
     createComponent(finding({ status: 'REDACTED' }));
 
     const value = query('obfuscation-row-value');
-    expect(value?.textContent).toContain('Caviardé');
+    expect(value?.textContent).toContain('Valeur supprimée');
     expect(value?.textContent).not.toContain('[EMAIL]');
   });
 
@@ -165,9 +165,9 @@ describe('ObfuscationFindingRowComponent', () => {
 
     const checkbox = query<HTMLInputElement>('obfuscation-row-checkbox');
     expect(checkbox?.disabled).toBe(false);
-    expect(checkbox?.title).toContain('caviardage automatique impossible');
+    expect(checkbox?.title).toContain('suppression automatique impossible');
     expect(query('obfuscation-row-ineligible')?.textContent).toContain(
-      'Pièce jointe non caviardable (pdf)'
+      'Pièce jointe : suppression impossible (pdf)'
     );
   });
 

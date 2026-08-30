@@ -7,13 +7,13 @@ import { ObfuscationPlanDto } from '../../../../core/models/remediation.model';
 const FR_TRANSLATIONS = {
   obfuscation: {
     severity: { high: 'Critique', medium: 'Modéré', low: 'Faible' },
-    bulk: { obfuscateN: 'Caviarder ({{count}})' },
+    bulk: { obfuscateN: 'Supprimer ({{count}})' },
     confirm: {
-      title: 'Caviarder {{count}} finding(s) ?',
+      title: 'Supprimer {{count}} finding(s) de la source ?',
       irreversibleTitle: 'Action irréversible.',
       irreversibleBody:
-        'Le contenu sera définitivement caviardé dans le document source (Confluence). Cette opération ne peut pas être annulée.',
-      lead: 'Vous êtes sur le point de caviarder <b>{{count}}</b> occurrence(s) dans <b>{{space}}</b>.',
+        'Les valeurs seront définitivement supprimées du document source (Confluence) et remplacées par un marqueur de type (ex. [EMAIL]). Cette opération ne peut pas être annulée.',
+      lead: 'Vous êtes sur le point de supprimer <b>{{count}}</b> occurrence(s) dans <b>{{space}}</b>.',
       total: 'Total',
       cancel: 'Annuler',
       fpFeedbackNote:
@@ -82,7 +82,7 @@ describe('ObfuscationConfirmDialogComponent', () => {
     const rows = fixture.nativeElement.querySelectorAll(
       '[data-testid="obfuscation-confirm-breakdown-row"]'
     );
-    expect(rows.length).toBe(2);
+      expect(rows).toHaveLength(2);
     expect(rows[0].textContent).toContain('Critique');
     expect(rows[0].textContent).toContain('4');
     expect(rows[1].textContent).toContain('Faible');
@@ -93,7 +93,7 @@ describe('ObfuscationConfirmDialogComponent', () => {
     createComponent(plan({ totalFindings: 999, bySeverity: { high: 1 } }));
 
     expect(query('obfuscation-confirm-total')?.textContent).toContain('999');
-    expect(query('obfuscation-confirm-accept')?.textContent).toContain('Caviarder (999)');
+    expect(query('obfuscation-confirm-accept')?.textContent).toContain('Supprimer (999)');
   });
 
   it('Should_ShowFpFeedbackNote_When_PlanReportsFalsePositives', () => {

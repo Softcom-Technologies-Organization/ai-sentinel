@@ -9,9 +9,9 @@ import { RemediationConfigService } from '../../../../core/services/remediation-
 const FR_TRANSLATIONS = {
   obfuscation: {
     entry: {
-      space: "Caviarder l'espace",
-      page: 'Caviarder la page',
-      attachment: 'Caviarder la pièce jointe',
+      space: "Supprimer les IPI de l'espace",
+      page: 'Supprimer les IPI de la page',
+      attachment: 'Supprimer les IPI de la pièce jointe',
     },
   },
 };
@@ -117,6 +117,6 @@ describe('ObfuscationEntryButtonComponent', () => {
     createComponent({ spaceKey: 'SPACE' });
 
     const link = fixture.nativeElement.querySelector('a');
-    expect(link.getAttribute('aria-label')).toBe("Caviarder l'espace");
+    expect(link.getAttribute('aria-label')).toBe("Supprimer les IPI de l'espace");
   });
 });

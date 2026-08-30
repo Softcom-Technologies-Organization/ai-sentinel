@@ -26,7 +26,7 @@ const FR_TRANSLATIONS = {
     table: { paginatorReport: 'Affichage de {first} à {last} sur {totalRecords} entrées' },
   },
   obfuscation: {
-    featureDisabled: 'Le caviardage automatique est désactivé pour cette instance.',
+    featureDisabled: 'La suppression automatique est désactivée pour cette instance.',
     noFindings: 'Aucun finding ne correspond.',
     selectAllPending: 'Tout sélectionner (à traiter)',
     searchPlaceholder: 'Rechercher…',
@@ -40,7 +40,7 @@ const FR_TRANSLATIONS = {
     table: { selected: 'Sélectionnés', occurrences: 'Occurrences', total: 'Valeurs', expand: 'Développer', collapse: 'Réduire' },
     groupPageHint: '{{visible}} sur {{total}}',
     select: 'Sélectionner',
-    redactedValue: 'Caviardé',
+    redactedValue: 'Valeur supprimée',
     entryBanner: {
       space: 'Ouvert depuis le tableau de bord — <b>{{count}}</b> findings de « {{space}} » pré-sélectionnés pour revue.',
       page: 'Ouvert depuis l’item <b>{{name}}</b> — <b>{{count}}</b> findings pré-sélectionnés pour revue.',
@@ -48,35 +48,35 @@ const FR_TRANSLATIONS = {
     stats: { toTreat: 'À traiter', treated: 'Traités', falsePositives: 'Faux positifs' },
     filter: { all: 'Tous', pending: 'À traiter', treated: 'Traités', fp: 'Faux positifs' },
     groupBy: { label: 'Grouper par', type: 'Type', severity: 'Sévérité' },
-    status: { pending: 'À traiter', redacted: 'Caviardé', manual: 'Traité (manuel)', fp: 'Faux positif' },
+    status: { pending: 'À traiter', redacted: 'Supprimé de la source', manual: 'Traité (manuel)', fp: 'Faux positif' },
     action: { markManual: 'Manuel', undoManual: 'Rétablir', restore: 'Rétablir' },
-    ineligible: { attachment: 'Pièce jointe non caviardable ({{kind}})' },
+    ineligible: { attachment: 'Pièce jointe : suppression impossible ({{kind}})' },
     bulk: {
       ariaLabel: 'Actions groupées',
-      selectedForObf: 'sélectionnés à caviarder',
+      selectedForObf: 'sélectionnés à supprimer',
       fpSignaled: '{{count}} faux positif(s) signalé(s)',
       clear: 'Effacer',
       markTreated: 'Marquer traité',
       markTreatedHint: 'Marquer la sélection comme traitée manuellement',
       markFp: 'Signaler faux positif',
       markFpHint: 'Signaler la sélection comme faux positif',
-      obfuscateN: 'Caviarder ({{count}})',
+      obfuscateN: 'Supprimer ({{count}})',
     },
     confirm: {
-      title: 'Caviarder {{count}} finding(s) ?',
+      title: 'Supprimer {{count}} finding(s) de la source ?',
       irreversibleTitle: 'Action irréversible.',
       irreversibleBody: 'Irréversible.',
-      lead: 'Vous allez caviarder <b>{{count}}</b> occurrence(s) dans <b>{{space}}</b>.',
+      lead: 'Vous allez supprimer <b>{{count}}</b> occurrence(s) dans <b>{{space}}</b>.',
       total: 'Total',
       cancel: 'Annuler',
       fpFeedbackNote: '{{count}} FP.',
     },
     severity: { high: 'Critique', medium: 'Modéré', low: 'Faible' },
     toast: {
-      obfuscated: '<b>{{count}}</b> finding(s) caviardé(s) dans la source.',
+      obfuscated: '<b>{{count}}</b> finding(s) supprimé(s) dans la source.',
       treated: '<b>{{count}}</b> finding(s) marqué(s) traité(s).',
       fpReported: '<b>{{count}}</b> finding(s) signalé(s) comme faux positif(s).',
-      completedWithIssues: 'Caviardage terminé avec des erreurs — consultez le détail des résultats.',
+      completedWithIssues: 'Suppression terminée avec des erreurs — consultez le détail des résultats.',
     },
     pager: {
       label: '{{first}}–{{last}} sur {{total}} groupes',
@@ -87,7 +87,7 @@ const FR_TRANSLATIONS = {
       rowsPerPage: 'Par page :',
     },
     job: {
-      running: 'Caviardage en cours… {{done}}/{{total}}',
+      running: 'Suppression en cours… {{done}}/{{total}}',
       rescanRecommended: 'Relancez un scan.',
     },
   },
@@ -341,7 +341,7 @@ describe('PiiObfuscationComponent', () => {
       'LOW',
       'MEDIUM',
     ]);
-    expect(lastSearchRequest().selection.severities.length).toBe(3);
+      expect(lastSearchRequest().selection.severities).toHaveLength(3);
     const banner = query('obfuscation-entry-banner');
     expect(banner).toBeTruthy();
     expect(banner?.getAttribute('role')).toBe('status');
@@ -564,7 +564,7 @@ describe('PiiObfuscationComponent', () => {
     expect(api.searchFindings).toHaveBeenCalledTimes(1);
     const toast = messageService.add.mock.calls[0][0];
     expect(toast.severity).toBe('success');
-    expect(toast.detail).toContain('5 finding(s) caviardé(s)');
+    expect(toast.detail).toContain('5 finding(s) supprimé(s)');
     expect(toast.detail).not.toContain('<b>');
   });
 

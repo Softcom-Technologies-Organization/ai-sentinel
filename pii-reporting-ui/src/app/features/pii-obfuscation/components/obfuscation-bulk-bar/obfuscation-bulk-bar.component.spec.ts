@@ -8,18 +8,18 @@ const FR_TRANSLATIONS = {
   obfuscation: {
     bulk: {
       ariaLabel: 'Actions groupées',
-      selectedForObf: 'sélectionnés à caviarder',
+      selectedForObf: 'sélectionnés à supprimer',
       fpSignaled: '{{count}} faux positif(s) signalé(s)',
       attachmentsExcluded:
-        '{{count}} pièce(s) jointe(s) sélectionnée(s), exclue(s) du caviardage automatique',
+        '{{count}} pièce(s) jointe(s) sélectionnée(s), exclue(s) de la suppression automatique',
       clear: 'Effacer',
       markTreated: 'Marquer traité',
       markTreatedHint: 'Marquer la sélection comme traitée manuellement',
       markFp: 'Signaler faux positif',
       markFpHint: 'Signaler la sélection comme faux positif',
-      obfuscateN: 'Caviarder ({{count}})',
+      obfuscateN: 'Supprimer ({{count}})',
       obfuscateHint:
-        'Caviarder les occurrences sélectionnées dans le corps des pages — les pièces jointes ne peuvent pas être caviardées automatiquement',
+        'Supprimer les occurrences sélectionnées dans le corps des pages — les IPI des pièces jointes ne peuvent pas être supprimées automatiquement',
     },
   },
 };
@@ -105,7 +105,7 @@ describe('ObfuscationBulkBarComponent', () => {
     createComponent(plan({ totalFindings: 14 }), [chip('EMAIL', 2)]);
 
     expect(query('obfuscation-bulk-counter')?.textContent).toContain('14');
-    expect(query('obfuscation-bulk-obfuscate')?.textContent).toContain('Caviarder (14)');
+    expect(query('obfuscation-bulk-obfuscate')?.textContent).toContain('Supprimer (14)');
   });
 
   it('Should_ShowFpNoteFromPlan_When_FalsePositivesReported', () => {
@@ -124,7 +124,7 @@ describe('ObfuscationBulkBarComponent', () => {
     createComponent(plan(), [chip('A', 5), chip('B', 4), chip('C', 3), chip('D', 2), chip('E', 1)]);
 
     const chips = fixture.nativeElement.querySelectorAll('[data-testid="obfuscation-bulk-chip"]');
-    expect(chips.length).toBe(3);
+      expect(chips).toHaveLength(3);
     expect(query('obfuscation-bulk-more-chip')?.textContent).toContain('+2');
   });
 

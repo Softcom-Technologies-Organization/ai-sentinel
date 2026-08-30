@@ -12,8 +12,8 @@ import { ObfuscationJobDto } from '../../../../core/models/remediation.model';
 const FR_TRANSLATIONS = {
   obfuscation: {
     job: {
-      running: 'Caviardage en cours… {{done}}/{{total}}',
-      rescanRecommended: 'Caviardage terminé — relancez un scan pour mettre à jour les findings.',
+      running: 'Suppression en cours… {{done}}/{{total}}',
+      rescanRecommended: 'Suppression terminée — relancez un scan pour mettre à jour les findings.',
     },
   },
 };
@@ -125,7 +125,7 @@ describe('ObfuscationJobProgressComponent', () => {
     const outcomes = fixture.nativeElement.querySelectorAll(
       '[data-testid="obfuscation-job-outcome"]'
     );
-    expect(outcomes.length).toBe(2);
+      expect(outcomes).toHaveLength(2);
     expect(outcomes[0].textContent).toContain('EMAIL');
     expect(outcomes[0].textContent).toContain('REDACTED');
     expect(outcomes[1].textContent).toContain('SKIPPED_VALUE_NOT_FOUND');

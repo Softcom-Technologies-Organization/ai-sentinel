@@ -2,7 +2,7 @@ import { expect, Page, test } from '@playwright/test';
 import { TestIds } from '../src/app/features/test-ids.constants';
 
 /**
- * E2E coverage for the PII obfuscation (caviardage) feature (AC13).
+ * E2E coverage for the PII removal feature (AC13).
  *
  * Both scenarios need a seeded stack with the remediation feature flag on and at least
  * one scanned space carrying PENDING findings (and, for the attachment case, a finding
@@ -63,7 +63,7 @@ test.describe('PII obfuscation', () => {
 
     const ineligible = page.getByTestId(ids.row.ineligible).first();
     await expect(ineligible).toBeVisible({ timeout: 15_000 });
-    await expect(ineligible).toContainText('Pièce jointe non caviardable');
+    await expect(ineligible).toContainText('Pièce jointe : suppression impossible');
 
     // The row's checkbox must be disabled: an attachment finding cannot be selected.
     const attachmentRow = page

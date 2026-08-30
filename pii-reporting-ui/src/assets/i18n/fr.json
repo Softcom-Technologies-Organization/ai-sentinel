@@ -1116,16 +1116,16 @@
     "remediation": {
       "disabled": "La remédiation est désactivée. Activez-la dans les paramètres pour effectuer cette opération.",
       "invalidStatusTransition": "Transition de statut invalide pour cette occurrence.",
-      "attachmentNotSupported": "L'anonymisation n'est pas supportée pour ce type de pièce jointe.",
+      "attachmentNotSupported": "La suppression n'est pas supportée pour ce type de pièce jointe.",
       "selectionOutdated": "La sélection n'est plus à jour. Rafraîchissez la page et réessayez.",
-      "jobAlreadyRunning": "Une anonymisation est déjà en cours. Attendez qu'elle se termine.",
-      "jobNotFound": "L'anonymisation demandée est introuvable.",
+      "jobAlreadyRunning": "Une suppression est déjà en cours. Attendez qu'elle se termine.",
+      "jobNotFound": "La suppression demandée est introuvable.",
       "plaintextUnavailable": "Valeur d'origine indisponible dans les résultats du scan",
       "valueNotFound": "Valeur introuvable dans le contenu actuel de la page",
-      "pageStale": "Page modifiée pendant l'anonymisation",
-      "pageRedactionFailed": "L'anonymisation de la page a échoué",
+      "pageStale": "Page modifiée pendant la suppression",
+      "pageRedactionFailed": "La suppression sur la page a échoué",
       "findingNotFound": "Occurrence absente du dernier scan",
-      "redactedStatusReserved": "Le statut « anonymisé » est réservé aux traitements d'anonymisation"
+      "redactedStatusReserved": "Le statut « supprimé de la source » est réservé aux traitements de suppression"
     },
     "export": {
       "failed": "Erreur lors de l'export du rapport. Réessayez.",
@@ -1144,9 +1144,9 @@
   },
   "obfuscation": {
     "entry": {
-      "space": "Caviarder l'espace",
-      "page": "Caviarder la page",
-      "attachment": "Caviarder la pièce jointe"
+      "space": "Supprimer les IPI de l'espace",
+      "page": "Supprimer les IPI de la page",
+      "attachment": "Supprimer les IPI de la pièce jointe"
     },
     "spaceSub": "{{total}} findings · dernier scan {{ts}}",
     "stats": {
@@ -1183,11 +1183,11 @@
     "select": "Sélectionner",
     "status": {
       "pending": "À traiter",
-      "redacted": "Caviardé",
+      "redacted": "Supprimé de la source",
       "manual": "Traité (manuel)",
       "fp": "Faux positif"
     },
-    "redactedValue": "Caviardé",
+    "redactedValue": "Valeur supprimée",
     "severity": {
       "high": "Critique",
       "medium": "Modéré",
@@ -1200,31 +1200,31 @@
     },
     "bulk": {
       "ariaLabel": "Actions groupées",
-      "selectedForObf": "sélectionnés à caviarder",
+      "selectedForObf": "sélectionnés à supprimer",
       "fpSignaled": "{{count}} faux positif(s) signalé(s)",
-      "attachmentsExcluded": "{{count}} pièce(s) jointe(s) sélectionnée(s), exclue(s) du caviardage automatique",
+      "attachmentsExcluded": "{{count}} pièce(s) jointe(s) sélectionnée(s), exclue(s) de la suppression automatique",
       "clear": "Effacer",
       "markTreated": "Marquer traité",
       "markTreatedHint": "Marquer la sélection comme traitée manuellement",
       "markFp": "Signaler faux positif",
       "markFpHint": "Signaler la sélection comme faux positif",
-      "obfuscateN": "Caviarder ({{count}})",
-      "obfuscateHint": "Caviarder les occurrences sélectionnées dans le corps des pages — les pièces jointes ne peuvent pas être caviardées automatiquement"
+      "obfuscateN": "Supprimer ({{count}})",
+      "obfuscateHint": "Supprimer les occurrences sélectionnées dans le corps des pages — les IPI des pièces jointes ne peuvent pas être supprimées automatiquement"
     },
     "confirm": {
-      "title": "Caviarder {{count}} finding(s) ?",
+      "title": "Supprimer {{count}} finding(s) de la source ?",
       "irreversibleTitle": "Action irréversible.",
-      "irreversibleBody": "Le contenu sera définitivement caviardé dans le document source (Confluence). Cette opération ne peut pas être annulée.",
-      "lead": "Vous êtes sur le point de caviarder <b>{{count}}</b> occurrence(s) dans <b>{{space}}</b>.",
+      "irreversibleBody": "Les valeurs seront définitivement supprimées du document source (Confluence) et remplacées par un marqueur de type (ex. [EMAIL]). Cette opération ne peut pas être annulée.",
+      "lead": "Vous êtes sur le point de supprimer <b>{{count}}</b> occurrence(s) dans <b>{{space}}</b>.",
       "total": "Total",
       "cancel": "Annuler",
       "fpFeedbackNote": "{{count}} occurrence(s) exclue(s) et signalée(s) comme faux positif (feedback détection)."
     },
     "toast": {
-      "obfuscated": "<b>{{count}}</b> finding(s) caviardé(s) dans la source.",
+      "obfuscated": "<b>{{count}}</b> finding(s) supprimé(s) dans la source.",
       "treated": "<b>{{count}}</b> finding(s) marqué(s) traité(s).",
       "fpReported": "<b>{{count}}</b> finding(s) signalé(s) comme faux positif(s).",
-      "completedWithIssues": "Caviardage terminé avec des erreurs — consultez le détail des résultats."
+      "completedWithIssues": "Suppression terminée avec des erreurs — consultez le détail des résultats."
     },
     "pager": {
       "label": "{{first}}–{{last}} sur {{total}} groupes",
@@ -1243,17 +1243,17 @@
     },
     "noFindings": "Aucun finding ne correspond.",
     "job": {
-      "running": "Caviardage en cours… {{done}}/{{total}}",
-      "rescanRecommended": "Caviardage terminé — relancez un scan pour mettre à jour les findings.",
+      "running": "Suppression en cours… {{done}}/{{total}}",
+      "rescanRecommended": "Suppression terminée — relancez un scan pour mettre à jour les findings.",
       "succeeded": "Réussis",
       "failed": "Échoués",
       "skipped": "Ignorés"
     },
     "ineligible": {
-      "attachment": "Pièce jointe non caviardable ({{kind}})",
-      "selectHint": "Pièce jointe : caviardage automatique impossible. La sélection sert uniquement à signaler un faux positif ou à marquer comme traité."
+      "attachment": "Pièce jointe : suppression impossible ({{kind}})",
+      "selectHint": "Pièce jointe : suppression automatique impossible. La sélection sert uniquement à signaler un faux positif ou à marquer comme traité."
     },
-    "featureDisabled": "Le caviardage automatique est désactivé pour cette instance."
+    "featureDisabled": "La suppression automatique est désactivée pour cette instance."
   },
   "piiTypes": {
     "EMAIL": "Email",

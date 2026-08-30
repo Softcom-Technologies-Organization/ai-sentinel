@@ -14,7 +14,6 @@ import pro.softcom.aisentinel.domain.pii.detection.DiscoveredLabel;
 import pro.softcom.aisentinel.domain.pii.detection.DiscoveredLabelStatus;
 import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.DiscoveredLabelResponseDto;
-import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.PiiTypeConfigResponseDto;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.PromoteDiscoveredLabelRequestDto;
 
 import java.time.LocalDateTime;

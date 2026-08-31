@@ -291,7 +291,7 @@ Modifie du code de production, mais chaque correction est locale et sans effet d
 
 **Correction** : Remettre les arguments d'assertion dans l'ordre attendu/obtenu. Ne change pas le verdict du test.
 
-- [ ] `pii-detector-service/tests/unit/test_composite_detector_run_stats.py:298` — Swap these 2 sides so they are in the correct order: actual value, expected value. <!-- fd5590e8 -->
+- [x] `pii-detector-service/tests/unit/test_composite_detector_run_stats.py:298` — Swap these 2 sides so they are in the correct order: actual value, expected value. <!-- fd5590e8 -->
 
 ### Lot `python:S5781` — 1 issue(s)
 

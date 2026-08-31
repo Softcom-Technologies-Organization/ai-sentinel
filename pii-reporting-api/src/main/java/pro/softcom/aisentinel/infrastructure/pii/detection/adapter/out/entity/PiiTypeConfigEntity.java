@@ -7,6 +7,7 @@ import lombok.Setter;
 import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Objects;
 
 /**
@@ -75,8 +76,8 @@ public class PiiTypeConfigEntity {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createdAt = LocalDateTime.now(ZoneOffset.UTC);
+        updatedAt = LocalDateTime.now(ZoneOffset.UTC);
         if (updatedBy == null) {
             updatedBy = "system";
         }
@@ -84,7 +85,7 @@ public class PiiTypeConfigEntity {
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     // Factory method to create entity from domain model

@@ -4,6 +4,7 @@ import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.dto.ConfluencePageDto;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -106,12 +107,12 @@ public final class ConfluencePageMapper {
 
     private static LocalDateTime parseDateTime(String dateTimeStr) {
         if (dateTimeStr == null || dateTimeStr.isBlank()) {
-            return LocalDateTime.now();
+            return LocalDateTime.now(ZoneOffset.UTC);
         }
         try {
             return LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ISO_DATE_TIME);
         } catch (Exception _) {
-            return LocalDateTime.now();
+            return LocalDateTime.now(ZoneOffset.UTC);
         }
     }
 

@@ -11,6 +11,7 @@ import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.Detec
 import pro.softcom.aisentinel.infrastructure.pii.reporting.adapter.out.jpa.entity.ScanCheckpointEntity;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,7 +37,8 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
             return;
         }
 
-        LocalDateTime lastUpdated = checkpoint.updatedAt() == null ? LocalDateTime.now() : checkpoint.updatedAt();
+        LocalDateTime lastUpdated =
+            checkpoint.updatedAt() == null ? LocalDateTime.now(ZoneId.systemDefault()) : checkpoint.updatedAt();
 
         // Use PostgreSQL UPSERT (INSERT ... ON CONFLICT DO UPDATE) for atomic operation
         jpaRepository.upsertCheckpoint(

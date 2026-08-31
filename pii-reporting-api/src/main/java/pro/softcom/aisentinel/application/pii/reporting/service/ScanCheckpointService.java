@@ -12,6 +12,7 @@ import pro.softcom.aisentinel.domain.pii.scan.Initiator;
 import pro.softcom.aisentinel.domain.pii.scan.ScanCheckpointStatusTransition;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 /**
@@ -250,7 +251,7 @@ public class ScanCheckpointService {
                 .lastProcessedAttachmentName(null)
                 .scanStatus(ScanStatus.NOT_STARTED)
                 .progressPercentage(0.0)
-                .updatedAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now(ZoneId.systemDefault()))
                 .build();
             scanCheckpointRepository.save(checkpoint);
             initialized++;

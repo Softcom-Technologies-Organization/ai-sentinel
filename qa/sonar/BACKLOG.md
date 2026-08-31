@@ -360,12 +360,29 @@ Change le HTML produit. Peut casser des selecteurs de test ou un snapshot : vagu
 
 **Correction** : Remplacer le `role=` ARIA par la balise HTML native equivalente : `role="region"` -> `<section>`, `role="status"` -> `<output>`. Verifier qu'aucun test ne cible le role via un selecteur.
 
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/components/obfuscation-bulk-bar/obfuscation-bulk-bar.component.html:3` — Use <section> instead of the region role to ensure accessibility across all devices. <!-- cccefd2a -->
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/components/obfuscation-job-progress/obfuscation-job-progress.component.html:2` — Use <output> instead of the status role to ensure accessibility across all devices. <!-- 6866961e -->
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:50` — Use <output> instead of the status role to ensure accessibility across all devices. <!-- a37f9219 -->
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:169` — Use <address> or <details> or <fieldset> or <optgroup> instead of the group role to ensure accessibility across all devices. <!-- 7b8955b0 -->
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:205` — Use <address> or <details> or <fieldset> or <optgroup> instead of the group role to ensure accessibility across all devices. <!-- a1bfc9a0 -->
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:387` — Use <output> instead of the status role to ensure accessibility across all devices. <!-- 2bbebd52 -->
+> LOT ANNULE (rollback) — `check ui` rouge sur 2 tests :
+> `ObfuscationJobProgressComponent.Should_RenderBackendProgressVerbatim_When_JobRunning` et
+> `PiiObfuscationComponent.Should_PreselectAllSeveritiesAndShowBanner_When_PreselectParamTrue`.
+> Les deux assertent `element.getAttribute('role') === 'status'` : le role est bien cible par les
+> tests, exactement le cas que la ligne Correction demandait de verifier. Les rendre verts
+> supposerait de modifier ces assertions, ce que le RUNBOOK interdit.
+>
+> A trancher par un humain, en deux parties :
+> 1. `role="region"` / `role="status"` (4 issues) : la conversion `<section>` / `<output>` est
+>    correcte et sans impact visuel (les classes fixent `display` explicitement). Elle demande
+>    d'ajuster 2 assertions de test, qui verifieraient alors le nom de balise plutot que le role.
+> 2. `role="group"` sur `<span class="ob-segmented">` (2 issues) : aucune des balises proposees par
+>    Sonar ne convient. `<fieldset>` apporte `padding`, `margin` et `min-inline-size: min-content`
+>    non neutralises par `.ob-segmented`, donc un changement visuel ; `<details>`, `<address>` et
+>    `<optgroup>` sont semantiquement faux pour un controle segmente. `role="group"` est le bon
+>    marquage ici : ces 2 issues sont a passer en faux positif.
+
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/components/obfuscation-bulk-bar/obfuscation-bulk-bar.component.html:3` — Use <section> instead of the region role to ensure accessibility across all devices. <!-- cccefd2a -->
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/components/obfuscation-job-progress/obfuscation-job-progress.component.html:2` — Use <output> instead of the status role to ensure accessibility across all devices. <!-- 6866961e -->
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:50` — Use <output> instead of the status role to ensure accessibility across all devices. <!-- a37f9219 -->
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:169` — Use <address> or <details> or <fieldset> or <optgroup> instead of the group role to ensure accessibility across all devices. <!-- 7b8955b0 -->
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:205` — Use <address> or <details> or <fieldset> or <optgroup> instead of the group role to ensure accessibility across all devices. <!-- a1bfc9a0 -->
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:387` — Use <output> instead of the status role to ensure accessibility across all devices. <!-- 2bbebd52 -->
 
 ### Lot `Web:ItemTagNotWithinContainerTagCheck` — 1 issue(s)
 

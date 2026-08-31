@@ -113,7 +113,7 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
      */
     private PiiDetectionConfigEntity requireConfigEntity() {
         return jpaRepository.findById(CONFIG_ID).orElseGet(() -> {
-            findConfig();
+            self.findConfig();
             return jpaRepository.findById(CONFIG_ID)
                     .orElseThrow(() -> new IllegalStateException("PII detection configuration row could not be created"));
         });

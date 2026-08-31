@@ -28,15 +28,15 @@
       <tbody>
         @for (row of severityRows(); track row.severity) {
           <tr [attr.data-testid]="testIds.breakdownRow">
-            <td>
+            <th scope="row">
               <span class="ob-dot ob-dot--{{ row.severity.toLowerCase() }}" aria-hidden="true"></span>
               {{ 'obfuscation.severity.' + row.severity.toLowerCase() | transloco }}
-            </td>
+            </th>
             <td class="ob-breakdown-count">{{ row.count }}</td>
           </tr>
         }
         <tr class="ob-breakdown-total" [attr.data-testid]="testIds.total">
-          <td>{{ 'obfuscation.confirm.total' | transloco }}</td>
+          <th scope="row">{{ 'obfuscation.confirm.total' | transloco }}</th>
           <td class="ob-breakdown-count">{{ totalFindings() }}</td>
         </tr>
       </tbody>

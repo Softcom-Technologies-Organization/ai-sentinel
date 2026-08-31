@@ -34,10 +34,16 @@
   font-size: 0.8125rem;
 }
 
-.ob-breakdown td {
+.ob-breakdown td,
+.ob-breakdown th {
   padding: 0.45rem 0.7rem;
   border-bottom: 1px solid var(--sentinel-border-light);
   color: var(--sentinel-text-body);
+}
+
+.ob-breakdown th {
+  font-weight: normal;
+  text-align: left;
 }
 
 .ob-breakdown-count {
@@ -45,7 +51,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-.ob-breakdown-total td {
+.ob-breakdown-total td,
+.ob-breakdown-total th {
   font-weight: 700;
   background: var(--sentinel-bg-page);
   border-bottom: none;

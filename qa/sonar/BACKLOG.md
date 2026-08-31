@@ -15,7 +15,7 @@ Protocole d'execution obligatoire : [RUNBOOK.md](RUNBOOK.md).
 | Vague | Perimetre | Issues | Statut |
 |-------|-----------|--------|--------|
 | **A** | Tests — mecanique pure | 87 | ✅ terminee et verifiee |
-| **B** | Production — mecanique locale | 50 | 🔄 en cours |
+| **B** | Production — mecanique locale | 50 | ✅ terminee et verifiee — 1 escalade (`java:S6213`) |
 | **C** | Accessibilite UI — modifie le DOM rendu | 16 | ⬜ a faire |
 | **D** | Jugement requis — lire le RUNBOOK avant | 25 | ⬜ a faire |
 
@@ -323,7 +323,7 @@ Modifie du code de production, mais chaque correction est locale et sans effet d
 
 **Correction** : Supprimer l'import inutilise.
 
-- [ ] `pii-reporting-ui/src/app/shared/components/space-filters/space-filters.component.ts:13` — Remove this unused import of 'SeverityFilterValue'. <!-- d98a3deb -->
+- [x] `pii-reporting-ui/src/app/shared/components/space-filters/space-filters.component.ts:13` — Remove this unused import of 'SeverityFilterValue'. <!-- d98a3deb -->
 
 ---
 

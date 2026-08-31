@@ -69,6 +69,9 @@ from pii_detector.infrastructure.text_processing.semantic_chunker import (
 
 DETECTOR_NAMESPACE = "MINISTRAL"
 MINISTRAL_DEFAULT_MODEL_ID = "ministral-3b-pii-preview@q8_0"
+# Plain HTTP on purpose: LM Studio serves its OpenAI-compatible API over
+# loopback only and offers no TLS listener. Switching to https:// breaks the
+# detector. Pending arbitration if the model server ever moves off-host.
 DEFAULT_BASE_URL = "http://localhost:1234/v1"
 # Permissive global threshold at this layer (the detector's own default when no
 # request threshold is supplied).

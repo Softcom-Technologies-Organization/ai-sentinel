@@ -525,8 +525,15 @@ Changement de signature, de semantique ou de structure. Chaque lot a une garde e
 
 **Correction** : GARDE : `http://` vise ici une instance LM Studio locale. Passer en `https://` casserait le detector. Documenter l'usage local et marquer l'issue en attente d'arbitrage, ne pas modifier l'URL.
 
-- [ ] `pii-detector-service/pii_detector/infrastructure/detector/ministral_detector.py:457` — Using HTTP protocol is insecure. Use HTTPS instead. <!-- 9ce0cc94 -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/detector/ministral_detector.py:457` — Using HTTP protocol is insecure. Use HTTPS instead. <!-- f664922a -->
+> Les deux occurrences se trouvent aujourd'hui aux lignes 72 (`DEFAULT_BASE_URL`) et 483
+> (`_resolve_base_url`, URL construite depuis les colonnes `lm_studio_host` / `lm_studio_port`).
+> URL inchangee, conformement a la garde : LM Studio n'expose son API que sur la boucle locale,
+> sans ecouteur TLS. L'usage local est documente par un commentaire au-dessus de la constante ;
+> les deux issues restent ouvertes, en attente d'arbitrage si le serveur de modele sort de la
+> machine. `check detector` vert.
+
+- [!] `pii-detector-service/pii_detector/infrastructure/detector/ministral_detector.py:457` — Using HTTP protocol is insecure. Use HTTPS instead. <!-- 9ce0cc94 -->
+- [!] `pii-detector-service/pii_detector/infrastructure/detector/ministral_detector.py:457` — Using HTTP protocol is insecure. Use HTTPS instead. <!-- f664922a -->
 
 ### Lot `typescript:S5976` — 2 issue(s)
 

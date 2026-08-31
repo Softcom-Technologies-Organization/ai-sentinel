@@ -63,7 +63,7 @@ public class PiiAccessAuditEntity {
     }
 
     @Override
-    public final boolean equals(Object o) {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -84,7 +84,7 @@ public class PiiAccessAuditEntity {
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         return this instanceof HibernateProxy hibernateProxy
             ? hibernateProxy.getHibernateLazyInitializer()
             .getPersistentClass().hashCode() : getClass().hashCode();

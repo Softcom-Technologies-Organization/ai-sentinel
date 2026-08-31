@@ -146,7 +146,7 @@ _STOPWORDS = frozenset(
         "a", "à", "se", "son", "sa", "ses", "il", "elle", "on", "nous",
         # English
         "the", "of", "to", "in", "for", "and", "or", "is", "are",
-        "with", "on", "at", "this", "that", "be", "it", "as", "by",
+        "with", "at", "this", "that", "be", "it", "as", "by",
         "from",
     }
 )

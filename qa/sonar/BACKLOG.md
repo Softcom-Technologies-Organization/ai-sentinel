@@ -76,12 +76,34 @@ RUNBOOK interdit a l'agent de changer le statut d'une issue sur le serveur.
 
 **Correction** : Remplacer le `role=` ARIA par la balise HTML native equivalente : `role="region"` -> `<section>`, `role="status"` -> `<output>`. Verifier qu'aucun test ne cible le role via un selecteur.
 
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/components/obfuscation-bulk-bar/obfuscation-bulk-bar.component.html:3` — Use <section> instead of the region role to ensure accessibility across all devices. <!-- cccefd2a -->
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/components/obfuscation-job-progress/obfuscation-job-progress.component.html:2` — Use <output> instead of the status role to ensure accessibility across all devices. <!-- 6866961e -->
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:50` — Use <output> instead of the status role to ensure accessibility across all devices. <!-- a37f9219 -->
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:169` — Use <address> or <details> or <fieldset> or <optgroup> instead of the group role to ensure accessibility across all devices. <!-- 7b8955b0 -->
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:205` — Use <address> or <details> or <fieldset> or <optgroup> instead of the group role to ensure accessibility across all devices. <!-- a1bfc9a0 -->
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:387` — Use <output> instead of the status role to ensure accessibility across all devices. <!-- 2bbebd52 -->
+**Escalade du 2026-08-31, deuxieme rencontre.** Ce lot a deja ete tente et annule la nuit
+precedente (`53b217ae`) : `check ui` avait fait echouer
+`ObfuscationJobProgressComponent.Should_RenderBackendProgressVerbatim_When_JobRunning` et
+`PiiObfuscationComponent.Should_PreselectAllSeveritiesAndShowBanner_When_PreselectParamTrue`.
+Etat verifie ce soir, identique a celui de la mesure : les 4 attributs `role` sont toujours en place
+(`obfuscation-job-progress.component.html:2`, `obfuscation-bulk-bar.component.html:5`,
+`pii-obfuscation.component.html:50` et `:387`) et les deux assertions qui les lisent aussi
+(`obfuscation-job-progress.component.spec.ts:79` et `pii-obfuscation.component.spec.ts:347`, toutes
+deux `expect(...getAttribute('role')).toBe('status')`). La suite n'a pas ete relancee ce soir : le
+resultat serait le meme, la conversion en `<output>` supprimant l'attribut que ces tests lisent.
+
+Le lot est bloque par deux decisions qui n'appartiennent pas a l'agent :
+
+1. **4 issues convertibles** (`role="region"` -> `<section>`, `role="status"` -> `<output>`) : la
+   conversion est correcte, mais elle demande de reecrire deux assertions pour qu'elles verifient le
+   nom de balise au lieu du role. Le RUNBOOK interdit de toucher a un test pour faire passer un lot.
+   A arbitrer : ces deux assertions sont-elles a mettre a jour ?
+2. **2 issues non convertibles** (`role="group"` sur `<span class="ob-segmented">`, lignes 169 et
+   205) : aucune des balises proposees par Sonar ne convient a un controle segmente. `<fieldset>`
+   apporte des marges et un `min-inline-size` a neutraliser ; `<details>`, `<address>` et
+   `<optgroup>` sont semantiquement faux. Faux positif a marquer cote SonarQube.
+
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/components/obfuscation-bulk-bar/obfuscation-bulk-bar.component.html:3` — Use <section> instead of the region role to ensure accessibility across all devices. <!-- cccefd2a -->
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/components/obfuscation-job-progress/obfuscation-job-progress.component.html:2` — Use <output> instead of the status role to ensure accessibility across all devices. <!-- 6866961e -->
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:50` — Use <output> instead of the status role to ensure accessibility across all devices. <!-- a37f9219 -->
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:169` — Use <address> or <details> or <fieldset> or <optgroup> instead of the group role to ensure accessibility across all devices. <!-- 7b8955b0 -->
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:205` — Use <address> or <details> or <fieldset> or <optgroup> instead of the group role to ensure accessibility across all devices. <!-- a1bfc9a0 -->
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:387` — Use <output> instead of the status role to ensure accessibility across all devices. <!-- 2bbebd52 -->
 
 ### Lot `Web:ItemTagNotWithinContainerTagCheck` — 1 issue(s)
 

@@ -17,7 +17,7 @@ Protocole d'execution obligatoire : [RUNBOOK.md](RUNBOOK.md).
 | **A** | Tests — mecanique pure | 87 | ✅ terminee et verifiee |
 | **B** | Production — mecanique locale | 50 | ✅ terminee et verifiee — 1 escalade (`java:S6213`) |
 | **C** | Accessibilite UI — modifie le DOM rendu | 16 | ✅ terminee — 3 corrigees, 13 escaladees (dont 1 lot annule) |
-| **D** | Jugement requis — lire le RUNBOOK avant | 25 | ⬜ a faire |
+| **D** | Jugement requis — lire le RUNBOOK avant | 25 | 🔄 en cours |
 
 Statuts : ⬜ a faire · 🔄 en cours · ✅ terminee et verifiee · ⛔ annulee (rollback).
 
@@ -436,14 +436,31 @@ Changement de signature, de semantique ou de structure. Chaque lot a une garde e
 
 **Correction** : GARDE : ne pas injecter de `Clock` a la volee. Utiliser la zone deja retenue par le projet et rester coherent avec le code voisin. Si le fichier n'a pas de convention, escalader plutot que d'en inventer une.
 
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/application/pii/reporting/service/ScanCheckpointService.java:253` — Explicitly specify the time zone by passing a ZoneId or a Clock to the .now() method. <!-- ead19c4a -->
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/confluence/adapter/out/jpa/mapper/ConfluenceSpaceEntityMapper.java:43` — Explicitly specify the time zone by passing a ZoneId or a Clock to the .now() method. <!-- 943e88ce -->
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/confluence/adapter/out/mapper/ConfluencePageMapper.java:109` — Explicitly specify the time zone by passing a ZoneId or a Clock to the .now() method. <!-- b6380c6b -->
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/confluence/adapter/out/mapper/ConfluencePageMapper.java:114` — Explicitly specify the time zone by passing a ZoneId or a Clock to the .now() method. <!-- d31061be -->
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/detection/adapter/out/entity/PiiTypeConfigEntity.java:78` — Explicitly specify the time zone by passing a ZoneId or a Clock to the .now() method. <!-- 016878d7 -->
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/detection/adapter/out/entity/PiiTypeConfigEntity.java:79` — Explicitly specify the time zone by passing a ZoneId or a Clock to the .now() method. <!-- 83dcbd7d -->
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/detection/adapter/out/entity/PiiTypeConfigEntity.java:87` — Explicitly specify the time zone by passing a ZoneId or a Clock to the .now() method. <!-- 99a87663 -->
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/ScanCheckpointPersistenceAdapter.java:39` — Explicitly specify the time zone by passing a ZoneId or a Clock to the .now() method. <!-- 60b5b4ce -->
+> 1 corrigee, 7 escaladees. Le projet n'a pas UNE zone de reference : `ZoneId.systemDefault()`
+> (5 usages) et `ZoneId.of("UTC")` (3 usages) coexistent dans `src/main`. La garde impose donc de
+> suivre la convention du fichier, ou d'escalader.
+>
+> Corrigee : `ConfluenceSpaceEntityMapper:43`, seul fichier du lot qui a une convention interne —
+> `ZoneId.systemDefault()` y est deja utilise deux fois, dont une deux lignes plus bas.
+>
+> Escaladees : `ScanCheckpointService`, `ConfluencePageMapper`, `PiiTypeConfigEntity` et
+> `ScanCheckpointPersistenceAdapter` ne contiennent aucun `ZoneId`. Choisir a leur place reviendrait
+> a inventer la convention que la garde interdit d'inventer.
+>
+> Cas le plus sensible : `PiiTypeConfigEntity` (`@PrePersist` / `@PreUpdate`) ecrit `created_at` et
+> `updated_at` de `pii_type_config`, alors que `PiiDetectionConfigPersistenceAdapter` ecrit ses
+> horodatages en `ZoneId.of("UTC")`. Trancher pour `systemDefault()` melangerait deux zones sur les
+> colonnes d'horodatage de la meme fonctionnalite. Il faut d'abord decider la zone de reference du
+> projet, puis appliquer les 7 d'un coup.
+
+- [!] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/application/pii/reporting/service/ScanCheckpointService.java:253` — Explicitly specify the time zone by passing a ZoneId or a Clock to the .now() method. <!-- ead19c4a -->
+- [x] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/confluence/adapter/out/jpa/mapper/ConfluenceSpaceEntityMapper.java:43` — Explicitly specify the time zone by passing a ZoneId or a Clock to the .now() method. <!-- 943e88ce -->
+- [!] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/confluence/adapter/out/mapper/ConfluencePageMapper.java:109` — Explicitly specify the time zone by passing a ZoneId or a Clock to the .now() method. <!-- b6380c6b -->
+- [!] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/confluence/adapter/out/mapper/ConfluencePageMapper.java:114` — Explicitly specify the time zone by passing a ZoneId or a Clock to the .now() method. <!-- d31061be -->
+- [!] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/detection/adapter/out/entity/PiiTypeConfigEntity.java:78` — Explicitly specify the time zone by passing a ZoneId or a Clock to the .now() method. <!-- 016878d7 -->
+- [!] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/detection/adapter/out/entity/PiiTypeConfigEntity.java:79` — Explicitly specify the time zone by passing a ZoneId or a Clock to the .now() method. <!-- 83dcbd7d -->
+- [!] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/detection/adapter/out/entity/PiiTypeConfigEntity.java:87` — Explicitly specify the time zone by passing a ZoneId or a Clock to the .now() method. <!-- 99a87663 -->
+- [!] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/ScanCheckpointPersistenceAdapter.java:39` — Explicitly specify the time zone by passing a ZoneId or a Clock to the .now() method. <!-- 60b5b4ce -->
 
 ### Lot `python:S3776` — 4 issue(s)
 

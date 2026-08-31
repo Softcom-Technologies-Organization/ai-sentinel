@@ -576,7 +576,28 @@ Changement de signature, de semantique ou de structure. Chaque lot a une garde e
 
 **Correction** : GARDE : 9 parametres sur une methode de repository. Regrouper en objet de criteres touche tous les appelants. Escalader si plus de 3 appelants.
 
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/jpa/ScanDetectorStatsJpaRepository.java:46` — Method has 9 parameters, which is greater than 7 authorized. <!-- 47955961 -->
+> ESCALADE. Le critere de la garde est pourtant rempli : `accumulate` n'a que 2 appelants
+> (`ScanSpaceStatsPersistenceAdapter:64` et un `verify` dans `ScanSpaceStatsPersistenceAdapterTest:60`),
+> et l'objet de criteres existe deja — `ScanDetectorStatDelta` porte 7 des 9 valeurs.
+>
+> Ce qui bloque est ailleurs : les 9 parametres ne sont pas des arguments de logique metier, ce sont
+> les marqueurs de binding d'un `INSERT ... ON CONFLICT` natif. Passer le record en parametre oblige a
+> remplacer chaque `:busyMs` par `:#{#delta.busyMs()}` dans le SQL. Six des sept valeurs apparaissent
+> deux fois dans l'upsert (une fois dans `VALUES`, une fois dans le `DO UPDATE SET`), donc la requete
+> passerait de 9 parametres nommes lisibles a 13 expressions SpEL dupliquees.
+>
+> Et surtout, ce serait inverifiable : aucun test n'execute cette requete. Les deux seuls tests qui la
+> mentionnent passent par un mock (`@Mock ScanDetectorStatsJpaRepository` pour l'adaptateur, mock du
+> port `ScanSpaceStatsRepository` pour le collecteur). Une expression SpEL fautive ne casse pas au
+> demarrage du contexte — elle n'est evaluee qu'au premier appel — donc `check api` resterait vert et
+> la panne n'apparaitrait qu'au premier scan reel, sur le chemin d'ecriture des statistiques.
+>
+> Aucune autre forme ne reduit le compte sans reecrire la requete : mettre `scanId`/`spaceKey` dans le
+> record laisse toujours 9 valeurs a binder. A trancher par un humain : soit accepter la version SpEL
+> en l'accompagnant d'un test qui execute reellement l'upsert, soit passer l'issue en faux positif,
+> une methode de repository declarative n'ayant pas le meme cout cognitif que 9 arguments d'appel.
+
+- [!] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/jpa/ScanDetectorStatsJpaRepository.java:46` — Method has 9 parameters, which is greater than 7 authorized. <!-- 47955961 -->
 
 ### Lot `java:S2925` — 1 issue(s)
 

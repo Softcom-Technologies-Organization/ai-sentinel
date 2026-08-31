@@ -187,7 +187,7 @@ class _FakeOndemandAdapter:
         self.failed.append(message)
 
 
-@pytest.fixture()
+@pytest.fixture
 def server_factory():
     servers: list = []
 

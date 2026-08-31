@@ -158,7 +158,7 @@ class _FakeDbAdapter:
         return True
 
 
-@pytest.fixture()
+@pytest.fixture
 def fake_server():
     server = _FakeLmStudioServer(("127.0.0.1", 0), _Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)

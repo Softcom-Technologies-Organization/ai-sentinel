@@ -315,7 +315,7 @@ Modifie du code de production, mais chaque correction est locale et sans effet d
 
 **Correction** : Remplacer le tableau utilise seulement pour un test d'appartenance par un `Set`.
 
-- [ ] `pii-reporting-ui/src/app/core/services/toast.service.ts:36` — `SCAN_PAUSED_TYPES` should be a `Set`, and use `SCAN_PAUSED_TYPES.has()` to check existence or non-existence. <!-- 24e95e52 -->
+- [x] `pii-reporting-ui/src/app/core/services/toast.service.ts:36` — `SCAN_PAUSED_TYPES` should be a `Set`, and use `SCAN_PAUSED_TYPES.has()` to check existence or non-existence. <!-- 24e95e52 -->
 
 ### Lot `typescript:S1128` — 1 issue(s)
 

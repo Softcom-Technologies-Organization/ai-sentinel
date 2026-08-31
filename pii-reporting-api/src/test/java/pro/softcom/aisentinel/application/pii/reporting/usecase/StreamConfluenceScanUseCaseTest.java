@@ -45,6 +45,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -203,15 +205,26 @@ class StreamConfluenceScanUseCaseTest {
         when(confluenceService.getAllPagesInSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(pages));
         when(scanTimeoutConfig.getPiiDetectionTimeout()).thenReturn(Duration.ofSeconds(30));
 
-        // Inverse-latency detection: page 1 is SLOWEST. An unordered flatMap would
-        // emit later (faster) pages first; flatMapSequential must still emit in
-        // source order p-1..p-5. The differing sleeps run concurrently because
-        // pageConcurrency = pageCount, proving both concurrency AND ordering.
+        // Inverse-completion detection: page 1 finishes LAST, because each page's analysis
+        // waits for the next page's analysis to complete. The completion order p-5..p-1 is
+        // therefore fixed by the latches rather than by timing, and it only unblocks at all
+        // because pageConcurrency = pageCount keeps the analyses in flight together.
+        // An unordered flatMap would emit in completion order; flatMapSequential must still
+        // emit in source order p-1..p-5.
+        CountDownLatch[] analysed = new CountDownLatch[pageCount + 2];
+        for (int i = 0; i < analysed.length; i++) {
+            analysed[i] = new CountDownLatch(1);
+        }
+        analysed[pageCount + 1].countDown();
+
         when(piiDetectorClient.analyzeContent(any())).thenAnswer(invocation -> {
             String text = invocation.getArgument(0);
             java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("P(\\d+)").matcher(text);
             int pageNum = matcher.find() ? Integer.parseInt(matcher.group(1)) : 0;
-            Thread.sleep((pageCount + 1 - pageNum) * 40L);
+            assertThat(analysed[pageNum + 1].await(10, TimeUnit.SECONDS))
+                .as("page P%d waited for P%d to be analysed", pageNum, pageNum + 1)
+                .isTrue();
+            analysed[pageNum].countDown();
             return ContentPiiDetection.builder().statistics(Map.of()).sensitiveDataFound(List.of()).build();
         });
 

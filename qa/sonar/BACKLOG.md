@@ -16,7 +16,7 @@ Protocole d'execution obligatoire : [RUNBOOK.md](RUNBOOK.md).
 |-------|-----------|--------|--------|
 | **A** | Tests — mecanique pure | 0 | ⬜ a faire |
 | **B** | Production — mecanique locale | 1 | ✅ terminee et verifiee |
-| **C** | Accessibilite UI — modifie le DOM rendu | 13 | ⬜ a faire |
+| **C** | Accessibilite UI — modifie le DOM rendu | 13 | 🔄 en cours |
 | **D** | Jugement requis — lire le RUNBOOK avant | 11 | ⬜ a faire |
 
 Statuts : ⬜ a faire · 🔄 en cours · ✅ terminee et verifiee · ⛔ annulee (rollback).
@@ -55,12 +55,20 @@ Change le HTML produit. Peut casser des selecteurs de test ou un snapshot : vagu
 
 **Correction** : Ajouter le gestionnaire clavier correspondant (`(keyup.enter)` / `(keydown.space)`) a cote du `(click)`. Ne pas retirer le gestionnaire souris.
 
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:109` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- 5bae9c35 -->
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:119` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- eaec42f0 -->
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:127` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- 481603b4 -->
-- [ ] `pii-reporting-ui/src/app/shared/components/space-filters/space-filters.component.html:115` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- 1f404321 -->
-- [ ] `pii-reporting-ui/src/app/shared/components/space-filters/space-filters.component.html:125` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- 87623884 -->
-- [ ] `pii-reporting-ui/src/app/shared/components/space-filters/space-filters.component.html:142` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- ecd7c5b7 -->
+**Escalade du 2026-08-31** : les 6 elements sont des `<p-button>`. PrimeNG 21 rend un `<button>`
+natif (`primeng/fesm2022/primeng-button.mjs:816`, `(click)="onClick.emit($event)"`), pour lequel le
+navigateur emet deja un `click` sur Enter et sur Espace. Ajouter un gestionnaire clavier a cote du
+`(click)` declencherait l'action deux fois a chaque activation au clavier : `nextPage()` sauterait
+une page, `toggleSortOrder()` reviendrait a son etat initial. La correction prescrite casserait
+l'usage clavier, c'est-a-dire ce que la regle protege. Faux positif a arbitrer cote SonarQube — le
+RUNBOOK interdit a l'agent de changer le statut d'une issue sur le serveur.
+
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:109` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- 5bae9c35 -->
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:119` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- eaec42f0 -->
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:127` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- 481603b4 -->
+- [!] `pii-reporting-ui/src/app/shared/components/space-filters/space-filters.component.html:115` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- 1f404321 -->
+- [!] `pii-reporting-ui/src/app/shared/components/space-filters/space-filters.component.html:125` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- 87623884 -->
+- [!] `pii-reporting-ui/src/app/shared/components/space-filters/space-filters.component.html:142` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- ecd7c5b7 -->
 
 ### Lot `Web:S6819` — 6 issue(s)
 

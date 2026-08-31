@@ -10,31 +10,19 @@ describe('ConfidenceIndicatorComponent', () => {
     }).compileComponents();
   });
 
-  it('Should_DisplayGreenAt95Percent_When_ConfidenceIsHigh', () => {
+  it.each([
+    { name: 'Should_DisplayGreenAt95Percent_When_ConfidenceIsHigh', value: 0.95, percent: '95%', levelClass: 'confidence--high' },
+    { name: 'Should_DisplayYellowAt78Percent_When_ConfidenceIsMedium', value: 0.78, percent: '78%', levelClass: 'confidence--medium' },
+    { name: 'Should_DisplayRedAt55Percent_When_ConfidenceIsLow', value: 0.55, percent: '55%', levelClass: 'confidence--low' },
+    { name: 'Should_DisplayGreenAtExactly90Percent_When_ConfidenceIsOnBoundary', value: 0.9, percent: '90%', levelClass: 'confidence--high' },
+    { name: 'Should_DisplayYellowAtExactly70Percent_When_ConfidenceIsOnBoundary', value: 0.7, percent: '70%', levelClass: 'confidence--medium' },
+  ])('$name', ({ value, percent, levelClass }) => {
     fixture = TestBed.createComponent(ConfidenceIndicatorComponent);
-    fixture.componentRef.setInput('value', 0.95);
+    fixture.componentRef.setInput('value', value);
     fixture.detectChanges();
     const pct = fixture.nativeElement.querySelector('.confidence-pct');
-    expect(pct.textContent.trim()).toBe('95%');
-    expect(pct.classList).toContain('confidence--high');
-  });
-
-  it('Should_DisplayYellowAt78Percent_When_ConfidenceIsMedium', () => {
-    fixture = TestBed.createComponent(ConfidenceIndicatorComponent);
-    fixture.componentRef.setInput('value', 0.78);
-    fixture.detectChanges();
-    const pct = fixture.nativeElement.querySelector('.confidence-pct');
-    expect(pct.textContent.trim()).toBe('78%');
-    expect(pct.classList).toContain('confidence--medium');
-  });
-
-  it('Should_DisplayRedAt55Percent_When_ConfidenceIsLow', () => {
-    fixture = TestBed.createComponent(ConfidenceIndicatorComponent);
-    fixture.componentRef.setInput('value', 0.55);
-    fixture.detectChanges();
-    const pct = fixture.nativeElement.querySelector('.confidence-pct');
-    expect(pct.textContent.trim()).toBe('55%');
-    expect(pct.classList).toContain('confidence--low');
+    expect(pct.textContent.trim()).toBe(percent);
+    expect(pct.classList).toContain(levelClass);
   });
 
   it('Should_SetBarWidth_When_ValueProvided', () => {
@@ -43,24 +31,6 @@ describe('ConfidenceIndicatorComponent', () => {
     fixture.detectChanges();
     const bar = fixture.nativeElement.querySelector('.confidence-bar-fill') as HTMLElement;
     expect(bar.style.width).toBe('82%');
-  });
-
-  it('Should_DisplayGreenAtExactly90Percent_When_ConfidenceIsOnBoundary', () => {
-    fixture = TestBed.createComponent(ConfidenceIndicatorComponent);
-    fixture.componentRef.setInput('value', 0.9);
-    fixture.detectChanges();
-    const pct = fixture.nativeElement.querySelector('.confidence-pct');
-    expect(pct.textContent.trim()).toBe('90%');
-    expect(pct.classList).toContain('confidence--high');
-  });
-
-  it('Should_DisplayYellowAtExactly70Percent_When_ConfidenceIsOnBoundary', () => {
-    fixture = TestBed.createComponent(ConfidenceIndicatorComponent);
-    fixture.componentRef.setInput('value', 0.7);
-    fixture.detectChanges();
-    const pct = fixture.nativeElement.querySelector('.confidence-pct');
-    expect(pct.textContent.trim()).toBe('70%');
-    expect(pct.classList).toContain('confidence--medium');
   });
 
   it('Should_HaveNativeMeterElement_When_ValueProvided', () => {

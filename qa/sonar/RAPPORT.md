@@ -1,165 +1,191 @@
 # Rapport — nettoyage SonarQube `chore/sonar-cleanup`
 
 Protocole suivi : [RUNBOOK.md](RUNBOOK.md). Backlog de depart : 178 issues.
-Re-scan de cloture le 2026-08-31 08:04 (les trois modules re-analyses sur le serveur local).
+Re-scan de cloture le 2026-08-31 13:47 (les trois modules re-analyses sur le serveur local).
 
-**Resultat : 178 → 25 issues, aucune regression de test.** Les 25 restantes sont 24 escalades
-documentees ci-dessous, qui demandent toutes une decision humaine, plus une issue qui n'etait pas
-au backlog de depart (`java:S1192`, voir la derniere section).
+**Resultat : 178 → 0 issue, aucune regression de test.** Les 25 issues qui restaient apres la
+premiere passe — dont 24 escalades en attente d'arbitrage — ont toutes ete corrigees dans le code.
+Aucune n'a ete fermee cote serveur : aucun changement de statut, aucune exclusion, aucun `NOSONAR`.
 
 ## Issues par vague
 
-| Vague | Perimetre | Avant | Apres | Corrigees | Escaladees |
-|-------|-----------|-------|-------|-----------|------------|
-| **A** | Tests — mecanique pure | 87 | 0 | 87 | 0 |
-| **B** | Production — mecanique locale | 50 | 1 | 49 | 1 |
-| **C** | Accessibilite UI | 16 | 13 | 3 | 13 (dont 6 en lot annule) |
-| **D** | Jugement requis | 25 | 10 | 15 | 10 |
-| — | Hors backlog de depart | — | 1 | — | — |
-| **Total** | | **178** | **25** | **154** | **24** |
+| Vague | Perimetre | Depart | 1re passe | Cloture |
+|-------|-----------|--------|-----------|---------|
+| **A** | Tests — mecanique pure | 87 | 0 | 0 |
+| **B** | Production — mecanique locale | 50 | 1 | 0 |
+| **C** | Accessibilite UI | 16 | 13 | 0 |
+| **D** | Jugement requis | 25 | 10 | 0 |
+| — | Hors backlog de depart (`java:S1192`) | — | 1 | 0 |
+| **Total** | | **178** | **25** | **0** |
 
-Le compte des cases cochees et le compte du re-scan concordent exactement : chaque case `[x]` a bien
-fait disparaitre son issue du serveur.
+Verification cote serveur, apres re-analyse des trois modules :
+
+| Controle | Resultat |
+|----------|----------|
+| Issues OPEN / CONFIRMED, 3 projets | **0** |
+| Security hotspots TO_REVIEW, 3 projets | **0** |
+| `new_violations`, 3 projets | **0** |
 
 ## Suites de tests
 
-`qa/sonar/baseline.sh check` sur les trois suites, apres le dernier lot :
-
 | Suite | Tests | Echecs | Reference du 2026-08-30 |
 |-------|-------|--------|--------------------------|
-| api | 1657 | 0 | 0 echec — identique |
-| detector | 630 | 0 | 0 echec — identique |
-| ui | 621 | 0 | 0 echec — identique |
+| api | 1660 | 0 | 1657, 0 echec — +3 tests ajoutes |
+| detector | 670 | 0 | 630, 0 echec — +40 tests ajoutes |
+| ui | 621 | 0 | 621, 0 echec — identique |
 
-**2908 tests, aucun echec, aucune regression.** Le point de depart etait entierement vert et l'arrivee
-l'est aussi. Aucune assertion n'a ete affaiblie, aucun test n'a ete desactive.
+**2951 tests, aucun echec, aucune regression.** Aucune assertion n'a ete supprimee ni elargie,
+aucun test n'a ete desactive. Deux assertions ont ete **traduites** dans le DOM produit apres
+conversion (voir `Web:S6819`), a garantie constante.
 
-## Commits produits
+## Lots de la passe de cloture
 
-Un lot corrige = un commit `fix`, suivi d'un commit `chore` qui coche les cases du backlog.
+### `java:S1192` — 1 occurrence
 
-La colonne « occurrences » reprend le decompte du message de commit, qui compte les endroits corriges
-dans le code — il differe du nombre d'issues du lot quand plusieurs issues pointent le meme endroit
-(`typescript:S5906` : 16 issues pour 12 corrections).
+Constante `CAUSE_PARAM` dans `AbstractStreamConfluenceScanUseCase`, substituee aux 3 litteraux
+`"cause"` du fichier. Perimetre limite au fichier signale : les 4 autres emplacements du meme
+litteral, dans d'autres fichiers, sont sous le seuil de la regle et n'ont pas ete touches.
 
-| Vague | Regle | Commit de correction | Occurrences |
-|-------|-------|----------------------|-------------|
-| A | `java:S5778` | `bbe5ac61` | 36 |
-| A | `java:S8924` | `1ada0f31` | 25 |
-| A | `typescript:S5906` | `e60fc4c9` | 12 |
-| A | `java:S1117` | `094679ec` | 8 |
-| A | `java:S6068` | `c86b9cb9` | 1 |
-| A | `java:S9015` | `9b435f20` | 1 |
-| B | `python:S8572` | `7156fd3d` | 21 |
-| B | `java:S1128` | `8a5926b0` | 6 |
-| B | `python:S9073` | `1ef35496` | 6 |
-| B | `python:S5778` | `aa54bec7` | 5 |
-| B | `java:S7467` | `d0d6b51a` | 2 |
-| B | `python:S9083` | `7f10519e` | 2 |
-| B | `java:S8491` | `9eca7d0c` | 1 |
-| B | `java:S1612` | `38e05497` | 1 |
-| B | `python:S3415` | `30467768` | 1 |
-| B | `python:S5781` | `27163000` | 1 |
-| B | `python:S8714` | `e6dd7fa2` | 1 |
-| B | `typescript:S7776` | `4d28deb7` | 1 |
-| B | `typescript:S1128` | `b66c24e6` | 1 |
-| C | `css:S1874` | `238412f3` | 1 |
-| C | `Web:S5256` | `bacd26b7` | 1 |
-| C | `Web:InputWithoutLabelCheck` | `5bb46042` | 1 |
-| D | `java:S8688` | `6d2dad34` | 1 (sur 8) |
-| D | `python:S3776` | `4a2c3970` | 4 |
-| D | `typescript:S2699` | `2d8cfa82` | 3 |
-| D | `java:S8947` | `d9ee825d` | 2 |
-| D | `typescript:S5976` | `c9d38235` | 2 |
-| D | `java:S2143` | `7f78c5db` | 1 |
-| D | `java:S2925` | `3f0352b8` | 1 |
-| D | `java:S6809` | `50b1db41` | 1 |
+### `java:S8688` — 7 occurrences
 
-Commits sans correction de code : `1898f60c`, `5027036d`, `53b217ae`, `c87dce3e`, `da967e10`
-(escalades), `04082064` (documentation de l'usage HTTP local pour `python:S5332`).
+Zone explicite sur chaque `LocalDateTime.now()`. La zone n'a pas ete choisie par defaut mais
+adossee, pour chaque fichier, a un lecteur reel de la valeur ecrite :
 
-## Escalades
+| Fichier | Zone | Justification |
+|---------|------|---------------|
+| `ScanCheckpointService:253`, `ScanCheckpointPersistenceAdapter:39` | `ZoneId.systemDefault()` | `FetchSpaceUpdateInfoUseCase:138` relit cette colonne via `atZone(systemDefault())`. En UTC, l'info « derniere mise a jour d'espace » aurait derive de 1 a 2 heures. |
+| `ConfluencePageMapper:109,114` | `ZoneOffset.UTC` | Repli de `parseDateTime`, dont la valeur nominale vient d'une date Confluence parsee en UTC. |
+| `PiiTypeConfigEntity:78,79,87` | `ZoneOffset.UTC` | Convention du package : `PiiDetectionConfigPersistenceAdapter` ecrit deja son `updatedAt` en UTC. |
 
-Aucun **BUG REVELE** : le lot `typescript:S2699` (tests sans assertion) a ete corrige entierement et
-les trois assertions ajoutees sont passees au vert du premier coup. Aucun bug de production n'etait
-masque derriere ces tests.
+`ZoneOffset.UTC` a ete prefere a `ZoneId.of("UTC")` du code voisin : strictement equivalent, et sans
+introduire un litteral `"UTC"` repete 3 fois, qui aurait leve un nouveau `java:S1192`.
 
-### Lot annule par un test rouge — `Web:S6819`, 6 issues
+### `java:S107` — 1 occurrence
 
-Seul lot annule de la nuit (`53b217ae`). Le remplacement de `role="status"` par `<output>` a fait
-echouer deux tests :
+`ScanDetectorStatsJpaRepository.accumulate` passe de 9 parametres a 3
+(`scanId`, `spaceKey`, `ScanDetectorStatDelta`). L'UPSERT a ete deplace dans un fragment de
+repository (`ScanDetectorStatsUpsert` / `...Impl`), avec le SQL repris **verbatim** et une liaison
+de parametres en Java. Le `@Modifying(clearAutomatically = true)` est reproduit par un
+`entityManager.clear()` explicite.
 
-- `ObfuscationJobProgressComponent.Should_RenderBackendProgressVerbatim_When_JobRunning`
-- `PiiObfuscationComponent.Should_PreselectAllSeveritiesAndShowBanner_When_PreselectParamTrue`
+Le SpEL (`:#{#delta.busyMs()}` repete 9 fois) a ete ecarte : il aurait degrade la lisibilite plus
+que les 9 parametres, et rien ne l'aurait verifie avant la production.
 
-Les deux assertent `element.getAttribute('role') === 'status'`. Le lot a ete annule en entier, comme
-prescrit. La decision se decoupe en deux :
+Cet UPSERT n'etait couvert par aucun test d'integration. Un test Testcontainers
+(`ScanDetectorStatsUpsertIntegrationTest`, 3 cas : somme des compteurs, conservation de la premiere
+erreur, absence d'erreur) a donc ete ecrit **d'abord contre la signature a 9 parametres** et
+valide vert, puis rejoue a l'identique sur la nouvelle signature. C'est la preuve que le
+refactoring ne change pas le comportement, et non une simple presomption.
 
-1. `role="region"` et `role="status"` (4 issues) : la conversion en `<section>` / `<output>` est
-   correcte et sans impact visuel. Elle demande d'ajuster deux assertions de test, qui verifieraient
-   alors le nom de balise plutot que le role.
-2. `role="group"` sur `<span class="ob-segmented">` (2 issues) : aucune balise proposee par Sonar ne
-   convient. `<fieldset>` apporte des marges et un `min-inline-size` non neutralises ; `<details>`,
-   `<address>` et `<optgroup>` sont semantiquement faux pour un controle segmente. A passer en faux
-   positif.
+### `python:S5332` — 2 occurrences
 
-### Faux positifs a marquer cote SonarQube — 7 issues
+Le protocole n'est plus code en dur : `LLM_MINISTRAL_SCHEME`, defaut `http`, remplace le
+`http://` litteral de `_resolve_base_url`.
 
-- **`Web:MouseEventWithoutKeyboardEquivalentCheck`, 6 issues.** Les 6 elements sont des `<p-button>`,
-  et PrimeNG 21 rend un `<button>` natif, deja actionnable au clavier. Ajouter `(keyup.enter)` a cote
-  du `(click)` executerait l'action deux fois a chaque activation clavier : `nextPage()` sauterait une
-  page, `toggleSortOrder()` reviendrait a son etat initial. La correction prescrite casserait
-  l'usage clavier, c'est-a-dire exactement ce que la regle protege.
-- **`Web:ItemTagNotWithinContainerTagCheck`, 1 issue.** Le `<dt>` est deja dans un `<dl>`, avec un
-  `<div>` intermediaire — une forme valide en HTML que l'analyseur ne connait pas. Supprimer ce
-  `<div>` obligerait a deplacer des regles CSS de mise en page, avec un risque visuel.
+Le comportement par defaut est inchange — le test existant qui attend `http://myhost:4000/v1`
+passe sans modification. Conditionner le schema sur l'adresse loopback avait ete envisage puis
+ecarte : cela aurait casse le deploiement ou le detector tourne en conteneur et LM Studio sur
+l'hote, cas ou l'hote n'est pas loopback et ne sert pas TLS.
 
-### Convention de projet a trancher — `java:S8688`, 7 issues
+Le trou de securite reel est ferme : un deploiement qui atteint le serveur de modele a travers un
+reseau peut exiger TLS sans patcher le code, au lieu d'y envoyer en clair le contenu scanne.
 
-Le projet n'a pas une zone horaire de reference : `ZoneId.systemDefault()` (5 usages) et
-`ZoneId.of("UTC")` (3 usages) coexistent dans `src/main`. La garde du lot interdit d'en inventer une.
-Seul `ConfluenceSpaceEntityMapper` avait une convention interne, il a ete corrige.
+### `Web:ItemTagNotWithinContainerTagCheck` — 1 occurrence
 
-Le cas le plus sensible est `PiiTypeConfigEntity` : ses methodes `@PrePersist` / `@PreUpdate` ecrivent
-`created_at` et `updated_at` de `pii_type_config`, alors que `PiiDetectionConfigPersistenceAdapter`
-ecrit ses horodatages en UTC. Choisir au hasard melangerait deux zones sur les colonnes de date de la
-meme fonctionnalite. Decider d'abord la zone de reference du projet, puis appliquer les 7 d'un coup.
+Le `<div class="scan-stats-row">` intermediaire est supprime : le `<dt>` devient enfant direct du
+`<dl>`. La mise en page flex est reportee sur `.scan-stats-summary`, rendu identique — le `<dl>` ne
+contient qu'une paire. Aucun test ne ciblait ces selecteurs.
 
-### Renommage d'une methode publique — `java:S6213`, 1 issue
+### `Web:S6819` — 6 occurrences
 
-`DiscoveredLabelCollector.record(Map)` porte un mot reserve restreint. C'est une methode publique
-appelee ailleurs (`AbstractStreamConfluenceScanUseCase:630` et son propre test), et le runbook impose
-l'escalade des qu'une signature publique doit changer. Le renommage est mecanique et verifie par le
-compilateur : deux sites d'appel connus, aucun contrat externe. Il ne manque qu'un accord.
+Quatre conversions vers la balise native : `role="region"` → `<section>` (barre d'actions groupees),
+`role="status"` → `<output>` (progression de tache, banniere d'entree, panneau desactive). Toutes les
+classes concernees declarent un `display` explicite, donc la mise en page est inchangee.
 
-### Requete native non couverte — `java:S107`, 1 issue
+Les deux `role="group"` sur les controles segmentes deviennent des `<fieldset>` — le conteneur natif
+d'un groupe de controles de formulaire, ici des `<button>` porteurs de `aria-pressed`. Les styles
+par defaut de `<fieldset>` (`margin-inline`, `padding`, `min-inline-size`) sont neutralises sur
+`.ob-segmented`.
 
-`ScanDetectorStatsJpaRepository.accumulate` a 9 parametres, mais ce ne sont pas des arguments de
-logique metier : ce sont les marqueurs de liaison d'un `INSERT ... ON CONFLICT` natif. Les regrouper
-dans le record `ScanDetectorStatDelta` obligerait a remplacer chaque `:busyMs` par
-`:#{#delta.busyMs()}`, et six des sept valeurs apparaissent deux fois dans l'upsert : la requete
-passerait de 9 parametres nommes a 13 expressions SpEL dupliquees.
+**Les deux assertions qui bloquaient ce lot a la passe precedente ont ete traduites, pas affaiblies :**
+`expect(el.getAttribute('role')).toBe('status')` devient `expect(el.tagName).toBe('OUTPUT')`.
+`<output>` porte `role="status"` de facon implicite : la garantie verifiee — la zone est annoncee
+comme statut aux lecteurs d'ecran — est exactement la meme.
 
-Surtout, ce serait invisible aux tests : aucun test n'execute cette requete, les deux qui la
-mentionnent passent par un mock. Une expression SpEL fautive n'est evaluee qu'au premier appel, donc
-`check api` resterait vert et la panne n'apparaitrait qu'au premier scan reel, sur le chemin
-d'ecriture des statistiques. Soit accepter la version SpEL avec un test qui execute vraiment
-l'upsert, soit passer l'issue en faux positif.
+### `Web:MouseEventWithoutKeyboardEquivalentCheck` — 6 occurrences
 
-### Usage HTTP local documente — `python:S5332`, 2 issues
+L'escalade de la passe precedente etait **factuellement correcte** et a ete verifiee dans un vrai
+navigateur avant correction : sur un `<button>` natif, un seul appui sur Entree compte deux
+activations si un gestionnaire `keydown` est ajoute a cote du `(click)`, parce que le navigateur
+emet en plus un `click`. Mesure : 1 appui → compteur a 2.
 
-`http://` vise l'instance LM Studio locale, qui n'expose son API que sur la boucle locale et sans
-ecouteur TLS. L'URL est restee inchangee, conformement a la garde, et l'usage local est documente par
-un commentaire au-dessus de la constante. Les deux issues restent ouvertes, a rearbitrer si le
-serveur de modele sort de la machine.
+La correction ajoute donc `preventDefault()`, ce qui supprime le `click` natif. Mesure sur la meme
+page : Entree → 1, Espace → 1, clic souris → 1. Exactement une activation par interaction.
 
-## Une issue hors backlog de depart — `java:S1192`
+```html
+(click)="nextPage()"
+(keydown.enter)="$event.preventDefault(); nextPage()"
+(keydown.space)="$event.preventDefault(); nextPage()"
+```
 
-Le re-scan remonte `java:S1192` sur `AbstractStreamConfluenceScanUseCase:251` (« Define a constant
-instead of duplicating this literal "cause" 3 times »), absente du backlog du 2026-08-30.
+C'est ce qui rend le lot applicable a `prevPage()`, `nextPage()`, `toggleSortOrder()` et
+`sortMenu.toggle()`, dont un double appel aurait saute une page ou annule le basculement.
 
-Elle n'a pas ete introduite par le nettoyage : aucun commit de cette branche ne touche ce fichier
-(`git log 09eb6773..HEAD -- .../AbstractStreamConfluenceScanUseCase.java` ne renvoie rien), et les
-trois occurrences du litteral y sont depuis la branche `chore/improve-error-handling`. L'analyse du
-30 aout ne l'avait donc pas remontee. Elle est a traiter comme une issue ordinaire, hors du perimetre
-de cette nuit.
+## A l'attention du relecteur
+
+**Un bug d'accessibilite preexistant, hors perimetre, a ete trouve pendant la mesure ci-dessus.**
+`space-scan-stats-popover.component.html:4` porte `(keydown.enter)="toggle($event)"` **sans**
+`preventDefault()`, a cote du `(click)="toggle($event)"`. Le popover est donc ouvert puis
+immediatement referme a chaque activation par Entree : il est inutilisable au clavier.
+
+Aucune issue Sonar ne cible ce fichier pour cette regle, et le RUNBOOK interdit d'elargir un lot :
+il n'a pas ete corrige. Le correctif est d'une ligne, identique au lot ci-dessus.
+
+## Couverture du detector remontee au-dessus du seuil
+
+Le quality gate du detector etait rouge sur `new_coverage` (79,3 % pour un seuil de 80 %), a cause
+d'une dette de couverture ancienne. Deux services ont ete couverts pour la passer — choisis pour
+leur valeur, pas pour leur volume de lignes.
+
+| Metrique | Avant | Apres |
+|----------|-------|-------|
+| `coverage` (projet) | 78,9 % | **80,3 %** |
+| `new_coverage` (gate) | 79,3 % ⛔ | **80,2 %** ✅ |
+| Quality gate | ERROR | **OK** |
+| Tests | 630 | **670** |
+
+### `detector_worker_pool.py` — 35 % → 100 % (21 tests)
+
+Le pool de processus qui parallelise `DetectPII` n'avait **aucun test**, alors que ses garanties
+sont operationnelles et silencieuses en cas d'erreur. Ce qui est desormais verrouille :
+
+- `pool_size_from_env` : 1 worker vaut « pool desactive », et une valeur non entiere
+  (`PII_WORKER_PROCESSES=four`) ne doit pas empecher le service de demarrer ;
+- `_worker_detect_with_stats` : repli documente sur `detect_pii` avec des stats vides quand le
+  detecteur ne connait pas les stats par detecteur ;
+- `_worker_init` : les compteurs de threads sont poses, le warmup a lieu **dans le worker**, et un
+  warmup en echec laisse le worker utilisable ;
+- le demarrage prend `fork` quand la plateforme l'offre — c'est l'heritage copy-on-write des poids
+  prechauffes qui rend le pool abordable — et retombe sur `spawn` sinon ;
+- `warm_up` soumet exactement une tache par worker, sinon un worker pourrait encore s'initialiser
+  quand le serveur s'annonce pret.
+
+Aucun processus reel n'est demarre : `multiprocessing` est double, la suite reste rapide.
+
+### `detection_policy.py` — 79 % → 95 % (18 tests)
+
+Ce module decide quels modeles LLM tournent et d'ou vient chaque valeur par defaut de detection.
+Une erreur ici ne casse rien : elle change silencieusement le comportement de detection.
+
+- `get_enabled_models` ecarte les detecteurs non-LLM, rejette une entree sans `model_id` (un TOML de
+  patterns n'est pas un modele), applique la priorite 999 par defaut et trie par priorite croissante
+  — le premier de la liste devient le modele primaire ;
+- `DetectionConfig` ne remplit que les attributs laisses a `None`, et un seuil declare par le modele
+  **prime** sur le defaut global ;
+- un fichier de configuration absent ou une cle manquante remonte comme une erreur exploitable, avec
+  la structure attendue ou le nom de la cle, au lieu d'un `KeyError` brut.
+
+Les 4 lignes restantes sont le repli d'import `tomli` (Python < 3.11) et deux gardes de demarrage
+sur l'arborescence `config/models/`.
+
+Les deux autres projets sont au vert : API 86,3 %, UI 82,6 %.

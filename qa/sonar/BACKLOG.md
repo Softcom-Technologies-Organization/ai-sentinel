@@ -414,7 +414,7 @@ Change le HTML produit. Peut casser des selecteurs de test ou un snapshot : vagu
 
 **Correction** : Ajouter les en-tetes `<th>` manquants au tableau.
 
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/components/obfuscation-confirm-dialog/obfuscation-confirm-dialog.component.html:27` — Add "<th>" headers to this "<table>". <!-- b8d41449 -->
+- [x] `pii-reporting-ui/src/app/features/pii-obfuscation/components/obfuscation-confirm-dialog/obfuscation-confirm-dialog.component.html:27` — Add "<th>" headers to this "<table>". <!-- b8d41449 -->
 
 ### Lot `Web:InputWithoutLabelCheck` — 1 issue(s)
 

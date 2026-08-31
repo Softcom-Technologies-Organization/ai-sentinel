@@ -409,6 +409,7 @@
                                 type="text"
                                 pInputText
                                 [placeholder]="'settings.piiTypes.search.placeholder' | transloco"
+                                [attr.aria-label]="'settings.piiTypes.search.placeholder' | transloco"
                                 [(ngModel)]="searchTerm"
                                 (ngModelChange)="onSearchChange($event)"
                                 class="pii-search-input" />

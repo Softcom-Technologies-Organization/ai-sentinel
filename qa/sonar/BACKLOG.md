@@ -261,7 +261,7 @@ Modifie du code de production, mais chaque correction est locale et sans effet d
 
 **Correction** : Le Javadoc ne documente rien : soit le rattacher a la declaration suivante, soit le convertir en commentaire bloc. Ne pas supprimer une information utile.
 
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/application/pii/reporting/service/ContentScanOrchestrator.java:179` — Remove or merge the dangling Javadoc comment(s). <!-- bfdf3a70 -->
+- [x] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/application/pii/reporting/service/ContentScanOrchestrator.java:179` — Remove or merge the dangling Javadoc comment(s). <!-- bfdf3a70 -->
 
 ### Lot `java:S6213` — 1 issue(s)
 

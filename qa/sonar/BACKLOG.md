@@ -307,7 +307,7 @@ Modifie du code de production, mais chaque correction est locale et sans effet d
 
 **Correction** : Remplacer le `try/except ... fail()` par `pytest.raises`.
 
-- [ ] `pii-detector-service/tests/unit/test_pii_entity_dynamic_attributes.py:55` — Remove this try/except block and let the test fail naturally if an exception is raised. <!-- 67d0b542 -->
+- [x] `pii-detector-service/tests/unit/test_pii_entity_dynamic_attributes.py:55` — Remove this try/except block and let the test fail naturally if an exception is raised. <!-- 67d0b542 -->
 
 ### Lot `typescript:S7776` — 1 issue(s)
 

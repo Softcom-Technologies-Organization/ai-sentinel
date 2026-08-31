@@ -18,8 +18,9 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -154,7 +155,7 @@ public class ExcelDetectionReportWriterAdapter implements WriteDetectionReportPo
             var dateCell = row.createCell(index);
             try {
                 Instant instant = Instant.parse(rawValue);
-                dateCell.setCellValue(Date.from(instant));
+                dateCell.setCellValue(LocalDateTime.ofInstant(instant, ZoneId.systemDefault()));
                 dateCell.setCellStyle(dateStyle);
             } catch (DateTimeParseException _) {
                 log.warn("Invalid date format: {}, using raw value", rawValue);

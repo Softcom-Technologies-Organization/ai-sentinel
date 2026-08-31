@@ -26,7 +26,7 @@ const UNKNOWN_ERROR_KEY = 'error.scan.unexpected';
 const DETECTOR_REFUSAL_PREFIX = 'error.scan.detector_';
 
 /** Keys meaning the scan stopped on an outage and waits on the Resume button. */
-const SCAN_PAUSED_KEYS: readonly string[] = ['error.scan.paused_detector', 'error.scan.paused_network'];
+const SCAN_PAUSED_KEYS: ReadonlySet<string> = new Set(['error.scan.paused_detector', 'error.scan.paused_network']);
 
 @Injectable()
 export class ToastService {
@@ -57,7 +57,7 @@ export class ToastService {
    * detector or the network, then press Resume) rather than an item to note.
    */
   isScanPaused(errorKey: string | undefined): boolean {
-    return errorKey !== undefined && SCAN_PAUSED_KEYS.includes(errorKey);
+    return errorKey !== undefined && SCAN_PAUSED_KEYS.has(errorKey);
   }
 
   /**

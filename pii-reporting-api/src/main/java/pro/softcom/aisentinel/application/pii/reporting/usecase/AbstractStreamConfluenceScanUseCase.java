@@ -53,6 +53,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public abstract class AbstractStreamConfluenceScanUseCase {
 
+    private static final String CAUSE_PARAM = "cause";
+
     protected final ConfluenceAccessor confluenceAccessor;
     protected final PiiDetectorClient piiDetectorClient;
     protected final ContentScanOrchestrator contentScanOrchestrator;
@@ -248,7 +250,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
     protected static TranslatableError pausedErrorOr(ScanRunState run, String fallback) {
         return run.pauseError().orElseGet(() ->
             new TranslatableError(ScanErrorKeys.UNEXPECTED,
-                                  Map.of("cause", fallback == null ? "" : fallback)));
+                                  Map.of(CAUSE_PARAM, fallback == null ? "" : fallback)));
     }
 
     private Flux<ConfluenceContentScanResult> buildScanResultFluxBody(ScanRunState run, String spaceKey,
@@ -393,7 +395,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                 pageState.scanId(), spaceKey, page.id(),
                 new TranslatableError(ScanErrorKeys.ATTACHMENT_FAILED,
                                       Map.of("attachment", extracted.attachment().name(),
-                                             "cause", resolveErrorMessage(exception))),
+                                             CAUSE_PARAM, resolveErrorMessage(exception))),
                 progress));
         });
     }
@@ -567,7 +569,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
             pageState.scanId(), spaceKey, page.id(),
             new TranslatableError(ScanErrorKeys.PAGE_FAILED,
                                   Map.of("page", page.title() == null ? "" : page.title(),
-                                         "cause", resolveErrorMessage(exception))),
+                                         CAUSE_PARAM, resolveErrorMessage(exception))),
             progress);
 
         return Mono.just(errorEvent);

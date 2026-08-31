@@ -211,6 +211,18 @@ def _is_stopword_sentence(span: str) -> bool:
     return len(words & _STOPWORDS) >= 2
 
 
+def _is_high_entropy_single_token(span: str) -> bool:
+    if " " in span:
+        return False
+    try:
+        return (
+            _ENTROPY_SCORER.calculate_shannon_entropy(span)
+            >= _HIGH_ENTROPY_KEEP_THRESHOLD
+        )
+    except Exception:  # defensive fail-open on the external scorer
+        return False
+
+
 def _is_dictionary_word(span: str) -> bool:
     if not span.isalpha() or len(span) > _MAX_ZXCVBN_LEN:
         return False
@@ -240,15 +252,8 @@ class CredentialPlausibilityStrategy:
             return PostfilterVerdict(
                 False, "placeholder: masked assignment value"
             )
-        if " " not in span:
-            try:
-                if (
-                    _ENTROPY_SCORER.calculate_shannon_entropy(span)
-                    >= _HIGH_ENTROPY_KEEP_THRESHOLD
-                ):
-                    return PASS
-            except Exception:  # defensive fail-open on the external scorer
-                pass
+        if _is_high_entropy_single_token(span):
+            return PASS
         if _is_keyword_literal(span):
             return PostfilterVerdict(False, "credential keyword literal")
         if _is_config_property_key(span):

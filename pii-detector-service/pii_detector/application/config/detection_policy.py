@@ -170,28 +170,7 @@ class DetectionConfig:
             enabled_models = get_enabled_models(config)
             primary_model = enabled_models[0] if enabled_models else {}
 
-            # Apply defaults only for None values
-            if self.model_id is None and primary_model:
-                self.model_id = primary_model["model_id"]
-            if self.device is None:
-                self.device = primary_model.get("device")
-            if self.max_length is None:
-                self.max_length = primary_model.get("max_length")
-            if self.threshold is None:
-                # Use model-specific threshold or fall back to the global default
-                model_threshold = primary_model.get("threshold")
-                if model_threshold is not None:
-                    self.threshold = model_threshold
-                else:
-                    self.threshold = config["detection"].get("default_threshold", 0.5)
-            if self.batch_size is None:
-                self.batch_size = config["detection"].get("batch_size", 4)
-            if self.stride_tokens is None:
-                self.stride_tokens = config["detection"].get("stride_tokens", 64)
-            if self.long_text_threshold is None:
-                self.long_text_threshold = config["detection"].get("long_text_threshold", 10000)
-            if self.custom_filenames is None:
-                self.custom_filenames = primary_model.get("custom_filenames")
+            self._apply_defaults(config, primary_model)
 
         except FileNotFoundError as e:
             raise FileNotFoundError(
@@ -216,3 +195,32 @@ class DetectionConfig:
                 f"Failed to load configuration: {e}. "
                 f"Please verify the TOML files are valid."
             ) from e
+
+    def _apply_defaults(self, config: dict, primary_model: dict) -> None:
+        """Fill the attributes left to None with the configured defaults.
+
+        Args:
+            config: Parsed TOML configuration
+            primary_model: Highest-priority enabled model, empty when none is enabled
+        """
+        if self.model_id is None and primary_model:
+            self.model_id = primary_model["model_id"]
+        if self.device is None:
+            self.device = primary_model.get("device")
+        if self.max_length is None:
+            self.max_length = primary_model.get("max_length")
+        if self.threshold is None:
+            # Use model-specific threshold or fall back to the global default
+            model_threshold = primary_model.get("threshold")
+            if model_threshold is not None:
+                self.threshold = model_threshold
+            else:
+                self.threshold = config["detection"].get("default_threshold", 0.5)
+        if self.batch_size is None:
+            self.batch_size = config["detection"].get("batch_size", 4)
+        if self.stride_tokens is None:
+            self.stride_tokens = config["detection"].get("stride_tokens", 64)
+        if self.long_text_threshold is None:
+            self.long_text_threshold = config["detection"].get("long_text_threshold", 10000)
+        if self.custom_filenames is None:
+            self.custom_filenames = primary_model.get("custom_filenames")

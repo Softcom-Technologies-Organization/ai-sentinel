@@ -860,28 +860,33 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             )
             kwargs['enable_presidio'] = detector_flags.get('presidio_enabled')
             kwargs['enable_regex'] = detector_flags.get('regex_enabled')
-            if 'enable_ministral' in sig.parameters:
-                kwargs['enable_ministral'] = detector_flags.get('ministral_enabled')
-            # Ministral-PII chunking knobs (DB columns ministral_chunk_size /
-            # ministral_overlap) forwarded so operator-configured values reach
-            # the detector.
-            if 'ministral_chunk_size' in sig.parameters:
-                kwargs['ministral_chunk_size'] = detector_flags.get('ministral_chunk_size')
-            if 'ministral_overlap' in sig.parameters:
-                kwargs['ministral_overlap'] = detector_flags.get('ministral_overlap')
-            # LM Studio endpoint (DB columns lm_studio_host / lm_studio_port)
-            # forwarded so the Ministral detector targets the operator-configured
-            # endpoint for this scan.
-            if 'lm_studio_host' in sig.parameters:
-                kwargs['lm_studio_host'] = detector_flags.get('lm_studio_host')
-            if 'lm_studio_port' in sig.parameters:
-                kwargs['lm_studio_port'] = detector_flags.get('lm_studio_port')
-            # Ministral chunk-prompt concurrency (DB column ministral_concurrency),
-            # forwarded so the operator/auto-tuned value reaches the detector.
-            if 'ministral_concurrency' in sig.parameters:
-                kwargs['ministral_concurrency'] = detector_flags.get('ministral_concurrency')
+            self._add_supported_ministral_kwargs(kwargs, sig, detector_flags)
 
         return kwargs
+
+    @staticmethod
+    def _add_supported_ministral_kwargs(kwargs: dict, sig, detector_flags: dict) -> None:
+        """Forward the Ministral knobs the detector signature actually accepts."""
+        if 'enable_ministral' in sig.parameters:
+            kwargs['enable_ministral'] = detector_flags.get('ministral_enabled')
+        # Ministral-PII chunking knobs (DB columns ministral_chunk_size /
+        # ministral_overlap) forwarded so operator-configured values reach
+        # the detector.
+        if 'ministral_chunk_size' in sig.parameters:
+            kwargs['ministral_chunk_size'] = detector_flags.get('ministral_chunk_size')
+        if 'ministral_overlap' in sig.parameters:
+            kwargs['ministral_overlap'] = detector_flags.get('ministral_overlap')
+        # LM Studio endpoint (DB columns lm_studio_host / lm_studio_port)
+        # forwarded so the Ministral detector targets the operator-configured
+        # endpoint for this scan.
+        if 'lm_studio_host' in sig.parameters:
+            kwargs['lm_studio_host'] = detector_flags.get('lm_studio_host')
+        if 'lm_studio_port' in sig.parameters:
+            kwargs['lm_studio_port'] = detector_flags.get('lm_studio_port')
+        # Ministral chunk-prompt concurrency (DB column ministral_concurrency),
+        # forwarded so the operator/auto-tuned value reaches the detector.
+        if 'ministral_concurrency' in sig.parameters:
+            kwargs['ministral_concurrency'] = detector_flags.get('ministral_concurrency')
     
     def _pass_fresh_configs_to_presidio(self, pii_type_configs: Optional[Dict], request_id: str) -> None:
         """
@@ -1148,7 +1153,18 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         if filter_reasons:
             logger.debug(f"[{request_id}] Filter reasons breakdown: {dict(filter_reasons)}")
 
-        # TEMPORARY: parity recall investigation — remove with git revert
+        self._log_parity_debug(
+            request_id, entities, filtered_entities, filtered_count, filter_reasons
+        )
+
+        return filtered_entities
+
+    @staticmethod
+    def _log_parity_debug(
+        request_id: str, entities: List, filtered_entities: List,
+        filtered_count: int, filter_reasons: dict,
+    ) -> None:
+        """TEMPORARY: parity recall investigation — remove with git revert."""
         in_per_type: Dict[str, int] = {}
         in_per_source: Dict[str, int] = {}
         out_per_type: Dict[str, int] = {}
@@ -1167,8 +1183,6 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             request_id, len(entities), len(filtered_entities), filtered_count,
             in_per_type, in_per_source, out_per_type, dict(filter_reasons)
         )
-
-        return filtered_entities
 
     def _evaluate_entity_filter(
         self, entity: dict, pii_type_configs: dict, idx: int, request_id: str

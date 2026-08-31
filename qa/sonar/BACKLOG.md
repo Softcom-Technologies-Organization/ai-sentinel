@@ -406,7 +406,7 @@ Change le HTML produit. Peut casser des selecteurs de test ou un snapshot : vagu
 
 **Correction** : Remplacer la propriete CSS depreciee par son equivalent courant.
 
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/components/obfuscation-finding-row/obfuscation-finding-row.component.css:54` — Deprecated keyword "break-word" for property "word-break" <!-- 5577e7b8 -->
+- [x] `pii-reporting-ui/src/app/features/pii-obfuscation/components/obfuscation-finding-row/obfuscation-finding-row.component.css:54` — Deprecated keyword "break-word" for property "word-break" <!-- 5577e7b8 -->
 
 ### Lot `Web:S5256` — 1 issue(s)
 

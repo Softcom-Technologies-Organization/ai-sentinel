@@ -512,8 +512,12 @@ Changement de signature, de semantique ou de structure. Chaque lot a une garde e
 
 **Correction** : Retirer le `final` sur la methode d'entite JPA : il empeche le proxy Hibernate de fonctionner (bug reel, pas un nit).
 
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/jpa/entity/PiiAccessAuditEntity.java:66` — Remove this "final" modifier from this JPA entity method. <!-- 0af73dfc -->
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/jpa/entity/PiiAccessAuditEntity.java:87` — Remove this "final" modifier from this JPA entity method. <!-- 1f31b5f1 -->
+> Les deux lignes citees correspondaient exactement au code. `final` retire sur `equals` et
+> `hashCode` ; le corps des deux methodes deroule deja le `HibernateProxy` pour comparer la classe
+> effective, la comparaison reste donc correcte sur une entite chargee en lazy. `check api` vert.
+
+- [x] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/jpa/entity/PiiAccessAuditEntity.java:66` — Remove this "final" modifier from this JPA entity method. <!-- 0af73dfc -->
+- [x] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/reporting/adapter/out/jpa/entity/PiiAccessAuditEntity.java:87` — Remove this "final" modifier from this JPA entity method. <!-- 1f31b5f1 -->
 
 ### Lot `python:S5332` — 2 issue(s)
 

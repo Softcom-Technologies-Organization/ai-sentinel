@@ -17,7 +17,7 @@ Protocole d'execution obligatoire : [RUNBOOK.md](RUNBOOK.md).
 | **A** | Tests — mecanique pure | 87 | ✅ terminee et verifiee |
 | **B** | Production — mecanique locale | 50 | ✅ terminee et verifiee — 1 escalade (`java:S6213`) |
 | **C** | Accessibilite UI — modifie le DOM rendu | 16 | ✅ terminee — 3 corrigees, 13 escaladees (dont 1 lot annule) |
-| **D** | Jugement requis — lire le RUNBOOK avant | 25 | 🔄 en cours |
+| **D** | Jugement requis — lire le RUNBOOK avant | 25 | ✅ terminee — 15 corrigees, 10 escaladees |
 
 Statuts : ⬜ a faire · 🔄 en cours · ✅ terminee et verifiee · ⛔ annulee (rollback).
 
@@ -627,5 +627,20 @@ Changement de signature, de semantique ou de structure. Chaque lot a une garde e
 
 **Correction** : Extraire la methode transactionnelle dans un bean injecte : appelee via `this`, la transaction n'est jamais ouverte (bug reel).
 
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/detection/adapter/out/PiiDetectionConfigPersistenceAdapter.java:116` — Call transactional methods via an injected dependency instead of directly via 'this'. <!-- 9b210e90 -->
+> Aucune extraction necessaire : le bean injecte existe deja dans la classe, le champ
+> `self` (`@Lazy PiiDetectionConfigRepository`), et il est deja utilise deux lignes plus loin par
+> `createDefaultConfig` pour `self.updateConfig(...)`. La correction se limite donc a
+> `findConfig()` -> `self.findConfig()` ligne 116, dans le style du code voisin.
+>
+> Nuance sur la ligne Correction : ici la transaction n'etait pas absente. Les deux seuls appelants
+> de `requireConfigEntity()` — `requestBenchmark()` et `findBenchStatus()` — sont eux-memes
+> `@Transactional`, donc une transaction etait deja ouverte et l'appel direct la rejoignait, comme le
+> ferait le proxy en propagation REQUIRED. Le defaut etait donc latent : il se serait manifeste des
+> qu'un appelant non transactionnel aurait ete ajoute. Corrige quand meme, le cout etant d'un mot.
+>
+> `PiiDetectionConfigPersistenceAdapterTest` est un `@SpringBootTest` sur Postgres Testcontainers avec
+> le vrai bean : le passage par le proxy est reellement exerce. 8 tests verts, puis `check api`
+> complet vert.
+
+- [x] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/detection/adapter/out/PiiDetectionConfigPersistenceAdapter.java:116` — Call transactional methods via an injected dependency instead of directly via 'this'. <!-- 9b210e90 -->
 

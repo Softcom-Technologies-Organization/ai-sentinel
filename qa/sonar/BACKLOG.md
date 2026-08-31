@@ -605,7 +605,21 @@ Changement de signature, de semantique ou de structure. Chaque lot a une garde e
 
 **Correction** : GARDE : remplacer `Thread.sleep` par une attente conditionnelle (Awaitility ou latch). Si le test devient instable, revenir au sleep et escalader.
 
-- [ ] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:212` — Remove this use of "Thread.sleep()". <!-- 0aad8b86 -->
+> Ligne 214 apres les lots precedents sur ce fichier, et non 212. Le `sleep` n'attendait rien : il
+> simulait une latence inverse (page 1 la plus lente) pour que l'ordre d'achevement soit l'inverse de
+> l'ordre source, et prouver ainsi que `flatMapSequential` reemet en ordre source.
+>
+> Remplace par un tableau de `CountDownLatch` : l'analyse de la page n attend que celle de la page
+> n+1 soit terminee. L'ordre d'achevement p-5..p-1 devient une contrainte, plus une course de
+> chronometres. Le test est aussi plus fort qu'avant : il ne se debloque que si les 5 analyses sont
+> reellement en vol ensemble, alors que la version au `sleep` passait meme si le pipeline les avait
+> executees en serie.
+>
+> Stabilite verifiee : 3 executions isolees, 0,98 / 0,99 / 0,99 s, toutes vertes, puis `check api`
+> complet vert. Un `await` de 10 s borne chaque attente, et le `timeout(15 s)` deja present sur le
+> flux rend un eventuel interblocage visible au lieu de suspendre la suite.
+
+- [x] `pii-reporting-api/src/test/java/pro/softcom/aisentinel/application/pii/reporting/usecase/StreamConfluenceScanUseCaseTest.java:212` — Remove this use of "Thread.sleep()". <!-- 0aad8b86 -->
 
 ### Lot `java:S6809` — 1 issue(s)
 

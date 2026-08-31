@@ -283,7 +283,7 @@ Modifie du code de production, mais chaque correction est locale et sans effet d
 
 **Correction** : Remplacer le lambda par une reference de methode.
 
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/detection/adapter/out/DiscoveredLabelPersistenceAdapter.java:31` — Replace this lambda with method reference 'jpaRepository::upsertOccurrence'. <!-- a4ef4892 -->
+- [x] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/detection/adapter/out/DiscoveredLabelPersistenceAdapter.java:31` — Replace this lambda with method reference 'jpaRepository::upsertOccurrence'. <!-- a4ef4892 -->
 
 ### Lot `python:S3415` — 1 issue(s)
 

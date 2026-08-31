@@ -76,7 +76,8 @@ describe('ObfuscationJobProgressComponent', () => {
     tick(0);
 
     const root = query('obfuscation-job-progress');
-    expect(root?.getAttribute('role')).toBe('status');
+    // <output> carries role="status" implicitly, so progress stays announced.
+    expect(root?.tagName).toBe('OUTPUT');
     expect(query('obfuscation-job-label')?.textContent).toContain('2/5');
     expect(query('obfuscation-job-rescan-hint')).toBeFalsy();
   });

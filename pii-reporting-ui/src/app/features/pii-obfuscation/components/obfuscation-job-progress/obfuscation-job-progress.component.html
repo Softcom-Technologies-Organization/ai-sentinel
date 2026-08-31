@@ -1,5 +1,5 @@
 @if (job(); as currentJob) {
-  <div class="ob-job" role="status" [attr.data-testid]="testIds.root">
+  <output class="ob-job" [attr.data-testid]="testIds.root">
     <div class="ob-job-label" [attr.data-testid]="testIds.label">
       <i class="pi pi-eye-slash" aria-hidden="true"></i>
       {{
@@ -34,5 +34,5 @@
         {{ 'obfuscation.job.rescanRecommended' | transloco }}
       </p>
     }
-  </div>
+  </output>
 }

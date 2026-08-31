@@ -1,8 +1,7 @@
 @if (plan(); as currentPlan) {
   @if (currentPlan.totalFindings > 0 || currentPlan.attachmentExclusions > 0) {
-    <div
+    <section
       class="ob-bulkbar"
-      role="region"
       [attr.aria-label]="'obfuscation.bulk.ariaLabel' | transloco"
       [attr.data-testid]="testIds.root"
     >
@@ -86,6 +85,6 @@
           {{ 'obfuscation.bulk.markFp' | transloco }}
         </button>
       </div>
-    </div>
+    </section>
   }
 }

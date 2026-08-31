@@ -344,7 +344,8 @@ describe('PiiObfuscationComponent', () => {
       expect(lastSearchRequest().selection.severities).toHaveLength(3);
     const banner = query('obfuscation-entry-banner');
     expect(banner).toBeTruthy();
-    expect(banner?.getAttribute('role')).toBe('status');
+    // <output> carries role="status" implicitly, so the banner stays announced.
+    expect(banner?.tagName).toBe('OUTPUT');
   });
 
   it('Should_HideBanner_When_Dismissed', () => {

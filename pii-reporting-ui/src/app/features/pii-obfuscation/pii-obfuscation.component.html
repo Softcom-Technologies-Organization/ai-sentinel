@@ -47,7 +47,7 @@
     </header>
 
     @if (showBanner()) {
-      <div class="ob-entry-banner" role="status" [attr.data-testid]="testIds.entryBanner">
+      <output class="ob-entry-banner" [attr.data-testid]="testIds.entryBanner">
         <i class="pi pi-bolt" aria-hidden="true"></i>
         @if (selection.scope()?.pageId || selection.scope()?.attachmentName) {
           <span
@@ -73,7 +73,7 @@
         >
           <i class="pi pi-times" aria-hidden="true"></i>
         </button>
-      </div>
+      </output>
     }
 
     <div class="ob-content" [attr.data-testid]="testIds.content">
@@ -166,7 +166,7 @@
                 />
               </span>
 
-              <span class="ob-segmented" role="group" [attr.data-testid]="testIds.toolbar.statusFilter">
+              <fieldset class="ob-segmented" [attr.data-testid]="testIds.toolbar.statusFilter">
                 @for (option of statusFilterOptions; track option.value) {
                   <button
                     type="button"
@@ -182,7 +182,7 @@
                     }
                   </button>
                 }
-              </span>
+              </fieldset>
 
               @if (itemChipLabel(); as itemName) {
                 <span class="ob-item-chip" [attr.data-testid]="testIds.toolbar.itemChip">
@@ -202,7 +202,7 @@
               <span class="ob-toolbar-spacer"></span>
 
               <span class="ob-groupby-label">{{ 'obfuscation.groupBy.label' | transloco }}</span>
-              <span class="ob-segmented" role="group" [attr.data-testid]="testIds.toolbar.groupBy">
+              <fieldset class="ob-segmented" [attr.data-testid]="testIds.toolbar.groupBy">
                 @for (option of groupByOptions; track option.value) {
                   <button
                     type="button"
@@ -215,7 +215,7 @@
                     {{ option.labelKey | transloco }}
                   </button>
                 }
-              </span>
+              </fieldset>
 
               <button
                 type="button"
@@ -384,10 +384,10 @@
       (cancelled)="dialogVisible.set(false)"
     />
   } @else {
-    <div class="ob-disabled" role="status" [attr.data-testid]="testIds.featureDisabled">
+    <output class="ob-disabled" [attr.data-testid]="testIds.featureDisabled">
       <i class="pi pi-lock" aria-hidden="true"></i>
       <p>{{ 'obfuscation.featureDisabled' | transloco }}</p>
-    </div>
+    </output>
   }
 </section>
 </div>

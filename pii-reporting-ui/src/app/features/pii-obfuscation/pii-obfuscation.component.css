@@ -177,6 +177,11 @@
   border-radius: 8px;
   overflow: hidden;
   background: var(--sentinel-bg-card);
+  /* Neutralise the <fieldset> defaults (margin-inline, padding, min-inline-size)
+     so the segmented control keeps hugging its buttons. */
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
 }
 
 .ob-segment {

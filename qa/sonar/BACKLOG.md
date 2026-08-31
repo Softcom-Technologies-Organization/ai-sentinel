@@ -299,7 +299,7 @@ Modifie du code de production, mais chaque correction est locale et sans effet d
 
 **Correction** : Supprimer la valeur dupliquee dans le litteral d'ensemble. Verifier qu'il ne s'agit pas d'une valeur manquante mal recopiee.
 
-- [ ] `pii-detector-service/pii_detector/infrastructure/postfilter/strategies/credential_plausibility.py:146` — Change or remove duplicates of this key. <!-- 0a17e8b4 -->
+- [x] `pii-detector-service/pii_detector/infrastructure/postfilter/strategies/credential_plausibility.py:146` — Change or remove duplicates of this key. <!-- 0a17e8b4 -->
 
 ### Lot `python:S8714` — 1 issue(s)
 

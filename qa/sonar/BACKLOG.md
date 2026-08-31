@@ -557,7 +557,18 @@ Changement de signature, de semantique ou de structure. Chaque lot a une garde e
 
 **Correction** : Remplacer l'API de date historique par `java.time`. Verifier le format produit dans l'export Excel.
 
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/export/adapter/out/ExcelDetectionReportWriterAdapter.java:?` — Use the "java.time" API for date and time. <!-- b7ae8a9e -->
+> Ligne non fournie par Sonar (`:?`) : le seul usage etait `populateDateField`, ligne 157,
+> `dateCell.setCellValue(Date.from(instant))` — remplace par
+> `LocalDateTime.ofInstant(instant, ZoneId.systemDefault())`, import `java.util.Date` supprime.
+>
+> Format produit verifie, et c'est ce qui dicte la zone : POI convertit un `java.util.Date` en date
+> serielle Excel dans le fuseau par defaut de la JVM. Mesure sur POI 5.5.1 avec
+> `2026-08-31T22:30:00Z` en Europe/Zurich : `Date` et `systemDefault()` donnent tous deux
+> 46266.020833333336, `ZoneOffset.UTC` donnerait 46265.9375, soit 2 h d'ecart dans le fichier
+> exporte. `systemDefault()` est donc le seul choix qui laisse l'export inchange — ce n'est pas une
+> convention inventee, contrairement au cas `java:S8688`. `check api` vert.
+
+- [x] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/export/adapter/out/ExcelDetectionReportWriterAdapter.java:?` — Use the "java.time" API for date and time. <!-- b7ae8a9e -->
 
 ### Lot `java:S107` — 1 issue(s)
 

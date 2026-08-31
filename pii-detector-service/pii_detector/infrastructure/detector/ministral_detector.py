@@ -69,9 +69,11 @@ from pii_detector.infrastructure.text_processing.semantic_chunker import (
 
 DETECTOR_NAMESPACE = "MINISTRAL"
 MINISTRAL_DEFAULT_MODEL_ID = "ministral-3b-pii-preview@q8_0"
-# Plain HTTP on purpose: LM Studio serves its OpenAI-compatible API over
-# loopback only and offers no TLS listener. Switching to https:// breaks the
-# detector. Pending arbitration if the model server ever moves off-host.
+# Plain HTTP by default: LM Studio offers no TLS listener, so the nominal
+# loopback deployment has nothing to negotiate. It is only a default — a
+# deployment that reaches the model server across a network sets
+# LLM_MINISTRAL_SCHEME=https rather than sending scanned content in clear.
+DEFAULT_SCHEME = "http"
 DEFAULT_BASE_URL = "http://localhost:1234/v1"
 # Permissive global threshold at this layer (the detector's own default when no
 # request threshold is supplied).
@@ -278,6 +280,7 @@ class MinistralDetector:
         # spec defaults as fallback. The generic config is accepted for parity
         # with the other detectors but the model id is forced to the env value.
         self.base_url = os.environ.get("LLM_MINISTRAL_BASE_URL", DEFAULT_BASE_URL).rstrip("/")
+        self._scheme = os.environ.get("LLM_MINISTRAL_SCHEME", DEFAULT_SCHEME)
         self._model_id = os.environ.get("LLM_MINISTRAL_MODEL", MINISTRAL_DEFAULT_MODEL_ID)
         self.threshold = (
             self.config.threshold
@@ -476,11 +479,12 @@ class MinistralDetector:
         """Return the effective LM Studio base URL for this request.
 
         When the operator-configured host/port are supplied (DB columns
-        lm_studio_host / lm_studio_port), build ``http://host:port/v1``;
-        otherwise fall back to the env-driven ``self.base_url``.
+        lm_studio_host / lm_studio_port), build ``<scheme>://host:port/v1``
+        using LLM_MINISTRAL_SCHEME; otherwise fall back to the env-driven
+        ``self.base_url``.
         """
         if lm_studio_host and lm_studio_port:
-            return f"http://{lm_studio_host}:{lm_studio_port}/v1"
+            return f"{self._scheme}://{lm_studio_host}:{lm_studio_port}/v1"
         return self.base_url
 
     def _extract_over_chunks(

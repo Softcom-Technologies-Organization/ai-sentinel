@@ -223,6 +223,16 @@ class TestLmStudioEndpointOverride:
         assert detector._resolve_base_url(None, 4000) == detector.base_url
         assert detector._resolve_base_url("myhost", None) == detector.base_url
 
+    def test_Should_HonourConfiguredScheme_When_ResolvingHostAndPort(self):
+        # A deployment reaching the model server across a network sets
+        # LLM_MINISTRAL_SCHEME so scanned content is not sent in clear.
+        detector = MinistralDetector()
+        detector._scheme = "https"
+        assert (
+            detector._resolve_base_url("myhost", 4000)
+            == "https://myhost:4000/v1"
+        )
+
     def test_Should_NormalizeCamelCaseLabel_When_PassthroughUnknown(self):
         # An unmapped camelCase label passes through as UPPER_SNAKE (not
         # "TRACKINGNUMBER"), so the Java enum can still resolve a FR label.

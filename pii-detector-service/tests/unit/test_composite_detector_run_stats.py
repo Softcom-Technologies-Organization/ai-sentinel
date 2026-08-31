@@ -299,7 +299,7 @@ class TestDetectorFailureIsReported:
         by_source = {s["source"]: s for s in stats}
         assert len(entities) == 1
         assert by_source[DetectorSource.REGEX]["error"] == ""
-        assert "RuntimeError: boom" == by_source[DetectorSource.MINISTRAL]["error"]
+        assert by_source[DetectorSource.MINISTRAL]["error"] == "RuntimeError: boom"
 
 
 class TestCheckDetectorsHealth:

@@ -468,10 +468,23 @@ Changement de signature, de semantique ou de structure. Chaque lot a une garde e
 
 **Correction** : GARDE : extraire une fonction privee nommee, sans changer les entrees/sorties. Gain vise : passer sous 15. Si la fonction est couverte par moins d'un test, escalader au lieu de refactorer.
 
-- [ ] `pii-detector-service/pii_detector/application/config/detection_policy.py:153` — Refactor this function to reduce its Cognitive Complexity from 16 to the 15 allowed. <!-- e3cccb43 -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/in/grpc/pii_service.py:834` — Refactor this function to reduce its Cognitive Complexity from 16 to the 15 allowed. <!-- 5eb32dce -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/adapter/in/grpc/pii_service.py:1092` — Refactor this function to reduce its Cognitive Complexity from 18 to the 15 allowed. <!-- f27efd85 -->
-- [ ] `pii-detector-service/pii_detector/infrastructure/postfilter/strategies/credential_plausibility.py:228` — Refactor this function to reduce its Cognitive Complexity from 16 to the 15 allowed. <!-- 4ef460a3 -->
+> Les deux lignes citees pour `pii_service.py` (834 et 1092) sont vides sur la branche : l'analyse
+> a ete faite sur une version decalee de 3 lignes. Les fonctions visees sont bien identifiees par
+> leur complexite — `_build_detection_kwargs` (16) ligne 837 et `_filter_entities_by_type_config`
+> (18) ligne 1095.
+>
+> Extractions faites, aucune signature publique touchee : `DetectionConfig._apply_defaults`,
+> `_add_supported_ministral_kwargs`, `_log_parity_debug` et `_is_high_entropy_single_token`.
+>
+> Reserve sur `_build_detection_kwargs` : la fonction est bien couverte (des tests l'appellent),
+> mais les 28 lignes deplacees ne sont exercees par aucun test (lignes 855-882 a 0 % dans le
+> rapport de couverture de `tests/unit/`). Verifiees a la place par un appel ponctuel avec un
+> detecteur factice acceptant les 9 parametres : les 9 valeurs sont bien transmises.
+
+- [x] `pii-detector-service/pii_detector/application/config/detection_policy.py:153` — Refactor this function to reduce its Cognitive Complexity from 16 to the 15 allowed. <!-- e3cccb43 -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/in/grpc/pii_service.py:834` — Refactor this function to reduce its Cognitive Complexity from 16 to the 15 allowed. <!-- 5eb32dce -->
+- [x] `pii-detector-service/pii_detector/infrastructure/adapter/in/grpc/pii_service.py:1092` — Refactor this function to reduce its Cognitive Complexity from 18 to the 15 allowed. <!-- f27efd85 -->
+- [x] `pii-detector-service/pii_detector/infrastructure/postfilter/strategies/credential_plausibility.py:228` — Refactor this function to reduce its Cognitive Complexity from 16 to the 15 allowed. <!-- 4ef460a3 -->
 
 ### Lot `typescript:S2699` — 3 issue(s)
 

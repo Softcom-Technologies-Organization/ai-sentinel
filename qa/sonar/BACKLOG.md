@@ -390,7 +390,15 @@ Change le HTML produit. Peut casser des selecteurs de test ou un snapshot : vagu
 
 **Correction** : Remettre le `<li>` dans un conteneur `<ul>` / `<ol>`.
 
-- [ ] `pii-reporting-ui/src/app/features/confluence-dashboard/components/space-scan-stats-popover/space-scan-stats-popover.component.html:38` — Surround this <dt> item tag by a <dl> container one. <!-- 2bbd57b7 -->
+> ESCALADE : faux positif. Le `<dt>` est deja dans un `<dl>` (ligne 36), avec un
+> `<div class="scan-stats-row">` intermediaire. C'est valide : le modele de contenu de `<dl>` accepte
+> des `<div>` regroupant chacun ses `<dt>`/`<dd>` (standard HTML vivant). L'analyseur Sonar ne
+> connait pas cette forme et decrit une situation qui n'existe pas. Supprimer le `<div>` obligerait a
+> deplacer les regles `.scan-stats-row` (`display:flex`, `justify-content:space-between`, `gap`) sur
+> le `<dl>`, donc a modifier le CSS avec un risque visuel, pour contourner une regle mal appliquee.
+> A passer en faux positif cote SonarQube.
+
+- [!] `pii-reporting-ui/src/app/features/confluence-dashboard/components/space-scan-stats-popover/space-scan-stats-popover.component.html:38` — Surround this <dt> item tag by a <dl> container one. <!-- 2bbd57b7 -->
 
 ### Lot `css:S1874` — 1 issue(s)
 

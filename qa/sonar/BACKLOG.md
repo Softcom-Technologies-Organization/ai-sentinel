@@ -541,8 +541,15 @@ Changement de signature, de semantique ou de structure. Chaque lot a une garde e
 
 **Correction** : Regrouper les tests similaires en un `it.each`. Conserver un cas par jeu de donnees, ne pas en perdre en route.
 
-- [ ] `pii-reporting-ui/src/app/shared/confidence-indicator/confidence-indicator.component.spec.ts:13` — Replace these 5 tests with a single Parameterized one. <!-- b0578b79 -->
-- [ ] `pii-reporting-ui/src/app/shared/detector-tag/detector-tag.component.spec.ts:13` — Replace these 3 tests with a single Parameterized one. <!-- 92886a2d -->
+> Les 8 cas sont conserves un a un, sous forme de tables `it.each` d'objets nommes (`$name` reprend
+> le nom d'origine de chaque test). Vitest les execute toujours comme 8 tests distincts, verifie au
+> `--reporters=verbose`. Fusionnes : les 5 cas valeur -> pourcentage + classe de niveau de
+> `confidence-indicator`, et les 3 cas detecteur -> libelle + classe de `detector-tag`. Les tests au
+> corps different (largeur de barre, element `meter`, classe `small`, `aria-label`) restent separes.
+> `check ui` vert.
+
+- [x] `pii-reporting-ui/src/app/shared/confidence-indicator/confidence-indicator.component.spec.ts:13` — Replace these 5 tests with a single Parameterized one. <!-- b0578b79 -->
+- [x] `pii-reporting-ui/src/app/shared/detector-tag/detector-tag.component.spec.ts:13` — Replace these 3 tests with a single Parameterized one. <!-- 92886a2d -->
 
 ### Lot `java:S2143` — 1 issue(s)
 

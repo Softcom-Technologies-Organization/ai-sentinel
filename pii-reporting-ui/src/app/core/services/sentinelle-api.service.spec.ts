@@ -54,6 +54,7 @@ describe('SentinelleApiService.getSpaceScanStats', () => {
     service.getSpaceScanStats('A B/C').subscribe();
 
     const request = httpTesting.expectOne('/api/v1/scans/dashboard/spaces/A%20B%2FC/stats');
+    expect(request.request.url).toBe('/api/v1/scans/dashboard/spaces/A%20B%2FC/stats');
     request.flush({} as SpaceScanStatsDto);
   });
 

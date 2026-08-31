@@ -603,7 +603,7 @@ describe('PiiSettingsComponent', () => {
       component.onRunBenchmark();
 
       // Then - no second POST is issued
-      httpMock.expectNone(BENCH_RUN_URL);
+      expect(httpMock.match(BENCH_RUN_URL)).toHaveLength(0);
 
       // Cleanup - let the running benchmark fail to stop the polling loop
       vi.advanceTimersByTime(1000);
@@ -644,7 +644,7 @@ describe('PiiSettingsComponent', () => {
 
       // Then - no further poll is issued
       vi.advanceTimersByTime(3000);
-      httpMock.expectNone(BENCH_STATUS_URL);
+      expect(httpMock.match(BENCH_STATUS_URL)).toHaveLength(0);
     });
   });
 

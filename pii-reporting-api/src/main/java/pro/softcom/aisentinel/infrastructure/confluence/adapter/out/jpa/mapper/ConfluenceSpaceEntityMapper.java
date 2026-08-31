@@ -40,7 +40,7 @@ public final class ConfluenceSpaceEntityMapper {
             return null;
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.systemDefault());
         LocalDateTime lastModifiedDate = domain.lastModified() != null
             ? LocalDateTime.ofInstant(domain.lastModified(), ZoneId.systemDefault())
             : null;

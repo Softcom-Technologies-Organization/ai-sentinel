@@ -8,8 +8,6 @@ Bug context: Presidio detector attaches entity.source = "PRESIDIO" but
 the post-filtering logic couldn't access it reliably.
 """
 
-import pytest
-
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.entity.pii_type import PIIType
 
@@ -50,13 +48,9 @@ class TestPIIEntityDynamicAttributes:
         entity.source = "PRESIDIO"
         
         # When: accessing source via bracket notation
-        # Then: should either work or raise KeyError (current behavior)
-        # After fix, this should work
-        try:
-            source = entity['source']
-            assert source == "PRESIDIO"
-        except KeyError:
-            pytest.fail("PIIEntity should expose dynamic attributes via __getitem__")
+        # Then: PIIEntity exposes dynamic attributes via __getitem__
+        source = entity['source']
+        assert source == "PRESIDIO"
     
     def test_should_check_dynamic_source_via_contains(self):
         """Should check dynamically attached 'source' attribute via 'in' operator."""

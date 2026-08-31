@@ -165,11 +165,6 @@ public class ContentScanOrchestrator {
     }
 
     /**
-     * Purges previous scan data for selected spaces to ensure a clean state before starting a new scan.
-     * 
-     * @param spaceKeys list of space keys to purge
-     */
-    /**
      * Records the scan scope server-side by creating a NOT_STARTED checkpoint for every space of a
      * fresh scan, before any space is scanned. This lets a paused scan be resumed within its original
      * scope and prevents the resume path from leaking into unselected spaces.
@@ -186,6 +181,11 @@ public class ContentScanOrchestrator {
         }
     }
 
+    /**
+     * Purges previous scan data for selected spaces to ensure a clean state before starting a new scan.
+     *
+     * @param spaceKeys list of space keys to purge
+     */
     public void purgePreviousScanDataForSpaces(java.util.List<String> spaceKeys) {
         try {
             log.info("[SCAN] Purging ALL previous scan data for selected spaces before starting new scan");

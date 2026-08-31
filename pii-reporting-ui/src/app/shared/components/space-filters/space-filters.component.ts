@@ -10,7 +10,6 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { MenuItem } from 'primeng/api';
 import {
   FacetCount,
-  SeverityFilterValue,
   SpaceFilteringService
 } from '../../../features/confluence-dashboard/services/space-filtering.service';
 

@@ -269,7 +269,13 @@ Modifie du code de production, mais chaque correction est locale et sans effet d
 
 **Correction** : Renommer l'identifiant qui utilise un mot reserve restreint (`var`, `record`, `yield`, `sealed`).
 
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/application/pii/reporting/service/DiscoveredLabelCollector.java:39` — Rename this method to not match a restricted identifier. <!-- 5f3d6c9b -->
+> ESCALADE : `DiscoveredLabelCollector.record(Map)` est une methode publique appelee ailleurs
+> (`AbstractStreamConfluenceScanUseCase:630` et `DiscoveredLabelCollectorTest`). Le RUNBOOK impose
+> l'escalade des qu'une signature publique appelee ailleurs doit changer. Le renommage est mecanique
+> et verifiable par le compilateur (2 sites d'appel connus, aucun contrat externe) : a valider par
+> une decision humaine, pas par l'agent.
+
+- [!] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/application/pii/reporting/service/DiscoveredLabelCollector.java:39` — Rename this method to not match a restricted identifier. <!-- 5f3d6c9b -->
 
 ### Lot `java:S1612` — 1 issue(s)
 

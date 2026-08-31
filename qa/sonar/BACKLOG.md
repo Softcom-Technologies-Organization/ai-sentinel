@@ -16,7 +16,7 @@ Protocole d'execution obligatoire : [RUNBOOK.md](RUNBOOK.md).
 |-------|-----------|--------|--------|
 | **A** | Tests — mecanique pure | 87 | ✅ terminee et verifiee |
 | **B** | Production — mecanique locale | 50 | ✅ terminee et verifiee — 1 escalade (`java:S6213`) |
-| **C** | Accessibilite UI — modifie le DOM rendu | 16 | ⬜ a faire |
+| **C** | Accessibilite UI — modifie le DOM rendu | 16 | ✅ terminee — 3 corrigees, 13 escaladees (dont 1 lot annule) |
 | **D** | Jugement requis — lire le RUNBOOK avant | 25 | ⬜ a faire |
 
 Statuts : ⬜ a faire · 🔄 en cours · ✅ terminee et verifiee · ⛔ annulee (rollback).
@@ -422,7 +422,7 @@ Change le HTML produit. Peut casser des selecteurs de test ou un snapshot : vagu
 
 **Correction** : Associer un `<label for>` au champ, ou un `aria-label` si l'etiquette est deja visible ailleurs.
 
-- [ ] `pii-reporting-ui/src/app/features/pii-settings/pii-settings.component.html:408` — Add an "id" attribute to this input field and associate it with a label. <!-- ff61389e -->
+- [x] `pii-reporting-ui/src/app/features/pii-settings/pii-settings.component.html:408` — Add an "id" attribute to this input field and associate it with a label. <!-- ff61389e -->
 
 ---
 

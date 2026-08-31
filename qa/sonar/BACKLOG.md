@@ -239,8 +239,12 @@ Modifie du code de production, mais chaque correction est locale et sans effet d
 
 **Correction** : Remplacer le parametre d'exception inutilise par la variable anonyme `_` (Java 21+).
 
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/remediation/adapter/out/ConfluencePageRedactionAdapter.java:45` — Replace "e" with an unnamed pattern. <!-- a3ada538 -->
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/remediation/adapter/out/ConfluencePageRedactionAdapter.java:69` — Replace "firstConflict" with an unnamed pattern. <!-- e84abb28 -->
+> Premier `check api` rouge sur `PurgeDetectionDataUseCaseTest` (2 tests) : contexte Spring non demarre,
+> connexion JDBC refusee (SQLState 08001). Cause environnementale, sans rapport avec le lot. Verifie en
+> rejouant la classe sur l'arbre propre (verte), puis `check api` complet a nouveau vert avec le lot applique.
+
+- [x] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/remediation/adapter/out/ConfluencePageRedactionAdapter.java:45` — Replace "e" with an unnamed pattern. <!-- a3ada538 -->
+- [x] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/infrastructure/pii/remediation/adapter/out/ConfluencePageRedactionAdapter.java:69` — Replace "firstConflict" with an unnamed pattern. <!-- e84abb28 -->
 
 ### Lot `python:S9083` — 2 issue(s)
 

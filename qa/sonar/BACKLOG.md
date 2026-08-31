@@ -337,12 +337,22 @@ Change le HTML produit. Peut casser des selecteurs de test ou un snapshot : vagu
 
 **Correction** : Ajouter le gestionnaire clavier correspondant (`(keyup.enter)` / `(keydown.space)`) a cote du `(click)`. Ne pas retirer le gestionnaire souris.
 
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:109` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- 5bae9c35 -->
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:119` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- eaec42f0 -->
-- [ ] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:127` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- 481603b4 -->
-- [ ] `pii-reporting-ui/src/app/shared/components/space-filters/space-filters.component.html:115` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- 1f404321 -->
-- [ ] `pii-reporting-ui/src/app/shared/components/space-filters/space-filters.component.html:125` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- 87623884 -->
-- [ ] `pii-reporting-ui/src/app/shared/components/space-filters/space-filters.component.html:142` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- ecd7c5b7 -->
+> ESCALADE (6/6) : faux positifs. Les 6 elements sont des `<p-button>`, et PrimeNG 21 rend un
+> `<button>` natif (verifie dans `node_modules/primeng/fesm2022/primeng-button.mjs`). Un bouton natif
+> est deja actionnable au clavier : Entree et Espace declenchent un evenement `click`. Ajouter
+> `(keyup.enter)` ou `(keydown.space)` a cote du `(click)` ferait donc executer l'action **deux fois**
+> a chaque activation clavier — `nextPage()` sauterait une page, `toggleSortOrder()` reviendrait a son
+> etat initial. La correction prescrite introduirait une regression pour les utilisateurs au clavier,
+> c'est-a-dire exactement le public que la regle protege. Resolution correcte : marquer ces 6 issues
+> en faux positif cote SonarQube — decision humaine, le RUNBOOK interdit a l'agent de toucher au
+> statut des issues.
+
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:109` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- 5bae9c35 -->
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:119` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- eaec42f0 -->
+- [!] `pii-reporting-ui/src/app/features/pii-obfuscation/pii-obfuscation.component.html:127` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- 481603b4 -->
+- [!] `pii-reporting-ui/src/app/shared/components/space-filters/space-filters.component.html:115` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- 1f404321 -->
+- [!] `pii-reporting-ui/src/app/shared/components/space-filters/space-filters.component.html:125` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- 87623884 -->
+- [!] `pii-reporting-ui/src/app/shared/components/space-filters/space-filters.component.html:142` — Add a 'onKeyDown|onKeyUp' attribute to this <p-button> tag. <!-- ecd7c5b7 -->
 
 ### Lot `Web:S6819` — 6 issue(s)
 

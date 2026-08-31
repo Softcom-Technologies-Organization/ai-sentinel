@@ -42,7 +42,7 @@ public class ConfluencePageRedactionAdapter implements SourcePageRedactionPort {
     public PageRedactionResult redactPage(String pageId, List<ValueReplacement> replacements) {
         try {
             return redactWithSingleRetry(pageId, replacements);
-        } catch (VersionConflictException e) {
+        } catch (VersionConflictException _) {
             log.warn("[PII_REMEDIATION] Page {} still conflicting after one retry, reported stale", pageId);
             return PageRedactionResult.stale();
         } catch (Exception e) {
@@ -66,7 +66,7 @@ public class ConfluencePageRedactionAdapter implements SourcePageRedactionPort {
     private PageRedactionResult redactWithSingleRetry(String pageId, List<ValueReplacement> replacements) {
         try {
             return redactOnce(pageId, replacements);
-        } catch (VersionConflictException firstConflict) {
+        } catch (VersionConflictException _) {
             log.info("[PII_REMEDIATION] Version conflict on page {}, re-reading and retrying once", pageId);
             return redactOnce(pageId, replacements);
         }

@@ -32,7 +32,7 @@ class DiscoveredLabelCollectorTest {
     @Test
     @DisplayName("Should_NotTouchStore_When_LabelCountsNull")
     void Should_NotTouchStore_When_LabelCountsNull() {
-        collector.record(null);
+        collector.recordOccurrences(null);
 
         verifyNoInteractions(store);
     }
@@ -42,7 +42,7 @@ class DiscoveredLabelCollectorTest {
     void Should_NotTouchStore_When_CollectionDisabled() {
         DiscoveredLabelCollector disabled = new DiscoveredLabelCollector(store, false);
 
-        disabled.record(Map.of("VEHICLE_COLOR", 2));
+        disabled.recordOccurrences(Map.of("VEHICLE_COLOR", 2));
 
         verifyNoInteractions(store);
     }
@@ -50,7 +50,7 @@ class DiscoveredLabelCollectorTest {
     @Test
     @DisplayName("Should_NotTouchStore_When_LabelCountsEmpty")
     void Should_NotTouchStore_When_LabelCountsEmpty() {
-        collector.record(Map.of());
+        collector.recordOccurrences(Map.of());
 
         verifyNoInteractions(store);
     }
@@ -60,7 +60,7 @@ class DiscoveredLabelCollectorTest {
     void Should_RecordOccurrences_When_LabelCountsPresent() {
         Map<String, Integer> labelCounts = Map.of("VEHICLE_COLOR", 2, "PET_NAME", 1);
 
-        collector.record(labelCounts);
+        collector.recordOccurrences(labelCounts);
 
         verify(store).recordOccurrences(labelCounts);
     }
@@ -72,6 +72,6 @@ class DiscoveredLabelCollectorTest {
         Map<String, Integer> labelCounts = Map.of("VEHICLE_COLOR", 2);
 
         // Must not propagate: label collection can never fail the scan.
-        assertThatCode(() -> collector.record(labelCounts)).doesNotThrowAnyException();
+        assertThatCode(() -> collector.recordOccurrences(labelCounts)).doesNotThrowAnyException();
     }
 }

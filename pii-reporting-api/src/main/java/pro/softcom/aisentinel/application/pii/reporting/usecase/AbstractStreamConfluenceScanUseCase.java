@@ -627,7 +627,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         if (discoveredLabelCollector == null) {
             return;
         }
-        Mono.fromRunnable(() -> discoveredLabelCollector.record(detection.discoveredLabels()))
+        Mono.fromRunnable(() -> discoveredLabelCollector.recordOccurrences(detection.discoveredLabels()))
             .subscribeOn(Schedulers.boundedElastic())
             .onErrorResume(e -> {
                 log.warn("[DISCOVERED_LABELS] Failed to record discovered labels: {}", e.getMessage());

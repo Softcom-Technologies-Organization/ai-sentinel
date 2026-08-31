@@ -15,7 +15,7 @@ Protocole d'execution obligatoire : [RUNBOOK.md](RUNBOOK.md).
 | Vague | Perimetre | Issues | Statut |
 |-------|-----------|--------|--------|
 | **A** | Tests — mecanique pure | 0 | ⬜ a faire |
-| **B** | Production — mecanique locale | 1 | ⬜ a faire |
+| **B** | Production — mecanique locale | 1 | ✅ terminee et verifiee |
 | **C** | Accessibilite UI — modifie le DOM rendu | 13 | ⬜ a faire |
 | **D** | Jugement requis — lire le RUNBOOK avant | 11 | ⬜ a faire |
 
@@ -41,7 +41,7 @@ Modifie du code de production, mais chaque correction est locale et sans effet d
 
 **Correction** : Renommer l'identifiant qui utilise un mot reserve restreint (`var`, `record`, `yield`, `sealed`).
 
-- [ ] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/application/pii/reporting/service/DiscoveredLabelCollector.java:39` — Rename this method to not match a restricted identifier. <!-- 5f3d6c9b -->
+- [x] `pii-reporting-api/src/main/java/pro/softcom/aisentinel/application/pii/reporting/service/DiscoveredLabelCollector.java:39` — Rename this method to not match a restricted identifier. <!-- 5f3d6c9b -->
 
 ---
 

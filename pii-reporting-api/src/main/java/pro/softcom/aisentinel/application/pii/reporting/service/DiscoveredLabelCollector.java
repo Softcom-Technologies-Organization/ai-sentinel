@@ -36,7 +36,7 @@ public class DiscoveredLabelCollector {
      * @param labelCounts UPPER_SNAKE label to per-request occurrence count
      *                    (ignored when null or empty)
      */
-    public void record(Map<String, Integer> labelCounts) {
+    public void recordOccurrences(Map<String, Integer> labelCounts) {
         if (!enabled || labelCounts == null || labelCounts.isEmpty()) {
             return;
         }

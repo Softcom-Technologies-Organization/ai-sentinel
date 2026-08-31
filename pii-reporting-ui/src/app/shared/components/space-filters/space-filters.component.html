@@ -119,6 +119,8 @@
       size="small"
       [text]="true"
       (click)="sortMenu.toggle($event)"
+      (keydown.enter)="$event.preventDefault(); sortMenu.toggle($event)"
+      (keydown.space)="$event.preventDefault(); sortMenu.toggle($event)"
       [attr.data-testid]="'sort-menu-trigger'">
     </p-button>
     <p-menu #sortMenu [popup]="true" [model]="sortMenuItems()" appendTo="body"></p-menu>
@@ -128,6 +130,8 @@
       size="small"
       [text]="true"
       (click)="toggleSortOrder()"
+      (keydown.enter)="$event.preventDefault(); toggleSortOrder()"
+      (keydown.space)="$event.preventDefault(); toggleSortOrder()"
       [ariaLabel]="t('dashboard.filters.sort.toggleOrder')"
       [attr.data-testid]="'sort-order-toggle'">
     </p-button>
@@ -147,6 +151,8 @@
         [outlined]="true"
         styleClass="btn-bw"
         (click)="resetAll()"
+        (keydown.enter)="$event.preventDefault(); resetAll()"
+        (keydown.space)="$event.preventDefault(); resetAll()"
         [attr.data-testid]="'reset-all-filters'">
       </p-button>
     }

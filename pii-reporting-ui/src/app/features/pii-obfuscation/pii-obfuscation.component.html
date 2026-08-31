@@ -113,6 +113,8 @@
                   size="small"
                   [disabled]="!hasPrev()"
                   (click)="prevPage()"
+                  (keydown.enter)="$event.preventDefault(); prevPage()"
+                  (keydown.space)="$event.preventDefault(); prevPage()"
                   [ariaLabel]="'obfuscation.pager.prev' | transloco"
                   [attr.data-testid]="testIds.pager.prev"
                 />
@@ -122,6 +124,8 @@
                   [text]="true"
                   size="small"
                   (click)="resetPage()"
+                  (keydown.enter)="$event.preventDefault(); resetPage()"
+                  (keydown.space)="$event.preventDefault(); resetPage()"
                   [ariaLabel]="'obfuscation.pager.refresh' | transloco"
                 />
                 <p-button
@@ -131,6 +135,8 @@
                   size="small"
                   [disabled]="!hasNext()"
                   (click)="nextPage()"
+                  (keydown.enter)="$event.preventDefault(); nextPage()"
+                  (keydown.space)="$event.preventDefault(); nextPage()"
                   [ariaLabel]="'obfuscation.pager.next' | transloco"
                   [attr.data-testid]="testIds.pager.next"
                 />

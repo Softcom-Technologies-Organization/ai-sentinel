@@ -61,9 +61,7 @@ public class ScanSpaceStatsPersistenceAdapter implements ScanSpaceStatsRepositor
 
     @Override
     public void accumulateDetectorStat(String scanId, String spaceKey, ScanDetectorStatDelta delta) {
-        detectorStatsRepository.accumulate(scanId, spaceKey, delta.detector(), delta.busyMs(),
-            delta.chars(), delta.detections(), delta.discarded(), delta.failedRequests(),
-            delta.lastError());
+        detectorStatsRepository.accumulate(scanId, spaceKey, delta);
     }
 
     @Override

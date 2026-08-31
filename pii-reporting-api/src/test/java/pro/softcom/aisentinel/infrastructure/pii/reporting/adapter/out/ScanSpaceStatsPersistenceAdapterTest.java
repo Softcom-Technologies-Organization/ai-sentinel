@@ -54,11 +54,12 @@ class ScanSpaceStatsPersistenceAdapterTest {
     @Test
     @DisplayName("Should_DelegateDetectorAccumulation_When_AccumulateDetectorStat")
     void Should_DelegateDetectorAccumulation_When_AccumulateDetectorStat() {
-        adapter.accumulateDetectorStat(SCAN_ID, SPACE_KEY,
-            new ScanDetectorStatDelta("MINISTRAL", 520L, 1000L, 12, 0, 1, "ConnectError: refused"));
+        ScanDetectorStatDelta delta =
+            new ScanDetectorStatDelta("MINISTRAL", 520L, 1000L, 12, 0, 1, "ConnectError: refused");
 
-        verify(detectorStatsRepository).accumulate(SCAN_ID, SPACE_KEY, "MINISTRAL", 520L, 1000L, 12, 0,
-            1, "ConnectError: refused");
+        adapter.accumulateDetectorStat(SCAN_ID, SPACE_KEY, delta);
+
+        verify(detectorStatsRepository).accumulate(SCAN_ID, SPACE_KEY, delta);
     }
 
     @Test

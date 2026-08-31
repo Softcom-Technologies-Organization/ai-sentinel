@@ -34,16 +34,14 @@
           <h3 class="scan-stats-title">{{ 'dashboard.scanStats.title' | transloco }}</h3>
 
           <dl class="scan-stats-summary">
-            <div class="scan-stats-row">
-              <dt>{{ 'dashboard.scanStats.duration' | transloco }}</dt>
-              <dd>
-                @if (isScanInProgress()) {
-                  {{ 'dashboard.scanStats.inProgress' | transloco }}
-                } @else {
-                  {{ formatDuration(data.durationMs ?? 0) }}
-                }
-              </dd>
-            </div>
+            <dt>{{ 'dashboard.scanStats.duration' | transloco }}</dt>
+            <dd>
+              @if (isScanInProgress()) {
+                {{ 'dashboard.scanStats.inProgress' | transloco }}
+              } @else {
+                {{ formatDuration(data.durationMs ?? 0) }}
+              }
+            </dd>
           </dl>
 
           <div class="scan-stats-table-scroll">

@@ -23,19 +23,16 @@
 
 .scan-stats-summary {
   margin: 0 0 0.75rem;
-}
-
-.scan-stats-row {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
 }
 
-.scan-stats-row dt {
+.scan-stats-summary dt {
   font-weight: 600;
 }
 
-.scan-stats-row dd {
+.scan-stats-summary dd {
   margin: 0;
 }
 

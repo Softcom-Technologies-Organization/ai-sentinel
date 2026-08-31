@@ -492,9 +492,19 @@ Changement de signature, de semantique ou de structure. Chaque lot a une garde e
 
 **Correction** : GARDE CRITIQUE : ajouter l'assertion qui manque, celle que le test pretend verifier d'apres son nom. Si elle passe au rouge, c'est un bug de production revele : NE PAS affaiblir l'assertion pour la faire passer. Marquer l'issue `[!]` et escalader.
 
-- [ ] `pii-reporting-ui/src/app/core/services/sentinelle-api.service.spec.ts:53` — Add at least one assertion to this test case. <!-- 43ccc3a9 -->
-- [ ] `pii-reporting-ui/src/app/features/pii-settings/pii-settings.component.spec.ts:596` — Add at least one assertion to this test case. <!-- f338204a -->
-- [ ] `pii-reporting-ui/src/app/features/pii-settings/pii-settings.component.spec.ts:636` — Add at least one assertion to this test case. <!-- 9855a147 -->
+> Aucun bug revele : les 3 tests passent avec leur assertion. Ils verifiaient deja quelque chose,
+> mais par une methode que Sonar ne compte pas comme assertion.
+>
+> `sentinelle-api.service.spec.ts:53` : ajout de `expect(request.request.url).toBe(...)` a cote du
+> `expectOne` deja present — c'est l'encodage de la cle d'espace que le test annonce.
+>
+> `pii-settings.component.spec.ts:596` et `:636` : `httpMock.expectNone(URL)` remplace par
+> `expect(httpMock.match(URL)).toHaveLength(0)`. Meme contrainte exactement — les deux echouent
+> des qu'une requete correspond — mais sous une forme que la regle reconnait.
+
+- [x] `pii-reporting-ui/src/app/core/services/sentinelle-api.service.spec.ts:53` — Add at least one assertion to this test case. <!-- 43ccc3a9 -->
+- [x] `pii-reporting-ui/src/app/features/pii-settings/pii-settings.component.spec.ts:596` — Add at least one assertion to this test case. <!-- f338204a -->
+- [x] `pii-reporting-ui/src/app/features/pii-settings/pii-settings.component.spec.ts:636` — Add at least one assertion to this test case. <!-- 9855a147 -->
 
 ### Lot `java:S8947` — 2 issue(s)
 

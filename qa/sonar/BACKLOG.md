@@ -252,8 +252,8 @@ Modifie du code de production, mais chaque correction est locale et sans effet d
 
 **Correction** : Uniformiser les parentheses des decorateurs pytest (`@pytest.fixture` sans parentheses vides).
 
-- [ ] `pii-detector-service/tests/integration/test_concurrency_autotune_e2e.py:161` — Remove empty parentheses from this decorator. <!-- 7b1c1a4c -->
-- [ ] `pii-detector-service/tests/integration/test_ondemand_benchmark_e2e.py:190` — Remove empty parentheses from this decorator. <!-- 78e282a2 -->
+- [x] `pii-detector-service/tests/integration/test_concurrency_autotune_e2e.py:161` — Remove empty parentheses from this decorator. <!-- 7b1c1a4c -->
+- [x] `pii-detector-service/tests/integration/test_ondemand_benchmark_e2e.py:190` — Remove empty parentheses from this decorator. <!-- 78e282a2 -->
 
 ### Lot `java:S8491` — 1 issue(s)
 

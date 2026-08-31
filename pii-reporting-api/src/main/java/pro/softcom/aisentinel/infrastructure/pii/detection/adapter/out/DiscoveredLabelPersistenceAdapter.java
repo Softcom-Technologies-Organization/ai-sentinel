@@ -28,7 +28,7 @@ public class DiscoveredLabelPersistenceAdapter implements DiscoveredLabelStore {
 
     @Override
     public void recordOccurrences(Map<String, Integer> labelCounts) {
-        labelCounts.forEach((label, count) -> jpaRepository.upsertOccurrence(label, count));
+        labelCounts.forEach(jpaRepository::upsertOccurrence);
     }
 
     @Override

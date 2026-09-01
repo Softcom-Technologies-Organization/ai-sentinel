@@ -169,13 +169,21 @@ class _FakeOndemandAdapter:
         self.progress_calls: list = []
         self.completed: list = []
         self.failed: list = []
+        self.cancelled = 0
+        self.max_concurrency = 4
 
     def fetch_config(self) -> dict:
         return dict(self._config)
 
-    def claim_bench_job(self) -> bool:
+    def claim_bench_job(self):
         self.claim_calls += 1
-        return self.claim_calls == 1
+        return self.max_concurrency if self.claim_calls == 1 else None
+
+    def is_bench_cancel_requested(self) -> bool:
+        return False
+
+    def cancel_bench_job(self) -> None:
+        self.cancelled += 1
 
     def update_bench_progress(self, progress: int, message: str) -> None:
         self.progress_calls.append((progress, message))
@@ -241,13 +249,19 @@ def _find_closed_port() -> int:
 
 def _run_poller_once(detector, adapter):
     """Simulate the gRPC servicer's bench-job poller body for one tick."""
-    if not adapter.claim_bench_job():
+    max_concurrency = adapter.claim_bench_job()
+    if max_concurrency is None:
         return None
     outcome = run_ondemand_autotune(
-        detector, on_progress=adapter.update_bench_progress
+        detector,
+        on_progress=adapter.update_bench_progress,
+        max_concurrency=max_concurrency,
+        should_stop=adapter.is_bench_cancel_requested,
     )
     if outcome.ran and outcome.chosen is not None:
         adapter.complete_bench_job(outcome.chosen, outcome.signature)
+    elif outcome.reason == "cancelled":
+        adapter.cancel_bench_job()
     else:
         adapter.fail_bench_job(outcome.reason)
     return outcome

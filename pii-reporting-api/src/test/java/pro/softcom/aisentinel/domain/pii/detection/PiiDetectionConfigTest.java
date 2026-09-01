@@ -271,7 +271,7 @@ class PiiDetectionConfigTest {
         BigDecimal defaultThreshold = new BigDecimal("0.75");
         // Arrange & Act & Assert
         assertThatThrownBy(() -> new PiiDetectionConfig(
-            1, true, false, false, 1024, 128, defaultThreshold, false, "localhost", 1234, 17, true, null, now, "testuser"
+            1, true, false, false, 1024, 128, defaultThreshold, false, "localhost", 1234, 21, true, null, now, "testuser"
         ))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Ministral concurrency");
@@ -284,14 +284,14 @@ class PiiDetectionConfigTest {
             1, true, false, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, 1, true, null, LocalDateTime.now(), "testuser"
         );
         PiiDetectionConfig maxConfig = new PiiDetectionConfig(
-            1, true, false, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, 16, false, null, LocalDateTime.now(), "testuser"
+            1, true, false, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, 20, false, null, LocalDateTime.now(), "testuser"
         );
 
         // Assert
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(minConfig.ministralConcurrency()).isEqualTo(1);
         softly.assertThat(minConfig.ministralConcurrencyAuto()).isTrue();
-        softly.assertThat(maxConfig.ministralConcurrency()).isEqualTo(16);
+        softly.assertThat(maxConfig.ministralConcurrency()).isEqualTo(20);
         softly.assertThat(maxConfig.ministralConcurrencyAuto()).isFalse();
         softly.assertAll();
     }

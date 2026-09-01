@@ -112,25 +112,41 @@ class TestUpdateMinistralConcurrency:
 
 
 class TestBenchJobMethods:
-    def test_claim_returns_true_and_flips_flag(self) -> None:
-        with _patched_adapter([], rowcount=1) as (adapter, cursor, conn):
+    def test_claim_returns_requested_max_and_flips_flag(self) -> None:
+        with _patched_adapter([(8,)], rowcount=1) as (adapter, cursor, conn):
             claimed = adapter.claim_bench_job()
-        assert claimed is True
+        assert claimed == 8
         conn.commit.assert_called_once()
         sql = cursor.execute.call_args.args[0]
         assert "concurrency_bench_requested = false" in sql
         assert "concurrency_bench_requested = true" in sql  # atomic WHERE guard
+        assert "RETURNING concurrency_bench_max_concurrency" in sql
 
-    def test_claim_returns_false_when_no_pending_request(self) -> None:
+    def test_claim_returns_none_when_no_pending_request(self) -> None:
         with _patched_adapter([], rowcount=0) as (adapter, _c, _conn):
-            assert adapter.claim_bench_job() is False
+            assert adapter.claim_bench_job() is None
 
-    def test_update_progress_writes_percent_and_message(self) -> None:
+    def test_update_progress_writes_percent_and_message_for_running_job_only(self) -> None:
         with _patched_adapter([], rowcount=1) as (adapter, cursor, _conn):
             adapter.update_bench_progress(50, "Testing concurrency 2/4")
         sql, params = cursor.execute.call_args.args
         assert "concurrency_bench_progress" in sql
+        # A CANCEL_REQUESTED status written by the API must survive a late tick.
+        assert "WHERE id = 1 AND concurrency_bench_status = 'RUNNING'" in sql
         assert params == (50, "Testing concurrency 2/4")
+
+    def test_is_cancel_requested_reads_status(self) -> None:
+        with _patched_adapter([("CANCEL_REQUESTED",)], rowcount=1) as (adapter, _c, _conn):
+            assert adapter.is_bench_cancel_requested() is True
+        with _patched_adapter([("RUNNING",)], rowcount=1) as (adapter, _c, _conn):
+            assert adapter.is_bench_cancel_requested() is False
+
+    def test_cancel_marks_job_cancelled_and_clears_request(self) -> None:
+        with _patched_adapter([], rowcount=1) as (adapter, cursor, _conn):
+            adapter.cancel_bench_job()
+        sql = cursor.execute.call_args.args[0]
+        assert "'CANCELLED'" in sql
+        assert "concurrency_bench_requested = false" in sql
 
     def test_complete_persists_result_and_marks_done(self) -> None:
         with _patched_adapter([], rowcount=1) as (adapter, cursor, _conn):
@@ -148,10 +164,10 @@ class TestBenchJobMethods:
         assert "'FAILED'" in sql
         assert params == ("endpoint down",)
 
-    def test_claim_returns_false_quietly_on_connection_error(self) -> None:
+    def test_claim_returns_none_quietly_on_connection_error(self) -> None:
         # A DB outage during the poll loop must not raise and must not crash the
-        # poller; claim_bench_job returns False (quiet path).
+        # poller; claim_bench_job returns None (quiet path).
         err = psycopg2.OperationalError("db down")
         with _patched_adapter([], execute_side_effects=[err]) as (adapter, _c, conn):
-            assert adapter.claim_bench_job() is False
+            assert adapter.claim_bench_job() is None
         conn.rollback.assert_called_once()

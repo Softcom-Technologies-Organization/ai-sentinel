@@ -873,6 +873,14 @@
   color: var(--sentinel-text-subtle);
 }
 
+/* Upper bound input + run/stop buttons of the on-demand benchmark on one row. */
+.bench-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Progress of the on-demand concurrency benchmark.
    ::ng-deep needed: PrimeNG progressbar renders its own internal template */
 .bench-progress ::ng-deep .p-progressbar {

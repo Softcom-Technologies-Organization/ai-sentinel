@@ -47,6 +47,8 @@ export interface ConcurrencyBenchStatus {
   message: string | null;
   concurrency: number;
   tunedSignature: string | null;
+  /** Highest concurrency level the benchmark measures (2..20). */
+  maxConcurrency: number;
 }
 
 /**

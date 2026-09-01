@@ -81,7 +81,7 @@ public record UpdatePiiDetectionConfigRequestDto(
     @JsonProperty("ministralConcurrency")
     @NotNull(message = "ministralConcurrency is required")
     @Min(value = 1, message = "ministralConcurrency must be at least 1")
-    @Max(value = 16, message = "ministralConcurrency must be at most 16")
+    @Max(value = 20, message = "ministralConcurrency must be at most 20")
     Integer ministralConcurrency,
 
     @JsonProperty("ministralConcurrencyAuto")

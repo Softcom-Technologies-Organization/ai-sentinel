@@ -57,16 +57,19 @@ const FR_TRANSLATIONS = {
         concurrencyAuto: 'Auto-réglage au démarrage',
         concurrency: 'Requêtes simultanées',
         concurrencyHint: 'hint',
-        concurrencyCurrent: 'Concurrence actuelle',
         concurrencySignature: 'Signature du réglage',
         concurrencyNotTuned: 'pas encore réglé',
         retune: 'Re-régler au prochain redémarrage',
         retuneHint: 'hint',
         runBenchmark: 'Lancer le benchmark maintenant',
-        runBenchmarkHint: 'hint',
         benchmarkRunning: 'Benchmark en cours…',
         benchmarkDone: 'Benchmark terminé — concurrence réglée à {{concurrency}}.',
         benchmarkFailed: 'Le benchmark a échoué : {{error}}',
+        benchMaxConcurrency: 'Tester jusqu\'à',
+        benchMaxConcurrencyHint: 'hint',
+        stopBenchmark: 'Arrêter le benchmark',
+        benchmarkCancelling: 'Arrêt en cours…',
+        benchmarkCancelled: 'Benchmark arrêté — la concurrence reste à {{concurrency}}.',
       },
       postfilter: { label: 'Post-filtre déterministe', description: 'desc' },
       detectorLabel: 'Détecteur',
@@ -449,10 +452,10 @@ describe('PiiSettingsComponent', () => {
     component.configForm.patchValue({ ministralConcurrency: 0 });
     expect(component.configForm.get('ministralConcurrency')?.invalid).toBe(true);
 
-    component.configForm.patchValue({ ministralConcurrency: 17 });
+    component.configForm.patchValue({ ministralConcurrency: 21 });
     expect(component.configForm.get('ministralConcurrency')?.invalid).toBe(true);
 
-    component.configForm.patchValue({ ministralConcurrency: 8 });
+    component.configForm.patchValue({ ministralConcurrency: 20 });
     expect(component.configForm.get('ministralConcurrency')?.valid).toBe(true);
   });
 
@@ -467,18 +470,17 @@ describe('PiiSettingsComponent', () => {
     expect(el.querySelector('.concurrency-readonly')).toBeNull();
   });
 
-  it('Should_ShowReadonlyTunedState_When_AutoTuneEnabled', () => {
+  it('Should_KeepConcurrencyEditableAndShowSignature_When_AutoTuneEnabled', () => {
     // Given - Ministral enabled with auto-tuning on and no signature yet
     component.configForm.patchValue({ ministralEnabled: true, ministralConcurrencyAuto: true });
     fixture.detectChanges();
 
-    // Then - the numeric input is gone; current value and placeholder show instead
+    // Then - the numeric input stays editable and the tuned signature placeholder shows
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('#ministralConcurrency')).toBeNull();
+    expect(el.querySelector('#ministralConcurrency')).not.toBeNull();
     const readonlyValues = el.querySelectorAll('.concurrency-readonly');
-    expect(readonlyValues).toHaveLength(2);
-    expect(readonlyValues[0].textContent).toContain('4');
-    expect(readonlyValues[1].textContent).toContain('pas encore réglé');
+    expect(readonlyValues).toHaveLength(1);
+    expect(readonlyValues[0].textContent).toContain('pas encore réglé');
   });
 
   it('Should_ShowTunedSignature_When_SignaturePresent', () => {
@@ -491,7 +493,8 @@ describe('PiiSettingsComponent', () => {
 
     const el = fixture.nativeElement as HTMLElement;
     const readonlyValues = el.querySelectorAll('.concurrency-readonly');
-    expect(readonlyValues[1].textContent).toContain('cpu16-mem32');
+    expect(readonlyValues).toHaveLength(1);
+    expect(readonlyValues[0].textContent).toContain('cpu16-mem32');
   });
 
   it('Should_ClearSignatureAndSave_When_RetuneRequested', () => {
@@ -517,6 +520,7 @@ describe('PiiSettingsComponent', () => {
   describe('Concurrency benchmark', () => {
     const BENCH_RUN_URL = '/api/v1/pii-detection/concurrency-benchmark/run';
     const BENCH_STATUS_URL = '/api/v1/pii-detection/concurrency-benchmark/status';
+    const BENCH_CANCEL_URL = '/api/v1/pii-detection/concurrency-benchmark/cancel';
 
     beforeEach(() => {
       vi.useFakeTimers();
@@ -533,6 +537,7 @@ describe('PiiSettingsComponent', () => {
         message: null,
         concurrency: 4,
         tunedSignature: null,
+        maxConcurrency: 4,
         ...overrides,
       };
     }
@@ -548,9 +553,10 @@ describe('PiiSettingsComponent', () => {
       // When - the button is clicked
       button.click();
 
-      // Then - the run endpoint is POSTed and polling starts
+      // Then - the run endpoint is POSTed with the default upper bound and polling starts
       const runReq = httpMock.expectOne(BENCH_RUN_URL);
       expect(runReq.request.method).toBe('POST');
+      expect(runReq.request.body).toEqual({ maxConcurrency: 4 });
       runReq.flush(null);
 
       vi.advanceTimersByTime(0);
@@ -586,6 +592,75 @@ describe('PiiSettingsComponent', () => {
       expect(button.disabled).toBe(false);
 
       // And - polling has stopped
+      vi.advanceTimersByTime(3000);
+      httpMock.expectNone(BENCH_STATUS_URL);
+    });
+
+    it('Should_PostRequestedMaxConcurrency_When_BenchmarkStarted', () => {
+      component.benchMaxConcurrency.setValue(12);
+
+      component.onRunBenchmark();
+
+      const runReq = httpMock.expectOne(BENCH_RUN_URL);
+      expect(runReq.request.body).toEqual({ maxConcurrency: 12 });
+      runReq.flush(benchStatus({ status: 'PENDING', maxConcurrency: 12 }));
+
+      // Cleanup - let the benchmark fail to stop the polling loop
+      vi.advanceTimersByTime(0);
+      httpMock.expectOne(BENCH_STATUS_URL).flush(benchStatus({ status: 'FAILED', message: 'boom' }));
+    });
+
+    it('Should_NotStartBenchmark_When_MaxConcurrencyOutOfRange', () => {
+      component.configForm.patchValue({ ministralEnabled: true });
+      component.benchMaxConcurrency.setValue(25);
+      fixture.detectChanges();
+
+      const el = fixture.nativeElement as HTMLElement;
+      const button = el.querySelector('[data-testid="runBenchmarkButton"] button') as HTMLButtonElement;
+      expect(button.disabled).toBe(true);
+
+      component.onRunBenchmark();
+
+      httpMock.expectNone(BENCH_RUN_URL);
+      expect(component.benchRunning()).toBe(false);
+    });
+
+    it('Should_PostCancelAndStopPolling_When_StopButtonClicked', () => {
+      component.configForm.patchValue({ ministralEnabled: true });
+      fixture.detectChanges();
+      component.onRunBenchmark();
+      httpMock.expectOne(BENCH_RUN_URL).flush(null);
+      vi.advanceTimersByTime(0);
+      httpMock.expectOne(BENCH_STATUS_URL).flush(benchStatus({ progress: 20 }));
+      fixture.detectChanges();
+
+      const el = fixture.nativeElement as HTMLElement;
+      const stop = el.querySelector('[data-testid="stopBenchmarkButton"] button') as HTMLButtonElement;
+      expect(stop).not.toBeNull();
+
+      // When - the operator stops the benchmark
+      stop.click();
+
+      // Then - the cancel endpoint is POSTed and the UI shows the stop in progress
+      const cancelReq = httpMock.expectOne(BENCH_CANCEL_URL);
+      expect(cancelReq.request.method).toBe('POST');
+      cancelReq.flush(benchStatus({ status: 'CANCEL_REQUESTED', progress: 20 }));
+      fixture.detectChanges();
+      expect(component.benchRunning()).toBe(true);
+      expect(component.benchCancelling()).toBe(true);
+      expect(el.querySelector('[data-testid="benchProgress"]')!.textContent).toContain('Arrêt en cours');
+
+      // When - the detector service confirms the cancellation
+      vi.advanceTimersByTime(1000);
+      httpMock.expectOne(BENCH_STATUS_URL).flush(
+        benchStatus({ status: 'CANCELLED', progress: 20, message: 'Benchmark cancelled by operator' })
+      );
+      fixture.detectChanges();
+
+      // Then - polling stops, the stop button disappears, no reload is triggered
+      expect(component.benchRunning()).toBe(false);
+      expect(component.benchCancelling()).toBe(false);
+      expect(el.querySelector('[data-testid="stopBenchmarkButton"]')).toBeNull();
       vi.advanceTimersByTime(3000);
       httpMock.expectNone(BENCH_STATUS_URL);
     });

@@ -32,9 +32,19 @@ public interface PiiDetectionConfigRepository {
      * Flags an on-demand concurrency benchmark request on the configuration row.
      * Resets the job status to PENDING with zero progress and no message.
      *
+     * @param maxConcurrency Highest concurrency level the benchmark measures
      * @throws RuntimeException if the request cannot be persisted
      */
-    void requestBenchmark();
+    void requestBenchmark(int maxConcurrency);
+
+    /**
+     * Cancels the benchmark job: a request not yet claimed by the detector
+     * service is withdrawn (CANCELLED), a running one is asked to stop
+     * (CANCEL_REQUESTED, the detector service confirms with CANCELLED).
+     *
+     * @throws RuntimeException if the cancellation cannot be persisted
+     */
+    void cancelBenchmark();
 
     /**
      * Retrieves the benchmark job status written by the detector service,

@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * {@code ministralConcurrencyAuto} / {@code ministralConcurrencyTunedSignature}
  * fields on the singleton detection config. Verifies GET exposes the fields,
  * PUT persists them through to the use-case command, and PUT rejects a
- * concurrency value outside the 1-16 range.
+ * concurrency value outside the 1-20 range.
  */
 @WebMvcTest(PiiDetectionConfigController.class)
 @Import(SecurityConfig.class)
@@ -132,10 +132,10 @@ class PiiDetectionConfigControllerConcurrencyTest {
 
     @Test
     void Should_RejectUpdate_When_MinistralConcurrencyAboveMaximum() throws Exception {
-        // ministralConcurrency is @Max(16) on the request DTO.
+        // ministralConcurrency is @Max(20) on the request DTO.
         mockMvc.perform(put(CONFIG_URL)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(bodyWithConcurrency("17")))
+                .content(bodyWithConcurrency("21")))
             .andExpect(status().isBadRequest());
     }
 

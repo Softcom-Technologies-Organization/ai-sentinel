@@ -37,10 +37,18 @@ export class PiiDetectionConfigService {
   }
 
   /**
-   * Start the Ministral concurrency benchmark job (no restart required).
+   * Start the Ministral concurrency benchmark job (no restart required),
+   * measuring concurrency levels 1..maxConcurrency.
    */
-  runConcurrencyBenchmark(): Observable<void> {
-    return this.http.post<void>(`${this.benchApiUrl}/run`, null);
+  runConcurrencyBenchmark(maxConcurrency: number): Observable<ConcurrencyBenchStatus> {
+    return this.http.post<ConcurrencyBenchStatus>(`${this.benchApiUrl}/run`, {maxConcurrency});
+  }
+
+  /**
+   * Stop the pending or running benchmark; the applied concurrency is left as is.
+   */
+  cancelConcurrencyBenchmark(): Observable<ConcurrencyBenchStatus> {
+    return this.http.post<ConcurrencyBenchStatus>(`${this.benchApiUrl}/cancel`, null);
   }
 
   /**

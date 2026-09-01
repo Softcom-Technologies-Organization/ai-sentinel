@@ -36,7 +36,7 @@ public record PiiDetectionConfig(
     private static final int MIN_PORT = 1;
     private static final int MAX_PORT = 65535;
     private static final int MIN_MINISTRAL_CONCURRENCY = 1;
-    private static final int MAX_MINISTRAL_CONCURRENCY = 16;
+    private static final int MAX_MINISTRAL_CONCURRENCY = 20;
 
     /**
      * Compact constructor for validation.

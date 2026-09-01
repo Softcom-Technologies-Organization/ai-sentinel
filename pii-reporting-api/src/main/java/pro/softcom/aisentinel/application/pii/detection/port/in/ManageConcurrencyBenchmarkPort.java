@@ -11,8 +11,17 @@ public interface ManageConcurrencyBenchmarkPort {
     /**
      * Requests an on-demand concurrency benchmark run.
      * The detector service picks up the request and executes the benchmark.
+     *
+     * @param maxConcurrency Highest concurrency level to measure (2..20)
+     * @throws IllegalArgumentException when maxConcurrency is out of range
      */
-    void requestBenchmark();
+    void requestBenchmark(int maxConcurrency);
+
+    /**
+     * Stops the pending or running benchmark. The applied concurrency is left
+     * untouched. A no-op when no benchmark is in progress.
+     */
+    void cancelBenchmark();
 
     /**
      * Retrieves the current benchmark job status together with the currently

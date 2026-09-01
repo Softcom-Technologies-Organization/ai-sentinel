@@ -225,12 +225,31 @@
                                         </p-toggleswitch>
                                     </div>
 
+                                    <!-- Concurrency, always editable: the startup auto-tuner and the
+                                         on-demand benchmark overwrite it with their measured value -->
+                                    <div class="advanced-param-field">
+                                        <label for="ministralConcurrency" class="advanced-param-label">
+                                            {{ 'settings.detectors.ministral.concurrency' | transloco }}
+                                        </label>
+                                        <p-inputNumber
+                                            inputId="ministralConcurrency"
+                                            formControlName="ministralConcurrency"
+                                            [min]="1"
+                                            [max]="benchConcurrencyMax"
+                                            [step]="1"
+                                            [showButtons]="true"
+                                            buttonLayout="horizontal"
+                                            incrementButtonIcon="pi pi-plus"
+                                            decrementButtonIcon="pi pi-minus"
+                                            [attr.aria-describedby]="'ministralConcurrencyHint'">
+                                        </p-inputNumber>
+                                        <small id="ministralConcurrencyHint" class="advanced-param-hint">
+                                            {{ 'settings.detectors.ministral.concurrencyHint' | transloco }}
+                                        </small>
+                                    </div>
+
                                     @if (configForm.get('ministralConcurrencyAuto')?.value) {
                                         <!-- Read-only tuned state -->
-                                        <div class="advanced-param-field">
-                                            <span class="advanced-param-label">{{ 'settings.detectors.ministral.concurrencyCurrent' | transloco }}</span>
-                                            <span class="concurrency-readonly">{{ configForm.get('ministralConcurrency')?.value }}</span>
-                                        </div>
                                         <div class="advanced-param-field">
                                             <span class="advanced-param-label">{{ 'settings.detectors.ministral.concurrencySignature' | transloco }}</span>
                                             <span class="concurrency-readonly">
@@ -257,45 +276,56 @@
                                                 {{ 'settings.detectors.ministral.retuneHint' | transloco }}
                                             </small>
                                         </div>
-                                    } @else {
-                                        <!-- Manual concurrency -->
-                                        <div class="advanced-param-field">
-                                            <label for="ministralConcurrency" class="advanced-param-label">
-                                                {{ 'settings.detectors.ministral.concurrency' | transloco }}
-                                            </label>
+                                    }
+
+                                    <!-- On-demand benchmark (no restart needed) -->
+                                    <div class="advanced-param-field">
+                                        <label for="benchMaxConcurrency" class="advanced-param-label">
+                                            {{ 'settings.detectors.ministral.benchMaxConcurrency' | transloco }}
+                                        </label>
+                                        <div class="bench-controls">
                                             <p-inputNumber
-                                                inputId="ministralConcurrency"
-                                                formControlName="ministralConcurrency"
-                                                [min]="1"
-                                                [max]="16"
+                                                inputId="benchMaxConcurrency"
+                                                data-testid="benchMaxConcurrency"
+                                                [formControl]="benchMaxConcurrency"
+                                                [min]="benchConcurrencyMin"
+                                                [max]="benchConcurrencyMax"
                                                 [step]="1"
                                                 [showButtons]="true"
                                                 buttonLayout="horizontal"
                                                 incrementButtonIcon="pi pi-plus"
                                                 decrementButtonIcon="pi pi-minus"
-                                                [attr.aria-describedby]="'ministralConcurrencyHint'">
+                                                [attr.aria-describedby]="'benchMaxConcurrencyHint'">
                                             </p-inputNumber>
-                                            <small id="ministralConcurrencyHint" class="advanced-param-hint">
-                                                {{ 'settings.detectors.ministral.concurrencyHint' | transloco }}
-                                            </small>
+                                            <p-button
+                                                type="button"
+                                                data-testid="runBenchmarkButton"
+                                                [label]="'settings.detectors.ministral.runBenchmark' | transloco"
+                                                icon="pi pi-play"
+                                                [disabled]="benchRunning() || benchMaxConcurrency.invalid"
+                                                (click)="onRunBenchmark()"
+                                                (keydown.enter)="onRunBenchmark()"
+                                                styleClass="p-button-outlined p-button-sm"
+                                                [ariaLabel]="'settings.detectors.ministral.runBenchmark' | transloco">
+                                            </p-button>
+                                            @if (benchRunning()) {
+                                                <p-button
+                                                    type="button"
+                                                    data-testid="stopBenchmarkButton"
+                                                    [label]="'settings.detectors.ministral.stopBenchmark' | transloco"
+                                                    icon="pi pi-stop"
+                                                    severity="danger"
+                                                    [disabled]="benchCancelling()"
+                                                    [loading]="benchCancelling()"
+                                                    (click)="onCancelBenchmark()"
+                                                    (keydown.enter)="onCancelBenchmark()"
+                                                    styleClass="p-button-outlined p-button-sm"
+                                                    [ariaLabel]="'settings.detectors.ministral.stopBenchmark' | transloco">
+                                                </p-button>
+                                            }
                                         </div>
-                                    }
-
-                                    <!-- On-demand benchmark (no restart needed) -->
-                                    <div class="advanced-param-field">
-                                        <p-button
-                                            type="button"
-                                            data-testid="runBenchmarkButton"
-                                            [label]="'settings.detectors.ministral.runBenchmark' | transloco"
-                                            icon="pi pi-play"
-                                            [disabled]="benchRunning()"
-                                            (click)="onRunBenchmark()"
-                                            (keydown.enter)="onRunBenchmark()"
-                                            styleClass="p-button-outlined p-button-sm"
-                                            [ariaLabel]="'settings.detectors.ministral.runBenchmark' | transloco">
-                                        </p-button>
-                                        <small class="advanced-param-hint">
-                                            {{ 'settings.detectors.ministral.runBenchmarkHint' | transloco }}
+                                        <small id="benchMaxConcurrencyHint" class="advanced-param-hint">
+                                            {{ 'settings.detectors.ministral.benchMaxConcurrencyHint' | transloco }}
                                         </small>
                                     </div>
 
@@ -306,7 +336,11 @@
                                                 [showValue]="false">
                                             </p-progressBar>
                                             <small class="advanced-param-hint" aria-live="polite">
-                                                {{ benchStatus()?.message || ('settings.detectors.ministral.benchmarkRunning' | transloco) }}
+                                                @if (benchCancelRequested()) {
+                                                    {{ 'settings.detectors.ministral.benchmarkCancelling' | transloco }}
+                                                } @else {
+                                                    {{ benchStatus()?.message || ('settings.detectors.ministral.benchmarkRunning' | transloco) }}
+                                                }
                                                 ({{ benchProgress() }}%)
                                             </small>
                                         </div>

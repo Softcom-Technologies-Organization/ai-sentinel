@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -130,7 +131,7 @@ public class PiiDetectionConfigEntity {
 
     /**
      * Lifecycle of the on-demand benchmark job, written by the detector
-     * service: IDLE, PENDING, RUNNING, DONE or FAILED.
+     * service: IDLE, PENDING, RUNNING, CANCEL_REQUESTED, CANCELLED, DONE or FAILED.
      */
     @NotNull
     @Builder.Default
@@ -152,6 +153,16 @@ public class PiiDetectionConfigEntity {
      */
     @Column(name = "concurrency_bench_message")
     private String concurrencyBenchMessage;
+
+    /**
+     * Highest concurrency level the on-demand benchmark measures (2..20),
+     * chosen by the operator when requesting the run.
+     */
+    @NotNull
+    @Builder.Default
+    @ColumnDefault("4")
+    @Column(name = "concurrency_bench_max_concurrency", nullable = false)
+    private Integer concurrencyBenchMaxConcurrency = 4;
 
     @NotNull
     @Column(name = "updated_at", nullable = false)

@@ -220,7 +220,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
         jpaRepository.deleteAll();
         persistenceAdapter.findConfig();
 
-        persistenceAdapter.requestBenchmark();
+        persistenceAdapter.requestBenchmark(8);
 
         PiiDetectionConfigEntity entity = jpaRepository.findById(CONFIG_ID).orElseThrow();
         ConcurrencyBenchStatus status = persistenceAdapter.findBenchStatus();
@@ -230,9 +230,46 @@ class PiiDetectionConfigPersistenceAdapterTest {
         softly.assertThat(entity.getConcurrencyBenchStatus()).isEqualTo("PENDING");
         softly.assertThat(entity.getConcurrencyBenchProgress()).isZero();
         softly.assertThat(entity.getConcurrencyBenchMessage()).isNull();
+        softly.assertThat(entity.getConcurrencyBenchMaxConcurrency()).isEqualTo(8);
         softly.assertThat(status.status()).isEqualTo("PENDING");
         softly.assertThat(status.progress()).isZero();
         softly.assertThat(status.message()).isNull();
+        softly.assertThat(status.maxConcurrency()).isEqualTo(8);
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_WithdrawRequest_When_CancellingBeforeDetectorClaimedIt() {
+        jpaRepository.deleteAll();
+        persistenceAdapter.findConfig();
+        persistenceAdapter.requestBenchmark(6);
+
+        persistenceAdapter.cancelBenchmark();
+
+        PiiDetectionConfigEntity entity = jpaRepository.findById(CONFIG_ID).orElseThrow();
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(entity.getConcurrencyBenchRequested()).isFalse();
+        softly.assertThat(entity.getConcurrencyBenchStatus()).isEqualTo("CANCELLED");
+        softly.assertThat(entity.getConcurrencyBenchMessage()).isNotBlank();
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_AskDetectorToStop_When_CancellingRunningBenchmark() {
+        jpaRepository.deleteAll();
+        persistenceAdapter.findConfig();
+        PiiDetectionConfigEntity running = jpaRepository.findById(CONFIG_ID).orElseThrow();
+        running.setConcurrencyBenchRequested(false);
+        running.setConcurrencyBenchStatus("RUNNING");
+        running.setConcurrencyBenchProgress(30);
+        jpaRepository.save(running);
+
+        persistenceAdapter.cancelBenchmark();
+
+        PiiDetectionConfigEntity entity = jpaRepository.findById(CONFIG_ID).orElseThrow();
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(entity.getConcurrencyBenchStatus()).isEqualTo("CANCEL_REQUESTED");
+        softly.assertThat(entity.getConcurrencyBenchProgress()).isEqualTo(30);
         softly.assertAll();
     }
 
@@ -247,6 +284,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
         entity.setConcurrencyBenchStatus("RUNNING");
         entity.setConcurrencyBenchProgress(42);
         entity.setConcurrencyBenchMessage("probing 4 workers");
+        entity.setConcurrencyBenchMaxConcurrency(12);
         jpaRepository.save(entity);
 
         persistenceAdapter.updateConfig(new PiiDetectionConfig(
@@ -265,6 +303,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
         softly.assertThat(reloaded.getConcurrencyBenchStatus()).isEqualTo("RUNNING");
         softly.assertThat(reloaded.getConcurrencyBenchProgress()).isEqualTo(42);
         softly.assertThat(reloaded.getConcurrencyBenchMessage()).isEqualTo("probing 4 workers");
+        softly.assertThat(reloaded.getConcurrencyBenchMaxConcurrency()).isEqualTo(12);
         softly.assertAll();
     }
 

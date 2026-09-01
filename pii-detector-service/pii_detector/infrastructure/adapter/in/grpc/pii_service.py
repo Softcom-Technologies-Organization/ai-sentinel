@@ -168,11 +168,17 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         adapter = get_database_config_adapter()
         while True:
             try:
-                if adapter.claim_bench_job():
-                    logger.info("[AUTOTUNE] on-demand benchmark requested; running")
+                max_concurrency = adapter.claim_bench_job()
+                if max_concurrency is not None:
+                    logger.info(
+                        "[AUTOTUNE] on-demand benchmark requested (up to C=%d); running",
+                        max_concurrency,
+                    )
                     outcome = run_ondemand_autotune(
                         self.detector,
                         on_progress=adapter.update_bench_progress,
+                        max_concurrency=max_concurrency,
+                        should_stop=adapter.is_bench_cancel_requested,
                     )
                     if outcome.ran and outcome.chosen is not None:
                         adapter.complete_bench_job(outcome.chosen, outcome.signature)
@@ -180,6 +186,9 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                             "[AUTOTUNE] on-demand benchmark done: concurrency=%d",
                             outcome.chosen,
                         )
+                    elif outcome.reason == "cancelled":
+                        adapter.cancel_bench_job()
+                        logger.info("[AUTOTUNE] on-demand benchmark cancelled by operator")
                     else:
                         adapter.fail_bench_job(f"Benchmark failed: {outcome.reason}")
                         logger.warning(

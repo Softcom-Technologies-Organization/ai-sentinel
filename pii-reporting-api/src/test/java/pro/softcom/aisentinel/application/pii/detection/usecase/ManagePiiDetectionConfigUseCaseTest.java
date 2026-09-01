@@ -150,13 +150,13 @@ class ManagePiiDetectionConfigUseCaseTest {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
             true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234,
-            17, false, null, "testuser"
+            21, false, null, "testuser"
         );
 
         // Act & Assert
         assertThatThrownBy(() -> useCase.updateConfig(command))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Ministral concurrency must be between 1 and 16");
+            .hasMessageContaining("Ministral concurrency must be between 1 and 20");
     }
 
     @Test

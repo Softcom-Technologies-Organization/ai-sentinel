@@ -7,12 +7,15 @@ from the shared PostgreSQL database when requested via the gRPC fetch_config_fro
 
 import logging
 import os
-from typing import Optional
+from typing import Callable, Any, Optional
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
 logger = logging.getLogger(__name__)
+
+# Upper bound of the on-demand benchmark when the row carries none (column default).
+DEFAULT_BENCH_MAX_CONCURRENCY = 4
 
 
 class DatabaseConfigAdapter:
@@ -378,13 +381,39 @@ class DatabaseConfigAdapter:
     def _execute_commit(
         self, sql: str, params: tuple, quiet_conn_errors: bool = False
     ) -> int:
-        """Run a write statement, commit, return rowcount (-1 on failure, logged).
+        """Run a write statement, commit, return rowcount (-1 on failure, logged)."""
+        rowcount = self._execute_and_commit(
+            sql, params, quiet_conn_errors, lambda cursor: cursor.rowcount
+        )
+        return -1 if rowcount is None else rowcount
 
-        Never raises: DB write hiccups must not crash the poller/bench.
-        ``quiet_conn_errors`` downgrades connection-level failures to DEBUG — used
-        by the benchmark-request poller (``claim_bench_job``), which runs every
-        few seconds and would otherwise spam ERROR during a DB outage. Genuine
-        query errors always stay at ERROR.
+    def _execute_returning_one(
+        self, sql: str, params: tuple, quiet_conn_errors: bool = False
+    ) -> Optional[tuple]:
+        """Run a statement yielding at most one row (``RETURNING`` or a SELECT),
+        commit, return that row — ``None`` when nothing matched or on failure."""
+        return self._execute_and_commit(
+            sql,
+            params,
+            quiet_conn_errors,
+            lambda cursor: cursor.fetchone() if cursor.rowcount > 0 else None,
+        )
+
+    def _execute_and_commit(
+        self,
+        sql: str,
+        params: tuple,
+        quiet_conn_errors: bool,
+        read_result: Callable[[Any], Any],
+    ) -> Any:
+        """Execute ``sql``, read its outcome through ``read_result(cursor)``, commit.
+
+        Never raises: DB write hiccups must not crash the poller/bench, so any
+        failure is logged and reported as ``None``. ``quiet_conn_errors``
+        downgrades connection-level failures to DEBUG — used by the
+        benchmark-request poller, which runs every few seconds and would
+        otherwise spam ERROR during a DB outage. Genuine query errors always
+        stay at ERROR.
         """
         connection = None
         cursor = None
@@ -392,8 +421,9 @@ class DatabaseConfigAdapter:
             connection = self._get_connection()
             cursor = connection.cursor()
             cursor.execute(sql, params)
+            result = read_result(cursor)
             connection.commit()
-            return cursor.rowcount
+            return result
         except psycopg2.OperationalError as e:
             if quiet_conn_errors:
                 logger.debug("DB unavailable (poller, quiet): %s", e)
@@ -401,26 +431,28 @@ class DatabaseConfigAdapter:
                 logger.exception("DB write failed (connection): %s", e)
             if connection:
                 connection.rollback()
-            return -1
+            return None
         except psycopg2.Error as e:
             logger.exception("DB write failed: %s", e)
             if connection:
                 connection.rollback()
-            return -1
+            return None
         finally:
             if cursor:
                 cursor.close()
             if connection:
                 connection.close()
 
-    def claim_bench_job(self) -> bool:
+    def claim_bench_job(self) -> Optional[int]:
         """Atomically claim a pending on-demand benchmark request.
 
-        Flips ``concurrency_bench_requested`` false -> RUNNING in a single
-        conditional UPDATE, so only the first poller tick that sees the request
-        runs the bench (no double-run). Returns True iff a request was claimed.
+        Flips ``concurrency_bench_requested`` true -> false and the status to
+        RUNNING in a single conditional UPDATE, so only the first poller tick that
+        sees the request runs the bench (no double-run). Returns the highest
+        concurrency the operator asked to measure, or ``None`` when there was no
+        pending request (or the DB was unreachable).
         """
-        rc = self._execute_commit(
+        row = self._execute_returning_one(
             """
             UPDATE pii_detection_config
             SET concurrency_bench_requested = false,
@@ -428,23 +460,55 @@ class DatabaseConfigAdapter:
                 concurrency_bench_progress = 0,
                 concurrency_bench_message = 'Starting benchmark'
             WHERE id = 1 AND concurrency_bench_requested = true
+            RETURNING concurrency_bench_max_concurrency
             """,
             (),
             quiet_conn_errors=True,
         )
-        return rc > 0
+        if row is None:
+            return None
+        return int(row[0]) if row[0] is not None else DEFAULT_BENCH_MAX_CONCURRENCY
 
     def update_bench_progress(self, progress: int, message: str) -> None:
-        """Update the RUNNING benchmark progress percentage and label."""
+        """Update the RUNNING benchmark progress percentage and label.
+
+        Guarded on RUNNING so a cancellation written by the API
+        (CANCEL_REQUESTED) is never overwritten by a late progress tick.
+        """
         self._execute_commit(
             """
             UPDATE pii_detection_config
-            SET concurrency_bench_status = 'RUNNING',
-                concurrency_bench_progress = %s,
+            SET concurrency_bench_progress = %s,
                 concurrency_bench_message = %s
-            WHERE id = 1
+            WHERE id = 1 AND concurrency_bench_status = 'RUNNING'
             """,
             (int(progress), message),
+        )
+
+    def is_bench_cancel_requested(self) -> bool:
+        """True once the operator asked to stop the running benchmark.
+
+        Polled between chunk requests by the bench, so connection errors stay
+        quiet and read as "not cancelled": a DB hiccup must not abort a run.
+        """
+        row = self._execute_returning_one(
+            "SELECT concurrency_bench_status FROM pii_detection_config WHERE id = 1",
+            (),
+            quiet_conn_errors=True,
+        )
+        return row is not None and row[0] == "CANCEL_REQUESTED"
+
+    def cancel_bench_job(self) -> None:
+        """Mark the benchmark job CANCELLED; the stored concurrency is left as is."""
+        self._execute_commit(
+            """
+            UPDATE pii_detection_config
+            SET concurrency_bench_requested = false,
+                concurrency_bench_status = 'CANCELLED',
+                concurrency_bench_message = 'Benchmark cancelled by operator'
+            WHERE id = 1
+            """,
+            (),
         )
 
     def complete_bench_job(self, concurrency: int, signature: str) -> None:

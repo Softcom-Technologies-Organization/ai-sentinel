@@ -30,6 +30,9 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
     private static final int DEFAULT_MINISTRAL_CONCURRENCY = 1;
     private static final String BENCH_STATUS_IDLE = "IDLE";
     private static final String BENCH_STATUS_PENDING = "PENDING";
+    private static final String BENCH_STATUS_CANCEL_REQUESTED = "CANCEL_REQUESTED";
+    private static final String BENCH_STATUS_CANCELLED = "CANCELLED";
+    private static final int DEFAULT_BENCH_MAX_CONCURRENCY = 4;
 
     private final PiiDetectionConfigJpaRepository jpaRepository;
 
@@ -79,17 +82,35 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
 
     @Override
     @Transactional
-    public void requestBenchmark() {
-        log.info("Flagging on-demand concurrency benchmark request");
+    public void requestBenchmark(int maxConcurrency) {
+        log.info("Flagging on-demand concurrency benchmark request (up to concurrency {})", maxConcurrency);
 
         PiiDetectionConfigEntity entity = requireConfigEntity();
         entity.setConcurrencyBenchRequested(true);
         entity.setConcurrencyBenchStatus(BENCH_STATUS_PENDING);
         entity.setConcurrencyBenchProgress(0);
         entity.setConcurrencyBenchMessage(null);
+        entity.setConcurrencyBenchMaxConcurrency(maxConcurrency);
         jpaRepository.save(entity);
 
         log.info("Concurrency benchmark request flagged successfully");
+    }
+
+    @Override
+    @Transactional
+    public void cancelBenchmark() {
+        PiiDetectionConfigEntity entity = requireConfigEntity();
+        if (Boolean.TRUE.equals(entity.getConcurrencyBenchRequested())) {
+            // Not claimed by the detector service yet: withdraw the request outright.
+            entity.setConcurrencyBenchRequested(false);
+            entity.setConcurrencyBenchStatus(BENCH_STATUS_CANCELLED);
+            entity.setConcurrencyBenchMessage("Benchmark cancelled before it started");
+        } else {
+            // Claimed and running: the detector service stops at its next check.
+            entity.setConcurrencyBenchStatus(BENCH_STATUS_CANCEL_REQUESTED);
+        }
+        jpaRepository.save(entity);
+        log.info("Concurrency benchmark cancellation persisted (status {})", entity.getConcurrencyBenchStatus());
     }
 
     @Override
@@ -103,7 +124,9 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 entity.getConcurrencyBenchProgress() != null ? entity.getConcurrencyBenchProgress() : 0,
                 entity.getConcurrencyBenchMessage(),
                 entity.getMinistralConcurrency() != null ? entity.getMinistralConcurrency() : DEFAULT_MINISTRAL_CONCURRENCY,
-                entity.getMinistralConcurrencyTunedSignature()
+                entity.getMinistralConcurrencyTunedSignature(),
+                entity.getConcurrencyBenchMaxConcurrency() != null
+                        ? entity.getConcurrencyBenchMaxConcurrency() : DEFAULT_BENCH_MAX_CONCURRENCY
         );
     }
 
@@ -124,6 +147,7 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
         target.setConcurrencyBenchStatus(source.getConcurrencyBenchStatus());
         target.setConcurrencyBenchProgress(source.getConcurrencyBenchProgress());
         target.setConcurrencyBenchMessage(source.getConcurrencyBenchMessage());
+        target.setConcurrencyBenchMaxConcurrency(source.getConcurrencyBenchMaxConcurrency());
     }
 
     /**

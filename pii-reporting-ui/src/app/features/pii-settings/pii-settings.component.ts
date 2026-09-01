@@ -4,6 +4,7 @@ import { DomSanitizer } from '@angular/platform-browser';
 import {
     AbstractControlOptions,
     FormBuilder,
+    FormControl,
     FormGroup,
     FormsModule,
     ReactiveFormsModule,
@@ -89,6 +90,20 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
   benchStatus = signal<ConcurrencyBenchStatus | null>(null);
   benchRunning = signal(false);
   benchProgress = computed(() => this.benchStatus()?.progress ?? 0);
+  benchCancelling = signal(false);
+  benchCancelRequested = computed(() => this.benchStatus()?.status === 'CANCEL_REQUESTED');
+  readonly benchConcurrencyMin = 2;
+  readonly benchConcurrencyMax = 20;
+  /** Highest concurrency level the on-demand benchmark measures. Every level replays
+   *  the whole sample on the detector service, so the run time grows with this bound. */
+  readonly benchMaxConcurrency = new FormControl<number>(4, {
+    nonNullable: true,
+    validators: [
+      Validators.required,
+      Validators.min(this.benchConcurrencyMin),
+      Validators.max(this.benchConcurrencyMax)
+    ]
+  });
   private benchPollSubscription: Subscription | null = null;
 
   // Collapsible detector groups in PII types section
@@ -198,7 +213,7 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
       ministralEnabled: [false],
       ministralChunkSize: [2048, [Validators.required, Validators.min(256), Validators.max(4096)]],
       ministralOverlap: [410, [Validators.required, Validators.min(0), Validators.max(512)]],
-      ministralConcurrency: [1, [Validators.required, Validators.min(1), Validators.max(16)]],
+      ministralConcurrency: [1, [Validators.required, Validators.min(1), Validators.max(this.benchConcurrencyMax)]],
       ministralConcurrencyAuto: [true],
       ministralConcurrencyTunedSignature: [null as string | null],
       defaultThreshold: [0.75, [Validators.required, Validators.min(0), Validators.max(1)]],
@@ -487,18 +502,39 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
    * restart, then poll its status until it terminates.
    */
   onRunBenchmark(): void {
-    if (this.benchRunning()) {
+    if (this.benchRunning() || this.benchMaxConcurrency.invalid) {
       return;
     }
 
     this.benchRunning.set(true);
+    this.benchCancelling.set(false);
     this.benchStatus.set(null);
 
-    this.configService.runConcurrencyBenchmark().subscribe({
+    this.configService.runConcurrencyBenchmark(this.benchMaxConcurrency.value).subscribe({
       next: () => this.startBenchPolling(),
       error: (err) => {
         console.error('Failed to start concurrency benchmark:', err);
         this.benchRunning.set(false);
+        this.showBenchError(err.error?.message || err.message || 'Unknown error');
+      }
+    });
+  }
+
+  /**
+   * Ask the detector service to stop the running benchmark. Polling continues
+   * until the service confirms (CANCELLED); the applied concurrency is left as is.
+   */
+  onCancelBenchmark(): void {
+    if (!this.benchRunning() || this.benchCancelling()) {
+      return;
+    }
+
+    this.benchCancelling.set(true);
+    this.configService.cancelConcurrencyBenchmark().subscribe({
+      next: (status) => this.handleBenchStatus(status),
+      error: (err) => {
+        console.error('Failed to cancel concurrency benchmark:', err);
+        this.benchCancelling.set(false);
         this.showBenchError(err.error?.message || err.message || 'Unknown error');
       }
     });
@@ -538,7 +574,18 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
     } else if (status.status === 'FAILED') {
       this.stopBenchPolling();
       this.benchRunning.set(false);
+      this.benchCancelling.set(false);
       this.showBenchError(status.message || 'Unknown error');
+    } else if (status.status === 'CANCELLED') {
+      this.stopBenchPolling();
+      this.benchRunning.set(false);
+      this.benchCancelling.set(false);
+      this.messageService.add({
+        severity: 'info',
+        summary: this.translocoService.translate('common.info'),
+        detail: this.translocoService.translate('settings.detectors.ministral.benchmarkCancelled', {concurrency: status.concurrency}),
+        life: 3000
+      });
     }
   }
 

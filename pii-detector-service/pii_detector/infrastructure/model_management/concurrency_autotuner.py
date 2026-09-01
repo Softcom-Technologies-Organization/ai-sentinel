@@ -33,7 +33,7 @@ import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import httpx
 
@@ -41,6 +41,9 @@ logger = logging.getLogger(__name__)
 
 # Bench tunables (env-overridable for a specific client host).
 DEFAULT_MAX_CONCURRENCY = 4
+# Hard cap on the levels an operator may request from the UI: every level replays
+# the whole sample, so the run time grows quadratically with this bound.
+MAX_BENCH_CONCURRENCY = 20
 DEFAULT_MIN_GAIN = 1.3
 # On a near-tie, prefer the smaller concurrency within this fraction of the best
 # speedup (avoid claiming +1 slot for a marginal gain).
@@ -69,13 +72,14 @@ _SAMPLE_BLOCK = (
 class BenchLevel:
     """Aggregate measurement for one concurrency level."""
 
-    __slots__ = ("concurrency", "wall_s", "completion_tokens", "errors")
+    __slots__ = ("concurrency", "wall_s", "completion_tokens", "errors", "cancelled")
 
     def __init__(self, concurrency: int) -> None:
         self.concurrency = concurrency
         self.wall_s = 0.0
         self.completion_tokens = 0
         self.errors = 0
+        self.cancelled = False
 
 
 def _int_env(name: str, default: int) -> int:
@@ -172,18 +176,30 @@ def _run_level(
     chunks: List[Any],
     url: str,
     concurrency: int,
+    should_stop: Optional[Callable[[], bool]] = None,
 ) -> BenchLevel:
-    """Send every chunk once through a pool of ``concurrency`` workers; time it."""
+    """Send every chunk once through a pool of ``concurrency`` workers; time it.
+
+    ``should_stop`` is consulted before each request so an operator cancellation
+    takes effect within one chunk; the level is then flagged ``cancelled`` and
+    its timing is meaningless.
+    """
     level = BenchLevel(concurrency)
     client = ministral._get_client()
     payloads = [ministral._build_payload(chunk.text) for chunk in chunks]
+    stop = should_stop or (lambda: False)
 
     def _task(payload: Dict[str, Any]) -> int:
+        if level.cancelled or stop():
+            level.cancelled = True
+            return 0
         return _post_completion_tokens(client, url, payload)
 
     started = time.perf_counter()
     if concurrency <= 1:
         for payload in payloads:
+            if level.cancelled:
+                break
             level.completion_tokens += _safe_task(_task, payload, level)
     else:
         max_workers = min(concurrency, len(payloads))
@@ -290,13 +306,33 @@ class BenchOutcome:
         self.reason = reason        # "ok" | "endpoint_down" | "insufficient_chunks" | ...
 
 
-def _bench_and_decide(ministral: Any, config: dict, on_progress=None) -> BenchOutcome:
+def _resolve_max_concurrency(requested: Optional[int]) -> int:
+    """Highest level to measure: the operator's request when given, else the
+    env default; always within 2..MAX_BENCH_CONCURRENCY."""
+    base = requested if requested else _int_env("PII_AUTOTUNE_MAX_C", DEFAULT_MAX_CONCURRENCY)
+    return max(2, min(MAX_BENCH_CONCURRENCY, int(base)))
+
+
+def _cancelled(signature: str, level: int) -> BenchOutcome:
+    logger.info("[AUTOTUNE] benchmark cancelled by operator at C=%d", level)
+    return BenchOutcome(None, signature, False, "cancelled")
+
+
+def _bench_and_decide(
+    ministral: Any,
+    config: dict,
+    on_progress=None,
+    max_concurrency: Optional[int] = None,
+    should_stop: Optional[Callable[[], bool]] = None,
+) -> BenchOutcome:
     """Health-probe, bench concurrency 1..MAX_C, decide. No DB persistence here.
 
     ``on_progress(percent:int, message:str)`` is invoked before each level when
-    provided (drives the UI progress bar). Returns a :class:`BenchOutcome`;
-    ``ran`` is False (with a reason) when the endpoint is unreachable or the
-    sample yields too few chunks to measure concurrency.
+    provided (drives the UI progress bar). ``max_concurrency`` overrides the env
+    default (clamped to 2..MAX_BENCH_CONCURRENCY). ``should_stop()`` returning
+    True aborts the run with reason ``cancelled``. Returns a
+    :class:`BenchOutcome`; ``ran`` is False (with a reason) when the endpoint is
+    unreachable, the sample yields too few chunks, or the run was cancelled.
     """
     host = config.get("lm_studio_host", "localhost")
     port = config.get("lm_studio_port", 1234)
@@ -308,7 +344,7 @@ def _bench_and_decide(ministral: Any, config: dict, on_progress=None) -> BenchOu
     if not _probe_endpoint(client, base_url):
         return BenchOutcome(None, signature, False, "endpoint_down")
 
-    max_c = max(2, _int_env("PII_AUTOTUNE_MAX_C", DEFAULT_MAX_CONCURRENCY))
+    max_c = _resolve_max_concurrency(max_concurrency)
     min_gain = _float_env("PII_AUTOTUNE_MIN_GAIN", DEFAULT_MIN_GAIN)
     eps = _float_env("PII_AUTOTUNE_TIE_EPS", DEFAULT_TIE_EPS)
     chunk_size = int(config.get("ministral_chunk_size") or 2048)
@@ -332,9 +368,13 @@ def _bench_and_decide(ministral: Any, config: dict, on_progress=None) -> BenchOu
 
     levels: Dict[int, BenchLevel] = {}
     for c in range(1, max_c + 1):
+        if should_stop is not None and should_stop():
+            return _cancelled(signature, c)
         if on_progress is not None:
             on_progress(int((c - 1) / max_c * 95), f"Testing concurrency {c}/{max_c}")
-        level = _run_level(ministral, chunks, url, c)
+        level = _run_level(ministral, chunks, url, c, should_stop)
+        if level.cancelled:
+            return _cancelled(signature, c)
         levels[c] = level
         logger.info(
             "[AUTOTUNE] C=%d wall=%.2fs compl_tok=%d errors=%d",
@@ -399,14 +439,20 @@ def _run_startup_autotune_inner(detector: Any) -> Optional[int]:
     return None
 
 
-def run_ondemand_autotune(detector: Any, on_progress=None) -> BenchOutcome:
+def run_ondemand_autotune(
+    detector: Any,
+    on_progress=None,
+    max_concurrency: Optional[int] = None,
+    should_stop: Optional[Callable[[], bool]] = None,
+) -> BenchOutcome:
     """Run the benchmark on demand (operator-triggered), returning the outcome.
 
     Unlike the startup path this FORCES a run: it ignores the auto flag and the
     already-tuned-signature skip (the operator explicitly clicked the button). It
-    still health-probes and is error-aware. Persistence of the result is left to
-    the caller (the poller) so it can also transition the job status. Never
-    raises — a failure is reported as a non-``ran`` outcome.
+    still health-probes and is error-aware. ``max_concurrency`` is the operator's
+    upper bound and ``should_stop`` their cancellation switch. Persistence of the
+    result is left to the caller (the poller) so it can also transition the job
+    status. Never raises — a failure is reported as a non-``ran`` outcome.
     """
     try:
         ministral = _resolve_ministral(detector)
@@ -419,7 +465,9 @@ def run_ondemand_autotune(detector: Any, on_progress=None) -> BenchOutcome:
         config = get_database_config_adapter().fetch_config()
         if not config:
             return BenchOutcome(None, "", False, "no_config")
-        return _bench_and_decide(ministral, config, on_progress)
+        return _bench_and_decide(
+            ministral, config, on_progress, max_concurrency, should_stop
+        )
     except Exception:  # pragma: no cover - defensive
         logger.warning(
             "[AUTOTUNE] on-demand run aborted (unexpected error)", exc_info=True

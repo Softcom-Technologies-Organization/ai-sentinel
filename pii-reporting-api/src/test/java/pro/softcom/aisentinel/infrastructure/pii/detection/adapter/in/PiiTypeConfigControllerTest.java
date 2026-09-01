@@ -11,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiTypeConfigsPort;
 import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.CategoryGroupResponseDto;
-import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.CreatePiiTypeConfigRequestDto;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.GroupedPiiTypesResponseDto;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto.UpdatePiiTypeConfigRequestDto;
 
@@ -26,7 +25,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -241,28 +239,6 @@ class PiiTypeConfigControllerTest {
     }
 
     @Test
-    @DisplayName("Should_ReturnCreated_When_CreateConfigCalled")
-    void Should_ReturnCreated_When_CreateConfigCalled() {
-        // Arrange
-        var created = PiiTypeConfig.builder()
-                .piiType("CUSTOM_TYPE").detector("MINISTRAL").enabled(true)
-                .threshold(0.80).category("CONTACT").detectorLabel("custom").severity("LOW").build();
-        when(managePiiTypeConfigsPort.createConfig(any())).thenReturn(created);
-        var request = new CreatePiiTypeConfigRequestDto(
-                "CUSTOM_TYPE", "MINISTRAL", true, 0.80,
-                "CONTACT", "custom", null, "LOW"
-        );
-
-        // Act
-        var response = controller.createConfig(request);
-
-        // Assert
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().piiType()).isEqualTo("CUSTOM_TYPE");
-    }
-
-    @Test
     @DisplayName("Should_ReturnUpdated_When_UpdateConfigCalled")
     void Should_ReturnUpdated_When_UpdateConfigCalled() {
         // Arrange
@@ -289,15 +265,6 @@ class PiiTypeConfigControllerTest {
         assertThatThrownBy(() -> controller.updateConfig("MINISTRAL", "EMAIL", request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Path parameters must match request body values");
-    }
-
-    @Test
-    @DisplayName("Should_ReturnNoContent_When_DeleteConfigCalled")
-    void Should_ReturnNoContent_When_DeleteConfigCalled() {
-        var response = controller.deleteConfig("MINISTRAL", "CUSTOM_TYPE");
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        verify(managePiiTypeConfigsPort).deleteConfig("CUSTOM_TYPE", "MINISTRAL");
     }
 
     @Test

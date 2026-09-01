@@ -41,8 +41,7 @@ annotations** — that is enforced, not stylistic. When you add a use case you m
 | Purge | `ScanPurgeController` | `POST /scans/purge` |
 | PII reveal | `PiiAccessController` | `GET /pii/config/reveal-allowed`, `POST /pii/reveal-page` |
 | Detection config | `PiiDetectionConfigController` | `GET`/`PUT /pii-detection/config` |
-| PII taxonomy | `PiiTypeConfigController` | `GET`/`POST /pii-detection/pii-types`, `GET /pii-detection/pii-types/{detector}`, `GET .../grouped`, `GET .../grouped/by-category`, `PUT`/`DELETE .../{detector}/{piiType}`, `PUT .../bulk` |
-| Discovered labels | `DiscoveredLabelController` | `GET /pii-detection/discovered-labels`, `POST .../{label}/promote`, `POST .../{label}/ignore` |
+| PII taxonomy | `PiiTypeConfigController` | `GET /pii-detection/pii-types`, `GET /pii-detection/pii-types/{detector}`, `GET .../grouped`, `GET .../grouped/by-category`, `PUT .../{detector}/{piiType}`, `PUT .../bulk` |
 | Concurrency benchmark | `ConcurrencyBenchmarkController` | `POST /pii-detection/concurrency-benchmark/run`, `GET .../status` |
 | Remediation | `PiiRemediationController` | `GET /pii/remediation/config`, `POST .../findings/search`, `POST .../findings/status`, `POST .../findings/status/by-selection`, `POST .../plan`, `POST .../jobs`, `GET .../jobs/{id}` |
 | Polling config | `ConfigController` | `GET /config/polling` |
@@ -87,7 +86,7 @@ constraints:
 
 Supporting services in `application/pii/reporting/service/`: `ScanEventFactory` (builds each event
 type), `ScanProgressCalculator`, `ScanCheckpointService`, `ScanEventDispatcher` (publishes only after
-transaction commit), `ScanSpaceStatsCollector`, `AttachmentProcessor`, `DiscoveredLabelCollector`, and
+transaction commit), `ScanSpaceStatsCollector`, `AttachmentProcessor`, and
 the `parser/` package (`HtmlContentParser` strips Confluence markup with jsoup before detection).
 
 Reconnection is served from `infrastructure/pii/scan/service/ScanEventBuffer`, a per-scan in-memory
@@ -118,7 +117,6 @@ Owned tables (see `init-scripts/`, applied in numeric order):
 | `confluence_connection_config` | Confluence URL, credentials, deployment type (encrypted) |
 | `pii_detection_config` | Single row `id = 1`: detector flags, thresholds, Ministral and LM Studio settings |
 | `pii_type_config` | One row per detector × PII type: enabled, threshold, severity, detector label |
-| `ministral_discovered_label` | Open-vocabulary labels awaiting operator review |
 | `pii_finding_remediation`, `pii_redaction_job` | Finding lifecycle and redaction jobs |
 | `pii_access_audit` | Every decryption of a PII value, with purpose and actor |
 

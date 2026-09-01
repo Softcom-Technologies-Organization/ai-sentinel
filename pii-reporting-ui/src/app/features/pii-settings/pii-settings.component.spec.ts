@@ -248,6 +248,31 @@ describe('PiiSettingsComponent', () => {
     expect(component.isDetectorCollapsed('REGEX')).toBe(false);
   });
 
+  it('Should_RenderTypeToggleOff_When_DetectorDisabled', async () => {
+    // Given - an enabled PRESIDIO type rendered in the "Types d'IPI" section
+    seedPresidioType({ enabled: true });
+    component.setActiveSection('pii_types');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    // When - the PRESIDIO master goes off and its group is expanded back
+    component.configForm.patchValue({ presidioEnabled: false });
+    component.onDetectorMasterToggle('PRESIDIO');
+    component.toggleDetectorCollapse('PRESIDIO');
+    fixture.detectChanges();
+    // NgModel writes the new value to the switch in a microtask, so the DOM only
+    // reflects it on the change detection pass that follows.
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    // Then - the switch reads off and locked, while the stored value is untouched
+    const toggle: HTMLInputElement = fixture.nativeElement
+      .querySelector('.pii-type-switches input[type="checkbox"]');
+    expect(toggle.checked).toBe(false);
+    expect(toggle.disabled).toBe(true);
+    expect(component.groupedPiiTypes()[0].categories[0].types[0].enabled).toBe(true);
+  });
+
   // ========== Helpers ==========
 
   function seedPresidioType(overrides: Partial<PiiTypeConfig> = {}): PiiTypeConfig {
@@ -410,19 +435,6 @@ describe('PiiSettingsComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelectorAll('p-inputnumber')).toHaveLength(1);
     expect(el.querySelector('.ministral-no-threshold-hint')).not.toBeNull();
-  });
-
-  it('Should_HideThresholdField_When_AddCustomLabelDialogOpened', () => {
-    // When - the add-custom-label dialog is opened (custom labels are always MINISTRAL)
-    component.openAddCustomLabelDialog();
-    component.customLabelForm.patchValue({ detectorLabel: 'my label', piiType: 'MY_LABEL' });
-    fixture.detectChanges();
-
-    // Then - the threshold input is gone, but the control keeps its default so the
-    // required create request stays populated and the form is valid.
-    expect(document.querySelector('#customThreshold')).toBeNull();
-    expect(component.customLabelForm.get('threshold')?.value).toBe(0.8);
-    expect(component.customLabelForm.valid).toBe(true);
   });
 
   // ========== Ministral concurrency ==========
@@ -851,72 +863,6 @@ describe('PiiSettingsComponent', () => {
 
     component.toggleDetectorCollapse('REGEX');
     expect(component.isDetectorCollapsed('REGEX')).toBe(false);
-  });
-
-  // ========== Custom label dialog ==========
-
-  it('Should_OpenAndCloseCustomLabelDialog_When_Toggled', () => {
-    component.openAddCustomLabelDialog();
-    expect(component.showAddCustomLabelDialog()).toBe(true);
-
-    component.closeAddCustomLabelDialog();
-    expect(component.showAddCustomLabelDialog()).toBe(false);
-  });
-
-  it('Should_GeneratePiiTypeCode_When_DetectorLabelChanged', () => {
-    component.onDetectorLabelChange('Numéro de badge');
-
-    expect(component.customLabelForm.get('piiType')?.value).toBe('NUMERO_DE_BADGE');
-  });
-
-  it('Should_AbortCreate_When_CustomLabelFormInvalid', () => {
-    component.openAddCustomLabelDialog();
-
-    component.createCustomType();
-
-    expect(component.creatingCustomType()).toBe(false);
-    httpMock.expectNone('/api/v1/pii-detection/pii-types');
-  });
-
-  it('Should_CreateCustomType_When_CustomLabelFormValid', () => {
-    component.customLabelForm.patchValue({
-      detectorLabel: 'Badge number',
-      piiType: 'BADGE_NUMBER',
-      category: 'CUSTOM',
-      severity: 'MEDIUM',
-      threshold: 0.8,
-      countryCode: '',
-    });
-
-    component.createCustomType();
-    expect(component.creatingCustomType()).toBe(true);
-
-    const req = httpMock.expectOne('/api/v1/pii-detection/pii-types');
-    expect(req.request.method).toBe('POST');
-    req.flush({ id: 5, piiType: 'BADGE_NUMBER', detector: 'MINISTRAL', enabled: true, threshold: 0.8, category: 'CUSTOM' });
-
-    // loadAllConfigs is re-triggered on success
-    httpMock.expectOne('/api/v1/pii-detection/config').flush(MOCK_DETECTOR_CONFIG);
-    httpMock.expectOne('/api/v1/pii-detection/pii-types/grouped').flush([]);
-
-    expect(component.creatingCustomType()).toBe(false);
-    expect(component.showAddCustomLabelDialog()).toBe(false);
-  });
-
-  it('Should_StopCreating_When_CreateCustomTypeFails', () => {
-    component.customLabelForm.patchValue({
-      detectorLabel: 'Badge number',
-      piiType: 'BADGE_NUMBER',
-      category: 'CUSTOM',
-      severity: 'MEDIUM',
-      threshold: 0.8,
-      countryCode: '',
-    });
-
-    component.createCustomType();
-    httpMock.expectOne('/api/v1/pii-detection/pii-types').flush('boom', { status: 500, statusText: 'Server Error' });
-
-    expect(component.creatingCustomType()).toBe(false);
   });
 
 });

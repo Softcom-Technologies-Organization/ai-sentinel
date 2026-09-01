@@ -112,6 +112,11 @@
         "settingsButton": "Configurer",
         "closeAriaLabel": "Fermer la notification"
       },
+      "backendUnreachable": {
+        "message": "Le serveur ai-sentinel ne répond pas. Vos paramètres Confluence n'ont pas pu être vérifiés et les chiffres affichés ne sont pas les vrais.",
+        "retryButton": "Réessayer",
+        "closeAriaLabel": "Fermer la notification"
+      },
       "newSpaces": {
         "message": "{{count}} nouvel(aux) espace(s) Confluence disponible(s)",
         "refreshButton": "Rafraîchir",
@@ -205,6 +210,18 @@
       "header": "Supprimer toutes les données",
       "message": "<p>Êtes-vous sûr de vouloir <b>supprimer définitivement</b> toutes les données de scan Confluence ?</p>\n<p>Cette action est <b>irréversible</b>. Tous les résultats de scan, les détections d'IPI et les points de contrôle seront supprimés.</p>",
       "acceptLabel": "Oui, tout supprimer",
+      "rejectLabel": "Annuler"
+    },
+    "reportFalsePositive": {
+      "header": "Signaler des faux positifs",
+      "message": "<p>Vous êtes sur le point de signaler <b>{{count}}</b> détection(s) comme <b>faux positifs</b>.</p>\n<p>Elles quitteront la file « À traiter » et ne seront plus proposées à la suppression. Le signalement sert aussi de retour sur la qualité de détection.</p>\n<p>Il n'existe <b>pas d'annulation groupée</b> : le rétablissement se fait détection par détection.</p>",
+      "acceptLabel": "Oui, signaler ({{count}})",
+      "rejectLabel": "Annuler"
+    },
+    "markTreated": {
+      "header": "Marquer des détections comme traitées",
+      "message": "<p>Vous êtes sur le point de marquer <b>{{count}}</b> détection(s) comme <b>traitées manuellement</b>.</p>\n<p>Elles quitteront la file « À traiter » et ne seront plus proposées à la suppression.</p>\n<p>Il n'existe <b>pas d'annulation groupée</b> : le rétablissement se fait détection par détection.</p>",
+      "acceptLabel": "Oui, marquer traité ({{count}})",
       "rejectLabel": "Annuler"
     }
   },
@@ -890,38 +907,6 @@
         "placeholder": "Rechercher par nom, description ou code pays...",
         "clear": "Effacer la recherche",
         "noResults": "Aucun résultat trouvé pour \"{{term}}\""
-      }
-    },
-    "customLabels": {
-      "addButton": "Ajouter un label personnalisé",
-      "deleteButton": "Supprimer le label personnalisé",
-      "createButton": "Créer",
-      "customBadge": "Personnalisé",
-      "dialogTitle": "Ajouter un label personnalisé",
-      "fields": {
-        "detectorLabel": "Label du détecteur",
-        "detectorLabelPlaceholder": "ex: numéro de badge employé",
-        "piiType": "Code du type PII",
-        "piiTypePlaceholder": "ex: NUMERO_BADGE_EMPLOYE",
-        "category": "Catégorie",
-        "severity": "Sévérité",
-        "threshold": "Seuil de confiance",
-        "countryCode": "Code pays (optionnel)",
-        "countryCodePlaceholder": "ex: CH, FR"
-      },
-      "validation": {
-        "detectorLabelRequired": "Le label du détecteur est requis (min. 2 caractères)",
-        "piiTypeInvalid": "Doit commencer par une lettre, majuscules et underscores uniquement (ex: NUMERO_BADGE)"
-      },
-      "deleteConfirm": {
-        "header": "Supprimer le label personnalisé",
-        "message": "Êtes-vous sûr de vouloir supprimer le label personnalisé \"{{label}}\" ? Cette action est irréversible."
-      },
-      "messages": {
-        "createSuccess": "Label personnalisé \"{{label}}\" créé avec succès",
-        "createError": "Erreur lors de la création du label personnalisé : {{error}}",
-        "deleteSuccess": "Label personnalisé \"{{label}}\" supprimé avec succès",
-        "deleteError": "Erreur lors de la suppression du label personnalisé : {{error}}"
       }
     },
     "actions": {

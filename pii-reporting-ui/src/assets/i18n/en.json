@@ -112,6 +112,11 @@
         "settingsButton": "Configure",
         "closeAriaLabel": "Close notification"
       },
+      "backendUnreachable": {
+        "message": "The ai-sentinel server is not responding. Your Confluence settings could not be checked and the figures below are not the real ones.",
+        "retryButton": "Retry",
+        "closeAriaLabel": "Close notification"
+      },
       "newSpaces": {
         "message": "{{count}} new Confluence space(s) available",
         "refreshButton": "Refresh",
@@ -205,6 +210,18 @@
       "header": "Delete all data",
       "message": "<p>Are you sure you want to <b>permanently delete</b> all Confluence scan data?</p>\n<p>This action is <b>irreversible</b>. All scan results, PII detections, and checkpoints will be removed.</p>",
       "acceptLabel": "Yes, delete all",
+      "rejectLabel": "Cancel"
+    },
+    "reportFalsePositive": {
+      "header": "Flag false positives",
+      "message": "<p>You are about to flag <b>{{count}}</b> detection(s) as <b>false positives</b>.</p>\n<p>They will leave the \"To handle\" queue and will no longer be offered for obfuscation. Flagging also feeds back into detection quality.</p>\n<p>There is <b>no bulk undo</b>: restoring is done one detection at a time.</p>",
+      "acceptLabel": "Yes, flag ({{count}})",
+      "rejectLabel": "Cancel"
+    },
+    "markTreated": {
+      "header": "Mark detections as handled",
+      "message": "<p>You are about to mark <b>{{count}}</b> detection(s) as <b>handled manually</b>.</p>\n<p>They will leave the \"To handle\" queue and will no longer be offered for obfuscation.</p>\n<p>There is <b>no bulk undo</b>: restoring is done one detection at a time.</p>",
+      "acceptLabel": "Yes, mark handled ({{count}})",
       "rejectLabel": "Cancel"
     }
   },
@@ -890,38 +907,6 @@
         "placeholder": "Search by name, description or country code...",
         "clear": "Clear search",
         "noResults": "No results found for \"{{term}}\""
-      }
-    },
-    "customLabels": {
-      "addButton": "Add custom label",
-      "deleteButton": "Delete custom label",
-      "createButton": "Create",
-      "customBadge": "Custom",
-      "dialogTitle": "Add a custom label",
-      "fields": {
-        "detectorLabel": "Detector Label",
-        "detectorLabelPlaceholder": "e.g. employee badge number",
-        "piiType": "PII Type Code",
-        "piiTypePlaceholder": "e.g. EMPLOYEE_BADGE_NUMBER",
-        "category": "Category",
-        "severity": "Severity",
-        "threshold": "Confidence Threshold",
-        "countryCode": "Country Code (optional)",
-        "countryCodePlaceholder": "e.g. CH, FR"
-      },
-      "validation": {
-        "detectorLabelRequired": "Detector label is required (min. 2 characters)",
-        "piiTypeInvalid": "Must start with a letter, uppercase with underscores only (e.g. EMPLOYEE_BADGE)"
-      },
-      "deleteConfirm": {
-        "header": "Delete custom label",
-        "message": "Are you sure you want to delete the custom label \"{{label}}\"? This action cannot be undone."
-      },
-      "messages": {
-        "createSuccess": "Custom label \"{{label}}\" created successfully",
-        "createError": "Error creating custom label: {{error}}",
-        "deleteSuccess": "Custom label \"{{label}}\" deleted successfully",
-        "deleteError": "Error deleting custom label: {{error}}"
       }
     },
     "actions": {

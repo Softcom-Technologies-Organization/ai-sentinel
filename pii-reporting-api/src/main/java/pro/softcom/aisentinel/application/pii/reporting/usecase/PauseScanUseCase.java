@@ -33,15 +33,15 @@ public class PauseScanUseCase implements PauseScanPort {
             log.warn("[PAUSE] Scan {} not found or already completed", scanId);
         }
 
-        // Step 2: Atomic UPDATE — sets ALL RUNNING checkpoints to PAUSED in a single SQL statement.
+        // Step 2: Atomic UPDATE — sets every unfinished checkpoint to PAUSED in a single SQL statement.
         // This eliminates the TOCTOU race condition where in-flight scan events could overwrite
         // a PAUSED status between a read and a write.
-        int updated = scanCheckpointRepository.pauseAllRunningCheckpoints(scanId);
+        int updated = scanCheckpointRepository.pauseUnfinishedCheckpoints(scanId);
 
         if (updated == 0) {
-            log.info("[PAUSE] No RUNNING checkpoint found for scan {} - scan may already be completed or paused", scanId);
+            log.info("[PAUSE] No unfinished checkpoint found for scan {} - scan may already be completed or paused", scanId);
         } else {
-            log.info("[PAUSE] Scan {} paused: {} checkpoint(s) updated from RUNNING to PAUSED", scanId, updated);
+            log.info("[PAUSE] Scan {} paused: {} checkpoint(s) moved to PAUSED", scanId, updated);
         }
     }
 

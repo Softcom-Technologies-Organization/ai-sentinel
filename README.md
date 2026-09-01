@@ -56,7 +56,6 @@ https://github.com/user-attachments/assets/d2c633d6-3209-4b2f-b80a-88fe2e41f945
 - ✅ **Microservices architecture**: Python (gRPC), Java (Spring Boot), and Angular services
 - ✅ **Configurable detectors & PII types**: Enable/disable individual detectors (GLiNER, Presidio, Regex) and specific PII types (names, emails, IBANs…) from `Settings > PII Settings`
 - ✅ **Tunable confidence thresholds**: Global default threshold + per-type override to reduce false positives (`Settings > PII Settings > Thresholds` / `PII Types`)
-- ✅ **Zero-shot custom labels (GLiNER)**: Add your own entities to detect on-the-fly without retraining, leveraging `nvidia/gliner-PII` zero-shot capabilities (`Settings > PII Settings > PII Types > + Add custom label` on the GLINER group). ⚠️ **No reliability guarantee**: zero-shot detection quality depends heavily on the label wording and the underlying model — validate results on a representative sample before relying on them in production.
 - ✅ **Scan management**: Pause, resume, and real-time tracking of ongoing scans
 - ✅ **PostgreSQL database**: Persistent storage of results and history
 - 🚧 **Report export** (in progress): CSV/PDF export of scan results
@@ -564,9 +563,6 @@ A: First names, last names, emails, phones, addresses, social security numbers, 
 
 **Q: Can I disable specific PII types or adjust detection sensitivity?**  
 A: Yes, via `Settings > PII Settings`. You can toggle detectors (GLiNER, Presidio, Regex), enable/disable individual PII types, and adjust the global confidence threshold as well as per-type thresholds.
-
-**Q: Can I detect custom entities not in the default PII list?**  
-A: Yes, through zero-shot custom labels on the GLiNER detector (`Settings > PII Settings > PII Types > + Add custom label`). ⚠️ Detection reliability is **not guaranteed** for zero-shot labels — results depend on the label wording and the underlying `nvidia/gliner-PII` model. Always validate on a representative sample before trusting the output.
 
 **Q: Do models work offline?**  
 A: Yes, after the first download, models are cached locally.

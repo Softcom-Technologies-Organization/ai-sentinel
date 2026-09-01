@@ -89,7 +89,7 @@ public class ContentScanOrchestrator {
      */
     public void pauseScanAfterOutage(String scanId) {
         try {
-            int paused = scanCheckpointService.pauseRunningCheckpoints(scanId);
+            int paused = scanCheckpointService.pauseUnfinishedCheckpoints(scanId);
             log.warn("[SCAN] Scan {} paused after an outage: {} checkpoint(s) moved to PAUSED", scanId, paused);
         } catch (Exception exception) {
             log.error("[SCAN] Failed to pause scan {} after an outage: {}", scanId, exception.getMessage());

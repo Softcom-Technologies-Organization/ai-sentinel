@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import pro.softcom.aisentinel.application.confluence.exception.ConfluencePageNotFoundException;
+import pro.softcom.aisentinel.application.confluence.exception.ConfluenceRequestFailedException;
 import pro.softcom.aisentinel.application.confluence.exception.ConfluenceSpaceCacheException;
 import pro.softcom.aisentinel.application.confluence.exception.ConfluenceSpaceNotFoundException;
 import pro.softcom.aisentinel.application.pii.export.exception.ExportContextNotFoundException;
@@ -75,6 +76,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ConfluenceApiException.class)
     ProblemDetail handleConfluenceApi(ConfluenceApiException ex) {
         log.error("[ERROR_HANDLER] Confluence API error: {}", ex.getMessage());
+        return problemWith(HttpStatus.BAD_GATEWAY, "Confluence API Error",
+                "error.confluence.api.error");
+    }
+
+    @ExceptionHandler(ConfluenceRequestFailedException.class)
+    ProblemDetail handleConfluenceRequestFailed(ConfluenceRequestFailedException ex) {
+        log.error("[ERROR_HANDLER] Confluence rejected the request: {}", ex.getMessage());
         return problemWith(HttpStatus.BAD_GATEWAY, "Confluence API Error",
                 "error.confluence.api.error");
     }

@@ -76,16 +76,6 @@ pii-encryption:
 
 # PII Configuration
 pii:
-  # PII Detection Configuration
-  detection:
-    # Open-vocabulary label discovery (MINISTRAL): persist labels dropped for
-    # lacking a pii_type_config, for later operator review. Disabled by default.
-    # The strict type filtering that drops those unconfigured labels lives in the
-    # detector service and is independent of this flag — it always applies.
-    # Enable only to debug the model's proposed vocabulary.
-    discovered-labels:
-      enabled: ${PII_DISCOVERED_LABELS_ENABLED:false}
-
   # PII Reporting Configuration
   reporting:
     # Allow revealing decrypted PII values to users (default: true)

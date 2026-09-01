@@ -1,10 +1,27 @@
 <div class="mx-auto p-3">
   <!-- Warning: Confluence credentials not configured -->
-  <app-confluence-config-banner
+  <app-notice-banner
     [showBanner]="confluenceConfigMissing()"
-    (openSettings)="requestOpenSettings(3)"
+    messageKey="dashboard.notifications.confluenceConfig.message"
+    actionKey="dashboard.notifications.confluenceConfig.settingsButton"
+    closeAriaLabelKey="dashboard.notifications.confluenceConfig.closeAriaLabel"
+    actionTestId="configure-button"
+    dismissTestId="dismiss-button"
+    (action)="requestOpenSettings(3)"
     (dismiss)="dismissConfluenceConfigBanner()">
-  </app-confluence-config-banner>
+  </app-notice-banner>
+
+  <!-- Warning: the API did not answer, so the figures below are not the real ones -->
+  <app-notice-banner
+    [showBanner]="backendUnreachable()"
+    messageKey="dashboard.notifications.backendUnreachable.message"
+    actionKey="dashboard.notifications.backendUnreachable.retryButton"
+    closeAriaLabelKey="dashboard.notifications.backendUnreachable.closeAriaLabel"
+    actionTestId="retry-backend-button"
+    dismissTestId="dismiss-backend-button"
+    (action)="retryBackendConnection()"
+    (dismiss)="dismissBackendUnreachableBanner()">
+  </app-notice-banner>
 
   <!-- Phase 2: New spaces notification banner -->
   <app-new-spaces-banner
@@ -24,7 +41,7 @@
            [(selection)]="selectedSpaces"
            dataKey="key"
            [rowTrackBy]="trackBySpaceKey"
-           sortField="name" [sortOrder]="1"
+           [sortField]="tableSortField()" [sortOrder]="tableSortOrder()"
            [paginator]="true"
            [tableStyle]="{'min-width':'60rem'}"
            [loading]="isSpacesLoading()" [showLoader]="false"

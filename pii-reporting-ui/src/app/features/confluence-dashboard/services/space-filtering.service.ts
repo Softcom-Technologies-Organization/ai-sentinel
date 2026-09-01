@@ -79,6 +79,16 @@ export class SpaceFilteringService {
   /** Legacy field kept for PrimeNG header sort compatibility. */
   readonly sortField = signal<string | null>(null);
 
+  /**
+   * Column field the table must be bound to, so that it never holds a sort of
+   * its own: PrimeNG re-emits (onSort) with its own sortField/sortOrder on every
+   * [value] change, which would otherwise overwrite the criterion chosen here.
+   */
+  readonly tableSortField = computed<string | null>(() => {
+    const criterion = this.sortCriterion();
+    return criterion === 'severityScore' ? 'piiCount' : criterion;
+  });
+
   // ===== Server-driven results =====
   private readonly orderedKeys = signal<string[]>([]);
   private readonly facets = signal<DashboardFacets>(EMPTY_FACETS);
@@ -133,13 +143,34 @@ export class SpaceFilteringService {
     order: this.sortOrder() === 1 ? 'asc' : 'desc'
   }));
 
+  private readonly reloadCounter = signal(0);
+
+  /**
+   * Fetch trigger: the counter is part of the deduplication key but never reaches the query
+   * string, so reload() can force a fetch with criteria the server has already been asked for.
+   */
+  private readonly fetchTrigger = computed(() => ({
+    reloadCounter: this.reloadCounter(),
+    params: this.criteria()
+  }));
+
+  /**
+   * Re-runs the server query with the current criteria.
+   *
+   * A failed fetch leaves orderedKeys empty, and distinctUntilChanged suppresses any retry as
+   * long as no criterion changes — so recovering from a backend outage needs an explicit nudge.
+   */
+  reload(): void {
+    this.reloadCounter.update(value => value + 1);
+  }
+
   constructor() {
     // Debounced server fetch: the criteria drive filtering/sorting/search server-side.
-    toObservable(this.criteria)
+    toObservable(this.fetchTrigger)
       .pipe(
         debounceTime(200),
         distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
-        switchMap(params => {
+        switchMap(({ params }) => {
           this.loading.set(true);
           return this.apiService.getDashboardSpacesSummary(params).pipe(catchError(() => of(null)));
         })

@@ -39,7 +39,6 @@ public class PiiTypeConfig {
      * - "person name" for PERSONNAME type
      */
     private final String detectorLabel;
-    private final boolean custom;
     private final String severity;
     private final LocalDateTime updatedAt;
     private final String updatedBy;
@@ -68,7 +67,6 @@ public class PiiTypeConfig {
                 ", threshold=" + threshold +
                 ", category='" + category + '\'' +
                 ", countryCode='" + countryCode + '\'' +
-                ", custom=" + custom +
                 ", severity='" + severity + '\'' +
                 ", updatedAt=" + updatedAt +
                 ", updatedBy='" + updatedBy + '\'' +

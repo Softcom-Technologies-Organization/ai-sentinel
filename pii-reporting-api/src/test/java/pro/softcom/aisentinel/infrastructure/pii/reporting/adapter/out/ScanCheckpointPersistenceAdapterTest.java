@@ -217,17 +217,17 @@ class ScanCheckpointPersistenceAdapterTest {
     }
 
     @Test
-    void Should_ReturnZero_When_PauseAllRunningCheckpointsWithBlankScanId() {
-        int result = adapter.pauseAllRunningCheckpoints("");
+    void Should_ReturnZero_When_PauseUnfinishedCheckpointsWithBlankScanId() {
+        int result = adapter.pauseUnfinishedCheckpoints("");
 
         assertThat(result).isZero();
     }
 
     @Test
-    void Should_DelegateAndReturnCount_When_PauseAllRunningCheckpoints() {
-        when(jpaRepository.pauseAllRunningCheckpoints("scan-1")).thenReturn(3);
+    void Should_DelegateAndReturnCount_When_PauseUnfinishedCheckpoints() {
+        when(jpaRepository.pauseUnfinishedCheckpoints("scan-1")).thenReturn(3);
 
-        int result = adapter.pauseAllRunningCheckpoints("scan-1");
+        int result = adapter.pauseUnfinishedCheckpoints("scan-1");
 
         assertThat(result).isEqualTo(3);
     }

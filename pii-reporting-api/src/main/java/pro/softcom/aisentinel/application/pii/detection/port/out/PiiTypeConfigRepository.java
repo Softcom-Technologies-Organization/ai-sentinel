@@ -67,30 +67,6 @@ public interface PiiTypeConfigRepository {
     Optional<PiiTypeConfig> findByPiiTypeAndDetector(String piiType, String detector);
 
     /**
-     * Saves a single PII type configuration.
-     *
-     * @param config the configuration to save
-     * @return the saved configuration
-     */
-    PiiTypeConfig save(PiiTypeConfig config);
-
-    /**
-     * Saves multiple PII type configurations.
-     *
-     * @param configs list of configurations to save
-     * @return list of saved configurations
-     */
-    List<PiiTypeConfig> saveAll(List<PiiTypeConfig> configs);
-
-    /**
-     * Deletes a PII type configuration by piiType and detector.
-     *
-     * @param piiType  the PII type identifier
-     * @param detector the detector name
-     */
-    void deleteByPiiTypeAndDetector(String piiType, String detector);
-
-    /**
      * Checks if configurations exist in database.
      * Used to determine if default data needs to be initialized.
      *

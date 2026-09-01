@@ -187,6 +187,7 @@ def _normalize_label(label: str) -> str:
 # empirically from the 69-label probe (my-files/ministral-69-labels-probe*).
 _MODEL_LABEL_ALIASES: Dict[str, str] = {
     "driver_license": "driver_license_number",
+    "ssn": "social_security_number",
     "routing_number": "bank_routing_number",
     "coordinates": "coordinate",
     "stripe_api_key": "api_key",
@@ -236,9 +237,10 @@ class _LabelResolver:
        ``driver_license_number``) so the generative model's inconsistent output
        still resolves to the configured type;
     4. **passthrough** — any still-unmapped label surfaces as its normalized
-       ``UPPER_SNAKE`` form so open-vocabulary detections are never silently
-       dropped. The gRPC type-config gate keeps no-config types and drops
-       disabled ones, so this never resurrects a type an operator turned off.
+       ``UPPER_SNAKE`` form rather than being dropped here. The gRPC type-config
+       gate then drops it for MINISTRAL (an unconfigured open-vocabulary label is
+       a model proposal, not a finding), so this never resurrects a type an
+       operator turned off.
     """
 
     exact: Dict[str, str]

@@ -501,7 +501,7 @@ _MINISTRAL_DB_DETECTOR_LABELS = [
     "marital_status", "medical_record_number", "national_id", "nationality", "occupation",
     "organization", "password", "phone_number", "pin", "political_view", "postcode",
     "race", "race_ethnicity", "religion", "religious_belief", "salary", "sexuality",
-    "social_security_number", "ssn", "state", "street_address", "swift_bic", "tax_id",
+    "social_security_number", "state", "street_address", "swift_bic", "tax_id",
     "time", "title", "unique_id", "url", "user_name", "vehicle_identifier", "zip_code",
 ]
 
@@ -592,6 +592,7 @@ class TestLabelResolver:
             "credit_card": "CREDIT_DEBIT_CARD",
             "atm_pin": "PIN",
             "employer_tax_id": "TAX_ID",
+            "SSN": "SOCIAL_SECURITY_NUMBER",
         }
         for variant, canonical in expected.items():
             assert resolver.resolve(variant) == canonical, variant

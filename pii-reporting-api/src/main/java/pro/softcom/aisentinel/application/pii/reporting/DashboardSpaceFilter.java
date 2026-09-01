@@ -29,6 +29,7 @@ public final class DashboardSpaceFilter {
     private static final String HIGH = "HIGH";
     private static final String MEDIUM = "MEDIUM";
     private static final String LOW = "LOW";
+    private static final String SORT_BY_NAME = "name";
 
     private DashboardSpaceFilter() {
     }
@@ -119,9 +120,8 @@ public final class DashboardSpaceFilter {
     }
 
     private static Comparator<SpaceSummary> comparatorFor(String sort) {
-        String key = sort == null ? "" : sort;
-        return switch (key) {
-            case "name" -> Comparator.comparing(DashboardSpaceFilter::searchableText);
+        return switch (effectiveSort(sort)) {
+            case SORT_BY_NAME -> Comparator.comparing(DashboardSpaceFilter::searchableText);
             case "lastScan" -> Comparator.comparing(SpaceSummary::lastEventAt,
                 Comparator.nullsFirst(Comparator.naturalOrder()));
             case "severityScore" -> Comparator.comparingLong(DashboardSpaceFilter::severityScore);
@@ -138,7 +138,12 @@ public final class DashboardSpaceFilter {
         if (order != null && !order.isBlank()) {
             return "desc".equalsIgnoreCase(order);
         }
-        return !"name".equals(sort);
+        return !SORT_BY_NAME.equals(effectiveSort(sort));
+    }
+
+    /** Sort criterion applied when the caller does not ask for one. */
+    private static String effectiveSort(String sort) {
+        return sort == null || sort.isBlank() ? SORT_BY_NAME : sort;
     }
 
     private static List<SpaceSummary> sortByPiiType(List<SpaceSummary> spaces, String code, String order) {

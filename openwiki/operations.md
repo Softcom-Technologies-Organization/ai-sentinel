@@ -96,7 +96,6 @@ Four places, in increasing order of runtime volatility:
    | `scan.page-concurrency` | `PII_SCAN_PAGE_CONCURRENCY` | `1` | Pages detected concurrently |
    | `pii.reporting.allow-secret-reveal` | `PII_REPORTING_ALLOW_SECRET_REVEAL` | *(none)* | Gates plaintext reveal; **no default — must be set** |
    | `pii.remediation.enabled` | `PII_REMEDIATION_ENABLED` | `true` | Gates the redaction endpoints |
-   | `pii.discovered-labels.enabled` | `PII_DISCOVERED_LABELS_ENABLED` | `false` | Collects Ministral's unconfigured labels |
    | `pii.audit.retention-days` | — | `730` | Audit retention (nLPD); purge cron `0 0 3 * * ?` |
    | `pii-reporting-api.findings-export-directory` | `PII_REPORTING_API_EXPORT_DIR` | `/personally-identifiable-information-scan-results` | Where Excel reports are written |
    | `ai-sentinel.confluence.cache.refresh-interval-ms` | `CONFLUENCE_CACHE_REFRESH_INTERVAL` | 300000 | Space cache refresh |

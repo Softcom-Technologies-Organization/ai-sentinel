@@ -21,7 +21,6 @@ flowchart TD
     M["Ask a local LLM to extract entities per token window<br/>MinistralDetector"]
     D["Fuse duplicates and overlaps into one finding list<br/>DetectionMerger.merge - detection_merger.py"]
     E["Drop disabled types and scores under their threshold<br/>_filter_entities_by_type_config - pii_service.py"]
-    F["Record labels the model invented but nobody configured<br/>discovered_labels map in the response"]
     G{"Is the precision post-filter switched on in the database?"}
     H["Reject machine artefacts and impossible values<br/>_apply_format_postfilter - pii_service.py"]
     I["Return findings, rejects, per-detector stats and counts<br/>_build_detection_response - pii_service.py"]
@@ -35,12 +34,10 @@ flowchart TD
     P -->|"raw findings"| D
     M -->|"raw findings"| D
     D -->|"merged findings"| E
-    E -->|"unconfigured MINISTRAL labels"| F
     E -->|"surviving findings"| G
     G -->|"flag on"| H
     G -->|"flag off, zero overhead path"| I
     H -->|"kept findings plus rejections"| I
-    F -->|"label counts"| I
 ```
 
 Every stage logs a `[FINDING_TRACKER] step=…` line with an in/out count. When findings "disappear"
@@ -108,15 +105,10 @@ remove them, and do not build on their output.
 1. A PII type disabled in configuration is dropped entirely.
 2. A finding scoring below its **per-type** threshold is dropped.
 3. A type with **no** configuration row is *kept* — except for `MINISTRAL`, where an unconfigured
-   open-vocabulary label is dropped and its per-request occurrence count is accumulated into the
-   response's `discovered_labels` map.
+   open-vocabulary label is dropped.
 
 That last rule is the counterpart of Ministral's passthrough: the model may invent labels, but only
-labels an operator has reviewed reach the dashboard. Discovered labels flow back to the backend, are
-stored in `ministral_discovered_label`, and are surfaced in `Settings` for the operator to *promote*
-(create a `pii_type_config` row) or *ignore* — see
-`DiscoveredLabelController` and `ManageDiscoveredLabelsUseCase` on the backend side. The channel
-carries labels and counts only, **never a value**.
+labels present in `pii_type_config` reach the dashboard.
 
 ## Precision post-filter
 

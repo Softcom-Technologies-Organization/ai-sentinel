@@ -1,5 +1,4 @@
 <p-toast></p-toast>
-<p-confirmDialog></p-confirmDialog>
 
 <!-- Loading -->
 @if (loading()) {
@@ -489,7 +488,7 @@
                                     </span>
                                     <p-toggleswitch
                                         styleClass="category-toggle"
-                                        [ngModel]="isCategoryEnabled(categoryGroup)"
+                                        [ngModel]="isCategoryEnabled(categoryGroup) && isDetectorEnabled(detectorGroup.detector)"
                                         (ngModelChange)="onCategoryToggleChange(categoryGroup, $event)"
                                         [disabled]="!isDetectorEnabled(detectorGroup.detector)"
                                         [ariaLabel]="'settings.piiTypes.categoryToggle' | transloco: {category: ('settings.piiTypes.categoryNames.' + categoryGroup.category | transloco)}">
@@ -498,40 +497,27 @@
 
                                 <!-- PII type rows -->
                                 @for (type of categoryGroup.types; track type.piiType) {
-                                    <div class="pii-type-row" [class.disabled]="!type.enabled">
+                                    <div class="pii-type-row" [class.disabled]="!type.enabled || !isDetectorEnabled(detectorGroup.detector)">
                                         <div class="pii-type-info">
-                                            @if (type.isCustom) {
-                                                <span class="custom-badge">{{ 'settings.customLabels.customBadge' | transloco }}</span>
-                                            }
-                                            @if (type.isCustom && type.detectorLabel) {
-                                                <span class="type-name">{{ type.detectorLabel }}</span>
-                                                <span class="type-code">({{ type.piiType }})</span>
-                                            } @else {
-                                                <span class="type-name"
-                                                      [class.disabled-text]="!type.enabled"
-                                                      [innerHTML]="highlightText('', 'settings.piiTypes.typeNames.' + type.piiType)"></span>
-                                            }
+                                            <span class="type-name"
+                                                  [class.disabled-text]="!type.enabled || !isDetectorEnabled(detectorGroup.detector)"
+                                                  [innerHTML]="highlightText('', 'settings.piiTypes.typeNames.' + type.piiType)"></span>
                                             @if (type.countryCode) {
                                                 <span class="type-country">({{ type.countryCode }})</span>
                                             }
-                                            @if (type.isCustom && type.severity) {
-                                                <span class="severity-indicator severity-{{ type.severity | lowercase }}">{{ type.severity }}</span>
-                                            }
-                                            @if (!(type.isCustom && type.detectorLabel)) {
-                                                <p class="type-description" [innerHTML]="highlightText('', 'settings.piiTypes.typeDescriptions.' + type.piiType)"></p>
-                                            }
+                                            <p class="type-description" [innerHTML]="highlightText('', 'settings.piiTypes.typeDescriptions.' + type.piiType)"></p>
                                         </div>
 
                                         <div class="pii-type-controls">
                                             <div class="pii-type-switches">
                                                 <p-toggleswitch
-                                                    [(ngModel)]="type.enabled"
+                                                    [ngModel]="type.enabled && isDetectorEnabled(detectorGroup.detector)"
                                                     (ngModelChange)="onPiiTypeToggleChange(type, $event)"
                                                     [disabled]="!isDetectorEnabled(detectorGroup.detector)"
                                                     [ariaLabel]="'settings.piiTypes.toggle' | transloco: {type: type.detectorLabel || (('settings.piiTypes.typeNames.' + type.piiType) | transloco)}">
                                                 </p-toggleswitch>
                                             </div>
-                                            @if (type.enabled && detectorGroup.detector !== 'MINISTRAL' && detectorGroup.detector !== 'REGEX') {
+                                            @if (type.enabled && isDetectorEnabled(detectorGroup.detector) && detectorGroup.detector !== 'MINISTRAL' && detectorGroup.detector !== 'REGEX') {
                                                 <p-inputNumber
                                                     [(ngModel)]="type.threshold"
                                                     (ngModelChange)="onPiiTypeThresholdChange(type, $event)"
@@ -545,18 +531,6 @@
                                                     incrementButtonIcon="pi pi-plus"
                                                     decrementButtonIcon="pi pi-minus">
                                                 </p-inputNumber>
-                                            }
-                                            @if (type.isCustom) {
-                                                <p-button
-                                                    type="button"
-                                                    icon="pi pi-trash"
-                                                    [rounded]="true"
-                                                    [text]="true"
-                                                    severity="danger"
-                                                    (click)="confirmDeleteCustomType(type)"
-                                                    (keydown.enter)="confirmDeleteCustomType(type)"
-                                                    [ariaLabel]="'settings.customLabels.deleteButton' | transloco">
-                                                </p-button>
                                             }
                                         </div>
                                     </div>
@@ -669,142 +643,3 @@
         </div>
     </div>
 }
-
-<!-- Add Custom Label Dialog -->
-<p-dialog
-    [(visible)]="showAddCustomLabelDialog"
-    [modal]="true"
-    [draggable]="false"
-    [resizable]="false"
-    [closable]="false"
-    [showHeader]="false"
-    [style]="{ width: '440px' }"
-    (onHide)="closeAddCustomLabelDialog()"
-    [attr.aria-label]="'settings.customLabels.dialogTitle' | transloco"
-    styleClass="custom-label-dialog">
-
-    <!-- Custom header -->
-    <div class="dialog-header">
-        <h3 class="dialog-title">{{ 'settings.customLabels.dialogTitle' | transloco }}</h3>
-        <button
-            type="button"
-            class="dialog-close-btn"
-            (click)="closeAddCustomLabelDialog()"
-            [attr.aria-label]="'common.close' | transloco">
-            <i class="pi pi-times"></i>
-        </button>
-    </div>
-
-    <form [formGroup]="customLabelForm" (ngSubmit)="createCustomType()">
-        <!-- Detector Label -->
-        <div class="custom-label-field">
-            <label for="detectorLabel">
-                {{ 'settings.customLabels.fields.detectorLabel' | transloco }}
-                <span class="required-marker" aria-hidden="true">*</span>
-            </label>
-            <input
-                id="detectorLabel"
-                type="text"
-                pInputText
-                formControlName="detectorLabel"
-                (input)="onDetectorLabelChange(customLabelForm.get('detectorLabel')?.value ?? '')"
-                [placeholder]="'settings.customLabels.fields.detectorLabelPlaceholder' | transloco" />
-            @if (customLabelForm.get('detectorLabel')?.invalid && customLabelForm.get('detectorLabel')?.touched) {
-                <small class="field-error">{{ 'settings.customLabels.validation.detectorLabelRequired' | transloco }}</small>
-            }
-        </div>
-
-        <!-- PII Type Code -->
-        <div class="custom-label-field">
-            <label for="piiType">
-                {{ 'settings.customLabels.fields.piiType' | transloco }}
-                <span class="required-marker" aria-hidden="true">*</span>
-            </label>
-            <input
-                id="piiType"
-                type="text"
-                pInputText
-                formControlName="piiType"
-                [placeholder]="'settings.customLabels.fields.piiTypePlaceholder' | transloco" />
-            @if (customLabelForm.get('piiType')?.invalid && customLabelForm.get('piiType')?.touched) {
-                <small class="field-error">{{ 'settings.customLabels.validation.piiTypeInvalid' | transloco }}</small>
-            }
-        </div>
-
-        <!-- Category -->
-        <div class="custom-label-field">
-            <label for="category">
-                {{ 'settings.customLabels.fields.category' | transloco }}
-                <span class="required-marker" aria-hidden="true">*</span>
-            </label>
-            <p-select
-                id="category"
-                formControlName="category"
-                [options]="categoryOptions"
-                optionLabel="label"
-                optionValue="value"
-                [ariaLabel]="'settings.customLabels.fields.category' | transloco">
-            </p-select>
-        </div>
-
-        <!-- Severity -->
-        <div class="custom-label-field">
-            <label for="severity">
-                {{ 'settings.customLabels.fields.severity' | transloco }}
-                <span class="required-marker" aria-hidden="true">*</span>
-            </label>
-            <p-select
-                id="severity"
-                formControlName="severity"
-                [options]="severityOptions"
-                optionLabel="label"
-                optionValue="value"
-                [ariaLabel]="'settings.customLabels.fields.severity' | transloco">
-            </p-select>
-        </div>
-
-        <!-- Threshold is inert for custom labels (always MINISTRAL, which emits no
-             confidence score), so the input is hidden. The 'threshold' form control is
-             kept with its default so the required create/promote request stays valid. -->
-        <div class="custom-label-field">
-            <span class="ministral-no-threshold-hint">
-                <i class="pi pi-info-circle" aria-hidden="true"></i>
-                {{ 'settings.piiTypes.ministralNoThreshold' | transloco }}
-            </span>
-        </div>
-
-        <!-- Country Code -->
-        <div class="custom-label-field">
-            <label for="countryCode">
-                {{ 'settings.customLabels.fields.countryCode' | transloco }}
-            </label>
-            <input
-                id="countryCode"
-                type="text"
-                pInputText
-                formControlName="countryCode"
-                [placeholder]="'settings.customLabels.fields.countryCodePlaceholder' | transloco"
-                maxlength="5" />
-        </div>
-
-        <!-- Dialog Actions -->
-        <div class="dialog-actions">
-            <p-button
-                type="button"
-                [label]="'common.cancel' | transloco"
-                icon="pi pi-times"
-                (click)="closeAddCustomLabelDialog()"
-                (keydown.enter)="closeAddCustomLabelDialog()"
-                styleClass="p-button-outlined">
-            </p-button>
-            <p-button
-                type="submit"
-                [label]="'settings.customLabels.createButton' | transloco"
-                icon="pi pi-check"
-                [disabled]="customLabelForm.invalid || creatingCustomType()"
-                [loading]="creatingCustomType()"
-                styleClass="p-button-success">
-            </p-button>
-        </div>
-    </form>
-</p-dialog>

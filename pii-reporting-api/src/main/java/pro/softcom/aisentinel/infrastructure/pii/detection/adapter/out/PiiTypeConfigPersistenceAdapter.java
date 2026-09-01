@@ -46,30 +46,6 @@ public class PiiTypeConfigPersistenceAdapter implements PiiTypeConfigRepository 
     }
 
     @Override
-    public PiiTypeConfig save(PiiTypeConfig config) {
-        PiiTypeConfigEntity entity = PiiTypeConfigEntity.fromDomain(config);
-        PiiTypeConfigEntity saved = jpaRepository.save(entity);
-        return saved.toDomain();
-    }
-
-    @Override
-    public List<PiiTypeConfig> saveAll(List<PiiTypeConfig> configs) {
-        List<PiiTypeConfigEntity> entities = configs.stream()
-                .map(PiiTypeConfigEntity::fromDomain)
-                .toList();
-        List<PiiTypeConfigEntity> saved = jpaRepository.saveAll(entities);
-        return saved.stream()
-                .map(PiiTypeConfigEntity::toDomain)
-                .toList();
-    }
-
-    @Override
-    @Transactional
-    public void deleteByPiiTypeAndDetector(String piiType, String detector) {
-        jpaRepository.deleteByPiiTypeAndDetector(piiType, detector);
-    }
-
-    @Override
     public boolean exists() {
         return jpaRepository.count() > 0;
     }

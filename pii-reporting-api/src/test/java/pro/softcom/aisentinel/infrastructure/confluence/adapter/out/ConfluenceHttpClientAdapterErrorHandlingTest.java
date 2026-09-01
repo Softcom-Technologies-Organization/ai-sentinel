@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pro.softcom.aisentinel.application.confluence.exception.ConfluenceRequestFailedException;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 import pro.softcom.aisentinel.domain.confluence.ModifiedAttachmentInfo;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
@@ -153,6 +155,23 @@ class ConfluenceHttpClientAdapterErrorHandlingTest {
         // Assert
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(list).isEmpty();
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_Fail_When_GetAllPagesIsRejected() {
+        // Arrange
+        when(httpResponse.statusCode()).thenReturn(403);
+
+        // Act
+        var thrown = catchThrowable(() -> confluenceService.getAllPagesInSpace("TEST").join());
+
+        // Assert: an empty list here would read as a space holding no page, and the scan
+        // would report a clean base over content it was never allowed to read.
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(thrown).cause().isInstanceOf(ConfluenceRequestFailedException.class);
+        softly.assertThat((ConfluenceRequestFailedException) thrown.getCause())
+            .extracting(ConfluenceRequestFailedException::getStatusCode).isEqualTo(403);
         softly.assertAll();
     }
 

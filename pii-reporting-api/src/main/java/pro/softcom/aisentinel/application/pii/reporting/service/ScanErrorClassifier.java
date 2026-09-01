@@ -2,6 +2,7 @@ package pro.softcom.aisentinel.application.pii.reporting.service;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import pro.softcom.aisentinel.application.confluence.exception.ConfluenceRequestFailedException;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorRunStat;
 import pro.softcom.aisentinel.domain.pii.scan.ScanErrorKind;
@@ -36,6 +37,9 @@ public final class ScanErrorClassifier {
     /** JDK message prefix when an HTTP proxy refuses the CONNECT handshake. */
     private static final String PROXY_TUNNEL_FAILURE_PREFIX = "Tunnel failed";
 
+    /** Status telling the space itself is missing, as opposed to the source turning the caller down. */
+    private static final int SPACE_GONE_STATUS = 404;
+
     private ScanErrorClassifier() {
         // static utility
     }
@@ -50,7 +54,8 @@ public final class ScanErrorClassifier {
         if (findInCauseChain(throwable, ConnectException.class) != null
             || findInCauseChain(throwable, UnknownHostException.class) != null
             || findInCauseChain(throwable, NoRouteToHostException.class) != null
-            || isProxyTunnelFailure(throwable)) {
+            || isProxyTunnelFailure(throwable)
+            || isSourceRefusingCaller(throwable)) {
             return ScanErrorKind.NETWORK_UNAVAILABLE;
         }
 
@@ -109,20 +114,7 @@ public final class ScanErrorClassifier {
         return null;
     }
 
-    /**
-     * Whether the HTTP proxy refused to open a tunnel to the data source.
-     *
-     * <p>When the data source is reached through a proxy — a VPN client exposing a
-     * local port, typically — losing the tunnel does NOT surface as a
-     * {@link ConnectException}: the proxy is still listening locally and accepts the
-     * connection, then fails the CONNECT handshake. The JDK reports that as a plain
-     * {@code IOException("Tunnel failed, got: <status>")}, which would otherwise be
-     * classified as a single-item failure and let the scan run to completion over an
-     * unreachable source.
-     *
-     * <p>Matching on the message is the only signal available: the JDK raises the
-     * generic {@code IOException} type for this case, with no dedicated subclass.
-     */
+
     private static boolean isProxyTunnelFailure(Throwable throwable) {
         IOException transportFailure = findInCauseChain(throwable, IOException.class);
         return transportFailure != null
@@ -130,15 +122,14 @@ public final class ScanErrorClassifier {
             && transportFailure.getMessage().startsWith(PROXY_TUNNEL_FAILURE_PREFIX);
     }
 
-    /**
-     * Whether a gRPC status means the detection service itself is down, as opposed
-     * to it rejecting this particular content.
-     *
-     * <p>{@code DEADLINE_EXCEEDED} (the LLM outran its timeout on this content) and
-     * {@code RESOURCE_EXHAUSTED} (payload above the channel limit, i.e. an oversized
-     * attachment) are explicitly item failures: they are expected on a full scan and
-     * pausing on them would stop every scan before its end.
-     */
+
+    private static boolean isSourceRefusingCaller(Throwable throwable) {
+        ConfluenceRequestFailedException rejection =
+            findInCauseChain(throwable, ConfluenceRequestFailedException.class);
+        return rejection != null && rejection.getStatusCode() != SPACE_GONE_STATUS;
+    }
+
+
     private static boolean isDetectionServiceDown(Status.Code code) {
         return code == Status.Code.UNAVAILABLE || code == Status.Code.UNIMPLEMENTED;
     }

@@ -60,25 +60,10 @@ export interface PiiTypeConfig {
   threshold: number;
   category: string;
   countryCode?: string;
-  isCustom?: boolean;
   detectorLabel?: string;
   severity?: string;
   updatedAt?: string;
   updatedBy?: string;
-}
-
-/**
- * Request DTO for creating a custom PII type configuration.
- */
-export interface CreatePiiTypeConfigRequest {
-  piiType: string;
-  detector: DetectorType;
-  enabled: boolean;
-  threshold: number;
-  category: string;
-  detectorLabel: string;
-  severity: string;
-  countryCode?: string;
 }
 
 /**

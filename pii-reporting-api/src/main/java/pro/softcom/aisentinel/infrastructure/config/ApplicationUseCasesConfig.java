@@ -24,14 +24,11 @@ import pro.softcom.aisentinel.application.confluence.usecase.FetchConfluenceSpac
 import pro.softcom.aisentinel.application.confluence.usecase.FetchSpaceUpdateInfoUseCase;
 import pro.softcom.aisentinel.application.confluence.usecase.ManageConfluenceConnectionUseCase;
 import pro.softcom.aisentinel.application.pii.detection.port.in.ManageConcurrencyBenchmarkPort;
-import pro.softcom.aisentinel.application.pii.detection.port.in.ManageDiscoveredLabelsPort;
 import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiDetectionConfigPort;
 import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiTypeConfigsPort;
-import pro.softcom.aisentinel.application.pii.detection.port.out.DiscoveredLabelStore;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionConfigRepository;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRepository;
 import pro.softcom.aisentinel.application.pii.detection.usecase.ManageConcurrencyBenchmarkUseCase;
-import pro.softcom.aisentinel.application.pii.detection.usecase.ManageDiscoveredLabelsUseCase;
 import pro.softcom.aisentinel.application.pii.detection.usecase.ManagePiiDetectionConfigUseCase;
 import pro.softcom.aisentinel.application.pii.detection.usecase.ManagePiiTypeConfigsUseCase;
 import pro.softcom.aisentinel.application.pii.export.DetectionReportMapper;
@@ -180,13 +177,6 @@ public class ApplicationUseCasesConfig {
     }
 
     @Bean
-    public DiscoveredLabelCollector discoveredLabelCollector(
-            DiscoveredLabelStore discoveredLabelStore,
-            @Value("${pii.detection.discovered-labels.enabled:false}") boolean discoveredLabelsEnabled) {
-        return new DiscoveredLabelCollector(discoveredLabelStore, discoveredLabelsEnabled);
-    }
-
-    @Bean
     public GetScanSpaceStatsPort getScanSpaceStatsPort(
             ScanCheckpointRepository scanCheckpointRepository,
             ScanSpaceStatsRepository scanSpaceStatsRepository,
@@ -203,7 +193,6 @@ public class ApplicationUseCasesConfig {
             ScanTimeOutConfig scanTimeoutConfig,
             HtmlContentParser htmlContentParser,
             ScanSpaceStatsCollector scanSpaceStatsCollector,
-            DiscoveredLabelCollector discoveredLabelCollector,
             ScanTimeFalsePositiveSuppressor scanTimeFalsePositiveSuppressor,
             @Value("${scan.page-concurrency:1}") int pageConcurrency) {
         return new ScanPipelineDependencies(
@@ -215,7 +204,6 @@ public class ApplicationUseCasesConfig {
                 htmlContentParser,
                 scanSpaceStatsCollector,
                 pageConcurrency,
-                discoveredLabelCollector,
                 scanTimeFalsePositiveSuppressor
         );
     }
@@ -352,13 +340,6 @@ public class ApplicationUseCasesConfig {
     public ManagePiiTypeConfigsPort managePiiTypeConfigsPort(
         PiiTypeConfigRepository piiTypeConfigRepository) {
         return new ManagePiiTypeConfigsUseCase(piiTypeConfigRepository);
-    }
-
-    @Bean
-    public ManageDiscoveredLabelsPort manageDiscoveredLabelsPort(
-        ManagePiiTypeConfigsPort managePiiTypeConfigsPort,
-        DiscoveredLabelStore discoveredLabelStore) {
-        return new ManageDiscoveredLabelsUseCase(managePiiTypeConfigsPort, discoveredLabelStore);
     }
 
     @Bean

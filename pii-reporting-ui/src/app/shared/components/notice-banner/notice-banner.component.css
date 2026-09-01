@@ -1,4 +1,4 @@
-.confluence-config-banner {
+.notice-banner {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -10,18 +10,18 @@
   animation: slide-down 300ms ease-out;
 }
 
-.confluence-config-banner i {
+.notice-banner i {
   color: var(--sentinel-warning-border);
   font-size: 1.25rem;
 }
 
-.confluence-config-banner .banner-message {
+.notice-banner .banner-message {
   flex: 1;
   font-weight: 500;
   color: var(--sentinel-warning-text);
 }
 
-.confluence-config-banner button {
+.notice-banner button {
   flex-shrink: 0;
 }
 

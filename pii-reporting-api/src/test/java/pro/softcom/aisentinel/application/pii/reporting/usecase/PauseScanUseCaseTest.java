@@ -42,7 +42,7 @@ class PauseScanUseCaseTest {
         // Given
         when(personallyIdentifiableInformationScanExecutionOrchestratorPort.pauseScan(scanId))
             .thenReturn(taskDisposed);
-        when(scanCheckpointRepository.pauseAllRunningCheckpoints(scanId))
+        when(scanCheckpointRepository.pauseUnfinishedCheckpoints(scanId))
             .thenReturn(updatedCount);
 
         // When
@@ -50,7 +50,7 @@ class PauseScanUseCaseTest {
 
         // Then — verify orchestrator pause is called BEFORE checkpoint update
         verify(personallyIdentifiableInformationScanExecutionOrchestratorPort).pauseScan(scanId);
-        verify(scanCheckpointRepository).pauseAllRunningCheckpoints(scanId);
+        verify(scanCheckpointRepository).pauseUnfinishedCheckpoints(scanId);
     }
 
     static Stream<Arguments> providePauseScanCases() {
@@ -70,7 +70,7 @@ class PauseScanUseCaseTest {
         pauseScanUseCase.pauseScan("   ");
 
         // Then
-        verify(scanCheckpointRepository, never()).pauseAllRunningCheckpoints(any());
+        verify(scanCheckpointRepository, never()).pauseUnfinishedCheckpoints(any());
         verify(personallyIdentifiableInformationScanExecutionOrchestratorPort, never()).pauseScan(any());
     }
 }

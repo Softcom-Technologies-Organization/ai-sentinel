@@ -218,4 +218,50 @@ class ScanCheckpointPersistenceAdapterIT {
         assertThat(remainingForScan).isEmpty();
         assertThat(remainingOthers).hasSize(1);
     }
+
+    @Test
+    void Should_PauseNotStartedCheckpoints_When_OutageStrikesBeforeAnySpaceStarted() {
+        em.persist(checkpoint("scan-16", "A", "NOT_STARTED"));
+        em.persist(checkpoint("scan-16", "B", "NOT_STARTED"));
+        em.flush();
+
+        int paused = scanCheckpointPersistenceAdapter.pauseUnfinishedCheckpoints("scan-16");
+
+        em.clear();
+        assertThat(paused).isEqualTo(2);
+        assertThat(jpaRepository.findByScanIdOrderBySpaceKey("scan-16"))
+            .extracting(ScanCheckpointEntity::getStatus)
+            .containsExactly("PAUSED", "PAUSED");
+    }
+
+    @Test
+    void Should_LeaveResolvedCheckpointsUntouched_When_PausingUnfinishedOnes() {
+        em.persist(checkpoint("scan-17", "A", "COMPLETED"));
+        em.persist(checkpoint("scan-17", "B", "RUNNING"));
+        em.persist(checkpoint("scan-17", "C", "NOT_STARTED"));
+        em.persist(checkpoint("other-17", "D", "NOT_STARTED"));
+        em.flush();
+
+        int paused = scanCheckpointPersistenceAdapter.pauseUnfinishedCheckpoints("scan-17");
+
+        em.clear();
+        assertThat(paused).isEqualTo(2);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(jpaRepository.findByScanIdOrderBySpaceKey("scan-17"))
+            .extracting(ScanCheckpointEntity::getStatus)
+            .containsExactly("COMPLETED", "PAUSED", "PAUSED");
+        softly.assertThat(jpaRepository.findByScanIdOrderBySpaceKey("other-17"))
+            .extracting(ScanCheckpointEntity::getStatus)
+            .containsExactly("NOT_STARTED");
+        softly.assertAll();
+    }
+
+    private static ScanCheckpointEntity checkpoint(String scanId, String spaceKey, String status) {
+        return ScanCheckpointEntity.builder()
+            .scanId(scanId)
+            .spaceKey(spaceKey)
+            .status(status)
+            .updatedAt(LocalDateTime.now())
+            .build();
+    }
 }

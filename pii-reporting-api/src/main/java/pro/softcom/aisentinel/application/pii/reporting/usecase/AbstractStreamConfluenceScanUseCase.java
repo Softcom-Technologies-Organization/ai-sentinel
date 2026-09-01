@@ -8,7 +8,6 @@ import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTimeOutConf
 import pro.softcom.aisentinel.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.aisentinel.application.pii.reporting.service.AttachmentTextExtracted;
 import pro.softcom.aisentinel.application.pii.reporting.service.ContentScanOrchestrator;
-import pro.softcom.aisentinel.application.pii.reporting.service.DiscoveredLabelCollector;
 import pro.softcom.aisentinel.application.pii.remediation.service.ScanTimeFalsePositiveSuppressor;
 import pro.softcom.aisentinel.application.pii.reporting.service.ScanErrorClassifier;
 import pro.softcom.aisentinel.application.pii.reporting.service.ScanEventFactory;
@@ -63,10 +62,6 @@ public abstract class AbstractStreamConfluenceScanUseCase {
     protected final HtmlContentParser htmlContentParser;
     protected final ScanSpaceStatsCollector scanSpaceStatsCollector;
 
-    /** Collects open-vocabulary MINISTRAL labels dropped for lacking a config, for
-     *  operator review; {@code null} disables label discovery. */
-    protected final DiscoveredLabelCollector discoveredLabelCollector;
-
     /** Drops detections already flagged false positive before persistence, statistics and the
      *  live view; {@code null} disables scan-time suppression. */
     protected final ScanTimeFalsePositiveSuppressor falsePositiveSuppressor;
@@ -86,7 +81,6 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         this.scanTimeoutConfig = dependencies.scanTimeoutConfig();
         this.htmlContentParser = dependencies.htmlContentParser();
         this.scanSpaceStatsCollector = dependencies.scanSpaceStatsCollector();
-        this.discoveredLabelCollector = dependencies.discoveredLabelCollector();
         this.falsePositiveSuppressor = dependencies.falsePositiveSuppressor();
         this.pageConcurrency = Math.max(1, dependencies.pageConcurrency());
     }
@@ -614,28 +608,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                 .subscribeOn(Schedulers.parallel())
                 .subscribe();
 
-        fireDiscoveredLabelsRecording(contentPiiDetection);
-
         return contentPiiDetection;
-    }
-
-    /**
-     * Fires a best-effort async recording of the detection's open-vocabulary
-     * discovered labels on a bounded-elastic scheduler. Errors are swallowed so
-     * label collection can never make the scan itself fail; a {@code null}
-     * collector (tests that do not exercise discovery) is a no-op.
-     */
-    private void fireDiscoveredLabelsRecording(ContentPiiDetection detection) {
-        if (discoveredLabelCollector == null) {
-            return;
-        }
-        Mono.fromRunnable(() -> discoveredLabelCollector.recordOccurrences(detection.discoveredLabels()))
-            .subscribeOn(Schedulers.boundedElastic())
-            .onErrorResume(e -> {
-                log.warn("[DISCOVERED_LABELS] Failed to record discovered labels: {}", e.getMessage());
-                return Mono.empty();
-            })
-            .subscribe();
     }
 
     private ConfluenceContentScanResult suppressFalsePositives(ConfluenceContentScanResult event,

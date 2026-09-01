@@ -124,11 +124,11 @@ public class ScanCheckpointPersistenceAdapter implements ScanCheckpointRepositor
 
     @Override
     @Transactional
-    public int pauseAllRunningCheckpoints(String scanId) {
+    public int pauseUnfinishedCheckpoints(String scanId) {
         if (isBlank(scanId)) {
             return 0;
         }
-        return jpaRepository.pauseAllRunningCheckpoints(scanId);
+        return jpaRepository.pauseUnfinishedCheckpoints(scanId);
     }
 
     @Override

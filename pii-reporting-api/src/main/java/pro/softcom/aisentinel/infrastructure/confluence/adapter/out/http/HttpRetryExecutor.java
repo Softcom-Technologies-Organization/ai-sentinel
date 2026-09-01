@@ -1,11 +1,13 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out.http;
 
 import lombok.extern.slf4j.Slf4j;
+import pro.softcom.aisentinel.application.confluence.exception.ConfluenceUnreachableException;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -24,10 +26,31 @@ public class HttpRetryExecutor {
     }
 
     /**
-     * Exécute une requête HTTP avec retry automatique.
+     * Runs an HTTP request, retrying on its own.
+     *
+     * <p>A transport failure is rethrown naming the instance it was aimed at: this
+     * is the last point of the call that still knows the URL, and the JDK message
+     * never carries it.
      */
     public CompletableFuture<HttpResponse<String>> executeRequest(HttpRequest request) {
-        return executeRequestWithRetry(request, maxRetries);
+        return executeRequestWithRetry(request, maxRetries)
+            .exceptionallyCompose(failure -> CompletableFuture.failedFuture(nameTarget(request, failure)));
+    }
+
+    private static Throwable nameTarget(HttpRequest request, Throwable failure) {
+        Throwable transportFailure = failure instanceof CompletionException && failure.getCause() != null
+            ? failure.getCause()
+            : failure;
+        var uri = request.uri();
+        return new ConfluenceUnreachableException(
+            "Confluence unreachable at %s://%s: %s".formatted(uri.getScheme(), uri.getAuthority(),
+                                                              describe(transportFailure)),
+            transportFailure);
+    }
+
+    private static String describe(Throwable transportFailure) {
+        String message = transportFailure.getMessage();
+        return message != null && !message.isBlank() ? message : transportFailure.getClass().getSimpleName();
     }
 
     private CompletableFuture<HttpResponse<String>> executeRequestWithRetry(HttpRequest request, int retriesLeft) {

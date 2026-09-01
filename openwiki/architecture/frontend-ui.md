@@ -11,7 +11,7 @@ files, three routes, and one architectural decision worth internalising before t
 | Route | Component | Purpose |
 |---|---|---|
 | `/` | `AppShellComponent` → `ConfluenceDashboardComponent` | Space dashboard, scan control, live findings |
-| `/settings` | `PiiSettingsComponent` | Detection configuration, PII taxonomy, discovered labels, Confluence connection |
+| `/settings` | `PiiSettingsComponent` | Detection configuration, PII taxonomy, Confluence connection |
 | `/obfuscation` | `PiiObfuscationComponent` | Finding triage and bulk redaction review |
 | `**` | → `/` | |
 
@@ -74,8 +74,8 @@ to log or persist client-side.
 ## Settings
 
 `features/pii-settings/` is a single large component covering: detector toggles, global and per-type
-thresholds, the PII taxonomy grouped by category, custom types, discovered-label review
-(promote / ignore), the LM Studio endpoint, and the Ministral concurrency benchmark trigger. It reads
+thresholds, the PII taxonomy grouped by category, the LM Studio endpoint, and the Ministral
+concurrency benchmark trigger. It reads
 and writes `core/services/pii-detection-config.service.ts` against
 `/pii-detection/config` and `/pii-detection/pii-types`.
 

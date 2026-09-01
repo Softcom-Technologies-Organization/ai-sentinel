@@ -102,14 +102,18 @@ public interface ScanCheckpointRepository {
     int resolveStaleActiveCheckpoints(List<String> spaceKeys);
 
     /**
-     * Atomically sets ALL RUNNING checkpoints for a scan to PAUSED.
+     * Atomically sets every unfinished checkpoint of a scan to PAUSED.
      * Business purpose: Race-condition-safe pause — uses a single UPDATE statement
      * so no in-flight scan event can overwrite the PAUSED status between read and write.
+     *
+     * <p>Unfinished means RUNNING or NOT_STARTED: a scan stopped before its first
+     * space was opened has nothing RUNNING, and must still be reported as paused
+     * rather than as forever in progress.
      *
      * @param scanId the business identifier of the scan
      * @return the number of checkpoints updated
      */
-    int pauseAllRunningCheckpoints(String scanId);
+    int pauseUnfinishedCheckpoints(String scanId);
 
     /**
      * Atomically sets ALL PAUSED checkpoints for a scan to RUNNING.

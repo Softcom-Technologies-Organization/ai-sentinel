@@ -401,33 +401,6 @@
   border-radius: 2px;
 }
 
-/* Custom label dialog -- strip ALL default chrome, single flat box */
-/* ::ng-deep needed: PrimeNG dialog renders its own encapsulated structure */
-:host ::ng-deep .custom-label-dialog.p-dialog {
-  border: none;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  padding: 0;
-  background: var(--sentinel-bg-card);
-}
-
-:host ::ng-deep .custom-label-dialog.p-dialog .p-dialog-header {
-  display: none !important;
-}
-
-:host ::ng-deep .custom-label-dialog.p-dialog .p-dialog-content {
-  padding: 20px;
-  margin: 0;
-  background: var(--sentinel-bg-card);
-  border: none;
-  border-radius: 0;
-}
-
-:host ::ng-deep .p-dialog-mask {
-  backdrop-filter: blur(2px);
-}
-
 /* Unsaved Changes Banner */
 .unsaved-changes-banner {
   margin-bottom: 16px;
@@ -653,13 +626,6 @@
   margin-left: 4px;
 }
 
-.type-code {
-  font-size: 10px;
-  color: var(--text-color-secondary);
-  font-family: monospace;
-  margin-left: 4px;
-}
-
 .pii-type-controls {
   display: flex;
   align-items: center;
@@ -704,47 +670,6 @@
   gap: 6px;
 }
 
-/* Custom badge and severity */
-.custom-badge {
-  display: inline-block;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--teal-700);
-  background: var(--teal-100);
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
-  margin-right: 0.5rem;
-  vertical-align: middle;
-}
-
-.severity-indicator {
-  display: inline-block;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  padding: 0.1rem 0.4rem;
-  border-radius: 4px;
-  margin-left: 0.5rem;
-  vertical-align: middle;
-}
-
-.severity-indicator.severity-high {
-  color: var(--red-700);
-  background: var(--red-100);
-}
-
-.severity-indicator.severity-medium {
-  color: var(--orange-700);
-  background: var(--orange-100);
-}
-
-.severity-indicator.severity-low {
-  color: var(--blue-700);
-  background: var(--blue-100);
-}
-
 /* ===== FOOTER ===== */
 .settings-footer {
   display: flex;
@@ -767,154 +692,6 @@
 
 /* Base layout (flex, gap) handled by PrimeFlex utilities on the element.
    This class is kept for responsive overrides in media queries. */
-
-/* ===== CUSTOM LABEL DIALOG ===== */
-
-/* Custom dialog header (replaces PrimeNG header) */
-.dialog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--sentinel-border-default);
-}
-
-.dialog-title {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--sentinel-text-primary);
-}
-
-.dialog-close-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: transparent;
-  border-radius: 6px;
-  color: var(--sentinel-text-muted);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.dialog-close-btn:hover {
-  background: var(--sentinel-bg-input-disabled);
-  color: var(--sentinel-text-body);
-}
-
-.dialog-close-btn:focus-visible {
-  outline: 2px solid var(--primary-color);
-  outline-offset: -2px;
-}
-
-.dialog-close-btn i {
-  font-size: 13px;
-}
-
-/* Dialog form fields */
-.custom-label-field {
-  margin-bottom: 0.9rem;
-}
-
-.custom-label-field:last-child {
-  margin-bottom: 0;
-}
-
-.custom-label-field label {
-  display: block;
-  font-weight: 500;
-  font-size: 12.5px;
-  margin-bottom: 0.3rem;
-  color: var(--sentinel-text-primary);
-}
-
-.custom-label-field label .required-marker {
-  color: var(--red-500);
-  margin-left: 0.2rem;
-  font-size: 11px;
-}
-
-.custom-label-field input[type="text"] {
-  width: 100%;
-  font-size: 12.5px;
-  padding: 0.35rem 0.6rem;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid var(--sentinel-border-input);
-  transition: border-color 0.15s;
-}
-
-.custom-label-field input[type="text"]:focus {
-  border-color: var(--primary-color);
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 99, 102, 241), 0.1);
-}
-
-.custom-label-field input[type="text"]::placeholder {
-  color: var(--sentinel-text-muted);
-  font-size: 12px;
-}
-
-.custom-label-field .field-error {
-  display: block;
-  color: var(--red-500);
-  font-size: 11px;
-  margin-top: 0.2rem;
-}
-
-/* ::ng-deep needed: PrimeNG inputnumber internal structure */
-:host .custom-label-field .threshold-input-group ::ng-deep .p-inputnumber .p-inputnumber-input {
-  text-align: center;
-  font-weight: 600;
-  font-size: 13px;
-  max-width: 3.5rem;
-  padding: 0.3rem 0.15rem;
-  height: 32px;
-}
-
-:host .custom-label-field .threshold-input-group ::ng-deep .p-inputnumber .p-inputnumber-button-group {
-  display: flex;
-}
-
-:host .custom-label-field .threshold-input-group ::ng-deep .p-inputnumber .p-inputnumber-button-group button {
-  width: 2rem;
-  height: 32px;
-  padding: 0;
-}
-
-:host .custom-label-field .threshold-input-group ::ng-deep .p-inputnumber .p-inputnumber-button-group button .pi {
-  font-size: 0.7rem;
-}
-
-/* ::ng-deep needed: PrimeNG select internal structure */
-:host .custom-label-field ::ng-deep p-select.p-select {
-  display: inline-flex;
-  width: 100%;
-  font-size: 12.5px;
-  border-radius: 8px;
-}
-
-.dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1.25rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--sentinel-border-default);
-}
-
-/* ::ng-deep needed: PrimeNG button internal structure */
-:host .dialog-actions ::ng-deep .p-button {
-  font-size: 12px;
-  padding: 6px 14px;
-  height: 32px;
-  border-radius: 8px;
-  font-weight: 500;
-}
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {

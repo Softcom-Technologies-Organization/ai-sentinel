@@ -55,13 +55,10 @@ message PIIDetectionResponse {
   // aggregate real per-detector busy time and throughput across a scan.
   repeated DetectorRunStats detector_stats = 5;
 
-  // UPPER_SNAKE labels of MINISTRAL entities dropped for lacking a
-  // pii_type_config row, with their per-request occurrence count. Because the
-  // Ministral-PII model emits an open, uncontrolled vocabulary, this surfaces
-  // the labels it proposed outside the configured set so the backend can
-  // collect them for operator review (promote or ignore). Never carries a PII
-  // value — only the label and how many times it occurred in this request.
-  map<string, int32> discovered_labels = 6;
+  // Tag 6 held discovered_labels, the open-vocabulary label inbox removed with
+  // that feature. Reserved so the tag is never silently reused.
+  reserved 6;
+  reserved "discovered_labels";
 }
 
 // Execution stats of a single detector for one DetectPII request

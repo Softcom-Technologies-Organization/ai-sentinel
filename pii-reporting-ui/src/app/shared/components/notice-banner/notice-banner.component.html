@@ -1,0 +1,27 @@
+@if (showBanner) {
+  <div class="notice-banner">
+    <i class="pi pi-exclamation-triangle"></i>
+    <span class="banner-message">
+      {{ messageKey | transloco }}
+    </span>
+    <button pButton
+            type="button"
+            class="p-button-raised p-button-sm"
+            (click)="onAction()"
+            (keydown.enter)="onAction()"
+            (keydown.space)="$event.preventDefault(); onAction()"
+            [attr.data-testid]="actionTestId">
+      {{ actionKey | transloco }}
+    </button>
+    <button pButton
+            type="button"
+            class="p-button-text p-button-sm"
+            icon="pi pi-times"
+            (click)="onDismiss()"
+            (keydown.enter)="onDismiss()"
+            (keydown.space)="$event.preventDefault(); onDismiss()"
+            [attr.aria-label]="closeAriaLabelKey | transloco"
+            [attr.data-testid]="dismissTestId">
+    </button>
+  </div>
+}

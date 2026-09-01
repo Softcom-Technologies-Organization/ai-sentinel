@@ -15,9 +15,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -94,19 +92,6 @@ class PiiTypeConfigPersistenceAdapterTest {
     }
 
     @Test
-    void Should_SaveAndReturnDomain_When_Save() {
-        PiiTypeConfig config = PiiTypeConfig.builder()
-                .piiType("EMAIL").detector("MINISTRAL").enabled(true)
-                .threshold(0.80).category("CONTACT").detectorLabel("email").severity("LOW").build();
-        PiiTypeConfigEntity savedEntity = buildEntity("EMAIL", "MINISTRAL");
-        when(jpaRepository.save(any())).thenReturn(savedEntity);
-
-        PiiTypeConfig result = adapter.save(config);
-
-        assertThat(result.getPiiType()).isEqualTo("EMAIL");
-    }
-
-    @Test
     void Should_ReturnTrue_When_ExistsAndCountIsPositive() {
         when(jpaRepository.count()).thenReturn(5L);
 
@@ -122,13 +107,6 @@ class PiiTypeConfigPersistenceAdapterTest {
         boolean result = adapter.exists();
 
         assertThat(result).isFalse();
-    }
-
-    @Test
-    void Should_CallDeleteRepository_When_DeleteByPiiTypeAndDetector() {
-        adapter.deleteByPiiTypeAndDetector("EMAIL", "MINISTRAL");
-
-        verify(jpaRepository).deleteByPiiTypeAndDetector("EMAIL", "MINISTRAL");
     }
 
     @Test
@@ -166,19 +144,6 @@ class PiiTypeConfigPersistenceAdapterTest {
         );
 
         List<PiiTypeConfig> result = adapter.bulkUpdateAtomically(updates, "admin");
-
-        assertThat(result).hasSize(1);
-    }
-
-    @Test
-    void Should_SaveAll_When_SaveAllCalled() {
-        PiiTypeConfig config = PiiTypeConfig.builder()
-                .piiType("EMAIL").detector("MINISTRAL").enabled(true)
-                .threshold(0.80).category("CONTACT").detectorLabel("email").severity("LOW").build();
-        PiiTypeConfigEntity savedEntity = buildEntity("EMAIL", "MINISTRAL");
-        when(jpaRepository.saveAll(anyList())).thenReturn(List.of(savedEntity));
-
-        List<PiiTypeConfig> result = adapter.saveAll(List.of(config));
 
         assertThat(result).hasSize(1);
     }

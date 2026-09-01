@@ -78,8 +78,7 @@ def _create_composite_detector():
 
 
 # Filter-reason sentinel flagging a dropped open-vocabulary MINISTRAL label with
-# no pii_type_config row. Produced by _evaluate_entity_filter and matched by
-# _filter_entities_by_type_config to feed the discovered-label counter.
+# no pii_type_config row, reported in the debug breakdown of filter reasons.
 _UNKNOWN_MINISTRAL_LABEL_REASON = "unknown_ministral_label"
 
 
@@ -415,11 +414,9 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
 
             # Apply PII type-specific filtering if configs were fetched
             entities_before_type_filter = len(entities)
-            discovered_labels: Dict[str, int] = {}
             if pii_type_configs:
                 entities = self._filter_entities_by_type_config(
                     entities, pii_type_configs, request_id,
-                    discovered_out=discovered_labels,
                 )
             logger.info(
                 "[FINDING_TRACKER] [%s] step=GRPC_AFTER_TYPE_CONFIG_FILTER in=%d out=%d dropped=%d",
@@ -475,7 +472,6 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 content, entities, request_id,
                 discarded_by_prefilter,
                 detector_stats,
-                discovered_labels,
             )
             logger.info(
                 "[FINDING_TRACKER] [%s] step=GRPC_FINAL_RESPONSE count=%d",
@@ -1099,7 +1095,6 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
 
     def _filter_entities_by_type_config(
         self, entities: List, pii_type_configs: dict, request_id: str,
-        discovered_out: Optional[Dict[str, int]] = None,
     ) -> List:
         """
         Filter detected entities based on PII type-specific configurations.
@@ -1109,14 +1104,11 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         2. If entity score is below type-specific threshold, filter it out
         3. If no config exists for a type, keep the entity (allow by default),
            except for MINISTRAL: an unconfigured open-vocabulary label is dropped
-           and its per-request occurrence count is accumulated into ``discovered_out``
 
         Args:
             entities: List of detected PII entities
             pii_type_configs: Dictionary mapping PII type to config
             request_id: Request identifier for logging
-            discovered_out: Optional caller-provided counter, incremented per
-                dropped unconfigured MINISTRAL label (label -> occurrence count)
 
         Returns:
             Filtered list of entities
@@ -1140,10 +1132,6 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 filtered_entities.append(entity)
             elif reason:
                 filter_reasons[reason] = filter_reasons.get(reason, 0) + 1
-                if discovered_out is not None:
-                    label, _, kind = reason.rpartition(":")
-                    if kind == _UNKNOWN_MINISTRAL_LABEL_REASON:
-                        discovered_out[label] = discovered_out.get(label, 0) + 1
 
         filtered_count = len(entities) - len(filtered_entities)
         logger.debug(
@@ -1292,7 +1280,6 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         self, content: str, entities: List, request_id: str,
         discarded_entities: Optional[List] = None,
         detector_stats: Optional[List] = None,
-        discovered_labels: Optional[Dict[str, int]] = None
     ) -> pii_detection_pb2.PIIDetectionResponse:
         """Build complete detection response with entities, nbOfDetectedPIIBySeverity, and masked content.
 
@@ -1305,8 +1292,6 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             detector_stats: Optional list of per-detector run-stats dicts
                 (``source``/``duration_ms``/``entities_found``) exposed in
                 ``detector_stats``. Empty for paths that don't produce them.
-            discovered_labels: Optional counter of dropped unconfigured MINISTRAL
-                labels (label -> occurrence count) exposed in ``discovered_labels``.
 
         Returns:
             Complete PIIDetectionResponse
@@ -1325,11 +1310,6 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             self._add_detector_stats_to_response(
                 response, detector_stats, request_id
             )
-        if discovered_labels:
-            self._add_discovered_labels_to_response(
-                response, discovered_labels, request_id
-            )
-
         return response
 
     @staticmethod
@@ -1500,35 +1480,6 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         logger.debug(f"[{request_id}] Adding nbOfDetectedPIIBySeverity to response: {dict(summary)}")
         for pii_type, count in summary.items():
             response.summary[pii_type] = count
-
-    @staticmethod
-    def _add_discovered_labels_to_response(
-        response: pii_detection_pb2.PIIDetectionResponse,
-        discovered_labels: Dict[str, int], request_id: str
-    ) -> None:
-        """Add dropped unconfigured MINISTRAL labels to ``discovered_labels``.
-
-        Open-vocabulary proposals the backend can collect for operator review.
-        A dropped label appears here but never in ``summary`` (which counts kept
-        entities). Carries only the UPPER_SNAKE label and its per-request
-        occurrence count, never a PII value.
-
-        Args:
-            response: Response object to populate
-            discovered_labels: Counter of dropped labels (label -> occurrence count)
-            request_id: Request identifier for logging
-        """
-        logger.debug(f"[{request_id}] Adding discovered labels to response: {dict(discovered_labels)}")
-        for label, count in discovered_labels.items():
-            try:
-                response.discovered_labels[label] = int(count)
-            except (ValueError, TypeError) as e:
-                # Discovery payload only: never fail the response because a
-                # single discovered label cannot be serialized.
-                logger.warning(
-                    f"[{request_id}] Failed to add discovered label to "
-                    f"protobuf: {e}. Label: {label}"
-                )
 
     def _add_masked_content_to_response(
         self,

@@ -3,7 +3,6 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   ConcurrencyBenchStatus,
-  CreatePiiTypeConfigRequest,
   GroupedPiiTypes,
   PiiDetectionConfig,
   PiiTypeConfig,
@@ -94,17 +93,4 @@ export class PiiDetectionConfigService {
     return this.http.get<GroupedPiiTypes[]>(`${this.typesApiUrl}/grouped`);
   }
 
-  /**
-   * Create a custom PII type configuration.
-   */
-  createPiiTypeConfig(request: CreatePiiTypeConfigRequest): Observable<PiiTypeConfig> {
-    return this.http.post<PiiTypeConfig>(this.typesApiUrl, request);
-  }
-
-  /**
-   * Delete a custom PII type configuration.
-   */
-  deletePiiTypeConfig(detector: string, piiType: string): Observable<void> {
-    return this.http.delete<void>(`${this.typesApiUrl}/${detector}/${piiType}`);
-  }
 }

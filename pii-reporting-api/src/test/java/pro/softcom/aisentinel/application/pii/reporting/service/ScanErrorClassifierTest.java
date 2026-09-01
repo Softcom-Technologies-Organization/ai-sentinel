@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import pro.softcom.aisentinel.application.confluence.exception.ConfluenceRequestFailedException;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorRunStat;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
@@ -20,6 +21,7 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -85,6 +87,28 @@ class ScanErrorClassifierTest {
         void Should_ReportNetworkOutage_When_TunnelFailureIsWrapped() {
             Throwable wrapped = new IllegalStateException("attachment listing failed",
                 new IOException("Tunnel failed, got: 407"));
+
+            assertThat(ScanErrorClassifier.classify(wrapped))
+                .isEqualTo(ScanErrorKind.NETWORK_UNAVAILABLE);
+        }
+
+        @Test
+        @DisplayName("classify - a source refusing the caller is a network outage")
+        void Should_ReportNetworkOutage_When_SourceRefusesTheCaller() {
+            // Observed verbatim when the Confluence token lost its product access: every space
+            // listing answered 403, and the scan used to read that as spaces holding no page.
+            Throwable refused = new ConfluenceRequestFailedException(
+                "Confluence refused to list the pages of space AS with status 403", 403);
+
+            assertThat(ScanErrorClassifier.classify(refused))
+                .isEqualTo(ScanErrorKind.NETWORK_UNAVAILABLE);
+        }
+
+        @Test
+        @DisplayName("classify - a wrapped source rejection is still detected")
+        void Should_ReportNetworkOutage_When_SourceRejectionIsWrapped() {
+            Throwable wrapped = new CompletionException(
+                new ConfluenceRequestFailedException("listing rejected", 401));
 
             assertThat(ScanErrorClassifier.classify(wrapped))
                 .isEqualTo(ScanErrorKind.NETWORK_UNAVAILABLE);
@@ -159,6 +183,19 @@ class ScanErrorClassifierTest {
             // A read timeout means the server answered too slowly for this item, which a
             // single huge page can cause; treating it as an outage would pause healthy scans.
             assertThat(ScanErrorClassifier.classify(new SocketTimeoutException()))
+                .isEqualTo(ScanErrorKind.ITEM_FAILURE);
+        }
+
+        @Test
+        @DisplayName("classify - a space that no longer exists is an item failure")
+        void Should_ReportItemFailure_When_SpaceIsGone() {
+            // The space cache outlives the spaces it holds, so a scan over every space walks
+            // into deleted ones. The spaces queued behind are readable: pausing here would
+            // stop a scan that one stale cache entry cannot doom.
+            Throwable spaceGone = new ConfluenceRequestFailedException(
+                "Confluence refused to list the pages of space OLD with status 404", 404);
+
+            assertThat(ScanErrorClassifier.classify(spaceGone))
                 .isEqualTo(ScanErrorKind.ITEM_FAILURE);
         }
 

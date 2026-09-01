@@ -399,7 +399,6 @@ class SeverityCalculationServiceTest {
                     .threshold(0.80)
                     .category("CUSTOM")
                     .severity("HIGH")
-                    .custom(true)
                     .build();
             when(piiTypeConfigRepository.findAll()).thenReturn(List.of(customConfig));
 
@@ -499,7 +498,6 @@ class SeverityCalculationServiceTest {
                     .threshold(0.80)
                     .category("CUSTOM")
                     .severity("HIGH")
-                    .custom(true)
                     .build();
             when(piiTypeConfigRepository.findAll()).thenReturn(List.of(newConfig));
             dbService.refreshSeverityCache();

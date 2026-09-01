@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { SpaceFilteringService } from './space-filtering.service';
 import { SpacesDashboardUtils } from '../spaces-dashboard.utils';
@@ -137,5 +137,33 @@ describe('SpaceFilteringService (server-driven)', () => {
     const { service } = setup();
     const contact = service.piiTypeGroups().find(g => g.category === 'CONTACT');
     expect(contact?.items.map(i => i.code).sort()).toEqual(['EMAIL', 'PHONE_NUMBER']);
+  });
+
+  it('Should_RefetchWithUnchangedCriteria_When_ReloadIsCalled', async () => {
+    const { service } = setup();
+    service.piiTypeFilter.set(['EMAIL']);
+    await flushFetch();
+    const callsBefore = api.getDashboardSpacesSummary.mock.calls.length;
+
+    service.reload();
+    await flushFetch();
+
+    expect(api.getDashboardSpacesSummary.mock.calls).toHaveLength(callsBefore + 1);
+    // The reload counter drives deduplication only; it must not leak into the query string.
+    expect(api.getDashboardSpacesSummary.mock.calls.at(-1)?.[0]).not.toHaveProperty('reloadCounter');
+  });
+
+  it('Should_RecoverRowOrder_When_ReloadFollowsAFailedFetch', async () => {
+    const { service } = setup();
+    api.getDashboardSpacesSummary.mockReturnValue(throwError(() => new Error('backend down')));
+    service.piiTypeFilter.set(['EMAIL']);
+    await flushFetch();
+    expect(service.sortedSpaces()).toEqual([]);
+
+    api.getDashboardSpacesSummary.mockReturnValue(of(summaryResponse(['C', 'A'])));
+    service.reload();
+    await flushFetch();
+
+    expect(service.sortedSpaces().map(s => s.key)).toEqual(['C', 'A']);
   });
 });

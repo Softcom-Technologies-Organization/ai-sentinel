@@ -3,7 +3,7 @@ import { signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, convertToParamMap, ParamMap, provideRouter } from '@angular/router';
 import { BehaviorSubject, of, throwError } from 'rxjs';
-import { MessageService } from 'primeng/api';
+import { Confirmation, ConfirmationService, MessageService } from 'primeng/api';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { PiiObfuscationComponent } from './pii-obfuscation.component';
@@ -22,6 +22,20 @@ import {
 
 const FR_TRANSLATIONS = {
   common: { success: 'Succès', warning: 'Attention' },
+  confirmations: {
+    reportFalsePositive: {
+      header: 'Signaler des faux positifs',
+      message: 'Vous êtes sur le point de signaler <b>{{count}}</b> détection(s) comme faux positifs.',
+      acceptLabel: 'Oui, signaler ({{count}})',
+      rejectLabel: 'Annuler',
+    },
+    markTreated: {
+      header: 'Marquer des détections comme traitées',
+      message: 'Vous êtes sur le point de marquer <b>{{count}}</b> détection(s) comme traitées.',
+      acceptLabel: 'Oui, marquer traité ({{count}})',
+      rejectLabel: 'Annuler',
+    },
+  },
   dashboard: {
     table: { paginatorReport: 'Affichage de {first} à {last} sur {totalRecords} entrées' },
   },
@@ -171,6 +185,7 @@ describe('PiiObfuscationComponent', () => {
   let queryParams$: BehaviorSubject<ParamMap>;
   let api: ApiMock;
   let messageService: { add: Mock };
+  let raisedConfirmations: Confirmation[];
 
   beforeEach(async () => {
     // The shared app header pulls in ThemeService, which probes matchMedia at
@@ -212,10 +227,28 @@ describe('PiiObfuscationComponent', () => {
         { provide: RemediationConfigService, useValue: remediationConfigMock },
         { provide: RemediationApiService, useValue: api },
         { provide: MessageService, useValue: messageService },
+        ConfirmationService,
         { provide: ActivatedRoute, useValue: { queryParamMap: queryParams$ } },
       ],
     }).compileComponents();
+
+    raisedConfirmations = [];
+    TestBed.inject(ConfirmationService).requireConfirmation$.subscribe((confirmation) => {
+      if (confirmation) {
+        raisedConfirmations.push(confirmation);
+      }
+    });
   });
+
+  function lastConfirmation(): Confirmation {
+    const confirmation = raisedConfirmations[raisedConfirmations.length - 1];
+    expect(confirmation).toBeTruthy();
+    return confirmation;
+  }
+
+  function acceptLastConfirmation(): void {
+    lastConfirmation().accept?.();
+  }
 
   function createComponent(): void {
     fixture = TestBed.createComponent(PiiObfuscationComponent);
@@ -588,6 +621,7 @@ describe('PiiObfuscationComponent', () => {
     );
 
     fixture.componentInstance.markSelectionTreated();
+    acceptLastConfirmation();
 
     expect(api.changeFindingsStatusBySelection).toHaveBeenCalledWith({
       selection: {
@@ -621,6 +655,7 @@ describe('PiiObfuscationComponent', () => {
     );
 
     fixture.componentInstance.reportSelectionFalsePositive();
+    acceptLastConfirmation();
 
     expect(api.changeFindingsStatusBySelection).toHaveBeenCalledWith({
       selection: {
@@ -643,7 +678,64 @@ describe('PiiObfuscationComponent', () => {
 
     fixture.componentInstance.reportSelectionFalsePositive();
 
+    expect(raisedConfirmations).toHaveLength(0);
     expect(api.changeFindingsStatusBySelection).not.toHaveBeenCalled();
+  });
+
+  it('Should_AskForConfirmation_When_BulkReportFalsePositive', () => {
+    createEnabledComponent();
+    selectionService().checkType('EMAIL');
+    viewStateService().lastPlan.set(plan({ totalFindings: 99 }));
+
+    fixture.componentInstance.reportSelectionFalsePositive();
+
+    expect(api.changeFindingsStatusBySelection).not.toHaveBeenCalled();
+    expect(lastConfirmation().header).toBe('Signaler des faux positifs');
+    expect(lastConfirmation().message).toContain('<b>99</b> détection(s)');
+    expect(lastConfirmation().acceptLabel).toBe('Oui, signaler (99)');
+  });
+
+  // The shared <p-confirmDialog> lives in the app shell, which this route does not render:
+  // without a dialog of its own the page would raise a confirmation nobody ever sees.
+  it('Should_DisplayTheConfirmDialog_When_BulkReportFalsePositive', () => {
+    createEnabledComponent();
+    selectionService().checkType('EMAIL');
+    viewStateService().lastPlan.set(plan({ totalFindings: 99 }));
+
+    fixture.componentInstance.reportSelectionFalsePositive();
+    fixture.detectChanges();
+
+    expect(document.body.textContent).toContain('Signaler des faux positifs');
+    expect(document.body.textContent).toContain('Oui, signaler (99)');
+  });
+
+  it('Should_KeepTheSelectionIntact_When_FalsePositiveConfirmationIsNotAccepted', () => {
+    createEnabledComponent();
+    selectionService().checkType('EMAIL');
+
+    fixture.componentInstance.reportSelectionFalsePositive();
+
+    expect(selectionService().checkedTypes().size).toBe(1);
+  });
+
+  it('Should_CountAttachmentFindings_When_AnnouncingTheFalsePositiveImpact', () => {
+    createEnabledComponent();
+    selectionService().checkType('EMAIL');
+    viewStateService().lastPlan.set(plan({ totalFindings: 97, attachmentExclusions: 2 }));
+
+    fixture.componentInstance.reportSelectionFalsePositive();
+
+    expect(lastConfirmation().message).toContain('<b>99</b> détection(s)');
+  });
+
+  it('Should_AskForConfirmation_When_BulkMarkTreated', () => {
+    createEnabledComponent();
+    selectionService().checkType('EMAIL');
+
+    fixture.componentInstance.markSelectionTreated();
+
+    expect(api.changeFindingsStatusBySelection).not.toHaveBeenCalled();
+    expect(lastConfirmation().header).toBe('Marquer des détections comme traitées');
   });
 
   it('Should_ClearSelectionAndDropPlan_When_BulkCleared', () => {

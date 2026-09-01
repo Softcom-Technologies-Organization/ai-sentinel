@@ -146,30 +146,6 @@ class GrpcPiiDetectorArmeriaClientAdapterTest {
     }
 
     @Test
-    @DisplayName("Should_MapDiscoveredLabels_When_ResponseCarriesDiscoveredLabels")
-    void Should_MapDiscoveredLabels_When_ResponseCarriesDiscoveredLabels() {
-        // Given - response with open-vocabulary labels dropped by the Python gate
-        PiiDetection.PIIDetectionResponse response = PiiDetection.PIIDetectionResponse.newBuilder()
-                .putDiscoveredLabels("VEHICLE_COLOR", 3)
-                .putDiscoveredLabels("PET_NAME", 1)
-                .build();
-
-        when(stub.withDeadlineAfter(anyLong(), any())).thenReturn(stub);
-        when(stub.detectPII(any())).thenReturn(response);
-
-        GrpcPiiDetectorArmeriaClientAdapter service =
-            new GrpcPiiDetectorArmeriaClientAdapter(config, stub, meterRegistry);
-
-        // When
-        ContentPiiDetection result = service.analyzePageContent("p", "t", "s", "payload");
-
-        // Then - the discovered labels are surfaced on the domain model
-        assertThat(result.discoveredLabels())
-                .containsEntry("VEHICLE_COLOR", 3)
-                .containsEntry("PET_NAME", 1);
-    }
-
-    @Test
     @DisplayName("Should_MapDetectorRunStatFailure_When_DetectorReportsAnError")
     void Should_MapDetectorRunStatFailure_When_DetectorReportsAnError() {
         // Given - Ministral ran for 30s, found nothing, and said why
@@ -241,21 +217,6 @@ class GrpcPiiDetectorArmeriaClientAdapterTest {
                 .contains("MINISTRAL", "http://lmstudio:1234/v1", "connection refused");
             softly.assertThat(health.get(1).reachable()).isTrue();
         });
-    }
-
-    @Test
-    @DisplayName("Should_ReturnEmptyDiscoveredLabels_When_ResponseHasNone")
-    void Should_ReturnEmptyDiscoveredLabels_When_ResponseHasNone() {
-        PiiDetection.PIIDetectionResponse response = PiiDetection.PIIDetectionResponse.newBuilder().build();
-        when(stub.withDeadlineAfter(anyLong(), any())).thenReturn(stub);
-        when(stub.detectPII(any())).thenReturn(response);
-
-        GrpcPiiDetectorArmeriaClientAdapter service =
-            new GrpcPiiDetectorArmeriaClientAdapter(config, stub, meterRegistry);
-
-        ContentPiiDetection result = service.analyzePageContent("p", "t", "s", "payload");
-
-        assertThat(result.discoveredLabels()).isEmpty();
     }
 
     @Test

@@ -16,7 +16,6 @@ public record PiiTypeConfigResponseDto(
         String category,
         String countryCode,
         String detectorLabel,
-        boolean isCustom,
         String severity,
         LocalDateTime updatedAt,
         String updatedBy
@@ -31,7 +30,6 @@ public record PiiTypeConfigResponseDto(
                 config.getCategory(),
                 config.getCountryCode(),
                 config.getDetectorLabel(),
-                config.isCustom(),
                 config.getSeverity(),
                 config.getUpdatedAt(),
                 config.getUpdatedBy()

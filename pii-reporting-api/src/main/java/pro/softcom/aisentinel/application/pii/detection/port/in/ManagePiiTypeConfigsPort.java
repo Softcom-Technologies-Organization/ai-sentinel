@@ -37,31 +37,6 @@ public interface ManagePiiTypeConfigsPort {
     Map<String, List<PiiTypeConfig>> getConfigsByCategory();
 
     /**
-     * Creates a new PII type configuration (custom label).
-     *
-     * @param command the creation command containing all required parameters
-     * @return the created configuration
-     * @throws IllegalArgumentException if parameters are invalid or duplicate exists
-     */
-    PiiTypeConfig createConfig(CreatePiiTypeConfigCommand command);
-
-    /**
-     * Command object for creating a new PII type configuration.
-     */
-    record CreatePiiTypeConfigCommand(
-            String piiType,
-            String detector,
-            boolean enabled,
-            double threshold,
-            String category,
-            String detectorLabel,
-            String countryCode,
-            String severity,
-            String createdBy
-    ) {
-    }
-
-    /**
      * Updates configuration for a specific PII type and detector.
      *
      * @param piiType     the PII type identifier
@@ -83,16 +58,6 @@ public interface ManagePiiTypeConfigsPort {
      * @throws IllegalArgumentException if any update is invalid
      */
     List<PiiTypeConfig> bulkUpdate(List<PiiTypeConfigUpdate> updates, String updatedBy);
-
-    /**
-     * Deletes a custom PII type configuration.
-     *
-     * @param piiType  the PII type identifier
-     * @param detector the detector name
-     * @throws IllegalArgumentException if configuration not found
-     * @throws IllegalStateException    if the configuration is a system-defined type
-     */
-    void deleteConfig(String piiType, String detector);
 
     /**
      * Represents a single configuration update.

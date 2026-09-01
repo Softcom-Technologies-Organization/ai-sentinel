@@ -191,19 +191,19 @@ public class ScanCheckpointService {
     }
 
     /**
-     * Atomically sets every RUNNING checkpoint of a scan to PAUSED.
+     * Atomically sets every unfinished checkpoint of a scan to PAUSED.
      *
      * <p>Used when an outage stops the scan on its own. Pausing rather than failing
      * is what keeps the work resumable: the checkpoints hold the last page analysed
      * per space, so the Resume button restarts exactly where the outage struck.
-     * Spaces of the scope not started yet keep their NOT_STARTED checkpoint and are
-     * scanned in full on resume.
+     * Spaces of the scope not started yet are paused with no starting position and
+     * are scanned in full on resume.
      *
      * @param scanId the scan to pause
-     * @return number of checkpoints moved from RUNNING to PAUSED
+     * @return number of checkpoints moved to PAUSED
      */
-    public int pauseRunningCheckpoints(String scanId) {
-        return scanCheckpointRepository.pauseAllRunningCheckpoints(scanId);
+    public int pauseUnfinishedCheckpoints(String scanId) {
+        return scanCheckpointRepository.pauseUnfinishedCheckpoints(scanId);
     }
 
     public void deleteAllCheckpointsForSpaces(java.util.List<String> spaceKeys) {

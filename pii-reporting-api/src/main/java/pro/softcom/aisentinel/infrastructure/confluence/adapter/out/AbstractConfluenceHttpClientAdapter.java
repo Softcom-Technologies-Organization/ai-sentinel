@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import lombok.extern.slf4j.Slf4j;
+import pro.softcom.aisentinel.application.confluence.exception.ConfluenceRequestFailedException;
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceClient;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
@@ -297,8 +298,16 @@ public abstract class AbstractConfluenceHttpClientAdapter implements ConfluenceC
     private CompletableFuture<List<ConfluencePage>> processPagesBatch(
         HttpResponse<String> response, String spaceKey, int startIndex, int pageSize, int remainingPagesLimit) {
 
+        // Failing rather than returning no page: the caller cannot tell an empty list apart from a
+        // space it was refused, so a rejected listing used to be scanned as a space holding nothing
+        // and published as a clean result over content that was never read.
         if (response.statusCode() != 200) {
-            return CompletableFuture.completedFuture(List.of());
+            log.error("HTTP error {} while retrieving pages of space {} (start={})",
+                response.statusCode(), spaceKey, startIndex);
+            return CompletableFuture.failedFuture(new ConfluenceRequestFailedException(
+                "Confluence refused to list the pages of space %s with status %d"
+                    .formatted(spaceKey, response.statusCode()),
+                response.statusCode()));
         }
 
         try {

@@ -416,8 +416,8 @@ class TestDetectorSpecificFiltering:
                production seed shape, with the composite ``PRESIDIO:LOCATION`` key
                the ALL-detector fetch adds alongside the plain key).
         When:  Ministral emits LOCATION via open-vocabulary passthrough.
-        Then:  The LOCATION must be DROPPED and surfaced as a discovered label —
-               not kept via the detector-mismatch allow-by-default path.
+        Then:  The LOCATION must be DROPPED — not kept via the detector-mismatch
+               allow-by-default path.
         """
         # Arrange — mirror the DatabaseConfigAdapter ALL-detector dict shape:
         # both a plain key and the composite per-detector key point to the row.
@@ -444,11 +444,10 @@ class TestDetectorSpecificFiltering:
                 source=DetectorSource.MINISTRAL,
             )
         ]
-        discovered = {}
 
         # Act
         filtered = self.servicer._filter_entities_by_type_config(
-            entities, pii_type_configs, self.request_id, discovered_out=discovered,
+            entities, pii_type_configs, self.request_id,
         )
 
         # Assert
@@ -456,7 +455,6 @@ class TestDetectorSpecificFiltering:
             "MINISTRAL LOCATION must be dropped when LOCATION is only configured "
             f"(disabled) for PRESIDIO. Expected 0 entities, got {len(filtered)}"
         )
-        assert discovered == {'LOCATION': 1}
 
     def test_Should_KeepPresidioType_When_OnlyConfiguredDisabledForMinistral(self):
         """Symmetric guard: a non-Ministral source keeps allow-by-default when the
@@ -485,14 +483,12 @@ class TestDetectorSpecificFiltering:
                 source=DetectorSource.PRESIDIO,
             )
         ]
-        discovered = {}
 
         # Act
         filtered = self.servicer._filter_entities_by_type_config(
-            entities, pii_type_configs, self.request_id, discovered_out=discovered,
+            entities, pii_type_configs, self.request_id,
         )
 
         # Assert
         assert len(filtered) == 1
         assert filtered[0]['source'] == DetectorSource.PRESIDIO
-        assert discovered == {}

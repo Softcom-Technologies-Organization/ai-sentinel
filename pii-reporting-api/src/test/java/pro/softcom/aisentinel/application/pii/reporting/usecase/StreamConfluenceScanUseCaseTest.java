@@ -935,7 +935,7 @@ class StreamConfluenceScanUseCaseTest {
             })
             .verifyComplete();
 
-        verify(scanCheckpointRepository).pauseAllRunningCheckpoints(anyString());
+        verify(scanCheckpointRepository).pauseUnfinishedCheckpoints(anyString());
     }
 
     @Test
@@ -1139,7 +1139,7 @@ class StreamConfluenceScanUseCaseTest {
         assertThat(events.getLast().errorParams().get("cause"))
             .contains("MINISTRAL", "LM Studio endpoint unreachable");
 
-        verify(scanCheckpointRepository).pauseAllRunningCheckpoints(anyString());
+        verify(scanCheckpointRepository).pauseUnfinishedCheckpoints(anyString());
     }
 
     @Test
@@ -1181,7 +1181,7 @@ class StreamConfluenceScanUseCaseTest {
             .findFirst().orElseThrow().message())
             .doesNotStartWith("SCAN_PAUSED");
 
-        verify(scanCheckpointRepository, never()).pauseAllRunningCheckpoints(anyString());
+        verify(scanCheckpointRepository, never()).pauseUnfinishedCheckpoints(anyString());
     }
 
     private List<ConfluencePage> twoScannablePages(String spaceKey) {

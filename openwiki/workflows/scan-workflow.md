@@ -22,7 +22,7 @@ sequenceDiagram
     loop for each space, then each page
         Scan->>Wiki: fetches the page and its attachments
         Scan->>Det: submits the cleaned text for detection
-        Det-->>Scan: findings, per-detector stats, discovered labels
+        Det-->>Scan: findings, per-detector stats
         Scan->>DB: writes the checkpoint synchronously, then counters and the event
         Scan-->>UI: emits an item event with encrypted or masked values
     end

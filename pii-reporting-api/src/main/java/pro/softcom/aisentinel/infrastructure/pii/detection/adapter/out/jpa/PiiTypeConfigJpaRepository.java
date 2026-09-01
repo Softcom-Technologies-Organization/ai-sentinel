@@ -29,6 +29,4 @@ public interface PiiTypeConfigJpaRepository extends JpaRepository<PiiTypeConfigE
      * @return optional containing the configuration if found
      */
     Optional<PiiTypeConfigEntity> findByPiiTypeAndDetector(String piiType, String detector);
-
-    void deleteByPiiTypeAndDetector(String piiType, String detector);
 }

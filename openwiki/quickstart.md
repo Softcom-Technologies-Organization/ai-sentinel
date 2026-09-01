@@ -118,8 +118,8 @@ Useful and current:
   auto-tune.
 
 Known stale claims:
-- Root `README.md` advertises **GLiNER** detectors and zero-shot custom labels. Those detectors were
-  removed (commit `0bc85df6`); `proto/pii_detection.proto` now *reserves* the `GLINER`, `GLINER2` and
+- Root `README.md` still mentions **GLiNER** among the toggleable detectors. It was removed
+  (commit `0bc85df6`); `proto/pii_detection.proto` now *reserves* the `GLINER`, `GLINER2` and
   `OPENMED` enum tags. The live detectors are **Presidio, Regex, Ministral**.
 - Root `README.md` lists endpoints such as `GET /ai-sentinel/api/scans`. The real base path is
   `/ai-sentinel/api/v1/...` (see [Backend API](architecture/backend-api.md)).

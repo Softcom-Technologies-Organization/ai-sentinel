@@ -4,10 +4,11 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Ripple } from 'primeng/ripple';
 import {
   FindingTargetStatus,
@@ -56,6 +57,27 @@ const GROUP_BY_OPTIONS: GroupByOption[] = [
   { value: 'severity', labelKey: 'obfuscation.groupBy.severity' }
 ];
 
+type BulkStatus = Exclude<FindingTargetStatus, 'PENDING'>;
+
+interface BulkStatusAction {
+  confirmKey: string;
+  icon: string;
+  toastKey: string;
+}
+
+const BULK_STATUS_ACTIONS: Record<BulkStatus, BulkStatusAction> = {
+  MANUALLY_HANDLED: {
+    confirmKey: 'confirmations.markTreated',
+    icon: 'pi pi-check',
+    toastKey: 'obfuscation.toast.treated'
+  },
+  FALSE_POSITIVE: {
+    confirmKey: 'confirmations.reportFalsePositive',
+    icon: 'pi pi-flag',
+    toastKey: 'obfuscation.toast.fpReported'
+  }
+};
+
 function stripBoldTags(value: string): string {
   return value.replace(/<\/?b>/g, '');
 }
@@ -74,6 +96,7 @@ function stripBoldTags(value: string): string {
     TableModule,
     ButtonModule,
     CheckboxModule,
+    ConfirmDialogModule,
     Ripple,
     AppHeaderComponent,
     ObfuscationFindingRowComponent,
@@ -94,6 +117,7 @@ export class PiiObfuscationComponent {
   private readonly router = inject(Router);
   private readonly remediationApi = inject(RemediationApiService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
   private readonly transloco = inject(TranslocoService);
 
   readonly testIds = TestIds.obfuscation;
@@ -137,6 +161,13 @@ export class PiiObfuscationComponent {
         severity: group.severity ?? (axis === 'severity' ? group.key : ''),
         selectedCount: group.selectedCount
       }));
+  });
+
+  // A bulk status change also reaches attachment findings, which redaction skips and the
+  // plan reports apart; the announced count must add them back to stay honest.
+  readonly selectionAffectedCount = computed(() => {
+    const plan = this.viewState.lastPlan();
+    return (plan?.totalFindings ?? 0) + (plan?.attachmentExclusions ?? 0);
   });
 
   // Pagination is by group (a type/severity group is never split across pages),
@@ -367,11 +398,11 @@ export class PiiObfuscationComponent {
   }
 
   markSelectionTreated(): void {
-    this.changeSelectionStatus('MANUALLY_HANDLED', 'obfuscation.toast.treated');
+    this.confirmSelectionStatus('MANUALLY_HANDLED');
   }
 
   reportSelectionFalsePositive(): void {
-    this.changeSelectionStatus('FALSE_POSITIVE', 'obfuscation.toast.fpReported');
+    this.confirmSelectionStatus('FALSE_POSITIVE');
   }
 
   openConfirmDialog(): void {
@@ -485,6 +516,24 @@ export class PiiObfuscationComponent {
     this.remediationApi
       .changeFindingsStatus({ changes: [{ findingId, targetStatus }] })
       .subscribe(() => this.refreshAll());
+  }
+
+  private confirmSelectionStatus(targetStatus: BulkStatus): void {
+    if (!this.hasSelectionCriteria()) {
+      return;
+    }
+    const action = BULK_STATUS_ACTIONS[targetStatus];
+    const count = this.selectionAffectedCount();
+    this.confirmationService.confirm({
+      header: this.transloco.translate(`${action.confirmKey}.header`),
+      message: this.transloco.translate(`${action.confirmKey}.message`, { count }),
+      icon: action.icon,
+      acceptLabel: this.transloco.translate(`${action.confirmKey}.acceptLabel`, { count }),
+      rejectLabel: this.transloco.translate(`${action.confirmKey}.rejectLabel`),
+      acceptButtonStyleClass: 'p-button-danger',
+      rejectButtonStyleClass: 'p-button-secondary',
+      accept: () => this.changeSelectionStatus(targetStatus, action.toastKey)
+    });
   }
 
   private changeSelectionStatus(targetStatus: FindingTargetStatus, toastKey: string): void {

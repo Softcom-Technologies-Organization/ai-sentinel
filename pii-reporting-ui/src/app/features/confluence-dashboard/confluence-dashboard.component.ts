@@ -18,7 +18,7 @@ import { SortEvent } from 'primeng/api';
 import { TestIds } from '../test-ids.constants';
 import { DialogModule } from 'primeng/dialog';
 import { NewSpacesBannerComponent } from '../../shared/components/new-spaces-banner/new-spaces-banner.component';
-import { ConfluenceConfigBannerComponent } from '../../shared/components/confluence-config-banner/confluence-config-banner.component';
+import { NoticeBannerComponent } from '../../shared/components/notice-banner/notice-banner.component';
 import { ConfluenceConnectionConfigService } from '../../core/services/confluence-connection-config.service';
 import { SpaceFilteringService } from './services/space-filtering.service';
 import { DashboardUiStateService } from './services/dashboard-ui-state.service';
@@ -57,7 +57,7 @@ import { ObfuscationEntryButtonComponent } from '../pii-obfuscation/components/o
         DialogModule,
         TranslocoModule,
         NewSpacesBannerComponent,
-        ConfluenceConfigBannerComponent,
+        NoticeBannerComponent,
         ScanProgressBarComponent,
         SeverityCardsComponent,
         SpaceScanStatsPopoverComponent,
@@ -102,8 +102,10 @@ export class ConfluenceDashboardComponent implements OnInit, OnDestroy {
   first = 0;
   rows = 20;
 
-  // Confluence config missing warning
   readonly confluenceConfigMissing = signal(false);
+
+  // The API did not answer, so nothing on screen reflects the real state
+  readonly backendUnreachable = signal(false);
 
   // ===== Computed signals exposing service state to template =====
 
@@ -111,6 +113,8 @@ export class ConfluenceDashboardComponent implements OnInit, OnDestroy {
   readonly modifiedOnlyFilter = computed(() => this.filteringService.modifiedOnlyFilter());
   readonly sortedSpaces = computed(() => this.filteringService.sortedSpaces());
   readonly isResettable = computed(() => this.filteringService.isResettable());
+  readonly tableSortField = computed(() => this.filteringService.tableSortField());
+  readonly tableSortOrder = computed(() => this.filteringService.sortOrder());
 
   // UI State
   readonly expandedRowKeys = computed(() => this.uiStateService.expandedRowKeys());
@@ -182,18 +186,30 @@ export class ConfluenceDashboardComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    // Check if Confluence connection is configured before loading data
+    this.checkConfluenceConfig(() => this.initializeDataLoading());
+  }
+
+  /**
+   * Reads the Confluence configuration, then runs {@code onConfigured} if credentials are set.
+   *
+   * <p>A failed call means the API itself is down: the endpoint is unauthenticated and always
+   * answers 200 with a {@code configured} flag, so an error says nothing about the credentials.
+   * Blaming them would send the operator to fix a setting that is already correct.
+   */
+  private checkConfluenceConfig(onConfigured: () => void): void {
     this.confluenceConfigService.getConfig().subscribe({
       next: (config) => {
+        this.backendUnreachable.set(false);
+        this.confluenceConfigMissing.set(!config.configured);
+
         if (!config.configured) {
-          this.confluenceConfigMissing.set(true);
           this.dataManagement.isSpacesLoading.set(false);
           return;
         }
-        this.initializeDataLoading();
+        onConfigured();
       },
       error: () => {
-        this.confluenceConfigMissing.set(true);
+        this.backendUnreachable.set(true);
         this.dataManagement.isSpacesLoading.set(false);
       }
     });
@@ -306,21 +322,27 @@ export class ConfluenceDashboardComponent implements OnInit, OnDestroy {
     this.confluenceConfigMissing.set(false);
   }
 
+  dismissBackendUnreachableBanner(): void {
+    this.backendUnreachable.set(false);
+  }
+
+  retryBackendConnection(): void {
+    this.checkConfluenceConfig(() => {
+      this.initializeDataLoading();
+      // The table renders store rows in the server-decided order, so restocking the store is not
+      // enough: without this the row order stays empty and the table looks empty despite the data.
+      this.filteringService.reload();
+    });
+  }
+
   /**
    * Refresh dashboard after settings have been saved from the settings modal.
    * Re-checks Confluence configuration status and reloads data if no scan is active.
    */
   refreshAfterSettingsSave(): void {
-    this.confluenceConfigService.getConfig().subscribe({
-      next: (config) => {
-        this.confluenceConfigMissing.set(!config.configured);
-
-        if (config.configured && !this.isStreaming()) {
-          this.initializeDataLoading();
-        }
-      },
-      error: () => {
-        this.confluenceConfigMissing.set(true);
+    this.checkConfluenceConfig(() => {
+      if (!this.isStreaming()) {
+        this.initializeDataLoading();
       }
     });
   }

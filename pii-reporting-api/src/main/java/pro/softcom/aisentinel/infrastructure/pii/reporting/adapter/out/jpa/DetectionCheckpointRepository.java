@@ -84,8 +84,14 @@ public interface DetectionCheckpointRepository extends
     int resolveStaleActiveCheckpoints(@Param("spaceKeys") List<String> spaceKeys);
 
     /**
-     * Atomically sets ALL RUNNING checkpoints for a scan to PAUSED.
+     * Atomically sets every unfinished checkpoint of a scan to PAUSED.
      * Uses a single UPDATE statement — no TOCTOU race condition possible.
+     *
+     * <p>NOT_STARTED is included, not only RUNNING: an outage that strikes while
+     * the first space is being listed leaves the whole scope NOT_STARTED, and
+     * restricting the update to RUNNING would then write nothing at all. The
+     * dashboard reads its state from these rows, so the scan would keep reporting
+     * itself as in progress with no way to resume it.
      *
      * @param scanId the scan identifier
      * @return number of rows updated
@@ -95,9 +101,9 @@ public interface DetectionCheckpointRepository extends
     @Query(value = """
         UPDATE scan_checkpoints
         SET status = 'PAUSED', updated_at = NOW()
-        WHERE scan_id = :scanId AND status = 'RUNNING'
+        WHERE scan_id = :scanId AND status IN ('RUNNING', 'NOT_STARTED')
         """, nativeQuery = true)
-    int pauseAllRunningCheckpoints(@Param("scanId") String scanId);
+    int pauseUnfinishedCheckpoints(@Param("scanId") String scanId);
 
     /**
      * Atomically sets ALL PAUSED checkpoints for a scan to RUNNING.

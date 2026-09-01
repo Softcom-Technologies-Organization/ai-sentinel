@@ -52,3 +52,6 @@ ${PROJECT_DIR}/
 /test-reports/e2e/2026-08-27_gestion-erreur-scan/videos/gestion-erreur-scan.webm
 /test-reports/e2e/2026-08-27_gestion-erreur-scan/report.md
 /test-reports/e2e/2026-08-27_gestion-erreur-scan/test-plan.md
+
+# Local deployment certificates (corporate CA, JDK truststore) - never commit
+/certs/

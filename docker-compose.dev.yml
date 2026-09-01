@@ -164,9 +164,10 @@ services:
       PII_DETECTOR_CLIENT: armeria
       PII_DETECTOR_HOST: pii-detector
       PII_DETECTOR_PORT: 50051
-      # Pages scanned concurrently — match PII_WORKER_PROCESSES on the detector
-      # so the worker pool stays fed. Page events stay ordered.
-      PII_SCAN_PAGE_CONCURRENCY: ${PII_SCAN_PAGE_CONCURRENCY:-6}
+      # Pages in flight at once (attachment I/O + detection); 2-3x
+      # PII_WORKER_PROCESSES so the worker pool stays fed while other pages
+      # fetch their attachments. Page events stay ordered.
+      PII_SCAN_PAGE_CONCURRENCY: ${PII_SCAN_PAGE_CONCURRENCY:-12}
 
       PII_DATABASE_ENCRYPTION_KEY_FILE: /secrets/pii_database_encryption_key.txt
     volumes:

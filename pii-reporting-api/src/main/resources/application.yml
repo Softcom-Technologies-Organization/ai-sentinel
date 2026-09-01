@@ -66,9 +66,10 @@ pii-detector:
 scan:
   timeouts:
     pii-detection: ${SCAN_PII_DETECTION_TIMEOUT:1810s}  # Should be > gRPC timeout to let gRPC exception trigger first
-  # Number of Confluence pages whose PII detection runs concurrently. 1 = sequential
-  # (historical behaviour). Raise in prod to feed the detector worker pool
-  # (PII_WORKER_PROCESSES); keep it <= the detector's CPU allocation.
+  # Number of Confluence pages in flight at once (attachment I/O + detection).
+  # 1 = sequential (historical behaviour). Detection is bounded by the detector's
+  # worker pool (PII_WORKER_PROCESSES); set this to 2-3x that value so the
+  # Confluence I/O overlaps with detection. Page events stay in source order.
   page-concurrency: ${PII_SCAN_PAGE_CONCURRENCY:1}
 
 pii-encryption:

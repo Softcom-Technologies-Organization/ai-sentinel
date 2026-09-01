@@ -120,11 +120,15 @@ CONNECT_TIMEOUT_SECONDS = float(os.getenv("LLM_MINISTRAL_CONNECT_TIMEOUT", "30")
 # scan hang for good with nothing reported. A bounded read turns that into a
 # failed chunk, which pauses the scan and names the cause.
 #
-# The default is ~40x the slowest chunk measured on the reference host (chunks run
-# between 0.1s and 1.5s there), which keeps a genuinely slow inference safe while
-# surfacing a dead endpoint within a minute. Raise it for hosts where inference is
-# known to be much slower.
-READ_TIMEOUT_SECONDS = float(os.getenv("LLM_MINISTRAL_READ_TIMEOUT", "60"))
+# The read also covers the wait in LM Studio's queue: the endpoint serves PARALLEL
+# slots (4 by default) and holds the other requests back, while up to
+# PII_WORKER_PROCESSES documents each send ``ministral_concurrency`` chunks at
+# once. Measured on an M-series host, a dense chunk takes ~9s alone and ~23s with
+# four in flight, so twelve queued chunks put the last one near 70s — past the
+# former 60s default, which then dropped that chunk silently (fail-open). 300s
+# keeps a fully loaded queue safe while still surfacing a dead endpoint in
+# minutes rather than never.
+READ_TIMEOUT_SECONDS = float(os.getenv("LLM_MINISTRAL_READ_TIMEOUT", "300"))
 # Total budget for the liveness probe (GET /models). Short on purpose: the probe
 # gates a scan start, so an operator must get the verdict in seconds, not after
 # the generous inference connect timeout above.

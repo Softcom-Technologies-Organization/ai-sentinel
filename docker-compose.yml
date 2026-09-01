@@ -643,10 +643,12 @@ services:
       PII_DETECTOR_CLIENT: armeria
       PII_DETECTOR_HOST: pii-detector
       PII_DETECTOR_PORT: 50051
-      # Number of Confluence pages whose detection runs concurrently. Should
-      # match PII_WORKER_PROCESSES on the detector so the worker pool stays fed
-      # (1 = sequential, historical). Page events are still emitted in order.
-      PII_SCAN_PAGE_CONCURRENCY: ${PII_SCAN_PAGE_CONCURRENCY:-3}
+      # Number of Confluence pages in flight at once (attachment download, text
+      # extraction and detection). Detection itself is bounded by the detector's
+      # PII_WORKER_PROCESSES, so keep this at 2-3x that value: the extra pages
+      # overlap their Confluence I/O with the running detections and keep the
+      # worker pool fed. Page events are still emitted in source order.
+      PII_SCAN_PAGE_CONCURRENCY: ${PII_SCAN_PAGE_CONCURRENCY:-8}
 
     volumes:
       - ./secrets:/secrets:ro

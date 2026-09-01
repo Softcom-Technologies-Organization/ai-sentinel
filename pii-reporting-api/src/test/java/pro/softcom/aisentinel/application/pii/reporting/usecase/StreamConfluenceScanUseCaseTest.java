@@ -47,6 +47,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -237,6 +238,61 @@ class StreamConfluenceScanUseCaseTest {
                 .collectList()
                 .block();
 
+        assertThat(pageStartOrder).containsExactly("p-1", "p-2", "p-3", "p-4", "p-5");
+    }
+
+    @Test
+    @DisplayName("streamSpace - a slow page at the head does not hold back the pages behind it")
+    void streamSpace_slowHeadPage_doesNotBlockFollowingPages() {
+        String spaceKey = "S-HEAD";
+        ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "t", "http://test.com", "d",
+                ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
+        when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
+
+        int pageCount = 5;
+        java.util.List<ConfluencePage> pages = new java.util.ArrayList<>();
+        for (int i = 1; i <= pageCount; i++) {
+            pages.add(ConfluencePage.builder()
+                .id("p-" + i)
+                .title("T" + i)
+                .spaceKey(spaceKey)
+                .content(new ConfluencePage.HtmlContent("scan marker P" + i + " endingPosition"))
+                .build());
+            when(confluenceAttachmentService.getPageAttachments("p-" + i))
+                .thenReturn(CompletableFuture.completedFuture(List.of()));
+        }
+        when(confluenceService.getAllPagesInSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(pages));
+        when(scanTimeoutConfig.getPiiDetectionTimeout()).thenReturn(Duration.ofSeconds(30));
+
+        // Page 1 only finishes once every other page has been analysed. With 2 slots that
+        // requires pages 3..5 to start while page 1 is still running, i.e. a finished page
+        // must release its slot even though page 1, ahead of it in source order, is not done.
+        // Holding finished pages in their slot until the head is emitted (flatMapSequential)
+        // would leave page 1 waiting for pages that can never start.
+        CountDownLatch othersAnalysed = new CountDownLatch(pageCount - 1);
+        AtomicBoolean headUnblocked = new AtomicBoolean(false);
+        when(piiDetectorClient.analyzeContent(any())).thenAnswer(invocation -> {
+            String text = invocation.getArgument(0);
+            java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("P(\\d+)").matcher(text);
+            int pageNum = matcher.find() ? Integer.parseInt(matcher.group(1)) : 0;
+            if (pageNum == 1) {
+                headUnblocked.set(othersAnalysed.await(3, TimeUnit.SECONDS));
+            } else {
+                othersAnalysed.countDown();
+            }
+            return ContentPiiDetection.builder().statistics(Map.of()).sensitiveDataFound(List.of()).build();
+        });
+
+        StreamConfluenceScanUseCase useCase = useCaseWithConcurrency(2);
+
+        List<String> pageStartOrder = useCase.streamSpace(spaceKey)
+                .filter(ev -> ScanEventType.PAGE_START.toJson().equals(ev.eventType()))
+                .map(ConfluenceContentScanResult::pageId)
+                .timeout(Duration.ofSeconds(15))
+                .collectList()
+                .block();
+
+        assertThat(headUnblocked).as("pages behind the slow head were analysed while it was running").isTrue();
         assertThat(pageStartOrder).containsExactly("p-1", "p-2", "p-3", "p-4", "p-5");
     }
 

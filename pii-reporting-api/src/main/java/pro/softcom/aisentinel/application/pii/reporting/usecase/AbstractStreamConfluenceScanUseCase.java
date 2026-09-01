@@ -27,20 +27,26 @@ import pro.softcom.aisentinel.domain.pii.scan.TranslatableError;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 import reactor.util.retry.Retry;
 
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -66,7 +72,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
      *  live view; {@code null} disables scan-time suppression. */
     protected final ScanTimeFalsePositiveSuppressor falsePositiveSuppressor;
 
-    /** Number of pages detected concurrently (>=1); feeds the detector worker pool. */
+    /** Number of pages in flight at once (attachment retrieval, extraction and detection), >= 1. */
     protected final int pageConcurrency;
 
     /** Live count of in-flight {@code detectPii} calls, surfaced in throughput logs
@@ -254,18 +260,19 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         return Flux.fromIterable(pages)
             // index() stamps each page with its deterministic 0-based startingPosition in
             // SOURCE order BEFORE the concurrent region, so the per-page progress
-            // index stays stable regardless of pageConcurrency. flatMapSequential
-            // runs up to pageConcurrency mappers at once (feeding the detector
-            // worker pool) yet EMITS strictly in source order — preserving the
-            // checkpoint/SSE ordering that concatMap previously guaranteed.
-            // pageConcurrency=1 is functionally identical to the former concatMap.
+            // index stays stable regardless of pageConcurrency. Pages run through an
+            // unordered flatMap so a finished page frees its slot at once, and their
+            // events are re-emitted in source order by inSourceOrder (checkpoint/SSE
+            // ordering). flatMapSequential used to keep a finished page in its slot
+            // until every earlier page had been emitted, which left the detector idle
+            // whenever a page with a large attachment was ahead in the space.
             .index()
             .publishOn(Schedulers.boundedElastic())
             // Stop feeding pages once an outage was detected: they would fail the same
             // way, and each failure would emit events for work that was never analysed.
             // Pages already in flight finish and are held back individually below.
             .takeWhile(indexed -> !run.mustPause())
-            .flatMapSequential(indexed -> {
+            .flatMap(indexed -> {
                 int currentIndex = (int) (indexed.getT1() + 1);
                 ConfluencePage page = indexed.getT2();
                 PageScanState pageState = new PageScanState(run);
@@ -291,7 +298,9 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                         ScanProgress scanProgress = new ScanProgress(currentIndex, analyzedOffset,
                                                                     originalTotal, total);
                         return processOnePage(pageState, spaceKey, page, scanProgress);
-                    });
+                    })
+                    .collectList()
+                    .map(events -> Tuples.of(indexed.getT1(), events));
             }, pageConcurrency)
             .onErrorContinue((exception, ignoredElement) -> {
                 log.error("[USECASE] Erreur lors du traitement d'une page: {}", exception.getMessage(),
@@ -299,9 +308,38 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                 // Last-resort net: an outage reaching this point must still pause the scan
                 // rather than be swallowed page after page.
                 run.requestPause(ScanErrorClassifier.classify(exception), resolveErrorMessage(exception));
-            });
+            })
+            .transform(AbstractStreamConfluenceScanUseCase::inSourceOrder)
+            .concatMapIterable(Function.identity());
     }
 
+    /**
+     * Re-emits per-page results in source order while the pages themselves finish in any order.
+     *
+     * <p>Each result is keyed by its page's source index and released once every earlier page
+     * has been released. A page dropped upstream (onErrorContinue) leaves a hole that would
+     * hold back everything behind it, so whatever is still pending when the source completes
+     * is released at that point, still in source order. The state lives inside the deferred
+     * subscription and is only touched from the serialized onNext signals, then once after
+     * completion.
+     */
+    static <T> Flux<T> inSourceOrder(Flux<Tuple2<Long, T>> completed) {
+        return Flux.defer(() -> {
+            TreeMap<Long, T> pending = new TreeMap<>();
+            AtomicLong nextIndex = new AtomicLong();
+            return completed
+                .concatMapIterable(result -> {
+                    pending.put(result.getT1(), result.getT2());
+                    List<T> released = new ArrayList<>();
+                    while (!pending.isEmpty() && pending.firstKey().longValue() == nextIndex.get()) {
+                        released.add(pending.pollFirstEntry().getValue());
+                        nextIndex.incrementAndGet();
+                    }
+                    return released;
+                })
+                .concatWith(Flux.defer(() -> Flux.fromIterable(List.copyOf(pending.values()))));
+        });
+    }
 
     private Mono<List<AttachmentInfo>> toAttachmentsMono(String pageId) {
         var future = confluenceAccessor.getPageAttachments(pageId);

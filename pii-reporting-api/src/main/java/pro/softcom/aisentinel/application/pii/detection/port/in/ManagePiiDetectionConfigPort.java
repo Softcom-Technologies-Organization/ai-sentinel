@@ -38,6 +38,7 @@ public interface ManagePiiDetectionConfigPort {
      * @param postfilterEnabled    Whether the deterministic format precision post-filter stage is enabled
      * @param lmStudioHost        Host of the LM Studio endpoint serving the Ministral-PII model
      * @param lmStudioPort        Port of the LM Studio endpoint serving the Ministral-PII model
+     * @param lmStudioModel       LM Studio identifier of the Ministral-PII model to prompt (null = service default)
      * @param ministralConcurrency               Number of chunk prompts sent concurrently to LM Studio (1 = sequential)
      * @param ministralConcurrencyAuto           Whether the service auto-tunes the concurrency at startup
      * @param ministralConcurrencyTunedSignature The "host:port|model" signature the auto value was tuned for (null = never tuned)
@@ -53,6 +54,7 @@ public interface ManagePiiDetectionConfigPort {
             boolean postfilterEnabled,
             String lmStudioHost,
             Integer lmStudioPort,
+            String lmStudioModel,
             Integer ministralConcurrency,
             boolean ministralConcurrencyAuto,
             String ministralConcurrencyTunedSignature,

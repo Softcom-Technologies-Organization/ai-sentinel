@@ -119,6 +119,12 @@ def _signature(host: str, port: Any, model: str) -> str:
     return f"{host}:{port}|{model}"
 
 
+def _configured_model(ministral: Any, config: dict) -> str:
+    """The model the operator picked (DB column lm_studio_model), else the
+    detector default — so switching quantization re-triggers the tuning."""
+    return config.get("lm_studio_model") or getattr(ministral, "_model_id", "unknown")
+
+
 def _load_bench_sample() -> str:
     """Load the representative benchmark sample shipped next to this module.
 
@@ -177,16 +183,18 @@ def _run_level(
     url: str,
     concurrency: int,
     should_stop: Optional[Callable[[], bool]] = None,
+    model_id: Optional[str] = None,
 ) -> BenchLevel:
     """Send every chunk once through a pool of ``concurrency`` workers; time it.
 
     ``should_stop`` is consulted before each request so an operator cancellation
     takes effect within one chunk; the level is then flagged ``cancelled`` and
-    its timing is meaningless.
+    its timing is meaningless. ``model_id`` is the configured LM Studio model
+    (``None`` = the detector default).
     """
     level = BenchLevel(concurrency)
     client = ministral._get_client()
-    payloads = [ministral._build_payload(chunk.text) for chunk in chunks]
+    payloads = [ministral._build_payload(chunk.text, model_id) for chunk in chunks]
     stop = should_stop or (lambda: False)
 
     def _task(payload: Dict[str, Any]) -> int:
@@ -336,7 +344,7 @@ def _bench_and_decide(
     """
     host = config.get("lm_studio_host", "localhost")
     port = config.get("lm_studio_port", 1234)
-    model = getattr(ministral, "_model_id", "unknown")
+    model = _configured_model(ministral, config)
     signature = _signature(host, port, model)
 
     base_url = ministral._resolve_base_url(host, port)
@@ -372,7 +380,7 @@ def _bench_and_decide(
             return _cancelled(signature, c)
         if on_progress is not None:
             on_progress(int((c - 1) / max_c * 95), f"Testing concurrency {c}/{max_c}")
-        level = _run_level(ministral, chunks, url, c, should_stop)
+        level = _run_level(ministral, chunks, url, c, should_stop, model)
         if level.cancelled:
             return _cancelled(signature, c)
         levels[c] = level
@@ -423,7 +431,7 @@ def _run_startup_autotune_inner(detector: Any) -> Optional[int]:
 
     host = config.get("lm_studio_host", "localhost")
     port = config.get("lm_studio_port", 1234)
-    model = getattr(ministral, "_model_id", "unknown")
+    model = _configured_model(ministral, config)
     signature = _signature(host, port, model)
     if config.get("ministral_concurrency_tuned_signature") == signature:
         logger.info(

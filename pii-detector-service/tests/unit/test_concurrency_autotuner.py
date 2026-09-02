@@ -136,7 +136,7 @@ class TestHappyPath:
         adapter = _mock_adapter(_config())
 
         # Deterministic bench: C=2 is 2x faster than C=1 -> decision must be 2.
-        def fake_run_level(ministral, chunks, url, concurrency, should_stop=None):
+        def fake_run_level(ministral, chunks, url, concurrency, should_stop=None, model_id=None):
             return _level(concurrency, 1.0 if concurrency == 1 else 0.5)
 
         with patch(_ADAPTER_FACTORY, return_value=adapter), \
@@ -153,7 +153,7 @@ class TestHappyPath:
         detector = _ministral_with_probe()
         adapter = _mock_adapter(_config())
 
-        def fake_run_level(ministral, chunks, url, concurrency, should_stop=None):
+        def fake_run_level(ministral, chunks, url, concurrency, should_stop=None, model_id=None):
             return _level(concurrency, 1.0)  # flat: no gain
 
         with patch(_ADAPTER_FACTORY, return_value=adapter), \
@@ -193,7 +193,7 @@ class TestOnDemand:
         )
         adapter = _mock_adapter(cfg)
 
-        def fake_run_level(ministral, chunks, url, concurrency, should_stop=None):
+        def fake_run_level(ministral, chunks, url, concurrency, should_stop=None, model_id=None):
             return _level(concurrency, 1.0 if concurrency == 1 else 0.5)
 
         with patch(_ADAPTER_FACTORY, return_value=adapter), \
@@ -224,7 +224,7 @@ class TestOnDemand:
         adapter = _mock_adapter(_config())
         seen = []
 
-        def fake_run_level(ministral, chunks, url, concurrency, should_stop=None):
+        def fake_run_level(ministral, chunks, url, concurrency, should_stop=None, model_id=None):
             return _level(concurrency, 1.0)
 
         with patch(_ADAPTER_FACTORY, return_value=adapter), \
@@ -245,7 +245,7 @@ class TestOnDemandBounds:
         adapter = _mock_adapter(_config())
         seen = []
 
-        def fake_run_level(ministral, chunks, url, concurrency, should_stop=None):
+        def fake_run_level(ministral, chunks, url, concurrency, should_stop=None, model_id=None):
             return _level(concurrency, 1.0)
 
         with patch(_ADAPTER_FACTORY, return_value=adapter), \
@@ -275,7 +275,7 @@ class TestOnDemandCancellation:
 
         measured = []
 
-        def fake_run_level(ministral, chunks, url, concurrency, should_stop=None):
+        def fake_run_level(ministral, chunks, url, concurrency, should_stop=None, model_id=None):
             measured.append(concurrency)
             return _level(concurrency, 1.0)
 
@@ -295,7 +295,7 @@ class TestOnDemandCancellation:
         detector = _ministral_with_probe()
         adapter = _mock_adapter(_config())
 
-        def fake_run_level(ministral, chunks, url, concurrency, should_stop=None):
+        def fake_run_level(ministral, chunks, url, concurrency, should_stop=None, model_id=None):
             level = _level(concurrency, 1.0)
             level.cancelled = concurrency == 2
             return level
@@ -325,6 +325,95 @@ class TestOnDemandCancellation:
 
         assert level.cancelled is True
         assert len(sent) == 2
+
+
+class TestConfiguredModel:
+    def test_Should_UseOperatorModel_When_ConfigCarriesIt(self):
+        detector = _ministral_with_probe()
+        cfg = _config(lm_studio_model="ministral-3b-pii-preview@q4_k_m")
+        assert ct._configured_model(detector, cfg) == "ministral-3b-pii-preview@q4_k_m"
+
+    def test_Should_FallBackToDetectorDefault_When_ConfigHasNoModel(self):
+        detector = _ministral_with_probe()
+        assert ct._configured_model(detector, _config()) == detector._model_id
+        assert ct._configured_model(detector, _config(lm_studio_model="")) == detector._model_id
+
+    def test_Should_SignWithOperatorModel_When_Benching(self):
+        detector = _ministral_with_probe()
+        adapter = _mock_adapter(_config(lm_studio_model="ministral-3b-pii-preview@q4_k_m"))
+        seen_models = []
+
+        def fake_run_level(ministral, chunks, url, concurrency, should_stop=None, model_id=None):
+            seen_models.append(model_id)
+            return _level(concurrency, 1.0)
+
+        with patch(_ADAPTER_FACTORY, return_value=adapter), \
+                patch.object(ct, "_run_level", side_effect=fake_run_level):
+            outcome = ct.run_ondemand_autotune(detector, max_concurrency=2)
+
+        assert outcome.signature == "localhost:1234|ministral-3b-pii-preview@q4_k_m"
+        assert set(seen_models) == {"ministral-3b-pii-preview@q4_k_m"}
+
+
+class TestRunLevel:
+    def test_Should_SendEveryChunkThroughThePool_When_ConcurrencyAboveOne(self):
+        detector = _ministral_with_probe()
+        chunks = [MagicMock(text=f"chunk {i}") for i in range(5)]
+        sent = []
+
+        def fake_post(client, url, payload):
+            sent.append(payload["messages"][1]["content"])
+            return 7
+
+        with patch.object(ct, "_post_completion_tokens", side_effect=fake_post):
+            level = ct._run_level(detector, chunks, "http://localhost:1234/v1/chat/completions", 2)
+
+        assert sorted(sent) == [f"chunk {i}" for i in range(5)]
+        assert level.completion_tokens == 35
+        assert level.errors == 0
+        assert level.cancelled is False
+        assert level.wall_s >= 0
+
+    def test_Should_CountErrors_When_PoolRequestsFail(self):
+        import httpx
+
+        detector = _ministral_with_probe()
+        chunks = [MagicMock(text=f"chunk {i}") for i in range(3)]
+
+        def failing_post(client, url, payload):
+            raise httpx.ConnectError("down")
+
+        with patch.object(ct, "_post_completion_tokens", side_effect=failing_post):
+            level = ct._run_level(detector, chunks, "http://localhost:1234/v1/chat/completions", 3)
+
+        assert level.errors == 3
+        assert level.completion_tokens == 0
+
+    def test_Should_PromptRequestedModel_When_ModelGiven(self):
+        detector = _ministral_with_probe()
+        chunks = [MagicMock(text="chunk")]
+        seen = []
+
+        with patch.object(ct, "_post_completion_tokens",
+                          side_effect=lambda client, url, payload: seen.append(payload["model"]) or 1):
+            ct._run_level(detector, chunks, "http://localhost:1234/v1/chat/completions", 1,
+                          model_id="ministral-3b-pii-preview@q4_k_m")
+
+        assert seen == ["ministral-3b-pii-preview@q4_k_m"]
+
+
+class TestPostCompletionTokens:
+    def test_Should_ReturnCompletionTokens_When_UsageReported(self):
+        client = MagicMock()
+        client.post.return_value.json.return_value = {"usage": {"completion_tokens": 42}}
+        assert ct._post_completion_tokens(client, "http://x/v1/chat/completions", {"model": "m"}) == 42
+
+    def test_Should_ReturnZero_When_UsageMissingOrMalformed(self):
+        client = MagicMock()
+        client.post.return_value.json.return_value = {}
+        assert ct._post_completion_tokens(client, "http://x/v1/chat/completions", {}) == 0
+        client.post.return_value.json.return_value = {"usage": {"completion_tokens": "n/a"}}
+        assert ct._post_completion_tokens(client, "http://x/v1/chat/completions", {}) == 0
 
 
 class TestSampleBuilder:

@@ -171,3 +171,24 @@ class TestBenchJobMethods:
         with _patched_adapter([], execute_side_effects=[err]) as (adapter, _c, conn):
             assert adapter.claim_bench_job() is None
         conn.rollback.assert_called_once()
+
+
+class TestWriteHelperErrorBranches:
+    def test_should_log_loudly_and_rollback_when_connection_fails_outside_poller(self) -> None:
+        err = psycopg2.OperationalError("db down")
+        with _patched_adapter([], execute_side_effects=[err]) as (adapter, _c, conn):
+            adapter.update_bench_progress(10, "Testing concurrency 1/4")
+        conn.rollback.assert_called_once()
+        conn.commit.assert_not_called()
+
+    def test_should_rollback_when_query_itself_fails(self) -> None:
+        err = psycopg2.ProgrammingError("bad sql")
+        with _patched_adapter([], execute_side_effects=[err]) as (adapter, _c, conn):
+            adapter.cancel_bench_job()
+        conn.rollback.assert_called_once()
+        conn.commit.assert_not_called()
+
+    def test_should_report_not_cancelled_when_status_read_fails(self) -> None:
+        err = psycopg2.OperationalError("db down")
+        with _patched_adapter([], execute_side_effects=[err]) as (adapter, _c, _conn):
+            assert adapter.is_bench_cancel_requested() is False

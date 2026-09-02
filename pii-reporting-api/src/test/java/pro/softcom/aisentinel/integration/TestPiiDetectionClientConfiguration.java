@@ -8,6 +8,7 @@ import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
 import pro.softcom.aisentinel.domain.pii.scan.DetectorHealth;
+import pro.softcom.aisentinel.domain.pii.scan.LmStudioModelListing;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -41,6 +42,11 @@ public class TestPiiDetectionClientConfiguration {
             // The fake detector is always in-process and ready, so the scan pre-flight
             // never blocks integration tests.
             return List.of(new DetectorHealth(DetectorSource.REGEX, true, "", "", "", Map.of()));
+        }
+
+        @Override
+        public LmStudioModelListing listLmStudioModels(String lmStudioHost, Integer lmStudioPort) {
+            return new LmStudioModelListing("", "", List.of(), "");
         }
 
         @Override

@@ -2,6 +2,7 @@ package pro.softcom.aisentinel.application.pii.scan.port.out;
 
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.DetectorHealth;
+import pro.softcom.aisentinel.domain.pii.scan.LmStudioModelListing;
 
 import java.util.List;
 
@@ -17,6 +18,17 @@ public interface PiiDetectorClient {
      * @return one entry per enabled detector, empty when readiness is unknown
      */
     List<DetectorHealth> checkDetectorsHealth() throws PiiDetectorException;
+
+    /**
+     * Lists the Ministral-PII models LM Studio has on disk, as seen from the
+     * detection service. A blank host or a null port means "the configured endpoint".
+     *
+     * @param lmStudioHost LM Studio host to query, or null/blank for the configured one
+     * @param lmStudioPort LM Studio port to query, or null for the configured one
+     * @return the listing; its error is set when the endpoint could not be listed
+     * @throws PiiDetectorException when the detection service itself cannot be reached
+     */
+    LmStudioModelListing listLmStudioModels(String lmStudioHost, Integer lmStudioPort) throws PiiDetectorException;
 
     ContentPiiDetection analyzeContent(String content) throws PiiDetectorException;
 

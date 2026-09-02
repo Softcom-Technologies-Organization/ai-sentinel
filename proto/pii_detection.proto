@@ -15,6 +15,13 @@ service PIIDetectionService {
   // silently incomplete report. The probe runs inside this service so it
   // measures the network path the detectors really use.
   rpc CheckDetectorsHealth (DetectorsHealthRequest) returns (DetectorsHealthResponse) {}
+
+  // Lists the Ministral-PII models LM Studio has on disk, so the dashboard can
+  // offer them in a picker. Only the quantizations of the Ministral-PII family are
+  // returned: the detector's chunker tokenizes with that family's tokenizer, so
+  // another model would silently mis-size chunks. Runs inside this service for
+  // the same network-standpoint reason as CheckDetectorsHealth.
+  rpc ListLmStudioModels (LmStudioModelsRequest) returns (LmStudioModelsResponse) {}
 }
 
 // Request message containing the text content to analyze
@@ -127,6 +134,44 @@ message DetectorHealth {
   // Values the translated message interpolates (model id, state, cause...).
   // Technical by nature and left untranslated.
   map<string, string> error_params = 6;
+}
+
+// Request for ListLmStudioModels. An empty host or a zero port falls back to the
+// endpoint stored in the database configuration.
+message LmStudioModelsRequest {
+  string lm_studio_host = 1;
+  int32 lm_studio_port = 2;
+}
+
+// Ministral-PII models LM Studio has on disk
+message LmStudioModelsResponse {
+  // One entry per model of the Ministral-PII family, loaded or not
+  repeated LmStudioModel models = 1;
+
+  // Where the models were listed (e.g. "http://host.docker.internal:1234/v1")
+  string endpoint = 2;
+
+  // Model family the entries belong to (identifier prefix), for the dashboard's
+  // manual-entry warning
+  string family = 3;
+
+  // Empty when the listing succeeded; short technical reason otherwise
+  string error = 4;
+}
+
+// One model as LM Studio knows it
+message LmStudioModel {
+  // Exact identifier LM Studio expects in requests, e.g. "ministral-3b-pii-preview@q4_k_m"
+  string id = 1;
+
+  // Quantization label, e.g. "Q4_K_M"
+  string quantization = 2;
+
+  // Publisher of the GGUF, e.g. "mradermacher"
+  string publisher = 3;
+
+  // "loaded" when the model is in memory and can answer, "not-loaded" otherwise
+  string state = 4;
 }
 
 // A PII entity rejected by the deterministic precision post-filter, with the

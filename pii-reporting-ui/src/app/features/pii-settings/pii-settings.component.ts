@@ -22,12 +22,14 @@ import { ToastModule } from 'primeng/toast';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { PiiDetectionConfigService } from '../../core/services/pii-detection-config.service';
 import {
     CategoryGroup,
     ConcurrencyBenchStatus,
     GroupedPiiTypes,
+    LmStudioModel,
     PiiDetectionConfig,
     PiiTypeConfig,
     UpdatePiiTypeConfigRequest
@@ -61,6 +63,7 @@ type SettingsSection = 'detectors' | 'thresholds' | 'pii_types' | 'lm_studio' | 
         IconFieldModule,
         InputIconModule,
         InputTextModule,
+        SelectModule,
         ConfluenceSettingsComponent
     ],
   providers: [MessageService]
@@ -105,6 +108,13 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
     ]
   });
   private benchPollSubscription: Subscription | null = null;
+
+  // LM Studio model picker, fed by the detector service's view of LM Studio
+  lmStudioModels = signal<LmStudioModel[]>([]);
+  lmStudioModelFamily = signal('');
+  lmStudioModelsError = signal<string | null>(null);
+  lmStudioModelsLoading = signal(false);
+  lmStudioModelsAvailable = computed(() => this.lmStudioModels().length > 0);
 
   // Collapsible detector groups in PII types section
   collapsedDetectors = signal<Set<string>>(new Set());
@@ -218,7 +228,8 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
       ministralConcurrencyTunedSignature: [null as string | null],
       defaultThreshold: [0.75, [Validators.required, Validators.min(0), Validators.max(1)]],
       lmStudioHost: ['localhost', [Validators.required, Validators.pattern(/^[^\s/]+$/)]],
-      lmStudioPort: [1234, [Validators.required, Validators.min(1), Validators.max(65535)]]
+      lmStudioPort: [1234, [Validators.required, Validators.min(1), Validators.max(65535)]],
+      lmStudioModel: [null as string | null]
     }, {
       validators: [this.atLeastOneDetectorValidator, this.overlapLessThanChunkSizeValidator]
     } as AbstractControlOptions);
@@ -277,7 +288,8 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
           ministralConcurrencyTunedSignature: detectorConfig.ministralConcurrencyTunedSignature ?? null,
           defaultThreshold: detectorConfig.defaultThreshold,
           lmStudioHost: detectorConfig.lmStudioHost,
-          lmStudioPort: detectorConfig.lmStudioPort
+          lmStudioPort: detectorConfig.lmStudioPort,
+          lmStudioModel: detectorConfig.lmStudioModel ?? null
         });
 
         // Set PII types
@@ -762,7 +774,8 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
         ministralConcurrencyTunedSignature: this.currentConfig()!.ministralConcurrencyTunedSignature ?? null,
         defaultThreshold: this.currentConfig()!.defaultThreshold,
         lmStudioHost: this.currentConfig()!.lmStudioHost,
-        lmStudioPort: this.currentConfig()!.lmStudioPort
+        lmStudioPort: this.currentConfig()!.lmStudioPort,
+        lmStudioModel: this.currentConfig()!.lmStudioModel ?? null
       });
       this.configForm.markAsPristine();
       // Restore the collapse state to match the reset detector toggles.
@@ -872,6 +885,64 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
    */
   setActiveSection(section: SettingsSection): void {
     this.activeSection.set(section);
+    if (section === 'lm_studio') {
+      this.loadLmStudioModels();
+    }
+  }
+
+  /**
+   * Ask the detector service which Ministral-PII quantizations LM Studio has on
+   * disk, for the host and port currently typed in the form. On failure the
+   * picker falls back to a free-text field so the operator is never blocked.
+   */
+  loadLmStudioModels(): void {
+    const host = this.configForm.get('lmStudioHost')?.value;
+    const port = this.configForm.get('lmStudioPort')?.value;
+    if (!host || !port) {
+      return;
+    }
+    this.lmStudioModelsLoading.set(true);
+    this.configService.listLmStudioModels(host, port).subscribe({
+      next: (listing) => {
+        this.lmStudioModels.set(listing.models ?? []);
+        this.lmStudioModelFamily.set(listing.family ?? '');
+        this.lmStudioModelsError.set(listing.error ? listing.error : null);
+        this.lmStudioModelsLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to list LM Studio models:', err);
+        this.lmStudioModels.set([]);
+        this.lmStudioModelsError.set(err.error?.message || err.message || 'Unknown error');
+        this.lmStudioModelsLoading.set(false);
+      }
+    });
+  }
+
+  /**
+   * Options of the model picker: the models LM Studio lists, plus the stored
+   * value when LM Studio no longer has it, so the current setting stays visible.
+   */
+  lmStudioModelOptions(): {label: string; value: string}[] {
+    const options = this.lmStudioModels().map((model) => ({
+      value: model.id,
+      label: `${model.id} · ${model.quantization || '?'} · ` + this.translocoService.translate(
+        model.loaded ? 'settings.lmStudio.modelLoaded' : 'settings.lmStudio.modelNotLoaded')
+    }));
+    const current = this.configForm.get('lmStudioModel')?.value as string | null;
+    if (current && !options.some((option) => option.value === current)) {
+      options.unshift({
+        value: current,
+        label: `${current} · ` + this.translocoService.translate('settings.lmStudio.modelNotListed')
+      });
+    }
+    return options;
+  }
+
+  /** True when a manually typed model falls outside the family the chunker's tokenizer covers. */
+  isLmStudioModelOutsideFamily(): boolean {
+    const current = (this.configForm.get('lmStudioModel')?.value as string | null) ?? '';
+    const family = this.lmStudioModelFamily();
+    return !!current && !!family && !current.toLowerCase().startsWith(family.toLowerCase());
   }
 
   /**

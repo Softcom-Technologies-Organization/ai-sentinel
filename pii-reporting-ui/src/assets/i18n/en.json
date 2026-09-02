@@ -345,7 +345,16 @@
       "hostError": "Host is required and must not contain spaces or slashes.",
       "port": "Port",
       "portHint": "TCP port exposed by LM Studio (1-65535, default 1234).",
-      "portError": "Port must be between 1 and 65535."
+      "portError": "Port must be between 1 and 65535.",
+      "model": "Model",
+      "modelPlaceholder": "ministral-3b-pii-preview@q4_k_m",
+      "modelHint": "Quantization of the Ministral-PII model to prompt, among those LM Studio has on disk. Changing the model re-runs the concurrency tuning at the next startup.",
+      "modelRefresh": "Reload the model list",
+      "modelListError": "List unavailable ({{error}}). Type the LM Studio identifier by hand.",
+      "modelNotListed": "not listed by LM Studio",
+      "modelLoaded": "loaded",
+      "modelNotLoaded": "not loaded",
+      "modelFamilyWarning": "This model is not a quantization of {{family}}: token chunking would no longer be reliable."
     },
     "detectors": {
       "presidio": {

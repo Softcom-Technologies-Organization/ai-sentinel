@@ -186,6 +186,7 @@ class CompositePIIDetector:
         lm_studio_host: Optional[str] = None,
         lm_studio_port: Optional[int] = None,
         ministral_concurrency: Optional[int] = None,
+        lm_studio_model: Optional[str] = None,
     ) -> List[PIIEntity]:
         """
         Detect PII using the Regex, Presidio and Ministral detectors.
@@ -214,6 +215,7 @@ class CompositePIIDetector:
             text, threshold, enable_regex, enable_presidio, enable_ministral,
             pii_type_configs, ministral_chunk_size, ministral_overlap,
             lm_studio_host, lm_studio_port, ministral_concurrency,
+            lm_studio_model,
         )
         return entities
 
@@ -230,6 +232,7 @@ class CompositePIIDetector:
         lm_studio_host: Optional[str] = None,
         lm_studio_port: Optional[int] = None,
         ministral_concurrency: Optional[int] = None,
+        lm_studio_model: Optional[str] = None,
     ) -> Tuple[List[PIIEntity], List[Dict]]:
         """Detect PII and return per-detector execution stats alongside results.
 
@@ -263,6 +266,7 @@ class CompositePIIDetector:
             text, threshold, use_regex, use_presidio, use_ministral,
             pii_type_configs, ministral_chunk_size, ministral_overlap,
             lm_studio_host, lm_studio_port, ministral_concurrency,
+            lm_studio_model,
         )
 
         if not results_per_detector:
@@ -280,6 +284,7 @@ class CompositePIIDetector:
         enable_ministral: Optional[bool] = None,
         lm_studio_host: Optional[str] = None,
         lm_studio_port: Optional[int] = None,
+        lm_studio_model: Optional[str] = None,
     ) -> List[Dict]:
         """Report whether each ENABLED detector can actually run right now.
 
@@ -310,7 +315,9 @@ class CompositePIIDetector:
                 self._local_health(DetectorSource.PRESIDIO, self.presidio_detector)
             )
         if use_ministral:
-            health.append(self._ministral_health(lm_studio_host, lm_studio_port))
+            health.append(
+                self._ministral_health(lm_studio_host, lm_studio_port, lm_studio_model)
+            )
         return health
 
     @staticmethod
@@ -334,8 +341,32 @@ class CompositePIIDetector:
         endpoint, failure = probe()
         return CompositePIIDetector._health_entry(source, endpoint, failure)
 
+    def list_lm_studio_models(
+        self,
+        lm_studio_host: Optional[str] = None,
+        lm_studio_port: Optional[int] = None,
+    ) -> Dict:
+        """Ministral-PII models LM Studio has on disk (see ``MinistralDetector.list_models``).
+
+        Without a Ministral detector there is nothing to list, which is reported
+        as an error rather than an empty catalogue the operator could mistake for
+        "no model downloaded".
+        """
+        lister = getattr(self.ministral_detector, "list_models", None)
+        if lister is None:
+            return {
+                "endpoint": "",
+                "family": "",
+                "models": [],
+                "error": "Ministral detector not instantiated",
+            }
+        return lister(lm_studio_host=lm_studio_host, lm_studio_port=lm_studio_port)
+
     def _ministral_health(
-        self, lm_studio_host: Optional[str], lm_studio_port: Optional[int]
+        self,
+        lm_studio_host: Optional[str],
+        lm_studio_port: Optional[int],
+        lm_studio_model: Optional[str] = None,
     ) -> Dict:
         """Probe the remote Ministral endpoint for the configured host/port."""
         if self.ministral_detector is None:
@@ -346,7 +377,7 @@ class CompositePIIDetector:
         probe = getattr(self.ministral_detector, "check_health", None)
         if probe is None:
             return self._health_entry(DetectorSource.MINISTRAL, "", None)
-        endpoint, failure = probe(lm_studio_host, lm_studio_port)
+        endpoint, failure = probe(lm_studio_host, lm_studio_port, lm_studio_model)
         return self._health_entry(DetectorSource.MINISTRAL, endpoint, failure)
 
     @staticmethod
@@ -415,6 +446,7 @@ class CompositePIIDetector:
         lm_studio_host: Optional[str] = None,
         lm_studio_port: Optional[int] = None,
         ministral_concurrency: Optional[int] = None,
+        lm_studio_model: Optional[str] = None,
     ) -> Tuple[List[Tuple[PIIDetectorProtocol, List[PIIEntity]]], List[Dict]]:
         """Run each enabled detector, collect results and per-detector stats.
 
@@ -454,7 +486,7 @@ class CompositePIIDetector:
                  lambda: self._run_ministral_detection(
                      text, threshold, pii_type_configs, ministral_chunk_size,
                      ministral_overlap, lm_studio_host, lm_studio_port,
-                     ministral_concurrency))
+                     ministral_concurrency, lm_studio_model))
         return results, stats
 
     def _run_detector_safely(
@@ -578,6 +610,7 @@ class CompositePIIDetector:
         lm_studio_host: Optional[str] = None,
         lm_studio_port: Optional[int] = None,
         concurrency: Optional[int] = None,
+        lm_studio_model: Optional[str] = None,
     ) -> List[PIIEntity]:
         """Run Ministral-PII detection.
 
@@ -608,6 +641,8 @@ class CompositePIIDetector:
             kwargs['lm_studio_port'] = lm_studio_port
         if 'concurrency' in sig.parameters and concurrency is not None:
             kwargs['concurrency'] = concurrency
+        if 'lm_studio_model' in sig.parameters and lm_studio_model:
+            kwargs['lm_studio_model'] = lm_studio_model
         return self.ministral_detector.detect_pii(text, threshold, **kwargs)
 
     def _run_presidio_detection(

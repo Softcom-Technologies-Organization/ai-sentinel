@@ -810,3 +810,69 @@ class TestHttp200ErrorPayloadIsNotACleanResult:
         configs = _configs(("EMAIL", "EMAIL", 0.0))
 
         assert detector.detect_pii("nothing sensitive here", pii_type_configs=configs) == []
+
+
+class TestModelSelection:
+    """The operator-picked quantization flows into every prompt and the picker
+    only offers the Ministral-PII family."""
+
+    def test_Should_PromptConfiguredModel_When_ModelOverrideGiven(self):
+        detector = MinistralDetector()
+        payload = detector._build_payload("Jean Dupont", "ministral-3b-pii-preview@q4_k_m")
+        assert payload["model"] == "ministral-3b-pii-preview@q4_k_m"
+
+    def test_Should_PromptDefaultModel_When_NoOverride(self):
+        detector = MinistralDetector()
+        assert detector._build_payload("Jean Dupont")["model"] == detector._model_id
+
+    def test_Should_ListOnlyMinistralFamily_When_LmStudioAnswers(self):
+        detector = MinistralDetector()
+        client = MagicMock()
+        client.get.return_value.raise_for_status = MagicMock()
+        client.get.return_value.json.return_value = {
+            "data": [
+                {"id": "ministral-3b-pii-preview@q8_0", "type": "llm", "publisher": "mradermacher",
+                 "quantization": "Q8_0", "state": "loaded"},
+                {"id": "ministral-3b-pii-preview@q4_k_m", "type": "llm", "publisher": "mradermacher",
+                 "quantization": "Q4_K_M", "state": "not-loaded"},
+                {"id": "google/gemma-4-31b", "type": "llm", "quantization": "Q4_K_M", "state": "not-loaded"},
+                {"id": "text-embedding-nomic-embed-text-v1.5", "type": "embeddings", "state": "not-loaded"},
+            ]
+        }
+        detector._client = client
+
+        listing = detector.list_models("lmstudio", 1234)
+
+        assert listing["error"] == ""
+        assert listing["family"] == "ministral-3b-pii-preview"
+        assert listing["endpoint"] == "http://lmstudio:1234/v1"
+        assert [m["id"] for m in listing["models"]] == [
+            "ministral-3b-pii-preview@q8_0", "ministral-3b-pii-preview@q4_k_m",
+        ]
+        assert listing["models"][0]["quantization"] == "Q8_0"
+        assert listing["models"][1]["state"] == "not-loaded"
+
+    def test_Should_ReportError_When_LmStudioUnreachable(self):
+        detector = MinistralDetector()
+        client = MagicMock()
+        client.get.side_effect = httpx.ConnectError("down")
+        detector._client = client
+
+        listing = detector.list_models("lmstudio", 1234)
+
+        assert listing["models"] == []
+        assert "unavailable" in listing["error"]
+
+    def test_Should_JudgeConfiguredModel_When_CheckingHealth(self):
+        detector = MinistralDetector()
+        client = MagicMock()
+        client.get.return_value.raise_for_status = MagicMock()
+        client.get.return_value.json.return_value = {
+            "data": [{"id": "ministral-3b-pii-preview@q4_k_m", "state": "not-loaded"}]
+        }
+        detector._client = client
+
+        _, failure = detector.check_health("lmstudio", 1234, "ministral-3b-pii-preview@q4_k_m")
+
+        assert failure is not None
+        assert failure.params["model"] == "ministral-3b-pii-preview@q4_k_m"

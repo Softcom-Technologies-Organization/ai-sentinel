@@ -283,7 +283,7 @@
                                         <label for="benchMaxConcurrency" class="advanced-param-label">
                                             {{ 'settings.detectors.ministral.benchMaxConcurrency' | transloco }}
                                         </label>
-                                        <div class="bench-controls">
+                                        <div class="inline-controls">
                                             <p-inputNumber
                                                 inputId="benchMaxConcurrency"
                                                 data-testid="benchMaxConcurrency"
@@ -627,6 +627,59 @@
                             @if (configForm.get('lmStudioPort')?.invalid && configForm.get('lmStudioPort')?.touched) {
                                 <small class="field-error" role="alert">
                                     {{ 'settings.lmStudio.portError' | transloco }}
+                                </small>
+                            }
+                        </div>
+
+                        <!-- Model: a quantization of the Ministral-PII family, listed by LM Studio itself -->
+                        <div class="advanced-param-field">
+                            <label for="lmStudioModel" class="advanced-param-label">
+                                {{ 'settings.lmStudio.model' | transloco }}
+                            </label>
+                            <div class="inline-controls">
+                                @if (lmStudioModelsAvailable()) {
+                                    <p-select
+                                        inputId="lmStudioModel"
+                                        data-testid="lmStudioModelSelect"
+                                        formControlName="lmStudioModel"
+                                        [options]="lmStudioModelOptions()"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        [placeholder]="'settings.lmStudio.modelPlaceholder' | transloco"
+                                        styleClass="lm-studio-model-select"
+                                        [attr.aria-describedby]="'lmStudioModelHint'">
+                                    </p-select>
+                                } @else {
+                                    <input
+                                        id="lmStudioModel"
+                                        type="text"
+                                        pInputText
+                                        data-testid="lmStudioModelInput"
+                                        formControlName="lmStudioModel"
+                                        [placeholder]="'settings.lmStudio.modelPlaceholder' | transloco"
+                                        [attr.aria-describedby]="'lmStudioModelHint'" />
+                                }
+                                <p-button
+                                    type="button"
+                                    data-testid="refreshLmStudioModels"
+                                    icon="pi pi-refresh"
+                                    [loading]="lmStudioModelsLoading()"
+                                    (click)="loadLmStudioModels()"
+                                    (keydown.enter)="loadLmStudioModels()"
+                                    styleClass="p-button-outlined p-button-sm"
+                                    [ariaLabel]="'settings.lmStudio.modelRefresh' | transloco">
+                                </p-button>
+                            </div>
+                            <small id="lmStudioModelHint" class="advanced-param-hint">
+                                @if (lmStudioModelsError()) {
+                                    {{ 'settings.lmStudio.modelListError' | transloco: {error: lmStudioModelsError()} }}
+                                } @else {
+                                    {{ 'settings.lmStudio.modelHint' | transloco }}
+                                }
+                            </small>
+                            @if (isLmStudioModelOutsideFamily()) {
+                                <small class="field-error" role="alert" data-testid="lmStudioModelFamilyWarning">
+                                    {{ 'settings.lmStudio.modelFamilyWarning' | transloco: {family: lmStudioModelFamily()} }}
                                 </small>
                             }
                         </div>

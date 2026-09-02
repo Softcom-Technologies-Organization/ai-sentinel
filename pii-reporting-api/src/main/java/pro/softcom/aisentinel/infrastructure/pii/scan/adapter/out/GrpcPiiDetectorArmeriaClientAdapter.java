@@ -12,6 +12,8 @@ import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorRunSta
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.PersonallyIdentifiableInformationType;
 import pro.softcom.aisentinel.domain.pii.scan.DetectorHealth;
+import pro.softcom.aisentinel.domain.pii.scan.LmStudioModel;
+import pro.softcom.aisentinel.domain.pii.scan.LmStudioModelListing;
 import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.config.PiiDetectorConfig;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -80,6 +82,30 @@ public class GrpcPiiDetectorArmeriaClientAdapter implements PiiDetectorClient {
                     .toList();
         } catch (Exception e) {
             final String errorMessage = String.format("Failed to check detectors health: %s", e.getMessage());
+            throw PiiDetectionException.serviceError(errorMessage, e);
+        }
+    }
+
+    @Override
+    public LmStudioModelListing listLmStudioModels(String lmStudioHost, Integer lmStudioPort) {
+        PiiDetection.LmStudioModelsRequest.Builder request = PiiDetection.LmStudioModelsRequest.newBuilder();
+        if (lmStudioHost != null && !lmStudioHost.isBlank()) {
+            request.setLmStudioHost(lmStudioHost);
+        }
+        if (lmStudioPort != null) {
+            request.setLmStudioPort(lmStudioPort);
+        }
+        try {
+            PiiDetection.LmStudioModelsResponse response = blockingStub
+                    .withDeadlineAfter(HEALTH_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                    .listLmStudioModels(request.build());
+            List<LmStudioModel> models = response.getModelsList().stream()
+                    .map(model -> new LmStudioModel(model.getId(), model.getQuantization(), model.getPublisher(),
+                                                    "loaded".equals(model.getState())))
+                    .toList();
+            return new LmStudioModelListing(response.getEndpoint(), response.getFamily(), models, response.getError());
+        } catch (Exception e) {
+            final String errorMessage = String.format("Failed to list LM Studio models: %s", e.getMessage());
             throw PiiDetectionException.serviceError(errorMessage, e);
         }
     }

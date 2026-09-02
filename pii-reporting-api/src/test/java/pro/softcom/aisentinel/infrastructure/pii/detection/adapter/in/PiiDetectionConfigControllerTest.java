@@ -44,7 +44,7 @@ class PiiDetectionConfigControllerTest {
     @Test
     void Should_ReturnPostfilterEnabledInResponse_When_GetConfig() throws Exception {
         PiiDetectionConfig domainConfig = new PiiDetectionConfig(
-            1, true, true, false, 1024, 128, new BigDecimal("0.75"), true, "localhost", 1234, 1, true, null,
+            1, true, true, false, 1024, 128, new BigDecimal("0.75"), true, "localhost", 1234, null, 1, true, null,
             LocalDateTime.now(), "admin"
         );
         when(managePiiDetectionConfigPort.getConfig()).thenReturn(domainConfig);
@@ -57,7 +57,7 @@ class PiiDetectionConfigControllerTest {
     @Test
     void Should_UpdatePostfilterEnabled_When_PutRequestEnablesFlag() throws Exception {
         PiiDetectionConfig persisted = new PiiDetectionConfig(
-            1, true, true, false, 1024, 128, new BigDecimal("0.75"), true, "localhost", 1234, 1, true, null,
+            1, true, true, false, 1024, 128, new BigDecimal("0.75"), true, "localhost", 1234, null, 1, true, null,
             LocalDateTime.now(), "admin"
         );
         when(managePiiDetectionConfigPort.updateConfig(any(UpdatePiiDetectionConfigCommand.class)))
@@ -94,7 +94,7 @@ class PiiDetectionConfigControllerTest {
     @Test
     void Should_DefaultPostfilterEnabledToFalse_When_OmittedInUpdateRequest() throws Exception {
         PiiDetectionConfig persisted = new PiiDetectionConfig(
-            1, true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, 1, true, null,
+            1, true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, 1, true, null,
             LocalDateTime.now(), "admin"
         );
         when(managePiiDetectionConfigPort.updateConfig(any(UpdatePiiDetectionConfigCommand.class)))

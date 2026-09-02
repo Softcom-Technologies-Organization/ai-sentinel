@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
@@ -77,6 +78,10 @@ public record UpdatePiiDetectionConfigRequestDto(
     @Min(value = 1, message = "lmStudioPort must be at least 1")
     @Max(value = 65535, message = "lmStudioPort must be at most 65535")
     Integer lmStudioPort,
+
+    @JsonProperty("lmStudioModel")
+    @Size(max = 255, message = "lmStudioModel must be at most 255 characters")
+    String lmStudioModel,
 
     @JsonProperty("ministralConcurrency")
     @NotNull(message = "ministralConcurrency is required")

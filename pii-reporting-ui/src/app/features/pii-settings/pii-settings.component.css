@@ -837,8 +837,8 @@
 
 /* ============================================================
    Ministral advanced chunking parameters -- inset panel painted in
-   the modal's background colour, sitting on top of the card's amber
-   tint so the large flat amber fill is broken up.
+   the modal's background colour, sitting on top of the card's orange
+   tint so the large flat orange fill is broken up.
    ============================================================ */
 .advanced-params {
   margin: 14px 0 0;
@@ -848,11 +848,21 @@
   background: var(--sentinel-bg-card);
 }
 
+/* Floating the legend takes it out of the fieldset's top border so the title
+   sits inside the panel instead of straddling its edge. The next sibling must
+   clear it, otherwise it lays out beside the float instead of below. */
 .advanced-params-title {
-  padding: 0 4px;
+  float: left;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 0;
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--sentinel-text-default);
+}
+
+.advanced-params-title + * {
+  clear: both;
 }
 
 .advanced-param-field {
@@ -873,12 +883,17 @@
   color: var(--sentinel-text-subtle);
 }
 
-/* Upper bound input + run/stop buttons of the on-demand benchmark on one row. */
-.bench-controls {
+/* An input and its action buttons on one row (benchmark bound, model picker). */
+.inline-controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+}
+
+.inline-controls ::ng-deep .lm-studio-model-select {
+  min-width: 26rem;
+  max-width: 100%;
 }
 
 /* Progress of the on-demand concurrency benchmark.

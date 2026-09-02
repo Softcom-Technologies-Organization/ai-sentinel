@@ -21,6 +21,7 @@ const MOCK_DETECTOR_CONFIG: PiiDetectionConfig = {
   defaultThreshold: 0.75,
   lmStudioHost: 'localhost',
   lmStudioPort: 1234,
+  lmStudioModel: 'ministral-3b-pii-preview@q8_0',
   updatedAt: '2026-03-16T10:00:00',
 };
 
@@ -515,6 +516,110 @@ describe('PiiSettingsComponent', () => {
     expect(component.configForm.get('ministralConcurrencyTunedSignature')?.value).toBeNull();
   });
 
+  // ========== LM Studio model picker ==========
+
+  describe('LM Studio model picker', () => {
+    const MODELS_URL = '/api/v1/pii-detection/lm-studio/models';
+
+    it('Should_ListModelsForTypedEndpoint_When_LmStudioSectionOpened', () => {
+      component.setActiveSection('lm_studio');
+
+      const req = httpMock.expectOne((r) => r.url === MODELS_URL);
+      expect(req.request.params.get('host')).toBe('localhost');
+      expect(req.request.params.get('port')).toBe('1234');
+      req.flush({
+        endpoint: 'http://localhost:1234/v1',
+        family: 'ministral-3b-pii-preview',
+        models: [
+          { id: 'ministral-3b-pii-preview@q8_0', quantization: 'Q8_0', publisher: 'mradermacher', loaded: true },
+          { id: 'ministral-3b-pii-preview@q4_k_m', quantization: 'Q4_K_M', publisher: 'mradermacher', loaded: false },
+        ],
+        error: '',
+      });
+      fixture.detectChanges();
+
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-testid="lmStudioModelSelect"]')).not.toBeNull();
+      expect(el.querySelector('[data-testid="lmStudioModelInput"]')).toBeNull();
+      expect(component.lmStudioModelOptions().map((o) => o.value)).toEqual([
+        'ministral-3b-pii-preview@q8_0', 'ministral-3b-pii-preview@q4_k_m',
+      ]);
+      expect(component.isLmStudioModelOutsideFamily()).toBe(false);
+    });
+
+    it('Should_KeepStoredModelSelectable_When_LmStudioNoLongerListsIt', () => {
+      component.setActiveSection('lm_studio');
+      httpMock.expectOne((r) => r.url === MODELS_URL).flush({
+        endpoint: 'http://localhost:1234/v1',
+        family: 'ministral-3b-pii-preview',
+        models: [
+          { id: 'ministral-3b-pii-preview@q4_k_m', quantization: 'Q4_K_M', publisher: 'mradermacher', loaded: false },
+        ],
+        error: '',
+      });
+
+      const options = component.lmStudioModelOptions();
+      expect(options[0].value).toBe('ministral-3b-pii-preview@q8_0');
+      expect(options).toHaveLength(2);
+    });
+
+    it('Should_FallBackToTextInput_When_ModelListUnavailable', () => {
+      component.setActiveSection('lm_studio');
+      httpMock.expectOne((r) => r.url === MODELS_URL).flush({
+        endpoint: 'http://localhost:1234/v1',
+        family: 'ministral-3b-pii-preview',
+        models: [],
+        error: 'LM Studio model list unavailable at http://localhost:1234/v1',
+      });
+      fixture.detectChanges();
+
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-testid="lmStudioModelInput"]')).not.toBeNull();
+      expect(el.querySelector('[data-testid="lmStudioModelSelect"]')).toBeNull();
+      expect(component.lmStudioModelsError()).toContain('unavailable');
+
+      // A model typed outside the family the tokenizer covers is flagged
+      component.configForm.patchValue({ lmStudioModel: 'google/gemma-4-31b' });
+      fixture.detectChanges();
+      expect(el.querySelector('[data-testid="lmStudioModelFamilyWarning"]')).not.toBeNull();
+    });
+
+    it('Should_SkipModelListing_When_HostOrPortMissing', () => {
+      component.configForm.patchValue({ lmStudioHost: '' });
+
+      component.loadLmStudioModels();
+
+      httpMock.expectNone((r) => r.url === MODELS_URL);
+      expect(component.lmStudioModelsLoading()).toBe(false);
+    });
+
+    it('Should_TolerateSparseListing_When_LmStudioOmitsFields', () => {
+      component.setActiveSection('lm_studio');
+      httpMock.expectOne((r) => r.url === MODELS_URL).flush({
+        endpoint: 'http://localhost:1234/v1',
+        family: null,
+        models: [{ id: 'ministral-3b-pii-preview@q8_0', quantization: '', publisher: '', loaded: false }],
+        error: '',
+      });
+
+      expect(component.lmStudioModelFamily()).toBe('');
+      expect(component.lmStudioModelsError()).toBeNull();
+      expect(component.lmStudioModelOptions()[0].label).toContain('?');
+      // Without a known family there is nothing to warn about
+      expect(component.isLmStudioModelOutsideFamily()).toBe(false);
+    });
+
+    it('Should_FallBackToTextInput_When_ModelListRequestFails', () => {
+      component.setActiveSection('lm_studio');
+      httpMock.expectOne((r) => r.url === MODELS_URL).flush('boom', { status: 502, statusText: 'Bad Gateway' });
+      fixture.detectChanges();
+
+      expect(component.lmStudioModelsAvailable()).toBe(false);
+      expect(component.lmStudioModelsError()).not.toBeNull();
+      expect(component.lmStudioModelsLoading()).toBe(false);
+    });
+  });
+
   // ========== Concurrency benchmark ==========
 
   describe('Concurrency benchmark', () => {
@@ -663,6 +768,31 @@ describe('PiiSettingsComponent', () => {
       expect(el.querySelector('[data-testid="stopBenchmarkButton"]')).toBeNull();
       vi.advanceTimersByTime(3000);
       httpMock.expectNone(BENCH_STATUS_URL);
+    });
+
+    it('Should_IgnoreCancel_When_NoBenchmarkRunning', () => {
+      component.onCancelBenchmark();
+
+      httpMock.expectNone(BENCH_CANCEL_URL);
+      expect(component.benchCancelling()).toBe(false);
+    });
+
+    it('Should_KeepPollingAndShowError_When_CancelRequestFails', () => {
+      component.onRunBenchmark();
+      httpMock.expectOne(BENCH_RUN_URL).flush(null);
+      vi.advanceTimersByTime(0);
+      httpMock.expectOne(BENCH_STATUS_URL).flush(benchStatus({ progress: 20 }));
+
+      component.onCancelBenchmark();
+      httpMock.expectOne(BENCH_CANCEL_URL).flush('boom', { status: 500, statusText: 'Server Error' });
+
+      // The stop request failed: the benchmark is still running and can be stopped again
+      expect(component.benchRunning()).toBe(true);
+      expect(component.benchCancelling()).toBe(false);
+
+      // Cleanup - let the running benchmark fail to stop the polling loop
+      vi.advanceTimersByTime(1000);
+      httpMock.expectOne(BENCH_STATUS_URL).flush(benchStatus({ status: 'FAILED', message: 'boom' }));
     });
 
     it('Should_StopPollingAndShowError_When_BenchmarkFails', () => {

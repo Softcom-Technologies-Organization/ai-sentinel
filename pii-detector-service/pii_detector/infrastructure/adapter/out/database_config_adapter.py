@@ -83,6 +83,7 @@ class DatabaseConfigAdapter:
                         postfilter_enabled,
                         lm_studio_host,
                         lm_studio_port,
+                        lm_studio_model,
                         ministral_concurrency,
                         ministral_concurrency_auto,
                         ministral_concurrency_tuned_signature
@@ -115,6 +116,7 @@ class DatabaseConfigAdapter:
                         default_threshold,
                         'localhost' AS lm_studio_host,
                         1234 AS lm_studio_port,
+                        NULL AS lm_studio_model,
                         1 AS ministral_concurrency,
                         TRUE AS ministral_concurrency_auto,
                         NULL AS ministral_concurrency_tuned_signature

@@ -168,35 +168,44 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         adapter = get_database_config_adapter()
         while True:
             try:
-                max_concurrency = adapter.claim_bench_job()
-                if max_concurrency is not None:
-                    logger.info(
-                        "[AUTOTUNE] on-demand benchmark requested (up to C=%d); running",
-                        max_concurrency,
-                    )
-                    outcome = run_ondemand_autotune(
-                        self.detector,
-                        on_progress=adapter.update_bench_progress,
-                        max_concurrency=max_concurrency,
-                        should_stop=adapter.is_bench_cancel_requested,
-                    )
-                    if outcome.ran and outcome.chosen is not None:
-                        adapter.complete_bench_job(outcome.chosen, outcome.signature)
-                        logger.info(
-                            "[AUTOTUNE] on-demand benchmark done: concurrency=%d",
-                            outcome.chosen,
-                        )
-                    elif outcome.reason == "cancelled":
-                        adapter.cancel_bench_job()
-                        logger.info("[AUTOTUNE] on-demand benchmark cancelled by operator")
-                    else:
-                        adapter.fail_bench_job(f"Benchmark failed: {outcome.reason}")
-                        logger.warning(
-                            "[AUTOTUNE] on-demand benchmark failed: %s", outcome.reason
-                        )
+                self._run_bench_job_once(adapter, run_ondemand_autotune)
             except Exception:  # pragma: no cover - defensive
                 logger.exception("[AUTOTUNE] bench poller iteration failed")
             time.sleep(poll_seconds)
+
+    def _run_bench_job_once(self, adapter, run_autotune) -> bool:
+        """Claim and run one pending benchmark request; True when a job ran.
+
+        The outcome is persisted through the adapter: DONE with the chosen
+        concurrency, CANCELLED when the operator stopped the run, FAILED otherwise.
+        ``run_autotune`` is the bench entry point (``run_ondemand_autotune``),
+        injected so the poller body can be exercised without a real LM Studio.
+        """
+        max_concurrency = adapter.claim_bench_job()
+        if max_concurrency is None:
+            return False
+        logger.info(
+            "[AUTOTUNE] on-demand benchmark requested (up to C=%d); running",
+            max_concurrency,
+        )
+        outcome = run_autotune(
+            self.detector,
+            on_progress=adapter.update_bench_progress,
+            max_concurrency=max_concurrency,
+            should_stop=adapter.is_bench_cancel_requested,
+        )
+        if outcome.ran and outcome.chosen is not None:
+            adapter.complete_bench_job(outcome.chosen, outcome.signature)
+            logger.info(
+                "[AUTOTUNE] on-demand benchmark done: concurrency=%d", outcome.chosen
+            )
+        elif outcome.reason == "cancelled":
+            adapter.cancel_bench_job()
+            logger.info("[AUTOTUNE] on-demand benchmark cancelled by operator")
+        else:
+            adapter.fail_bench_job(f"Benchmark failed: {outcome.reason}")
+            logger.warning("[AUTOTUNE] on-demand benchmark failed: %s", outcome.reason)
+        return True
 
     def _init_worker_pool(self) -> None:
         """Create and warm up the inference worker pool when enabled by env."""
@@ -545,6 +554,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 enable_ministral=detector_flags.get('ministral_enabled'),
                 lm_studio_host=detector_flags.get('lm_studio_host'),
                 lm_studio_port=detector_flags.get('lm_studio_port'),
+                lm_studio_model=detector_flags.get('lm_studio_model'),
             )
         except Exception as exc:
             logger.exception(
@@ -573,6 +583,62 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             f"{unreachable} unreachable"
         )
         return response
+
+    def ListLmStudioModels(self, request, context):
+        """Implement the ListLmStudioModels RPC method.
+
+        Lists the Ministral-PII models LM Studio has on disk so the dashboard can
+        offer them in a picker. Runs here for the same reason as the health check:
+        LM Studio is reachable from this service's network standpoint. Host and
+        port come from the request when given, else from the database
+        configuration. Never fails the RPC: an unreachable endpoint is reported
+        in the response's ``error`` with an empty list.
+        """
+        request_id = self._generate_request_id(time.time())
+        response = pii_detection_pb2.LmStudioModelsResponse()
+        host, port = self._resolve_lm_studio_endpoint(request, request_id)
+
+        lister = getattr(self.detector, "list_lm_studio_models", None)
+        if lister is None:
+            response.error = "detector does not support model listing"
+            return response
+        try:
+            listing = lister(lm_studio_host=host, lm_studio_port=port)
+        except Exception as exc:
+            logger.exception(f"[{request_id}] LM Studio model listing failed")
+            response.error = f"{type(exc).__name__}: {exc}"
+            return response
+
+        self._fill_lm_studio_models(response, listing)
+        logger.info(
+            "[%s] LM Studio models listed at %s: %d in family '%s' (error='%s')",
+            request_id, response.endpoint, len(response.models), response.family,
+            response.error,
+        )
+        return response
+
+    def _resolve_lm_studio_endpoint(self, request, request_id: str):
+        """Host and port from the request when given, else from the DB configuration."""
+        host = request.lm_studio_host or None
+        port = request.lm_studio_port or None
+        if host is None or port is None:
+            flags = self._fetch_detector_flags(request_id) or {}
+            host = host or flags.get('lm_studio_host')
+            port = port or flags.get('lm_studio_port')
+        return host, port
+
+    @staticmethod
+    def _fill_lm_studio_models(response, listing: dict) -> None:
+        """Copy the detector's listing dict into the protobuf response."""
+        response.endpoint = str(listing.get("endpoint") or "")
+        response.family = str(listing.get("family") or "")
+        response.error = str(listing.get("error") or "")
+        for model in listing.get("models") or []:
+            entry = response.models.add()
+            entry.id = str(model.get("id") or "")
+            entry.quantization = str(model.get("quantization") or "")
+            entry.publisher = str(model.get("publisher") or "")
+            entry.state = str(model.get("state") or "")
 
     def _generate_request_id(self, start_time: float) -> str:
         """Generate unique request identifier for logging.
@@ -720,6 +786,9 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             # (fetch_config_from_db is set per request by the backend).
             'lm_studio_host': db_config.get('lm_studio_host'),
             'lm_studio_port': db_config.get('lm_studio_port'),
+            # Quantization of the Ministral-PII model to prompt (DB column
+            # lm_studio_model); None = the detector service default.
+            'lm_studio_model': db_config.get('lm_studio_model'),
             # Number of chunk prompts the Ministral detector sends to LM Studio
             # concurrently (DB column ministral_concurrency, auto-tuned at
             # startup). Threaded by _build_detection_kwargs into the composite
@@ -888,6 +957,8 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             kwargs['lm_studio_host'] = detector_flags.get('lm_studio_host')
         if 'lm_studio_port' in sig.parameters:
             kwargs['lm_studio_port'] = detector_flags.get('lm_studio_port')
+        if 'lm_studio_model' in sig.parameters:
+            kwargs['lm_studio_model'] = detector_flags.get('lm_studio_model')
         # Ministral chunk-prompt concurrency (DB column ministral_concurrency),
         # forwarded so the operator/auto-tuned value reaches the detector.
         if 'ministral_concurrency' in sig.parameters:

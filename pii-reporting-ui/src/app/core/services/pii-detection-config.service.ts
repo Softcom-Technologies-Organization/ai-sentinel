@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   ConcurrencyBenchStatus,
+  LmStudioModelListing,
   GroupedPiiTypes,
   PiiDetectionConfig,
   PiiTypeConfig,
@@ -18,6 +19,7 @@ export class PiiDetectionConfigService {
   private readonly apiUrl = '/api/v1/pii-detection/config';
   private readonly typesApiUrl = '/api/v1/pii-detection/pii-types';
   private readonly benchApiUrl = '/api/v1/pii-detection/concurrency-benchmark';
+  private readonly lmStudioApiUrl = '/api/v1/pii-detection/lm-studio';
 
   constructor(private readonly http: HttpClient) {
   }
@@ -42,6 +44,15 @@ export class PiiDetectionConfigService {
    */
   runConcurrencyBenchmark(maxConcurrency: number): Observable<ConcurrencyBenchStatus> {
     return this.http.post<ConcurrencyBenchStatus>(`${this.benchApiUrl}/run`, {maxConcurrency});
+  }
+
+  /**
+   * List the Ministral-PII models available on the given LM Studio endpoint.
+   */
+  listLmStudioModels(host: string, port: number): Observable<LmStudioModelListing> {
+    return this.http.get<LmStudioModelListing>(`${this.lmStudioApiUrl}/models`, {
+      params: {host, port: String(port)}
+    });
   }
 
   /**

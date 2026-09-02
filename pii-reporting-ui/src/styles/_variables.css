@@ -99,12 +99,12 @@
   --sentinel-regex-avatar-bg: #f8efe9;     /* custom -- avatar background */
   --sentinel-regex-avatar-border: #f1ded0; /* custom -- avatar border */
 
-  /* Ministral -- amber (distinct from Presidio blue) */
-  --sentinel-ministral-bg: #fef3c7;          /* amber-100 -- badge/card background */
-  --sentinel-ministral-fg: #78350f;          /* amber-900 -- text color (contrast >= 4.5:1) */
-  --sentinel-ministral-border: #f59e0b;      /* amber-500 -- border */
-  --sentinel-ministral-avatar-bg: #fffbeb;   /* amber-50 -- avatar background */
-  --sentinel-ministral-avatar-border: #fde68a; /* amber-200 -- avatar border */
+  /* Ministral -- Mistral brand orange #fa500f (distinct from Presidio blue) */
+  --sentinel-ministral-bg: #ffe8dd;          /* orange tint -- badge/card background */
+  --sentinel-ministral-fg: #7a2405;          /* dark orange -- text color (contrast >= 4.5:1) */
+  --sentinel-ministral-border: #fa500f;      /* Mistral orange -- border */
+  --sentinel-ministral-avatar-bg: #fff4f0;   /* lightest orange tint -- avatar background */
+  --sentinel-ministral-avatar-border: #ffb896; /* soft orange -- avatar border */
 
   /* Unknown detector */
   --sentinel-detector-unknown-bg: #f4f4f5;
@@ -328,12 +328,12 @@
   --sentinel-regex-avatar-bg: #201a10;     /* slightly lifted amber tint */
   --sentinel-regex-avatar-border: #6b5520; /* mid amber */
 
-  /* Ministral -- amber (dark theme override, mirrors the light palette) */
-  --sentinel-ministral-bg: #291a08;          /* very dark amber tint */
-  --sentinel-ministral-fg: #fcd34d;          /* amber-300 -- readable on dark (contrast >= 4.5:1) */
-  --sentinel-ministral-border: #92400e;      /* amber-800 -- muted border */
-  --sentinel-ministral-avatar-bg: #3a2710;   /* slightly lifted amber tint */
-  --sentinel-ministral-avatar-border: #b45309; /* amber-700 -- mid amber */
+  /* Ministral -- Mistral orange (dark theme override, mirrors the light palette) */
+  --sentinel-ministral-bg: #2a1006;          /* very dark orange tint */
+  --sentinel-ministral-fg: #ff8f66;          /* light orange -- readable on dark (contrast >= 4.5:1) */
+  --sentinel-ministral-border: #8a2c08;      /* muted dark orange -- border */
+  --sentinel-ministral-avatar-bg: #3a1608;   /* slightly lifted orange tint */
+  --sentinel-ministral-avatar-border: #c23d0a; /* mid orange */
 
   /* Unknown detector */
   --sentinel-detector-unknown-bg: #1e2736; /* neutral dark surface */

@@ -69,6 +69,10 @@ from pii_detector.infrastructure.text_processing.semantic_chunker import (
 
 DETECTOR_NAMESPACE = "MINISTRAL"
 MINISTRAL_DEFAULT_MODEL_ID = "ministral-3b-pii-preview@q8_0"
+# Identifier prefix shared by every quantization of the Ministral-PII model. The
+# chunker tokenizes with this family's tokenizer, so the model picker
+# (``list_models``) offers nothing outside it.
+MINISTRAL_MODEL_FAMILY = MINISTRAL_DEFAULT_MODEL_ID.split("@", 1)[0]
 # Plain HTTP by default: LM Studio offers no TLS listener, so the nominal
 # loopback deployment has nothing to negotiate. It is only a default — a
 # deployment that reaches the model server across a network sets
@@ -325,6 +329,7 @@ class MinistralDetector:
         self,
         lm_studio_host: Optional[str] = None,
         lm_studio_port: Optional[int] = None,
+        lm_studio_model: Optional[str] = None,
     ) -> Tuple[str, Optional[DetectorFailure]]:
         """Probe the LM Studio endpoint; return ``(endpoint, failure)``.
 
@@ -349,18 +354,58 @@ class MinistralDetector:
                 message=f"{type(exc).__name__}: {exc}",
             )
 
-        return base_url, self._model_not_served_reason(base_url)
+        return base_url, self._model_not_served_reason(base_url, lm_studio_model)
 
-    def _model_not_served_reason(self, base_url: str) -> Optional[DetectorFailure]:
-        """Why the configured model cannot answer, or ``None`` when it is ready.
+    def list_models(
+        self,
+        lm_studio_host: Optional[str] = None,
+        lm_studio_port: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Ministral-PII models LM Studio has on disk, for the dashboard's picker.
 
-        A reachable endpoint is not a working detector: LM Studio answers
-        ``GET /models`` with every model it has on disk, loaded or not, so a server
-        left running with the model unloaded passes a reachability check and then
-        fails every request. The model state lives on LM Studio's own
-        ``/api/v0/models``; a server that does not expose it (any other
-        OpenAI-compatible backend) is left alone rather than refused on a check it
-        never claimed to support.
+        Only the ``MINISTRAL_MODEL_FAMILY`` quantizations are offered: the chunker
+        tokenizes with that family's tokenizer, so another model would silently
+        mis-size every chunk. Returns ``{"endpoint", "family", "models": [{id,
+        quantization, publisher, state}], "error"}``; ``error`` is set and
+        ``models`` empty when the endpoint is unreachable or does not expose LM
+        Studio's model list.
+        """
+        base_url = self._resolve_base_url(lm_studio_host, lm_studio_port)
+        listed = self._fetch_lm_studio_models(base_url)
+        if listed is None:
+            return {
+                "endpoint": base_url,
+                "family": MINISTRAL_MODEL_FAMILY,
+                "models": [],
+                "error": f"LM Studio model list unavailable at {base_url}",
+            }
+        family = MINISTRAL_MODEL_FAMILY.lower()
+        models = [
+            {
+                "id": str(m.get("id")),
+                "quantization": str(m.get("quantization") or ""),
+                "publisher": str(m.get("publisher") or ""),
+                "state": str(m.get("state") or ""),
+            }
+            for m in listed
+            if str(m.get("id") or "").lower().startswith(family)
+            and m.get("type", "llm") == "llm"
+        ]
+        return {
+            "endpoint": base_url,
+            "family": MINISTRAL_MODEL_FAMILY,
+            "models": models,
+            "error": "",
+        }
+
+    def _fetch_lm_studio_models(self, base_url: str) -> Optional[List[Dict[str, Any]]]:
+        """Models LM Studio has on disk (its own ``/api/v0/models``), loaded or not.
+
+        ``None`` when the endpoint is unreachable or the payload is not understood:
+        a server that does not expose the endpoint (any other OpenAI-compatible
+        backend) is left alone rather than judged on a response misread. An empty
+        list, on the other hand, is understood and conclusive: the server serves
+        no model at all.
         """
         root = base_url[: -len("/v1")] if base_url.endswith("/v1") else base_url
         try:
@@ -371,12 +416,6 @@ class MinistralDetector:
             payload = response.json()
         except (httpx.HTTPError, httpx.TimeoutException, ValueError):
             return None
-
-        # A verdict is only given on a payload actually understood. An unexpected
-        # shape means this backend does not answer the question asked, which is the
-        # same situation as not exposing the endpoint at all — staying silent beats
-        # refusing a scan over a response misread. An empty list, on the other hand,
-        # is understood and conclusive: the server serves no model at all.
         if not isinstance(payload, dict):
             return None
         listed = payload.get("data")
@@ -385,18 +424,37 @@ class MinistralDetector:
         models = [m for m in listed if isinstance(m, dict)]
         if listed and not models:
             return None
+        return models
 
-        entry = next((m for m in models if m.get("id") == self._model_id), None)
+    def _model_not_served_reason(
+        self, base_url: str, lm_studio_model: Optional[str] = None
+    ) -> Optional[DetectorFailure]:
+        """Why the configured model cannot answer, or ``None`` when it is ready.
+
+        A reachable endpoint is not a working detector: LM Studio answers
+        ``GET /models`` with every model it has on disk, loaded or not, so a server
+        left running with the model unloaded passes a reachability check and then
+        fails every request. The model state lives on LM Studio's own
+        ``/api/v0/models``; a server that does not expose it (any other
+        OpenAI-compatible backend) is left alone rather than refused on a check it
+        never claimed to support.
+        """
+        model_id = lm_studio_model or self._model_id
+        models = self._fetch_lm_studio_models(base_url)
+        if models is None:
+            return None
+
+        entry = next((m for m in models if m.get("id") == model_id), None)
         if entry is None:
             loaded = [m.get("id") for m in models if m.get("state") == "loaded"]
             return DetectorFailure(
                 code=DetectorFailureCode.MODEL_NOT_AVAILABLE,
                 params={
-                    "model": str(self._model_id),
+                    "model": str(model_id),
                     "loadedModels": ", ".join(str(model) for model in loaded),
                 },
                 message=(
-                    f"model {self._model_id} is not available on the endpoint "
+                    f"model {model_id} is not available on the endpoint "
                     f"(loaded models: {loaded or 'none'})"
                 ),
             )
@@ -404,9 +462,9 @@ class MinistralDetector:
         if state != "loaded":
             return DetectorFailure(
                 code=DetectorFailureCode.MODEL_NOT_LOADED,
-                params={"model": str(self._model_id), "state": str(state)},
+                params={"model": str(model_id), "state": str(state)},
                 message=(
-                    f"model {self._model_id} is present but not loaded (state: {state})"
+                    f"model {model_id} is present but not loaded (state: {state})"
                 ),
             )
         return None
@@ -421,6 +479,7 @@ class MinistralDetector:
         lm_studio_host: Optional[str] = None,
         lm_studio_port: Optional[int] = None,
         concurrency: Optional[int] = None,
+        lm_studio_model: Optional[str] = None,
     ) -> List[PIIEntity]:
         if not text:
             return []
@@ -431,6 +490,9 @@ class MinistralDetector:
         # the singleton detector's ``self.base_url`` (env default) is never
         # mutated under concurrent gRPC threads.
         base_url = self._resolve_base_url(lm_studio_host, lm_studio_port)
+        # Per-request model override (DB column lm_studio_model): a quantization
+        # of the Ministral-PII family picked by the operator.
+        model_id = lm_studio_model or self._model_id
         detection_id = f"ministral_{int(time.time() * 1000) % 10000}"
 
         try:
@@ -447,7 +509,7 @@ class MinistralDetector:
             resolver = _LabelResolver.from_mapping(label_mapping)
             entities = self._extract_over_chunks(
                 text, resolver, type_labels, chunk_size, overlap, base_url,
-                concurrency,
+                concurrency, model_id,
             )
             entities = self._apply_per_type_thresholds(entities, scoring_overrides)
             # Global confidence floor, for parity with the other detectors. The
@@ -502,6 +564,7 @@ class MinistralDetector:
         overlap: Optional[int],
         base_url: str,
         concurrency: Optional[int] = None,
+        model_id: Optional[str] = None,
     ) -> List[PIIEntity]:
         """Chunk the text, extract per chunk, rebase offsets to global coords.
 
@@ -527,12 +590,12 @@ class MinistralDetector:
         workers = max(1, int(concurrency)) if concurrency else 1
         if workers <= 1 or len(chunks) <= 1:
             outcomes = [
-                self._extract_one_chunk(chunk, resolver, type_labels, base_url)
+                self._extract_one_chunk(chunk, resolver, type_labels, base_url, model_id)
                 for chunk in chunks
             ]
         else:
             outcomes = self._extract_chunks_concurrently(
-                chunks, resolver, type_labels, base_url, workers
+                chunks, resolver, type_labels, base_url, workers, model_id
             )
         return self._merge_chunk_outcomes(outcomes, base_url)
 
@@ -565,6 +628,7 @@ class MinistralDetector:
         resolver: _LabelResolver,
         type_labels: Dict[str, str],
         base_url: str,
+        model_id: Optional[str] = None,
     ) -> _ChunkOutcome:
         """Extract one chunk's entities (global offsets); fail-open on HTTP/timeout.
 
@@ -574,7 +638,7 @@ class MinistralDetector:
         is a real bug, surfaced by ``detect_pii`` as ``PIIDetectionError``).
         """
         try:
-            raw_pairs = self._extract_chunk(chunk.text, base_url)
+            raw_pairs = self._extract_chunk(chunk.text, base_url, model_id)
         except (httpx.HTTPError, httpx.TimeoutException, DetectorUnavailableError) as exc:
             self.logger.warning(
                 "MINISTRAL_CHUNK_FAILED start=%d len=%d: %s",
@@ -592,6 +656,7 @@ class MinistralDetector:
         type_labels: Dict[str, str],
         base_url: str,
         workers: int,
+        model_id: Optional[str] = None,
     ) -> List[_ChunkOutcome]:
         """Extract chunks across a bounded thread pool over the shared client.
 
@@ -612,7 +677,8 @@ class MinistralDetector:
         ) as pool:
             futures = [
                 pool.submit(
-                    self._extract_one_chunk, chunk, resolver, type_labels, base_url
+                    self._extract_one_chunk, chunk, resolver, type_labels, base_url,
+                    model_id,
                 )
                 for chunk in chunks
             ]
@@ -757,21 +823,26 @@ class MinistralDetector:
         return self._client
 
     def _extract_chunk(
-        self, chunk_text: str, base_url: Optional[str] = None
+        self,
+        chunk_text: str,
+        base_url: Optional[str] = None,
+        model_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """POST one chunk to ``/chat/completions`` and parse the entity array."""
         client = self._get_client()
         url = f"{base_url or self.base_url}/chat/completions"
-        payload = self._build_payload(chunk_text)
+        payload = self._build_payload(chunk_text, model_id)
         resp = client.post(url, json=payload)
         resp.raise_for_status()
         content = self._extract_content(resp.json())
         return self._parse_entity_array(content)
 
-    def _build_payload(self, chunk_text: str) -> Dict[str, Any]:
+    def _build_payload(
+        self, chunk_text: str, model_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Build the OpenAI chat/completions body (temperature 0, json_schema)."""
         return {
-            "model": self._model_id,
+            "model": model_id or self._model_id,
             "messages": [
                 {"role": "system", "content": _SYSTEM_PROMPT},
                 {"role": "user", "content": chunk_text},

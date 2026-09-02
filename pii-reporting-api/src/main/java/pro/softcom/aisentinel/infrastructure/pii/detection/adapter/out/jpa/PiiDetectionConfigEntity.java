@@ -96,6 +96,15 @@ public class PiiDetectionConfigEntity {
     private Integer lmStudioPort;
 
     /**
+     * LM Studio identifier of the Ministral-PII model the detector prompts (a
+     * quantization of the Ministral-PII family, e.g.
+     * {@code ministral-3b-pii-preview@q4_k_m}). {@code null} = the detector
+     * service default.
+     */
+    @Column(name = "lm_studio_model")
+    private String lmStudioModel;
+
+    /**
      * Number of chunk prompts the Ministral-PII detector sends concurrently to
      * the LM Studio endpoint (1 = sequential). Defaults to {@code 1}.
      */

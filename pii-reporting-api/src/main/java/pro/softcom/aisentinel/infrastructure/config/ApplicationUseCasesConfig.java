@@ -28,6 +28,7 @@ import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiDetecti
 import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiTypeConfigsPort;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionConfigRepository;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRepository;
+import pro.softcom.aisentinel.application.pii.detection.usecase.ListLmStudioModelsUseCase;
 import pro.softcom.aisentinel.application.pii.detection.usecase.ManageConcurrencyBenchmarkUseCase;
 import pro.softcom.aisentinel.application.pii.detection.usecase.ManagePiiDetectionConfigUseCase;
 import pro.softcom.aisentinel.application.pii.detection.usecase.ManagePiiTypeConfigsUseCase;
@@ -100,6 +101,12 @@ public class ApplicationUseCasesConfig {
                                                FalsePositiveDetectionFilter falsePositiveDetectionFilter) {
         return new ScanReportingUseCase(scanResultQuery, checkpointRepo, spaceRepository,
                 scanSeverityCountService, scanPiiTypeCountService, falsePositiveDetectionFilter);
+    }
+
+    @Bean
+    public ListLmStudioModelsUseCase listLmStudioModelsUseCase(PiiDetectorClient piiDetectorClient,
+                                                              PiiDetectionConfigRepository piiDetectionConfigRepository) {
+        return new ListLmStudioModelsUseCase(piiDetectorClient, piiDetectionConfigRepository);
     }
 
     @Bean

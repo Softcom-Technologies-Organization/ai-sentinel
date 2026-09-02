@@ -15,11 +15,15 @@ ALTER TABLE pii_detection_config
     ADD COLUMN IF NOT EXISTS lm_studio_host VARCHAR(255) NOT NULL DEFAULT 'localhost';
 ALTER TABLE pii_detection_config
     ADD COLUMN IF NOT EXISTS lm_studio_port INTEGER NOT NULL DEFAULT 1234;
+ALTER TABLE pii_detection_config
+    ADD COLUMN IF NOT EXISTS lm_studio_model VARCHAR(255);
 
 COMMENT ON COLUMN pii_detection_config.lm_studio_host IS
     'Host of the OpenAI-compatible LM Studio endpoint serving the Ministral-PII model. Default: localhost.';
 COMMENT ON COLUMN pii_detection_config.lm_studio_port IS
     'Port of the OpenAI-compatible LM Studio endpoint serving the Ministral-PII model. Default: 1234.';
+COMMENT ON COLUMN pii_detection_config.lm_studio_model IS
+    'LM Studio identifier of the Ministral-PII model to prompt (a quantization of the family, e.g. ministral-3b-pii-preview@q4_k_m). NULL: detector service default.';
 
 ALTER TABLE pii_detection_config DROP CONSTRAINT IF EXISTS chk_lm_studio_port_range;
 ALTER TABLE pii_detection_config

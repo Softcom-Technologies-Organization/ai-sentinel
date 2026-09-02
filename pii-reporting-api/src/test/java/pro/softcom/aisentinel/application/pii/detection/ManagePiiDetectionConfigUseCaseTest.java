@@ -59,7 +59,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_PersistAndRetrieveConfig_When_UpdatingConfiguration() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            false, true, true, 1024, 128, new BigDecimal("0.85"), false, "localhost", 1234, 1, true, null, "integrationtest"
+            false, true, true, 1024, 128, new BigDecimal("0.85"), false, "localhost", 1234, null, 1, true, null, "integrationtest"
         );
 
         // Act
@@ -84,7 +84,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_PersistPostfilterEnabled_When_UpdateRequested() {
         // Arrange — enable the flag
         UpdatePiiDetectionConfigCommand enableCommand = new UpdatePiiDetectionConfigCommand(
-            true, true, true, 1024, 128, new BigDecimal("0.75"), true, "localhost", 1234, 1, true, null, "postfilter-enabler"
+            true, true, true, 1024, 128, new BigDecimal("0.75"), true, "localhost", 1234, null, 1, true, null, "postfilter-enabler"
         );
 
         // Act
@@ -98,7 +98,7 @@ class ManagePiiDetectionConfigUseCaseTest {
 
         // Arrange — toggle back to disabled
         UpdatePiiDetectionConfigCommand disableCommand = new UpdatePiiDetectionConfigCommand(
-            true, true, true, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, 1, true, null, "postfilter-disabler"
+            true, true, true, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, 1, true, null, "postfilter-disabler"
         );
 
         // Act
@@ -115,13 +115,13 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_UpdateExistingConfig_When_ConfigAlreadyExists() {
         // Arrange - Create initial config
         UpdatePiiDetectionConfigCommand initialCommand = new UpdatePiiDetectionConfigCommand(
-            true, false, false, 1024, 128, new BigDecimal("0.60"), false, "localhost", 1234, 1, true, null, "user1"
+            true, false, false, 1024, 128, new BigDecimal("0.60"), false, "localhost", 1234, null, 1, true, null, "user1"
         );
         managePiiDetectionConfigPort.updateConfig(initialCommand);
 
         // Act - Update config
         UpdatePiiDetectionConfigCommand updateCommand = new UpdatePiiDetectionConfigCommand(
-            false, true, true, 1024, 128, new BigDecimal("0.90"), false, "localhost", 1234, 1, true, null, "user2"
+            false, true, true, 1024, 128, new BigDecimal("0.90"), false, "localhost", 1234, null, 1, true, null, "user2"
         );
         PiiDetectionConfig updated = managePiiDetectionConfigPort.updateConfig(updateCommand);
 
@@ -145,7 +145,7 @@ class ManagePiiDetectionConfigUseCaseTest {
         for (int i = 0; i < 5; i++) {
             UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
                 i % 2 == 0, i % 2 != 0, true, 1024, 128,
-                new BigDecimal("0." + (70 + i)), false, "localhost", 1234, 1, true, null, "user" + i
+                new BigDecimal("0." + (70 + i)), false, "localhost", 1234, null, 1, true, null, "user" + i
             );
             managePiiDetectionConfigPort.updateConfig(command);
         }
@@ -163,7 +163,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_PersistBoundaryThresholds_When_ThresholdIsZeroOrOne() {
         // Act - Update with threshold 0.0
         UpdatePiiDetectionConfigCommand zeroCommand = new UpdatePiiDetectionConfigCommand(
-            true, false, false, 1024, 128, BigDecimal.ZERO, false, "localhost", 1234, 1, true, null, "testuser"
+            true, false, false, 1024, 128, BigDecimal.ZERO, false, "localhost", 1234, null, 1, true, null, "testuser"
         );
         PiiDetectionConfig zeroConfig = managePiiDetectionConfigPort.updateConfig(zeroCommand);
 
@@ -172,7 +172,7 @@ class ManagePiiDetectionConfigUseCaseTest {
 
         // Act - Update with threshold 1.0
         UpdatePiiDetectionConfigCommand oneCommand = new UpdatePiiDetectionConfigCommand(
-            true, false, false, 1024, 128, BigDecimal.ONE, false, "localhost", 1234, 1, true, null, "testuser"
+            true, false, false, 1024, 128, BigDecimal.ONE, false, "localhost", 1234, null, 1, true, null, "testuser"
         );
         PiiDetectionConfig oneConfig = managePiiDetectionConfigPort.updateConfig(oneCommand);
 
@@ -184,7 +184,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_PersistDetectorStates_When_OnlyOneDetectorEnabled() {
         // Test with only Presidio enabled
         UpdatePiiDetectionConfigCommand presidioCommand = new UpdatePiiDetectionConfigCommand(
-            true, false, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, 1, true, null, "testuser"
+            true, false, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, 1, true, null, "testuser"
         );
         PiiDetectionConfig presidioConfig = managePiiDetectionConfigPort.updateConfig(presidioCommand);
 
@@ -195,7 +195,7 @@ class ManagePiiDetectionConfigUseCaseTest {
 
         // Test with only Regex enabled
         UpdatePiiDetectionConfigCommand regexCommand = new UpdatePiiDetectionConfigCommand(
-            false, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, 1, true, null, "testuser"
+            false, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, 1, true, null, "testuser"
         );
         PiiDetectionConfig regexConfig = managePiiDetectionConfigPort.updateConfig(regexCommand);
 
@@ -205,7 +205,7 @@ class ManagePiiDetectionConfigUseCaseTest {
 
         // Test with only Ministral enabled
         UpdatePiiDetectionConfigCommand ministralCommand = new UpdatePiiDetectionConfigCommand(
-            false, false, true, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, 1, true, null, "testuser"
+            false, false, true, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, 1, true, null, "testuser"
         );
         PiiDetectionConfig ministralConfig = managePiiDetectionConfigPort.updateConfig(ministralCommand);
 

@@ -345,7 +345,16 @@
       "hostError": "L'hôte est requis et ne doit pas contenir d'espaces ni de barres obliques.",
       "port": "Port",
       "portHint": "Port TCP exposé par LM Studio (1-65535, défaut 1234).",
-      "portError": "Le port doit être compris entre 1 et 65535."
+      "portError": "Le port doit être compris entre 1 et 65535.",
+      "model": "Modèle",
+      "modelPlaceholder": "ministral-3b-pii-preview@q4_k_m",
+      "modelHint": "Quantisation du modèle Ministral-PII à interroger, parmi celles que LM Studio a sur disque. Changer de modèle relance le calibrage de la concurrence au prochain démarrage.",
+      "modelRefresh": "Recharger la liste des modèles",
+      "modelListError": "Liste indisponible ({{error}}). Saisissez l'identifiant LM Studio à la main.",
+      "modelNotListed": "non listé par LM Studio",
+      "modelLoaded": "chargé",
+      "modelNotLoaded": "non chargé",
+      "modelFamilyWarning": "Ce modèle n'est pas une quantisation de {{family}} : le découpage en tokens ne serait plus fiable."
     },
     "detectors": {
       "presidio": {

@@ -105,7 +105,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
             false,
             1024, 128,
             newThreshold,
-            false, "localhost", 1234, 1, true, null,
+            false, "localhost", 1234, null, 1, true, null,
             updateTime,
             "integration-test"
         );
@@ -145,7 +145,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
             true,
             true,
             1024, 128, new BigDecimal("0.75"),
-            true, "localhost", 1234, 1, true, null,
+            true, "localhost", 1234, null, 1, true, null,
             LocalDateTime.now(),
             "postfilter-enabler"
         );
@@ -168,7 +168,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
         PiiDetectionConfig config = new PiiDetectionConfig(
             CONFIG_ID,
             true, false, true, 2048, 256, new BigDecimal("0.75"),
-            false, "localhost", 1234, 1, true, null,
+            false, "localhost", 1234, null, 1, true, null,
             LocalDateTime.now(),
             "ministral-enabler"
         );
@@ -195,7 +195,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
         PiiDetectionConfig config = new PiiDetectionConfig(
             CONFIG_ID,
             true, false, true, 2048, 256, new BigDecimal("0.75"),
-            false, "localhost", 1234, 4, false, "localhost:1234|ministral",
+            false, "localhost", 1234, null, 4, false, "localhost:1234|ministral",
             LocalDateTime.now(),
             "concurrency-tuner"
         );
@@ -290,7 +290,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
         persistenceAdapter.updateConfig(new PiiDetectionConfig(
             existingConfig.id(),
             false, true, false, 1024, 128, new BigDecimal("0.80"),
-            false, "localhost", 1234, 1, true, null,
+            false, "localhost", 1234, null, 1, true, null,
             LocalDateTime.now(),
             "bench-preserver"
         ));
@@ -314,7 +314,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
         persistenceAdapter.updateConfig(new PiiDetectionConfig(
             CONFIG_ID,
             true, true, true, 2048, 256, new BigDecimal("0.75"),
-            false, "localhost", 1234, 4, true, "localhost:1234|ministral",
+            false, "localhost", 1234, null, 4, true, "localhost:1234|ministral",
             LocalDateTime.now(),
             "concurrency-tuner"
         ));

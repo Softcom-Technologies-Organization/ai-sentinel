@@ -34,6 +34,7 @@ public record PiiDetectionConfigResponseDto(
     boolean postfilterEnabled,
     String lmStudioHost,
     Integer lmStudioPort,
+    String lmStudioModel,
     Integer ministralConcurrency,
     boolean ministralConcurrencyAuto,
     String ministralConcurrencyTunedSignature,

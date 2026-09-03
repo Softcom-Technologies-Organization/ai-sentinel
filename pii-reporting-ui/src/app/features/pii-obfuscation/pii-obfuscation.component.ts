@@ -130,8 +130,6 @@ export class PiiObfuscationComponent {
   readonly dialogVisible = signal(false);
   readonly activeJobId = signal<string | null>(null);
 
-  private openFirstGroupOnNextResponse = true;
-
   readonly totals = computed(() => this.viewState.lastSearchResponse()?.totals ?? null);
   readonly groups = computed(() => this.viewState.lastSearchResponse()?.groups ?? []);
   readonly showBanner = computed(() => this.preselectRequested() && !this.bannerDismissed());
@@ -266,7 +264,8 @@ export class PiiObfuscationComponent {
     }
     this.viewState.groupBy.set(axis);
     this.viewState.page.set(0);
-    this.openFirstGroupOnNextResponse = true;
+    // Open accordions are keyed by the previous axis, so they no longer match any group.
+    this.viewState.collapseAll();
     this.refreshSearch();
   }
 
@@ -488,10 +487,6 @@ export class PiiObfuscationComponent {
   private applySearchResponse(response: RemediationFindingsSearchResponse): void {
     this.viewState.lastSearchResponse.set(response);
     this.viewState.loading.set(false);
-    if (this.openFirstGroupOnNextResponse) {
-      this.viewState.openAll(response.groups.slice(0, 1).map((group) => group.key));
-      this.openFirstGroupOnNextResponse = false;
-    }
   }
 
   private refreshPlan(): void {

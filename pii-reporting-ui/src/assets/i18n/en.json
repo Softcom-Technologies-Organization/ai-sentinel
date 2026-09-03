@@ -66,6 +66,7 @@
       "resumeScan": "Resume last scan",
       "openInConfluence": "Open in Confluence",
       "confluenceUnavailable": "URL unavailable (not provided by backend)",
+      "noScanData": "No scan data for this space",
       "settings": "Settings",
       "darkMode": "Switch to dark mode",
       "lightMode": "Switch to light mode",
@@ -1141,9 +1142,9 @@
   },
   "obfuscation": {
     "entry": {
-      "space": "Obfuscate space",
-      "page": "Obfuscate page",
-      "attachment": "Obfuscate attachment"
+      "space": "Remedy PIIs from space",
+      "page": "Remedy PIIs from page",
+      "attachment": "Remedy PIIs from attachment"
     },
     "spaceSub": "{{total}} findings · last scan {{ts}}",
     "stats": {

@@ -29,7 +29,7 @@ const FR_TRANSLATIONS = {
       rate: 'Débit moyen',
       rateUnit: 'car/s',
       busy: 'Temps cumulé',
-      prefilterLabel: 'Pré-filtre',
+      postfilterLabel: 'Post-filtre',
       detectorFailed: '{{count}} échec(s) — analyse incomplète',
       busyNote: 'Temps de calcul cumulé.'
     }
@@ -51,7 +51,7 @@ const COMPLETED_STATS: SpaceScanStatsDto = {
   failedItems: [{ itemType: 'PAGE', title: 'Ma page' }],
   detectorStats: [
     { detector: 'PRESIDIO', detections: 12, charsProcessed: 1730000, busyMs: 520000, charsPerSecond: 3326.9, discarded: 0, failedRequests: 0, lastError: null },
-    { detector: 'PREFILTER', detections: 50, charsProcessed: 0, busyMs: 12, charsPerSecond: null, discarded: 5, failedRequests: 0, lastError: null }
+    { detector: 'POSTFILTER', detections: 50, charsProcessed: 0, busyMs: 12, charsPerSecond: null, discarded: 5, failedRequests: 0, lastError: null }
   ]
 };
 
@@ -85,6 +85,17 @@ describe('SpaceScanStatsPopoverComponent', () => {
     createComponent();
     expect(fixture.componentInstance.state()).toBe('idle');
     expect(apiMock.getSpaceScanStats).not.toHaveBeenCalled();
+  });
+
+  it('Should_DisableTriggerButton_When_DisabledInputSet', () => {
+    fixture = TestBed.createComponent(SpaceScanStatsPopoverComponent);
+    fixture.componentRef.setInput('spaceKey', 'KEY');
+    fixture.componentRef.setInput('disabled', true);
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector('[data-testid="space-scan-stats-button"] button')
+      ?? fixture.nativeElement.querySelector('button');
+    expect(button.disabled).toBe(true);
   });
 
   it('Should_LoadStats_When_PopoverShown', () => {
@@ -153,18 +164,19 @@ describe('SpaceScanStatsPopoverComponent', () => {
     expect(fixture.componentInstance.formatRate(null)).toBe('—');
   });
 
-  it('Should_IdentifyPrefilter_When_DetectorIsPrefilter', () => {
+  it('Should_IdentifyPostfilter_When_DetectorIsPostfilter', () => {
     createComponent();
     const c = fixture.componentInstance;
-    expect(c.isPrefilter('PREFILTER')).toBe(true);
+    expect(c.isPostfilter('POSTFILTER')).toBe(true);
+    expect(c.isPostfilter('PREFILTER')).toBe(false);
   });
 
   it('Should_ExposeDiscardedCounts_When_StatsLoaded', () => {
     createComponent();
     fixture.componentInstance.onShow();
     const loaded = fixture.componentInstance.stats();
-    const prefilter = loaded?.detectorStats.find((d) => d.detector === 'PREFILTER');
-    expect(prefilter?.discarded).toBe(5);
+    const postfilter = loaded?.detectorStats.find((d) => d.detector === 'POSTFILTER');
+    expect(postfilter?.discarded).toBe(5);
   });
 
   it('Should_ExposeFailureCountAndReason_When_DetectorCouldNotRun', () => {

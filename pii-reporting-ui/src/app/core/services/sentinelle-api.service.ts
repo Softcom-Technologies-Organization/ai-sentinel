@@ -92,7 +92,7 @@ export interface ScanDetectorStatDto {
   charsProcessed: number;
   busyMs: number;
   charsPerSecond: number | null;
-  /** PII discarded by this stage (0 for real detectors; >0 for the PREFILTER post-filter). */
+  /** PII discarded by this stage (0 for real detectors; >0 for the POSTFILTER post-filter). */
   discarded: number;
   /**
    * Analysis requests this detector could not serve (e.g. its endpoint was

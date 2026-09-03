@@ -28,6 +28,16 @@
   background: var(--sentinel-severity-high-bg);
 }
 
+.obfuscation-entry-btn--disabled {
+  color: var(--sentinel-text-subtle);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.obfuscation-entry-btn--disabled:hover {
+  background: transparent;
+}
+
 .obfuscation-entry-btn:focus-visible {
   outline: 2px solid var(--sentinel-focus-ring);
   outline-offset: 2px;

@@ -23,6 +23,7 @@ export class ObfuscationEntryButtonComponent {
   readonly pageId = input<string | undefined>(undefined);
   readonly attachmentName = input<string | undefined>(undefined);
   readonly labeled = input(false);
+  readonly disabled = input(false);
 
   readonly remediationConfig = inject(RemediationConfigService);
 
@@ -50,7 +51,6 @@ export class ObfuscationEntryButtonComponent {
     if (attachmentName) {
       params['attachmentName'] = attachmentName;
     }
-    params['preselect'] = 'true';
     return params;
   });
 }

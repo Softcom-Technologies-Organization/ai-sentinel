@@ -1,12 +1,14 @@
 @if (remediationConfig.enabled()) {
   <a class="obfuscation-entry-btn"
      [class.obfuscation-entry-btn--labeled]="labeled()"
-     [routerLink]="['/obfuscation']"
+     [class.obfuscation-entry-btn--disabled]="disabled()"
+     [routerLink]="disabled() ? null : ['/obfuscation']"
      [queryParams]="queryParams()"
      target="_blank"
      [attr.data-testid]="testId()"
      [attr.aria-label]="labelKey() | transloco"
-     [pTooltip]="labeled() ? undefined : (labelKey() | transloco)"
+     [attr.aria-disabled]="disabled() ? 'true' : null"
+     [pTooltip]="disabled() ? ('dashboard.actions.noScanData' | transloco) : (labeled() ? undefined : (labelKey() | transloco))"
      tooltipPosition="top"
      (click)="$event.stopPropagation()">
     <i class="pi pi-eye-slash" aria-hidden="true"></i>

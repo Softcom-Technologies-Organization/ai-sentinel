@@ -1,10 +1,14 @@
-<p-button icon="pi pi-chart-bar"
-          styleClass="p-button-text"
-          (click)="toggle($event)"
-          (keydown.enter)="toggle($event)"
-          (keydown.space)="$event.preventDefault(); toggle($event)"
-          [ariaLabel]="'dashboard.scanStats.buttonAriaLabel' | transloco"
-          [attr.data-testid]="'space-scan-stats-button'"></p-button>
+<span [pTooltip]="(disabled() ? 'dashboard.actions.noScanData' : 'dashboard.scanStats.buttonAriaLabel') | transloco"
+      tooltipPosition="top">
+  <p-button icon="pi pi-chart-bar"
+            styleClass="p-button-text"
+            [disabled]="disabled()"
+            (click)="toggle($event)"
+            (keydown.enter)="toggle($event)"
+            (keydown.space)="$event.preventDefault(); toggle($event)"
+            [ariaLabel]="'dashboard.scanStats.buttonAriaLabel' | transloco"
+            [attr.data-testid]="'space-scan-stats-button'"></p-button>
+</span>
 
 <p-popover #popover (onShow)="onShow()">
   <section class="scan-stats-panel"
@@ -106,7 +110,7 @@
                     @for (detector of data.detectorStats; track detector.detector) {
                       <tr [class.scan-stats-detector-failed]="detector.failedRequests > 0">
                         <th scope="row">
-                          @if (isPrefilter(detector.detector)) {
+                          @if (isPostfilter(detector.detector)) {
                             {{ 'dashboard.scanStats.postfilterLabel' | transloco }}
                           } @else {
                             {{ detector.detector }}
@@ -121,14 +125,14 @@
                         </th>
                         <td>{{ detector.detections }}</td>
                         <td>
-                          @if (isPrefilter(detector.detector)) {
+                          @if (isPostfilter(detector.detector)) {
                             {{ detector.discarded }}
                           } @else {
                             —
                           }
                         </td>
                         <td>
-                          @if (isPrefilter(detector.detector)) {
+                          @if (isPostfilter(detector.detector)) {
                             —
                           } @else {
                             @if (detector.charsPerSecond !== null) {

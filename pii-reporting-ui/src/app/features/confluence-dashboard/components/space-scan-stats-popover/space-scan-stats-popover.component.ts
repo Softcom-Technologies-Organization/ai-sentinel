@@ -11,6 +11,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ButtonModule } from 'primeng/button';
 import { PopoverModule, Popover } from 'primeng/popover';
 import { TableModule } from 'primeng/table';
+import { TooltipModule } from 'primeng/tooltip';
 import { TranslocoModule } from '@jsverse/transloco';
 import {
   SentinelleApiService,
@@ -29,7 +30,7 @@ type LoadState = 'idle' | 'loading' | 'loaded' | 'notFound' | 'error';
 @Component({
   selector: 'app-space-scan-stats-popover',
   standalone: true,
-  imports: [ButtonModule, PopoverModule, TableModule, TranslocoModule],
+  imports: [ButtonModule, PopoverModule, TableModule, TooltipModule, TranslocoModule],
   templateUrl: './space-scan-stats-popover.component.html',
   styleUrl: './space-scan-stats-popover.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -37,6 +38,8 @@ type LoadState = 'idle' | 'loading' | 'loaded' | 'notFound' | 'error';
 export class SpaceScanStatsPopoverComponent {
   /** Confluence space key whose scan statistics are displayed. */
   readonly spaceKey = input.required<string>();
+
+  readonly disabled = input(false);
 
   private readonly api = inject(SentinelleApiService);
   private readonly popover = viewChild.required<Popover>('popover');
@@ -110,10 +113,10 @@ export class SpaceScanStatsPopoverComponent {
     return Math.round(charsPerSecond).toLocaleString('fr-FR');
   }
 
-  /** True for the deterministic format pre-filter pseudo detector, which discards
+  /** True for the deterministic format post-filter pseudo detector, which discards
    * PII and has no characters-per-second throughput. */
-  isPrefilter(detector: string): boolean {
-    return detector === 'PREFILTER';
+  isPostfilter(detector: string): boolean {
+    return detector === 'POSTFILTER';
   }
 
   private toFrenchDecimal(value: number): string {

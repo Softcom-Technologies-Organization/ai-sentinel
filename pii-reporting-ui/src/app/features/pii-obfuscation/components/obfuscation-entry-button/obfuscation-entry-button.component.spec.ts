@@ -39,9 +39,12 @@ describe('ObfuscationEntryButtonComponent', () => {
     }).compileComponents();
   });
 
-  function createComponent(inputs: { spaceKey: string; pageId?: string; attachmentName?: string }): void {
+  function createComponent(inputs: { spaceKey: string; pageId?: string; attachmentName?: string; disabled?: boolean }): void {
     fixture = TestBed.createComponent(ObfuscationEntryButtonComponent);
     fixture.componentRef.setInput('spaceKey', inputs.spaceKey);
+    if (inputs.disabled) {
+      fixture.componentRef.setInput('disabled', true);
+    }
     if (inputs.pageId) {
       fixture.componentRef.setInput('pageId', inputs.pageId);
     }
@@ -66,13 +69,13 @@ describe('ObfuscationEntryButtonComponent', () => {
     expect(button).toBeTruthy();
   });
 
-  it('Should_LinkToSpaceScopeWithPreselect_When_SpaceEntryRendered', () => {
+  it('Should_LinkToSpaceScopeWithoutPreselect_When_SpaceEntryRendered', () => {
     remediationConfigMock.enabled.set(true);
     createComponent({ spaceKey: 'SPACE' });
 
     const link = fixture.nativeElement.querySelector('[data-testid="btn-obfuscate-space"]');
 
-    expect(link.getAttribute('href')).toBe('/obfuscation?spaceKey=SPACE&preselect=true');
+    expect(link.getAttribute('href')).toBe('/obfuscation?spaceKey=SPACE');
   });
 
   it('Should_LinkToPageScope_When_PageEntryRendered', () => {
@@ -81,7 +84,7 @@ describe('ObfuscationEntryButtonComponent', () => {
 
     const link = fixture.nativeElement.querySelector('[data-testid="btn-obfuscate-page"]');
 
-    expect(link.getAttribute('href')).toBe('/obfuscation?spaceKey=SPACE&pageId=p1&preselect=true');
+    expect(link.getAttribute('href')).toBe('/obfuscation?spaceKey=SPACE&pageId=p1');
   });
 
   it('Should_LinkToAttachmentScope_When_AttachmentEntryRendered', () => {
@@ -91,7 +94,7 @@ describe('ObfuscationEntryButtonComponent', () => {
     const link = fixture.nativeElement.querySelector('[data-testid="btn-obfuscate-attachment"]');
 
     expect(link.getAttribute('href'))
-      .toBe('/obfuscation?spaceKey=SPACE&pageId=p1&attachmentName=doc.pdf&preselect=true');
+      .toBe('/obfuscation?spaceKey=SPACE&pageId=p1&attachmentName=doc.pdf');
   });
 
   it('Should_OpenInNewTab_When_EntryRendered', () => {
@@ -110,6 +113,15 @@ describe('ObfuscationEntryButtonComponent', () => {
     fixture.nativeElement.querySelector('a').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(rowClickSpy).not.toHaveBeenCalled();
+  });
+
+  it('Should_RemoveLinkTarget_When_Disabled', () => {
+    remediationConfigMock.enabled.set(true);
+    createComponent({ spaceKey: 'SPACE', disabled: true });
+
+    const link = fixture.nativeElement.querySelector('a');
+    expect(link.getAttribute('href')).toBeNull();
+    expect(link.getAttribute('aria-disabled')).toBe('true');
   });
 
   it('Should_ExposeTranslatedAriaLabel_When_SpaceEntryRendered', () => {

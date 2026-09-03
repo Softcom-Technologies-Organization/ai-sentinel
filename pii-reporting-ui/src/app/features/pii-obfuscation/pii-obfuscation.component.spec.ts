@@ -355,14 +355,14 @@ describe('PiiObfuscationComponent', () => {
     expect(stats?.textContent).toContain('7');
   });
 
-  it('Should_OpenOnlyFirstGroup_When_FirstResponseArrives', () => {
+  it('Should_KeepEveryGroupCollapsed_When_FirstResponseArrives', () => {
     api.searchFindings.mockReturnValue(
       of(searchResponse({ groups: [group({ key: 'A' }), group({ key: 'B' })] }))
     );
 
     createEnabledComponent();
 
-    expect([...viewStateService().openAccordions()]).toEqual(['A']);
+    expect(viewStateService().openAccordions().size).toBe(0);
   });
 
   it('Should_PreselectAllSeveritiesAndShowBanner_When_PreselectParamTrue', () => {
@@ -423,7 +423,7 @@ describe('PiiObfuscationComponent', () => {
     expect(lastSearchRequest().statusFilter).toBe('PENDING');
   });
 
-  it('Should_ReopenFirstGroupOnly_When_GroupByChanges', () => {
+  it('Should_CollapseEveryGroup_When_GroupByChanges', () => {
     api.searchFindings.mockReturnValue(
       of(searchResponse({ groups: [group({ key: 'high' }), group({ key: 'low' })] }))
     );
@@ -433,7 +433,7 @@ describe('PiiObfuscationComponent', () => {
     fixture.componentInstance.setGroupBy('severity');
 
     expect(lastSearchRequest().groupBy).toBe('severity');
-    expect([...viewStateService().openAccordions()]).toEqual(['high']);
+    expect(viewStateService().openAccordions().size).toBe(0);
   });
 
   it('Should_CheckTypeCriterion_When_TypeMasterToggledFromNone', () => {
@@ -847,6 +847,8 @@ describe('PiiObfuscationComponent', () => {
     );
 
     createEnabledComponent();
+    fixture.componentInstance.expandAll();
+    fixture.detectChanges();
 
     expect(query('obfuscation-group-hint')?.textContent).toContain('1 sur 12');
   });

@@ -80,12 +80,12 @@ message DetectorRunStats {
   int64 duration_ms = 2;
 
   // For real detectors: number of raw entities found (pre-merge).
-  // For the PREFILTER post-filter: number of PII examined by the stage
+  // For the POSTFILTER post-filter: number of PII examined by the stage
   // (i.e. its input count).
   int32 entities_found = 3;
 
   // Number of PII the stage discarded. Always 0 for real detectors; for the
-  // PREFILTER post-filter it is the count of PII it rejected.
+  // POSTFILTER post-filter it is the count of PII it rejected.
   int32 entities_discarded = 4;
 
   // Short technical reason why this detector produced nothing usable for this
@@ -221,7 +221,7 @@ message PIIEntity {
 
 // Source of the detected PII.
 //
-// PREFILTER is not a PII detector but the deterministic precision post-filter.
+// POSTFILTER is not a PII detector but the deterministic precision post-filter.
 // It never labels a PIIEntity.source; it appears only in DetectorRunStats so
 // callers can measure how many PII it discarded: entities_found carries the
 // number of PII it examined and entities_discarded the number it rejected.
@@ -233,7 +233,7 @@ enum DetectorSource {
   UNKNOWN_SOURCE = 0;
   PRESIDIO = 2;
   REGEX = 3;
-  PREFILTER = 7;
+  POSTFILTER = 7;
   // Specialised LLM PII detector (Ministral-PII).
   MINISTRAL = 8;
 }

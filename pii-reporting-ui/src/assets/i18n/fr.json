@@ -66,6 +66,7 @@
       "resumeScan": "Reprendre le dernier scan",
       "openInConfluence": "Ouvrir dans Confluence",
       "confluenceUnavailable": "URL indisponible (non fournie par le backend)",
+      "noScanData": "Aucune donnée de scan pour cet espace",
       "settings": "Paramètres",
       "darkMode": "Activer le mode sombre",
       "lightMode": "Activer le mode clair",
@@ -1141,9 +1142,9 @@
   },
   "obfuscation": {
     "entry": {
-      "space": "Supprimer les IPI de l'espace",
-      "page": "Supprimer les IPI de la page",
-      "attachment": "Supprimer les IPI de la pièce jointe"
+      "space": "Remédier les IPI de l'espace",
+      "page": "Remédier les IPI de la page",
+      "attachment": "Remédier les IPI de la pièce jointe"
     },
     "spaceSub": "{{total}} findings · dernier scan {{ts}}",
     "stats": {

@@ -1,6 +1,7 @@
+/* Fixed width: PrimeNG anchors the popover while the panel still shows the spinner,
+   so a content-driven width would leave it overflowing on the right once loaded. */
 .scan-stats-panel {
-  min-width: 22rem;
-  max-width: min(34rem, calc(100vw - 2rem));
+  width: min(34rem, calc(100vw - 2rem));
   box-sizing: border-box;
   font-size: 0.875rem;
 }

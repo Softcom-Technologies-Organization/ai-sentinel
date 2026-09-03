@@ -230,8 +230,10 @@
           </div>
         </td>
         <td class="col-actions">
-          <app-space-scan-stats-popover [spaceKey]="space.key"></app-space-scan-stats-popover>
-          <app-obfuscation-entry-button [spaceKey]="space.key"></app-obfuscation-entry-button>
+          <app-space-scan-stats-popover [spaceKey]="space.key"
+                                       [disabled]="!spacesDashboardUtils.canViewResult(space)"></app-space-scan-stats-popover>
+          <app-obfuscation-entry-button [spaceKey]="space.key"
+                                        [disabled]="!spacesDashboardUtils.canViewResult(space)"></app-obfuscation-entry-button>
           <span
             [pTooltip]="(spacesDashboardUtils.hasConfluenceUrl(space) ? 'dashboard.actions.openInConfluence' : 'dashboard.actions.confluenceUnavailable') | transloco"
             tooltipPosition="top">

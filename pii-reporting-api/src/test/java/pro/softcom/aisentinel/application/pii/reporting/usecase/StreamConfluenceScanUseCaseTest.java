@@ -25,6 +25,7 @@ import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.confluence.ConfluenceSpace;
 import pro.softcom.aisentinel.domain.confluence.DataOwners;
+import pro.softcom.aisentinel.domain.confluence.extraction.ExtractedContent;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
@@ -416,7 +417,7 @@ class StreamConfluenceScanUseCaseTest {
         AttachmentInfo att = new AttachmentInfo("file.pdf", "pdf", "application/pdf", "http://file");
         when(confluenceAttachmentService.getPageAttachments("p-2")).thenReturn(CompletableFuture.completedFuture(List.of(att)));
         when(confluenceDownloadService.downloadAttachmentContent("p-2", "file.pdf")).thenReturn(CompletableFuture.completedFuture(Optional.of("PDFDATA".getBytes(StandardCharsets.UTF_8))));
-        when(attachmentTextExtractionService.extractText(eq(att), any())).thenReturn(Optional.of("Extracted email test"));
+        when(attachmentTextExtractionService.extractText(eq(att), any())).thenReturn(Optional.of(ExtractedContent.identity("Extracted email test")));
 
         ContentPiiDetection resp = ContentPiiDetection.builder()
                 .statistics(Map.of("EMAIL", 1))
@@ -446,6 +447,80 @@ class StreamConfluenceScanUseCaseTest {
                 .expectNextMatches(ev -> ScanEventType.PAGE_COMPLETE.toJson().equals(ev.eventType()) && "p-2".equals(ev.pageId()))
                 .expectNextMatches(ev -> ScanEventType.COMPLETE.toJson().equals(ev.eventType()))
                 .verifyComplete();
+    }
+
+    @Test
+    void Should_SendHeadersToDetectorAndRestoreOffsets_When_PageContainsTable() {
+        String spaceKey = "TABLE";
+        ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "Tables", "http://test.com", "d",
+                ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
+        ConfluencePage page = ConfluencePage.builder().id("table-page").title("Contacts").spaceKey(spaceKey)
+                .content(new ConfluencePage.HtmlContent("<p>😀 Contacts</p><table>"
+                        + "<tr><th>Service</th><th>Email</th></tr>"
+                        + "<tr><td>Support</td><td>lea@example.org</td></tr></table>"))
+                .build();
+        when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
+        when(confluenceService.getAllPagesInSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(List.of(page)));
+        when(confluenceAttachmentService.getPageAttachments(page.id())).thenReturn(CompletableFuture.completedFuture(List.of()));
+        when(piiDetectorClient.analyzeContent(anyString())).thenAnswer(invocation -> {
+            String analysis = invocation.getArgument(0);
+            assertThat(analysis).contains("Service : Support", "Email : lea@example.org");
+            int valueStart = analysis.indexOf("lea@example.org");
+            int syntheticLabel = analysis.indexOf("Email :");
+            return ContentPiiDetection.builder().sensitiveDataFound(List.of(
+                    new ContentPiiDetection.SensitiveData("EMAIL", "Email", "lea@example.org", "",
+                            valueStart, valueStart + 15, 0.95, "email", DetectorSource.MINISTRAL),
+                    new ContentPiiDetection.SensitiveData("PERSON", "Person", "Email", "",
+                            syntheticLabel, syntheticLabel + 5, 0.95, "label", DetectorSource.MINISTRAL)))
+                    .build();
+        });
+
+        ConfluenceContentScanResult event = streamConfluenceScanUseCase.streamSpace(spaceKey)
+                .filter(item -> ScanEventType.ITEM.toJson().equals(item.eventType()))
+                .blockFirst(Duration.ofSeconds(5));
+
+        assertThat(event).isNotNull();
+        assertThat(event.sourceContent()).contains("😀", "lea@example.org").doesNotContain("Email :");
+        assertThat(event.detectedPIIs()).hasSize(1);
+        var finding = event.detectedPIIs().getFirst();
+        assertThat(event.sourceContent().substring(finding.startPosition(), finding.endPosition()))
+                .isEqualTo("lea@example.org");
+        assertThat(finding.maskedContext()).doesNotContain("lea@example.org");
+    }
+
+    @Test
+    void Should_SendEnrichedAttachmentAndRestoreOffsets_When_AttachmentHasHeaders() {
+        String spaceKey = "SHEET";
+        ConfluenceSpace space = new ConfluenceSpace("id", spaceKey, "Sheets", "http://test.com", "d",
+                ConfluenceSpace.SpaceType.GLOBAL, ConfluenceSpace.SpaceStatus.CURRENT, new DataOwners.NotLoaded(), null);
+        ConfluencePage page = ConfluencePage.builder().id("sheet-page").title("Sheet").spaceKey(spaceKey)
+                .content(new ConfluencePage.HtmlContent("")).build();
+        AttachmentInfo attachment = new AttachmentInfo("contacts.csv", "csv", "text/csv", "http://file");
+        ExtractedContent content = ExtractedContent.builder().appendOriginal("Email\n")
+                .appendSynthetic("Email : ").appendOriginal("lea@example.org").build();
+        when(confluenceService.getSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(Optional.of(space)));
+        when(confluenceService.getAllPagesInSpace(spaceKey)).thenReturn(CompletableFuture.completedFuture(List.of(page)));
+        when(confluenceAttachmentService.getPageAttachments(page.id()))
+                .thenReturn(CompletableFuture.completedFuture(List.of(attachment)));
+        when(confluenceDownloadService.downloadAttachmentContent(page.id(), attachment.name()))
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(new byte[]{1})));
+        when(attachmentTextExtractionService.extractText(eq(attachment), any())).thenReturn(Optional.of(content));
+        when(piiDetectorClient.analyzeContent(content.analysisText())).thenReturn(ContentPiiDetection.builder()
+                .sensitiveDataFound(List.of(new ContentPiiDetection.SensitiveData("EMAIL", "Email", "lea@example.org", "",
+                        content.analysisText().indexOf("lea@"), content.analysisText().length(), 0.95,
+                        "email", DetectorSource.MINISTRAL))).build());
+
+        ConfluenceContentScanResult event = streamConfluenceScanUseCase.streamSpace(spaceKey)
+                .filter(item -> ScanEventType.ATTACHMENT_ITEM.toJson().equals(item.eventType()))
+                .blockFirst(Duration.ofSeconds(5));
+
+        assertThat(event).isNotNull();
+        assertThat(event.sourceContent()).isEqualTo(content.contextText());
+        assertThat(event.detectedPIIs()).hasSize(1);
+        var finding = event.detectedPIIs().getFirst();
+        assertThat(event.sourceContent().substring(finding.startPosition(), finding.endPosition()))
+                .isEqualTo("lea@example.org");
+        verify(piiDetectorClient).analyzeContent(content.analysisText());
     }
 
     @Test

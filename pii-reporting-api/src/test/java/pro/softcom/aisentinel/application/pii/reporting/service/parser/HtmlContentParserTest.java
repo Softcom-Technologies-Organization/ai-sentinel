@@ -16,6 +16,37 @@ class HtmlContentParserTest {
 
     private final HtmlContentParser parser = new HtmlContentParser();
 
+    @Test
+    void Should_AssociateHeadersAndPreserveOffsets_When_ExtractingTableInPage() {
+        var content = parser.extractContent("""
+            <p>Avant 😀</p><table><caption>Contacts</caption>
+            <tr><th>Nom</th><th>Courriel</th></tr>
+            <tr><td><p>Élodie</p></td><td>same@example.ch</td></tr>
+            <tr><td>René</td><td>same@example.ch</td></tr></table><p>Après</p>
+            """);
+
+        assertThat(content.analysisText()).contains("Avant 😀", "Contacts", "Après",
+            "Nom : Élodie | Courriel : same@example.ch", "Nom : René | Courriel : same@example.ch");
+        assertThat(content.contextText()).doesNotContain("Nom :", "Courriel :");
+        assertThat(content.contextText()).contains("Nom", "Courriel", "Élodie", "René");
+        content.segments().forEach(segment -> assertThat(content.analysisText()
+            .substring(segment.analysisStart(), segment.analysisStart() + segment.length()))
+            .isEqualTo(content.contextText().substring(segment.contextStart(), segment.contextStart() + segment.length())));
+        assertThat(content.segments().stream().mapToInt(segment -> segment.length()).sum())
+            .isEqualTo(content.contextText().length());
+        assertThat(content.contextText().split("same@example.ch", -1)).hasSize(3);
+    }
+
+    @Test
+    void Should_PreserveCellBoundaries_When_NoDeclaredTableHeaders() {
+        String html = "<p>Avant</p><table><tr><td>Alice</td><td>1234</td></tr></table><p>Après</p>";
+
+        assertThat(parser.extractContent(html).analysisText()).contains("Avant", "Alice | 1234", "Après");
+        assertThat(parser.extractContent(html).analysisText()).isEqualTo(parser.extractContent(html).contextText());
+        assertThat(parser.extractContent(null).analysisText()).isEmpty();
+        assertThat(parser.extractContent("").analysisText()).isEmpty();
+    }
+
     // ========== findLineStart Tests ==========
 
     @Test

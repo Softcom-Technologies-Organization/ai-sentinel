@@ -6,6 +6,7 @@ import pro.softcom.aisentinel.application.confluence.port.out.AttachmentTextExtr
 import pro.softcom.aisentinel.application.confluence.port.out.ConfluenceAttachmentDownloader;
 import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
 import pro.softcom.aisentinel.domain.confluence.AttachmentTypeFilter;
+import pro.softcom.aisentinel.domain.confluence.extraction.ExtractedContent;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -52,7 +53,7 @@ public class AttachmentProcessor {
             .flatMap(optional -> optional.map(Mono::just).orElse(Mono.empty()));
     }
 
-    private Mono<String> extractTextFromBytes(AttachmentInfo attachment, byte[] bytes) {
+    private Mono<ExtractedContent> extractTextFromBytes(AttachmentInfo attachment, byte[] bytes) {
         return Mono.fromCallable(
                 () -> attachmentTextExtractionService.extractText(attachment, bytes))
             .flatMap(textOptional -> textOptional.map(Mono::just).orElse(Mono.empty()));

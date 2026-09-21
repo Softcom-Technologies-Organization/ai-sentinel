@@ -5,6 +5,7 @@ import com.google.re2j.Pattern;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import pro.softcom.aisentinel.domain.confluence.extraction.ExtractedContent;
 
 /**
  * Parser for HTML content where logical lines are delimited by block-level tags.
@@ -147,6 +148,19 @@ public class HtmlContentParser implements ContentParser {
     @Override
     public ContentType getContentType() {
         return ContentType.HTML;
+    }
+
+    public ExtractedContent extractContent(String html) {
+        if (html == null || html.isEmpty()) {
+            return ExtractedContent.identity("");
+        }
+        try {
+            Document document = Jsoup.parse(html);
+            removeConfluenceMetadataElements(document);
+            return HtmlTableContextualizer.extract(document, this);
+        } catch (RuntimeException _) {
+            return HtmlTableContextualizer.isolateCells(Jsoup.parse(html).body(), this);
+        }
     }
 
     private static void removeConfluenceMetadataElements(Document doc) {

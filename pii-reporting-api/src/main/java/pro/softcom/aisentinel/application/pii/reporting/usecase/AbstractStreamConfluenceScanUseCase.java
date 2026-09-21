@@ -8,6 +8,7 @@ import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanTimeOutConf
 import pro.softcom.aisentinel.application.pii.reporting.service.AttachmentProcessor;
 import pro.softcom.aisentinel.application.pii.reporting.service.AttachmentTextExtracted;
 import pro.softcom.aisentinel.application.pii.reporting.service.ContentScanOrchestrator;
+import pro.softcom.aisentinel.application.pii.reporting.service.DetectionOffsetRemapper;
 import pro.softcom.aisentinel.application.pii.remediation.service.ScanTimeFalsePositiveSuppressor;
 import pro.softcom.aisentinel.application.pii.reporting.service.ScanErrorClassifier;
 import pro.softcom.aisentinel.application.pii.reporting.service.ScanEventFactory;
@@ -19,6 +20,7 @@ import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
 import pro.softcom.aisentinel.domain.confluence.ConfluencePage;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
+import pro.softcom.aisentinel.domain.confluence.extraction.ExtractedContent;
 import pro.softcom.aisentinel.domain.pii.scan.DetectorHealth;
 import pro.softcom.aisentinel.domain.pii.scan.ScanErrorKeys;
 import pro.softcom.aisentinel.domain.pii.scan.ScanErrorKind;
@@ -379,7 +381,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                                                                     ConfluencePage page,
                                                                     AttachmentTextExtracted extracted,
                                                                     ScanProgress scanProgress) {
-        return Mono.fromCallable(() -> detectPii(extracted.extractedText()))
+        return Mono.fromCallable(() -> detectPii(extracted.content()))
         .flatMap(detection -> {
             reportUnavailableDetector(pageState, detection);
             // Same reason as for a page: a partial analysis is not persisted, because the
@@ -389,7 +391,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
             }
             double progress = calculateProgressForAttachment(scanProgress);
             return Mono.just(contentScanOrchestrator.createAttachmentItemEvent(
-                pageState.scanId(), spaceKey, page, extracted.attachment(), extracted.extractedText(), detection,
+                pageState.scanId(), spaceKey, page, extracted.attachment(), extracted.content().contextText(), detection,
                 progress));
         })
         .timeout(scanTimeoutConfig.getPiiDetectionTimeout())
@@ -438,7 +440,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                                                              ScanProgress scanProgress) {
         String scanId = pageState.scanId();
         String rawContent = extractPageContent(page);
-        String content = htmlContentParser.cleanText(rawContent);
+        ExtractedContent content = htmlContentParser.extractContent(rawContent);
         double startProgress = contentScanOrchestrator.calculateProgress(
             scanProgress.analyzedOffset() + (scanProgress.currentIndex() - 1),
             scanProgress.originalTotal());
@@ -468,9 +470,9 @@ public abstract class AbstractStreamConfluenceScanUseCase {
 
     private Flux<ConfluenceContentScanResult> createPageItemEvent(PageScanState pageState, String spaceKey,
                                                                   ConfluencePage page,
-                                                                  String content, ScanProgress scanProgress) {
+                                                                  ExtractedContent content, ScanProgress scanProgress) {
         String scanId = pageState.scanId();
-        if (isBlank(content)) {
+        if (isBlank(content.analysisText())) {
             return createEmptyPageItem(scanId, spaceKey, page, scanProgress);
         }
 
@@ -484,7 +486,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                 if (pageState.hitOutage()) {
                     return Mono.empty();
                 }
-                return Mono.just(buildPageItemEvent(scanId, page, content, detection, scanProgress));
+                return Mono.just(buildPageItemEvent(scanId, page, content.contextText(), detection, scanProgress));
             })
             .onErrorResume(exception -> {
                 if (exception instanceof TimeoutException) {
@@ -611,8 +613,8 @@ public abstract class AbstractStreamConfluenceScanUseCase {
         return page.content() != null ? page.content().body() : "";
     }
 
-    private ContentPiiDetection detectPii(String content) {
-        String safeContent = content != null ? content : "";
+    private ContentPiiDetection detectPii(ExtractedContent content) {
+        String safeContent = content.analysisText();
         int charCount = safeContent.length();
         // Snapshot the concurrent detection count for this call so the throughput
         // log shows whether pageConcurrency is actually exercised (should approach
@@ -646,7 +648,7 @@ public abstract class AbstractStreamConfluenceScanUseCase {
                 .subscribeOn(Schedulers.parallel())
                 .subscribe();
 
-        return contentPiiDetection;
+        return DetectionOffsetRemapper.remap(contentPiiDetection, content);
     }
 
     private ConfluenceContentScanResult suppressFalsePositives(ConfluenceContentScanResult event,

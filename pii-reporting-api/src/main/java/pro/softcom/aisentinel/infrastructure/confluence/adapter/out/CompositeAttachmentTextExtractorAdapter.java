@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import pro.softcom.aisentinel.application.confluence.port.out.AttachmentTextExtractor;
 import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
+import pro.softcom.aisentinel.domain.confluence.extraction.ExtractedContent;
 
 import java.util.List;
 import java.util.Objects;
@@ -25,7 +26,7 @@ public class CompositeAttachmentTextExtractorAdapter implements AttachmentTextEx
     }
 
     @Override
-    public Optional<String> extractText(AttachmentInfo info, byte[] bytes) {
+    public Optional<ExtractedContent> extractText(AttachmentInfo info, byte[] bytes) {
         if (info == null || bytes == null || bytes.length == 0) {
             return Optional.empty();
         }
@@ -34,7 +35,7 @@ public class CompositeAttachmentTextExtractorAdapter implements AttachmentTextEx
                 if (!extractionStrategy.supports(info)) {
                     continue;
                 }
-                Optional<String> text = extractionStrategy.extract(info, bytes);
+                Optional<ExtractedContent> text = extractionStrategy.extract(info, bytes);
                 if (text.isPresent()) {
                     return text;
                 }

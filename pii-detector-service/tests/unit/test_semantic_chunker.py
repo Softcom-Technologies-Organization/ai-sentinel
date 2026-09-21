@@ -316,3 +316,123 @@ class TestMinistralTokenChunker:
         assert info["library"] == "tokenizers"
         assert info["available"] is True
         assert "tokenizer" in info
+
+
+class _CharacterTokenizer:
+    def encode(self, text, add_special_tokens=False):
+        return _FakeEncoding([(index, index + 1) for index in range(len(text))])
+
+
+def _assert_complete_coverage(text, chunks):
+    assert chunks[0].start == 0
+    assert chunks[-1].end == len(text)
+    for chunk in chunks:
+        assert chunk.text == text[chunk.start:chunk.end]
+        assert chunk.start < chunk.end
+    for previous, following in zip(chunks, chunks[1:]):
+        assert previous.start < following.start <= previous.end
+        assert following.end > previous.end
+
+
+class TestStructuredRowChunking:
+    @pytest.mark.parametrize("token_based", [False, True])
+    def test_Should_KeepCompleteRowsAndHeaders_When_TableSpansManyChunks(self, token_based):
+        rows = [
+            f"Nom : Élise {index} | Service : SMTP | Port : 587 | Code PIN : 1234\n"
+            for index in range(30)
+        ]
+        text = "".join(rows)
+        tokenizer = _WhitespaceFakeTokenizer()
+        chunker = (
+            MinistralTokenChunker(tokenizer, chunk_size=40, overlap=12)
+            if token_based else FallbackChunker(145, overlap=50, chars_per_token=1)
+        )
+        chunks = chunker.chunk_text(text)
+
+        assert len(chunks) > 5
+        _assert_complete_coverage(text, chunks)
+        for row in rows:
+            assert any(row in chunk.text for chunk in chunks)
+        assert all(chunk.start == 0 or text[chunk.start - 1] == "\n" for chunk in chunks)
+        assert all(chunk.text.endswith("\n") for chunk in chunks)
+        if token_based:
+            assert all(chunk.token_count == len(tokenizer.encode(chunk.text).offsets) <= 40
+                       for chunk in chunks)
+        else:
+            assert all(len(chunk.text) <= 145 for chunk in chunks)
+
+    @pytest.mark.parametrize("token_based", [False, True])
+    def test_Should_KeepHeaderWithEachCell_When_RowExceedsBudget(self, token_based):
+        cells = [f"Champ {index} : élise@example.test" for index in range(24)]
+        text = " | ".join(cells)
+        chunker = (
+            MinistralTokenChunker(_WhitespaceFakeTokenizer(), chunk_size=13, overlap=4)
+            if token_based else FallbackChunker(78, overlap=20, chars_per_token=1)
+        )
+        chunks = chunker.chunk_text(text)
+
+        _assert_complete_coverage(text, chunks)
+        for cell in cells:
+            assert any(cell in chunk.text for chunk in chunks)
+        assert all(chunk.start == 0 or text[chunk.start - 3:chunk.start] == " | "
+                   for chunk in chunks)
+        assert all(chunk.end == len(text) or chunk.text.endswith(" | ") for chunk in chunks)
+
+    @pytest.mark.parametrize("token_based", [False, True])
+    @pytest.mark.parametrize("overlap", [0, 6, 23])
+    def test_Should_CoverOversizedCellWithinBudget_When_UnicodeValueCannotFit(
+        self, token_based, overlap
+    ):
+        text = "Secret : " + "🔐é漢abc" * 80 + " | Code : 1234\nNom : Élise\n"
+        chunker = (
+            MinistralTokenChunker(_CharacterTokenizer(), chunk_size=24, overlap=overlap)
+            if token_based else FallbackChunker(24, overlap=overlap, chars_per_token=1)
+        )
+        chunks = chunker.chunk_text(text)
+
+        _assert_complete_coverage(text, chunks)
+        assert all(len(chunk.text) <= 24 for chunk in chunks)
+        assert any("Code : 1234" in chunk.text for chunk in chunks)
+        assert any("Nom : Élise" in chunk.text for chunk in chunks)
+
+    def test_Should_CoverWhitespaceBetweenTokens_When_OverlapIsZero(self):
+        text = "  one \t two   three\r\n four five   six "
+        chunks = MinistralTokenChunker(_WhitespaceFakeTokenizer(), chunk_size=2).chunk_text(text)
+
+        _assert_complete_coverage(text, chunks)
+        assert "".join(chunk.text for chunk in chunks) == text
+
+    @pytest.mark.parametrize("chars_per_token", [0, -1])
+    def test_Should_RejectInvalidCharacterBudget_When_Configured(self, chars_per_token):
+        with pytest.raises(ValueError, match="chars_per_token"):
+            FallbackChunker(20, chars_per_token=chars_per_token)
+
+    def test_Should_EnforceBudgetAfterRetokenizing_When_SlicedTokensChange(self):
+        class BoundarySensitiveTokenizer:
+            def encode(self, text, add_special_tokens=False):
+                width = 3 if len(text) > 20 else 1
+                return _FakeEncoding([
+                    (index, min(len(text), index + width))
+                    for index in range(0, len(text), width)
+                ])
+
+        tokenizer = BoundarySensitiveTokenizer()
+        text = "Champ : " + "123456789" * 15
+        chunks = MinistralTokenChunker(tokenizer, chunk_size=8, overlap=2).chunk_text(text)
+
+        _assert_complete_coverage(text, chunks)
+        assert all(chunk.token_count == len(tokenizer.encode(chunk.text).offsets) <= 8
+                   for chunk in chunks)
+
+    def test_Should_RejectImpossibleBudget_When_OneCharacterNeedsMultipleTokens(self):
+        class ByteFallbackTokenizer:
+            def encode(self, text, add_special_tokens=False):
+                return _FakeEncoding([
+                    (index, index + 1)
+                    for index, character in enumerate(text)
+                    for _ in character.encode("utf-8")
+                ])
+
+        chunker = MinistralTokenChunker(ByteFallbackTokenizer(), chunk_size=1)
+        with pytest.raises(ValueError, match="single character"):
+            chunker.chunk_text("🔐")

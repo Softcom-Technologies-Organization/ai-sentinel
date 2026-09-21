@@ -56,6 +56,21 @@ _FRENCH_DOC = (
 
 
 class TestRealTokenizerOffsetInvariant:
+    @pytest.mark.parametrize("budget,overlap", [(64, 16), (128, 32), (2048, 256)])
+    def test_Should_KeepTableRowsWithHeaders_When_RealTokenizer(self, real_tokenizer, budget, overlap):
+        rows = [
+            f"Nom : Élise Müller {index} | Email : elise{index}@example.ch | Port : 587\n"
+            for index in range(120)
+        ]
+        text = "".join(rows)
+        chunks = MinistralTokenChunker(real_tokenizer, budget, overlap).chunk_text(text)
+
+        assert len(chunks) > 1
+        assert all(any(row in chunk.text for chunk in chunks) for row in rows)
+        assert all(text[chunk.start:chunk.end] == chunk.text for chunk in chunks)
+        assert all(len(real_tokenizer.encode(chunk.text, add_special_tokens=False).ids) <= budget
+                   for chunk in chunks)
+
     def test_Should_PreserveCharOffsetInvariant_When_RealTokenizerFrenchText(
         self, real_tokenizer
     ):

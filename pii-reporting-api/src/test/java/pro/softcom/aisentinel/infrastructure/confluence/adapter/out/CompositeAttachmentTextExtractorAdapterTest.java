@@ -5,6 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.domain.confluence.AttachmentInfo;
+import pro.softcom.aisentinel.domain.confluence.extraction.ExtractedContent;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -62,7 +63,7 @@ class CompositeAttachmentTextExtractorAdapterTest {
         when(ex1.supports(info)).thenReturn(false);
         when(ex2.supports(info)).thenReturn(false);
 
-        Optional<String> out = service.extractText(info, bytes);
+        Optional<ExtractedContent> out = service.extractText(info, bytes);
         assertThat(out).isEmpty();
 
         verify(ex1).supports(info);
@@ -80,10 +81,10 @@ class CompositeAttachmentTextExtractorAdapterTest {
         when(ex1.supports(info)).thenReturn(true);
         when(ex1.extract(info, bytes)).thenReturn(Optional.empty());
         when(ex2.supports(info)).thenReturn(true);
-        when(ex2.extract(info, bytes)).thenReturn(Optional.of("OK"));
+        when(ex2.extract(info, bytes)).thenReturn(Optional.of(ExtractedContent.identity("OK")));
 
-        Optional<String> out = service.extractText(info, bytes);
-        assertThat(out).contains("OK");
+        Optional<ExtractedContent> out = service.extractText(info, bytes);
+        assertThat(out).contains(ExtractedContent.identity("OK"));
 
         verify(ex1).supports(info);
         verify(ex1).extract(info, bytes);
@@ -98,15 +99,28 @@ class CompositeAttachmentTextExtractorAdapterTest {
         byte[] bytes = "abc".getBytes(StandardCharsets.UTF_8);
 
         when(ex1.supports(info)).thenReturn(true);
-        when(ex1.extract(info, bytes)).thenReturn(Optional.of("FIRST"));
+        when(ex1.extract(info, bytes)).thenReturn(Optional.of(ExtractedContent.identity("FIRST")));
 
-        Optional<String> out = service.extractText(info, bytes);
-        assertThat(out).contains("FIRST");
+        Optional<ExtractedContent> out = service.extractText(info, bytes);
+        assertThat(out).contains(ExtractedContent.identity("FIRST"));
 
         verify(ex1).supports(info);
         verify(ex1).extract(info, bytes);
         // Ensure later extractors were never invoked
         verifyNoInteractions(ex2, ex3);
+    }
+
+    @Test
+    void Should_PreserveMappings_When_StrategyReturnsEnrichedContent() {
+        CompositeAttachmentTextExtractorAdapter service = new CompositeAttachmentTextExtractorAdapter(List.of(ex1));
+        AttachmentInfo info = new AttachmentInfo("contacts.csv", "csv", "text/csv", "url");
+        byte[] bytes = "Email\nalice@example.test".getBytes(StandardCharsets.UTF_8);
+        ExtractedContent content = ExtractedContent.builder().appendSynthetic("Email : ")
+                .appendOriginal("alice@example.test").build();
+        when(ex1.supports(info)).thenReturn(true);
+        when(ex1.extract(info, bytes)).thenReturn(Optional.of(content));
+
+        assertThat(service.extractText(info, bytes)).hasValueSatisfying(value -> assertThat(value).isSameAs(content));
     }
 
     @Test
@@ -118,10 +132,10 @@ class CompositeAttachmentTextExtractorAdapterTest {
         when(ex1.supports(info)).thenReturn(true);
         when(ex1.extract(info, bytes)).thenThrow(new RuntimeException("boom"));
         when(ex2.supports(info)).thenReturn(true);
-        when(ex2.extract(info, bytes)).thenReturn(Optional.of("RECOVERED"));
+        when(ex2.extract(info, bytes)).thenReturn(Optional.of(ExtractedContent.identity("RECOVERED")));
 
-        Optional<String> out = service.extractText(info, bytes);
-        assertThat(out).contains("RECOVERED");
+        Optional<ExtractedContent> out = service.extractText(info, bytes);
+        assertThat(out).contains(ExtractedContent.identity("RECOVERED"));
 
         verify(ex1).supports(info);
         verify(ex1).extract(info, bytes);

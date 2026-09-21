@@ -27,7 +27,7 @@ public class ListLmStudioModelsUseCase implements ListLmStudioModelsPort {
     }
 
     @Override
-    public LmStudioModelListing listModels(String lmStudioHost, Integer lmStudioPort) {
+    public LmStudioModelListing listModels(String lmStudioHost, Integer lmStudioPort, boolean allModels) {
         String host = lmStudioHost;
         Integer port = lmStudioPort;
         if (host == null || host.isBlank() || port == null) {
@@ -35,7 +35,7 @@ public class ListLmStudioModelsUseCase implements ListLmStudioModelsPort {
             host = host == null || host.isBlank() ? config.lmStudioHost() : host;
             port = port == null ? config.lmStudioPort() : port;
         }
-        log.debug("Listing LM Studio models at {}:{}", host, port);
-        return piiDetectorClient.listLmStudioModels(host, port);
+        log.debug("Listing LM Studio models at {}:{} (allModels={})", host, port, allModels);
+        return piiDetectorClient.listLmStudioModels(host, port, allModels);
     }
 }

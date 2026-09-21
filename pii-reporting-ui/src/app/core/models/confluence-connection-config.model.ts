@@ -7,7 +7,6 @@ export interface ConfluenceConnectionConfig {
   readTimeout: number;
   maxRetries: number;
   pagesLimit: number;
-  maxPages: number;
   deploymentType: ConfluenceDeploymentType;
   updatedAt?: string;
   updatedBy?: string;
@@ -22,7 +21,6 @@ export interface UpdateConfluenceConnectionConfigRequest {
   readTimeout: number;
   maxRetries: number;
   pagesLimit: number;
-  maxPages: number;
   deploymentType: ConfluenceDeploymentType;
 }
 

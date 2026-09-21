@@ -22,7 +22,14 @@ const STATUS_META: Record<FindingStatus, StatusMeta> = {
   PENDING: { labelKey: 'obfuscation.status.pending', icon: 'pi-clock', variant: 'pending' },
   REDACTED: { labelKey: 'obfuscation.status.redacted', icon: 'pi-check-circle', variant: 'redacted' },
   MANUALLY_HANDLED: { labelKey: 'obfuscation.status.manual', icon: 'pi-check', variant: 'manual' },
-  FALSE_POSITIVE: { labelKey: 'obfuscation.status.fp', icon: 'pi-flag', variant: 'fp' }
+  FALSE_POSITIVE: { labelKey: 'obfuscation.status.fp', icon: 'pi-flag', variant: 'fp' },
+  PROPOSED_FALSE_POSITIVE: { labelKey: 'obfuscation.status.proposedFp', icon: 'pi-sparkles', variant: 'proposed' }
+};
+
+const JUDGED_KEPT_META: StatusMeta = {
+  labelKey: 'obfuscation.status.judgedKept',
+  icon: 'pi-sparkles',
+  variant: 'judged-keep'
 };
 
 /**
@@ -45,6 +52,7 @@ export class ObfuscationFindingRowComponent {
   readonly toggled = output<void>();
   readonly markManual = output<void>();
   readonly restore = output<void>();
+  readonly confirmFalsePositive = output<void>();
 
   private readonly itemCardUtils = inject(PiiItemCardUtils);
   private readonly valueDisplay = inject(PiiValueDisplayService);
@@ -65,8 +73,20 @@ export class ObfuscationFindingRowComponent {
   );
 
   readonly status = computed(() => this.finding().status);
-  readonly statusMeta = computed(() => STATUS_META[this.status()]);
+  readonly judgedKept = computed(() => {
+    const current = this.finding();
+    return current.status === 'PENDING' && current.judgeVerdict !== undefined && current.judgeVerdict !== 'FALSE_POSITIVE';
+  });
+  readonly statusMeta = computed(() => (this.judgedKept() ? JUDGED_KEPT_META : STATUS_META[this.status()]));
+  readonly judgeConfidencePercent = computed(() => {
+    const confidence = this.finding().judgeConfidence;
+    if (confidence === undefined || !(this.judgedKept() || this.status() === 'PROPOSED_FALSE_POSITIVE')) {
+      return null;
+    }
+    return Math.round(confidence * 100);
+  });
   readonly detectorSource = computed(() => this.finding().detector as DetectorSource);
+  readonly confidenceAvailable = computed(() => this.detectorSource() !== 'MINISTRAL');
   readonly attachmentKind = computed(() =>
     this.itemCardUtils.attachmentKind(this.finding().attachmentName)
   );
@@ -75,7 +95,8 @@ export class ObfuscationFindingRowComponent {
   // is also the false-positive gesture, and reviewers must be able to flag them.
   readonly checkboxDisabled = computed(() => {
     const current = this.finding();
-    return current.status === 'REDACTED' || current.status === 'MANUALLY_HANDLED';
+    return current.status === 'REDACTED' || current.status === 'MANUALLY_HANDLED'
+      || current.status === 'PROPOSED_FALSE_POSITIVE';
   });
 
   readonly treated = computed(

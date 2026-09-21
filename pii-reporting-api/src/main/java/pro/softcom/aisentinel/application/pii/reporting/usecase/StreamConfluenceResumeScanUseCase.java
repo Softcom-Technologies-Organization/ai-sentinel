@@ -74,10 +74,16 @@ public class StreamConfluenceResumeScanUseCase extends
         // so the UPSERT guard (which blocks PAUSED → RUNNING from scan events) does not reject them.
         // Wrapped in Mono.fromCallable to run on boundedElastic (JPA is blocking).
         ScanRunState run = new ScanRunState(scanId);
-        return Mono.fromCallable(() -> scanCheckpointRepository.resumeAllPausedCheckpoints(scanId))
+        Flux<ConfluenceContentScanResult> resumeFlux = Mono.fromCallable(() -> scanCheckpointRepository.resumeAllPausedCheckpoints(scanId))
             .subscribeOn(Schedulers.boundedElastic())
-            .doOnNext(resumed ->
-                log.info("[RESUME] Scan {} — {} checkpoint(s) updated from PAUSED to RUNNING", scanId, resumed))
+            .doOnNext(resumed -> {
+                // Taken off the automatic retry list here rather than by the caller, so an
+                // operator pressing Resume also stops the scheduled retry from racing them.
+                // A resume that walks straight back into the outage is listed again by the
+                // pause it causes.
+                contentScanOrchestrator.forgetOutagePause(scanId);
+                log.info("[RESUME] Scan {} — {} checkpoint(s) updated from PAUSED to RUNNING", scanId, resumed);
+            })
             .then(Mono.fromCallable(() -> scanCheckpointRepository.findByScan(scanId))
                 .subscribeOn(Schedulers.boundedElastic()))
             .flatMapMany(checkpoints -> resumeScopedSpaces(run, checkpoints))
@@ -95,6 +101,13 @@ public class StreamConfluenceResumeScanUseCase extends
                 persistPauseIfNeeded(run);
                 return buildErrorScanResultFlux(run, null, exception);
             });
+
+        // Registered like a fresh scan, for two reasons: the pipeline then runs on its own
+        // subscription, so a resume survives the browser being closed; and any second caller —
+        // the Resume button, the scheduled retry — is seen by the isScanActive guard above and
+        // attaches to this run instead of starting a rival pipeline that would double-count.
+        scanExecutionOrchestratorPort.startScan(scanId, resumeFlux);
+        return scanExecutionOrchestratorPort.subscribeScan(scanId);
     }
 
     /**
@@ -107,6 +120,10 @@ public class StreamConfluenceResumeScanUseCase extends
      */
     private Flux<ConfluenceContentScanResult> resumeScopedSpaces(ScanRunState run, List<ScanCheckpoint> checkpoints) {
         if (checkpoints == null || checkpoints.isEmpty()) {
+            // Also drops it from the automatic retry list: with no checkpoint there is
+            // nothing left to resume, and the scheduled retry would keep picking it up
+            // every couple of minutes for nothing.
+            contentScanOrchestrator.forgetOutagePause(run.scanId());
             log.warn("[RESUME] Scan {} has no persisted checkpoints — nothing to resume", run.scanId());
             return Flux.empty();
         }

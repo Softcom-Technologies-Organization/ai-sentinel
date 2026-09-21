@@ -48,6 +48,7 @@ class PiiDetectionConfigControllerConcurrencyTest {
     void Should_ExposeMinistralConcurrencyFields_When_GetConfig() throws Exception {
         PiiDetectionConfig config = new PiiDetectionConfig(
             1, true, true, true, 2048, 256, new BigDecimal("0.75"), false, "localhost", 1234, null,
+            null,
             4, false, "localhost:1234|ministral",
             LocalDateTime.now(), "admin"
         );
@@ -64,6 +65,7 @@ class PiiDetectionConfigControllerConcurrencyTest {
     void Should_ExposeNullTunedSignature_When_NeverTuned() throws Exception {
         PiiDetectionConfig config = new PiiDetectionConfig(
             1, true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null,
+            null,
             1, true, null,
             LocalDateTime.now(), "admin"
         );
@@ -80,6 +82,7 @@ class PiiDetectionConfigControllerConcurrencyTest {
     void Should_PersistMinistralConcurrencyFields_When_PutConfig() throws Exception {
         PiiDetectionConfig persisted = new PiiDetectionConfig(
             1, true, true, true, 2048, 256, new BigDecimal("0.75"), false, "localhost", 1234, null,
+            null,
             8, false, "localhost:1234|ministral",
             LocalDateTime.now(), "admin"
         );

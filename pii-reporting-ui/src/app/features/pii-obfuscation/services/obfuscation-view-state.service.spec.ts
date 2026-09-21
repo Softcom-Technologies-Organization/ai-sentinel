@@ -97,7 +97,7 @@ describe('ObfuscationViewStateService', () => {
           findings: []
         }
       ],
-      totals: { pending: 10, handled: 1, falsePositive: 1, total: 12 },
+      totals: { pending: 10, handled: 1, falsePositive: 1, proposedFalsePositive: 0, total: 12 },
       page: 0,
       pageSize: 20,
       totalElements: 12,

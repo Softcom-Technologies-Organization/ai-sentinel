@@ -19,7 +19,6 @@ export const TestIds = {
     headers: {
       space: 'header-space',
       status: 'header-status',
-      progress: 'header-progress',
       lastScan: 'header-last-scan',
       pii: 'header-pii',
       riskScore: 'header-risk-score',
@@ -83,7 +82,9 @@ export const TestIds = {
       status: 'obfuscation-row-status',
       ineligible: 'obfuscation-row-ineligible',
       markManual: 'obfuscation-row-mark-manual',
-      restore: 'obfuscation-row-restore'
+      restore: 'obfuscation-row-restore',
+      confirmFp: 'obfuscation-row-confirm-fp',
+      judgeConfidence: 'obfuscation-row-judge-confidence'
     },
     bulkBar: {
       root: 'obfuscation-bulk-bar',
@@ -118,6 +119,40 @@ export const TestIds = {
       prev: 'obfuscation-pager-prev',
       next: 'obfuscation-pager-next',
       pageSize: 'obfuscation-pager-page-size'
+    }
+  },
+  judge: {
+    remediationButton: 'btn-judge-remediation',
+    panel: 'judge-action-panel',
+    buttons: {
+      start: 'btn-judge-start',
+      pause: 'btn-judge-pause',
+      resume: 'btn-judge-resume',
+      cancel: 'btn-judge-cancel'
+    },
+    spaceStatus: 'judge-space-status',
+    dialog: {
+      root: 'judge-dialog',
+      scopeOption: 'judge-scope-option',
+      model: 'judge-model',
+      refreshModels: 'judge-refresh-models',
+      applyOption: 'judge-apply-option',
+      estimate: 'judge-estimate',
+      threshold: 'judge-threshold',
+      cancel: 'judge-cancel',
+      launch: 'judge-launch'
+    },
+    banner: {
+      root: 'judge-banner',
+      progress: 'judge-banner-progress',
+      interrupt: 'judge-banner-interrupt',
+      dismiss: 'judge-banner-dismiss'
+    },
+    bulkBar: {
+      root: 'judge-bulk-bar',
+      detections: 'judge-bulk-detections',
+      clear: 'judge-bulk-clear',
+      launch: 'judge-bulk-launch'
     }
   }
 } as const;

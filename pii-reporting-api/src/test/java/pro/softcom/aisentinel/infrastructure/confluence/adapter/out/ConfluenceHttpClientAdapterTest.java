@@ -56,7 +56,6 @@ class ConfluenceHttpClientAdapterTest {
         lenient().when(config.readTimeout()).thenReturn(10000);
         lenient().when(config.maxRetries()).thenReturn(3);
         lenient().when(config.pagesLimit()).thenReturn(50);
-        lenient().when(config.maxPages()).thenReturn(100);
 
         // Create real ObjectMapper
         final ObjectMapper objectMapper = new ObjectMapper();

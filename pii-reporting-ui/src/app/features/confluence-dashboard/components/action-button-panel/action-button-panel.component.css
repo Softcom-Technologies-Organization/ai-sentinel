@@ -1,0 +1,77 @@
+.action-button-panel {
+  display: inline-flex;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(52, 211, 153, 0.3);
+}
+
+.action-button-panel.accent-judge {
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+}
+
+/* Semi-transparent so the buttons stay visible under the spinner. */
+.action-button-panel-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(241, 243, 245, 0.75);
+  border-radius: 8px;
+}
+
+.action-button-panel-overlay .pi-spinner {
+  font-size: 1.1rem;
+  color: #6b7280;
+}
+
+:host ::ng-deep .action-button-panel > p-button {
+  display: inline-flex;
+}
+
+:host ::ng-deep .action-button-panel > p-button + p-button {
+  border-left: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+/* ::ng-deep reaches the template p-button renders internally. */
+:host ::ng-deep .action-button-panel .p-button {
+  border-radius: 0 !important;
+  border: none !important;
+  background: linear-gradient(135deg, var(--sentinel-scan-btn-start), var(--sentinel-scan-btn-end)) !important;
+  color: var(--sentinel-bg-card) !important;
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  transition: filter 0.15s;
+}
+
+:host ::ng-deep .action-button-panel.accent-judge .p-button {
+  background: linear-gradient(135deg, var(--sentinel-judge-btn-start), var(--sentinel-judge-btn-end)) !important;
+}
+
+:host ::ng-deep .action-button-panel .p-button:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+:host ::ng-deep .action-button-panel .p-button:disabled {
+  background: var(--sentinel-scan-btn-disabled) !important;
+  opacity: 0.6;
+}
+
+:host ::ng-deep .action-button-panel .purge-button.p-button {
+  background: linear-gradient(135deg, #dc3545, #c82333) !important;
+}
+
+:host ::ng-deep .action-button-panel .purge-button.p-button:disabled {
+  background: var(--sentinel-scan-btn-disabled) !important;
+}
+
+:host ::ng-deep .action-button-panel .p-button .p-button-icon {
+  font-size: 1rem;
+  color: var(--sentinel-bg-card) !important;
+}

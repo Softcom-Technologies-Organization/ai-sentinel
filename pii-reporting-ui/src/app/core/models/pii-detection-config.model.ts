@@ -18,6 +18,8 @@ export interface PiiDetectionConfig {
   lmStudioPort: number;
   /** LM Studio identifier of the Ministral-PII quantization to prompt; null = detector default. */
   lmStudioModel: string | null;
+  /** Any chat model is accepted here, unlike lmStudioModel; null = reuse lmStudioModel. */
+  lmStudioJudgeModel: string | null;
   updatedAt?: string;
   updatedBy?: string;
 }
@@ -39,6 +41,7 @@ export interface UpdatePiiDetectionConfigRequest {
   lmStudioHost: string;
   lmStudioPort: number;
   lmStudioModel: string | null;
+  lmStudioJudgeModel: string | null;
 }
 
 /**

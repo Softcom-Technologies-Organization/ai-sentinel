@@ -296,9 +296,7 @@
       "pagination": {
         "title": "Pagination",
         "pagesLimit": "Pages per Request",
-        "pagesLimitDesc": "Number of Confluence pages fetched per API request",
-        "maxPages": "Maximum Pages",
-        "maxPagesDesc": "Maximum number of pages to scan per Confluence space"
+        "pagesLimitDesc": "Number of Confluence pages fetched per API request"
       },
       "buttons": {
         "save": "Save",
@@ -355,7 +353,11 @@
       "modelNotListed": "not listed by LM Studio",
       "modelLoaded": "loaded",
       "modelNotLoaded": "not loaded",
-      "modelFamilyWarning": "This model is not a quantization of {{family}}: token chunking would no longer be reliable."
+      "modelFamilyWarning": "This model is not a quantization of {{family}}: token chunking would no longer be reliable.",
+      "judgeModel": "Judge model",
+      "judgeModelPlaceholder": "None — reuse the detection model",
+      "judgeModelHint": "Model the LLM judge prompts to rule on detections. Any chat model works: the judge does not depend on the detector's tokenizer. Empty = the detection model above is reused.",
+      "judgeModelRefresh": "Reload the judge model list"
     },
     "detectors": {
       "presidio": {
@@ -1123,7 +1125,13 @@
       "pageStale": "Page changed while it was being anonymised",
       "pageRedactionFailed": "Anonymising the page failed",
       "findingNotFound": "Occurrence missing from the latest scan",
-      "redactedStatusReserved": "The “anonymised” status is reserved for anonymisation jobs"
+      "redactedStatusReserved": "The “anonymised” status is reserved for anonymisation jobs",
+      "proposedStatusReserved": "The “proposed false positive” status is reserved to the LLM judge"
+    },
+    "judge": {
+      "scanInProgress": "The LLM judge will be available after the scan finishes.",
+      "jobNotFound": "The requested review could not be found.",
+      "jobAlreadyRunning": "An LLM judge review is already running on this space. Wait for it to finish."
     },
     "export": {
       "failed": "Report export failed. Please try again.",
@@ -1139,6 +1147,73 @@
       "invalid": "Operation not possible in the current state."
     },
     "internal": "An unexpected error occurred. Contact the administrator if the issue persists."
+  },
+  "judge": {
+    "unavailable": {
+      "scanInProgress": "Available after the scan finishes",
+      "noScanData": "No scan data available",
+      "scanStatusUnknown": "Checking scan status…"
+    },
+    "remediationButton": "Review with LLM judge",
+    "actions": {
+      "start": "Start the LLM judge evaluation",
+      "pause": "Pause the evaluation",
+      "resume": "Resume the evaluation",
+      "cancel": "Cancel the evaluation",
+      "notYetAvailable": "Not available yet"
+    },
+    "dashboard": { "tooltip": "Have the LLM judge review the pending findings of scanned spaces" },
+    "dialog": {
+      "title": "Review findings with the LLM judge",
+      "scope": "Scope",
+      "model": "Judge model",
+      "modelLoading": "Loading models…",
+      "modelPlaceholder": "LM Studio model identifier",
+      "notLoaded": "not loaded",
+      "apply": "Applying verdicts",
+      "propose": "Propose for review",
+      "proposeHint": "False positives stay “proposed” until confirmed",
+      "autoApply": "Apply automatically",
+      "autoApplyHint": "False positives are reported without review",
+      "calls": "<b>{{count}}</b> model calls",
+      "duration": "Estimated duration <b>~{{minutes}} min</b>",
+      "threshold": "Confidence threshold",
+      "cancel": "Cancel",
+      "launch": "Start review ({{count}})"
+    },
+    "scope": {
+      "allPending": "All pending findings",
+      "allPendingHint": "space {{space}}",
+      "currentSelection": "Current selection",
+      "allScanned": "All scanned spaces",
+      "allScannedHint": "{{count}} space(s)",
+      "selectedSpaces": "Current selection",
+      "neverJudged": "Spaces never reviewed",
+      "neverJudgedHint": "Excludes spaces the judge already reviewed"
+    },
+    "banner": {
+      "running": "LLM judge review in progress",
+      "done": "LLM judge review completed",
+      "interrupted": "LLM judge review interrupted — verdicts already given are kept",
+      "progress": "{{done}} / {{total}} findings reviewed · {{fp}} false positive(s) proposed",
+      "spaces": "{{done}} / {{total}} spaces",
+      "errors": "{{count}} without verdict",
+      "interrupt": "Interrupt",
+      "dismiss": "Close"
+    },
+    "space": {
+      "running": "LLM judge · {{done}} / {{total}}",
+      "judged": "Reviewed · {{count}} false positive(s) proposed",
+      "judgedNone": "Reviewed · no false positive proposed"
+    },
+    "bulk": {
+      "ariaLabel": "Actions on selected spaces",
+      "spaces": "{{count}} space(s) selected",
+      "detections": "{{count}} pending findings",
+      "clear": "Clear",
+      "launch": "Review with LLM judge ({{count}})"
+    },
+    "toast": { "completed": "Review completed: <b>{{fp}}</b> false positive(s) proposed for confirmation." }
   },
   "obfuscation": {
     "entry": {
@@ -1183,7 +1258,9 @@
       "pending": "To handle",
       "redacted": "Obfuscated",
       "manual": "Handled (manual)",
-      "fp": "False positive"
+      "fp": "False positive",
+      "proposedFp": "False positive · AI",
+      "judgedKept": "Kept"
     },
     "redactedValue": "Obfuscated",
     "severity": {
@@ -1194,7 +1271,9 @@
     "action": {
       "markManual": "Mark handled manually",
       "undoManual": "Reset to \"to handle\"",
-      "restore": "Restore"
+      "restore": "Restore",
+      "confirmFp": "Confirm false positive",
+      "keep": "Keep (back to pending)"
     },
     "bulk": {
       "ariaLabel": "Bulk actions",

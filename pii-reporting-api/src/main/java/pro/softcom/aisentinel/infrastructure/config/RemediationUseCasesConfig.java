@@ -23,6 +23,7 @@ import pro.softcom.aisentinel.application.pii.remediation.usecase.QueryRemediati
 import pro.softcom.aisentinel.application.pii.remediation.usecase.TrackObfuscationJobUseCase;
 import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery;
+import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 
 import java.time.Clock;
 import java.util.concurrent.ExecutorService;
@@ -49,10 +50,11 @@ public class RemediationUseCasesConfig {
     public QueryRemediationFindingsPort queryRemediationFindingsPort(
             RemediationConfigPort remediationConfigPort,
             ScanResultQuery scanResultQuery,
+            ScanCheckpointRepository checkpointRepository,
             FindingRemediationStore findingRemediationStore,
             ScanEventFindingResolver scanEventFindingResolver,
             SelectionEvaluator selectionEvaluator) {
-        return new QueryRemediationFindingsUseCase(remediationConfigPort, scanResultQuery,
+        return new QueryRemediationFindingsUseCase(remediationConfigPort, scanResultQuery, checkpointRepository,
                 findingRemediationStore, scanEventFindingResolver, selectionEvaluator);
     }
 
@@ -60,11 +62,12 @@ public class RemediationUseCasesConfig {
     public ChangeFindingStatusPort changeFindingStatusPort(
             RemediationConfigPort remediationConfigPort,
             ScanResultQuery scanResultQuery,
+            ScanCheckpointRepository checkpointRepository,
             FindingRemediationStore findingRemediationStore,
             ScanEventFindingResolver scanEventFindingResolver,
             SelectionResolver selectionResolver,
             PublishRemediationEventPort publishRemediationEventPort) {
-        return new ChangeFindingStatusUseCase(remediationConfigPort, scanResultQuery,
+        return new ChangeFindingStatusUseCase(remediationConfigPort, scanResultQuery, checkpointRepository,
                 findingRemediationStore, scanEventFindingResolver, selectionResolver,
                 publishRemediationEventPort, Clock.systemUTC());
     }
@@ -72,10 +75,11 @@ public class RemediationUseCasesConfig {
     @Bean
     public SelectionResolver selectionResolver(
             ScanResultQuery scanResultQuery,
+            ScanCheckpointRepository checkpointRepository,
             FindingRemediationStore findingRemediationStore,
             ScanEventFindingResolver scanEventFindingResolver,
             SelectionEvaluator selectionEvaluator) {
-        return new SelectionResolver(scanResultQuery, findingRemediationStore,
+        return new SelectionResolver(scanResultQuery, checkpointRepository, findingRemediationStore,
                 scanEventFindingResolver, selectionEvaluator);
     }
 

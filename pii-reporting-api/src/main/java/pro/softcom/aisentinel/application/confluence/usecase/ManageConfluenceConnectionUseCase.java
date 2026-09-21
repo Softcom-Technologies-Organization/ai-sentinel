@@ -60,9 +60,9 @@ public class ManageConfluenceConnectionUseCase implements ManageConfluenceConnec
         var validatedUrl = new ConfluenceBaseUrl(command.baseUrl());
 
         log.info("Updating Confluence connection settings: baseUrl={}, username={}, connectTimeout={}, " +
-                        "readTimeout={}, maxRetries={}, pagesLimit={}, maxPages={}",
+                        "readTimeout={}, maxRetries={}, pagesLimit={}",
                 validatedUrl.value(), command.username(), command.connectTimeout(),
-                command.readTimeout(), command.maxRetries(), command.pagesLimit(), command.maxPages());
+                command.readTimeout(), command.maxRetries(), command.pagesLimit());
 
         ConfluenceConnectionSettings newSettings = new ConfluenceConnectionSettings(
                 CONFIG_ID,
@@ -72,7 +72,6 @@ public class ManageConfluenceConnectionUseCase implements ManageConfluenceConnec
                 command.readTimeout(),
                 command.maxRetries(),
                 command.pagesLimit(),
-                command.maxPages(),
                 command.deploymentType(),
                 Instant.now(),
                 command.updatedBy()

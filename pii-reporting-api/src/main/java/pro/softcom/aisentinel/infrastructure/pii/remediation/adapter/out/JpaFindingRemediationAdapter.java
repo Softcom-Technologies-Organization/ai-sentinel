@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import pro.softcom.aisentinel.application.pii.remediation.port.out.FindingRemediationStore;
+import pro.softcom.aisentinel.domain.pii.judge.FindingJudgement;
+import pro.softcom.aisentinel.domain.pii.judge.JudgeVerdict;
+import pro.softcom.aisentinel.domain.pii.judge.SpaceJudgementCounts;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediation;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediationStatus;
 import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
@@ -69,6 +72,14 @@ public class JpaFindingRemediationAdapter implements FindingRemediationStore {
                         entity -> FindingRemediationStatus.valueOf(entity.getStatus())));
     }
 
+    @Override
+    public List<SpaceJudgementCounts> countJudgementsBySpace() {
+        return repository.countJudgementsBySpace().stream()
+                .map(row -> new SpaceJudgementCounts((String) row[0],
+                        ((Number) row[1]).longValue(), ((Number) row[2]).longValue()))
+                .toList();
+    }
+
     private static boolean hasStatusFilter(Set<FindingRemediationStatus> statuses) {
         return statuses != null && !statuses.isEmpty();
     }
@@ -96,6 +107,8 @@ public class JpaFindingRemediationAdapter implements FindingRemediationStore {
                 .actor(row.actor())
                 .occurredAt(row.occurredAt())
                 .redactionJobId(row.redactionJobId())
+                .judgeVerdict(row.judgement() == null ? null : row.judgement().verdict().name())
+                .judgeConfidence(row.judgement() == null ? null : row.judgement().confidence())
                 .build();
     }
 
@@ -114,6 +127,14 @@ public class JpaFindingRemediationAdapter implements FindingRemediationStore {
                 .actor(entity.getActor())
                 .occurredAt(entity.getOccurredAt())
                 .redactionJobId(entity.getRedactionJobId())
+                .judgement(judgementOf(entity))
                 .build();
+    }
+
+    private static FindingJudgement judgementOf(FindingRemediationEntity entity) {
+        if (entity.getJudgeVerdict() == null || entity.getJudgeConfidence() == null) {
+            return null;
+        }
+        return new FindingJudgement(JudgeVerdict.valueOf(entity.getJudgeVerdict()), entity.getJudgeConfidence());
     }
 }

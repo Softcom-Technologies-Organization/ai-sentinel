@@ -105,6 +105,14 @@ public class PiiDetectionConfigEntity {
     private String lmStudioModel;
 
     /**
+     * Any chat model is accepted here, unlike {@link #lmStudioModel} which the
+     * chunker ties to the Ministral-PII tokenizer. {@code null} = reuse
+     * {@link #lmStudioModel}.
+     */
+    @Column(name = "lm_studio_judge_model")
+    private String lmStudioJudgeModel;
+
+    /**
      * Number of chunk prompts the Ministral-PII detector sends concurrently to
      * the LM Studio endpoint (1 = sequential). Defaults to {@code 1}.
      */

@@ -68,11 +68,6 @@ public class ConfluenceConnectionConfigEntity {
     private Integer pagesLimit;
 
     @NotNull
-    @Min(value = 1, message = "Max pages must be positive")
-    @Column(name = "max_pages", nullable = false)
-    private Integer maxPages;
-
-    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "deployment_type", nullable = false, length = 20)
     private ConfluenceDeploymentType deploymentType;

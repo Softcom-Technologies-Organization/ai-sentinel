@@ -142,6 +142,11 @@ public class ApplicationUseCasesConfig {
     }
 
     @Bean
+    public OutagePausedScans outagePausedScans() {
+        return new OutagePausedScans();
+    }
+
+    @Bean
     public ContentScanOrchestrator scanOrchestrator(ScanEventFactory scanEventFactory,
                                                     ScanProgressCalculator scanProgressCalculator,
                                                     ScanCheckpointService scanCheckpointService,
@@ -149,7 +154,8 @@ public class ApplicationUseCasesConfig {
                                                     ScanEventDispatcher scanEventDispatcher,
                                                     SeverityCalculationService severityCalculationService,
                                                     ScanSeverityCountService scanSeverityCountService,
-                                                    ScanPiiTypeCountService scanPiiTypeCountService) {
+                                                    ScanPiiTypeCountService scanPiiTypeCountService,
+                                                    OutagePausedScans outagePausedScans) {
         return new ContentScanOrchestrator(
                 scanEventFactory,
                 scanProgressCalculator,
@@ -158,7 +164,8 @@ public class ApplicationUseCasesConfig {
                 scanEventDispatcher,
                 severityCalculationService,
                 scanSeverityCountService,
-                scanPiiTypeCountService
+                scanPiiTypeCountService,
+                outagePausedScans
         );
     }
 
@@ -239,9 +246,11 @@ public class ApplicationUseCasesConfig {
 
     @Bean
     public PauseScanPort pauseScanUseCase(ScanCheckpointRepository scanCheckpointRepository,
-                                          PersonallyIdentifiableInformationScanExecutionOrchestratorPort personallyIdentifiableInformationScanExecutionOrchestratorPort) {
+                                          PersonallyIdentifiableInformationScanExecutionOrchestratorPort personallyIdentifiableInformationScanExecutionOrchestratorPort,
+                                          OutagePausedScans outagePausedScans) {
         return new PauseScanUseCase(scanCheckpointRepository,
-                                    personallyIdentifiableInformationScanExecutionOrchestratorPort);
+                                    personallyIdentifiableInformationScanExecutionOrchestratorPort,
+                                    outagePausedScans);
     }
 
     @Bean

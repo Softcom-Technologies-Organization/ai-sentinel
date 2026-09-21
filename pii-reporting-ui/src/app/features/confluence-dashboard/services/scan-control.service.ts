@@ -143,6 +143,7 @@ export class ScanControlService {
     this.statusPolling.actionPending.set(true);
     this.disconnectSse();
     this.dataManagement.currentScanSpaceKeys.set(spaceKeys);
+    this.uiStateService.selectedSpaces.set([]);
     this.resetDashboardForNewScan(spaceKeys);
 
     this.isStreaming.set(true);
@@ -449,7 +450,8 @@ export class ScanControlService {
    * under the current scanId means the scan is still in progress, even in the
    * inter-space window where no space is RUNNING at the instant of the reload.
    * A finished scan (all COMPLETED/FAILED/INTERRUPTED) does not reconnect; a paused
-   * scan never resumes on its own.
+   * scan is left alone here — the backend may retry it on its own after an outage,
+   * and this view picks it up on the next call, once its spaces read RUNNING again.
    */
   reconnectIfScanRunning(): void {
     // Always sync button panel state from backend — regardless of scan state

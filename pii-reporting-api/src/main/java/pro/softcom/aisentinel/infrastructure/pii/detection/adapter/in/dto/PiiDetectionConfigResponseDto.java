@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
  * @param postfilterEnabled    Whether the deterministic format precision post-filter stage is enabled
  * @param lmStudioHost        Host of the LM Studio endpoint serving the Ministral-PII model
  * @param lmStudioPort        Port of the LM Studio endpoint serving the Ministral-PII model
+ * @param lmStudioModel       LM Studio identifier of the Ministral-PII model the detector prompts (null = service default)
+ * @param lmStudioJudgeModel  LM Studio identifier of the model the LLM judge prompts (null = reuse lmStudioModel)
  * @param ministralConcurrency               Number of chunk prompts sent concurrently to LM Studio (1 = sequential)
  * @param ministralConcurrencyAuto           Whether the service auto-tunes the concurrency at startup
  * @param ministralConcurrencyTunedSignature The "host:port|model" signature the auto value was tuned for (null = never tuned)
@@ -35,6 +37,7 @@ public record PiiDetectionConfigResponseDto(
     String lmStudioHost,
     Integer lmStudioPort,
     String lmStudioModel,
+    String lmStudioJudgeModel,
     Integer ministralConcurrency,
     boolean ministralConcurrencyAuto,
     String ministralConcurrencyTunedSignature,

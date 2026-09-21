@@ -75,7 +75,8 @@ public class RemediationDtoMapper {
         return new RemediationSearchResponseDto(
                 result.groups().stream().map(this::toGroupDto).toList(),
                 new RemediationTotalsDto(result.totals().pending(), result.totals().handled(),
-                        result.totals().falsePositive(), result.totals().total()),
+                        result.totals().falsePositive(), result.totals().proposedFalsePositive(),
+                        result.totals().total()),
                 result.page(),
                 result.pageSize(),
                 result.totalElements(),
@@ -178,6 +179,8 @@ public class RemediationDtoMapper {
                 view.status().name(),
                 view.selected(),
                 view.eligibleForRedaction(),
-                view.ineligibilityReason());
+                view.ineligibilityReason(),
+                view.judgeVerdict() == null ? null : view.judgeVerdict().name(),
+                view.judgeConfidence());
     }
 }

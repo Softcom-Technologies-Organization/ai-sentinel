@@ -24,6 +24,7 @@ public record PiiDetectionConfig(
         String lmStudioHost,
         Integer lmStudioPort,
         String lmStudioModel,
+        String lmStudioJudgeModel,
         Integer ministralConcurrency,
         boolean ministralConcurrencyAuto,
         String ministralConcurrencyTunedSignature,

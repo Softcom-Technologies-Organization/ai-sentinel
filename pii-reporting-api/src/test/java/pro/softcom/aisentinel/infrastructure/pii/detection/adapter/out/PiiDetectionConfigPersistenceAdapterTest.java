@@ -105,7 +105,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
             false,
             1024, 128,
             newThreshold,
-            false, "localhost", 1234, null, 1, true, null,
+            false, "localhost", 1234, null, null, 1, true, null,
             updateTime,
             "integration-test"
         );
@@ -145,7 +145,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
             true,
             true,
             1024, 128, new BigDecimal("0.75"),
-            true, "localhost", 1234, null, 1, true, null,
+            true, "localhost", 1234, null, null, 1, true, null,
             LocalDateTime.now(),
             "postfilter-enabler"
         );
@@ -168,7 +168,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
         PiiDetectionConfig config = new PiiDetectionConfig(
             CONFIG_ID,
             true, false, true, 2048, 256, new BigDecimal("0.75"),
-            false, "localhost", 1234, null, 1, true, null,
+            false, "localhost", 1234, null, null, 1, true, null,
             LocalDateTime.now(),
             "ministral-enabler"
         );
@@ -195,7 +195,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
         PiiDetectionConfig config = new PiiDetectionConfig(
             CONFIG_ID,
             true, false, true, 2048, 256, new BigDecimal("0.75"),
-            false, "localhost", 1234, null, 4, false, "localhost:1234|ministral",
+            false, "localhost", 1234, null, null, 4, false, "localhost:1234|ministral",
             LocalDateTime.now(),
             "concurrency-tuner"
         );
@@ -212,6 +212,31 @@ class PiiDetectionConfigPersistenceAdapterTest {
         softly.assertThat(entity.getMinistralConcurrency()).isEqualTo(4);
         softly.assertThat(entity.getMinistralConcurrencyAuto()).isFalse();
         softly.assertThat(entity.getMinistralConcurrencyTunedSignature()).isEqualTo("localhost:1234|ministral");
+        softly.assertAll();
+    }
+
+    @Test
+    void Should_RoundTripLmStudioModels_When_DetectionAndJudgeModelsDiffer() {
+        jpaRepository.deleteAll();
+
+        PiiDetectionConfig config = new PiiDetectionConfig(
+            CONFIG_ID,
+            true, false, true, 2048, 256, new BigDecimal("0.75"),
+            false, "localhost", 1234, "ministral-3b-pii-preview@q8_0", "google/gemma-4-31b", 1, true, null,
+            LocalDateTime.now(),
+            "judge-configurator"
+        );
+
+        persistenceAdapter.updateConfig(config);
+
+        PiiDetectionConfig reloaded = persistenceAdapter.findConfig();
+        PiiDetectionConfigEntity entity = jpaRepository.findById(CONFIG_ID).orElseThrow();
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(reloaded.lmStudioModel()).isEqualTo("ministral-3b-pii-preview@q8_0");
+        softly.assertThat(reloaded.lmStudioJudgeModel()).isEqualTo("google/gemma-4-31b");
+        softly.assertThat(entity.getLmStudioModel()).isEqualTo("ministral-3b-pii-preview@q8_0");
+        softly.assertThat(entity.getLmStudioJudgeModel()).isEqualTo("google/gemma-4-31b");
         softly.assertAll();
     }
 
@@ -290,7 +315,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
         persistenceAdapter.updateConfig(new PiiDetectionConfig(
             existingConfig.id(),
             false, true, false, 1024, 128, new BigDecimal("0.80"),
-            false, "localhost", 1234, null, 1, true, null,
+            false, "localhost", 1234, null, null, 1, true, null,
             LocalDateTime.now(),
             "bench-preserver"
         ));
@@ -314,7 +339,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
         persistenceAdapter.updateConfig(new PiiDetectionConfig(
             CONFIG_ID,
             true, true, true, 2048, 256, new BigDecimal("0.75"),
-            false, "localhost", 1234, null, 4, true, "localhost:1234|ministral",
+            false, "localhost", 1234, null, null, 4, true, "localhost:1234|ministral",
             LocalDateTime.now(),
             "concurrency-tuner"
         ));

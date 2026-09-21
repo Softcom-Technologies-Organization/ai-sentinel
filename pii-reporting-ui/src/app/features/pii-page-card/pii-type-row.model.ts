@@ -7,5 +7,6 @@ export interface PiiEntityRow {
   valueParts: ValuePart[];
   isRevealed: boolean;
   confidence: number;
+  confidenceAvailable: boolean;
   detector: DetectorSource;
 }

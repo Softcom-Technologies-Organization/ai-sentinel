@@ -35,15 +35,17 @@ public class LmStudioModelsController {
      *
      * @param host optional LM Studio host overriding the configured one
      * @param port optional LM Studio port overriding the configured one
+     * @param all  true to list every chat model (LLM judge picker), false for the Ministral-PII family
      * @return 200 with the listing; the listing's error is set when LM Studio could not be listed
      */
     @GetMapping("/models")
-    @Operation(summary = "List the Ministral-PII models available on LM Studio")
+    @Operation(summary = "List the models available on LM Studio")
     public ResponseEntity<@NonNull LmStudioModelsResponseDto> listModels(
             @RequestParam(required = false) String host,
-            @RequestParam(required = false) Integer port) {
-        log.debug("GET /api/v1/pii-detection/lm-studio/models host={} port={}", host, port);
-        LmStudioModelListing listing = listLmStudioModelsPort.listModels(host, port);
+            @RequestParam(required = false) Integer port,
+            @RequestParam(required = false, defaultValue = "false") boolean all) {
+        log.debug("GET /api/v1/pii-detection/lm-studio/models host={} port={} all={}", host, port, all);
+        LmStudioModelListing listing = listLmStudioModelsPort.listModels(host, port, all);
         List<LmStudioModelDto> models = listing.models().stream()
                 .map(model -> new LmStudioModelDto(model.id(), model.quantization(), model.publisher(), model.loaded()))
                 .toList();

@@ -49,12 +49,6 @@
   color: var(--sentinel-text-secondary);
   overflow-wrap: anywhere;
   max-width: 100%;
-  /* Keep the row compact: show at most two lines of context, then clamp. */
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
 }
 
 .ob-value--revealed {
@@ -165,6 +159,22 @@
   border: 1px dashed var(--sentinel-border-strong);
 }
 
+.ob-status-badge--proposed {
+  background: var(--sentinel-judge-bg);
+  color: var(--sentinel-judge-color);
+  border: 1px dashed var(--sentinel-judge-border);
+}
+
+.ob-status-badge--judged-keep {
+  background: var(--sentinel-status-success-bg);
+  color: var(--sentinel-status-success-text);
+  border: 1px solid var(--sentinel-status-success-text);
+}
+
+.ob-status-badge b {
+  font-weight: 700;
+}
+
 .ob-occ-actions {
   display: inline-flex;
   gap: 0.2rem;
@@ -191,6 +201,10 @@
 
 .ob-icon-btn--ok:hover {
   color: var(--sentinel-status-success-text);
+}
+
+.ob-icon-btn--ai:hover {
+  color: var(--sentinel-judge-color);
 }
 
 .ob-icon-btn--warn:hover {

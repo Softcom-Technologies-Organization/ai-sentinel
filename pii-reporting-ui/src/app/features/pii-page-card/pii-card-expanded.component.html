@@ -120,12 +120,14 @@
                   [class.sort-indicator--desc]="sortColumn() === 'value' && sortDirection() === 'desc'"
                   aria-hidden="true">&#x25B4;</span>
           </th>
-          <th class="th-confidence th-sortable" tabindex="0" (click)="onSort('confidence')" (keydown.enter)="onSort('confidence')">
-            {{ 'piiPageCard.table.confidence' | transloco }}
-            <span class="sort-indicator" [class.sort-indicator--active]="sortColumn() === 'confidence'"
-                  [class.sort-indicator--desc]="sortColumn() === 'confidence' && sortDirection() === 'desc'"
-                  aria-hidden="true">&#x25B4;</span>
-          </th>
+          @if (showConfidenceColumn()) {
+            <th class="th-confidence th-sortable" tabindex="0" (click)="onSort('confidence')" (keydown.enter)="onSort('confidence')">
+              {{ 'piiPageCard.table.confidence' | transloco }}
+              <span class="sort-indicator" [class.sort-indicator--active]="sortColumn() === 'confidence'"
+                    [class.sort-indicator--desc]="sortColumn() === 'confidence' && sortDirection() === 'desc'"
+                    aria-hidden="true">&#x25B4;</span>
+            </th>
+          }
           <th class="th-detector th-sortable" tabindex="0" (click)="onSort('detector')" (keydown.enter)="onSort('detector')">
             {{ 'piiPageCard.table.detector' | transloco }}
             <span class="sort-indicator" [class.sort-indicator--active]="sortColumn() === 'detector'"
@@ -149,9 +151,13 @@
                 }
               }
             </td>
-            <td class="td-confidence">
-              <app-confidence-indicator [value]="row.confidence" />
-            </td>
+            @if (showConfidenceColumn()) {
+              <td class="td-confidence">
+                @if (row.confidenceAvailable) {
+                  <app-confidence-indicator [value]="row.confidence" />
+                }
+              </td>
+            }
             <td class="td-detector">
               <app-detector-tag [detector]="row.detector" [small]="true" />
             </td>

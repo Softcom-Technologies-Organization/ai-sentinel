@@ -69,7 +69,9 @@
   </div>
 
   <div class="ob-occ-side">
-    <app-confidence-indicator [value]="finding().confidenceScore" />
+    @if (confidenceAvailable()) {
+      <app-confidence-indicator [value]="finding().confidenceScore" />
+    }
     <app-detector-tag [detector]="detectorSource()" [small]="true" />
     <span
       class="ob-status-badge ob-status-badge--{{ statusMeta().variant }}"
@@ -77,6 +79,9 @@
     >
       <i class="pi {{ statusMeta().icon }}" aria-hidden="true"></i>
       {{ statusMeta().labelKey | transloco }}
+      @if (judgeConfidencePercent() !== null) {
+        <b [attr.data-testid]="testIds.judgeConfidence">{{ judgeConfidencePercent() }} %</b>
+      }
     </span>
     <span class="ob-occ-actions">
       @switch (status()) {
@@ -111,6 +116,28 @@
             (click)="restore.emit()"
             [title]="'obfuscation.action.restore' | transloco"
             [attr.aria-label]="'obfuscation.action.restore' | transloco"
+            [attr.data-testid]="testIds.restore"
+          >
+            <i class="pi pi-replay" aria-hidden="true"></i>
+          </button>
+        }
+        @case ('PROPOSED_FALSE_POSITIVE') {
+          <button
+            type="button"
+            class="ob-icon-btn ob-icon-btn--ai"
+            (click)="confirmFalsePositive.emit()"
+            [title]="'obfuscation.action.confirmFp' | transloco"
+            [attr.aria-label]="'obfuscation.action.confirmFp' | transloco"
+            [attr.data-testid]="testIds.confirmFp"
+          >
+            <i class="pi pi-flag" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
+            class="ob-icon-btn"
+            (click)="restore.emit()"
+            [title]="'obfuscation.action.keep' | transloco"
+            [attr.aria-label]="'obfuscation.action.keep' | transloco"
             [attr.data-testid]="testIds.restore"
           >
             <i class="pi pi-replay" aria-hidden="true"></i>

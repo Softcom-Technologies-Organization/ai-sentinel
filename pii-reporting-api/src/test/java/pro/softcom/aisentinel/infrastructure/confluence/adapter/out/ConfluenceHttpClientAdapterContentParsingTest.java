@@ -62,7 +62,6 @@ class ConfluenceHttpClientAdapterContentParsingTest {
         lenient().when(config.readTimeout()).thenReturn(10000);
         lenient().when(config.maxRetries()).thenReturn(0);
         lenient().when(config.pagesLimit()).thenReturn(50);
-        lenient().when(config.maxPages()).thenReturn(100);
     }
 
     private void setupHttpClient() throws Exception {

@@ -17,12 +17,16 @@ const FR_TRANSLATIONS = {
       redacted: 'Supprimé de la source',
       manual: 'Traité (manuel)',
       fp: 'Faux positif',
+      proposedFp: 'Faux positif · IA',
+      judgedKept: 'Conservé',
     },
     action: {
       markManual: 'Marquer comme traité manuellement',
       undoManual: 'Rétablir « à traiter »',
       markFp: 'Signaler faux positif',
       restore: 'Rétablir',
+      confirmFp: 'Confirmer le faux positif',
+      keep: 'Conserver (rétablir « à traiter »)',
     },
     ineligible: {
       attachment: 'Pièce jointe : suppression impossible ({{kind}})',
@@ -256,9 +260,40 @@ describe('ObfuscationFindingRowComponent', () => {
     expect(fixture.nativeElement.querySelector('app-detector-tag')).toBeTruthy();
   });
 
+  it('Should_HideConfidence_When_FindingComesFromMinistral', () => {
+    createComponent(finding({ detector: 'MINISTRAL', confidenceScore: 1 }));
+
+    expect(fixture.nativeElement.querySelector('app-confidence-indicator')).toBeNull();
+  });
+
   it('Should_ShowPiiTypeTag_When_GroupedBySeverity', () => {
     createComponent(finding(), 'severity');
 
     expect(fixture.nativeElement.textContent).toContain('EMAIL');
+  });
+
+  it('Should_ShowProposedVerdictWithConfidenceAndConfirmGesture_When_JudgeProposedFalsePositive', () => {
+    createComponent(finding({ status: 'PROPOSED_FALSE_POSITIVE', judgeVerdict: 'FALSE_POSITIVE', judgeConfidence: 0.93 }));
+    const confirmed = vi.fn();
+    fixture.componentInstance.confirmFalsePositive.subscribe(confirmed);
+
+    const status = fixture.nativeElement.querySelector('[data-testid="obfuscation-row-status"]') as HTMLElement;
+    const checkbox = fixture.nativeElement.querySelector('[data-testid="obfuscation-row-checkbox"]') as HTMLInputElement;
+    (fixture.nativeElement.querySelector('[data-testid="obfuscation-row-confirm-fp"]') as HTMLButtonElement).click();
+
+    expect(status.textContent).toContain('Faux positif · IA');
+    expect(status.textContent).toContain('93 %');
+    expect(checkbox.disabled).toBe(true);
+    expect(confirmed).toHaveBeenCalledTimes(1);
+  });
+
+  it('Should_ShowKeptVerdict_When_PendingFindingWasJudgedTruePositive', () => {
+    createComponent(finding({ status: 'PENDING', judgeVerdict: 'TRUE_POSITIVE', judgeConfidence: 0.97 }));
+
+    const status = fixture.nativeElement.querySelector('[data-testid="obfuscation-row-status"]') as HTMLElement;
+
+    expect(status.textContent).toContain('Conservé');
+    expect(status.textContent).toContain('97 %');
+    expect(fixture.nativeElement.querySelector('[data-testid="obfuscation-row-mark-manual"]')).not.toBeNull();
   });
 });

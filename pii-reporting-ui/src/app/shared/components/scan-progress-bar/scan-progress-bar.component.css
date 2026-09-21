@@ -1,25 +1,24 @@
-/* Progress bar base: thin with rounded corners
-   ::ng-deep needed: PrimeNG progressbar renders its own internal template */
+:host {
+  display: block;
+  width: 100%;
+}
+
+:host:empty {
+  display: none;
+}
+
+/* ::ng-deep needed: PrimeNG progressbar renders its own internal template */
 :host ::ng-deep .p-progressbar {
+  height: 4px;
   background: var(--sentinel-progress-bg);
-  border-radius: 3px;
+  border-radius: 999px;
 }
 
 :host ::ng-deep .p-progressbar .p-progressbar-value {
-  border-radius: 3px;
-}
-
-/* Completed: gradient matching the reference design */
-:host ::ng-deep .scan-progress-completed .p-progressbar-value {
-  background: linear-gradient(90deg, var(--sentinel-progress-completed-start), var(--sentinel-progress-completed-end));
+  border-radius: 999px;
 }
 
 /* Running: blue tone matching the "En cours" badge */
 :host ::ng-deep .scan-progress-running .p-progressbar-value {
   background: var(--sentinel-progress-running);
-}
-
-/* Paused: grey tone matching the "En pause" badge */
-:host ::ng-deep .scan-progress-paused .p-progressbar-value {
-  background: var(--sentinel-progress-paused);
 }

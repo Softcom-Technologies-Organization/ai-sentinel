@@ -22,6 +22,9 @@ import pro.softcom.aisentinel.application.pii.remediation.service.SelectionResol
 import pro.softcom.aisentinel.application.pii.remediation.service.SelectionResolver.ResolvedSelection;
 import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery;
+import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
+import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
+import pro.softcom.aisentinel.domain.pii.ScanStatus;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingReference;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediation;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediationStatus;
@@ -42,6 +45,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.anyCollection;
@@ -69,6 +73,9 @@ class ChangeFindingStatusUseCaseTest {
     private ScanResultQuery scanResultQuery;
 
     @Mock
+    private ScanCheckpointRepository checkpointRepository;
+
+    @Mock
     private FindingRemediationStore findingRemediationStore;
 
     @Mock
@@ -89,13 +96,84 @@ class ChangeFindingStatusUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new ChangeFindingStatusUseCase(remediationConfigPort, scanResultQuery,
+        useCase = new ChangeFindingStatusUseCase(remediationConfigPort, scanResultQuery, checkpointRepository,
                 findingRemediationStore, new ScanEventFindingResolver(severityCalculationService),
                 selectionResolver, publishRemediationEventPort, Clock.fixed(NOW, ZoneOffset.UTC));
         lenient().when(remediationConfigPort.isRemediationEnabled()).thenReturn(true);
         lenient().when(severityCalculationService.calculateSeverity("EMAIL"))
                 .thenReturn(PersonallyIdentifiableInformationSeverity.MEDIUM);
         emailFindingId = emailReference().findingId();
+    }
+
+    @Test
+    void Should_ChangeSpaceFinding_When_AnotherSpaceWasScannedLater() {
+        lenient().when(checkpointRepository.findAllLatestCheckpoints())
+                .thenReturn(List.of(ScanCheckpoint.builder().scanId(SCAN_ID).spaceKey(SPACE).build()));
+        lenient().when(scanResultQuery.findLatestScan())
+                .thenReturn(Optional.of(new LastScanMeta("scan-other", NOW, 1)));
+        lenient().when(scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey(SCAN_ID, SPACE))
+                .thenReturn(List.of(emailEvent()));
+
+        FindingStatusChangeResult result = useCase.changeStatuses(command(
+                new StatusChange(emailFindingId, FindingRemediationStatus.FALSE_POSITIVE)));
+
+        assertThat(result.applied()).containsExactly(emailFindingId);
+        verify(publishRemediationEventPort)
+                .publishFalsePositivesChanged(new SpaceFalsePositivesChanged(SCAN_ID, SPACE));
+    }
+
+    @Test
+    void Should_PersistAndPublishEachSpaceScanId_When_BatchSpansDifferentScans() {
+        when(checkpointRepository.findAllLatestCheckpoints()).thenReturn(List.of(
+                ScanCheckpoint.builder().scanId(SCAN_ID).spaceKey(SPACE).build(),
+                ScanCheckpoint.builder().scanId("scan-other").spaceKey("OTHER").build()));
+        when(scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey(SCAN_ID, SPACE))
+                .thenReturn(List.of(emailEvent()));
+        when(scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey("scan-other", "OTHER"))
+                .thenReturn(List.of(emailEvent().toBuilder().scanId("scan-other").spaceKey("OTHER").build()));
+        String otherFindingId = emailReference().toBuilder().spaceKey("OTHER").build().findingId();
+
+        FindingStatusChangeResult result = useCase.changeStatuses(command(
+                new StatusChange(emailFindingId, FindingRemediationStatus.FALSE_POSITIVE),
+                new StatusChange(otherFindingId, FindingRemediationStatus.FALSE_POSITIVE)));
+
+        assertThat(result.applied()).containsExactly(emailFindingId, otherFindingId);
+        verify(findingRemediationStore).upsertAll(upsertCaptor.capture());
+        assertThat(upsertCaptor.getValue()).extracting(FindingRemediation::findingId, FindingRemediation::scanId)
+                .containsExactly(tuple(emailFindingId, SCAN_ID), tuple(otherFindingId, "scan-other"));
+        verify(publishRemediationEventPort).publishFalsePositivesChanged(new SpaceFalsePositivesChanged(SCAN_ID, SPACE));
+        verify(publishRemediationEventPort).publishFalsePositivesChanged(new SpaceFalsePositivesChanged("scan-other", "OTHER"));
+    }
+
+    @Test
+    void Should_RejectStaleFinding_When_SpaceWasRescanned() {
+        when(checkpointRepository.findAllLatestCheckpoints()).thenReturn(List.of(
+                ScanCheckpoint.builder().scanId("rescan").spaceKey(SPACE).scanStatus(ScanStatus.NOT_STARTED).build()));
+        lenient().when(scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey(SCAN_ID, SPACE))
+                .thenReturn(List.of(emailEvent()));
+
+        FindingStatusChangeResult result = useCase.changeStatuses(command(
+                new StatusChange(emailFindingId, FindingRemediationStatus.FALSE_POSITIVE)));
+
+        assertThat(result.applied()).isEmpty();
+        assertThat(result.rejected()).extracting(FindingStatusChangeResult.RejectedChange::reason)
+                .containsExactly("error.remediation.finding_not_found");
+        verify(findingRemediationStore, never()).upsertAll(anyCollection());
+        verifyNoInteractions(publishRemediationEventPort);
+        verify(scanResultQuery, never()).listItemEventsEncryptedByScanIdAndSpaceKey(SCAN_ID, SPACE);
+    }
+
+    @Test
+    void Should_RejectFinding_When_NoCheckpointRemainsAfterPurge() {
+        lenient().when(scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey(SCAN_ID, SPACE))
+                .thenReturn(List.of(emailEvent()));
+
+        FindingStatusChangeResult result = useCase.changeStatuses(command(
+                new StatusChange(emailFindingId, FindingRemediationStatus.FALSE_POSITIVE)));
+
+        assertThat(result.applied()).isEmpty();
+        assertThat(result.rejected()).hasSize(1);
+        verifyNoInteractions(scanResultQuery, publishRemediationEventPort);
     }
 
     @Nested
@@ -123,9 +201,9 @@ class ChangeFindingStatusUseCaseTest {
         @DisplayName("Should_CreateFalsePositiveRow_When_PendingFindingReported")
         void Should_CreateFalsePositiveRow_When_PendingFindingReported() {
             when(findingRemediationStore.findByIds(anyCollection())).thenReturn(List.of());
-            when(scanResultQuery.findLatestScan())
-                    .thenReturn(Optional.of(new LastScanMeta(SCAN_ID, NOW, 1)));
-            when(scanResultQuery.listItemEventsEncrypted(SCAN_ID)).thenReturn(List.of(emailEvent()));
+            when(checkpointRepository.findAllLatestCheckpoints())
+                    .thenReturn(List.of(ScanCheckpoint.builder().scanId(SCAN_ID).spaceKey(SPACE).build()));
+            when(scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey(SCAN_ID, SPACE)).thenReturn(List.of(emailEvent()));
 
             FindingStatusChangeResult result = useCase.changeStatuses(command(
                     new StatusChange(emailFindingId, FindingRemediationStatus.FALSE_POSITIVE)));
@@ -152,9 +230,9 @@ class ChangeFindingStatusUseCaseTest {
         @DisplayName("Should_RejectUnknownFinding_When_IdNotResolvableFromLatestScan")
         void Should_RejectUnknownFinding_When_IdNotResolvableFromLatestScan() {
             when(findingRemediationStore.findByIds(anyCollection())).thenReturn(List.of());
-            when(scanResultQuery.findLatestScan())
-                    .thenReturn(Optional.of(new LastScanMeta(SCAN_ID, NOW, 1)));
-            when(scanResultQuery.listItemEventsEncrypted(SCAN_ID)).thenReturn(List.of());
+            when(checkpointRepository.findAllLatestCheckpoints())
+                    .thenReturn(List.of(ScanCheckpoint.builder().scanId(SCAN_ID).spaceKey(SPACE).build()));
+            when(scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey(SCAN_ID, SPACE)).thenReturn(List.of());
 
             FindingStatusChangeResult result = useCase.changeStatuses(command(
                     new StatusChange("unknown-id", FindingRemediationStatus.FALSE_POSITIVE)));
@@ -173,9 +251,9 @@ class ChangeFindingStatusUseCaseTest {
         @DisplayName("Should_RejectPendingToPending_When_NoRowExists")
         void Should_RejectPendingToPending_When_NoRowExists() {
             when(findingRemediationStore.findByIds(anyCollection())).thenReturn(List.of());
-            when(scanResultQuery.findLatestScan())
-                    .thenReturn(Optional.of(new LastScanMeta(SCAN_ID, NOW, 1)));
-            when(scanResultQuery.listItemEventsEncrypted(SCAN_ID)).thenReturn(List.of(emailEvent()));
+            when(checkpointRepository.findAllLatestCheckpoints())
+                    .thenReturn(List.of(ScanCheckpoint.builder().scanId(SCAN_ID).spaceKey(SPACE).build()));
+            when(scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey(SCAN_ID, SPACE)).thenReturn(List.of(emailEvent()));
 
             FindingStatusChangeResult result = useCase.changeStatuses(command(
                     new StatusChange(emailFindingId, FindingRemediationStatus.PENDING)));

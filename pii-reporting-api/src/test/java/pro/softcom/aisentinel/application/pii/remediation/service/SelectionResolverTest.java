@@ -7,9 +7,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.application.pii.remediation.port.out.FindingRemediationStore;
+import pro.softcom.aisentinel.application.pii.remediation.port.in.ExecuteObfuscationPort.ObfuscationSubmission;
+import pro.softcom.aisentinel.application.pii.remediation.port.out.ObfuscationJobStore;
+import pro.softcom.aisentinel.application.pii.remediation.port.out.RemediationConfigPort;
+import pro.softcom.aisentinel.application.pii.remediation.usecase.ExecuteObfuscationUseCase;
+import pro.softcom.aisentinel.application.pii.remediation.usecase.PlanObfuscationUseCase;
+import pro.softcom.aisentinel.domain.pii.remediation.ObfuscationPlan;
+import pro.softcom.aisentinel.domain.pii.remediation.SelectionOutdatedException;
 import pro.softcom.aisentinel.application.pii.remediation.service.SelectionResolver.ResolvedSelection;
 import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery;
+import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
+import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
+import pro.softcom.aisentinel.domain.pii.ScanStatus;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediationStatus;
 import pro.softcom.aisentinel.domain.pii.remediation.RemediationSelection;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
@@ -19,6 +29,7 @@ import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInforma
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
 
 import java.time.Instant;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,7 +40,12 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("SelectionResolver")
@@ -42,6 +58,9 @@ class SelectionResolverTest {
     private ScanResultQuery scanResultQuery;
 
     @Mock
+    private ScanCheckpointRepository checkpointRepository;
+
+    @Mock
     private FindingRemediationStore findingRemediationStore;
 
     @Mock
@@ -51,19 +70,19 @@ class SelectionResolverTest {
 
     @BeforeEach
     void setUp() {
-        resolver = new SelectionResolver(scanResultQuery, findingRemediationStore,
+        resolver = new SelectionResolver(scanResultQuery, checkpointRepository, findingRemediationStore,
                 new ScanEventFindingResolver(severityCalculationService), new SelectionEvaluator());
         lenient().when(severityCalculationService.calculateSeverity(anyString()))
                 .thenReturn(PersonallyIdentifiableInformationSeverity.MEDIUM);
-        lenient().when(scanResultQuery.findLatestScan())
-                .thenReturn(Optional.of(new LastScanMeta(SCAN_ID, Instant.parse("2026-01-01T10:00:00Z"), 1)));
+        lenient().when(checkpointRepository.findLatestBySpace(SPACE_KEY))
+                .thenReturn(Optional.of(ScanCheckpoint.builder().scanId(SCAN_ID).spaceKey(SPACE_KEY).build()));
         lenient().when(findingRemediationStore.findStatusesByIds(any())).thenReturn(Map.of());
     }
 
     @Test
     @DisplayName("Should_ReturnEmptyResolution_When_NoScanExists")
     void Should_ReturnEmptyResolution_When_NoScanExists() {
-        when(scanResultQuery.findLatestScan()).thenReturn(Optional.empty());
+        when(checkpointRepository.findLatestBySpace(SPACE_KEY)).thenReturn(Optional.empty());
 
         ResolvedSelection resolved = resolver.resolve(selectionOfTypes("EMAIL"));
 
@@ -147,6 +166,87 @@ class SelectionResolverTest {
             softly.assertThat(resolved.pageFindings()).hasSize(1);
             softly.assertThat(resolved.pageFindings().getFirst().reference().pageId()).isEqualTo("p2");
         });
+    }
+
+    @Test
+    void Should_KeepSpaceSelection_When_AnotherSpaceWasScannedLater() {
+        lenient().when(checkpointRepository.findLatestBySpace(SPACE_KEY))
+                .thenReturn(Optional.of(ScanCheckpoint.builder().scanId(SCAN_ID).spaceKey(SPACE_KEY).build()));
+        lenient().when(scanResultQuery.findLatestScan())
+                .thenReturn(Optional.of(new LastScanMeta("scan-other", Instant.now(), 1)));
+        lenient().when(scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey(SCAN_ID, SPACE_KEY))
+                .thenReturn(List.of(event("p1", null, detection("EMAIL", "fp-1"))));
+
+        ResolvedSelection resolved = resolver.resolve(selectionOfTypes("EMAIL"));
+
+        assertThat(resolved.scanId()).isEqualTo(SCAN_ID);
+        assertThat(resolved.pageFindings()).hasSize(1);
+    }
+
+    @Test
+    void Should_ReturnEmptySelection_When_SpaceHasNoCheckpoint() {
+        when(checkpointRepository.findLatestBySpace(SPACE_KEY)).thenReturn(Optional.empty());
+        lenient().when(scanResultQuery.findLatestScan())
+                .thenReturn(Optional.of(new LastScanMeta("scan-other", Instant.now(), 1)));
+
+        assertThat(resolver.resolve(selectionOfTypes("EMAIL"))).isEqualTo(ResolvedSelection.empty());
+        verify(scanResultQuery, never()).findLatestScan();
+    }
+
+    @Test
+    void Should_ReplaceOldSelection_When_SpaceHasANewerScan() {
+        when(checkpointRepository.findLatestBySpace(SPACE_KEY))
+                .thenReturn(Optional.of(ScanCheckpoint.builder().scanId("rescan").spaceKey(SPACE_KEY).build()));
+        when(scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey("rescan", SPACE_KEY))
+                .thenReturn(List.of(event("p2", null, detection("EMAIL", "new-fp")).toBuilder()
+                        .scanId("rescan").build()));
+
+        ResolvedSelection resolved = resolver.resolve(selectionOfTypes("EMAIL"));
+
+        assertThat(resolved.scanId()).isEqualTo("rescan");
+        assertThat(resolved.pageFindings()).extracting(finding -> finding.reference().valueFingerprint())
+                .containsExactly("new-fp");
+        verify(scanResultQuery, never()).listItemEventsEncryptedByScanIdAndSpaceKey(SCAN_ID, SPACE_KEY);
+    }
+
+    @Test
+    void Should_NotRestoreOldSelection_When_NewScanHasNoEventsYet() {
+        when(checkpointRepository.findLatestBySpace(SPACE_KEY))
+                .thenReturn(Optional.of(ScanCheckpoint.builder().scanId("rescan").spaceKey(SPACE_KEY)
+                        .scanStatus(ScanStatus.NOT_STARTED).build()));
+        lenient().when(scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey(SCAN_ID, SPACE_KEY))
+                .thenReturn(List.of(event("p1", null, detection("EMAIL", "old-fp"))));
+
+        ResolvedSelection resolved = resolver.resolve(selectionOfTypes("EMAIL"));
+
+        assertThat(resolved.scanId()).isEqualTo("rescan");
+        assertThat(resolved.pageFindings()).isEmpty();
+        verify(scanResultQuery, never()).listItemEventsEncryptedByScanIdAndSpaceKey(SCAN_ID, SPACE_KEY);
+    }
+
+    @Test
+    void Should_ExecutePlannedSelection_When_OnlyAnotherSpaceWasScannedLater() {
+        RemediationConfigPort config = mock(RemediationConfigPort.class);
+        when(config.isRemediationEnabled()).thenReturn(true);
+        ObfuscationJobStore jobStore = mock(ObfuscationJobStore.class);
+        ObfuscationJobRunner runner = mock(ObfuscationJobRunner.class);
+        ExecuteObfuscationUseCase execute = new ExecuteObfuscationUseCase(config, resolver, jobStore,
+                runner, Runnable::run, Clock.systemUTC());
+        stubEvents(event("p1", null, detection("EMAIL", "fp-1")));
+        RemediationSelection selection = selectionOfTypes("EMAIL");
+        ObfuscationPlan plan = new PlanObfuscationUseCase(config, resolver).plan(selection);
+        lenient().when(scanResultQuery.findLatestScan())
+                .thenReturn(Optional.of(new LastScanMeta("scan-other", Instant.now(), 1)));
+
+        execute.execute(new ObfuscationSubmission(selection, plan.selectionChecksum(), "tester"));
+
+        assertThat(plan.totalFindings()).isEqualTo(1);
+        verify(runner).run(any(), argThat(resolved -> SCAN_ID.equals(resolved.scanId())
+                && resolved.pageFindings().size() == 1));
+        when(checkpointRepository.findLatestBySpace(SPACE_KEY))
+                .thenReturn(Optional.of(ScanCheckpoint.builder().scanId("rescan").spaceKey(SPACE_KEY).build()));
+        ObfuscationSubmission staleSubmission = new ObfuscationSubmission(selection, plan.selectionChecksum(), "tester");
+        assertThatThrownBy(() -> execute.execute(staleSubmission)).isInstanceOf(SelectionOutdatedException.class);
     }
 
     private void stubEvents(ConfluenceContentScanResult... events) {

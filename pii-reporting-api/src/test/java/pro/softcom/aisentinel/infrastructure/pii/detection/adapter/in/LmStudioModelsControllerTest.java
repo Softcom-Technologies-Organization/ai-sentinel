@@ -33,7 +33,7 @@ class LmStudioModelsControllerTest {
 
     @Test
     void Should_ReturnModelsJson_When_GetModelsWithEndpoint() throws Exception {
-        when(listLmStudioModelsPort.listModels("lmstudio", 4321)).thenReturn(new LmStudioModelListing(
+        when(listLmStudioModelsPort.listModels("lmstudio", 4321, false)).thenReturn(new LmStudioModelListing(
             "http://lmstudio:4321/v1", "ministral-3b-pii-preview",
             List.of(new LmStudioModel("ministral-3b-pii-preview@q8_0", "Q8_0", "mradermacher", true)),
             ""));
@@ -50,7 +50,7 @@ class LmStudioModelsControllerTest {
 
     @Test
     void Should_UseConfiguredEndpoint_When_NoParamsGiven() throws Exception {
-        when(listLmStudioModelsPort.listModels(null, null)).thenReturn(
+        when(listLmStudioModelsPort.listModels(null, null, false)).thenReturn(
             new LmStudioModelListing("http://localhost:1234/v1", "ministral-3b-pii-preview", List.of(),
                                      "LM Studio model list unavailable"));
 
@@ -59,6 +59,6 @@ class LmStudioModelsControllerTest {
             .andExpect(jsonPath("$.models").isEmpty())
             .andExpect(jsonPath("$.error").value("LM Studio model list unavailable"));
 
-        verify(listLmStudioModelsPort).listModels(null, null);
+        verify(listLmStudioModelsPort).listModels(null, null, false);
     }
 }

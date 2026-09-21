@@ -20,5 +20,11 @@ public enum AccessPurpose {
      */
     REDACTION,
 
+    /**
+     * Decryption of PII values by an LLM judge job so the model can review each finding in its
+     * context. Each space-level decryption is audit-logged.
+     */
+    LLM_JUDGE,
+
     // Future purposes can be added here as needed
 }

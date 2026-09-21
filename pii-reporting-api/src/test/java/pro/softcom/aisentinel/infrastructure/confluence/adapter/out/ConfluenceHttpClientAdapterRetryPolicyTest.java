@@ -58,7 +58,6 @@ class ConfluenceHttpClientAdapterRetryPolicyTest {
         lenient().when(config.readTimeout()).thenReturn(10000);
         lenient().when(config.maxRetries()).thenReturn(1); // 1 retry for tests
         lenient().when(config.pagesLimit()).thenReturn(50);
-        lenient().when(config.maxPages()).thenReturn(100);
     }
 
     private void setupHttpClient() throws Exception {

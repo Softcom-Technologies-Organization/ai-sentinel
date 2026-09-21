@@ -72,6 +72,30 @@ class _FakeServicer:
 
 
 class TestApplyFormatPostfilter:
+    @pytest.mark.parametrize(
+        "pii_type",
+        ["SOCIAL_SECURITY_NUMBER", "social security number", "SSN", "US_SSN", "SOCIALNUM"],
+    )
+    def test_Should_KeepShortSocialSecurityValues_When_PostfilterRuns(self, pii_type):
+        kept_values = [
+            "1234", "123456",
+            "123456789", "123-45-6789", "756.1234.5678.97", "7561234567897",
+            "1 84 12 75 116 001 42", "1841275116001", "1 84 12 2A 116 001 42",
+            "850730-033-28",
+        ]
+        entities = [
+            PIIEntity(
+                text=value, pii_type=pii_type, type_label=pii_type,
+                start=0, end=len(value), score=1.0, source=DetectorSource.MINISTRAL,
+            )
+            for value in kept_values
+        ]
+        kept, rejections = _FakeServicer()._apply_format_postfilter(
+            entities, content="", request_id="req-ssn"
+        )
+        assert kept == entities
+        assert rejections == []
+
     def test_should_discard_fake_ip_and_keep_real_ip(self) -> None:
         servicer = _FakeServicer()
         real_ip = _ip_entity("10.217.4.11")

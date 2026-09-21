@@ -122,8 +122,7 @@ public class ScanCheckpointService {
 
     private CheckpointData extractCheckpointData(String eventType, ConfluenceContentScanResult confluenceContentScanResult) {
         return switch (eventType) {
-            case "item" ->
-                // Interim page item: persist checkpoint with RUNNING status
+            case "start", "item" ->
                 // Pass null for lastProcessedPageId - repository merge strategy preserves existing value
                 new CheckpointData(null, null, ScanStatus.RUNNING);
             case "attachmentItem" -> 

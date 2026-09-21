@@ -296,9 +296,7 @@
       "pagination": {
         "title": "Pagination",
         "pagesLimit": "Limite de pages par requête",
-        "pagesLimitDesc": "Nombre de pages Confluence récupérées par requête API",
-        "maxPages": "Maximum de pages",
-        "maxPagesDesc": "Nombre maximum de pages à scanner par espace Confluence"
+        "pagesLimitDesc": "Nombre de pages Confluence récupérées par requête API"
       },
       "buttons": {
         "save": "Enregistrer",
@@ -355,7 +353,11 @@
       "modelNotListed": "non listé par LM Studio",
       "modelLoaded": "chargé",
       "modelNotLoaded": "non chargé",
-      "modelFamilyWarning": "Ce modèle n'est pas une quantisation de {{family}} : le découpage en tokens ne serait plus fiable."
+      "modelFamilyWarning": "Ce modèle n'est pas une quantisation de {{family}} : le découpage en tokens ne serait plus fiable.",
+      "judgeModel": "Modèle juge",
+      "judgeModelPlaceholder": "Aucun — reprendre le modèle de détection",
+      "judgeModelHint": "Modèle interrogé par le juge LLM pour trancher les détections. N'importe quel modèle de chat convient : le juge ne dépend pas du tokenizer du détecteur. Vide = le modèle de détection ci-dessus est réutilisé.",
+      "judgeModelRefresh": "Recharger la liste des modèles du juge"
     },
     "detectors": {
       "presidio": {
@@ -1123,7 +1125,13 @@
       "pageStale": "Page modifiée pendant la suppression",
       "pageRedactionFailed": "La suppression sur la page a échoué",
       "findingNotFound": "Occurrence absente du dernier scan",
-      "redactedStatusReserved": "Le statut « supprimé de la source » est réservé aux traitements de suppression"
+      "redactedStatusReserved": "Le statut « supprimé de la source » est réservé aux traitements de suppression",
+      "proposedStatusReserved": "Le statut « faux positif proposé » est réservé au juge LLM"
+    },
+    "judge": {
+      "scanInProgress": "Le juge LLM sera disponible après la fin du scan.",
+      "jobNotFound": "L'évaluation demandée est introuvable.",
+      "jobAlreadyRunning": "Une évaluation par juge LLM est déjà en cours sur cet espace. Attendez qu'elle se termine."
     },
     "export": {
       "failed": "Erreur lors de l'export du rapport. Réessayez.",
@@ -1139,6 +1147,73 @@
       "invalid": "Opération impossible dans l'état actuel."
     },
     "internal": "Une erreur inattendue est survenue. Contactez l'administrateur si le problème persiste."
+  },
+  "judge": {
+    "unavailable": {
+      "scanInProgress": "Disponible après la fin du scan",
+      "noScanData": "Aucune donnée de scan disponible",
+      "scanStatusUnknown": "Vérification du statut du scan…"
+    },
+    "remediationButton": "Évaluer par juge LLM",
+    "actions": {
+      "start": "Lancer l'évaluation par juge LLM",
+      "pause": "Mettre l'évaluation en pause",
+      "resume": "Reprendre l'évaluation",
+      "cancel": "Annuler l'évaluation",
+      "notYetAvailable": "Pas encore disponible"
+    },
+    "dashboard": { "tooltip": "Évaluer par juge LLM les détections à traiter des espaces scannés" },
+    "dialog": {
+      "title": "Évaluer les détections par juge LLM",
+      "scope": "Périmètre",
+      "model": "Modèle juge",
+      "modelLoading": "Chargement des modèles…",
+      "modelPlaceholder": "Identifiant du modèle LM Studio",
+      "notLoaded": "non chargé",
+      "apply": "Application des verdicts",
+      "propose": "Proposer pour validation",
+      "proposeHint": "Les faux positifs restent « proposés » jusqu'à confirmation",
+      "autoApply": "Appliquer automatiquement",
+      "autoApplyHint": "Les faux positifs sont signalés sans revue",
+      "calls": "<b>{{count}}</b> appels au modèle",
+      "duration": "Durée estimée <b>~{{minutes}} min</b>",
+      "threshold": "Seuil de confiance",
+      "cancel": "Annuler",
+      "launch": "Lancer l'évaluation ({{count}})"
+    },
+    "scope": {
+      "allPending": "Toutes les détections à traiter",
+      "allPendingHint": "espace {{space}}",
+      "currentSelection": "Sélection actuelle",
+      "allScanned": "Tous les espaces scannés",
+      "allScannedHint": "{{count}} espace(s)",
+      "selectedSpaces": "Sélection actuelle",
+      "neverJudged": "Espaces jamais évalués",
+      "neverJudgedHint": "Exclut les espaces déjà passés au juge"
+    },
+    "banner": {
+      "running": "Évaluation par juge LLM en cours",
+      "done": "Évaluation par juge LLM terminée",
+      "interrupted": "Évaluation par juge LLM interrompue — verdicts rendus conservés",
+      "progress": "{{done}} / {{total}} détections évaluées · {{fp}} faux positif(s) proposé(s)",
+      "spaces": "{{done}} / {{total}} espaces",
+      "errors": "{{count}} sans verdict",
+      "interrupt": "Interrompre",
+      "dismiss": "Fermer"
+    },
+    "space": {
+      "running": "Juge LLM · {{done}} / {{total}}",
+      "judged": "Jugé · {{count}} faux positif(s) proposé(s)",
+      "judgedNone": "Jugé · aucun faux positif proposé"
+    },
+    "bulk": {
+      "ariaLabel": "Actions sur les espaces sélectionnés",
+      "spaces": "{{count}} espace(s) sélectionné(s)",
+      "detections": "{{count}} détections à traiter",
+      "clear": "Effacer",
+      "launch": "Évaluer par juge LLM ({{count}})"
+    },
+    "toast": { "completed": "Évaluation terminée : <b>{{fp}}</b> faux positif(s) proposé(s) à confirmer." }
   },
   "obfuscation": {
     "entry": {
@@ -1183,7 +1258,9 @@
       "pending": "À traiter",
       "redacted": "Supprimé de la source",
       "manual": "Traité (manuel)",
-      "fp": "Faux positif"
+      "fp": "Faux positif",
+      "proposedFp": "Faux positif · IA",
+      "judgedKept": "Conservé"
     },
     "redactedValue": "Valeur supprimée",
     "severity": {
@@ -1194,7 +1271,9 @@
     "action": {
       "markManual": "Marquer comme traité manuellement",
       "undoManual": "Rétablir « à traiter »",
-      "restore": "Rétablir"
+      "restore": "Rétablir",
+      "confirmFp": "Confirmer le faux positif",
+      "keep": "Conserver (rétablir « à traiter »)"
     },
     "bulk": {
       "ariaLabel": "Actions groupées",

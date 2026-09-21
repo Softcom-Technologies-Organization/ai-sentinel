@@ -48,10 +48,10 @@ public class ConfluenceConnectionConfigPersistenceAdapter implements ConfluenceC
         }
 
         log.info("Updating Confluence connection configuration: baseUrl={}, username={}, " +
-                        "connectTimeout={}, readTimeout={}, maxRetries={}, pagesLimit={}, maxPages={}, updatedBy={}",
+                        "connectTimeout={}, readTimeout={}, maxRetries={}, pagesLimit={}, updatedBy={}",
                 settings.baseUrl(), settings.username(),
                 settings.connectTimeout(), settings.readTimeout(),
-                settings.maxRetries(), settings.pagesLimit(), settings.maxPages(),
+                settings.maxRetries(), settings.pagesLimit(),
                 settings.updatedBy());
 
         ConfluenceConnectionConfigEntity entity = toEntity(settings, encryptedToken);
@@ -80,7 +80,6 @@ public class ConfluenceConnectionConfigPersistenceAdapter implements ConfluenceC
                 60000,
                 3,
                 50,
-                100,
                 ConfluenceDeploymentType.CLOUD,
                 Instant.now(),
                 "system"
@@ -99,7 +98,6 @@ public class ConfluenceConnectionConfigPersistenceAdapter implements ConfluenceC
                 entity.getReadTimeout(),
                 entity.getMaxRetries(),
                 entity.getPagesLimit(),
-                entity.getMaxPages(),
                 entity.getDeploymentType(),
                 entity.getUpdatedAt(),
                 entity.getUpdatedBy()
@@ -119,7 +117,6 @@ public class ConfluenceConnectionConfigPersistenceAdapter implements ConfluenceC
                 .readTimeout(settings.readTimeout())
                 .maxRetries(settings.maxRetries())
                 .pagesLimit(settings.pagesLimit())
-                .maxPages(settings.maxPages())
                 .deploymentType(settings.deploymentType() != null ? settings.deploymentType() : ConfluenceDeploymentType.CLOUD)
                 .updatedAt(settings.updatedAt() != null ? settings.updatedAt() : Instant.now())
                 .updatedBy(settings.updatedBy())

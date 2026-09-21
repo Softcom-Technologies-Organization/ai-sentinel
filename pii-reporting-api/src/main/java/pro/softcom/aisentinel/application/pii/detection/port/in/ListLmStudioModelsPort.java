@@ -14,7 +14,9 @@ public interface ListLmStudioModelsPort {
      *
      * @param lmStudioHost host to query, or null/blank for the configured host
      * @param lmStudioPort port to query, or null for the configured port
+     * @param allModels    true to list every chat model (LLM judge), false for the
+     *                     Ministral-PII family only (detection)
      * @return the listing; never null, its error is set when LM Studio could not be listed
      */
-    LmStudioModelListing listModels(String lmStudioHost, Integer lmStudioPort);
+    LmStudioModelListing listModels(String lmStudioHost, Integer lmStudioPort, boolean allModels);
 }

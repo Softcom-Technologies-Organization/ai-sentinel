@@ -123,7 +123,7 @@ class TableHeaderPrecisionBenchmarkIT {
         try (Connection connection = dataSource.getConnection()) {
             assertThat(connection.getMetaData().getDatabaseProductName()).isEqualTo("PostgreSQL");
         }
-        var models = piiDetectorClient.listLmStudioModels(LM_STUDIO_HOST, LM_STUDIO_PORT);
+        var models = piiDetectorClient.listLmStudioModels(LM_STUDIO_HOST, LM_STUDIO_PORT, false);
         assertThat(models.failed()).as(models.error()).isFalse();
         assertThat(models.models()).anySatisfy(model -> {
             assertThat(model.id()).isEqualTo(MODEL);

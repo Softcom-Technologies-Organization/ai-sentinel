@@ -1,0 +1,136 @@
+<p-dialog
+  [visible]="visible()"
+  [modal]="true"
+  [closable]="true"
+  (onHide)="cancelled.emit()"
+  [style]="{ width: 'min(600px, 100%)' }"
+  styleClass="judge-dialog"
+>
+  <ng-template pTemplate="header">
+    <h2 class="jd-title" [attr.data-testid]="testIds.root">
+      <i class="pi pi-sparkles" aria-hidden="true"></i>
+      {{ 'judge.dialog.title' | transloco }}
+    </h2>
+  </ng-template>
+
+  <div class="jd-body">
+    <fieldset class="jd-field">
+      <legend class="jd-label">{{ 'judge.dialog.scope' | transloco }}</legend>
+      <div class="jd-radios">
+        @for (option of scopeOptions(); track option.key) {
+          <label class="jd-radio" [class.jd-radio--on]="selectedOption()?.key === option.key">
+            <input
+              type="radio"
+              name="judge-scope"
+              [value]="option.key"
+              [checked]="selectedOption()?.key === option.key"
+              (change)="selectedScopeKey.set(option.key)"
+              [attr.data-testid]="testIds.scopeOption + '-' + option.key"
+            />
+            <span class="jd-radio-text">
+              {{ option.labelKey | transloco: option.labelParams }}
+              @if (option.hintKey) {
+                <small>{{ option.hintKey | transloco: option.hintParams }}</small>
+              } @else if (option.hintText) {
+                <small>{{ option.hintText }}</small>
+              }
+            </span>
+            <span class="jd-count">{{ option.count }}</span>
+          </label>
+        }
+      </div>
+    </fieldset>
+
+    <div class="jd-field">
+      <label class="jd-label" for="judge-model">{{ 'judge.dialog.model' | transloco }}</label>
+      <div class="jd-model-row">
+      <p-select
+        inputId="judge-model"
+        [options]="modelOptions()"
+        optionLabel="label"
+        optionValue="id"
+        [editable]="true"
+        [ngModel]="selectedModel()"
+        (ngModelChange)="selectedModel.set($event)"
+        [placeholder]="(modelsLoading() ? 'judge.dialog.modelLoading' : 'judge.dialog.modelPlaceholder') | transloco"
+        [loading]="modelsLoading()"
+        styleClass="jd-select"
+        [attr.data-testid]="testIds.model"
+      />
+      <p-button
+        type="button"
+        icon="pi pi-refresh"
+        [outlined]="true"
+        size="small"
+        [loading]="modelsLoading()"
+        (click)="refreshModels()"
+        (keydown.enter)="refreshModels()"
+        [ariaLabel]="'settings.lmStudio.modelRefresh' | transloco"
+        [pTooltip]="'settings.lmStudio.modelRefresh' | transloco"
+        tooltipPosition="top"
+        [attr.data-testid]="testIds.refreshModels"
+      />
+      </div>
+    </div>
+
+    <fieldset class="jd-field">
+      <legend class="jd-label">{{ 'judge.dialog.apply' | transloco }}</legend>
+      <div class="jd-cards">
+        @for (mode of applyModes; track mode.value) {
+          <label class="jd-radio" [class.jd-radio--on]="applyMode() === mode.value">
+            <input
+              type="radio"
+              name="judge-apply"
+              [value]="mode.value"
+              [checked]="applyMode() === mode.value"
+              (change)="applyMode.set(mode.value)"
+              [attr.data-testid]="testIds.applyOption + '-' + mode.value"
+            />
+            <span class="jd-radio-text">
+              {{ mode.labelKey | transloco }}
+              <small>{{ mode.hintKey | transloco }}</small>
+            </span>
+          </label>
+        }
+      </div>
+    </fieldset>
+
+    <div class="jd-estimate" [attr.data-testid]="testIds.estimate">
+      <span [innerHTML]="'judge.dialog.calls' | transloco: { count: selectedCount() }"></span>
+      <span [innerHTML]="'judge.dialog.duration' | transloco: { minutes: estimatedMinutes() }"></span>
+      <label class="jd-threshold">
+        {{ 'judge.dialog.threshold' | transloco }} ≥
+        <input
+          type="number"
+          min="0"
+          max="100"
+          step="1"
+          [value]="thresholdPercent()"
+          (input)="onThresholdInput($event)"
+          [attr.aria-label]="'judge.dialog.threshold' | transloco"
+          [attr.data-testid]="testIds.threshold"
+        />
+        %
+      </label>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    @if (disabledReason(); as reason) {
+      <p role="status" aria-live="polite">{{ reason | transloco }}</p>
+    }
+    <button type="button" class="jd-btn" (click)="cancelled.emit()" [attr.data-testid]="testIds.cancel">
+      {{ 'judge.dialog.cancel' | transloco }}
+    </button>
+    <button
+      type="button"
+      class="jd-btn jd-btn--ai"
+      (click)="launch()"
+      [disabled]="!canLaunch()"
+      [attr.data-testid]="testIds.launch"
+    >
+      <i class="pi pi-sparkles" aria-hidden="true"></i>
+      {{ 'judge.dialog.launch' | transloco: { count: selectedCount() } }}
+    </button>
+  </ng-template>
+</p-dialog>

@@ -603,7 +603,9 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             response.error = "detector does not support model listing"
             return response
         try:
-            listing = lister(lm_studio_host=host, lm_studio_port=port)
+            listing = lister(
+                lm_studio_host=host, lm_studio_port=port, all_models=request.all_models
+            )
         except Exception as exc:
             logger.exception(f"[{request_id}] LM Studio model listing failed")
             response.error = f"{type(exc).__name__}: {exc}"
@@ -616,6 +618,51 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             response.error,
         )
         return response
+
+    def JudgeFinding(self, request, context):
+        """Implement the JudgeFinding RPC method.
+
+        Asks the LLM judge whether one stored finding is a genuine instance of its
+        PII type. Runs here for the same reason as ListLmStudioModels: LM Studio is
+        reachable from this service's network standpoint. Never fails the RPC: a
+        judge that could not answer is reported as an ``ERROR`` verdict.
+        """
+        request_id = self._generate_request_id(time.time())
+        response = pii_detection_pb2.JudgeFindingResponse()
+        judge = getattr(self.detector, "judge_finding", None)
+        if judge is None:
+            response.verdict = "ERROR"
+            response.error = "detector does not support judging"
+            return response
+        host, port = self._resolve_lm_studio_endpoint(request, request_id)
+        try:
+            answer = judge(
+                pii_type=request.pii_type,
+                type_label=request.type_label,
+                value=request.value,
+                context=request.context,
+                lm_studio_model=request.lm_studio_model or None,
+                lm_studio_host=host,
+                lm_studio_port=port,
+            )
+        except Exception as exc:
+            logger.exception(f"[{request_id}] LLM judge call failed")
+            response.verdict = "ERROR"
+            response.error = f"{type(exc).__name__}: {exc}"
+            return response
+        self._fill_judge_answer(response, answer)
+        logger.info(
+            "[%s] Judge verdict %s (%.2f) for type %s (error='%s')",
+            request_id, response.verdict, response.confidence, request.pii_type, response.error,
+        )
+        return response
+
+    @staticmethod
+    def _fill_judge_answer(response, answer: dict) -> None:
+        response.verdict = str(answer.get("verdict") or "ERROR")
+        response.confidence = float(answer.get("confidence") or 0.0)
+        response.reason = str(answer.get("reason") or "")
+        response.error = str(answer.get("error") or "")
 
     def _resolve_lm_studio_endpoint(self, request, request_id: str):
         """Host and port from the request when given, else from the DB configuration."""

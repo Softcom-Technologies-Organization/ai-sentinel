@@ -1,3 +1,7 @@
-<p-progressBar [value]="progressPercent()" [showValue]="false"
-             [style]="{'height':'6px'}"
-             [styleClass]="(progressPercent() === 100 ? 'scan-progress-completed' : '') + ' ' + (isRunningAndNotComplete() ? 'scan-progress-running' : (isPaused() ? 'scan-progress-paused' : ''))"></p-progressBar>
+@if (isRunningAndNotComplete()) {
+  <p-progressBar
+    [value]="progressPercent()"
+    [showValue]="false"
+    styleClass="scan-progress-running"
+    [attr.aria-label]="ariaLabel()" />
+}

@@ -32,7 +32,6 @@ class ConfluenceHttpClientAdapterDateExtractionTest {
         when(config.readTimeout()).thenReturn(10000);
         when(config.maxRetries()).thenReturn(3);
         when(config.pagesLimit()).thenReturn(50);
-        when(config.maxPages()).thenReturn(100);
         when(config.baseUrl()).thenReturn("https://test.com");
 
         adapter = new ConfluenceCloudHttpClientAdapter(config, objectMapper);

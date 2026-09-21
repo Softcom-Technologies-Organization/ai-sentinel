@@ -85,7 +85,6 @@ public class ConfluenceConnectionConfigController {
                     request.readTimeout(),
                     request.maxRetries(),
                     request.pagesLimit(),
-                    request.maxPages(),
                     request.deploymentType(),
                     updatedBy
             );
@@ -137,7 +136,6 @@ public class ConfluenceConnectionConfigController {
                 settings.readTimeout(),
                 settings.maxRetries(),
                 settings.pagesLimit(),
-                settings.maxPages(),
                 settings.deploymentType() != null ? settings.deploymentType().name() : "CLOUD",
                 settings.updatedAt(),
                 settings.updatedBy(),

@@ -3,7 +3,7 @@
 This module exposes :class:`FormatPrefilterValidator`, an implementation of
 the :class:`~pii_detector.domain.port.pii_post_filter_protocol.PIIPostFilterProtocol`
 that runs as the **final precision stage** of the detection pipeline. It
-rejects only deterministic false positives, in two passes:
+applies minimum-length heuristics before two existing validation passes:
 
 1. a **cross-label technical-artifact denylist**
    (:mod:`technical_artifact_denylist`) that drops spans whose text is a
@@ -15,9 +15,9 @@ rejects only deterministic false positives, in two passes:
 
 Key design points:
 
-- **Fail-open absolute**: a non-canonical value, an unmapped ``pii_type``, or
-  any exception raised by a strategy keeps the entity (recall preserved at all
-  costs -- see ``data-analysis.md``).
+- **Fail-open**: an unmapped ``pii_type`` or an exception raised by a strategy
+  keeps the entity. Values below a configured length are rejected even when
+  a format marker or a non-canonical shape would otherwise preserve them.
 - **Shared discard channel**: :meth:`filter_with_verdicts` returns a
   ``(kept, rejections)`` shape that ``_add_discarded_entities_to_response``
   already knows how to serialise (the proto verdict fields keep their
@@ -42,7 +42,7 @@ from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.port.pii_post_filter_protocol import (
     PIIPostFilterProtocol,
 )
-from pii_detector.infrastructure.postfilter import technical_artifact_denylist
+from pii_detector.infrastructure.postfilter import minimum_length, technical_artifact_denylist
 from pii_detector.infrastructure.postfilter.registry import STRATEGIES
 
 logger = logging.getLogger(__name__)
@@ -124,7 +124,7 @@ class FormatPostfilterValidator(PIIPostFilterProtocol):
 
     Behaviour summary:
 
-    - Each entity first goes through the label-agnostic
+    - Each entity first goes through its minimum-length check, then the label-agnostic
       :func:`technical_artifact_denylist.evaluate` pass: spans whose text is
       a recognisable technical artefact are discarded whatever their label.
     - Then the ``pii_type`` is normalised and looked up in
@@ -166,9 +166,11 @@ class FormatPostfilterValidator(PIIPostFilterProtocol):
         for entity in entities:
             pii_type = _normalize_pii_type(entity.pii_type)
             try:
-                deny = technical_artifact_denylist.evaluate(
-                    entity.text, pii_type
-                )
+                deny = minimum_length.evaluate(entity.text, pii_type)
+                if deny is None:
+                    deny = technical_artifact_denylist.evaluate(
+                        entity.text, pii_type
+                    )
             except Exception:  # defensive fail-open
                 deny = None
             if deny is not None and not deny.keep:

@@ -62,6 +62,10 @@ from pii_detector.domain.exception.exceptions import (
     DetectorUnavailableError,
     PIIDetectionError,
 )
+from pii_detector.infrastructure.judge.llm_finding_judge import (
+    build_payload as build_judge_payload,
+    parse_verdict,
+)
 from pii_detector.infrastructure.text_processing.semantic_chunker import (
     FallbackChunker,
     MinistralTokenChunker,
@@ -360,12 +364,15 @@ class MinistralDetector:
         self,
         lm_studio_host: Optional[str] = None,
         lm_studio_port: Optional[int] = None,
+        all_models: bool = False,
     ) -> Dict[str, Any]:
-        """Ministral-PII models LM Studio has on disk, for the dashboard's picker.
+        """Models LM Studio has on disk, for the dashboard's pickers.
 
-        Only the ``MINISTRAL_MODEL_FAMILY`` quantizations are offered: the chunker
-        tokenizes with that family's tokenizer, so another model would silently
-        mis-size every chunk. Returns ``{"endpoint", "family", "models": [{id,
+        By default only the ``MINISTRAL_MODEL_FAMILY`` quantizations are offered:
+        the chunker tokenizes with that family's tokenizer, so another detection
+        model would silently mis-size every chunk. ``all_models`` lifts the family
+        filter (every chat model, embeddings excluded) for the LLM judge, which
+        accepts any model. Returns ``{"endpoint", "family", "models": [{id,
         quantization, publisher, state}], "error"}``; ``error`` is set and
         ``models`` empty when the endpoint is unreachable or does not expose LM
         Studio's model list.
@@ -388,7 +395,7 @@ class MinistralDetector:
                 "state": str(m.get("state") or ""),
             }
             for m in listed
-            if str(m.get("id") or "").lower().startswith(family)
+            if (all_models or str(m.get("id") or "").lower().startswith(family))
             and m.get("type", "llm") == "llm"
         ]
         return {
@@ -397,6 +404,41 @@ class MinistralDetector:
             "models": models,
             "error": "",
         }
+
+    def judge_finding(
+        self,
+        pii_type: str,
+        type_label: str,
+        value: str,
+        context: str,
+        lm_studio_model: Optional[str] = None,
+        lm_studio_host: Optional[str] = None,
+        lm_studio_port: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """One LLM-judge verdict on a stored finding (see ``llm_finding_judge``).
+
+        Reuses the detector's endpoint resolution and HTTP client so the judge
+        follows the same scheme, proxy policy and timeouts as detection. A
+        transport or payload failure comes back as an ``ERROR`` verdict instead of
+        an exception: the caller records it against the finding and moves on.
+        """
+        base_url = self._resolve_base_url(lm_studio_host, lm_studio_port)
+        payload = build_judge_payload(
+            lm_studio_model or self._model_id, pii_type, type_label, value, context
+        )
+        try:
+            response = self._get_client().post(f"{base_url}/chat/completions", json=payload)
+            response.raise_for_status()
+            content = self._extract_content(response.json())
+        except (httpx.HTTPError, httpx.TimeoutException, DetectorUnavailableError, ValueError) as exc:
+            self.logger.warning("JUDGE_CALL_FAILED base_url=%s: %s", base_url, exc)
+            return {
+                "verdict": "ERROR",
+                "confidence": 0.0,
+                "reason": "",
+                "error": f"{type(exc).__name__}: {exc}"[:300],
+            }
+        return {**parse_verdict(content), "error": ""}
 
     def _fetch_lm_studio_models(self, base_url: str) -> Optional[List[Dict[str, Any]]]:
         """Models LM Studio has on disk (its own ``/api/v0/models``), loaded or not.

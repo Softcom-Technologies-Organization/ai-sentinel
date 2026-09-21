@@ -3,6 +3,8 @@ package pro.softcom.aisentinel.application.pii.reporting.service;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -43,6 +45,38 @@ class ScanCheckpointServiceCheckpointDataTest {
                 .pageId(pageId)
                 .attachmentName(attachmentName)
                 .build();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ScanStatus.class, names = {"NOT_STARTED", "RUNNING"})
+    void Should_MarkCheckpointRunningWithoutAdvancingCursor_When_SpaceStarts(ScanStatus existingStatus) {
+        var existing = ScanCheckpoint.builder().scanId("scan-1").spaceKey("SPACE")
+            .scanStatus(existingStatus).lastProcessedPageId("previous-page").build();
+        when(scanCheckpointRepository.findByScanAndSpace("scan-1", "SPACE"))
+            .thenReturn(Optional.of(existing));
+
+        scanCheckpointService.persistCheckpoint(event("start", "next-page", "next-attachment"));
+
+        ArgumentCaptor<ScanCheckpoint> captor = ArgumentCaptor.forClass(ScanCheckpoint.class);
+        verify(scanCheckpointRepository).save(captor.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(captor.getValue().scanStatus()).isEqualTo(ScanStatus.RUNNING);
+            softly.assertThat(captor.getValue().lastProcessedPageId()).isNull();
+            softly.assertThat(captor.getValue().lastProcessedAttachmentName()).isNull();
+        });
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ScanStatus.class, names = {"PAUSED", "COMPLETED"})
+    void Should_PreserveCheckpointStatus_When_StartEventArrivesAfterPauseOrCompletion(ScanStatus existingStatus) {
+        var existing = ScanCheckpoint.builder().scanId("scan-1").spaceKey("SPACE")
+            .scanStatus(existingStatus).build();
+        when(scanCheckpointRepository.findByScanAndSpace("scan-1", "SPACE"))
+            .thenReturn(Optional.of(existing));
+
+        scanCheckpointService.persistCheckpoint(event("start", null, null));
+
+        verify(scanCheckpointRepository, never()).save(any());
     }
 
     @Test
@@ -125,7 +159,7 @@ class ScanCheckpointServiceCheckpointDataTest {
     void Should_NotSave_When_EventTypeIsUnknown() {
         // Arrange
         when(scanCheckpointRepository.findByScanAndSpace("scan-1", "SPACE")).thenReturn(Optional.empty());
-        ConfluenceContentScanResult unknownEvent = event("start", null, null);
+        ConfluenceContentScanResult unknownEvent = event("unknown-event", null, null);
 
         // Act
         scanCheckpointService.persistCheckpoint(unknownEvent);

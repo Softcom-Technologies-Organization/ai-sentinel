@@ -22,6 +22,7 @@ const MOCK_DETECTOR_CONFIG: PiiDetectionConfig = {
   lmStudioHost: 'localhost',
   lmStudioPort: 1234,
   lmStudioModel: 'ministral-3b-pii-preview@q8_0',
+  lmStudioJudgeModel: null,
   updatedAt: '2026-03-16T10:00:00',
 };
 
@@ -32,7 +33,6 @@ const MOCK_CONFLUENCE_CONFIG: ConfluenceConnectionConfig = {
   readTimeout: 60000,
   maxRetries: 3,
   pagesLimit: 25,
-  maxPages: 1000,
   deploymentType: 'CLOUD',
   configured: true,
 };
@@ -74,6 +74,11 @@ const FR_TRANSLATIONS = {
       },
       postfilter: { label: 'Post-filtre déterministe', description: 'desc' },
       detectorLabel: 'Détecteur',
+    },
+    lmStudio: {
+      modelLoaded: 'chargé',
+      modelNotLoaded: 'non chargé',
+      modelNotListed: 'non listé par LM Studio',
     },
     messages: { loadError: 'Erreur', saveAllSuccess: 'Sauvegardé', saveAllError: 'Erreur' },
     confluence: { messages: { loadError: 'Erreur', saveSuccess: 'OK', saveError: 'Erreur' } },
@@ -527,6 +532,8 @@ describe('PiiSettingsComponent', () => {
       const req = httpMock.expectOne((r) => r.url === MODELS_URL);
       expect(req.request.params.get('host')).toBe('localhost');
       expect(req.request.params.get('port')).toBe('1234');
+      // One catalogue request feeds both pickers, so it must not be filtered server-side
+      expect(req.request.params.get('all')).toBe('true');
       req.flush({
         endpoint: 'http://localhost:1234/v1',
         family: 'ministral-3b-pii-preview',
@@ -607,6 +614,65 @@ describe('PiiSettingsComponent', () => {
       expect(component.lmStudioModelOptions()[0].label).toContain('?');
       // Without a known family there is nothing to warn about
       expect(component.isLmStudioModelOutsideFamily()).toBe(false);
+    });
+
+    it('Should_SplitCatalogueBetweenPickers_When_LmStudioServesModelsOutsideTheFamily', () => {
+      component.setActiveSection('lm_studio');
+      httpMock.expectOne((r) => r.url === MODELS_URL).flush({
+        endpoint: 'http://localhost:1234/v1',
+        family: 'ministral-3b-pii-preview',
+        models: [
+          { id: 'ministral-3b-pii-preview@q8_0', quantization: 'Q8_0', publisher: 'mradermacher', loaded: true },
+          { id: 'google/gemma-4-31b', quantization: 'Q8_0', publisher: 'google', loaded: false },
+          { id: 'openai/gpt-oss-120b', quantization: 'MXFP4', publisher: 'openai', loaded: false },
+        ],
+        error: '',
+      });
+      fixture.detectChanges();
+
+      expect(component.lmStudioModelOptions().map((o) => o.value)).toEqual(['ministral-3b-pii-preview@q8_0']);
+      expect(component.lmStudioJudgeModelOptions().map((o) => o.value)).toEqual([
+        'ministral-3b-pii-preview@q8_0', 'google/gemma-4-31b', 'openai/gpt-oss-120b',
+      ]);
+      expect(component.lmStudioJudgeModelOptions()[1].label).toContain('non chargé');
+
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-testid="lmStudioJudgeModelSelect"]')).not.toBeNull();
+      expect(el.querySelector('[data-testid="refreshLmStudioJudgeModels"]')).not.toBeNull();
+    });
+
+    it('Should_NotWarnAboutFamily_When_JudgeModelIsOutsideIt', () => {
+      component.setActiveSection('lm_studio');
+      httpMock.expectOne((r) => r.url === MODELS_URL).flush({
+        endpoint: 'http://localhost:1234/v1',
+        family: 'ministral-3b-pii-preview',
+        models: [
+          { id: 'ministral-3b-pii-preview@q8_0', quantization: 'Q8_0', publisher: 'mradermacher', loaded: true },
+          { id: 'google/gemma-4-31b', quantization: 'Q8_0', publisher: 'google', loaded: false },
+        ],
+        error: '',
+      });
+      component.configForm.patchValue({ lmStudioJudgeModel: 'google/gemma-4-31b' });
+      fixture.detectChanges();
+
+      expect(component.isLmStudioModelOutsideFamily()).toBe(false);
+      expect((fixture.nativeElement as HTMLElement)
+        .querySelector('[data-testid="lmStudioModelFamilyWarning"]')).toBeNull();
+    });
+
+    it('Should_OfferOnlyTheFamilyToTheDetector_When_LmStudioServesNoneOfIt', () => {
+      component.setActiveSection('lm_studio');
+      httpMock.expectOne((r) => r.url === MODELS_URL).flush({
+        endpoint: 'http://localhost:1234/v1',
+        family: 'ministral-3b-pii-preview',
+        models: [{ id: 'google/gemma-4-31b', quantization: 'Q8_0', publisher: 'google', loaded: false }],
+        error: '',
+      });
+      fixture.detectChanges();
+
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-testid="lmStudioModelInput"]')).not.toBeNull();
+      expect(el.querySelector('[data-testid="lmStudioJudgeModelSelect"]')).not.toBeNull();
     });
 
     it('Should_FallBackToTextInput_When_ModelListRequestFails', () => {

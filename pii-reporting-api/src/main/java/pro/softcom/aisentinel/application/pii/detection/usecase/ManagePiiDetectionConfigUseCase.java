@@ -48,6 +48,7 @@ public class ManagePiiDetectionConfigUseCase implements ManagePiiDetectionConfig
                 command.lmStudioHost(),
                 command.lmStudioPort(),
                 command.lmStudioModel(),
+                command.lmStudioJudgeModel(),
                 command.ministralConcurrency(),
                 command.ministralConcurrencyAuto(),
                 command.ministralConcurrencyTunedSignature(),

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { ScanProgressService } from '../../../core/services/scan-progress.service';
 
@@ -24,14 +24,16 @@ export class ScanProgressBarComponent {
    * Space key for which to display progress.
    * Required input that identifies the Confluence space being scanned.
    */
-  @Input({ required: true }) spaceKey!: string;
+  readonly spaceKey = input.required<string>();
 
   /**
    * Current scan status for the space.
    * Business rule: when status is RUNNING and the scan is not yet complete,
    * the progress bar should use the same blue tone as the "En cours" badge.
    */
-  @Input() status: string | undefined;
+  readonly status = input<string>();
+
+  readonly ariaLabel = input.required<string>();
 
   /**
    * Computed signal that retrieves the current progress percentage from the service.
@@ -40,7 +42,7 @@ export class ScanProgressBarComponent {
    * @returns Progress percentage (0-100)
    */
   readonly progressPercent = computed(() => {
-    return this.scanProgressService.getProgressPercent(this.spaceKey);
+    return this.scanProgressService.getProgressPercent(this.spaceKey());
   });
 
   /**
@@ -49,14 +51,6 @@ export class ScanProgressBarComponent {
    * "En cours" status badge.
    */
   readonly isRunningAndNotComplete = computed(() => {
-    return this.status === 'RUNNING' && this.progressPercent() < 100;
-  });
-
-  /**
-   * True when the scan is currently paused.
-   * Used to align the progress bar color with the "En pause" status badge.
-   */
-  readonly isPaused = computed(() => {
-    return this.status === 'PAUSED';
+    return this.status() === 'RUNNING' && this.progressPercent() < 100;
   });
 }

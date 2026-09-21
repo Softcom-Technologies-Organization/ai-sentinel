@@ -169,6 +169,7 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 DEFAULT_LM_STUDIO_HOST, // lmStudioHost
                 DEFAULT_LM_STUDIO_PORT, // lmStudioPort
                 null,  // lmStudioModel (detector service default)
+                null,  // lmStudioJudgeModel (reuse the detection model)
                 DEFAULT_MINISTRAL_CONCURRENCY, // ministralConcurrency (sequential)
                 true,  // ministralConcurrencyAuto (auto-tune at startup)
                 null,  // ministralConcurrencyTunedSignature (never tuned)
@@ -196,6 +197,7 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 entity.getLmStudioHost() != null ? entity.getLmStudioHost() : DEFAULT_LM_STUDIO_HOST,
                 entity.getLmStudioPort() != null ? entity.getLmStudioPort() : DEFAULT_LM_STUDIO_PORT,
                 entity.getLmStudioModel(),
+                entity.getLmStudioJudgeModel(),
                 entity.getMinistralConcurrency() != null ? entity.getMinistralConcurrency() : DEFAULT_MINISTRAL_CONCURRENCY,
                 entity.getMinistralConcurrencyAuto() == null || entity.getMinistralConcurrencyAuto(),
                 entity.getMinistralConcurrencyTunedSignature(),
@@ -220,6 +222,7 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 .lmStudioHost(config.lmStudioHost())
                 .lmStudioPort(config.lmStudioPort())
                 .lmStudioModel(config.lmStudioModel())
+                .lmStudioJudgeModel(config.lmStudioJudgeModel())
                 .ministralConcurrency(config.ministralConcurrency())
                 .ministralConcurrencyAuto(config.ministralConcurrencyAuto())
                 .ministralConcurrencyTunedSignature(config.ministralConcurrencyTunedSignature())

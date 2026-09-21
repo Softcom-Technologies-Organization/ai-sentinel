@@ -17,7 +17,6 @@ import java.time.Instant;
  * @param readTimeout    Read timeout in milliseconds
  * @param maxRetries     Maximum number of retry attempts
  * @param pagesLimit     Number of pages per pagination request
- * @param maxPages       Maximum total pages to retrieve
  * @param deploymentType Type of Confluence deployment (CLOUD or DATA_CENTER)
  * @param updatedAt      Timestamp of last configuration update
  * @param updatedBy      User who last updated the configuration
@@ -30,7 +29,6 @@ public record ConfluenceConnectionSettings(
         int readTimeout,
         int maxRetries,
         int pagesLimit,
-        int maxPages,
         ConfluenceDeploymentType deploymentType,
         Instant updatedAt,
         String updatedBy) {
@@ -67,10 +65,6 @@ public record ConfluenceConnectionSettings(
 
         if (pagesLimit <= 0) {
             throw new IllegalArgumentException("Pages limit must be positive");
-        }
-
-        if (maxPages <= 0) {
-            throw new IllegalArgumentException("Max pages must be positive");
         }
     }
 }

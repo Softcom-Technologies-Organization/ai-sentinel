@@ -1,5 +1,6 @@
 package pro.softcom.aisentinel.application.pii.remediation.port.out;
 
+import pro.softcom.aisentinel.domain.pii.judge.SpaceJudgementCounts;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediation;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediationStatus;
 
@@ -40,4 +41,10 @@ public interface FindingRemediationStore {
      * (implicitly {@code PENDING}).
      */
     Map<String, FindingRemediationStatus> findStatusesByIds(Collection<String> findingIds);
+
+    /**
+     * Per space, how many findings the LLM judge has evaluated and how many of them still await
+     * a reviewer as proposed false positives. Spaces never judged are absent.
+     */
+    List<SpaceJudgementCounts> countJudgementsBySpace();
 }

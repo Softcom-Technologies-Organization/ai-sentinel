@@ -82,4 +82,6 @@ public interface PersonallyIdentifiableInformationScanExecutionOrchestratorPort 
      * @return true when a managed scan exists, is not completed and its subscription is not disposed
      */
     boolean isScanActive(String scanId);
+
+    boolean hasActiveScan();
 }

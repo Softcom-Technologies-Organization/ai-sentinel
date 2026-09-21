@@ -19,7 +19,6 @@ import pro.softcom.aisentinel.domain.confluence.ConfluenceDeploymentType;
  * @param readTimeout    Read timeout in milliseconds
  * @param maxRetries     Maximum number of retry attempts
  * @param pagesLimit     Number of pages per pagination request
- * @param maxPages       Maximum total pages to retrieve
  * @param deploymentType Type of Confluence deployment ("CLOUD" or "DATA_CENTER")
  */
 public record UpdateConfluenceConnectionConfigRequestDto(
@@ -52,11 +51,6 @@ public record UpdateConfluenceConnectionConfigRequestDto(
         @NotNull(message = "pagesLimit is required")
         @Min(value = 1, message = "pagesLimit must be positive")
         Integer pagesLimit,
-
-        @JsonProperty("maxPages")
-        @NotNull(message = "maxPages is required")
-        @Min(value = 1, message = "maxPages must be positive")
-        Integer maxPages,
 
         @JsonProperty("deploymentType")
         @NotNull(message = "deploymentType is required")

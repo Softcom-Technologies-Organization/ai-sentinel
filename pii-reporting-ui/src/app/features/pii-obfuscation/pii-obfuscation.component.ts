@@ -22,6 +22,14 @@ import {
   RemediationStatusFilter
 } from '../../core/models/remediation.model';
 import { RemediationApiService } from '../../core/services/remediation-api.service';
+import { JudgeApiService } from '../../core/services/judge-api.service';
+import { JudgeJobDto, JudgeLaunchRequest } from '../../core/models/judge.model';
+import { JudgeJobTrackerService } from '../llm-judge/services/judge-job-tracker.service';
+import {
+  JudgeLaunchDialogComponent,
+  JudgeScopeOption
+} from '../llm-judge/components/judge-launch-dialog/judge-launch-dialog.component';
+import { JudgeJobBannerComponent } from '../llm-judge/components/judge-job-banner/judge-job-banner.component';
 import { RemediationConfigService } from '../../core/services/remediation-config.service';
 import { AppHeaderComponent } from '../app-header/app-header.component';
 import { ObfuscationSelectionService } from './services/obfuscation-selection.service';
@@ -102,9 +110,11 @@ function stripBoldTags(value: string): string {
     ObfuscationFindingRowComponent,
     ObfuscationBulkBarComponent,
     ObfuscationConfirmDialogComponent,
-    ObfuscationJobProgressComponent
+    ObfuscationJobProgressComponent,
+    JudgeLaunchDialogComponent,
+    JudgeJobBannerComponent
   ],
-  providers: [ObfuscationSelectionService, ObfuscationViewStateService],
+  providers: [ObfuscationSelectionService, ObfuscationViewStateService, JudgeJobTrackerService],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pii-obfuscation.component.html',
   styleUrl: './pii-obfuscation.component.css',
@@ -113,6 +123,8 @@ export class PiiObfuscationComponent {
   readonly remediationConfig = inject(RemediationConfigService);
   readonly selection = inject(ObfuscationSelectionService);
   readonly viewState = inject(ObfuscationViewStateService);
+  readonly judgeTracker = inject(JudgeJobTrackerService);
+  private readonly judgeApi = inject(JudgeApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly remediationApi = inject(RemediationApiService);
@@ -121,6 +133,7 @@ export class PiiObfuscationComponent {
   private readonly transloco = inject(TranslocoService);
 
   readonly testIds = TestIds.obfuscation;
+  readonly judgeTestIds = TestIds.judge;
   readonly statusFilterOptions = STATUS_FILTER_OPTIONS;
   readonly groupByOptions = GROUP_BY_OPTIONS;
   readonly pageSizes = PAGE_SIZES;
@@ -129,10 +142,46 @@ export class PiiObfuscationComponent {
   readonly bannerDismissed = signal(false);
   readonly dialogVisible = signal(false);
   readonly activeJobId = signal<string | null>(null);
+  readonly judgeDialogVisible = signal(false);
 
   readonly totals = computed(() => this.viewState.lastSearchResponse()?.totals ?? null);
   readonly groups = computed(() => this.viewState.lastSearchResponse()?.groups ?? []);
   readonly showBanner = computed(() => this.preselectRequested() && !this.bannerDismissed());
+
+  readonly falsePositiveFacetCount = computed(() => {
+    const totals = this.totals();
+    return totals ? totals.falsePositive + totals.proposedFalsePositive : 0;
+  });
+  readonly proposedFalsePositives = computed(() => this.totals()?.proposedFalsePositive ?? 0);
+  readonly canLaunchJudge = computed(
+    () => (this.totals()?.pending ?? 0) > 0 && !this.judgeTracker.launchUnavailableReason() && !this.judgeTracker.active() && this.activeJobId() === null
+  );
+
+  readonly judgeScopeOptions = computed<JudgeScopeOption[]>(() => {
+    const scope = this.selection.scope();
+    const totals = this.totals();
+    if (!scope || !totals) {
+      return [];
+    }
+    const options: JudgeScopeOption[] = [{
+      key: 'all',
+      labelKey: 'judge.scope.allPending',
+      hintKey: 'judge.scope.allPendingHint',
+      hintParams: { space: scope.spaceKey },
+      count: totals.pending,
+      scope: { selection: { scope, piiTypes: [], severities: ALL_SEVERITIES, excludedFindingIds: [], includedFindingIds: [] } }
+    }];
+    if (this.hasSelectionCriteria()) {
+      options.push({
+        key: 'selection',
+        labelKey: 'judge.scope.currentSelection',
+        hintText: this.selectedChips().map((chip) => chip.label).join(', '),
+        count: this.selectionAffectedCount(),
+        scope: { selection: this.selection.buildSelectionDto() }
+      });
+    }
+    return options;
+  });
 
   // "Select all pending" checks every severity with no per-finding exclusion.
   // Detecting that state lets the single button toggle to "deselect all".
@@ -236,7 +285,7 @@ export class PiiObfuscationComponent {
       ALL: totals.total,
       PENDING: totals.pending,
       HANDLED: totals.handled,
-      FALSE_POSITIVE: totals.falsePositive
+      FALSE_POSITIVE: this.falsePositiveFacetCount()
     };
     return byFilter[filter];
   }
@@ -382,6 +431,10 @@ export class PiiObfuscationComponent {
     this.refreshAll();
   }
 
+  onRowConfirmFalsePositive(finding: RemediationFindingDto): void {
+    this.changeStatus(finding.findingId, 'FALSE_POSITIVE');
+  }
+
   onRowMarkManual(finding: RemediationFindingDto): void {
     this.changeStatus(finding.findingId, 'MANUALLY_HANDLED');
   }
@@ -427,11 +480,32 @@ export class PiiObfuscationComponent {
       });
   }
 
+  openJudgeDialog(): void {
+    if (!this.canLaunchJudge()) return;
+    this.judgeDialogVisible.set(true);
+  }
+
+  launchJudge(request: JudgeLaunchRequest): void {
+    if (!this.canLaunchJudge()) return;
+    this.judgeDialogVisible.set(false);
+    this.judgeApi
+      .launch(request)
+      .subscribe((created) => this.judgeTracker.track(created.jobIds, (jobs) => this.onJudgeProgress(jobs)));
+  }
+
   onJobCompleted(job: ObfuscationJobDto): void {
     this.activeJobId.set(null);
     this.notifyJobResult(job);
     this.selection.clear();
     this.refreshAll();
+  }
+
+  // Verdicts land row by row while the job runs: every progress step re-reads the view.
+  private onJudgeProgress(jobs: JudgeJobDto[]): void {
+    this.refreshAll();
+    if (!jobs.some((job) => job.status === 'RUNNING')) {
+      this.notify('success', 'judge.toast.completed', { fp: this.judgeTracker.proposedFalsePositives() });
+    }
   }
 
   private enterFromParams(params: ParamMap): void {

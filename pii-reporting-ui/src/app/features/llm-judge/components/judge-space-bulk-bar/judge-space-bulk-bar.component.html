@@ -1,0 +1,34 @@
+@if (spaces().length > 0) {
+  <section class="jbb" [attr.aria-label]="'judge.bulk.ariaLabel' | transloco" [attr.data-testid]="testIds.root">
+    <span class="jbb-counter">{{ spaces().length }}</span>
+    <span class="jbb-text">
+      <span>{{ 'judge.bulk.spaces' | transloco: { count: spaces().length } }}</span>
+      <small [attr.data-testid]="testIds.detections">
+        {{ (disabledReason() ?? 'judge.bulk.detections') | transloco: { count: totalFindings() } }}
+      </small>
+    </span>
+    <span class="jbb-chips">
+      @for (chip of visibleChips(); track chip.key) {
+        <span class="jbb-chip">{{ chip.name }}<b>{{ countOf(chip.key) }}</b></span>
+      }
+      @if (overflowCount() > 0) {
+        <span class="jbb-chip jbb-chip--more">+{{ overflowCount() }}</span>
+      }
+    </span>
+    <span class="jbb-actions">
+      <button type="button" class="jbb-btn" (click)="cleared.emit()" [attr.data-testid]="testIds.clear">
+        {{ 'judge.bulk.clear' | transloco }}
+      </button>
+      <button
+        type="button"
+        class="jbb-btn jbb-btn--ai"
+        (click)="launch.emit()"
+        [disabled]="!!disabledReason() || totalFindings() === 0"
+        [attr.data-testid]="testIds.launch"
+      >
+        <i class="pi pi-sparkles" aria-hidden="true"></i>
+        {{ 'judge.bulk.launch' | transloco: { count: totalFindings() } }}
+      </button>
+    </span>
+  </section>
+}

@@ -1,0 +1,309 @@
+{
+  "versions": {
+    "python-stdnum": "2.2",
+    "presidio-analyzer": "2.2.364"
+  },
+  "scope": "Synthetic/public examples; direct components, not live configuration or end-to-end recall",
+  "postfilter": [
+    {
+      "case": "card_valid_spaces",
+      "label": "CREDIT_CARD",
+      "value": "4242 4242 4242 4242",
+      "kept": true,
+      "strategy": "CardNumberStrategy",
+      "reason": null
+    },
+    {
+      "case": "card_valid_hyphens",
+      "label": "CREDIT_CARD",
+      "value": "4242-4242-4242-4242",
+      "kept": true,
+      "strategy": "CardNumberStrategy",
+      "reason": null
+    },
+    {
+      "case": "card_invalid_checksum",
+      "label": "CREDIT_CARD",
+      "value": "4242 4242 4242 4243",
+      "kept": false,
+      "strategy": "CardNumberStrategy",
+      "reason": "card_number luhn failed"
+    },
+    {
+      "case": "card_invalid_with_letters",
+      "label": "CREDIT_CARD",
+      "value": "AB4242424242424243",
+      "kept": true,
+      "strategy": "CardNumberStrategy",
+      "reason": null
+    },
+    {
+      "case": "card_12_digits",
+      "label": "CREDIT_CARD",
+      "value": "412345678901",
+      "kept": true,
+      "strategy": "CardNumberStrategy",
+      "reason": null
+    },
+    {
+      "case": "card_20_digits",
+      "label": "CREDIT_CARD",
+      "value": "41234567890123456789",
+      "kept": true,
+      "strategy": "CardNumberStrategy",
+      "reason": null
+    },
+    {
+      "case": "iban_valid_compact",
+      "label": "IBAN",
+      "value": "CH9300762011623852957",
+      "kept": true,
+      "strategy": "IbanStrategy",
+      "reason": null
+    },
+    {
+      "case": "iban_valid_spaces",
+      "label": "IBAN",
+      "value": "CH93 0076 2011 6238 5295 7",
+      "kept": true,
+      "strategy": "IbanStrategy",
+      "reason": null
+    },
+    {
+      "case": "iban_invalid_compact",
+      "label": "IBAN",
+      "value": "CH9300762011623852958",
+      "kept": false,
+      "strategy": "IbanStrategy",
+      "reason": "iban mod-97 / length failed"
+    },
+    {
+      "case": "iban_invalid_spaces",
+      "label": "IBAN",
+      "value": "CH93 0076 2011 6238 5295 8",
+      "kept": false,
+      "strategy": "IbanStrategy",
+      "reason": "iban mod-97 / length failed"
+    },
+    {
+      "case": "iban_invalid_hyphens",
+      "label": "IBAN",
+      "value": "CH93-0076-2011-6238-5295-8",
+      "kept": true,
+      "strategy": "IbanStrategy",
+      "reason": null
+    },
+    {
+      "case": "iban_invalid_nbsp",
+      "label": "IBAN",
+      "value": "CH93 0076 2011 6238 5295 8",
+      "kept": true,
+      "strategy": "IbanStrategy",
+      "reason": null
+    },
+    {
+      "case": "iban_non_iban_words",
+      "label": "IBAN",
+      "value": "customer reference pending",
+      "kept": true,
+      "strategy": "IbanStrategy",
+      "reason": null
+    },
+    {
+      "case": "ssn_invalid_us_typed",
+      "label": "US_SSN",
+      "value": "000-12-3456",
+      "kept": true,
+      "strategy": null,
+      "reason": null
+    },
+    {
+      "case": "ssn_invalid_generic_typed",
+      "label": "SOCIAL_SECURITY_NUMBER",
+      "value": "000-12-3456",
+      "kept": true,
+      "strategy": null,
+      "reason": null
+    },
+    {
+      "case": "ssn_non_identifier",
+      "label": "SOCIAL_SECURITY_NUMBER",
+      "value": "customer reference pending",
+      "kept": true,
+      "strategy": null,
+      "reason": null
+    },
+    {
+      "case": "avs_invalid_typed",
+      "label": "AVS_NUMBER",
+      "value": "756.9217.0769.84",
+      "kept": false,
+      "strategy": "AvsNumberStrategy",
+      "reason": "avs_number ean-13 checksum failed"
+    },
+    {
+      "case": "avs_invalid_generic_typed",
+      "label": "SOCIAL_SECURITY_NUMBER",
+      "value": "756.9217.0769.84",
+      "kept": true,
+      "strategy": null,
+      "reason": null
+    },
+    {
+      "case": "tax_uid_valid",
+      "label": "TAX_ID",
+      "value": "CHE-116.281.710",
+      "kept": true,
+      "strategy": "SwissUidStrategy",
+      "reason": null
+    },
+    {
+      "case": "tax_uid_invalid",
+      "label": "TAX_ID",
+      "value": "CHE-116.281.711",
+      "kept": false,
+      "strategy": "SwissUidStrategy",
+      "reason": "swiss_uid mod-11 check digit failed"
+    },
+    {
+      "case": "tax_unknown_format",
+      "label": "TAX_ID",
+      "value": "TX940039",
+      "kept": true,
+      "strategy": "SwissUidStrategy",
+      "reason": null
+    },
+    {
+      "case": "tax_non_identifier",
+      "label": "TAX_ID",
+      "value": "customer reference pending",
+      "kept": true,
+      "strategy": "SwissUidStrategy",
+      "reason": null
+    }
+  ],
+  "presidio_extraction": [
+    {
+      "recognizer": "CreditCardRecognizer",
+      "value": "4242 4242 4242 4242",
+      "matches": [
+        {
+          "span": "4242 4242 4242 4242",
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "recognizer": "CreditCardRecognizer",
+      "value": "2223 0031 2200 3222",
+      "matches": []
+    },
+    {
+      "recognizer": "CreditCardRecognizer",
+      "value": "4242 4242 4242 4242",
+      "matches": []
+    },
+    {
+      "recognizer": "CreditCardRecognizer",
+      "value": "4000000000000000006",
+      "matches": []
+    },
+    {
+      "recognizer": "IbanRecognizer",
+      "value": "CH93-0076-2011-6238-5295-7",
+      "matches": [
+        {
+          "span": "CH93-0076-2011-6238-5295-7",
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "recognizer": "IbanRecognizer",
+      "value": "CH93 0076 2011 6238 5295 7",
+      "matches": []
+    },
+    {
+      "recognizer": "IbanRecognizer",
+      "value": "DE813704004405320130000",
+      "matches": [
+        {
+          "span": "DE813704004405320130000",
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "recognizer": "UsSsnRecognizer",
+      "value": "900-12-3456",
+      "matches": [
+        {
+          "span": "900-12-3456",
+          "score": 0.5
+        }
+      ]
+    }
+  ],
+  "regex_avs_extraction": [
+    {
+      "value": "756.9217.0769.85",
+      "count": 1
+    },
+    {
+      "value": "7569217076985",
+      "count": 0
+    },
+    {
+      "value": "756 9217 0769 85",
+      "count": 0
+    },
+    {
+      "value": "756-9217-0769-85",
+      "count": 0
+    }
+  ],
+  "itin_group_50": {
+    "value": "912-50-3456",
+    "stdnum_accepts": false
+  },
+  "ssn_blacklist_separator_probe": {
+    "078-051120": {
+      "raw": true,
+      "compact": false
+    },
+    "07805-1120": {
+      "raw": true,
+      "compact": false
+    },
+    "078-05-1120": {
+      "raw": false,
+      "compact": false
+    }
+  },
+  "reference_corpus": {
+    "gold-values.json": {
+      "total": 95,
+      "kept": 93,
+      "rejected": 2,
+      "rejected_by_label": {
+        "tax_id": 2
+      }
+    },
+    "raw-findings.json": {
+      "total": 135,
+      "kept": 121,
+      "rejected": 14,
+      "rejected_by_label": {
+        "object_id": 2,
+        "guid": 2,
+        "release_version": 2,
+        "build_number": 3,
+        "trace_id": 1,
+        "hash": 1,
+        "build_sha": 1,
+        "application_version": 1,
+        "github_token": 1
+      }
+    }
+  }
+}

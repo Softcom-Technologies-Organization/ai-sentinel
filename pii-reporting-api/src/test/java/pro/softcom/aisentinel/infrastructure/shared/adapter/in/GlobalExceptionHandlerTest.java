@@ -21,6 +21,7 @@ import pro.softcom.aisentinel.application.pii.export.exception.ExportException;
 import pro.softcom.aisentinel.application.pii.export.exception.UnsupportedSourceTypeException;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorException;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
+import pro.softcom.aisentinel.domain.pii.judge.JudgeScanInProgressException;
 import pro.softcom.aisentinel.domain.pii.remediation.AttachmentRedactionUnsupportedException;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediationStatus;
 import pro.softcom.aisentinel.domain.pii.remediation.IllegalStatusTransitionException;
@@ -339,6 +340,15 @@ class GlobalExceptionHandlerTest {
         mockMvc.perform(get("/test/throw"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorKey").value("error.validation.invalid_argument"));
+    }
+
+    @Test
+    void Should_Return409WithErrorKey_When_JudgeLaunchBlockedByScan() throws Exception {
+        ExceptionThrowingTestController.exceptionToThrow.set(new JudgeScanInProgressException());
+
+        mockMvc.perform(get("/test/throw"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorKey").value("error.judge.scan_in_progress"));
     }
 
     @Test

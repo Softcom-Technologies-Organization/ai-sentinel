@@ -1,6 +1,7 @@
 package pro.softcom.aisentinel.application.pii.remediation.port.in;
 
 import lombok.Builder;
+import pro.softcom.aisentinel.domain.pii.judge.JudgeVerdict;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediationStatus;
 import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInformationSeverity;
 
@@ -8,7 +9,8 @@ import pro.softcom.aisentinel.domain.pii.reporting.PersonallyIdentifiableInforma
  * Read-model row of a single finding. Carries the masked context plus, when the caller is
  * authorized to reveal secrets (gated by {@code pii.reporting.allow-secret-reveal}), the
  * plaintext {@code sensitiveValue} and its surrounding {@code sensitiveContext}; those fields
- * are null when revelation is not allowed.
+ * are null when revelation is not allowed. {@code judgeVerdict} and {@code judgeConfidence} are
+ * set once the LLM judge has evaluated the finding.
  */
 @Builder(toBuilder = true)
 public record RemediationFindingView(
@@ -27,6 +29,8 @@ public record RemediationFindingView(
         FindingRemediationStatus status,
         boolean selected,
         boolean eligibleForRedaction,
-        String ineligibilityReason
+        String ineligibilityReason,
+        JudgeVerdict judgeVerdict,
+        Double judgeConfidence
 ) {
 }

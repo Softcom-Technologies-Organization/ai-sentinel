@@ -40,11 +40,11 @@ export class PiiValueDisplayService {
   }): PiiValueDisplay {
     const hasRevealedValue = input.revealed && !!input.sensitiveValue;
     if (hasRevealedValue) {
-      const text = input.sensitiveContext || input.sensitiveValue!;
+      const parts = this.parseRevealedParts(input.sensitiveContext ?? undefined, input.sensitiveValue!);
       return {
-        text,
+        text: parts.map(part => part.text).join(''),
         isRevealed: true,
-        parts: this.parseRevealedParts(input.sensitiveContext ?? undefined, input.sensitiveValue!),
+        parts,
       };
     }
     const text = input.maskedContext || MASK_PLACEHOLDER;
@@ -74,7 +74,7 @@ export class PiiValueDisplayService {
 
     const index = sensitiveContext.indexOf(sensitiveValue);
     if (index === -1) {
-      return [{ text: sensitiveContext, isBadge: false, isHighlighted: true }];
+      return [{ text: sensitiveValue, isBadge: false, isHighlighted: true }];
     }
 
     const parts: ValuePart[] = [];

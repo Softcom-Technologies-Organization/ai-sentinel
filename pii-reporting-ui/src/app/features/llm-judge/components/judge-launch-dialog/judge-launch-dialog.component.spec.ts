@@ -1,0 +1,170 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+import { of } from 'rxjs';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { JudgeLaunchDialogComponent, JudgeScopeOption } from './judge-launch-dialog.component';
+import { PiiDetectionConfigService } from '../../../../core/services/pii-detection-config.service';
+import { JudgeLaunchRequest } from '../../../../core/models/judge.model';
+
+const FR_TRANSLATIONS = {
+  judge: {
+    unavailable: { scanInProgress: 'Disponible après la fin du scan' },
+    scope: {
+      allPending: 'Toutes les détections à traiter',
+      currentSelection: 'Sélection actuelle',
+    },
+    dialog: {
+      title: 'Évaluer les détections par juge LLM',
+      scope: 'Périmètre',
+      model: 'Modèle juge',
+      modelLoading: 'Chargement…',
+      modelPlaceholder: 'Identifiant du modèle',
+      notLoaded: 'non chargé',
+      apply: 'Application des verdicts',
+      propose: 'Proposer pour validation',
+      proposeHint: 'hint',
+      autoApply: 'Appliquer automatiquement',
+      autoApplyHint: 'hint',
+      calls: '<b>{{count}}</b> appels au modèle',
+      duration: 'Durée estimée <b>~{{minutes}} min</b>',
+      threshold: 'Seuil de confiance',
+      cancel: 'Annuler',
+      launch: "Lancer l'évaluation ({{count}})",
+    },
+  },
+};
+
+const OPTIONS: JudgeScopeOption[] = [
+  { key: 'all', labelKey: 'judge.scope.allPending', count: 95, scope: { spaceKeys: ['AS'] } },
+  { key: 'selection', labelKey: 'judge.scope.currentSelection', hintText: 'Jeton', count: 11, scope: { spaceKeys: ['AS', 'B'] } },
+];
+
+const LISTING = {
+  endpoint: 'http://localhost:1234/v1', family: 'ministral', error: '',
+  models: [
+    { id: 'ministral@q4', quantization: 'Q4_K_M', publisher: 'x', loaded: false },
+    { id: 'ministral@q8', quantization: 'Q8_0', publisher: 'x', loaded: true },
+    { id: 'openai/gpt-oss-120b', quantization: '', publisher: 'openai', loaded: true },
+  ],
+};
+const listLmStudioModels = vi.fn(() => of(LISTING));
+const CONFIG: { lmStudioHost: string; lmStudioPort: number; lmStudioModel: string; lmStudioJudgeModel: string | null } =
+  { lmStudioHost: 'localhost', lmStudioPort: 1234, lmStudioModel: 'ministral@q8', lmStudioJudgeModel: null };
+const getConfig = vi.fn(() => of(CONFIG));
+
+describe('JudgeLaunchDialogComponent', () => {
+  let fixture: ComponentFixture<JudgeLaunchDialogComponent>;
+
+  beforeEach(async () => {
+    listLmStudioModels.mockClear();
+    getConfig.mockClear();
+    await TestBed.configureTestingModule({
+      imports: [
+        JudgeLaunchDialogComponent,
+        TranslocoTestingModule.forRoot({
+          translocoConfig: { defaultLang: 'fr', availableLangs: ['fr'] },
+          preloadLangs: true,
+          langs: { fr: FR_TRANSLATIONS },
+        }),
+      ],
+      providers: [
+        {
+          provide: PiiDetectionConfigService,
+          useValue: {
+            getConfig: getConfig,
+            listLmStudioModels: listLmStudioModels,
+          },
+        },
+      ],
+    }).compileComponents();
+  });
+
+  function createComponent(options: JudgeScopeOption[] = OPTIONS): void {
+    fixture = TestBed.createComponent(JudgeLaunchDialogComponent);
+    fixture.componentRef.setInput('visible', true);
+    fixture.componentRef.setInput('scopeOptions', options);
+    fixture.detectChanges();
+  }
+
+  function query<T extends HTMLElement>(testId: string): T {
+    return document.querySelector(`[data-testid="${testId}"]`) as T;
+  }
+
+  it('Should_PreselectFirstScopeAndConfiguredModel_When_Opened', () => {
+    createComponent();
+
+    expect(fixture.componentInstance.selectedOption()?.key).toBe('all');
+    expect(fixture.componentInstance.selectedModel()).toBe('ministral@q8');
+    expect(listLmStudioModels).toHaveBeenCalledWith('localhost', 1234, true);
+    expect(fixture.componentInstance.modelOptions().map((option) => option.label))
+      .toEqual(['ministral@q8', 'openai/gpt-oss-120b', 'ministral@q4 · non chargé']);
+    expect(query('judge-estimate').textContent).toContain('95');
+  });
+
+  it('Should_PreselectConfiguredJudgeModel_When_ItDiffersFromTheDetectionModel', () => {
+    getConfig.mockReturnValueOnce(of({ ...CONFIG, lmStudioJudgeModel: 'openai/gpt-oss-120b' }));
+
+    createComponent();
+
+    expect(fixture.componentInstance.selectedModel()).toBe('openai/gpt-oss-120b');
+  });
+
+  it('Should_EmitLaunchRequestFromChoices_When_Launching', () => {
+    createComponent();
+    const launched = vi.fn();
+    fixture.componentInstance.launched.subscribe(launched);
+
+    query<HTMLInputElement>('judge-scope-option-selection').click();
+    query<HTMLInputElement>('judge-apply-option-AUTO_APPLY').click();
+    const threshold = query<HTMLInputElement>('judge-threshold');
+    threshold.value = '95';
+    threshold.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    query<HTMLButtonElement>('judge-launch').click();
+
+    const request: JudgeLaunchRequest = launched.mock.calls[0][0];
+    expect(request).toEqual({
+      scope: { spaceKeys: ['AS', 'B'] },
+      model: 'ministral@q8',
+      applyMode: 'AUTO_APPLY',
+      confidenceThreshold: 0.95,
+    });
+  });
+
+  it('Should_DisableLaunch_When_ScopeIsEmpty', () => {
+    createComponent([{ key: 'all', labelKey: 'judge.scope.allPending', count: 0, scope: { spaceKeys: ['AS'] } }]);
+
+    expect(query<HTMLButtonElement>('judge-launch').disabled).toBe(true);
+  });
+
+  it('Should_DisableLaunchAndBlockEmission_When_ScanStartsWithDialogOpen', () => {
+    createComponent();
+    const launched = vi.fn();
+    fixture.componentInstance.launched.subscribe(launched);
+    expect(query<HTMLButtonElement>('judge-launch').disabled).toBe(false);
+    expect(fixture.componentInstance.applyMode()).toBe('PROPOSE');
+
+    fixture.componentRef.setInput('disabledReason', 'judge.unavailable.scanInProgress');
+    fixture.detectChanges();
+    expect(query<HTMLButtonElement>('judge-launch').disabled).toBe(true);
+    expect(document.body.textContent).toContain('Disponible après la fin du scan');
+    fixture.componentInstance.launch();
+    expect(launched).not.toHaveBeenCalled();
+
+    fixture.componentRef.setInput('disabledReason', null);
+    fixture.detectChanges();
+    expect(query<HTMLButtonElement>('judge-launch').disabled).toBe(false);
+  });
+
+  it('Should_ReloadModelsAndKeepChoice_When_RefreshClicked', () => {
+    createComponent();
+    fixture.componentInstance.selectedModel.set('ministral@q4');
+
+    query<HTMLButtonElement>('judge-refresh-models').click();
+    fixture.detectChanges();
+
+    expect(listLmStudioModels).toHaveBeenCalledTimes(2);
+    expect(fixture.componentInstance.selectedModel()).toBe('ministral@q4');
+    expect(fixture.componentInstance.modelOptions()).toHaveLength(3);
+  });
+});

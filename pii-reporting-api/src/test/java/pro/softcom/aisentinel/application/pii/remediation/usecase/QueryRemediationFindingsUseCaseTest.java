@@ -20,7 +20,11 @@ import pro.softcom.aisentinel.application.pii.remediation.service.ScanEventFindi
 import pro.softcom.aisentinel.application.pii.remediation.service.SelectionEvaluator;
 import pro.softcom.aisentinel.application.pii.reporting.SeverityCalculationService;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery;
+import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
+import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
+import pro.softcom.aisentinel.domain.pii.ScanStatus;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingReference;
+import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediation;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediationStatus;
 import pro.softcom.aisentinel.domain.pii.remediation.RemediationDisabledException;
 import pro.softcom.aisentinel.domain.pii.remediation.RemediationSelection;
@@ -33,7 +37,6 @@ import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -43,6 +46,8 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("QueryRemediationFindingsUseCase")
@@ -56,6 +61,9 @@ class QueryRemediationFindingsUseCaseTest {
 
     @Mock
     private ScanResultQuery scanResultQuery;
+
+    @Mock
+    private ScanCheckpointRepository checkpointRepository;
 
     @Mock
     private FindingRemediationStore findingRemediationStore;
@@ -73,7 +81,7 @@ class QueryRemediationFindingsUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new QueryRemediationFindingsUseCase(remediationConfigPort, scanResultQuery,
+        useCase = new QueryRemediationFindingsUseCase(remediationConfigPort, scanResultQuery, checkpointRepository,
                 findingRemediationStore, new ScanEventFindingResolver(severityCalculationService),
                 new SelectionEvaluator());
         lenient().when(remediationConfigPort.isRemediationEnabled()).thenReturn(true);
@@ -85,17 +93,62 @@ class QueryRemediationFindingsUseCaseTest {
                 .thenReturn(PersonallyIdentifiableInformationSeverity.HIGH);
         lenient().when(severityCalculationService.calculateSeverity("AVS"))
                 .thenReturn(PersonallyIdentifiableInformationSeverity.HIGH);
-        lenient().when(scanResultQuery.findLatestScan())
-                .thenReturn(Optional.of(new LastScanMeta(SCAN_ID, Instant.parse("2026-01-01T10:00:00Z"), 1)));
+        lenient().when(checkpointRepository.findLatestBySpace(SPACE))
+                .thenReturn(Optional.of(ScanCheckpoint.builder().scanId(SCAN_ID).spaceKey(SPACE).build()));
         lenient().when(scanResultQuery.listItemEventsDecryptedByScanIdAndSpaceKey(
                         SCAN_ID, SPACE, AccessPurpose.USER_DISPLAY))
                 .thenReturn(defaultEvents());
-        lenient().when(findingRemediationStore.findStatusesByIds(anyCollection())).thenReturn(Map.of());
+        lenient().when(findingRemediationStore.findByIds(anyCollection())).thenReturn(List.of());
         emailP1Id = findingId("p1", null, "PRESIDIO", "EMAIL", "fp-email-1");
         phoneP1Id = findingId("p1", null, "REGEX", "PHONE", "fp-phone-1");
         emailP2Id = findingId("p2", null, "MINISTRAL", "EMAIL", "fp-email-2");
         ibanP2Id = findingId("p2", null, "REGEX", "IBAN", "fp-iban-1");
         avsAttachmentId = findingId("p2", "doc.pdf", "MINISTRAL", "AVS", "fp-avs-1");
+    }
+
+    @Test
+    void Should_KeepSpaceResults_When_AnotherSpaceWasScannedLater() {
+        lenient().when(checkpointRepository.findLatestBySpace(SPACE))
+                .thenReturn(Optional.of(ScanCheckpoint.builder().scanId(SCAN_ID).spaceKey(SPACE).build()));
+        lenient().when(scanResultQuery.findLatestScan())
+                .thenReturn(Optional.of(new LastScanMeta("scan-other", Instant.now(), 1)));
+
+        RemediationFindingsResult result = useCase.search(query().build());
+
+        assertThat(result.totalElements()).isEqualTo(5);
+    }
+
+    @Test
+    void Should_ReturnEmptyResults_When_SpaceHasNoCheckpoint() {
+        when(checkpointRepository.findLatestBySpace(SPACE)).thenReturn(Optional.empty());
+        lenient().when(scanResultQuery.findLatestScan())
+                .thenReturn(Optional.of(new LastScanMeta("scan-other", Instant.now(), 1)));
+
+        assertThat(useCase.search(query().build()).totalElements()).isZero();
+        verify(scanResultQuery, never()).findLatestScan();
+    }
+
+    @Test
+    void Should_ReplaceOldResults_When_SpaceHasANewerScan() {
+        when(checkpointRepository.findLatestBySpace(SPACE))
+                .thenReturn(Optional.of(ScanCheckpoint.builder().scanId("rescan").spaceKey(SPACE).build()));
+        when(scanResultQuery.listItemEventsDecryptedByScanIdAndSpaceKey("rescan", SPACE, AccessPurpose.USER_DISPLAY))
+                .thenReturn(List.of(defaultEvents().getLast().toBuilder().scanId("rescan").build()));
+
+        RemediationFindingsResult result = useCase.search(query().build());
+
+        assertThat(allViews(result)).extracting(RemediationFindingView::findingId).containsExactly(avsAttachmentId);
+        verify(scanResultQuery, never()).listItemEventsDecryptedByScanIdAndSpaceKey(SCAN_ID, SPACE, AccessPurpose.USER_DISPLAY);
+    }
+
+    @Test
+    void Should_NotRestoreOldResults_When_NewScanHasNoEventsYet() {
+        when(checkpointRepository.findLatestBySpace(SPACE))
+                .thenReturn(Optional.of(ScanCheckpoint.builder().scanId("rescan").spaceKey(SPACE)
+                        .scanStatus(ScanStatus.NOT_STARTED).build()));
+
+        assertThat(useCase.search(query().build()).totalElements()).isZero();
+        verify(scanResultQuery, never()).listItemEventsDecryptedByScanIdAndSpaceKey(SCAN_ID, SPACE, AccessPurpose.USER_DISPLAY);
     }
 
     @Nested
@@ -128,7 +181,7 @@ class QueryRemediationFindingsUseCaseTest {
         @Test
         @DisplayName("Should_ReturnEmptyResult_When_NoScanExists")
         void Should_ReturnEmptyResult_When_NoScanExists() {
-            when(scanResultQuery.findLatestScan()).thenReturn(Optional.empty());
+            when(checkpointRepository.findLatestBySpace(SPACE)).thenReturn(Optional.empty());
 
             RemediationFindingsResult result = useCase.search(query().build());
 
@@ -284,8 +337,8 @@ class QueryRemediationFindingsUseCaseTest {
         @Test
         @DisplayName("Should_SkipNonPendingFindings_When_TypeChecked")
         void Should_SkipNonPendingFindings_When_TypeChecked() {
-            when(findingRemediationStore.findStatusesByIds(anyCollection()))
-                    .thenReturn(Map.of(emailP2Id, FindingRemediationStatus.FALSE_POSITIVE));
+            when(findingRemediationStore.findByIds(anyCollection()))
+                    .thenReturn(List.of(row(emailP2Id, FindingRemediationStatus.FALSE_POSITIVE)));
 
             RemediationFindingsResult result = useCase.search(
                     query().selection(selection().piiTypes(List.of("EMAIL")).build()).build());
@@ -307,8 +360,8 @@ class QueryRemediationFindingsUseCaseTest {
         @Test
         @DisplayName("Should_FilterByStatusFacetKeepingTotals_When_StatusFilterHandled")
         void Should_FilterByStatusFacetKeepingTotals_When_StatusFilterHandled() {
-            when(findingRemediationStore.findStatusesByIds(anyCollection()))
-                    .thenReturn(Map.of(emailP1Id, FindingRemediationStatus.MANUALLY_HANDLED));
+            when(findingRemediationStore.findByIds(anyCollection()))
+                    .thenReturn(List.of(row(emailP1Id, FindingRemediationStatus.MANUALLY_HANDLED)));
 
             RemediationFindingsResult result = useCase.search(
                     query().statusFilter(StatusFilter.HANDLED).build());
@@ -440,6 +493,21 @@ class QueryRemediationFindingsUseCaseTest {
                 softly.assertThat(groupByKey(result, "PHONE").occurrenceCount()).isEqualTo(1);
             });
         }
+    }
+
+    private static FindingRemediation row(String findingId, FindingRemediationStatus status) {
+        return FindingRemediation.builder()
+                .findingId(findingId)
+                .scanId(SCAN_ID)
+                .spaceKey(SPACE)
+                .pageId("p1")
+                .piiType("EMAIL")
+                .severity(PersonallyIdentifiableInformationSeverity.MEDIUM)
+                .detector("PRESIDIO")
+                .status(status)
+                .actor("tester")
+                .occurredAt(Instant.parse("2026-07-06T10:00:00Z"))
+                .build();
     }
 
     private static RemediationFindingsQuery.RemediationFindingsQueryBuilder query() {

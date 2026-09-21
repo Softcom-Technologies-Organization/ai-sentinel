@@ -14,7 +14,6 @@ const MOCK_CONFIG: ConfluenceConnectionConfig = {
   readTimeout: 60000,
   maxRetries: 3,
   pagesLimit: 25,
-  maxPages: 1000,
   deploymentType: 'CLOUD',
   configured: true,
 };
@@ -59,7 +58,6 @@ describe('ConfluenceSettingsComponent', () => {
       readTimeout: 60000,
       maxRetries: 3,
       pagesLimit: 25,
-      maxPages: 1000,
     });
   }
 
@@ -158,6 +156,8 @@ describe('ConfluenceSettingsComponent', () => {
 
     const req = httpMock.expectOne(CONFIG_URL);
     expect(req.request.method).toBe('PUT');
+    expect(req.request.body.pagesLimit).toBe(25);
+    expect(req.request.body).not.toHaveProperty('maxPages');
     req.flush(MOCK_CONFIG);
 
     expect(component.saving()).toBe(false);

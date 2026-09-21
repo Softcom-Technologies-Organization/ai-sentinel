@@ -5,6 +5,8 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
+import pro.softcom.aisentinel.domain.pii.judge.FindingJudgeAnswer;
+import pro.softcom.aisentinel.domain.pii.judge.FindingJudgeRequest;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
 import pro.softcom.aisentinel.domain.pii.scan.DetectorHealth;
@@ -45,8 +47,13 @@ public class TestPiiDetectionClientConfiguration {
         }
 
         @Override
-        public LmStudioModelListing listLmStudioModels(String lmStudioHost, Integer lmStudioPort) {
+        public LmStudioModelListing listLmStudioModels(String lmStudioHost, Integer lmStudioPort, boolean allModels) {
             return new LmStudioModelListing("", "", List.of(), "");
+        }
+
+        @Override
+        public FindingJudgeAnswer judgeFinding(FindingJudgeRequest request) {
+            return new FindingJudgeAnswer("UNSURE", 0.0, "", "");
         }
 
         @Override

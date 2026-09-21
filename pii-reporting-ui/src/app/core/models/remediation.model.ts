@@ -24,7 +24,15 @@ export type RemediationGroupBy = 'type' | 'severity';
 
 export type RemediationStatusFilter = 'ALL' | 'PENDING' | 'HANDLED' | 'FALSE_POSITIVE';
 
-export type FindingStatus = 'PENDING' | 'REDACTED' | 'MANUALLY_HANDLED' | 'FALSE_POSITIVE';
+export type FindingStatus =
+  | 'PENDING'
+  | 'REDACTED'
+  | 'MANUALLY_HANDLED'
+  | 'FALSE_POSITIVE'
+  | 'PROPOSED_FALSE_POSITIVE';
+
+/** LLM judge verdict once the confidence threshold has been honoured by the backend. */
+export type JudgeVerdict = 'TRUE_POSITIVE' | 'FALSE_POSITIVE' | 'UNSURE';
 
 export type FindingTargetStatus = 'FALSE_POSITIVE' | 'MANUALLY_HANDLED' | 'PENDING';
 
@@ -76,6 +84,8 @@ export interface RemediationFindingDto {
   selected: boolean;
   eligibleForRedaction: boolean;
   ineligibilityReason?: string;
+  judgeVerdict?: JudgeVerdict;
+  judgeConfidence?: number;
 }
 
 export interface RemediationGroupDto {
@@ -93,6 +103,8 @@ export interface RemediationTotalsDto {
   pending: number;
   handled: number;
   falsePositive: number;
+  /** Judge rejections still awaiting a reviewer, apart from confirmed false positives. */
+  proposedFalsePositive: number;
   total: number;
 }
 

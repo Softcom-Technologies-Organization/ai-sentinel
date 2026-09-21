@@ -1,0 +1,664 @@
+{
+  "name": "Tax identification numbers",
+  "scope": {
+    "category": "Country-specific tax identifiers",
+    "researched_on": "2026-09-19",
+    "conclusion": "Use country- and subtype-specific extraction and validation. There is no universal TIN format. The supplied Upvest table is an onboarding format reference, not a sufficient PII detector or a reliable global rejection rule.",
+    "priority_jurisdictions": [
+      "CH",
+      "FR",
+      "DE",
+      "GB",
+      "US"
+    ],
+    "eu_coverage": "The Upvest inventory covers the 27 EU member states and GB; CH and US require separate profiles. This audit checks the whole table for regex structure and investigates authoritative rules for priority jurisdictions plus important FI, SE and IT exceptions.",
+    "coverage_limit": "[uncertain] A complete, current authority-level algorithm audit for every EU member state was not established. Country profiles outside the detailed findings must remain unsupported or provisional for hard rejection.",
+    "individual_vs_business": "An individual TIN, a VAT registration number and a business identifier are distinct subtypes, even where one number serves multiple administrative purposes. A business identifier may belong to a sole trader, so routing it away from individual TIN validation does not establish that it is non-personal data.",
+    "country_requirement": "Use the identifier's issuing jurisdiction, not the document language, current address, citizenship or a default locale. Multiple issuing jurisdictions may occur in one document or for one person.",
+    "validation_layers": [
+      "Extraction finds an original text span and retains offsets.",
+      "Format validation checks the selected jurisdiction and subtype after permitted normalization.",
+      "Checksum or component validation checks mathematical consistency where rules are available.",
+      "Issuance, ownership, current validity and tax status require authoritative records or authorized verification; a regex or checksum establishes none of these."
+    ],
+    "sources": [
+      "https://taxation-customs.ec.europa.eu/online-services/online-services-and-databases-taxation/taxpayer-identification-number-tin_en",
+      "https://docs.upvest.co/products/tol/guides/users/users_tax_identification_numbers",
+      "https://www.gov.uk/hmrc-internal-manuals/international-exchange-of-information/ieim902330"
+    ]
+  },
+  "official_rules": {
+    "CH": {
+      "individual": "The AHV/AVS/OASI number is the individual TIN for automatic exchange of information. It has 13 digits: invariant prefix 756, nine random digits and one EAN-13 check digit. The usual printed grouping is 756.xxxx.xxxx.xx.",
+      "canonical_format": "756[0-9]{10}",
+      "validation": "Check the prefix and EAN-13 checksum after extracting a complete candidate. This checks consistency only.",
+      "business": "The UID/IDE is CHE plus nine digits, with a modulo-11 check digit; it is the entity TIN in the AEOI context. It is not the personal AHV number. VAT designation is a separate business context.",
+      "sources": [
+        "https://www.zas.admin.ch/de/ahv-nummer-identifikator",
+        "https://www.oecd.org/tax/automatic-exchange/crs-implementation-and-assistance/tax-identification-numbers/Switzerland-TIN.pdf"
+      ]
+    },
+    "FR": {
+      "individual": "The French fiscal number/SPI has 13 digits and starts with 0, 1, 2 or 3. Printed groups may contain spaces; the canonical number does not.",
+      "canonical_format": "[0-3][0-9]{12}",
+      "checksum_evidence": "Both python-stdnum and validator.js implement the final three digits as the first ten digits modulo 511, left-padded to three digits.",
+      "checksum_authority_status": "[uncertain] The consulted French authority and OECD country pages establish the format, but did not independently publish the modulo-511 algorithm. Treat this algorithm as corroborated library behavior, not an authority specification verified in this audit.",
+      "additional_printed_marker": "A C following the fiscal number can indicate certified civil-status data. It is not a fourteenth identifier character.",
+      "business": "SIREN has nine digits; SIRET has fourteen. French VAT identification is FR plus a two-character key and the SIREN. Do not use a VAT validator for a person's fiscal number.",
+      "territorial_caveat": "The OECD sheet documents separate territorial cases, including a seven-digit identifier for New Caledonia and a different Saint-Martin structure; do not apply the mainland profile to every French-related territory.",
+      "sources": [
+        "https://www.impots.gouv.fr/particulier/acceder-mon-espace",
+        "https://www.oecd.org/tax/automatic-exchange/crs-implementation-and-assistance/tax-identification-numbers/France-TIN.pdf",
+        "https://www.impots.gouv.fr/professionnel/les-numeros-didentification",
+        "https://static.impots.gouv.fr/tdir/static/2026-04-29T08%3A13%3A24Z/aide/html/aide-teleir.htm",
+        "https://github.com/arthurdejong/python-stdnum/blob/master/stdnum/fr/nif.py",
+        "https://raw.githubusercontent.com/validatorjs/validator.js/master/src/lib/isTaxID.js"
+      ]
+    },
+    "DE": {
+      "individual": "The personal IdNr has 11 digits including a check digit. It is separate from the local Steuernummer, VAT USt-IdNr and business W-IdNr.",
+      "canonical_candidate_format": "[1-9][0-9]{10}",
+      "implementation_validation": "python-stdnum checks ISO 7064 MOD 11,10 and digit multiplicity: in the first ten positions exactly one digit repeats two or three times, with other digits occurring at most once. A rule allowing only one repeated pair is incomplete.",
+      "business": "The federal finance ministry describes W-IdNr as DE plus nine digits, supplemented by a five-digit activity suffix. Economically active natural persons can receive it in addition to their personal IdNr; it does not replace VAT identification.",
+      "source_freshness": "The OECD Germany sheet still describes business identification as future work. The finance ministry's November 2024 publication documents its introduction. Use the OECD sheet for personal format, not for current business rollout status.",
+      "sources": [
+        "https://www.oecd.org/tax/automatic-exchange/crs-implementation-and-assistance/tax-identification-numbers/Germany-TIN.pdf",
+        "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/de/idnr.py",
+        "https://www.bundesfinanzministerium.de/Monatsberichte/Ausgabe/2024/11/Inhalte/Kapitel-3-Analysen/3-2-wirtschafts-identifikationsnummer-startet.html"
+      ]
+    },
+    "GB": {
+      "individual_profiles": [
+        "UTR: ten digits; used by both individuals and entities, so surrounding context is needed to classify the holder.",
+        "NINO: two letters, six digits and suffix A, B, C or D; printed spaces are common."
+      ],
+      "nino_components": "Neither prefix position permits D, F, I, Q, U or V; the second also excludes O. Reject prefix pairs BG, GB, KN, NK, NT, TN and ZZ for the NINO profile.",
+      "temporary_references": "A PAYE temporary reference is not a NINO. Do not silently interpret a temporary reference as an invalid or valid NINO.",
+      "checksum_evidence": "python-stdnum implements a first-digit UTR checksum with weighted remainder. NINO validation has component restrictions rather than a check digit.",
+      "checksum_authority_status": "[uncertain] The UTR checksum implementation was inspected, but its algorithm was not independently corroborated in the consulted HMRC authority pages.",
+      "source_conflict": "The OECD UK sheet uses DQ123456C as an illustrative NINO, although D and Q are forbidden by the HMRC format manual. Prefer the HMRC component rules and do not assume all authority illustrations pass validators.",
+      "sources": [
+        "https://www.gov.uk/hmrc-internal-manuals/national-insurance-manual/nim39110",
+        "https://www.oecd.org/tax/automatic-exchange/crs-implementation-and-assistance/tax-identification-numbers/UK-TIN.pdf",
+        "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/gb/utr.py"
+      ]
+    },
+    "US": {
+      "family": "TIN is an umbrella term including SSN, ITIN, EIN, ATIN and PTIN. SSN/ITIN are the principal individual profiles here; EIN must have a separate business profile. ATIN is a temporary individual identifier and must not be rejected merely because it is not an SSN or ITIN.",
+      "SSN": "Nine digits, commonly 3-2-4 with hyphens. Exclude first groups 000, 666 and 900-999, middle group 00 and final group 0000. The old geographic/high-group issuance assumptions became obsolete with randomization in 2011.",
+      "ITIN": "Nine digits starting with 9, commonly 3-2-4. Current IRS Publication 4152 allows middle groups 50-65, 70-88, 90-92 and 94-99. Do not apply SSN's exclusion of 900-999 to ITINs.",
+      "checksums": "Use documented ranges and components; SSN/ITIN do not provide a public checksum that establishes issuance.",
+      "active_status": "An ITIN can expire through non-use. Expiration does not make an identifier cease to be potentially sensitive, and it cannot be inferred from format alone.",
+      "remaining_scope": "[uncertain] ATIN/PTIN detailed extraction and validation profiles were not audited. Keep them explicitly unsupported rather than mapping them to SSN or ITIN.",
+      "sources": [
+        "https://www.irs.gov/tin/taxpayer-identification-numbers-tin",
+        "https://www.irs.gov/pub/irs-pdf/p4152.pdf",
+        "https://www.ssa.gov/employer/randomizationfaqs.html"
+      ]
+    },
+    "EU": {
+      "authority_baseline": "There is no EU-level TIN. National specifications differ, some taxpayers have no TIN, and the Commission portal concerns natural persons. Its check service verifies structure and/or algorithm, not existence or identity.",
+      "FI": "The personal identity code must support added century characters: Y, X, W, V, U for the 1900s and B, C, D, E, F for the 2000s alongside existing characters. The separate twelve-digit construction/shipyard tax number is a distinct identifier.",
+      "SE": "The personal identity number's hyphen becomes plus in the year the person reaches 100. Coordination numbers add 60 to the birth day. A date validator unaware of that rule causes false negatives.",
+      "IT": "A personal codice fiscale normally has 16 characters. Omocodia permits letters in positions otherwise used for digits, so a rigid digit-only template in those positions is incomplete.",
+      "remaining_countries": "[uncertain] AT, BE, BG, CY, CZ, DK, EE, ES, GR, HR, HU, IE, LT, LU, LV, MT, NL, PL, PT, RO, SI and SK were inventoried but not each independently certified against current national algorithm specifications.",
+      "sources": [
+        "https://taxation-customs.ec.europa.eu/online-services/online-services-and-databases-taxation/taxpayer-identification-number-tin_en",
+        "https://valtioneuvosto.fi/-/10623/henkilotunnusten-riittavyys-varmistetaan-uusilla-valimerkeilla?languageId=en_US",
+        "https://www.vero.fi/en/detailed-guidance/guidance/48791/individual-tax-numbers-and-the-public-tax-number-register2/",
+        "https://www.skatteverket.se/servicelankar/otherlanguages/englishengelska/individualsandemployees/livinginsweden/personalidentitynumbers.4.2cf1b5cd163796a5c8b4295.html",
+        "https://www.skatteverket.se/servicelankar/otherlanguages/inenglish/individualsandemployees/coordinationnumbers.4.1657ce2817f5a993c3a7d2a.html",
+        "https://prefettura.interno.gov.it/sites/default/files/89/2024-03/manuale-utente-sui_min-interno_0.pdf"
+      ]
+    }
+  },
+  "separators_and_extraction": {
+    "recommendation": "Extract bounded candidates in the original text, then normalize a copy using the selected profile. Keep the original start/end offsets for reporting and redaction.",
+    "rules": [
+      "Use ASCII [0-9] where the documented alphabet is ASCII. In Python, default \\d also matches Unicode decimal digits.",
+      "Validate an entire candidate with fullmatch or equivalent absolute boundaries; group every alternation.",
+      "Do not strip every non-alphanumeric character globally. That can join separate identifiers, conceal malformed input, or remove semantically significant signs.",
+      "Allow only country-specific printed separators and bounded spaces, including explicitly handled non-breaking spaces. Never let a permissive whitespace expression bridge unrelated lines or table cells.",
+      "CH dots and FR/DE/GB spaces can be normalized after candidate extraction. Preserve leading zeroes by keeping identifiers as strings.",
+      "FI century characters and SE plus/minus signs carry meaning; preserve them until the country-specific parser interprets them.",
+      "For the documented French certified-status C, extract only the thirteen digits while allowing the known adjacent marker under fiscal context.",
+      "Exclude matches embedded in longer digit strings and examine adjacent prefixes/suffixes before stripping them; a VAT/business marker changes the subtype.",
+      "Treat OCR substitutions such as O/0 or I/1 as uncertain recovery candidates, never silently as checksum-validated originals."
+    ],
+    "algorithm_status": "These are detector-design recommendations inferred from the documented formats, not a universal official normalization specification.",
+    "sources": [
+      "https://docs.upvest.co/products/tol/guides/users/users_tax_identification_numbers",
+      "https://www.oecd.org/tax/automatic-exchange/crs-implementation-and-assistance/tax-identification-numbers/France-TIN.pdf",
+      "https://www.gov.uk/hmrc-internal-manuals/national-insurance-manual/nim39110",
+      "https://valtioneuvosto.fi/-/10623/henkilotunnusten-riittavyys-varmistetaan-uusilla-valimerkeilla?languageId=en_US"
+    ]
+  },
+  "validators_and_libraries": [
+    {
+      "name": "python-stdnum",
+      "recommendation": "Preferred reusable Python starting point for explicit country/subtype validation, subject to regression tests against authorities.",
+      "maintenance": "The maintainer lists release 2.2 dated 2026-01-04. The changelog records continuing additions and country-format corrections.",
+      "relevant_modules": [
+        "stdnum.ch.ssn",
+        "stdnum.fr.nif",
+        "stdnum.de.idnr",
+        "stdnum.gb.utr",
+        "stdnum.us.ssn",
+        "stdnum.us.itin"
+      ],
+      "separate_business_modules": [
+        "stdnum.ch.uid",
+        "stdnum.ch.vat",
+        "stdnum.fr.tva",
+        "stdnum.de.vat",
+        "stdnum.us.ein"
+      ],
+      "limitation": "The inspected master US ITIN module permits 70-99 except 89 and 93, omitting IRS-allowed 50-65. Its is_valid result is unsafe as an exhaustive current ITIN rejection gate. Library compact functions may accept separators more broadly than a desired extractor.",
+      "maintenance_lessons": "Version 1.19 added Finnish century signs; 1.20 added French NIF check digits; 2.2 notes post-2017 Latvian codes. Pin a version and audit its actual module behavior.",
+      "license": "LGPL-2.1-or-later",
+      "license_implications": "Preserve notices and license. Distributed library modifications remain subject to LGPL source obligations; combined distributions must meet applicable replacement/relinking conditions. This is not a reason to assume the entire application must become LGPL. Copying implementation into a differently licensed project does not erase the original obligations.",
+      "uncertainty": "[uncertain] Installed project version and packaging-specific license compliance were not assessed; no application source or dependency files were inspected.",
+      "sources": [
+        "https://arthurdejong.org/python-stdnum/",
+        "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/NEWS",
+        "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/us/itin.py",
+        "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/COPYING"
+      ]
+    },
+    {
+      "name": "validator.js",
+      "recommendation": "Possible JavaScript validation source, but not a drop-in individual-TIN validator for the full requested scope.",
+      "maintenance": "The repository changelog inspected on the research date begins with 13.15.35 and includes continuing isTaxID changes.",
+      "limitations": "isTaxID defaults to en-US; its US profile checks an EIN-like two-plus-seven-digit format and IRS campus prefixes, not the SSN/ITIN family. The TIN locale list has no Swiss profile. Its Finnish regex still accepts only the older century characters. GB lacks a UTR checksum branch in the inspected dispatcher and omits some HMRC-forbidden NINO prefixes.",
+      "license": "MIT",
+      "license_implications": "Retain the copyright and permission notice in copies or substantial portions. MIT is permissive, but does not establish correctness of the national rules.",
+      "sources": [
+        "https://github.com/validatorjs/validator.js",
+        "https://raw.githubusercontent.com/validatorjs/validator.js/master/src/lib/isTaxID.js",
+        "https://raw.githubusercontent.com/validatorjs/validator.js/master/CHANGELOG.md",
+        "https://raw.githubusercontent.com/validatorjs/validator.js/master/LICENSE"
+      ]
+    },
+    {
+      "name": "Presidio",
+      "recommendation": "Retain as a possible extraction/context framework and extend or correct individual recognizers. Do not equate using deterministic validators with replacing Presidio.",
+      "evidence": "Official documentation lists country-specific recognizers including US ITIN/SSN, UK NINO, Spanish NIF/NIE, Italian fiscal code, Finnish personal identity code and German tax ID. It supports pattern, context and checksum logic.",
+      "important_comparison": "The inspected current US_ITIN recognizer includes IRS middle groups 50-65. Replacing it with the inspected stdnum.us.itin would lose those candidates.",
+      "license": "MIT",
+      "limitation": "[uncertain] The application's installed Presidio version, enabled recognizers, supported languages and actual coverage are unknown. Upstream main is evidence of source behavior, not evidence that the project runs that behavior.",
+      "sources": [
+        "https://raw.githubusercontent.com/microsoft/presidio/main/docs/supported_entities.md",
+        "https://raw.githubusercontent.com/microsoft/presidio/main/presidio-analyzer/presidio_analyzer/predefined_recognizers/country_specific/us/us_itin_recognizer.py",
+        "https://raw.githubusercontent.com/microsoft/presidio/main/LICENSE",
+        "https://microsoft.github.io/presidio/"
+      ]
+    },
+    {
+      "name": "European Commission TIN portal",
+      "recommendation": "Authority reference and possible controlled conformance check; not an online dependency for scanning private documents.",
+      "limitation": "Natural-person formats only; the result does not establish issuance, ownership or identity. No document data or extracted PII was submitted in this research.",
+      "sources": [
+        "https://taxation-customs.ec.europa.eu/online-services/online-services-and-databases-taxation/taxpayer-identification-number-tin_en"
+      ]
+    }
+  ],
+  "supplied_source_audit": {
+    "url": "https://docs.upvest.co/products/tol/guides/users/users_tax_identification_numbers",
+    "accessed_on": "2026-09-19",
+    "verdict": "Useful inventory; insufficient as a complete validator or detector.",
+    "findings": [
+      "CY, GB, LV and MT have ungrouped alternatives: anchors do not cover every branch under search/test semantics.",
+      "FR allows invalid leading digits; DE checks only length; GB omits restricted NINO prefixes.",
+      "FI excludes the newer century characters; SE requires a hyphen; IT disallows omocodia substitutions.",
+      "LV's second alternative is redundant under full-string matching because the first already accepts every eleven-digit string.",
+      "Most patterns only express character counts. They do not implement checksums, date rules, issuance or owner verification.",
+      "The page covers EU countries plus GB and states a 1-20-character onboarding limit. This limit is not a worldwide TIN specification."
+    ],
+    "runtime_caveat": "[uncertain] Upvest's API implementation was not tested. The observed anchoring defect affects reuse with regex search/test; fullmatch or an external whole-string check can prevent that particular bypass.",
+    "counterexample": "With regex search, AB123456Cgarbage matches the supplied GB expression; whole-candidate fullmatch rejects it.",
+    "corroborating_authorities": [
+      "https://www.gov.uk/hmrc-internal-manuals/national-insurance-manual/nim39110",
+      "https://www.oecd.org/tax/automatic-exchange/crs-implementation-and-assistance/tax-identification-numbers/France-TIN.pdf",
+      "https://valtioneuvosto.fi/-/10623/henkilotunnusten-riittavyys-varmistetaan-uusilla-valimerkeilla?languageId=en_US",
+      "https://www.skatteverket.se/servicelankar/otherlanguages/englishengelska/individualsandemployees/livinginsweden/personalidentitynumbers.4.2cf1b5cd163796a5c8b4295.html"
+    ]
+  },
+  "false_positive_and_recall_risks": {
+    "false_positives": [
+      "Bare runs of 9-13 digits overlap with invoice references, telephone numbers, account numbers, timestamps and product identifiers.",
+      "Trying every country and accepting any checksum increases accidental matches; passing one algorithm does not identify the issuing country.",
+      "Checksums are finite filters: arbitrary numbers can pass, including EAN-13 values that are not Swiss personal identifiers.",
+      "Business VAT, UID, SIREN, EIN and personal TIN formats must not share an undifferentiated result label.",
+      "Overbroad normalization can merge unrelated tokens into a mathematically valid number."
+    ],
+    "false_negatives": [
+      "Mandatory country metadata discards real identifiers whose country is absent from the text.",
+      "Outdated range or alphabet lists reject newer identifiers, demonstrated by stdnum ITIN and Upvest/validator.js Finnish signs.",
+      "Strict compact regexes miss printed spaces/dots, and generic punctuation removal mishandles meaningful FI/SE signs.",
+      "A checksum failure can reflect OCR or a mistyped real person's identifier; it means no validated identifier, not necessarily no sensitive content.",
+      "Unsupported temporary, historic or territorial profiles must not become global negative evidence."
+    ],
+    "empirical_status": "[uncertain] No project corpus or accuracy benchmark was examined, so false-positive rates, recall, latency and savings from removing a model are unmeasured.",
+    "sources": [
+      "https://www.irs.gov/pub/irs-pdf/p4152.pdf",
+      "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/us/itin.py",
+      "https://taxation-customs.ec.europa.eu/online-services/online-services-and-databases-taxation/taxpayer-identification-number-tin_en"
+    ]
+  },
+  "detector_recommendation": {
+    "decision": "Build or reuse deterministic country/subtype recognizers for exact formats; keep contextual classification for ambiguous candidates.",
+    "minimum_flow": [
+      "Extract a bounded original candidate, plus nearby subtype/country labels.",
+      "Choose known issuing-country/subtype validators; retain multiple plausible interpretations when country evidence is ambiguous.",
+      "Return separate format, checksum/component and contextual-confidence outcomes.",
+      "Emit a validated structured identifier only when the selected rule is supported and passes.",
+      "Retain strong-context malformed or unsupported candidates as uncertain findings rather than asserting they are valid or globally non-PII."
+    ],
+    "hard_rejection_without_country": "No global hard rejection. A missing country is an unsupported/ambiguous state. A failed Swiss check cannot disprove a French, German or other identifier. A strongly distinctive format such as 756-prefixed AHV can supply a country hypothesis, but contextual collisions still matter.",
+    "country_known": "Hard rejection is appropriate for the exact selected formal profile when its current rules are complete and the original span is intact. It must not erase another supported subtype or a contextual suspected-PII finding.",
+    "ministral": "Deterministic rules can replace Ministral's exact-format/checksum decision for audited supported subtypes. A model is unnecessary to calculate a checksum. Complete removal from TIN detection requires a held-out evaluation of ambiguous countries, OCR, mixed-language text and unsupported variants.",
+    "presidio": "Validators can be called inside Presidio recognizers or an existing extraction path. Do not replace the framework solely to add checksums, and do not replace a correct recognizer with a stale validator.",
+    "operating_policy": "Perform local validation; do not send document text or identifiers to authority checkers by default. Record country, subtype, validator/version and reason for each decision.",
+    "benchmark_gate": "[uncertain] Whether all Ministral TIN calls or any deployed Presidio recognizers can be removed safely cannot be determined without the installed configuration and a representative labeled corpus.",
+    "sources": [
+      "https://microsoft.github.io/presidio/",
+      "https://raw.githubusercontent.com/microsoft/presidio/main/presidio-analyzer/presidio_analyzer/predefined_recognizers/country_specific/us/us_itin_recognizer.py",
+      "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/us/itin.py",
+      "https://taxation-customs.ec.europa.eu/online-services/online-services-and-databases-taxation/taxpayer-identification-number-tin_en"
+    ]
+  },
+  "acceptance_cases": {
+    "data_policy": "Values below are published library examples or synthetic strings used only for local tests. Passing format/checksum never claims actual issuance or a real person's identity.",
+    "executed_checks": {
+      "environment": "Local Python 3 re module; no application code or online verification service used.",
+      "result": "PASS: seven assertions/checks reproduced five unsafe partial matches and two excluded format shapes.",
+      "cases": [
+        {
+          "input": "AB123456Cgarbage",
+          "profile": "Upvest GB",
+          "observed": "search accepts; fullmatch rejects"
+        },
+        {
+          "input": "garbage1234567890",
+          "profile": "Upvest GB",
+          "observed": "search accepts; fullmatch rejects"
+        },
+        {
+          "input": "01234567Agarbage",
+          "profile": "Upvest CY",
+          "observed": "search accepts; fullmatch rejects"
+        },
+        {
+          "input": "12345678901garbage",
+          "profile": "Upvest LV",
+          "observed": "search accepts; fullmatch rejects"
+        },
+        {
+          "input": "garbage123456789",
+          "profile": "Upvest MT",
+          "observed": "search accepts; fullmatch rejects"
+        },
+        {
+          "input": "010101B123N",
+          "profile": "Upvest FI",
+          "observed": "new-sign shape rejected; checksum not tested"
+        },
+        {
+          "input": "230101+1234",
+          "profile": "Upvest SE",
+          "observed": "plus-sign shape rejected; checksum not tested"
+        }
+      ]
+    },
+    "required_regression_cases": [
+      {
+        "input": "756.9217.0769.85",
+        "country": "CH",
+        "subtype": "AHV",
+        "expected": "Canonicalize to 7569217076985 and pass published library checksum example; issuance unknown"
+      },
+      {
+        "input": "756.9217.0769.84",
+        "country": "CH",
+        "subtype": "AHV",
+        "expected": "Fail checksum; preserve suspicious context separately if present"
+      },
+      {
+        "input": "CHE-123.456.789 TVA",
+        "country": "CH",
+        "subtype": "business",
+        "expected": "Route to UID/VAT profile; never classify as personal AHV solely from a tax label; checksum outcome not specified"
+      },
+      {
+        "input": "30 23 217 600 053",
+        "country": "FR",
+        "subtype": "individual fiscal number",
+        "expected": "Normalize to 3023217600053; pass the published library modulo-511 example"
+      },
+      {
+        "input": "3023217600053 C",
+        "country": "FR",
+        "subtype": "individual fiscal number",
+        "expected": "Extract the 13-digit number; retain C only as certified-status context"
+      },
+      {
+        "input": "9123456789012",
+        "country": "FR",
+        "subtype": "individual fiscal number",
+        "expected": "Fail first-digit rule even though Upvest length regex accepts"
+      },
+      {
+        "input": "36 574 261 809",
+        "country": "DE",
+        "subtype": "IdNr",
+        "expected": "Normalize and pass published library example"
+      },
+      {
+        "input": "DE123456789-00001",
+        "country": "DE",
+        "subtype": "business",
+        "expected": "Route as W-IdNr candidate, not personal IdNr"
+      },
+      {
+        "input": "AB 12 34 56 C",
+        "country": "GB",
+        "subtype": "NINO",
+        "expected": "Pass component format after bounded-space normalization; issuance unknown"
+      },
+      {
+        "input": "BG123456A",
+        "country": "GB",
+        "subtype": "NINO",
+        "expected": "Fail HMRC forbidden-prefix rule"
+      },
+      {
+        "input": "DQ123456C",
+        "country": "GB",
+        "subtype": "NINO",
+        "expected": "Fail HMRC prefix characters despite its use as an OECD illustration"
+      },
+      {
+        "input": "1955839661",
+        "country": "GB",
+        "subtype": "UTR",
+        "expected": "Pass published stdnum UTR example; holder type requires context"
+      },
+      {
+        "input": "912-50-3456",
+        "country": "US",
+        "subtype": "ITIN",
+        "expected": "Pass current IRS format/range; inspected stdnum incorrectly rejects; current Presidio pattern covers it"
+      },
+      {
+        "input": "912-93-3456",
+        "country": "US",
+        "subtype": "ITIN",
+        "expected": "Reject forbidden middle group 93"
+      },
+      {
+        "input": "666-12-3456",
+        "country": "US",
+        "subtype": "SSN",
+        "expected": "Reject forbidden area group"
+      },
+      {
+        "input": "912-90-3456",
+        "country": "US",
+        "subtype": "ambiguous TIN",
+        "expected": "Evaluate ITIN; do not discard because SSN validation rejects a 9xx prefix"
+      },
+      {
+        "input": "701063-2391",
+        "country": "SE",
+        "subtype": "coordination number",
+        "expected": "Recognize the authority's coordination-number example; do not reject day 63 as a calendar date"
+      },
+      {
+        "input": "TIN 1234567890",
+        "country": "unknown",
+        "subtype": "unknown",
+        "expected": "Contextual ambiguous candidate; never default to US EIN or globally reject after one country's failure"
+      }
+    ],
+    "not_executed": "The required regression cases are specifications derived from authorities and published library tests; no project detector benchmark or installed-library suite was executed.",
+    "sources": [
+      "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/ch/ssn.py",
+      "https://github.com/arthurdejong/python-stdnum/blob/master/stdnum/fr/nif.py",
+      "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/de/idnr.py",
+      "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/gb/utr.py",
+      "https://www.skatteverket.se/servicelankar/otherlanguages/inenglish/individualsandemployees/coordinationnumbers.4.1657ce2817f5a993c3a7d2a.html"
+    ]
+  },
+  "sources": [
+    {
+      "title": "Upvest TIN onboarding format table",
+      "url": "https://docs.upvest.co/products/tol/guides/users/users_tax_identification_numbers",
+      "authority": "Vendor documentation; object of audit",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "European Commission TIN portal and limitations",
+      "url": "https://taxation-customs.ec.europa.eu/online-services/online-services-and-databases-taxation/taxpayer-identification-number-tin_en",
+      "authority": "Official EU authority",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "Swiss AHV number structure",
+      "url": "https://www.zas.admin.ch/de/ahv-nummer-identifikator",
+      "authority": "Swiss Central Compensation Office; primary authority",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "Swiss jurisdiction TIN information",
+      "url": "https://www.oecd.org/tax/automatic-exchange/crs-implementation-and-assistance/tax-identification-numbers/Switzerland-TIN.pdf",
+      "authority": "Jurisdiction-provided OECD sheet",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "French fiscal account identifiers",
+      "url": "https://www.impots.gouv.fr/particulier/acceder-mon-espace",
+      "authority": "French tax authority",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "France jurisdiction TIN information",
+      "url": "https://www.oecd.org/tax/automatic-exchange/crs-implementation-and-assistance/tax-identification-numbers/France-TIN.pdf",
+      "authority": "Jurisdiction-provided OECD sheet",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "French business identifiers",
+      "url": "https://www.impots.gouv.fr/professionnel/les-numeros-didentification",
+      "authority": "French tax authority; older page, used for basic distinctions",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "French fiscal-number certified-status C",
+      "url": "https://static.impots.gouv.fr/tdir/static/2026-04-29T08%3A13%3A24Z/aide/html/aide-teleir.htm",
+      "authority": "French tax authority help",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "Germany jurisdiction TIN information",
+      "url": "https://www.oecd.org/tax/automatic-exchange/crs-implementation-and-assistance/tax-identification-numbers/Germany-TIN.pdf",
+      "authority": "Jurisdiction-provided OECD sheet; business rollout paragraph is stale",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "German business identification rollout",
+      "url": "https://www.bundesfinanzministerium.de/Monatsberichte/Ausgabe/2024/11/Inhalte/Kapitel-3-Analysen/3-2-wirtschafts-identifikationsnummer-startet.html",
+      "authority": "German finance ministry; November 2024",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "HMRC NINO format and forbidden prefixes",
+      "url": "https://www.gov.uk/hmrc-internal-manuals/national-insurance-manual/nim39110",
+      "authority": "UK tax authority",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "United Kingdom TIN information",
+      "url": "https://www.oecd.org/tax/automatic-exchange/crs-implementation-and-assistance/tax-identification-numbers/UK-TIN.pdf",
+      "authority": "Jurisdiction-provided OECD sheet; illustrative NINO conflicts with HMRC rules",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "TIN issuing jurisdiction",
+      "url": "https://www.gov.uk/hmrc-internal-manuals/international-exchange-of-information/ieim902330",
+      "authority": "UK tax authority",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "US TIN categories",
+      "url": "https://www.irs.gov/tin/taxpayer-identification-numbers-tin",
+      "authority": "IRS primary authority",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "Current ITIN middle-digit ranges",
+      "url": "https://www.irs.gov/pub/irs-pdf/p4152.pdf",
+      "authority": "IRS Publication 4152, revision September 2025; PDF page 102",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "SSN randomization and exclusions",
+      "url": "https://www.ssa.gov/employer/randomizationfaqs.html",
+      "authority": "Social Security Administration",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "Additional Finnish century signs",
+      "url": "https://valtioneuvosto.fi/-/10623/henkilotunnusten-riittavyys-varmistetaan-uusilla-valimerkeilla?languageId=en_US",
+      "authority": "Finnish government",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "Finnish sector tax number",
+      "url": "https://www.vero.fi/en/detailed-guidance/guidance/48791/individual-tax-numbers-and-the-public-tax-number-register2/",
+      "authority": "Finnish tax authority",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "Swedish personal identity number plus sign",
+      "url": "https://www.skatteverket.se/servicelankar/otherlanguages/englishengelska/individualsandemployees/livinginsweden/personalidentitynumbers.4.2cf1b5cd163796a5c8b4295.html",
+      "authority": "Swedish tax authority",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "Swedish coordination numbers",
+      "url": "https://www.skatteverket.se/servicelankar/otherlanguages/inenglish/individualsandemployees/coordinationnumbers.4.1657ce2817f5a993c3a7d2a.html",
+      "authority": "Swedish tax authority",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "Italian government manual with omocodia support",
+      "url": "https://prefettura.interno.gov.it/sites/default/files/89/2024-03/manuale-utente-sui_min-interno_0.pdf",
+      "authority": "Italian interior ministry; official application manual",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "python-stdnum releases and license overview",
+      "url": "https://arthurdejong.org/python-stdnum/",
+      "authority": "Maintainer primary source",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "python-stdnum change history",
+      "url": "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/NEWS",
+      "authority": "Maintainer primary source; mutable master",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "python-stdnum Swiss personal number module",
+      "url": "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/ch/ssn.py",
+      "authority": "Maintainer source code",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "python-stdnum French NIF module",
+      "url": "https://github.com/arthurdejong/python-stdnum/blob/master/stdnum/fr/nif.py",
+      "authority": "Maintainer source code",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "python-stdnum German IdNr module",
+      "url": "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/de/idnr.py",
+      "authority": "Maintainer source code",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "python-stdnum UTR module",
+      "url": "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/gb/utr.py",
+      "authority": "Maintainer source code",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "python-stdnum ITIN module",
+      "url": "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/us/itin.py",
+      "authority": "Maintainer source code; conflicts with current IRS range",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "python-stdnum LGPL license",
+      "url": "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/COPYING",
+      "authority": "License text",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "validator.js repository",
+      "url": "https://github.com/validatorjs/validator.js",
+      "authority": "Maintainer primary source",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "validator.js TIN source",
+      "url": "https://raw.githubusercontent.com/validatorjs/validator.js/master/src/lib/isTaxID.js",
+      "authority": "Maintainer source code",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "validator.js changelog",
+      "url": "https://raw.githubusercontent.com/validatorjs/validator.js/master/CHANGELOG.md",
+      "authority": "Maintainer primary source",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "validator.js MIT license",
+      "url": "https://raw.githubusercontent.com/validatorjs/validator.js/master/LICENSE",
+      "authority": "License text",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "Presidio overview",
+      "url": "https://microsoft.github.io/presidio/",
+      "authority": "Official project documentation",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "Presidio supported entities",
+      "url": "https://raw.githubusercontent.com/microsoft/presidio/main/docs/supported_entities.md",
+      "authority": "Official project documentation; mutable main",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "Presidio current US ITIN recognizer",
+      "url": "https://raw.githubusercontent.com/microsoft/presidio/main/presidio-analyzer/presidio_analyzer/predefined_recognizers/country_specific/us/us_itin_recognizer.py",
+      "authority": "Official source code; includes 50-65",
+      "accessed_on": "2026-09-19"
+    },
+    {
+      "title": "Presidio MIT license",
+      "url": "https://raw.githubusercontent.com/microsoft/presidio/main/LICENSE",
+      "authority": "License text",
+      "accessed_on": "2026-09-19"
+    }
+  ],
+  "uncertain": [
+    "scope",
+    "official_rules",
+    "validators_and_libraries",
+    "supplied_source_audit",
+    "false_positive_and_recall_risks",
+    "detector_recommendation"
+  ]
+}

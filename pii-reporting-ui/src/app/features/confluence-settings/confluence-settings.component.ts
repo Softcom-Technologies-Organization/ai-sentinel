@@ -31,7 +31,6 @@ interface ConfluenceFormModel {
   readTimeout: number;
   maxRetries: number;
   pagesLimit: number;
-  maxPages: number;
 }
 
 const DEFAULT_MODEL: ConfluenceFormModel = {
@@ -42,8 +41,7 @@ const DEFAULT_MODEL: ConfluenceFormModel = {
   connectTimeout: 30000,
   readTimeout: 60000,
   maxRetries: 3,
-  pagesLimit: 25,
-  maxPages: 1000
+  pagesLimit: 25
 };
 
 @Component({
@@ -120,10 +118,6 @@ export class ConfluenceSettingsComponent implements OnInit {
     required(path.pagesLimit);
     min(path.pagesLimit, 1);
     max(path.pagesLimit, 1000);
-
-    required(path.maxPages);
-    min(path.maxPages, 1);
-    max(path.maxPages, 10000);
   });
 
   readonly isCloud = computed(() => this.model().deploymentType === 'CLOUD');
@@ -173,8 +167,7 @@ export class ConfluenceSettingsComponent implements OnInit {
           connectTimeout: config.connectTimeout,
           readTimeout: config.readTimeout,
           maxRetries: config.maxRetries,
-          pagesLimit: config.pagesLimit,
-          maxPages: config.maxPages
+          pagesLimit: config.pagesLimit
         });
         this.loading.set(false);
       },
@@ -206,7 +199,6 @@ export class ConfluenceSettingsComponent implements OnInit {
       readTimeout: value.readTimeout,
       maxRetries: value.maxRetries,
       pagesLimit: value.pagesLimit,
-      maxPages: value.maxPages,
       deploymentType: value.deploymentType
     };
 
@@ -302,8 +294,7 @@ export class ConfluenceSettingsComponent implements OnInit {
         connectTimeout: config.connectTimeout,
         readTimeout: config.readTimeout,
         maxRetries: config.maxRetries,
-        pagesLimit: config.pagesLimit,
-        maxPages: config.maxPages
+        pagesLimit: config.pagesLimit
       });
     } else {
       this.model.set({...DEFAULT_MODEL});

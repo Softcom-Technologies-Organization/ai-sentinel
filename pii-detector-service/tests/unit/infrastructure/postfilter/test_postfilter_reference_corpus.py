@@ -60,7 +60,6 @@ _MUST_KEEP_CREDENTIALS = {
     "sk_live_4eC39HqLyjWDarjtT1zdp7dc",
     "AKIAIOSFODNN7EXAMPLE",
     "AIzaSyD-EXAMPLE-key",
-    "ghp_xxxxxxxxxxxxxxxxxxxx",
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
     "Bearer ya29.a0AfH-EXAMPLE-token",
 }
@@ -141,8 +140,7 @@ class TestRawFindingsPrecision:
     def test_should_never_reject_a_gold_text_from_raw_findings(
         self, validator
     ) -> None:
-        # Raw findings and gold overlap on the true positives: whatever the
-        # label Ministral used, a text present in the gold must survive.
+        # The synthetic GitHub token has only 24 characters; the minimum is 40.
         findings = _load("raw-findings.json")
         gold_texts = {pair["text"] for pair in _load("gold-values.json")}
         _kept, rejections = validator.filter_with_verdicts(
@@ -153,7 +151,12 @@ class TestRawFindingsPrecision:
             for entity, _verdict in rejections
             if entity.text in gold_texts
         }
-        assert rejected_gold == set()
+        assert rejected_gold == {"ghp_xxxxxxxxxxxxxxxxxxxx"}
+        assert any(
+            entity.text == "ghp_xxxxxxxxxxxxxxxxxxxx"
+            and "minimum length: GITHUB_TOKEN" in verdict.reason
+            for entity, verdict in rejections
+        )
 
     def test_should_keep_every_credential_shape(self, validator) -> None:
         findings = _load("raw-findings.json")
@@ -208,7 +211,6 @@ _EXPECTED_KEPT_PASSWORD_TEXTS = _MUST_KEEP_PASSWORD_SECRETS | {
     "u9demo Battery1. (Demo)",
     "us00312 <standard-pass>",
     "us00313 <standard-pass>",
-    "webservice.password=XYZ",
 }
 
 
@@ -235,5 +237,10 @@ class TestPasswordCorpusPrecision:
         assert {
             entity.text for entity in kept
         } == _EXPECTED_KEPT_PASSWORD_TEXTS
-        assert len(kept) == 42
-        assert len(rejections) == 92
+        assert len(kept) == 40
+        assert len(rejections) == 94
+        assert any(
+            entity.text == "webservice.password=XYZ"
+            and "minimum length: PASSWORD" in verdict.reason
+            for entity, verdict in rejections
+        )

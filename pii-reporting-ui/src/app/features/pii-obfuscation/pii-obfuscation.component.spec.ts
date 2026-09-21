@@ -11,6 +11,9 @@ import { ObfuscationSelectionService } from './services/obfuscation-selection.se
 import { ObfuscationViewStateService } from './services/obfuscation-view-state.service';
 import { RemediationConfigService } from '../../core/services/remediation-config.service';
 import { RemediationApiService } from '../../core/services/remediation-api.service';
+import { SentinelleApiService } from '../../core/services/sentinelle-api.service';
+import { JudgeApiService } from '../../core/services/judge-api.service';
+import { PiiDetectionConfigService } from '../../core/services/pii-detection-config.service';
 import {
   ObfuscationJobDto,
   ObfuscationPlanDto,
@@ -144,7 +147,7 @@ function searchResponse(
 ): RemediationFindingsSearchResponse {
   return {
     groups: [group()],
-    totals: { pending: 8, handled: 3, falsePositive: 1, total: 12 },
+    totals: { pending: 8, handled: 3, falsePositive: 1, proposedFalsePositive: 0, total: 12 },
     page: 0,
     pageSize: 20,
     totalElements: 12,
@@ -226,6 +229,12 @@ describe('PiiObfuscationComponent', () => {
         provideRouter([]),
         { provide: RemediationConfigService, useValue: remediationConfigMock },
         { provide: RemediationApiService, useValue: api },
+        { provide: SentinelleApiService, useValue: { getDashboardSpacesSummary: () => of(null) } },
+        { provide: JudgeApiService, useValue: { launch: vi.fn(), getJob: vi.fn(), cancel: vi.fn() } },
+        {
+          provide: PiiDetectionConfigService,
+          useValue: { getConfig: () => of({ lmStudioHost: 'h', lmStudioPort: 1, lmStudioModel: null }), listLmStudioModels: () => of({ models: [] }) }
+        },
         { provide: MessageService, useValue: messageService },
         ConfirmationService,
         { provide: ActivatedRoute, useValue: { queryParamMap: queryParams$ } },
@@ -344,7 +353,7 @@ describe('PiiObfuscationComponent', () => {
 
   it('Should_RenderTotalsVerbatim_When_RowsWouldImplyOtherCounts', () => {
     api.searchFindings.mockReturnValue(
-      of(searchResponse({ totals: { pending: 999, handled: 31, falsePositive: 7, total: 12 } }))
+      of(searchResponse({ totals: { pending: 999, handled: 31, falsePositive: 7, proposedFalsePositive: 0, total: 12 } }))
     );
 
     createEnabledComponent();
@@ -762,7 +771,7 @@ describe('PiiObfuscationComponent', () => {
 
   it('Should_ShowEmptyState_When_NoGroupReturned', () => {
     api.searchFindings.mockReturnValue(
-      of(searchResponse({ groups: [], totals: { pending: 0, handled: 0, falsePositive: 0, total: 0 }, totalElements: 0, totalGroups: 0 }))
+      of(searchResponse({ groups: [], totals: { pending: 0, handled: 0, falsePositive: 0, proposedFalsePositive: 0, total: 0 }, totalElements: 0, totalGroups: 0 }))
     );
 
     createEnabledComponent();
@@ -864,4 +873,37 @@ describe('PiiObfuscationComponent', () => {
 
     expect(fixture.nativeElement.querySelector('.ob-dot--high')).toBeTruthy();
   });
+
+  it('Should_DisableJudgeButtons_When_ScanRunsAndReenableWhenFinished', () => {
+    remediationConfigMock.enabled.set(true);
+    queryParams$.next(convertToParamMap({ spaceKey: 'SPACE' }));
+    fixture = TestBed.createComponent(PiiObfuscationComponent);
+    const reason = signal<'judge.unavailable.scanInProgress' | null>(null);
+    vi.spyOn(fixture.componentInstance.judgeTracker, 'launchUnavailableReason').mockImplementation(reason);
+    fixture.detectChanges();
+    const button = fixture.nativeElement.querySelector(`[data-testid="${fixture.componentInstance.judgeTestIds.remediationButton}"]`);
+    expect(button.disabled).toBe(false);
+
+    reason.set('judge.unavailable.scanInProgress');
+    fixture.detectChanges();
+    expect(button.disabled).toBe(true);
+    fixture.componentInstance.openJudgeDialog();
+    expect(fixture.componentInstance.judgeDialogVisible()).toBe(false);
+
+    reason.set(null);
+    fixture.detectChanges();
+    expect(button.disabled).toBe(false);
+  });
+
+  it('Should_DisableJudgeButton_When_NoFindingsAreAvailable', () => {
+    api.searchFindings.mockReturnValue(of(searchResponse({
+      groups: [], totals: { pending: 0, handled: 0, falsePositive: 0, proposedFalsePositive: 0, total: 0 }
+    })));
+    createEnabledComponent();
+    vi.spyOn(fixture.componentInstance.judgeTracker, 'launchUnavailableReason').mockReturnValue(null);
+    fixture.detectChanges();
+    const button = fixture.nativeElement.querySelector(`[data-testid="${fixture.componentInstance.judgeTestIds.remediationButton}"]`);
+    expect(button.disabled).toBe(true);
+  });
+
 });

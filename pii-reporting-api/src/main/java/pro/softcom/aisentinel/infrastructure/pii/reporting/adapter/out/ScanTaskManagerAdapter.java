@@ -76,18 +76,36 @@ public class ScanTaskManagerAdapter implements
         }
         
         log.info("[ScanTaskManager] Starting independent scan with scanId={}", scanId);
-        
-        // Create a sink with a replay buffer to support SSE reconnection (Last-Event-ID)
+
+        // compute, not put: the check and the subscription have to be one step. Two
+        // callers racing here — the operator's Resume and the scheduled retry of the
+        // same paused scan — would otherwise both subscribe, and severity counts are
+        // additive, so the same pages would be counted twice.
+        managedScans.compute(scanId, (id, existing) -> {
+            if (existing != null && !existing.isCompleted().get() && !existing.subscription().isDisposed()) {
+                log.info("[ScanTaskManager] Scan {} is already running; keeping it and ignoring the new stream", id);
+                return existing;
+            }
+            return subscribeIndependently(id, scanDataStream);
+        });
+        log.info("[ScanTaskManager] Scan registered, active scans count: {}", managedScans.size());
+    }
+
+    /**
+     * Subscribes the scan on its own, so it survives every SSE client going away.
+     *
+     * <p>subscribeOn(boundedElastic) keeps the scan off the Virtual Threads that are
+     * interrupted when an HTTP client disconnects. The sink replays to late subscribers,
+     * which is what lets a browser reconnect (Last-Event-ID) mid-scan.
+     */
+    private ManagedScan subscribeIndependently(String scanId,
+                                               Flux<ConfluenceContentScanResult> scanDataStream) {
         Sinks.Many<ConfluenceContentScanResult> sink = Sinks.many().replay().limit(REPLAY_BUFFER_SIZE);
-        
-        // KEY: independent subscribe() — decouples scan execution from SSE subscribers' lifecycle
-        // When the SSE client disconnects, this subscription keeps running
-        // subscribeOn(boundedElastic) ensures the scan executes on a dedicated thread pool,
-        // isolated from Virtual Thread interruptions when HTTP clients disconnect
+
         Disposable subscription = scanDataStream
                 .subscribeOn(Schedulers.boundedElastic())
                 .doOnNext(event -> {
-                    log.debug("[ScanTaskManager] Emitting event for scanId={}, eventType={}", 
+                    log.debug("[ScanTaskManager] Emitting event for scanId={}, eventType={}",
                             scanId, event.eventType());
                     sink.emitNext(event, EmitFailureHandler.FAIL_FAST);
                 })
@@ -105,18 +123,9 @@ public class ScanTaskManagerAdapter implements
                     log.info("[ScanTaskManager] Scan cancelled for scanId={}", scanId);
                     markCompleted(scanId);
                 })
-                .subscribe(); // ← KEY part — independent subscription on boundedElastic scheduler
-        
-        ManagedScan managedScan = new ManagedScan(
-                sink,
-                subscription,
-                Instant.now(),
-                new AtomicBoolean(false)
-        );
-        
-        managedScans.put(scanId, managedScan);
-        log.info("[ScanTaskManager] Scan registered, active scans count: {}", managedScans.size());
+                .subscribe();
 
+        return new ManagedScan(sink, subscription, Instant.now(), new AtomicBoolean(false));
     }
 
     @Override
@@ -162,6 +171,11 @@ public class ScanTaskManagerAdapter implements
     public boolean isScanActive(String scanId) {
         ManagedScan scan = managedScans.get(scanId);
         return scan != null && !scan.isCompleted().get() && !scan.subscription().isDisposed();
+    }
+
+    @Override
+    public boolean hasActiveScan() {
+        return managedScans.keySet().stream().anyMatch(this::isScanActive);
     }
 
     /**

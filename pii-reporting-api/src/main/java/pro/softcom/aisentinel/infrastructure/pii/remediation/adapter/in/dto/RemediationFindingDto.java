@@ -7,7 +7,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * value and {@code sensitiveContext} its surrounding line; both are only present when the
  * remediation feature is enabled together with {@code pii.reporting.allow-secret-reveal},
  * and are omitted (null) otherwise so masked-only deployments keep the previous contract.
- * The full page {@code sourceContent} is never exposed here.
+ * The full page {@code sourceContent} is never exposed here. {@code judgeVerdict} and
+ * {@code judgeConfidence} are present once the LLM judge has evaluated the finding.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record RemediationFindingDto(
@@ -26,6 +27,8 @@ public record RemediationFindingDto(
         String status,
         boolean selected,
         boolean eligibleForRedaction,
-        String ineligibilityReason
+        String ineligibilityReason,
+        String judgeVerdict,
+        Double judgeConfidence
 ) {
 }

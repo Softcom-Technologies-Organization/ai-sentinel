@@ -683,6 +683,54 @@
                                 </small>
                             }
                         </div>
+
+                        <div class="advanced-param-field">
+                            <label for="lmStudioJudgeModel" class="advanced-param-label">
+                                {{ 'settings.lmStudio.judgeModel' | transloco }}
+                            </label>
+                            <div class="inline-controls">
+                                @if (lmStudioJudgeModelsAvailable()) {
+                                    <p-select
+                                        inputId="lmStudioJudgeModel"
+                                        data-testid="lmStudioJudgeModelSelect"
+                                        formControlName="lmStudioJudgeModel"
+                                        [options]="lmStudioJudgeModelOptions()"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        [showClear]="true"
+                                        [placeholder]="'settings.lmStudio.judgeModelPlaceholder' | transloco"
+                                        styleClass="lm-studio-model-select"
+                                        [attr.aria-describedby]="'lmStudioJudgeModelHint'">
+                                    </p-select>
+                                } @else {
+                                    <input
+                                        id="lmStudioJudgeModel"
+                                        type="text"
+                                        pInputText
+                                        data-testid="lmStudioJudgeModelInput"
+                                        formControlName="lmStudioJudgeModel"
+                                        [placeholder]="'settings.lmStudio.judgeModelPlaceholder' | transloco"
+                                        [attr.aria-describedby]="'lmStudioJudgeModelHint'" />
+                                }
+                                <p-button
+                                    type="button"
+                                    data-testid="refreshLmStudioJudgeModels"
+                                    icon="pi pi-refresh"
+                                    [loading]="lmStudioModelsLoading()"
+                                    (click)="loadLmStudioModels()"
+                                    (keydown.enter)="loadLmStudioModels()"
+                                    styleClass="p-button-outlined p-button-sm"
+                                    [ariaLabel]="'settings.lmStudio.judgeModelRefresh' | transloco">
+                                </p-button>
+                            </div>
+                            <small id="lmStudioJudgeModelHint" class="advanced-param-hint">
+                                @if (lmStudioModelsError()) {
+                                    {{ 'settings.lmStudio.modelListError' | transloco: {error: lmStudioModelsError()} }}
+                                } @else {
+                                    {{ 'settings.lmStudio.judgeModelHint' | transloco }}
+                                }
+                            </small>
+                        </div>
                     </div>
                 </form>
             }

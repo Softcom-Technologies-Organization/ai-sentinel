@@ -22,6 +22,9 @@ import pro.softcom.aisentinel.application.pii.export.exception.ExportContextNotF
 import pro.softcom.aisentinel.application.pii.export.exception.ExportException;
 import pro.softcom.aisentinel.application.pii.export.exception.UnsupportedSourceTypeException;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorException;
+import pro.softcom.aisentinel.domain.pii.judge.JudgeJobAlreadyRunningException;
+import pro.softcom.aisentinel.domain.pii.judge.JudgeScanInProgressException;
+import pro.softcom.aisentinel.domain.pii.judge.JudgeJobNotFoundException;
 import pro.softcom.aisentinel.domain.pii.remediation.AttachmentRedactionUnsupportedException;
 import pro.softcom.aisentinel.domain.pii.remediation.IllegalStatusTransitionException;
 import pro.softcom.aisentinel.domain.pii.remediation.ObfuscationJobAlreadyRunningException;
@@ -232,6 +235,26 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.warn("[ERROR_HANDLER] Obfuscation job already running: {}", ex.getMessage());
         return problemWith(HttpStatus.CONFLICT, "Obfuscation Job Already Running",
                 "error.remediation.job_already_running");
+    }
+
+    @ExceptionHandler(JudgeScanInProgressException.class)
+    ProblemDetail handleJudgeScanInProgress(JudgeScanInProgressException ex) {
+        log.warn("[ERROR_HANDLER] Judge launch blocked by scan: {}", ex.getMessage());
+        return problemWith(HttpStatus.CONFLICT, "Scan In Progress", "error.judge.scan_in_progress");
+    }
+
+    @ExceptionHandler(JudgeJobAlreadyRunningException.class)
+    ProblemDetail handleJudgeJobAlreadyRunning(JudgeJobAlreadyRunningException ex) {
+        log.warn("[ERROR_HANDLER] Judge job already running: {}", ex.getMessage());
+        return problemWith(HttpStatus.CONFLICT, "Judge Job Already Running",
+                "error.judge.job_already_running");
+    }
+
+    @ExceptionHandler(JudgeJobNotFoundException.class)
+    ProblemDetail handleJudgeJobNotFound(JudgeJobNotFoundException ex) {
+        log.warn("[ERROR_HANDLER] Judge job not found: {}", ex.getMessage());
+        return problemWith(HttpStatus.NOT_FOUND, "Judge Job Not Found",
+                "error.judge.job_not_found");
     }
 
     @ExceptionHandler(ObfuscationJobNotFoundException.class)

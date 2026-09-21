@@ -16,12 +16,13 @@ import pro.softcom.aisentinel.application.pii.remediation.service.ScanEventFindi
 import pro.softcom.aisentinel.application.pii.remediation.service.SelectionResolver;
 import pro.softcom.aisentinel.application.pii.remediation.service.SelectionResolver.ResolvedSelection;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery;
+import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingReference;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediation;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediationStatus;
 import pro.softcom.aisentinel.domain.pii.remediation.RemediationDisabledException;
 import pro.softcom.aisentinel.domain.pii.remediation.SpaceFalsePositivesChanged;
-import pro.softcom.aisentinel.domain.pii.reporting.LastScanMeta;
+import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
 
 import java.time.Clock;
 import java.util.ArrayList;
@@ -31,7 +32,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -58,10 +58,12 @@ public class ChangeFindingStatusUseCase implements ChangeFindingStatusPort {
 
     private static final String REASON_UNKNOWN_FINDING = "error.remediation.finding_not_found";
     private static final String REASON_REDACTED_RESERVED = "error.remediation.redacted_status_reserved";
+    private static final String REASON_PROPOSED_RESERVED = "error.remediation.proposed_status_reserved";
     private static final String REASON_ILLEGAL_TRANSITION = "error.remediation.invalid_status_transition";
 
     private final RemediationConfigPort remediationConfigPort;
     private final ScanResultQuery scanResultQuery;
+    private final ScanCheckpointRepository checkpointRepository;
     private final FindingRemediationStore findingRemediationStore;
     private final ScanEventFindingResolver findingResolver;
     private final SelectionResolver selectionResolver;
@@ -119,7 +121,7 @@ public class ChangeFindingStatusUseCase implements ChangeFindingStatusPort {
                 .collect(Collectors.toSet());
         Map<String, FindingRemediation> rows = loadRows(ids);
         if (rows.keySet().containsAll(ids)) {
-            return new BatchContext(rows, Map.of(), null);
+            return new BatchContext(rows, Map.of(), Map.of());
         }
         return withResolvedFindings(rows);
     }
@@ -134,22 +136,23 @@ public class ChangeFindingStatusUseCase implements ChangeFindingStatusPort {
     }
 
     private BatchContext withResolvedFindings(Map<String, FindingRemediation> rows) {
-        Optional<LastScanMeta> latestScan = scanResultQuery.findLatestScan();
-        if (latestScan.isEmpty()) {
-            return new BatchContext(rows, Map.of(), null);
+        Map<String, String> scanIdsBySpace = new HashMap<>();
+        Map<String, EligibleFinding> eligibleById = new HashMap<>();
+        for (ScanCheckpoint checkpoint : checkpointRepository.findAllLatestCheckpoints()) {
+            scanIdsBySpace.put(checkpoint.spaceKey(), checkpoint.scanId());
+            findingResolver.resolve(scanResultQuery.listItemEventsEncryptedByScanIdAndSpaceKey(
+                            checkpoint.scanId(), checkpoint.spaceKey()))
+                    .findings().forEach(finding -> eligibleById.putIfAbsent(finding.findingId(), finding));
         }
-        String scanId = latestScan.get().scanId();
-        Map<String, EligibleFinding> eligibleById = findingResolver
-                .resolve(scanResultQuery.listItemEventsEncrypted(scanId))
-                .findings().stream()
-                .collect(Collectors.toMap(EligibleFinding::findingId, Function.identity(),
-                        (first, second) -> first));
-        return new BatchContext(rows, eligibleById, scanId);
+        return new BatchContext(rows, eligibleById, scanIdsBySpace);
     }
 
     private Outcome apply(StatusChange change, String actor, BatchContext context) {
         if (change.targetStatus() == FindingRemediationStatus.REDACTED) {
             return Outcome.rejected(change.findingId(), REASON_REDACTED_RESERVED);
+        }
+        if (change.targetStatus() == FindingRemediationStatus.PROPOSED_FALSE_POSITIVE) {
+            return Outcome.rejected(change.findingId(), REASON_PROPOSED_RESERVED);
         }
         FindingRemediation row = context.rows().get(change.findingId());
         if (row != null) {
@@ -178,7 +181,8 @@ public class ChangeFindingStatusUseCase implements ChangeFindingStatusPort {
         if (!FindingRemediationStatus.PENDING.canTransitionTo(change.targetStatus())) {
             return Outcome.rejected(change.findingId(), REASON_ILLEGAL_TRANSITION);
         }
-        return Outcome.applied(newRow(finding, context.scanId(), change.targetStatus(), actor));
+        return Outcome.applied(newRow(finding, context.scanIdsBySpace().get(finding.reference().spaceKey()),
+                change.targetStatus(), actor));
     }
 
     private FindingRemediation newRow(EligibleFinding finding, String scanId,
@@ -229,7 +233,7 @@ public class ChangeFindingStatusUseCase implements ChangeFindingStatusPort {
 
     private record BatchContext(Map<String, FindingRemediation> rows,
                                 Map<String, EligibleFinding> eligibleById,
-                                String scanId) {
+                                Map<String, String> scanIdsBySpace) {
     }
 
     private record Outcome(FindingRemediation row, RejectedChange rejection) {

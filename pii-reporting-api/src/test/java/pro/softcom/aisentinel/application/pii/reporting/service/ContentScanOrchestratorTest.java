@@ -19,6 +19,7 @@ import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -52,6 +53,8 @@ class ContentScanOrchestratorTest {
     @Mock
     private ScanPiiTypeCountService scanPiiTypeCountService;
 
+    private final OutagePausedScans outagePausedScans = new OutagePausedScans();
+
     private ContentScanOrchestrator orchestrator;
 
     @BeforeEach
@@ -64,7 +67,8 @@ class ContentScanOrchestratorTest {
                 scanEventDispatcher,
                 severityCalculationService,
                 scanSeverityCountService,
-                scanPiiTypeCountService
+                scanPiiTypeCountService,
+                outagePausedScans
         );
     }
 
@@ -219,6 +223,47 @@ class ContentScanOrchestratorTest {
             // Then
             verifyNoInteractions(scanCheckpointService);
             verify(scanEventStore).append(event);
+        }
+    }
+
+    @Nested
+    @DisplayName("Outage Pause Bookkeeping")
+    class OutagePauseBookkeeping {
+
+        @Test
+        @DisplayName("Should_ListScanForAutomaticRetry_When_PausedByAnOutage")
+        void Should_ListScanForAutomaticRetry_When_PausedByAnOutage() {
+            String scanId = "scan-outage";
+            when(scanCheckpointService.pauseUnfinishedCheckpoints(scanId)).thenReturn(2);
+
+            orchestrator.pauseScanAfterOutage(scanId);
+
+            assertThat(outagePausedScans.snapshot()).containsExactly(scanId);
+        }
+
+        @Test
+        @DisplayName("Should_NotListScanForAutomaticRetry_When_PausingFailed")
+        void Should_NotListScanForAutomaticRetry_When_PausingFailed() {
+            // Nothing reached PAUSED, so there is nothing for the retry to pick up.
+            String scanId = "scan-outage-failed";
+            doThrow(new RuntimeException("DB error"))
+                    .when(scanCheckpointService).pauseUnfinishedCheckpoints(scanId);
+
+            orchestrator.pauseScanAfterOutage(scanId);
+
+            assertThat(outagePausedScans.snapshot()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Should_StopAutomaticRetry_When_ResumeBegins")
+        void Should_StopAutomaticRetry_When_ResumeBegins() {
+            String scanId = "scan-resumed";
+            when(scanCheckpointService.pauseUnfinishedCheckpoints(scanId)).thenReturn(1);
+            orchestrator.pauseScanAfterOutage(scanId);
+
+            orchestrator.forgetOutagePause(scanId);
+
+            assertThat(outagePausedScans.snapshot()).isEmpty();
         }
     }
 }

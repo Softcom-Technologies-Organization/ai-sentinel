@@ -52,7 +52,7 @@ class TestListLmStudioModels:
         )
 
         detector.list_lm_studio_models.assert_called_once_with(
-            lm_studio_host="lmstudio", lm_studio_port=1234
+            lm_studio_host="lmstudio", lm_studio_port=1234, all_models=False
         )
         assert response.endpoint == "http://lmstudio:1234/v1"
         assert response.family == "ministral-3b-pii-preview"
@@ -76,7 +76,7 @@ class TestListLmStudioModels:
         servicer.ListLmStudioModels(pii_detection_pb2.LmStudioModelsRequest(), MagicMock())
 
         detector.list_lm_studio_models.assert_called_once_with(
-            lm_studio_host="host.docker.internal", lm_studio_port=4321
+            lm_studio_host="host.docker.internal", lm_studio_port=4321, all_models=False
         )
 
     def test_Should_ReportError_When_DetectorCannotListModels(self):
@@ -117,3 +117,15 @@ class TestListLmStudioModels:
 
         assert len(response.models) == 0
         assert "unavailable" in response.error
+
+    def test_Should_ForwardAllModelsFlag_When_JudgeAsksForEveryModel(self):
+        detector = MagicMock()
+        detector.list_lm_studio_models.return_value = _listing(family="")
+        servicer = _servicer(detector)
+
+        servicer.ListLmStudioModels(
+            pii_detection_pb2.LmStudioModelsRequest(lm_studio_host="lmstudio", lm_studio_port=1234, all_models=True),
+            MagicMock(),
+        )
+
+        assert detector.list_lm_studio_models.call_args.kwargs["all_models"] is True

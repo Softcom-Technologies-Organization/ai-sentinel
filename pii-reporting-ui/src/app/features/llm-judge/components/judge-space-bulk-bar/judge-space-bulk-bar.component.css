@@ -1,0 +1,111 @@
+.jbb {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(900px, calc(100vw - 2rem));
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.7rem 0.9rem 0.7rem 1rem;
+  border-radius: 12px;
+  background: var(--sentinel-bg-card);
+  border: 1px solid var(--sentinel-border-default);
+  box-shadow: 0 10px 30px rgb(15 23 42 / 0.18);
+  z-index: 900;
+}
+
+.jbb-counter {
+  min-width: 2.1rem;
+  height: 2.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--sentinel-judge-color);
+  color: #fff;
+  font-weight: 700;
+  padding: 0 0.4rem;
+}
+
+.jbb-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--sentinel-text-primary);
+}
+
+.jbb-text small {
+  font-weight: 400;
+  color: var(--sentinel-text-secondary);
+  font-size: 0.72rem;
+}
+
+.jbb-chips {
+  flex: 1;
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.jbb-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.7rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  background: var(--sentinel-badge-count-bg);
+  color: var(--sentinel-text-body);
+  line-height: 1.2;
+}
+
+.jbb-chip--more {
+  justify-content: center;
+}
+
+.jbb-actions {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.jbb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 2rem;
+  padding: 0 0.8rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--sentinel-text-secondary);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.jbb-btn:hover:not(:disabled) {
+  background: var(--sentinel-bg-hover);
+}
+
+.jbb-btn--ai {
+  background: var(--sentinel-judge-color);
+  border-color: var(--sentinel-judge-color);
+  color: #fff;
+  font-weight: 600;
+}
+
+.jbb-btn--ai:hover:not(:disabled) {
+  background: var(--sentinel-judge-color-dark);
+}
+
+.jbb-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.jbb-btn:focus-visible {
+  outline: 2px solid var(--sentinel-focus-ring);
+  outline-offset: 1px;
+}

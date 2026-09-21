@@ -1,0 +1,8 @@
+<div class="action-button-panel" [class.accent-judge]="accent() === 'judge'">
+  @if (pending()) {
+    <div class="action-button-panel-overlay" aria-live="polite">
+      <i class="pi pi-spin pi-spinner"></i>
+    </div>
+  }
+  <ng-content />
+</div>

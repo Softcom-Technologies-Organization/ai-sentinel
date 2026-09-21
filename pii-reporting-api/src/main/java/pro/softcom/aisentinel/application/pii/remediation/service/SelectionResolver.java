@@ -3,6 +3,7 @@ package pro.softcom.aisentinel.application.pii.remediation.service;
 import lombok.RequiredArgsConstructor;
 import pro.softcom.aisentinel.application.pii.remediation.port.out.FindingRemediationStore;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery;
+import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediationStatus;
 import pro.softcom.aisentinel.domain.pii.remediation.RemediationSelection;
 import pro.softcom.aisentinel.domain.pii.reporting.ConfluenceContentScanResult;
@@ -13,7 +14,7 @@ import java.util.stream.Collectors;
 
 /**
  * Resolves a criteria-based {@link RemediationSelection} into the concrete findings of
- * the latest scan. Only {@code PENDING} findings are resolved (enforced by
+ * the latest scan of that space. Only {@code PENDING} findings are resolved (enforced by
  * {@link SelectionEvaluator}); attachment findings are excluded from the redactable set
  * and surfaced separately so plans can report them as exclusions.
  *
@@ -23,12 +24,13 @@ import java.util.stream.Collectors;
 public class SelectionResolver {
 
     private final ScanResultQuery scanResultQuery;
+    private final ScanCheckpointRepository checkpointRepository;
     private final FindingRemediationStore findingRemediationStore;
     private final ScanEventFindingResolver findingResolver;
     private final SelectionEvaluator selectionEvaluator;
 
     public ResolvedSelection resolve(RemediationSelection selection) {
-        return scanResultQuery.findLatestScan()
+        return checkpointRepository.findLatestBySpace(selection.spaceKey())
                 .map(scan -> resolveScan(scan.scanId(), selection))
                 .orElseGet(ResolvedSelection::empty);
     }

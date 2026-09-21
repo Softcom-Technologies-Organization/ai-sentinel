@@ -38,9 +38,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -93,6 +95,10 @@ class StreamConfluenceResumeScanUseCaseTest {
 
     private StreamConfluenceResumeScanPort streamConfluenceResumeScanPort;
 
+    private final Map<String, Flux<ConfluenceContentScanResult>> registeredScans = new ConcurrentHashMap<>();
+
+    private final OutagePausedScans outagePausedScans = new OutagePausedScans();
+
     @BeforeEach
     void setUp() {
         final ConfluenceUrlProvider confluenceUrlProvider = stubDataCenterUrlProvider();
@@ -112,7 +118,8 @@ class StreamConfluenceResumeScanUseCaseTest {
         ConfluenceAccessor confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService, spaceRepository);
         ContentScanOrchestrator contentScanOrchestrator = new ContentScanOrchestrator(
                 eventFactory, progressCalculator, checkpointService, jpaScanEventStoreAdapter, scanEventDispatcher,
-                severityCalculationService, scanSeverityCountService, scanPiiTypeCountService
+                severityCalculationService, scanSeverityCountService, scanPiiTypeCountService,
+                outagePausedScans
         );
         AttachmentProcessor attachmentProcessor = new AttachmentProcessor(
                 confluenceDownloadService,
@@ -134,6 +141,22 @@ class StreamConfluenceResumeScanUseCaseTest {
                 scanCheckpointRepository,
                 scanExecutionOrchestratorPort
         );
+        stubOrchestratorPassThrough();
+    }
+
+    /**
+     * Makes the orchestrator port hand the registered pipeline back, as the real adapter does
+     * through its replay sink. Without it a resume would return the mock's null and every
+     * assertion below would read an empty stream instead of the pipeline it is testing.
+     */
+    private void stubOrchestratorPassThrough() {
+        Mockito.lenient().doAnswer(invocation -> {
+            registeredScans.put(invocation.getArgument(0), invocation.getArgument(1));
+            return null;
+        }).when(scanExecutionOrchestratorPort).startScan(anyString(), any());
+        Mockito.lenient().when(scanExecutionOrchestratorPort.subscribeScan(anyString()))
+            .thenAnswer(invocation ->
+                            registeredScans.getOrDefault(invocation.getArgument(0), Flux.empty()));
     }
 
     private static ScanCheckpoint scopeCheckpoint(String scanId, String spaceKey) {
@@ -168,6 +191,33 @@ class StreamConfluenceResumeScanUseCaseTest {
         verify(confluenceService, never()).getAllSpaces();
         verify(scanCheckpointRepository, never()).findByScan(anyString());
         verify(scanCheckpointRepository, never()).resumeAllPausedCheckpoints(anyString());
+    }
+
+    @Test
+    @DisplayName("resumeAllSpaces - the pipeline is registered, so it survives the browser closing")
+    void Should_RegisterThePipeline_When_ScanInactive() {
+        String scanId = "SID-REGISTERED";
+        when(scanCheckpointRepository.findByScan(scanId)).thenReturn(List.of());
+
+        Flux<ConfluenceContentScanResult> flux = streamConfluenceResumeScanPort.resumeAllSpaces(scanId);
+
+        StepVerifier.create(flux.timeout(Duration.ofSeconds(5))).verifyComplete();
+        verify(scanExecutionOrchestratorPort).startScan(eq(scanId), any());
+        verify(scanExecutionOrchestratorPort).subscribeScan(scanId);
+    }
+
+    @Test
+    @DisplayName("resumeAllSpaces - a resume takes the scan off the automatic retry list")
+    void Should_StopTheAutomaticRetry_When_AResumeBegins() {
+        String scanId = "SID-FORGET";
+        outagePausedScans.record(scanId);
+        when(scanCheckpointRepository.findByScan(scanId)).thenReturn(List.of());
+
+        StepVerifier.create(streamConfluenceResumeScanPort.resumeAllSpaces(scanId)
+                                .timeout(Duration.ofSeconds(5)))
+            .verifyComplete();
+
+        assertThat(outagePausedScans.snapshot()).isEmpty();
     }
 
     @Test

@@ -17,7 +17,6 @@ public interface ConfluenceConnectionConfig {
     int maxRetries();
 
     int pagesLimit();
-    int maxPages();
 
     ConfluenceDeploymentType deploymentType();
 

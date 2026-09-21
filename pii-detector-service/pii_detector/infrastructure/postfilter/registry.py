@@ -76,7 +76,10 @@ STRATEGIES["SWIFT"] = _swift_bic
 # Label variants seen on the 2026-07 Confluence scan that missed their
 # existing strategy (pure aliases, same instances).
 STRATEGIES["IPV4"] = STRATEGIES["IP_ADDRESS"]
+STRATEGIES["IPV6"] = STRATEGIES["IP_ADDRESS"]
 STRATEGIES["CREDIT_CARD"] = _card_number
+STRATEGIES["CREDIT_DEBIT_CARD"] = _card_number
+STRATEGIES["IBAN_CODE"] = STRATEGIES["IBAN"]
 
 # Credential plausibility (2026-07 scan: 134 PASSWORD findings, ~129 were
 # keyword/config-key/placeholder/sentence mentions). One shared instance

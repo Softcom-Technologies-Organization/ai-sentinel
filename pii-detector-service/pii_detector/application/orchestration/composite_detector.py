@@ -345,6 +345,7 @@ class CompositePIIDetector:
         self,
         lm_studio_host: Optional[str] = None,
         lm_studio_port: Optional[int] = None,
+        all_models: bool = False,
     ) -> Dict:
         """Ministral-PII models LM Studio has on disk (see ``MinistralDetector.list_models``).
 
@@ -360,7 +361,42 @@ class CompositePIIDetector:
                 "models": [],
                 "error": "Ministral detector not instantiated",
             }
-        return lister(lm_studio_host=lm_studio_host, lm_studio_port=lm_studio_port)
+        return lister(
+            lm_studio_host=lm_studio_host, lm_studio_port=lm_studio_port, all_models=all_models
+        )
+
+    def judge_finding(
+        self,
+        pii_type: str,
+        type_label: str,
+        value: str,
+        context: str,
+        lm_studio_model: Optional[str] = None,
+        lm_studio_host: Optional[str] = None,
+        lm_studio_port: Optional[int] = None,
+    ) -> Dict:
+        """LLM-judge verdict on one finding (see ``MinistralDetector.judge_finding``).
+
+        Without a Ministral detector there is no LLM to ask, reported as an
+        ``ERROR`` verdict so the caller keeps the finding.
+        """
+        judge = getattr(self.ministral_detector, "judge_finding", None)
+        if judge is None:
+            return {
+                "verdict": "ERROR",
+                "confidence": 0.0,
+                "reason": "",
+                "error": "Ministral detector not instantiated",
+            }
+        return judge(
+            pii_type=pii_type,
+            type_label=type_label,
+            value=value,
+            context=context,
+            lm_studio_model=lm_studio_model,
+            lm_studio_host=lm_studio_host,
+            lm_studio_port=lm_studio_port,
+        )
 
     def _ministral_health(
         self,

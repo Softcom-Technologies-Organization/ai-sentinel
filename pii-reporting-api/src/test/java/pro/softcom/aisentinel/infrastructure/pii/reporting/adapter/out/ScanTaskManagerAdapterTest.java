@@ -7,6 +7,9 @@ import pro.softcom.aisentinel.domain.pii.scan.ScanNotFoundException;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -138,6 +141,23 @@ class ScanTaskManagerAdapterTest {
     }
 
     @Test
+    void Should_ReturnFalse_When_NoScanIsManaged() {
+        assertThat(adapter.hasActiveScan()).isFalse();
+    }
+
+    @Test
+    void Should_ReportAnyActiveScan_When_OtherScansArePaused() {
+        adapter.startScan("paused", Flux.never());
+        adapter.pauseScan("paused");
+        adapter.startScan("active", Flux.never());
+
+        assertThat(adapter.hasActiveScan()).isTrue();
+
+        adapter.pauseScan("active");
+        assertThat(adapter.hasActiveScan()).isFalse();
+    }
+
+    @Test
     void Should_DoNothing_When_CleanupCalledWithNoScans() {
         assertThatCode(() -> adapter.cleanupCompletedScans())
                 .doesNotThrowAnyException();
@@ -157,5 +177,53 @@ class ScanTaskManagerAdapterTest {
         assertThat(sub).isNotNull();
 
         adapter.pauseScan(scanId);
+    }
+
+    @Test
+    void Should_IgnoreTheSecondStream_When_ScanIdIsAlreadyRunning() {
+        // Two callers can ask to start the same scan: the operator's Resume and the
+        // scheduled retry of the same outage-paused scan. Severity counts are additive,
+        // so a second pipeline would count the same pages twice.
+        String scanId = "scan-started-twice";
+        AtomicInteger secondSubscriptions = new AtomicInteger();
+        adapter.startScan(scanId, Flux.never());
+
+        adapter.startScan(scanId, Flux.<ConfluenceContentScanResult>never()
+                .doOnSubscribe(_ -> secondSubscriptions.incrementAndGet()));
+
+        assertThat(secondSubscriptions).hasValue(0);
+        assertThat(adapter.isScanActive(scanId)).isTrue();
+
+        adapter.pauseScan(scanId);
+    }
+
+    @Test
+    void Should_StartTheNewStream_When_ThePreviousRunOfTheSameScanIsOver() {
+        // A scan paused by an outage keeps its id: retrying it has to be allowed to
+        // subscribe again, otherwise nothing would ever resume.
+        String scanId = "scan-resumed-later";
+        AtomicInteger retrySubscriptions = new AtomicInteger();
+        adapter.startScan(scanId, Flux.never());
+        adapter.pauseScan(scanId);
+
+        adapter.startScan(scanId, Flux.<ConfluenceContentScanResult>never()
+                .doOnSubscribe(_ -> retrySubscriptions.incrementAndGet()));
+
+        await(() -> retrySubscriptions.get() == 1);
+        assertThat(adapter.isScanActive(scanId)).isTrue();
+
+        adapter.pauseScan(scanId);
+    }
+
+    /** The scan subscribes on boundedElastic, so its start is not visible on return. */
+    private static void await(java.util.function.BooleanSupplier condition) {
+        long deadline = System.nanoTime() + Duration.ofSeconds(2).toNanos();
+        while (System.nanoTime() < deadline) {
+            if (condition.getAsBoolean()) {
+                return;
+            }
+            Thread.onSpinWait();
+        }
+        throw new AssertionError("condition never became true");
     }
 }

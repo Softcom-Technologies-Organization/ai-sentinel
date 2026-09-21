@@ -1,0 +1,91 @@
+.jb {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 0 0.75rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--sentinel-judge-border);
+  border-left: 4px solid var(--sentinel-judge-color);
+  border-radius: 8px;
+  background: var(--sentinel-judge-bg);
+}
+
+.jb > .pi {
+  font-size: 1.1rem;
+  color: var(--sentinel-judge-color);
+}
+
+.jb--done {
+  border-color: var(--sentinel-status-success-text);
+  border-left-color: var(--sentinel-status-success-text);
+  background: var(--sentinel-status-success-bg);
+}
+
+.jb--done > .pi {
+  color: var(--sentinel-status-success-text);
+}
+
+.jb-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.jb-title {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--sentinel-text-primary);
+}
+
+.jb-sub {
+  font-size: 0.75rem;
+  color: var(--sentinel-text-secondary);
+}
+
+.jb-track {
+  flex: 1;
+  max-width: 260px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--sentinel-judge-border);
+  overflow: hidden;
+}
+
+.jb-fill {
+  height: 100%;
+  background: var(--sentinel-judge-color);
+  transition: width 0.3s ease;
+}
+
+.jb--done .jb-fill {
+  background: var(--sentinel-status-success-text);
+}
+
+.jb-actions {
+  margin-left: auto;
+}
+
+.jb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 1.9rem;
+  padding: 0 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--sentinel-border-default);
+  background: var(--sentinel-bg-card);
+  color: var(--sentinel-text-primary);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.jb-btn:hover {
+  background: var(--sentinel-bg-hover);
+}
+
+.jb-btn:focus-visible {
+  outline: 2px solid var(--sentinel-focus-ring);
+  outline-offset: 1px;
+}

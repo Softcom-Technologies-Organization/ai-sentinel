@@ -37,6 +37,13 @@
   <!-- Filter / sort bar (3 axes + search + sort), 100% client-side -->
   <app-space-filters></app-space-filters>
 
+  @if (judgeTracker.jobs().length > 0) {
+    <app-judge-job-banner
+      [jobs]="judgeTracker.jobs()"
+      (interrupt)="judgeTracker.cancelAll()"
+      (dismissed)="judgeTracker.clear()" />
+  }
+
   <p-table #dt [value]="sortedSpaces()"
            [(selection)]="selectedSpaces"
            dataKey="key"
@@ -85,12 +92,7 @@
                  [attr.aria-live]="scanActive() || actionPending() ? 'polite' : 'off'"
                  [attr.aria-label]="scanStatusKey() | transloco">
           </p-tag>
-          <div class="scan-actions-group">
-            @if (actionPending()) {
-              <div class="scan-actions-overlay" aria-live="polite">
-                <i class="pi pi-spin pi-spinner"></i>
-              </div>
-            }
+          <app-action-button-panel accent="scan" [pending]="actionPending()">
             <p-button type="button"
                       icon="pi pi-play"
                       (click)="selectedSpacesCount() > 0 ? startSelected() : startAll()"
@@ -128,7 +130,42 @@
                       styleClass="purge-button"
                       [ariaLabel]="'dashboard.actions.purgeData' | transloco"
                       [attr.data-testid]="testIds.buttons.purgeData" />
-          </div>
+          </app-action-button-panel>
+
+          @if (remediationConfig.enabled()) {
+            <app-action-button-panel accent="judge" [attr.data-testid]="judgeTestIds.panel">
+              <p-button type="button"
+                        icon="pi pi-play"
+                        (click)="openJudgeDialog()"
+                        (keydown.enter)="openJudgeDialog()"
+                        [disabled]="!canLaunchJudge()"
+                        [pTooltip]="(judgeUnavailableReason() ?? 'judge.dashboard.tooltip') | transloco"
+                        tooltipPosition="bottom"
+                        [ariaLabel]="'judge.actions.start' | transloco"
+                        [attr.data-testid]="judgeTestIds.buttons.start" />
+              <p-button type="button"
+                        icon="pi pi-pause"
+                        [disabled]="true"
+                        [pTooltip]="'judge.actions.notYetAvailable' | transloco"
+                        tooltipPosition="bottom"
+                        [ariaLabel]="'judge.actions.pause' | transloco"
+                        [attr.data-testid]="judgeTestIds.buttons.pause" />
+              <p-button type="button"
+                        icon="pi pi-forward"
+                        [disabled]="true"
+                        [pTooltip]="'judge.actions.notYetAvailable' | transloco"
+                        tooltipPosition="bottom"
+                        [ariaLabel]="'judge.actions.resume' | transloco"
+                        [attr.data-testid]="judgeTestIds.buttons.resume" />
+              <p-button type="button"
+                        icon="pi pi-times"
+                        [disabled]="true"
+                        [pTooltip]="'judge.actions.notYetAvailable' | transloco"
+                        tooltipPosition="bottom"
+                        [ariaLabel]="'judge.actions.cancel' | transloco"
+                        [attr.data-testid]="judgeTestIds.buttons.cancel" />
+            </app-action-button-panel>
+          }
         </div>
       </div>
     </ng-template>
@@ -142,11 +179,8 @@
           {{ 'dashboard.table.headers.space' | transloco }}
           <p-sortIcon field="name" />
         </th>
-        <th id="col-status" style="width: 9.5rem"
+        <th id="col-status" style="width: 15.5rem"
             [attr.data-testid]="testIds.headers.status">{{ 'dashboard.table.headers.status' | transloco }}
-        </th>
-        <th id="col-progress" style="width: 6rem"
-            [attr.data-testid]="testIds.headers.progress">{{ 'dashboard.table.headers.progress' | transloco }}
         </th>
         <th id="col-last-scan" style="width: 8rem"
             [attr.data-testid]="testIds.headers.lastScan">{{ 'dashboard.table.headers.lastScan' | transloco }}
@@ -204,13 +238,21 @@
           </div>
         </td>
         <td class="col-status">
-          <p-tag [value]="statusLabel(space.status)"
-                 [severity]="statusStyle(space.status)"
-                 [styleClass]="'status-tag ' + (spacesDashboardUtils.statusStyleClass(space.status) || '')"
-                 [attr.data-testid]="testIds.spaceStatus"></p-tag>
-        </td>
-        <td class="col-progress">
-          <app-scan-progress-bar [spaceKey]="space.key" [status]="space.status"></app-scan-progress-bar>
+          <div class="status-stack">
+            <div class="status-step">
+              <p-tag [value]="statusLabel(space.status)"
+                     [severity]="statusStyle(space.status)"
+                     [styleClass]="'status-tag ' + (spacesDashboardUtils.statusStyleClass(space.status) || '')"
+                     [attr.data-testid]="testIds.spaceStatus"></p-tag>
+              <app-scan-progress-bar
+                [spaceKey]="space.key"
+                [status]="space.status"
+                [ariaLabel]="'dashboard.table.headers.progress' | transloco" />
+            </div>
+            @if (remediationConfig.enabled()) {
+              <app-judge-space-status [summary]="judgeSummaries.summaryFor(space.key)" />
+            }
+          </div>
         </td>
         <td class="col-last-scan">{{ space.lastScanTs | date:'short' }}</td>
         <td class="text-center col-risk-score">
@@ -251,7 +293,7 @@
 
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td colspan="9">
+        <td colspan="8">
           <div class="filters-empty-state" [attr.data-testid]="'filters-empty-state'">
             <i class="pi pi-filter-slash" aria-hidden="true"></i>
             <p class="filters-empty-message">{{ 'dashboard.filters.emptyState' | transloco }}</p>
@@ -285,9 +327,6 @@
           <td class="col-status">
             <p-skeleton width="6rem" height="1.5rem"></p-skeleton>
           </td>
-          <td class="col-progress">
-            <p-skeleton width="8rem" height="0.75rem"></p-skeleton>
-          </td>
           <td class="col-last-scan">
             <p-skeleton width="9rem"></p-skeleton>
           </td>
@@ -310,7 +349,7 @@
 
     <ng-template #expandedrow let-space>
       <tr>
-        <td colspan="9">
+        <td colspan="8">
           <div class="row-expansion">
             <div class="pii-scroll">
               @for (it of itemsBySpace()[space.key] ?? []; track (it.pageId + '-' + (it.attachmentName ?? 'page'))) {
@@ -325,6 +364,23 @@
       </tr>
     </ng-template>
   </p-table>
+
+  @if (remediationConfig.enabled()) {
+    @if (!judgeTracker.active() && selectedSpaceChips().length > 0) {
+      <app-judge-space-bulk-bar
+        [spaces]="selectedSpaceChips()"
+        [plan]="judgeSelectionPlan()"
+        [disabledReason]="judgeUnavailableReason()"
+        (cleared)="clearSpaceSelection()"
+        (launch)="openJudgeDialog('selection')" />
+    }
+    <app-judge-launch-dialog
+      [visible]="judgeDialogVisible()"
+      [scopeOptions]="judgeScopeOptions()"
+      [disabledReason]="judgeUnavailableReason()"
+      (launched)="launchJudge($event)"
+      (cancelled)="judgeDialogVisible.set(false)" />
+  }
 
   <!-- PII Severity Help Dialog -->
   <p-dialog [header]="'piiHelp.dialogTitle' | transloco"

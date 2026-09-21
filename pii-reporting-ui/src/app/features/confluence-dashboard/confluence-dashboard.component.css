@@ -1,83 +1,3 @@
-/* Scan action button group - tightly packed gradient bar */
-.scan-actions-group {
-  display: inline-flex;
-  position: relative;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(52, 211, 153, 0.3);
-}
-
-/* Spinner overlay covering all buttons when an action is pending.
-   Semi-transparent so buttons remain visible underneath. */
-.scan-actions-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(241, 243, 245, 0.75);
-  border-radius: 8px;
-}
-
-.scan-actions-overlay .pi-spinner {
-  font-size: 1.1rem;
-  color: #6b7280;
-}
-
-/* Target p-button host elements inside the group */
-.scan-actions-group > p-button {
-  display: inline-flex;
-}
-
-/* Separator between buttons */
-.scan-actions-group > p-button + p-button {
-  border-left: 1px solid rgba(255, 255, 255, 0.25);
-}
-
-/* Override PrimeNG button styling for all buttons inside the group
-   ::ng-deep needed: p-button renders its own internal template */
-:host ::ng-deep .scan-actions-group .p-button {
-  border-radius: 0 !important;
-  border: none !important;
-  background: linear-gradient(135deg, var(--sentinel-scan-btn-start), var(--sentinel-scan-btn-end)) !important;
-  color: var(--sentinel-bg-card) !important;
-  width: 2.75rem !important;
-  height: 2.75rem !important;
-  padding: 0 !important;
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
-  transition: filter 0.15s;
-}
-
-:host ::ng-deep .scan-actions-group .p-button:hover:not(:disabled) {
-  filter: brightness(1.1);
-}
-
-:host ::ng-deep .scan-actions-group .p-button:disabled {
-  background: var(--sentinel-scan-btn-disabled) !important;
-  opacity: 0.6;
-}
-
-/* Purge/delete button: danger red theme */
-:host ::ng-deep .scan-actions-group .purge-button.p-button {
-  background: linear-gradient(135deg, #dc3545, #c82333) !important;
-}
-
-:host ::ng-deep .scan-actions-group .purge-button.p-button:hover:not(:disabled) {
-  filter: brightness(1.1);
-}
-
-:host ::ng-deep .scan-actions-group .purge-button.p-button:disabled {
-  background: var(--sentinel-scan-btn-disabled) !important;
-}
-
-:host ::ng-deep .scan-actions-group .p-button .p-button-icon {
-  font-size: 1rem;
-  color: var(--sentinel-bg-card) !important;
-}
-
 /* ======================================================================
  * Caption bar: filter + paginator (left) + scan controls (right)
  * Lives inside the p-table #caption template.
@@ -709,27 +629,6 @@
   }
 }
 
-@media (max-width: 1024px) {
-  :host ::ng-deep #col-progress,
-  :host ::ng-deep #col-progress-value,
-  :host ::ng-deep .col-progress {
-    width: 0 !important;
-    min-width: 0 !important;
-    max-width: 0 !important;
-    padding: 0 !important;
-    border-width: 0 !important;
-    overflow: hidden !important;
-    font-size: 0 !important;
-    line-height: 0 !important;
-  }
-
-  :host ::ng-deep #col-progress > *,
-  :host ::ng-deep #col-progress-value > *,
-  :host ::ng-deep .col-progress > * {
-    display: none !important;
-  }
-}
-
 @media (max-width: 960px) {
   :host ::ng-deep #col-risk-score,
   :host ::ng-deep #col-risk-score-value,
@@ -811,4 +710,24 @@
 
 .filters-empty-message {
   margin: 0;
+}
+
+.col-status {
+  vertical-align: top;
+}
+
+.status-stack,
+.status-step {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.status-stack {
+  gap: 0.5rem;
+}
+
+.status-step {
+  gap: 0.25rem;
+  width: fit-content;
 }

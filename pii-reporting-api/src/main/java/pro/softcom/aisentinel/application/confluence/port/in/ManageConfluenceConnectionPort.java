@@ -52,7 +52,6 @@ public interface ManageConfluenceConnectionPort {
      * @param readTimeout    Read timeout in milliseconds
      * @param maxRetries     Maximum number of retry attempts
      * @param pagesLimit     Number of pages per pagination request
-     * @param maxPages       Maximum total pages to retrieve
      * @param deploymentType Type of Confluence deployment (CLOUD or DATA_CENTER)
      * @param updatedBy      User identifier who is updating the configuration
      */
@@ -64,7 +63,6 @@ public interface ManageConfluenceConnectionPort {
             int readTimeout,
             int maxRetries,
             int pagesLimit,
-            int maxPages,
             ConfluenceDeploymentType deploymentType,
             String updatedBy
     ) {

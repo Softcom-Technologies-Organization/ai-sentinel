@@ -38,7 +38,6 @@ class ConfluenceConnectionConfigPersistenceAdapterTest {
                 .readTimeout(60000)
                 .maxRetries(3)
                 .pagesLimit(50)
-                .maxPages(100)
                 .deploymentType(ConfluenceDeploymentType.CLOUD)
                 .updatedAt(Instant.parse("2026-01-01T00:00:00Z"))
                 .updatedBy("admin")
@@ -73,7 +72,7 @@ class ConfluenceConnectionConfigPersistenceAdapterTest {
     void Should_SaveEntity_When_UpdateConfigCalled() {
         ConfluenceConnectionSettings settings = new ConfluenceConnectionSettings(
                 1, "https://new.confluence.com", "new-user",
-                15000, 30000, 2, 25, 50,
+                15000, 30000, 2, 25,
                 ConfluenceDeploymentType.CLOUD,
                 Instant.now(), "admin"
         );
@@ -116,7 +115,7 @@ class ConfluenceConnectionConfigPersistenceAdapterTest {
     void Should_UseEmptyEncryptedToken_When_UpdateConfigCalledWithNullToken() {
         ConfluenceConnectionSettings settings = new ConfluenceConnectionSettings(
                 1, "https://confluence.com", "user",
-                10000, 20000, 1, 25, 50,
+                10000, 20000, 1, 25,
                 ConfluenceDeploymentType.DATA_CENTER,
                 Instant.now(), "system"
         );

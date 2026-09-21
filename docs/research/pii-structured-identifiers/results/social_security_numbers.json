@@ -1,0 +1,155 @@
+{
+  "name": "Social security numbers",
+  "scope": {
+    "category": "National identifiers",
+    "access_date": "2026-09-19",
+    "decision": "Use separate jurisdiction-specific detectors for US SSN, Swiss AVS/AHV/NAVS13 and French NIR. The generic social_security_number label is not equivalent to US_SSN.",
+    "included": ["US SSN, nine digits", "Swiss AVS/AHV/NAVS13, thirteen digits", "French NIR, thirteen characters, with or without its additional two-digit control key"],
+    "boundary": "Other countries, historical Swiss AVS11, French temporary identifiers and masked or incomplete values require separate coverage. Failure of one national validator is not evidence that a generic social-security identifier is not sensitive.",
+    "validation_levels": ["Extraction locates a candidate and preserves its original text offsets.", "Format validation checks a named national scheme.", "Checksum validation checks transcription consistency where a checksum exists.", "Actual issuance and association with a person require an authoritative register; neither regex nor checksum proves either."],
+    "sources": ["https://secure.ssa.gov/poms.nsf/lnx/0110201035", "https://www.zas.admin.ch/fr/numero-avs-identificateur", "https://xml.insee.fr/schema/nir.html"]
+  },
+  "official_rules": {
+    "US_SSN": {
+      "format": "Nine ASCII digits, conventionally AAA-GG-SSSS. No checksum.",
+      "invalid_components": ["AAA equals 000 or 666, or lies between 900 and 999 inclusive.", "GG equals 00.", "SSSS equals 0000."],
+      "historical_rule": "Randomization began on 2011-06-25. Do not use obsolete geographic assignment or High Group History tables to reject contemporary SSNs.",
+      "issuance": "SSA identifies a Numident query as the most reliable way to determine assignment. Passing the stated component rules only establishes structural plausibility.",
+      "sources": ["https://secure.ssa.gov/poms.nsf/lnx/0110201035", "https://www.ssa.gov/employer/randomizationfaqs.html", "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.us.ssn"]
+    },
+    "CH_AVS": {
+      "format": "Thirteen ASCII digits: immutable prefix 756, nine randomly assigned digits, one EAN-13 check digit. Conventional presentation is 756.xxxx.xxxx.xx.",
+      "checksum": "For the first twelve digits numbered from one, multiply odd positions by 1 and even positions by 3. The last digit equals (10 - (weighted_sum mod 10)) mod 10.",
+      "invalid_components": "Reject wrong length, non-digits, a prefix other than 756 or an incorrect check digit. ZAS describes the nine-digit identifier portion as ranging from 000000000 through 999999999; do not invent additional forbidden ranges.",
+      "legacy": "The former eleven-digit AVS was replaced progressively from 2008. Historical documents can still contain that identifier.",
+      "legacy_limit": "[uncertain] Complete historical AVS11 validation rules were not established in this research; NAVS13 validation cannot classify an eleven-digit value as non-PII.",
+      "sources": ["https://www.zas.admin.ch/fr/numero-avs-identificateur", "https://ref.gs1.org/standards/genspecs/", "https://www.edoeb.admin.ch/dam/edoeb/fr/Dokumente/deredoeb/19eme_rapport_d_activites20112012.pdf.download.pdf/19eme_rapport_d_activites20112012.pdf"]
+    },
+    "FR_NIR": {
+      "format": "The NIR body has thirteen characters: sex (1), year (2), month (2), birthplace (5), sequence (3). NIR with key adds two digits, producing fifteen characters. Corsican birthplace codes may contain 2A or 2B.",
+      "checksum": "Replace the department 2A with 19 or 2B with 18 for calculation only. The key is 97 minus the thirteen-digit body's remainder modulo 97, padded to two digits; its range is 01 to 97.",
+      "component_profile": "The Net-entreprises NIR profile accepts sex 1 or 2; year 00-99; month 01-12, 20, 30-42 or 50-99; department 01-99 or 2A/2B; commune and sequence 001-999. These operational bounds are not an authoritative registry of every historical or provisional identifier.",
+      "geography": "The five birthplace positions may encode a metropolitan department and commune, an overseas department and commune, or 99 plus a foreign-country code. Do not validate only against today's metropolitan departments.",
+      "temporary_identifiers": "Ameli confirms provisional numbers starting with 7 or 8. Net-entreprises also distinguishes NIA and NTT. Preserve these as separate candidate types rather than silently rejecting them under a permanent-NIR rule.",
+      "keyless_body": "A thirteen-character NIR body is an established representation, not necessarily a truncation. Its absent key cannot be checked.",
+      "sources": ["https://xml.insee.fr/schema/nir.html", "https://www.net-entreprises.fr/declaration/bilan-identification-salaries/", "https://forum-assures.ameli.fr/questions/2911287-carte-vitale"]
+    }
+  },
+  "separators_and_extraction": {
+    "policy_status": "The following extraction policy is an engineering recommendation, distinct from official assignment rules.",
+    "shared": "Match bounded candidates in original text, then normalize only explicitly accepted separators inside each candidate. Retain original start/end offsets and leading zeroes. Do not remove every non-digit from a document or join numbers across lines, table cells or unrelated fields.",
+    "US_SSN": "Recognize compact nine-digit values and 3-2-4 groups separated by consistent hyphens, dots or horizontal spaces. Treat mixed separators and unusual 5-4 or 3-6 groupings as lower-confidence contextual candidates. Normalize accepted candidates to nine digits before validation.",
+    "CH_AVS": "Recognize compact 756 followed by ten digits and grouped 3-4-4-2 notation with dots or horizontal spaces. A hyphenated variant may be a deliberate tolerant extraction rule, but is not directly accepted by stdnum.ch.ssn.",
+    "FR_NIR": "Recognize compact thirteen/fifteen-character forms and 1-2-2-2-3-3[-2] grouping. Preserve the A/B in 2A/2B and uppercase it only in the normalized value. Accept standard spaces and documented dot normalization; additional separators require explicit tests.",
+    "unicode_and_boundaries": "Use ASCII digit semantics by default. If non-breaking spaces or typographic hyphens are accepted, map them deliberately inside candidates while retaining the original span. Prevent matching a valid-looking substring inside a longer alphanumeric identifier. Avoid unbounded whitespace expressions that cross lines.",
+    "partial_values": "Route values such as SSN ending in 4399, ***-**-4399, or AVS 756.****.****.85 to an explicitly partial/contextual path. Never reconstruct hidden digits or claim a checksum result for missing data. Missing NIR keys require a distinct body-only state.",
+    "sources": ["https://raw.githubusercontent.com/data-privacy-stack/presidio/2.2.364/presidio-analyzer/presidio_analyzer/predefined_recognizers/country_specific/us/us_ssn_recognizer.py", "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/ch/ssn.py", "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/fr/nir.py"]
+  },
+  "validators_and_libraries": {
+    "Presidio": {
+      "version_scope": "Public UsSsnRecognizer source checked at release 2.2.364; supported-entities documentation accessed on 2026-09-19.",
+      "US_SSN": "Regex and contextual scoring; compact and unusual split forms start at 0.05, while 3-2-4 groups with hyphen/space/dot separators start at 0.5. It rejects mixed separators, repeated single digits, 000/666 prefixes, zero group/serial and several known examples. It does not reject all 900-999 prefixes in the audited source.",
+      "coverage": "The audited built-in entity list contains US_SSN but does not list Swiss AVS or French NIR. Custom recognizers are supported. Do not confuse external French recognizers or an unmerged branch with built-in release coverage.",
+      "role": "Provides extraction, offsets, contextual scoring and recognizer composition; it is not an authoritative issuer validator. A raw recognizer candidate is not necessarily retained after registry configuration, language selection and score thresholds.",
+      "sources": ["https://raw.githubusercontent.com/data-privacy-stack/presidio/2.2.364/presidio-analyzer/presidio_analyzer/predefined_recognizers/country_specific/us/us_ssn_recognizer.py", "https://presidio.dataprivacystack.org/supported_entities/", "https://github.com/data-privacy-stack/presidio/releases/tag/2.2.364"]
+    },
+    "python_stdnum": {
+      "version_scope": "Version 2.2 documentation and tagged US source checked; CH/FR implementation details checked against public master source on 2026-09-19.",
+      "US_SSN": "stdnum.us.ssn validates nine-digit components, including the 900-999 exclusion, and three blacklisted examples. Its optional hyphens are permitted independently at the two group boundaries; spaces and dots require upstream normalization. This is a candidate validator, not a document extractor.",
+      "US_blacklist_caveat": "Source inspection shows that the blacklist is applied through format(number) before compacting. The host reproduced stdnum 2.2 accepting 078-051120 and 07805-1120 as raw inputs but rejecting their compact form and 078-05-1120. Validate a strictly extracted canonical representation. Local evidence: docs/research/pii-structured-identifiers/probe-results.json.",
+      "CH_AVS": "stdnum.ch.ssn removes spaces/dots, requires thirteen characters and prefix 756, then delegates to stdnum.ean for checksum validation. It does not verify issuance or AVS11.",
+      "FR_NIR": "stdnum.fr.nir removes spaces/dots, uppercases letters, validates fifteen-character syntax and the modulo-97 key including Corsica. It does not validate sex, month, commune, sequence or geographic assignment, and rejects a keyless body on length.",
+      "limit": "A True result must be recorded as the specific checks passed, not as identity verification. The source's use of is_valid is a library API name, not evidence of issuance.",
+      "version_uncertainty": "[uncertain] The tagged CH/FR 2.2 raw files were unavailable through the web tool. Their 2.2 API documentation agrees with the inspected master source; exact installed behavior should be regression-tested before deployment.",
+      "sources": ["https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.us.ssn", "https://raw.githubusercontent.com/arthurdejong/python-stdnum/2.2/stdnum/us/ssn.py", "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.ch.ssn", "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.fr.nir", "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/ch/ssn.py", "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/fr/nir.py"]
+    }
+  },
+  "supplied_source_audit": {
+    "supplied_links": "No initial source URLs were supplied with this delegated item. Sources below were discovered and checked independently.",
+    "findings": [
+      "SSA official rules contradict any implementation that accepts 900-999 as an SSN prefix.",
+      "Presidio US_SSN is specifically American; its name cannot justify applying US rules to a generic international social-security label.",
+      "The older INSEE XML reference is useful for representation and arithmetic. Its historical legal discussion is not used as current legal guidance.",
+      "Net-entreprises documents non-calendar month codes; a month check restricted to 01-12 loses supported cases.",
+      "python-stdnum FR_NIR documentation describes length and check digits, not complete semantic or registry validation. Its implementation matches that narrower claim.",
+      "General EAN validation without the 756 prefix does not establish Swiss AVS syntax."
+    ],
+    "sources": ["https://secure.ssa.gov/poms.nsf/lnx/0110201035", "https://presidio.dataprivacystack.org/supported_entities/", "https://xml.insee.fr/schema/nir.html", "https://www.net-entreprises.fr/declaration/bilan-identification-salaries/", "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.fr.nir", "https://www.zas.admin.ch/fr/numero-avs-identificateur"]
+  },
+  "false_positive_and_recall_risks": {
+    "US_SSN": "Nine digits also occur in order numbers, accounts and other countries' identifiers. SSN has no check digit, so valid components alone provide limited discrimination. Strong field labels and nearby context matter, especially for compact forms.",
+    "ITIN_collision": "An IRS ITIN is also nine digits and uses the same grouping but begins with 9. Rejecting it as US_SSN must not remove it from all PII detection. IRS assigns several tax-number classes distinct from SSA SSNs.",
+    "CH_AVS": "A correct EAN checksum is insufficient without AVS structure. Even a checksum-consistent 756-prefixed value does not prove assignment or personal context. A NAVS13-only detector misses archived AVS11 and partial references.",
+    "FR_NIR": "A checksum-only validator may accept impossible components, including an all-zero body with its mathematically correct key. Conversely, over-restricting dates, modern geography, sex prefixes or mandatory keys loses special, temporary and body-only representations.",
+    "privacy_vs_validity": "A typo or failed checksum can still be a disclosure of a person's identifier. Keep contextual malformed candidates at lower confidence when the product's purpose is finding leaks; distinguish them from verified structural matches.",
+    "placeholder_policy": "Library blacklists differ. Excluding documentation examples may improve precision but is a product policy, not a complete list of unissued identifiers. Measure its effect instead of treating repeated or example-looking digits as universally impossible.",
+    "sources": ["https://www.irs.gov/tin/taxpayer-identification-numbers-tin", "https://secure.ssa.gov/poms.nsf/lnx/0110201035", "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.fr.nir", "https://www.net-entreprises.fr/declaration/bilan-identification-salaries/", "https://forum-assures.ameli.fr/questions/2911287-carte-vitale"]
+  },
+  "detector_recommendation": {
+    "verdict": "Deterministic recognition is appropriate for complete, explicitly scoped US SSN, Swiss NAVS13 and French NIR-with-key candidates. It is not a drop-in replacement for an international social_security_number entity covering unknown countries and partial values.",
+    "implementation_shape": "Use bounded extraction plus the existing stdnum country modules where available. Presidio custom PatternRecognizer integrations can retain context and source offsets. Add only the missing country rules and narrow semantic checks; avoid a new universal SSN validator.",
+    "routing": ["Emit separate US_SSN, CH_AVS and FR_NIR identities with country evidence.", "Keep body-only FR_NIR, temporary identifiers, historical AVS and masked fragments distinguishable from fully checked values.", "Use locale and explicit labels as evidence, not as permission to apply one country's rejection rules globally.", "Resolve overlapping full and partial matches using original spans; a fifteen-character NIR should not also emit its thirteen-character prefix as a separate finding.", "Do not call public verification services with detected values."],
+    "replacement_gate": "[uncertain] Equivalent precision/recall and latency have not been measured on the target corpus. Replace a model path only after a multilingual benchmark covers the supported jurisdictions, short fragments, malformed values, separators and non-PII numeric controls. Retain contextual coverage where deterministic checks cannot decide.",
+    "measurement": "Report extraction recall, correct-country classification, semantic rejection rate and checksum result separately. Evaluate partial and malformed disclosures independently of strict identifier validity; do not hide their recall loss inside an aggregate score.",
+    "sources": ["https://presidio.dataprivacystack.org/supported_entities/", "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.us.ssn", "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.ch.ssn", "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.fr.nir"]
+  },
+  "acceptance_cases": {
+    "fixture_policy": "Public library examples and constructed arithmetic fixtures only. Acceptance means structural or contextual classification as stated, never proof of assignment. No real records were sent to a verification service.",
+    "cases": [
+      {"input": "SSN: 536-90-4399", "expected": "US_SSN structural candidate; checksum not applicable."},
+      {"input": "SSN: 536904399", "expected": "Same canonical candidate; use explicit context for confidence."},
+      {"input": "SSN: 536 90 4399", "expected": "Extract grouped candidate and normalize before stdnum US validation."},
+      {"input": "SSN: 536.90.4399", "expected": "Extract consistent dotted groups under the chosen tolerant policy."},
+      {"input": "SSN: 000-12-3456", "expected": "Invalid US prefix; contextual malformed disclosure may remain."},
+      {"input": "SSN: 666-12-3456", "expected": "Invalid US prefix."},
+      {"input": "SSN: 900-12-3456", "expected": "Invalid US prefix; regression for the audited Presidio omission."},
+      {"input": "SSN: 536-00-4399", "expected": "Invalid US group."},
+      {"input": "SSN: 536-90-0000", "expected": "Invalid US serial."},
+      {"input": "078-051120 / 07805-1120 / 078-05-1120", "expected": "All normalize to the same blacklisted library fixture; avoid separator-dependent blacklist behavior."},
+      {"input": "ITIN: 900-70-1234", "expected": "Not US_SSN; retain for a separately scoped tax-identifier detector, without claiming issuance."},
+      {"input": "Order: A536904399B", "expected": "No embedded full US_SSN match under the proposed alphanumeric-boundary rule."},
+      {"input": "SSN ending in 4399", "expected": "Partial contextual candidate only; do not fabricate missing digits."},
+      {"input": "SSN: ***-**-4399", "expected": "Masked contextual candidate; not a full validated SSN."},
+      {"input": "AVS: 756.9217.0769.85", "expected": "CH_AVS format and checksum pass."},
+      {"input": "AVS: 7569217076985", "expected": "Same CH_AVS canonical value."},
+      {"input": "AVS: 756\u00a09217\u00a00769\u00a085", "expected": "Accept only if the explicit non-breaking-space policy is enabled; preserve the full original span."},
+      {"input": "AVS: 756.9217.0769.84", "expected": "CH_AVS checksum fails; keep malformed disclosure handling distinct."},
+      {"input": "7559217076986", "expected": "EAN checksum passes but CH_AVS prefix fails."},
+      {"input": "7560000000002", "expected": "Prefix and checksum pass; actual issuance remains unknown. Do not invent a forbidden all-zero identifier-body range."},
+      {"input": "AVS: 756.****.****.85", "expected": "Masked contextual candidate; checksum unavailable."},
+      {"input": "NIR: 2 95 10 99 126 111 93", "expected": "FR_NIR-with-key format and checksum pass."},
+      {"input": "NIR: 253072A07300443", "expected": "Corsica 2A checksum passes after calculation-only conversion to 19."},
+      {"input": "NIR: 253072B07300470", "expected": "Corsica 2B checksum passes after calculation-only conversion to 18."},
+      {"input": "NIR: 253072C07300443", "expected": "Invalid alphabet/location syntax."},
+      {"input": "NIR: 295109912611199", "expected": "Incorrect key; not a checksum-validated match."},
+      {"input": "NIR: 2951099126111", "expected": "Thirteen-character NIR body; key absent, not automatically invalid."},
+      {"input": "NIR: 295209912611159", "expected": "Month code 20 and correct key; do not reject solely because the month exceeds 12."},
+      {"input": "NIR: 295309912611125", "expected": "Month code 30 and correct key; retain under the documented exceptional-month profile."},
+      {"input": "NIR: 000000000000097", "expected": "Arithmetic key passes but permanent-NIR component profile fails; demonstrates checksum-only limits."},
+      {"input": "Provisional social security number: 7** ** ** *** *** **", "expected": "Provisional/masked candidate, not a permanent NIR or US_SSN."},
+      {"input": "756\n9217\n0769\n85", "expected": "Do not join across lines by default; any document-layout reconstruction requires its own tested policy."}
+    ],
+    "sources": ["https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.us.ssn", "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.ch.ssn", "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.fr.nir", "https://www.net-entreprises.fr/declaration/bilan-identification-salaries/", "https://secure.ssa.gov/poms.nsf/lnx/0110201035"]
+  },
+  "sources": [
+    {"title": "SSA POMS RM 10201.035: Invalid Social Security Numbers", "url": "https://secure.ssa.gov/poms.nsf/lnx/0110201035", "type": "Official operational rules", "accessed": "2026-09-19"},
+    {"title": "SSA Social Security Number Randomization FAQ", "url": "https://www.ssa.gov/employer/randomizationfaqs.html", "type": "Official assignment rules", "accessed": "2026-09-19"},
+    {"title": "ZAS AVS identifier structure", "url": "https://www.zas.admin.ch/fr/numero-avs-identificateur", "type": "Official national register authority", "accessed": "2026-09-19"},
+    {"title": "GS1 General Specifications: check-digit calculations", "url": "https://ref.gs1.org/standards/genspecs/", "type": "Standards publisher", "accessed": "2026-09-19"},
+    {"title": "Swiss FDPIC activity report 2011/2012: historical AVS transition", "url": "https://www.edoeb.admin.ch/dam/edoeb/fr/Dokumente/deredoeb/19eme_rapport_d_activites20112012.pdf.download.pdf/19eme_rapport_d_activites20112012.pdf", "type": "Official historical report", "accessed": "2026-09-19"},
+    {"title": "INSEE XML NIR and control-key reference", "url": "https://xml.insee.fr/schema/nir.html", "type": "Official technical reference; historical legal text not relied upon", "accessed": "2026-09-19"},
+    {"title": "Net-entreprises employee identification and NIR structure", "url": "https://www.net-entreprises.fr/declaration/bilan-identification-salaries/", "type": "Official social-declaration platform", "accessed": "2026-09-19"},
+    {"title": "Ameli expert answer on temporary social-security numbers", "url": "https://forum-assures.ameli.fr/questions/2911287-carte-vitale", "type": "Official insurer expert response", "accessed": "2026-09-19"},
+    {"title": "IRS Taxpayer Identification Numbers", "url": "https://www.irs.gov/tin/taxpayer-identification-numbers-tin", "type": "Official tax authority", "accessed": "2026-09-19"},
+    {"title": "Presidio 2.2.364 US SSN recognizer source", "url": "https://raw.githubusercontent.com/data-privacy-stack/presidio/2.2.364/presidio-analyzer/presidio_analyzer/predefined_recognizers/country_specific/us/us_ssn_recognizer.py", "type": "Versioned upstream source", "accessed": "2026-09-19"},
+    {"title": "Presidio supported entities", "url": "https://presidio.dataprivacystack.org/supported_entities/", "type": "Upstream documentation", "accessed": "2026-09-19"},
+    {"title": "Presidio 2.2.364 release", "url": "https://github.com/data-privacy-stack/presidio/releases/tag/2.2.364", "type": "Upstream release", "accessed": "2026-09-19"},
+    {"title": "python-stdnum 2.2 US SSN API", "url": "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.us.ssn", "type": "Versioned upstream documentation", "accessed": "2026-09-19"},
+    {"title": "python-stdnum 2.2 US SSN source", "url": "https://raw.githubusercontent.com/arthurdejong/python-stdnum/2.2/stdnum/us/ssn.py", "type": "Versioned upstream source", "accessed": "2026-09-19"},
+    {"title": "python-stdnum 2.2 Swiss SSN API", "url": "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.ch.ssn", "type": "Versioned upstream documentation", "accessed": "2026-09-19"},
+    {"title": "python-stdnum Swiss SSN implementation", "url": "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/ch/ssn.py", "type": "Upstream master source at access date", "accessed": "2026-09-19"},
+    {"title": "python-stdnum 2.2 French NIR API", "url": "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.fr.nir", "type": "Versioned upstream documentation", "accessed": "2026-09-19"},
+    {"title": "python-stdnum French NIR implementation", "url": "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/fr/nir.py", "type": "Upstream master source at access date", "accessed": "2026-09-19"}
+  ],
+  "uncertain": ["official_rules", "validators_and_libraries", "detector_recommendation"]
+}

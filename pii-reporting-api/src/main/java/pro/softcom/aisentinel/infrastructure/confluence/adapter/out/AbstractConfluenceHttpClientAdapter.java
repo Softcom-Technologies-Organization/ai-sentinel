@@ -270,24 +270,15 @@ public abstract class AbstractConfluenceHttpClientAdapter implements ConfluenceC
     }
 
     private CompletableFuture<List<ConfluencePage>> retrieveAllPagesFromSpace(String spaceKey) {
-        return collectAllPagesRecursively(spaceKey, 0, config.pagesLimit(), config.maxPages());
+        return collectAllPagesRecursively(spaceKey, 0, config.pagesLimit());
     }
 
     private CompletableFuture<List<ConfluencePage>> collectAllPagesRecursively(
-        String spaceKey, int startIndex, int pageSize, int remainingPagesLimit) {
-
-        if (hasReachedPageLimit(remainingPagesLimit)) {
-            log.warn("Page limit reached for space: {}", spaceKey);
-            return CompletableFuture.completedFuture(List.of());
-        }
+        String spaceKey, int startIndex, int pageSize) {
 
         var request = buildSpacePagesRequest(spaceKey, startIndex, pageSize);
         return retryExecutor.executeRequest(request)
-            .thenCompose(response -> processPagesBatch(response, spaceKey, startIndex, pageSize, remainingPagesLimit));
-    }
-
-    private boolean hasReachedPageLimit(int remainingPagesLimit) {
-        return remainingPagesLimit <= 0;
+            .thenCompose(response -> processPagesBatch(response, spaceKey, startIndex, pageSize));
     }
 
     private HttpRequest buildSpacePagesRequest(String spaceKey, int startIndex, int pageSize) {
@@ -296,7 +287,7 @@ public abstract class AbstractConfluenceHttpClientAdapter implements ConfluenceC
     }
 
     private CompletableFuture<List<ConfluencePage>> processPagesBatch(
-        HttpResponse<String> response, String spaceKey, int startIndex, int pageSize, int remainingPagesLimit) {
+        HttpResponse<String> response, String spaceKey, int startIndex, int pageSize) {
 
         // Failing rather than returning no page: the caller cannot tell an empty list apart from a
         // space it was refused, so a rejected listing used to be scanned as a space holding nothing
@@ -314,7 +305,7 @@ public abstract class AbstractConfluenceHttpClientAdapter implements ConfluenceC
             var currentBatch = extractPagesFromResponse(response.body(), spaceKey);
 
             if (shouldFetchNextBatch(currentBatch, pageSize)) {
-                return fetchNextBatchAndMerge(currentBatch, spaceKey, startIndex, pageSize, remainingPagesLimit);
+                return fetchNextBatchAndMerge(currentBatch, spaceKey, startIndex, pageSize);
             }
 
             return CompletableFuture.completedFuture(currentBatch);
@@ -356,9 +347,9 @@ public abstract class AbstractConfluenceHttpClientAdapter implements ConfluenceC
     }
 
     private CompletableFuture<List<ConfluencePage>> fetchNextBatchAndMerge(
-        List<ConfluencePage> currentBatch, String spaceKey, int startIndex, int pageSize, int remainingPagesLimit) {
+        List<ConfluencePage> currentBatch, String spaceKey, int startIndex, int pageSize) {
 
-        return collectAllPagesRecursively(spaceKey, startIndex + pageSize, pageSize, remainingPagesLimit - 1)
+        return collectAllPagesRecursively(spaceKey, startIndex + currentBatch.size(), pageSize)
             .thenApply(nextBatch -> mergePageBatches(currentBatch, nextBatch));
     }
 

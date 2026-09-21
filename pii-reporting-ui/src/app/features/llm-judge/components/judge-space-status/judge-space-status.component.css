@@ -1,0 +1,43 @@
+:host {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-start;
+}
+
+.js-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--sentinel-judge-bg);
+  color: var(--sentinel-judge-color);
+  white-space: nowrap;
+}
+
+.js-track {
+  display: block;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--sentinel-judge-border);
+  overflow: hidden;
+}
+
+.js-track i {
+  display: block;
+  height: 100%;
+  background: var(--sentinel-judge-color);
+  transition: width 0.3s ease;
+}
+
+.js-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  color: var(--sentinel-judge-color);
+  white-space: nowrap;
+}

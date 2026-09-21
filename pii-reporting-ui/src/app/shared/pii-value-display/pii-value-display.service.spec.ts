@@ -54,6 +54,20 @@ describe('PiiValueDisplayService', () => {
     ]);
   });
 
+  it('Should_HighlightBareValue_When_RevealedValueIsMissingFromContext', () => {
+    const display = service.build({
+      sensitiveValue: 'user@example.com',
+      sensitiveContext: 'Contact information unavailable',
+      revealed: true,
+    });
+
+    expect(display.isRevealed).toBe(true);
+    expect(display.text).toBe('user@example.com');
+    expect(display.parts).toEqual([
+      { text: 'user@example.com', isBadge: false, isHighlighted: true },
+    ]);
+  });
+
   it('Should_RenderTokenBadges_When_NotRevealed', () => {
     const display = service.build({
       sensitiveValue: 'user@example.com',

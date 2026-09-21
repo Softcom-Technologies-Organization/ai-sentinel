@@ -100,11 +100,6 @@ public class DatabaseBackedConfluenceConnectionConfig implements ConfluenceConne
         return getSettings().pagesLimit();
     }
 
-    @Override
-    public int maxPages() {
-        return getSettings().maxPages();
-    }
-
     private ConfluenceConnectionSettings getSettings() {
         ConfluenceConnectionSettings settings = cachedSettings.get();
         if (settings == null) {

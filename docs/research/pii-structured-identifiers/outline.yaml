@@ -1,0 +1,17 @@
+topic: Structured PII detection and deterministic postfilters
+date: 2026-09-19
+scope: Research only; do not change detectors or database configuration.
+items:
+  - name: Credit cards and IBAN
+    category: Financial identifiers
+    description: Compare candidate regex extraction, bounded separator handling, length/country checks and checksums; audit the supplied IBAN sources against SWIFT and maintained library sources; examine Presidio recognizers and python-stdnum, licenses and limitations. Assess replacing Ministral or Presidio without assuming real-world recall. Sources include https://ibanchecker.cash/blog/developer-resources/iban-regex-patterns and https://gist.github.com/akndmr/7ba7af0c07a3ec517c651bc6f1c508d5.
+  - name: Social security numbers
+    category: National identifiers
+    description: Distinguish US SSN, Swiss AVS and French NIR; verify official format rules, invalid ranges, checksums where available, separator handling, ambiguity and partial values; compare Presidio and python-stdnum and assess deterministic replacement without assuming universal SSN semantics.
+  - name: Tax identification numbers
+    category: Country-specific tax identifiers
+    description: Audit https://docs.upvest.co/products/tol/guides/users/users_tax_identification_numbers against tax-authority sources; distinguish individual TIN from business VAT or Swiss UID; prioritize Switzerland, France, Germany, UK, US and EU coverage. Identify regex pitfalls, country requirements, maintained validators and license implications; assess hard rejection without country and replacement of Ministral or Presidio.
+execution:
+  batch_size: 3
+  items_per_agent: 1
+  output_dir: docs/research/pii-structured-identifiers/results

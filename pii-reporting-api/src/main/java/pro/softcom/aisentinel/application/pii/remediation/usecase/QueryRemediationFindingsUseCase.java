@@ -17,8 +17,11 @@ import pro.softcom.aisentinel.application.pii.remediation.service.ScanEventFindi
 import pro.softcom.aisentinel.application.pii.remediation.service.ScanEventFindingResolver.Resolution;
 import pro.softcom.aisentinel.application.pii.remediation.service.SelectionEvaluator;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery;
+import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
+import pro.softcom.aisentinel.domain.pii.judge.FindingJudgement;
 import pro.softcom.aisentinel.domain.pii.reporting.AccessPurpose;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingReference;
+import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediation;
 import pro.softcom.aisentinel.domain.pii.remediation.FindingRemediationStatus;
 import pro.softcom.aisentinel.domain.pii.remediation.RemediationDisabledException;
 import pro.softcom.aisentinel.domain.pii.remediation.RemediationSelection;
@@ -30,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -51,6 +55,7 @@ public class QueryRemediationFindingsUseCase implements QueryRemediationFindings
 
     private final RemediationConfigPort remediationConfigPort;
     private final ScanResultQuery scanResultQuery;
+    private final ScanCheckpointRepository checkpointRepository;
     private final FindingRemediationStore findingRemediationStore;
     private final ScanEventFindingResolver findingResolver;
     private final SelectionEvaluator selectionEvaluator;
@@ -63,7 +68,7 @@ public class QueryRemediationFindingsUseCase implements QueryRemediationFindings
     @Override
     public RemediationFindingsResult search(RemediationFindingsQuery query) {
         requireEnabled();
-        return scanResultQuery.findLatestScan()
+        return checkpointRepository.findLatestBySpace(query.spaceKey())
                 .map(scan -> searchScan(scan.scanId(), query))
                 .orElseGet(() -> emptyResult(query));
     }
@@ -112,28 +117,30 @@ public class QueryRemediationFindingsUseCase implements QueryRemediationFindings
     }
 
     private List<StatusedFinding> visibleFindings(List<EligibleFinding> findings, RemediationFindingsQuery query) {
-        Map<String, FindingRemediationStatus> statuses = statusesOf(findings);
+        Map<String, FindingRemediation> rows = rowsOf(findings);
         return findings.stream()
-                .map(finding -> toStatused(finding, statuses, query.selection()))
+                .map(finding -> toStatused(finding, rows.get(finding.findingId()), query.selection()))
                 .filter(finding -> matchesSearchText(finding.finding(), query.searchText()))
                 .filter(finding -> matchesItemFilter(finding.finding().reference(), query.itemFilter()))
                 .toList();
     }
 
-    private Map<String, FindingRemediationStatus> statusesOf(List<EligibleFinding> findings) {
+    private Map<String, FindingRemediation> rowsOf(List<EligibleFinding> findings) {
         if (findings.isEmpty()) {
             return Map.of();
         }
         List<String> ids = findings.stream().map(EligibleFinding::findingId).toList();
-        return findingRemediationStore.findStatusesByIds(ids);
+        return findingRemediationStore.findByIds(ids).stream()
+                .collect(Collectors.toMap(FindingRemediation::findingId, Function.identity(),
+                        (first, second) -> first));
     }
 
-    private StatusedFinding toStatused(EligibleFinding finding,
-                                       Map<String, FindingRemediationStatus> statuses,
+    private StatusedFinding toStatused(EligibleFinding finding, FindingRemediation row,
                                        RemediationSelection selection) {
-        FindingRemediationStatus status =
-                statuses.getOrDefault(finding.findingId(), FindingRemediationStatus.PENDING);
-        return new StatusedFinding(finding, status, selectionEvaluator.isSelected(finding, status, selection));
+        FindingRemediationStatus status = row == null ? FindingRemediationStatus.PENDING : row.status();
+        FindingJudgement judgement = row == null ? null : row.judgement();
+        return new StatusedFinding(finding, status, selectionEvaluator.isSelected(finding, status, selection),
+                judgement);
     }
 
     private static boolean matchesSearchText(EligibleFinding finding, String searchText) {
@@ -160,7 +167,8 @@ public class QueryRemediationFindingsUseCase implements QueryRemediationFindings
             case PENDING -> status == FindingRemediationStatus.PENDING;
             case HANDLED -> status == FindingRemediationStatus.REDACTED
                     || status == FindingRemediationStatus.MANUALLY_HANDLED;
-            case FALSE_POSITIVE -> status == FindingRemediationStatus.FALSE_POSITIVE;
+            case FALSE_POSITIVE -> status == FindingRemediationStatus.FALSE_POSITIVE
+                    || status == FindingRemediationStatus.PROPOSED_FALSE_POSITIVE;
         };
     }
 
@@ -169,7 +177,8 @@ public class QueryRemediationFindingsUseCase implements QueryRemediationFindings
         long handled = countByStatus(visible, FindingRemediationStatus.REDACTED)
                 + countByStatus(visible, FindingRemediationStatus.MANUALLY_HANDLED);
         long falsePositive = countByStatus(visible, FindingRemediationStatus.FALSE_POSITIVE);
-        return new RemediationTotals(pending, handled, falsePositive, visible.size());
+        long proposed = countByStatus(visible, FindingRemediationStatus.PROPOSED_FALSE_POSITIVE);
+        return new RemediationTotals(pending, handled, falsePositive, proposed, visible.size());
     }
 
     private static long countByStatus(List<StatusedFinding> findings, FindingRemediationStatus status) {
@@ -265,6 +274,8 @@ public class QueryRemediationFindingsUseCase implements QueryRemediationFindings
                 .selected(statused.selected())
                 .eligibleForRedaction(!onAttachment)
                 .ineligibilityReason(onAttachment ? ATTACHMENT_INELIGIBILITY_REASON : null)
+                .judgeVerdict(statused.judgement() == null ? null : statused.judgement().verdict())
+                .judgeConfidence(statused.judgement() == null ? null : statused.judgement().confidence())
                 .build();
     }
 
@@ -280,6 +291,7 @@ public class QueryRemediationFindingsUseCase implements QueryRemediationFindings
                 .build();
     }
 
-    private record StatusedFinding(EligibleFinding finding, FindingRemediationStatus status, boolean selected) {
+    private record StatusedFinding(EligibleFinding finding, FindingRemediationStatus status, boolean selected,
+                                   FindingJudgement judgement) {
     }
 }

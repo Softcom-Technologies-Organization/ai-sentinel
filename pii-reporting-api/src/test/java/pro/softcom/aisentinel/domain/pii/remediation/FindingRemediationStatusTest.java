@@ -11,6 +11,7 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static pro.softcom.aisentinel.domain.pii.remediation.FindingRemediationStatus.FALSE_POSITIVE;
 import static pro.softcom.aisentinel.domain.pii.remediation.FindingRemediationStatus.MANUALLY_HANDLED;
 import static pro.softcom.aisentinel.domain.pii.remediation.FindingRemediationStatus.PENDING;
+import static pro.softcom.aisentinel.domain.pii.remediation.FindingRemediationStatus.PROPOSED_FALSE_POSITIVE;
 import static pro.softcom.aisentinel.domain.pii.remediation.FindingRemediationStatus.REDACTED;
 
 @DisplayName("FindingRemediationStatus")
@@ -138,6 +139,37 @@ class FindingRemediationStatusTest {
                 softly.assertThat(MANUALLY_HANDLED.canTransitionTo(FALSE_POSITIVE)).isFalse();
                 softly.assertThat(FALSE_POSITIVE.canTransitionTo(MANUALLY_HANDLED)).isFalse();
                 softly.assertThat(PENDING.canTransitionTo(PENDING)).isFalse();
+            });
+        }
+    }
+
+    @Nested
+    @DisplayName("proposed false positive (LLM judge)")
+    class ProposedFalsePositive {
+
+        @Test
+        @DisplayName("Should_AllowProposal_When_StatusIsPending")
+        void Should_AllowProposal_When_StatusIsPending() {
+            assertThat(PENDING.transitionTo(PROPOSED_FALSE_POSITIVE)).isEqualTo(PROPOSED_FALSE_POSITIVE);
+        }
+
+        @Test
+        @DisplayName("Should_AllowConfirmOrKeep_When_StatusIsProposed")
+        void Should_AllowConfirmOrKeep_When_StatusIsProposed() {
+            assertSoftly(softly -> {
+                softly.assertThat(PROPOSED_FALSE_POSITIVE.canTransitionTo(FALSE_POSITIVE)).isTrue();
+                softly.assertThat(PROPOSED_FALSE_POSITIVE.canTransitionTo(PENDING)).isTrue();
+                softly.assertThat(PROPOSED_FALSE_POSITIVE.canTransitionTo(REDACTED)).isFalse();
+                softly.assertThat(PROPOSED_FALSE_POSITIVE.canTransitionTo(MANUALLY_HANDLED)).isFalse();
+            });
+        }
+
+        @Test
+        @DisplayName("Should_RejectProposal_When_StatusIsNotPending")
+        void Should_RejectProposal_When_StatusIsNotPending() {
+            assertSoftly(softly -> {
+                softly.assertThat(FALSE_POSITIVE.canTransitionTo(PROPOSED_FALSE_POSITIVE)).isFalse();
+                softly.assertThat(MANUALLY_HANDLED.canTransitionTo(PROPOSED_FALSE_POSITIVE)).isFalse();
             });
         }
     }

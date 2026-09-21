@@ -270,7 +270,7 @@ class ManageConfluenceConnectionUseCaseTest {
     private UpdateConfluenceConnectionCommand createUpdateCommand(String baseUrl, String apiToken) {
         return new UpdateConfluenceConnectionCommand(
                 baseUrl, "user@example.com", apiToken,
-                5000, 30000, 3, 25, 100,
+                5000, 30000, 3, 25,
                 ConfluenceDeploymentType.CLOUD, "test-user"
         );
     }
@@ -278,7 +278,7 @@ class ManageConfluenceConnectionUseCaseTest {
     private ConfluenceConnectionSettings createSettings(String baseUrl) {
         return new ConfluenceConnectionSettings(
                 1, baseUrl, "user@example.com",
-                5000, 30000, 3, 25, 100,
+                5000, 30000, 3, 25,
                 ConfluenceDeploymentType.CLOUD,
                 Instant.now(), "test-user"
         );

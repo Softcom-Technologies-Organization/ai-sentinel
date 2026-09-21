@@ -1,4 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, EventEmitter, inject, OnDestroy, OnInit, Output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, EventEmitter, inject, OnDestroy, OnInit, Output, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { of, Subject } from 'rxjs';
+import { debounceTime, switchMap } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -31,6 +34,24 @@ import { SpaceScanStatsPopoverComponent } from './components/space-scan-stats-po
 import { SpaceFiltersComponent } from '../../shared/components/space-filters/space-filters.component';
 import { FilterUrlStateService } from './services/filter-url-state.service';
 import { ObfuscationEntryButtonComponent } from '../pii-obfuscation/components/obfuscation-entry-button/obfuscation-entry-button.component';
+import { RemediationConfigService } from '../../core/services/remediation-config.service';
+import { JudgeApiService } from '../../core/services/judge-api.service';
+import { JudgeLaunchRequest, JudgePlanDto } from '../../core/models/judge.model';
+import { JudgeJobTrackerService } from '../llm-judge/services/judge-job-tracker.service';
+import { JudgeSpaceSummaryService } from '../llm-judge/services/judge-space-summary.service';
+import {
+  JudgeLaunchDialogComponent,
+  JudgeScopeOption
+} from '../llm-judge/components/judge-launch-dialog/judge-launch-dialog.component';
+import { JudgeJobBannerComponent } from '../llm-judge/components/judge-job-banner/judge-job-banner.component';
+import { JudgeSpaceStatusComponent } from '../llm-judge/components/judge-space-status/judge-space-status.component';
+import { ActionButtonPanelComponent } from './components/action-button-panel/action-button-panel.component';
+import {
+  JudgeSpaceBulkBarComponent,
+  JudgeSpaceChip
+} from '../llm-judge/components/judge-space-bulk-bar/judge-space-bulk-bar.component';
+
+type JudgePreselect = 'all' | 'selection';
 
 /**
  * Confluence source dashboard - displays spaces table with PII scan results.
@@ -62,8 +83,14 @@ import { ObfuscationEntryButtonComponent } from '../pii-obfuscation/components/o
         SeverityCardsComponent,
         SpaceScanStatsPopoverComponent,
         SpaceFiltersComponent,
-        ObfuscationEntryButtonComponent
+        ObfuscationEntryButtonComponent,
+        JudgeLaunchDialogComponent,
+        JudgeJobBannerComponent,
+        JudgeSpaceStatusComponent,
+        ActionButtonPanelComponent,
+        JudgeSpaceBulkBarComponent
     ],
+  providers: [JudgeJobTrackerService],
   templateUrl: './confluence-dashboard.component.html',
   styleUrl: './confluence-dashboard.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -81,6 +108,26 @@ export class ConfluenceDashboardComponent implements OnInit, OnDestroy {
 
   // Utility services
   readonly spacesDashboardUtils = inject(SpacesDashboardUtils);
+
+  readonly remediationConfig = inject(RemediationConfigService);
+  readonly judgeTracker = inject(JudgeJobTrackerService);
+  readonly judgeSummaries = inject(JudgeSpaceSummaryService);
+  private readonly judgeApi = inject(JudgeApiService);
+  private readonly judgePlanRequests = new Subject<string[]>();
+  readonly judgeTestIds = TestIds.judge;
+  readonly judgeDialogVisible = signal(false);
+  readonly judgeScopeOptions = signal<JudgeScopeOption[]>([]);
+  readonly judgeUnavailableReason = computed(() =>
+    this.actionPending() || this.scanActive()
+      ? 'judge.unavailable.scanInProgress'
+      : this.judgeTracker.launchUnavailableReason()
+        ?? (this.scannedSpaceKeys().length === 0 ? 'judge.unavailable.noScanData' : null)
+  );
+  readonly canLaunchJudge = computed(() =>
+    !this.judgeUnavailableReason() && !this.judgeTracker.active()
+  );
+  readonly judgeSelectionPlan = signal<JudgePlanDto | null>(null);
+  readonly selectedSpaceChips = signal<JudgeSpaceChip[]>([]);
 
   // Output to request settings dialog from parent (AppShellComponent)
   @Output() openSettings = new EventEmitter<number>();
@@ -129,6 +176,7 @@ export class ConfluenceDashboardComponent implements OnInit, OnDestroy {
 
   set selectedSpaces(val: any[]) {
     this.uiStateService.selectedSpaces.set(val);
+    this.refreshJudgeSelection(val);
   }
 
   // PII Items
@@ -184,6 +232,21 @@ export class ConfluenceDashboardComponent implements OnInit, OnDestroy {
     }
     return result;
   });
+
+  constructor() {
+    this.judgePlanRequests
+      .pipe(
+        debounceTime(300),
+        switchMap((keys) => (keys.length === 0 ? of(null) : this.judgeApi.plan({ spaceKeys: keys }))),
+        takeUntilDestroyed()
+      )
+      .subscribe((plan) => this.judgeSelectionPlan.set(plan));
+    effect(() => {
+      if (this.remediationConfig.enabled()) {
+        this.judgeSummaries.refresh();
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.checkConfluenceConfig(() => this.initializeDataLoading());
@@ -347,6 +410,57 @@ export class ConfluenceDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  openJudgeDialog(preselect: JudgePreselect = 'all'): void {
+    if (!this.canLaunchJudge()) return;
+    const scanned = this.scannedSpaceKeys();
+    this.judgeApi.plan({ spaceKeys: scanned }).subscribe((plan) => {
+      if (!this.canLaunchJudge()) return;
+      this.judgeScopeOptions.set(this.buildJudgeScopeOptions(scanned, plan, preselect));
+      this.judgeDialogVisible.set(true);
+    });
+  }
+
+  launchJudge(request: JudgeLaunchRequest): void {
+    if (!this.canLaunchJudge()) return;
+    this.judgeDialogVisible.set(false);
+    this.judgeApi.launch(request).subscribe((created) => {
+      this.selectedSpaces = [];
+      this.judgeTracker.track(created.jobIds, () => this.judgeSummaries.refresh());
+    });
+  }
+
+  clearSpaceSelection(): void {
+    this.selectedSpaces = [];
+  }
+
+  private refreshJudgeSelection(selected: UISpace[]): void {
+    const scanned = selected.filter((space) => this.spacesDashboardUtils.canViewResult(space));
+    this.selectedSpaceChips.set(scanned.map((space) => ({ key: space.key, name: space.name ?? space.key })));
+    if (this.remediationConfig.enabled()) {
+      this.judgePlanRequests.next(scanned.map((space) => space.key));
+    }
+  }
+
+  private scannedSpaceKeys(): string[] {
+    return this.spacesDashboardUtils
+      .allSpaces()
+      .filter((space) => this.spacesDashboardUtils.canViewResult(space))
+      .map((space) => space.key);
+  }
+
+  private buildJudgeScopeOptions(scanned: string[], plan: JudgePlanDto, preselect: JudgePreselect): JudgeScopeOption[] {
+    const selected = this.selectedSpaceChips().map((chip) => chip.key).filter((key) => scanned.includes(key));
+    const neverJudged = scanned.filter((key) => (this.judgeSummaries.summaryFor(key)?.judgedCount ?? 0) === 0);
+    const all = judgeOption('all', 'judge.scope.allScanned', plan, scanned, { hintKey: 'judge.scope.allScannedHint', hintParams: { count: scanned.length } });
+    const never = judgeOption('never', 'judge.scope.neverJudged', plan, neverJudged, { hintKey: 'judge.scope.neverJudgedHint' });
+    if (selected.length === 0) {
+      return [all, never];
+    }
+    const names = this.selectedSpaceChips().map((chip) => chip.name).join(', ');
+    const selection = judgeOption('selection', 'judge.scope.selectedSpaces', plan, selected, { hintText: names });
+    return preselect === 'selection' ? [selection, all, never] : [all, selection, never];
+  }
+
   // ===== Paginator navigation =====
 
   onPageChange(event: { first: number; rows: number }): void {
@@ -382,4 +496,15 @@ export class ConfluenceDashboardComponent implements OnInit, OnDestroy {
   get totalPages(): number {
     return Math.max(1, Math.ceil(this.sortedSpaces().length / this.rows));
   }
+}
+
+function judgeOption(
+  key: string,
+  labelKey: string,
+  plan: JudgePlanDto,
+  spaceKeys: string[],
+  hint: Pick<JudgeScopeOption, 'hintKey' | 'hintParams' | 'hintText'>
+): JudgeScopeOption {
+  const count = spaceKeys.reduce((sum, spaceKey) => sum + (plan.findingsBySpace[spaceKey] ?? 0), 0);
+  return { key, labelKey, ...hint, count, scope: { spaceKeys } };
 }

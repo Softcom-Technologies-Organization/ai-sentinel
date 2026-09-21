@@ -71,6 +71,13 @@ scan:
   # worker pool (PII_WORKER_PROCESSES); set this to 2-3x that value so the
   # Confluence I/O overlaps with detection. Page events stay in source order.
   page-concurrency: ${PII_SCAN_PAGE_CONCURRENCY:1}
+  # Retry of the scans an outage paused (VPN session over, detector down), so a scan
+  # longer than the VPN session finishes without someone pressing Resume. A retry that
+  # still finds the outage just pauses the scan again, so the interval is how long a
+  # scan waits after the network is back, not a load concern.
+  auto-resume:
+    enabled: ${PII_SCAN_AUTO_RESUME_ENABLED:true}
+    interval-ms: ${PII_SCAN_AUTO_RESUME_INTERVAL_MS:120000}
 
 pii-encryption:
   kek-pii-encryption-key: ${PII_DATABASE_ENCRYPTION_KEY}

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pro.softcom.aisentinel.application.pii.reporting.port.in.PauseScanPort;
 import pro.softcom.aisentinel.application.pii.reporting.port.out.PersonallyIdentifiableInformationScanExecutionOrchestratorPort;
+import pro.softcom.aisentinel.application.pii.reporting.service.OutagePausedScans;
 import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 
 /**
@@ -17,6 +18,7 @@ public class PauseScanUseCase implements PauseScanPort {
 
     private final ScanCheckpointRepository scanCheckpointRepository;
     private final PersonallyIdentifiableInformationScanExecutionOrchestratorPort personallyIdentifiableInformationScanExecutionOrchestratorPort;
+    private final OutagePausedScans outagePausedScans;
 
     @Override
     public void pauseScan(String scanId) {
@@ -26,6 +28,11 @@ public class PauseScanUseCase implements PauseScanPort {
         }
 
         log.info("[PAUSE] Pausing scan {}", scanId);
+
+        // The operator has the last word: an outage may have listed this scan for
+        // automatic retry moments ago, and without this it would start again on its
+        // own, right after they stopped it.
+        outagePausedScans.forget(scanId);
 
         // Step 1: Dispose the reactive subscription to stop emitting new events
         boolean disposed = personallyIdentifiableInformationScanExecutionOrchestratorPort.pauseScan(scanId);

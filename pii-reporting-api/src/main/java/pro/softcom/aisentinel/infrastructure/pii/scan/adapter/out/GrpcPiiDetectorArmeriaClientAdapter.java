@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import pii_detection.PIIDetectionServiceGrpc;
 import pii_detection.PiiDetection;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
+import pro.softcom.aisentinel.domain.pii.judge.FindingJudgeAnswer;
+import pro.softcom.aisentinel.domain.pii.judge.FindingJudgeRequest;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorRunStat;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection.DetectorSource;
@@ -23,6 +25,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -58,6 +61,13 @@ public class GrpcPiiDetectorArmeriaClientAdapter implements PiiDetectorClient {
      */
     private static final long HEALTH_CHECK_TIMEOUT_MS = 15_000L;
 
+    /**
+     * Deadline for one judge verdict, above the detection service's own 300 s read timeout on
+     * LM Studio so a slow verdict is reported by the service as an ERROR answer rather than cut
+     * here as an outage.
+     */
+    private static final long JUDGE_TIMEOUT_MS = 330_000L;
+
     private final PiiDetectorConfig config;
     private final PIIDetectionServiceGrpc.PIIDetectionServiceBlockingStub blockingStub;
     private final MeterRegistry meterRegistry;
@@ -87,8 +97,9 @@ public class GrpcPiiDetectorArmeriaClientAdapter implements PiiDetectorClient {
     }
 
     @Override
-    public LmStudioModelListing listLmStudioModels(String lmStudioHost, Integer lmStudioPort) {
-        PiiDetection.LmStudioModelsRequest.Builder request = PiiDetection.LmStudioModelsRequest.newBuilder();
+    public LmStudioModelListing listLmStudioModels(String lmStudioHost, Integer lmStudioPort, boolean allModels) {
+        PiiDetection.LmStudioModelsRequest.Builder request = PiiDetection.LmStudioModelsRequest.newBuilder()
+                .setAllModels(allModels);
         if (lmStudioHost != null && !lmStudioHost.isBlank()) {
             request.setLmStudioHost(lmStudioHost);
         }
@@ -107,6 +118,28 @@ public class GrpcPiiDetectorArmeriaClientAdapter implements PiiDetectorClient {
         } catch (Exception e) {
             final String errorMessage = String.format("Failed to list LM Studio models: %s", e.getMessage());
             throw PiiDetectionException.serviceError(errorMessage, e);
+        }
+    }
+
+    @Override
+    public FindingJudgeAnswer judgeFinding(FindingJudgeRequest request) {
+        PiiDetection.JudgeFindingRequest grpcRequest = PiiDetection.JudgeFindingRequest.newBuilder()
+                .setPiiType(Objects.requireNonNullElse(request.piiType(), ""))
+                .setTypeLabel(Objects.requireNonNullElse(request.typeLabel(), ""))
+                .setValue(Objects.requireNonNullElse(request.value(), ""))
+                .setContext(Objects.requireNonNullElse(request.context(), ""))
+                .setLmStudioModel(Objects.requireNonNullElse(request.model(), ""))
+                .setLmStudioHost(Objects.requireNonNullElse(request.lmStudioHost(), ""))
+                .setLmStudioPort(Objects.requireNonNullElse(request.lmStudioPort(), 0))
+                .build();
+        try {
+            PiiDetection.JudgeFindingResponse response = blockingStub
+                    .withDeadlineAfter(JUDGE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                    .judgeFinding(grpcRequest);
+            return new FindingJudgeAnswer(response.getVerdict(), response.getConfidence(),
+                    response.getReason(), response.getError());
+        } catch (Exception e) {
+            throw PiiDetectionException.serviceError("Failed to judge finding: " + e.getMessage(), e);
         }
     }
 

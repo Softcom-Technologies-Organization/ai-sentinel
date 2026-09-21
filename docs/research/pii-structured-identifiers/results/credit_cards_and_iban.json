@@ -1,0 +1,366 @@
+{
+  "name": "Credit cards and IBAN",
+  "scope": {
+    "category": "Financial identifiers",
+    "access_date": "2026-09-19",
+    "summary": "Complete payment-card numbers and IBANs are strong candidates for deterministic extraction followed by format and checksum validation. This supports reducing model use for these entity types, but does not establish real-document recall or justify removing all Presidio capabilities.",
+    "included": [
+      "Payment-card primary account numbers (PANs), including compact and explicitly supported separated representations.",
+      "IBAN country codes, country-specific lengths and BBAN structures, MOD-97-10 checksums, and original-text spans.",
+      "Public source inspection of Presidio 2.2.364 and python-stdnum 2.2, with upstream data freshness distinguished from release behavior."
+    ],
+    "excluded": [
+      "Proof of account existence, ownership, issuance, activation, balance, payment authorization or current bank membership.",
+      "CVV/CVC, expiry dates and domestic non-IBAN account formats.",
+      "Application source inspection or modification, external validation of local identifiers, and production benchmarking."
+    ]
+  },
+  "official_rules": {
+    "iban": {
+      "authority": "SWIFT is the ISO 13616 registration authority. The retrieved official PDF is release 103, September 2026; its history identifies a Brazil update. Some indexed document-centre content still described release 102, so the downloaded document was checked directly.",
+      "structure": "Two country letters, two check digits and a country-specific BBAN of at most 30 alphanumeric characters: at most 34 characters overall. A registered country has a fixed length and BBAN structure; an arbitrary ISO country code is insufficient.",
+      "checks": "Normalize an accepted representation, enforce country and complete format, then verify MOD-97-10. Rearrange the first four characters to the end, replace A through Z by 10 through 35, and require remainder 1. These checks do not establish account existence.",
+      "swiss_example": "CH has length 21 and a BBAN consisting of five digits followed by twelve alphanumeric characters. SWIFT prints CH9300762011623852957 as CH93 0076 2011 6238 5295 7.",
+      "source_urls": [
+        "https://www.swift.com/swift-resource/9606/download",
+        "https://www.swift.com/fr/node/301396"
+      ]
+    },
+    "payment_cards": {
+      "structure": "ISO/IEC 7812-1 defines issuer identification and PAN structure. ISO's explanation of the eight-digit IIN transition gives a maximum PAN length of 19 and a minimum of 10 for issuers using eight-digit IINs. Historical six-digit-IIN formats had a broader minimum. A common-card detector's 12-19 or 13-19 policy must therefore be stated as a coverage choice, not a universal ISO rule.",
+      "checksum": "Luhn is a useful deterministic check for the supported payment-card profile. It does not identify the issuer, prove that a number was issued, or show that a payment will succeed.",
+      "issuer_ranges": "Avoid a permanently hard-coded rule that cards must start with 3, 4, 5 or 6. Stripe publishes a Mastercard 2-series test PAN, 2223003122003222, which must be included in coverage tests.",
+      "source_urls": [
+        "https://www.iso.org/standard/70484.html",
+        "https://www.iso.org/news/2016/11/Ref2146.html",
+        "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.luhn.html",
+        "https://docs.stripe.com/testing"
+      ]
+    },
+    "validation_layers": [
+      "Extraction identifies a candidate span in text; it must preserve offsets and cannot prove validity.",
+      "Format validation enforces the chosen PAN profile or the registered IBAN country, exact length and character positions.",
+      "Checksum validation rejects many transcription errors but is not a semantic classifier.",
+      "Issuance and ownership are outside these offline checks. A documentation example can pass every arithmetic check without being a real customer's account."
+    ]
+  },
+  "separators_and_extraction": {
+    "status": "Engineering recommendations, not claims of measured extraction quality.",
+    "normalization": [
+      "Extract on the original text and keep start/end offsets; normalize only the candidate sent to the validator.",
+      "Use ASCII [0-9] for numeric rules. For IBAN, allow an explicit ASCII case-insensitive input policy and uppercase the candidate for validation.",
+      "Enumerate supported separators: ordinary space, U+00A0 NO-BREAK SPACE, U+202F NARROW NO-BREAK SPACE, and optionally ASCII hyphen. Their acceptance is a detector policy; it does not make every such rendering an official bank presentation.",
+      "Bound the number of separators between characters or groups. Do not use unbounded \\s* or remove all non-alphanumeric characters from a document: both can join separate values, lines or table cells.",
+      "Do not silently correct OCR substitutions such as O/0 or I/1. If required, evaluate a separate recovery path and distinguish the original text from a proposed correction."
+    ],
+    "pan_candidates": {
+      "length_policy": "A broad current PAN candidate profile can use 10-19 digits; a narrower common-payment-card profile can use 12-19 with its exclusions documented. Apply length after removing only allowed separators.",
+      "bounded_fragment": "[0-9](?:[ \\u00A0\\u202F-]?[0-9]){9,18}",
+      "important_limit": "This is a candidate fragment, not a complete extractor. It still needs token/layout boundaries and a check against selecting a valid-looking substring of a longer separator-connected numeric run. A bare word boundary does not solve the separated-run case.",
+      "grouping": "Support documented renderings such as 4-4-4-4 and Amex 4-6-5; do not assume that all cards have four groups of four digits. Context or layout is needed where consecutive unrelated numeric fields resemble a card."
+    },
+    "iban_candidates": {
+      "preferred_flow": "Find a plausible two-letter country and two-digit checksum prefix, look up the registered total length, collect a bounded candidate using the configured separator policy, then validate the complete canonical value. Standard compact and grouped forms should be covered first.",
+      "limits": "Never consume an unbounded alphanumeric-and-space run. The complete canonical value cannot exceed 34 characters; with at most one separator between characters, its raw span is bounded as well. Preserve country-code/check-digit adjacency for the standard profile.",
+      "boundaries": "Test punctuation, adjacent letters, trailing prose and following numbers explicitly. A country-aware endpoint helps avoid swallowing words after a valid IBAN, but a detector must also reject contiguous overlong tokens instead of salvaging a valid prefix.",
+      "line_breaks": "Keep newlines, HTML element boundaries and table-cell boundaries outside the baseline separator set. Add line-wrap recovery only with layout-aware tests, because a global whitespace matcher can merge unrelated fields."
+    }
+  },
+  "validators_and_libraries": [
+    {
+      "name": "python-stdnum",
+      "version_examined": "2.2, released 2026-01-04; public 2.2 IBAN source and documentation inspected.",
+      "license": "LGPL-2.1-or-later, as declared in the module headers.",
+      "iban_behavior": "stdnum.iban.validate checks MOD-97, requires an entry in its IBAN database and validates the complete BBAN structure. check_country=False disables optional country-specific modules; it does not disable the base country lookup or BBAN format check. Country-specific domestic checks exist only for some countries.",
+      "normalization": "IBAN compacting requests removal of spaces, hyphens and periods and uppercases the result. Constrain extraction first; a permissive normalizer should not define document boundaries.",
+      "pan_behavior": "The public format inventory exposes stdnum.luhn as a generic checksum algorithm, not a dedicated credit-card extractor or issuer/length validator. Combine Luhn with explicit PAN extraction and format policy; do not invent a stdnum.creditcard API.",
+      "data_freshness": "The inspected upstream master iban.dat identifies registry v101. SWIFT now publishes v103. [uncertain] Exact deployed 2.2 database parity with v103 was not audited here; a release number alone does not prove current country coverage.",
+      "source_urls": [
+        "https://arthurdejong.org/python-stdnum/",
+        "https://raw.githubusercontent.com/arthurdejong/python-stdnum/2.2/stdnum/iban.py",
+        "https://arthurdejong.org/python-stdnum/doc/2.2/index.html",
+        "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.luhn.html",
+        "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/iban.dat"
+      ]
+    },
+    {
+      "name": "Presidio CreditCardRecognizer",
+      "version_examined": "Public tag 2.2.364; the inspected main source has the same candidate pattern.",
+      "license": "MIT; the project license requires preserving its copyright and permission notice in copies or substantial portions.",
+      "behavior": "Uses a candidate regex, optional context, removal of ordinary spaces/hyphens and a Luhn check. These operations are deterministic and are not an LLM-based card detector.",
+      "source_derived_limits": [
+        "The default pattern's group lengths total 13-17 digits. This is narrower than the 12-19 range often described for the entity.",
+        "Its allowed prefixes omit 2, so the published Stripe Mastercard 2-series example cannot match the default regex.",
+        "The separator class accepts ASCII space or hyphen, not NBSP, narrow NBSP or newlines.",
+        "Amex 4-6-5 grouping is not automatically a failure: optional separators allow the six-digit group to split into two internal groups of three."
+      ],
+      "interpretation": "These are code-level coverage observations, not measured rates of missed real cards. The parent audit owns runtime verification against the installed package.",
+      "source_urls": [
+        "https://raw.githubusercontent.com/microsoft/presidio/2.2.364/presidio-analyzer/presidio_analyzer/predefined_recognizers/generic/credit_card_recognizer.py",
+        "https://docs.stripe.com/testing",
+        "https://raw.githubusercontent.com/microsoft/presidio/main/LICENSE"
+      ]
+    },
+    {
+      "name": "Presidio IbanRecognizer",
+      "version_examined": "Public tag 2.2.364; the microsoft repository release URL redirects to data-privacy-stack/presidio.",
+      "license": "MIT.",
+      "behavior": "Extracts grouped candidates, removes ASCII spaces/hyphens, checks the generated IBAN check digits and consults country regexes. Its group fallback tries shorter candidate endings to avoid including trailing text.",
+      "source_derived_limits": [
+        "The default exact_match=False causes country validation to use re.match without a required end anchor; it is not equivalent to full-string country-length validation.",
+        "The default extraction flags are DOTALL and MULTILINE, with uppercase character classes. Case-normalizing after a match does not guarantee lowercase input was extracted.",
+        "Default extraction separators are ASCII space and hyphen; broader validator normalization cannot recover candidates that the extractor never selected."
+      ],
+      "country_table": "The inspected upstream iban_patterns.py embeds a manually maintained table and cites Wikipedia and other secondary references. Do not treat it as a live copy of SWIFT. [uncertain] An exhaustive comparison of the tag's country patterns against registry v103 was not completed.",
+      "interpretation": "Require full candidate format validation independently of the matching score. A score raised by checksum success is not a calibrated probability that the text is PII.",
+      "source_urls": [
+        "https://raw.githubusercontent.com/data-privacy-stack/presidio/2.2.364/presidio-analyzer/presidio_analyzer/predefined_recognizers/generic/iban_recognizer.py",
+        "https://raw.githubusercontent.com/microsoft/presidio/main/presidio-analyzer/presidio_analyzer/predefined_recognizers/generic/iban_patterns.py",
+        "https://github.com/microsoft/presidio/releases/tag/2.2.364"
+      ]
+    }
+  ],
+  "supplied_source_audit": [
+    {
+      "url": "https://ibanchecker.cash/blog/developer-resources/iban-regex-patterns",
+      "status": "[uncertain] The article body could not be retrieved through the web tool despite direct, trailing-slash and category-link attempts.",
+      "verified": "The site's accessible developer-resources index lists the article, dated 2026-06-17, and describes generic and DE/GB/FR/NL regexes plus the limits of regex-only validation.",
+      "not_verified": "The actual regexes, checksum code, edge cases, claimed coverage, maintenance process and reuse license were not inspected. Do not present an audit of these details as completed.",
+      "decision": "Treat this commercial vendor article as a supplied secondary source, not the country-format authority. Its broad description is consistent with layered validation, but implementation choices should be checked against SWIFT and maintained library source.",
+      "corroborating_urls": [
+        "https://ibanchecker.cash/blog/developer-resources",
+        "https://www.swift.com/swift-resource/9606/download",
+        "https://raw.githubusercontent.com/arthurdejong/python-stdnum/2.2/stdnum/iban.py"
+      ]
+    },
+    {
+      "url": "https://gist.github.com/akndmr/7ba7af0c07a3ec517c651bc6f1c508d5",
+      "status": "Retrieved; created 2021-04-09, with two revisions shown.",
+      "findings": [
+        "The anchored expression is a whole-value shape matcher, not an extractor for arbitrary prose.",
+        "It permits any two uppercase country letters and a generic length envelope, with no lookup of the registered country's exact BBAN structure or length.",
+        "It does not calculate MOD-97. Matching its positive sample list cannot establish rejection of checksum-invalid values.",
+        "The pasted Kotlin-style expression includes quoting and escape text in its separator class; its exact portability and accepted punctuation must be tested in the intended regex engine.",
+        "The sample table is illustrative rather than a maintained authority; no evidence was found that it tracks current SWIFT releases."
+      ],
+      "license": "[uncertain] No explicit reuse license was visible on the inspected gist page. Do not assume that public visibility grants the same permissions as MIT or LGPL.",
+      "decision": "Do not adopt it as the complete validator. Use SWIFT-backed country data plus a maintained checksum implementation, with a separately tested extractor.",
+      "corroborating_urls": [
+        "https://www.swift.com/swift-resource/9606/download",
+        "https://raw.githubusercontent.com/arthurdejong/python-stdnum/2.2/stdnum/iban.py"
+      ]
+    }
+  ],
+  "false_positive_and_recall_risks": {
+    "false_positives": [
+      "Luhn is also used outside payment cards. For uniformly random numeric strings of a fixed length, exactly one possible final digit per prefix passes: the resulting one-in-ten property is mathematical, not a measured document false-positive rate.",
+      "IBAN examples, test cards, synthetic numbers and unrelated structured strings can pass checksums. Their presence does not prove personal ownership.",
+      "Overly permissive separator removal can combine independent fields into a checksum-valid number.",
+      "A validator accepting a prefix instead of the complete candidate can accept a wrong-length value.",
+      "Repeated-digit or all-zero candidates can satisfy some checksum algorithms; issuer/profile rules and clearly defined synthetic-data treatment are separate decisions."
+    ],
+    "false_negatives": [
+      "Unsupported grouping, NBSP, narrow NBSP, lower-case IBANs, OCR mistakes, masks, line wrapping and markup boundaries may prevent extraction before a validator is called.",
+      "Country-table lag, outdated issuer prefixes and arbitrary PAN length restrictions exclude valid formats.",
+      "Strict checksums reject mistyped real identifiers. If the product aims to detect attempted disclosure as well as valid identifiers, preserve a separate explicitly lower-confidence path rather than silently broadening the valid category.",
+      "Mandatory nearby keywords can miss bare table cells. Removing all context can increase classification errors; measure that trade-off."
+    ],
+    "unmeasured": "[uncertain] No representative labeled corpus, recall comparison with Ministral, precision estimate, latency benchmark or production coverage percentage was available. The listed failure modes cannot be converted into real-world rates from source inspection."
+  },
+  "detector_recommendation": {
+    "decision": "Use deterministic extraction and validation as the primary path for complete literal PANs and IBANs. A small custom recognizer or correction of existing recognizer configuration is preferable to replacing the entire Presidio framework for these two types.",
+    "iban": "Reuse stdnum.iban for validation when available; enforce the extraction policy and full canonical format, and monitor country-data updates against SWIFT. Retain the distinction between generic IBAN validation and additional domestic checks.",
+    "cards": "Use bounded candidates, an explicit supported length/issuer policy and Luhn. Cover Mastercard 2-series and 19-digit candidates. A checksum helper alone is not a card recognizer.",
+    "ministral": "Complete well-formed literals do not need generative reasoning to apply their formal rules. Keep any model-based handling of masked, corrupted or contextual disclosures as a separately evaluated use case rather than assuming it is redundant.",
+    "replacement_gate": "[uncertain] Removal of Ministral for these entity types should depend on paired evaluation on labeled representative documents, including exact spans and formatting variants. Removal of Presidio as a whole cannot be justified from this financial-identifier review.",
+    "evaluation": [
+      "Compare current detector, deterministic candidate pipeline, and their union on the same documents.",
+      "Report entity precision and recall, exact-span correctness, and latency separately for cards and IBANs.",
+      "Stratify by country, PAN length/prefix, separator, case, prose/table/code context, and masked or erroneous input.",
+      "Keep synthetic acceptance checks separate from real-document recall measurements; choose acceptable non-regression criteria before switching."
+    ],
+    "source_urls": [
+      "https://microsoft.github.io/presidio/analyzer/",
+      "https://raw.githubusercontent.com/arthurdejong/python-stdnum/2.2/stdnum/iban.py",
+      "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.luhn.html"
+    ]
+  },
+  "acceptance_cases": {
+    "status": "Proposed tests for the host implementation, not a claim that an application test suite was run. Named public examples are test/reference data, and generated checksum-valid values imply no issuance.",
+    "positive_cases": [
+      {
+        "input": "4242424242424242",
+        "expected": "Extract a complete PAN candidate and pass Luhn.",
+        "origin": "Stripe public Visa test number: https://docs.stripe.com/testing"
+      },
+      {
+        "input_variants": ["4242 4242 4242 4242", "4242-4242-4242-4242", "4242\u00a04242\u00a04242\u00a04242", "4242\u202f4242\u202f4242\u202f4242"],
+        "expected": "Accept supported separated forms; preserve the full original span, including separators."
+      },
+      {
+        "input": "2223003122003222",
+        "expected": "Recognize the published Mastercard 2-series test PAN; detect the default Presidio prefix coverage gap.",
+        "origin": "Stripe public test data: https://docs.stripe.com/testing"
+      },
+      {
+        "input": "3782 822463 10005",
+        "expected": "Accept the Amex 4-6-5 rendering when that payment-card profile is supported.",
+        "origin": "Grouped representation of the Stripe public Amex test number: https://docs.stripe.com/testing"
+      },
+      {
+        "input": "4000000000000000006",
+        "expected": "Extract all 19 digits and pass Luhn in a profile allowing 19 digits; no issuer or issuance claim.",
+        "origin": "Synthetic arithmetic test, independently checked with a local standard-library Luhn calculation."
+      },
+      {
+        "input_variants": ["CH9300762011623852957", "CH93 0076 2011 6238 5295 7", "ch93 0076 2011 6238 5295 7"],
+        "expected": "Accept compact/printed IBAN and the explicitly supported lowercase normalization; retain original spans.",
+        "origin": "SWIFT public CH reference example and a derived lowercase variant: https://www.swift.com/swift-resource/9606/download"
+      }
+    ],
+    "negative_and_boundary_cases": [
+      {
+        "input": "4242424242424243",
+        "expected": "Reject as a checksum-valid PAN; a separate suspected-disclosure policy may retain it at a different confidence."
+      },
+      {
+        "input": "CH9400762011623852957",
+        "expected": "Reject IBAN checksum after successful candidate extraction."
+      },
+      {
+        "input": "DE813704004405320130000",
+        "expected": "Reject the full 23-character candidate despite MOD-97=1, because the registered DE length is 22. This targets unanchored country validation.",
+        "origin": "Synthetic wrong-length value with recalculated checksum, calculated locally."
+      },
+      {
+        "input": "ZZ22370400440532013000",
+        "expected": "Reject unknown country despite MOD-97=1.",
+        "origin": "Synthetic unknown-country value with recalculated checksum, calculated locally."
+      },
+      {
+        "input_variants": ["942424242424242429999", "4242\n4242\n4242\n4242", "CH93 0076\n2011 6238 5295 7", "CH93 .... .... .... 5295 7"],
+        "expected": "Do not extract a valid substring from the overlong contiguous run. Do not join lines or accept a masked IBAN through the baseline full-identifier path."
+      },
+      {
+        "input_variants": ["(CH9300762011623852957).", "IBAN: CH9300762011623852957 tomorrow", "CH9300762011623852957X", "0000000000000000"],
+        "expected": "Preserve the exact IBAN span beside punctuation/prose; reject the contiguous overlong IBAN token; exercise the explicit degenerate-PAN policy rather than trusting Luhn alone."
+      }
+    ]
+  },
+  "sources": [
+    {
+      "title": "SWIFT IBAN Registry, release 103, September 2026",
+      "url": "https://www.swift.com/swift-resource/9606/download",
+      "type": "Primary registration authority",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "SWIFT explanation of the IBAN registration authority",
+      "url": "https://www.swift.com/fr/node/301396",
+      "type": "Primary registration authority",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "ISO/IEC 7812-1:2017 standard catalogue",
+      "url": "https://www.iso.org/standard/70484.html",
+      "type": "Primary standards organization; public abstract, not full paid standard",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "ISO explanation of IIN length changes",
+      "url": "https://www.iso.org/news/2016/11/Ref2146.html",
+      "type": "Primary standards organization; historical transition explanation",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "Stripe testing documentation",
+      "url": "https://docs.stripe.com/testing",
+      "type": "Primary payment-provider test data",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "python-stdnum releases and project description",
+      "url": "https://arthurdejong.org/python-stdnum/",
+      "type": "Primary maintainer documentation",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "python-stdnum 2.2 format inventory",
+      "url": "https://arthurdejong.org/python-stdnum/doc/2.2/index.html",
+      "type": "Primary versioned documentation",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "python-stdnum 2.2 IBAN source and license header",
+      "url": "https://raw.githubusercontent.com/arthurdejong/python-stdnum/2.2/stdnum/iban.py",
+      "type": "Primary versioned implementation",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "python-stdnum 2.2 Luhn documentation",
+      "url": "https://arthurdejong.org/python-stdnum/doc/2.2/stdnum.luhn.html",
+      "type": "Primary versioned documentation",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "python-stdnum upstream IBAN data provenance",
+      "url": "https://raw.githubusercontent.com/arthurdejong/python-stdnum/master/stdnum/iban.dat",
+      "type": "Primary moving-branch data file; not proof of deployed version content",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "Presidio 2.2.364 credit-card recognizer source",
+      "url": "https://raw.githubusercontent.com/microsoft/presidio/2.2.364/presidio-analyzer/presidio_analyzer/predefined_recognizers/generic/credit_card_recognizer.py",
+      "type": "Primary versioned implementation",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "Presidio 2.2.364 IBAN recognizer source",
+      "url": "https://raw.githubusercontent.com/data-privacy-stack/presidio/2.2.364/presidio-analyzer/presidio_analyzer/predefined_recognizers/generic/iban_recognizer.py",
+      "type": "Primary versioned implementation",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "Presidio upstream IBAN country patterns",
+      "url": "https://raw.githubusercontent.com/microsoft/presidio/main/presidio-analyzer/presidio_analyzer/predefined_recognizers/generic/iban_patterns.py",
+      "type": "Primary moving-branch implementation; exact tag parity not exhaustively audited",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "Presidio MIT license",
+      "url": "https://raw.githubusercontent.com/microsoft/presidio/main/LICENSE",
+      "type": "Primary license text",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "Presidio analyzer and extensible recognizers",
+      "url": "https://microsoft.github.io/presidio/analyzer/",
+      "type": "Primary project documentation",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "Supplied IBAN regex article",
+      "url": "https://ibanchecker.cash/blog/developer-resources/iban-regex-patterns",
+      "type": "Secondary commercial article; body retrieval failed",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "Vendor index confirming the supplied article and date",
+      "url": "https://ibanchecker.cash/blog/developer-resources",
+      "type": "Vendor source for its own publication metadata only",
+      "access_date": "2026-09-19"
+    },
+    {
+      "title": "Supplied Global IBAN regex gist",
+      "url": "https://gist.github.com/akndmr/7ba7af0c07a3ec517c651bc6f1c508d5",
+      "type": "Author's primary source for the supplied snippet; not an IBAN standards authority",
+      "access_date": "2026-09-19"
+    }
+  ],
+  "uncertain": [
+    "validators_and_libraries",
+    "supplied_source_audit",
+    "false_positive_and_recall_risks",
+    "detector_recommendation"
+  ]
+}

@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Tests for the PiiDetectionConfigController class.
- * Verifies REST mapping for the {@code postfilterEnabled} flag.
+ * Verifies REST mapping for the {@code postfilterEnabled} flag and the LM Studio model fields.
  */
 @WebMvcTest(PiiDetectionConfigController.class)
 @Import(SecurityConfig.class)
@@ -44,7 +44,7 @@ class PiiDetectionConfigControllerTest {
     @Test
     void Should_ReturnPostfilterEnabledInResponse_When_GetConfig() throws Exception {
         PiiDetectionConfig domainConfig = new PiiDetectionConfig(
-            1, true, true, false, 1024, 128, new BigDecimal("0.75"), true, "localhost", 1234, null, 1, true, null,
+            1, true, true, false, 1024, 128, new BigDecimal("0.75"), true, "localhost", 1234, null, null, 1, true, null,
             LocalDateTime.now(), "admin"
         );
         when(managePiiDetectionConfigPort.getConfig()).thenReturn(domainConfig);
@@ -57,7 +57,7 @@ class PiiDetectionConfigControllerTest {
     @Test
     void Should_UpdatePostfilterEnabled_When_PutRequestEnablesFlag() throws Exception {
         PiiDetectionConfig persisted = new PiiDetectionConfig(
-            1, true, true, false, 1024, 128, new BigDecimal("0.75"), true, "localhost", 1234, null, 1, true, null,
+            1, true, true, false, 1024, 128, new BigDecimal("0.75"), true, "localhost", 1234, null, null, 1, true, null,
             LocalDateTime.now(), "admin"
         );
         when(managePiiDetectionConfigPort.updateConfig(any(UpdatePiiDetectionConfigCommand.class)))
@@ -92,9 +92,64 @@ class PiiDetectionConfigControllerTest {
     }
 
     @Test
+    void Should_ExposeJudgeModelInResponse_When_GetConfig() throws Exception {
+        PiiDetectionConfig domainConfig = new PiiDetectionConfig(
+            1, true, true, false, 1024, 128, new BigDecimal("0.75"), true, "localhost", 1234,
+            "ministral-3b-pii-preview@q8_0", "google/gemma-4-31b", 1, true, null,
+            LocalDateTime.now(), "admin"
+        );
+        when(managePiiDetectionConfigPort.getConfig()).thenReturn(domainConfig);
+
+        mockMvc.perform(get(CONFIG_URL))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.lmStudioModel").value("ministral-3b-pii-preview@q8_0"))
+            .andExpect(jsonPath("$.lmStudioJudgeModel").value("google/gemma-4-31b"));
+    }
+
+    @Test
+    void Should_ForwardJudgeModelToCommand_When_PutRequestCarriesIt() throws Exception {
+        PiiDetectionConfig persisted = new PiiDetectionConfig(
+            1, true, true, false, 1024, 128, new BigDecimal("0.75"), true, "localhost", 1234,
+            "ministral-3b-pii-preview@q8_0", "google/gemma-4-31b", 1, true, null,
+            LocalDateTime.now(), "admin"
+        );
+        when(managePiiDetectionConfigPort.updateConfig(any(UpdatePiiDetectionConfigCommand.class)))
+            .thenReturn(persisted);
+
+        String body = """
+                {
+                  "presidioEnabled": true,
+                  "regexEnabled": true,
+                  "ministralEnabled": false,
+                  "ministralChunkSize": 1024,
+                  "ministralOverlap": 128,
+                  "defaultThreshold": 0.75,
+                  "postfilterEnabled": true,
+                  "lmStudioHost": "localhost",
+                  "lmStudioPort": 1234,
+                  "lmStudioModel": "ministral-3b-pii-preview@q8_0",
+                  "lmStudioJudgeModel": "google/gemma-4-31b",
+                  "ministralConcurrency": 1,
+                  "ministralConcurrencyAuto": true
+                }
+                """;
+
+        mockMvc.perform(put(CONFIG_URL)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.lmStudioJudgeModel").value("google/gemma-4-31b"));
+
+        ArgumentCaptor<UpdatePiiDetectionConfigCommand> captor =
+            ArgumentCaptor.forClass(UpdatePiiDetectionConfigCommand.class);
+        verify(managePiiDetectionConfigPort).updateConfig(captor.capture());
+        assertThat(captor.getValue().lmStudioJudgeModel()).isEqualTo("google/gemma-4-31b");
+    }
+
+    @Test
     void Should_DefaultPostfilterEnabledToFalse_When_OmittedInUpdateRequest() throws Exception {
         PiiDetectionConfig persisted = new PiiDetectionConfig(
-            1, true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, 1, true, null,
+            1, true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null,
             LocalDateTime.now(), "admin"
         );
         when(managePiiDetectionConfigPort.updateConfig(any(UpdatePiiDetectionConfigCommand.class)))

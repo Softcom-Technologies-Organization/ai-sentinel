@@ -38,7 +38,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_ReturnConfig_When_GetConfigCalled() {
         // Arrange
         PiiDetectionConfig expectedConfig = new PiiDetectionConfig(
-            1, true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, 1, true, null,
+            1, true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null,
             LocalDateTime.now(ZoneId.systemDefault()), "system"
         );
         when(repository.findConfig()).thenReturn(expectedConfig);
@@ -55,7 +55,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_UpdateAndReturnConfig_When_ValidCommand() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            false, true, false, 1024, 128, new BigDecimal("0.80"), false, "localhost", 1234, null, 1, true, null, "testuser"
+            false, true, false, 1024, 128, new BigDecimal("0.80"), false, "localhost", 1234, null, null, 1, true, null, "testuser"
         );
 
         // Act
@@ -83,7 +83,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_PassPostfilterEnabledFlagThroughUseCase_When_CommandEnablesIt() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, false, true, 1024, 128, new BigDecimal("0.80"), true, "localhost", 1234, null, 1, true, null, "testuser"
+            true, false, true, 1024, 128, new BigDecimal("0.80"), true, "localhost", 1234, null, null, 1, true, null, "testuser"
         );
 
         // Act
@@ -102,7 +102,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_PassMinistralFieldsThroughUseCase_When_CommandEnablesIt() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, false, true, 2048, 256, new BigDecimal("0.80"), false, "localhost", 1234, null, 1, true, null, "testuser"
+            true, false, true, 2048, 256, new BigDecimal("0.80"), false, "localhost", 1234, null, null, 1, true, null, "testuser"
         );
 
         // Act
@@ -126,6 +126,7 @@ class ManagePiiDetectionConfigUseCaseTest {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
             true, false, true, 2048, 256, new BigDecimal("0.80"), false, "localhost", 1234, null,
+            null,
             4, false, "localhost:1234|ministral", "testuser"
         );
 
@@ -150,6 +151,7 @@ class ManagePiiDetectionConfigUseCaseTest {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
             true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null,
+            null,
             21, false, null, "testuser"
         );
 
@@ -163,7 +165,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_ThrowException_When_CommandHasInvalidThreshold() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, true, false, 1024, 128, new BigDecimal("1.5"), false, "localhost", 1234, null, 1, true, null, "testuser"
+            true, true, false, 1024, 128, new BigDecimal("1.5"), false, "localhost", 1234, null, null, 1, true, null, "testuser"
         );
 
         // Act & Assert
@@ -176,7 +178,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_ThrowException_When_CommandHasNegativeThreshold() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, true, false, 1024, 128, new BigDecimal("-0.1"), false, "localhost", 1234, null, 1, true, null, "testuser"
+            true, true, false, 1024, 128, new BigDecimal("-0.1"), false, "localhost", 1234, null, null, 1, true, null, "testuser"
         );
 
         // Act & Assert
@@ -189,7 +191,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_ThrowException_When_NoDetectorsEnabled() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            false, false, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, 1, true, null, "testuser"
+            false, false, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser"
         );
 
         // Act & Assert
@@ -202,7 +204,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_UpdateConfig_When_OnlyPresidioEnabled() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, false, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, 1, true, null, "testuser"
+            true, false, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser"
         );
 
         // Act
@@ -220,7 +222,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_UpdateConfig_When_OnlyRegexEnabled() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            false, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, 1, true, null, "testuser"
+            false, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser"
         );
 
         // Act
@@ -238,7 +240,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_UpdateConfig_When_OnlyMinistralEnabled() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            false, false, true, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, 1, true, null, "testuser"
+            false, false, true, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser"
         );
 
         // Act
@@ -256,7 +258,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_AcceptBoundaryThreshold_When_ThresholdIsZero() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, false, false, 1024, 128, BigDecimal.ZERO, false, "localhost", 1234, null, 1, true, null, "testuser"
+            true, false, false, 1024, 128, BigDecimal.ZERO, false, "localhost", 1234, null, null, 1, true, null, "testuser"
         );
 
         // Act
@@ -270,7 +272,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_AcceptBoundaryThreshold_When_ThresholdIsOne() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, false, false, 1024, 128, BigDecimal.ONE, false, "localhost", 1234, null, 1, true, null, "testuser"
+            true, false, false, 1024, 128, BigDecimal.ONE, false, "localhost", 1234, null, null, 1, true, null, "testuser"
         );
 
         // Act
@@ -284,7 +286,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_SetConfigIdToOne_When_UpdatingConfig() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, 1, true, null, "testuser"
+            true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser"
         );
 
         // Act
@@ -300,7 +302,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_PropagateException_When_RepositoryThrowsException() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, 1, true, null, "testuser"
+            true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser"
         );
         doThrow(new RuntimeException("Database error"))
             .when(repository).updateConfig(any());

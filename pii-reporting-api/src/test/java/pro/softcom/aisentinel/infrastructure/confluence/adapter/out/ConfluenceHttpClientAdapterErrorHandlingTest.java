@@ -62,7 +62,6 @@ class ConfluenceHttpClientAdapterErrorHandlingTest {
         lenient().when(config.readTimeout()).thenReturn(10000);
         lenient().when(config.maxRetries()).thenReturn(0); // No retry for error tests
         lenient().when(config.pagesLimit()).thenReturn(50);
-        lenient().when(config.maxPages()).thenReturn(100);
     }
 
     private void setupHttpClient() throws Exception {

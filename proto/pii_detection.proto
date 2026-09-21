@@ -16,12 +16,19 @@ service PIIDetectionService {
   // measures the network path the detectors really use.
   rpc CheckDetectorsHealth (DetectorsHealthRequest) returns (DetectorsHealthResponse) {}
 
-  // Lists the Ministral-PII models LM Studio has on disk, so the dashboard can
-  // offer them in a picker. Only the quantizations of the Ministral-PII family are
+  // Lists the models LM Studio has on disk, so the dashboard can offer them in
+  // a picker. By default only the quantizations of the Ministral-PII family are
   // returned: the detector's chunker tokenizes with that family's tokenizer, so
-  // another model would silently mis-size chunks. Runs inside this service for
-  // the same network-standpoint reason as CheckDetectorsHealth.
+  // another model would silently mis-size chunks; `all_models` lifts that filter
+  // for the LLM judge. Runs inside this service for the same network-standpoint
+  // reason as CheckDetectorsHealth.
   rpc ListLmStudioModels (LmStudioModelsRequest) returns (LmStudioModelsResponse) {}
+
+  // Asks the LLM judge whether one detected value really is an instance of its
+  // PII type in its context (precision review of stored findings). Runs inside
+  // this service for the same network-standpoint reason as ListLmStudioModels.
+  // Never fails the RPC: a judge that could not answer is reported in `error`.
+  rpc JudgeFinding (JudgeFindingRequest) returns (JudgeFindingResponse) {}
 }
 
 // Request message containing the text content to analyze
@@ -141,6 +148,10 @@ message DetectorHealth {
 message LmStudioModelsRequest {
   string lm_studio_host = 1;
   int32 lm_studio_port = 2;
+  // When true, every chat model LM Studio has on disk is listed, not only the
+  // Ministral-PII family: the LLM judge accepts any model, unlike the detector
+  // whose chunker is bound to the Ministral tokenizer.
+  bool all_models = 3;
 }
 
 // Ministral-PII models LM Studio has on disk
@@ -176,6 +187,31 @@ message LmStudioModel {
 
 // A PII entity rejected by the deterministic precision post-filter, with the
 // verdict that motivated the rejection
+// One finding submitted to the LLM judge. The context is the raw text window
+// around the value; the judge marks the judged span itself.
+message JudgeFindingRequest {
+  string pii_type = 1;
+  string type_label = 2;
+  string value = 3;
+  string context = 4;
+  // LM Studio identifier of the judge model; empty = the configured detection model
+  string lm_studio_model = 5;
+  // Endpoint override; empty/zero = the configured endpoint
+  string lm_studio_host = 6;
+  int32 lm_studio_port = 7;
+}
+
+message JudgeFindingResponse {
+  // TRUE_POSITIVE | FALSE_POSITIVE | UNSURE, or UNPARSEABLE | ERROR when no verdict could be read
+  string verdict = 1;
+  // Judge confidence in the verdict (0.0-1.0)
+  float confidence = 2;
+  // One-sentence justification naming the rejection motive
+  string reason = 3;
+  // Empty when the judge answered; short technical reason otherwise
+  string error = 4;
+}
+
 message DiscardedPIIEntity {
   // The entity as originally detected (before the post-filter discarded it)
   PIIEntity entity = 1;

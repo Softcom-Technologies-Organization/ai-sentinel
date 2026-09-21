@@ -39,9 +39,9 @@ class ListLmStudioModelsUseCaseTest {
 
     @Test
     void Should_QueryGivenEndpoint_When_HostAndPortProvided() {
-        when(piiDetectorClient.listLmStudioModels("lmstudio", 4321)).thenReturn(LISTING);
+        when(piiDetectorClient.listLmStudioModels("lmstudio", 4321, false)).thenReturn(LISTING);
 
-        LmStudioModelListing result = useCase.listModels("lmstudio", 4321);
+        LmStudioModelListing result = useCase.listModels("lmstudio", 4321, false);
 
         assertThat(result).isEqualTo(LISTING);
         verify(configRepository, never()).findConfig();
@@ -51,22 +51,22 @@ class ListLmStudioModelsUseCaseTest {
     void Should_FallBackToConfiguredEndpoint_When_HostOrPortMissing() {
         when(configRepository.findConfig()).thenReturn(new PiiDetectionConfig(
             1, true, true, true, 2048, 410, new BigDecimal("0.30"), true,
-            "10.10.17.145", 1234, "ministral-3b-pii-preview@q8_0", 4, true, null,
+            "10.10.17.145", 1234, "ministral-3b-pii-preview@q8_0", null, 4, true, null,
             LocalDateTime.now(), "system"));
-        when(piiDetectorClient.listLmStudioModels("10.10.17.145", 1234)).thenReturn(LISTING);
+        when(piiDetectorClient.listLmStudioModels("10.10.17.145", 1234, false)).thenReturn(LISTING);
 
-        LmStudioModelListing result = useCase.listModels(" ", null);
+        LmStudioModelListing result = useCase.listModels(" ", null, false);
 
         assertThat(result.models()).hasSize(1);
-        verify(piiDetectorClient).listLmStudioModels("10.10.17.145", 1234);
+        verify(piiDetectorClient).listLmStudioModels("10.10.17.145", 1234, false);
     }
 
     @Test
     void Should_ReportFailure_When_ListingCarriesAnError() {
         LmStudioModelListing failed = new LmStudioModelListing("http://lmstudio:1234/v1", "", null, "unreachable");
-        when(piiDetectorClient.listLmStudioModels("lmstudio", 1234)).thenReturn(failed);
+        when(piiDetectorClient.listLmStudioModels("lmstudio", 1234, false)).thenReturn(failed);
 
-        LmStudioModelListing result = useCase.listModels("lmstudio", 1234);
+        LmStudioModelListing result = useCase.listModels("lmstudio", 1234, false);
 
         assertThat(result.failed()).isTrue();
         assertThat(result.models()).isEmpty();

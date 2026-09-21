@@ -177,7 +177,7 @@ class RemediationDtoMapperTest {
                             .masterState(MasterState.PARTIAL)
                             .findings(List.of(findingView()))
                             .build()))
-                    .totals(new RemediationTotals(3, 2, 1, 6))
+                    .totals(new RemediationTotals(3, 2, 1, 0, 6))
                     .page(1)
                     .pageSize(25)
                     .totalElements(6)

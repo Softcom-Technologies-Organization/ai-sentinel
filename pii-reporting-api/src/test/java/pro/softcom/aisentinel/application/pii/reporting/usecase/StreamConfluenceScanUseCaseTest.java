@@ -132,7 +132,8 @@ class StreamConfluenceScanUseCaseTest {
         confluenceAccessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService, spaceRepository);
         contentScanOrchestrator = new ContentScanOrchestrator(
                 eventFactory, progressCalculator, checkpointService, jpaScanEventStoreAdapter, scanEventDispatcher,
-                severityCalculationService, scanSeverityCountService, scanPiiTypeCountService
+                severityCalculationService, scanSeverityCountService, scanPiiTypeCountService,
+                new OutagePausedScans()
         );
         attachmentProcessor = new AttachmentProcessor(
                 confluenceDownloadService,
@@ -835,7 +836,8 @@ class StreamConfluenceScanUseCaseTest {
         ConfluenceAccessor accessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService, spaceRepository);
         ContentScanOrchestrator orchestrator = new ContentScanOrchestrator(
                 eventFactory, progressCalculator, checkpointService, jpaScanEventStoreAdapter, scanEventDispatcher,
-                severityCalculationService, scanSeverityCountService, scanPiiTypeCountService
+                severityCalculationService, scanSeverityCountService, scanPiiTypeCountService,
+                new OutagePausedScans()
         );
         AttachmentProcessor processor = new AttachmentProcessor(
                 confluenceDownloadService,
@@ -904,7 +906,8 @@ class StreamConfluenceScanUseCaseTest {
         ConfluenceAccessor accessor = new ConfluenceAccessor(confluenceService, confluenceAttachmentService, spaceRepository);
         ContentScanOrchestrator orchestrator = new ContentScanOrchestrator(
                 eventFactory, progressCalculator, checkpointService, jpaScanEventStoreAdapter, scanEventDispatcher,
-                severityCalculationService, scanSeverityCountService, scanPiiTypeCountService
+                severityCalculationService, scanSeverityCountService, scanPiiTypeCountService,
+                new OutagePausedScans()
         );
         AttachmentProcessor processor = new AttachmentProcessor(
                 confluenceDownloadService,

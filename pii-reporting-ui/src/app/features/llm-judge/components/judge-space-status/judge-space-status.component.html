@@ -1,0 +1,15 @@
+@if (activeJob(); as job) {
+  <span class="js-pill" [attr.data-testid]="testIds.spaceStatus">
+    <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+    {{ 'judge.space.running' | transloco: { done: job.processed, total: job.total } }}
+  </span>
+  <span class="js-track" aria-hidden="true"><i [style.width.%]="percent()"></i></span>
+} @else if (judged()) {
+  <span class="js-sub" [attr.data-testid]="testIds.spaceStatus">
+    <i class="pi pi-sparkles" aria-hidden="true"></i>
+    {{
+      (summary()!.proposedFalsePositives > 0 ? 'judge.space.judged' : 'judge.space.judgedNone')
+        | transloco: { count: summary()!.proposedFalsePositives }
+    }}
+  </span>
+}

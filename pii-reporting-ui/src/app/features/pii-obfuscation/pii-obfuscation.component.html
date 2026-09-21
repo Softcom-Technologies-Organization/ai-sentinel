@@ -26,7 +26,7 @@
             </span>
           </div>
           <div class="ob-stat">
-            <span class="ob-stat-num">{{ currentTotals.falsePositive }}</span>
+            <span class="ob-stat-num">{{ falsePositiveFacetCount() }}</span>
             <span class="ob-stat-label">
               <span class="ob-stat-dot ob-stat-dot--fp" aria-hidden="true"></span>
               {{ 'obfuscation.stats.falsePositives' | transloco }}
@@ -39,7 +39,7 @@
             ></div>
             <div
               class="ob-progress-fill ob-progress-fill--fp"
-              [style.width.%]="percentOfTotal(currentTotals.falsePositive)"
+              [style.width.%]="percentOfTotal(falsePositiveFacetCount())"
             ></div>
           </div>
         </div>
@@ -156,6 +156,19 @@
                   }
                 </span>
               </div>
+              <div class="caption-right">
+                <button
+                  type="button"
+                  class="ob-btn ob-btn--ai"
+                  (click)="openJudgeDialog()"
+                  [disabled]="!canLaunchJudge()"
+                  [attr.title]="judgeTracker.launchUnavailableReason() ? (judgeTracker.launchUnavailableReason()! | transloco) : null"
+                  [attr.data-testid]="judgeTestIds.remediationButton"
+                >
+                  <i class="pi pi-sparkles" aria-hidden="true"></i>
+                  {{ 'judge.remediationButton' | transloco }}
+                </button>
+              </div>
             </div>
 
             <!-- Table controls, below the top pagination. -->
@@ -183,6 +196,9 @@
                     [attr.data-testid]="testIds.toolbar.statusOption + '-' + option.value"
                   >
                     {{ option.labelKey | transloco }}
+                    @if (option.value === 'FALSE_POSITIVE' && proposedFalsePositives() > 0) {
+                      <i class="pi pi-sparkles ob-segment-sparkle" aria-hidden="true"></i>
+                    }
                     @if (statusCount(option.value) !== null) {
                       <span class="ob-segment-count">{{ statusCount(option.value) }}</span>
                     }
@@ -242,6 +258,14 @@
                 {{ 'obfuscation.collapseAll' | transloco }}
               </button>
             </div>
+
+            @if (judgeTracker.jobs().length > 0) {
+              <app-judge-job-banner
+                [jobs]="judgeTracker.jobs()"
+                (interrupt)="judgeTracker.cancelAll()"
+                (dismissed)="judgeTracker.clear()"
+              />
+            }
           </ng-template>
 
           <ng-template #header>
@@ -340,6 +364,7 @@
                       (toggled)="onRowToggled(finding)"
                       (markManual)="onRowMarkManual(finding)"
                       (restore)="onRowRestore(finding)"
+                      (confirmFalsePositive)="onRowConfirmFalsePositive(finding)"
                     />
                   }
                   @if (group.findings.length < group.total) {
@@ -390,6 +415,14 @@
       [spaceKey]="selection.scope()?.spaceKey ?? ''"
       (confirmed)="confirmObfuscation()"
       (cancelled)="dialogVisible.set(false)"
+    />
+
+    <app-judge-launch-dialog
+      [visible]="judgeDialogVisible()"
+      [scopeOptions]="judgeScopeOptions()"
+      [disabledReason]="judgeTracker.launchUnavailableReason()"
+      (launched)="launchJudge($event)"
+      (cancelled)="judgeDialogVisible.set(false)"
     />
   } @else {
     <output class="ob-disabled" [attr.data-testid]="testIds.featureDisabled">

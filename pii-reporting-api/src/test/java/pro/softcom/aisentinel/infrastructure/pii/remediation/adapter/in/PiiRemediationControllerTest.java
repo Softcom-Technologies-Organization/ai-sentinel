@@ -134,7 +134,7 @@ class PiiRemediationControllerTest {
             RemediationFindingsQuery query = query();
             RemediationFindingsResult result = emptyResult();
             RemediationSearchResponseDto responseDto = new RemediationSearchResponseDto(
-                    List.of(), new RemediationTotalsDto(0, 0, 0, 0), 0, 50, 0, 0, 0);
+                    List.of(), new RemediationTotalsDto(0, 0, 0, 0, 0), 0, 50, 0, 0, 0);
             when(mapper.toQuery(request)).thenReturn(query);
             when(queryRemediationFindingsPort.search(query)).thenReturn(result);
             when(mapper.toDto(result)).thenReturn(responseDto);

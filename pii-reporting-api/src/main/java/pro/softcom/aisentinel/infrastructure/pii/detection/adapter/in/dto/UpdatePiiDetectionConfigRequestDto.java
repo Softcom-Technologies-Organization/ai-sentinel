@@ -30,6 +30,10 @@ import java.math.BigDecimal;
  *                            Optional in the payload: when omitted, defaults to {@code false}.
  * @param lmStudioHost        Host of the LM Studio endpoint serving the Ministral-PII model
  * @param lmStudioPort        Port of the LM Studio endpoint serving the Ministral-PII model (1-65535)
+ * @param lmStudioModel       LM Studio identifier of the Ministral-PII model the detector prompts.
+ *                            Optional in the payload: {@code null} means "detector service default".
+ * @param lmStudioJudgeModel  LM Studio identifier of the model the LLM judge prompts. Any chat model
+ *                            is acceptable. Optional in the payload: {@code null} means "reuse lmStudioModel".
  * @param ministralConcurrency               Number of chunk prompts sent concurrently to LM Studio (1-16, 1 = sequential)
  * @param ministralConcurrencyAuto           Whether the service auto-tunes the concurrency at startup
  * @param ministralConcurrencyTunedSignature The "host:port|model" signature the auto value was tuned for.
@@ -82,6 +86,10 @@ public record UpdatePiiDetectionConfigRequestDto(
     @JsonProperty("lmStudioModel")
     @Size(max = 255, message = "lmStudioModel must be at most 255 characters")
     String lmStudioModel,
+
+    @JsonProperty("lmStudioJudgeModel")
+    @Size(max = 255, message = "lmStudioJudgeModel must be at most 255 characters")
+    String lmStudioJudgeModel,
 
     @JsonProperty("ministralConcurrency")
     @NotNull(message = "ministralConcurrency is required")

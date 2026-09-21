@@ -1,0 +1,31 @@
+field_categories:
+  - category: basic_info
+    fields:
+      - name: name
+        required: true
+      - name: scope
+        required: true
+      - name: official_rules
+        required: true
+      - name: separators_and_extraction
+        required: true
+      - name: validators_and_libraries
+        required: true
+      - name: supplied_source_audit
+        required: true
+      - name: false_positive_and_recall_risks
+        required: true
+      - name: detector_recommendation
+        required: true
+      - name: acceptance_cases
+        required: true
+      - name: sources
+        required: true
+research_instructions:
+  - Research current public primary sources with web tools; attach direct URLs to claims and record the access date.
+  - Separate extraction, format validation, checksum validation and actual issuance; never claim a checksum proves an identifier exists.
+  - Do not submit any local PII or repository data to external services.
+  - Do not inspect or modify application source. Own only your assigned JSON result. Other agents are working in the repository; do not revert their edits.
+  - Each field may contain an array or object; write all values in English and list uncertainty explicitly.
+  - The host will produce the French user-facing synthesis. Return only completion status, output path and material uncertainties.
+  - The skill validator moved on this machine; if ~/.Codex/skills/research/validate_json.py is missing, use python3 /Users/Thibaut.Vuillaume/.agents/skills/research/validate_json.py with the same arguments. If PyYAML is unavailable, use the existing pii-detector-service/.venv/bin/python.

@@ -50,7 +50,6 @@ class ConfluenceCloudHttpClientAdapterTest {
         lenient().when(config.readTimeout()).thenReturn(10000);
         lenient().when(config.maxRetries()).thenReturn(0);
         lenient().when(config.pagesLimit()).thenReturn(50);
-        lenient().when(config.maxPages()).thenReturn(100);
 
         adapter = new ConfluenceCloudHttpClientAdapter(config, new ObjectMapper());
 

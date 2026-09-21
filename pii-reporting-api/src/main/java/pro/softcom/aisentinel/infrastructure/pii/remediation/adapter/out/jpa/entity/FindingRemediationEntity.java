@@ -60,4 +60,10 @@ public class FindingRemediationEntity {
 
     @Column(name = "redaction_job_id", length = 100)
     private String redactionJobId;
+
+    @Column(name = "judge_verdict", length = 20)
+    private String judgeVerdict;
+
+    @Column(name = "judge_confidence")
+    private Double judgeConfidence;
 }

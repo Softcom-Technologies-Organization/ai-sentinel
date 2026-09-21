@@ -176,24 +176,6 @@
           decrementButtonIcon="pi pi-minus">
         </p-inputNumber>
       </div>
-
-      <div class="form-field">
-        <label for="maxPages">
-          <span class="field-label">{{ 'settings.confluence.pagination.maxPages' | transloco }}</span>
-        </label>
-        <p class="field-description">{{ 'settings.confluence.pagination.maxPagesDesc' | transloco }}</p>
-        <p-inputNumber
-          inputId="maxPages"
-          [formField]="configForm.maxPages"
-          [min]="1"
-          [max]="10000"
-          [step]="100"
-          [showButtons]="true"
-          buttonLayout="horizontal"
-          incrementButtonIcon="pi pi-plus"
-          decrementButtonIcon="pi pi-minus">
-        </p-inputNumber>
-      </div>
     </p-fieldset>
 
     <!-- Info Card -->

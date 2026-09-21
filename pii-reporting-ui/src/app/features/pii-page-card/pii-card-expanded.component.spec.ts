@@ -124,6 +124,58 @@ describe('PiiCardExpandedComponent', () => {
     expect(rows).toHaveLength(4); // One row per entity
   });
 
+  it('Should_HideConfidenceColumn_When_AllEntitiesComeFromMinistral', () => {
+    const ministralItem: PersonallyIdentifiableInformationScanResult = {
+      ...MOCK_ITEM,
+      detectedPersonallyIdentifiableInformationList: [
+        {
+          startPosition: 0,
+          endPosition: 10,
+          piiTypeLabel: 'EMAIL',
+          confidence: 1,
+          source: 'MINISTRAL',
+          maskedContext: 'user@***',
+        },
+      ],
+    };
+
+    createComponent(ministralItem);
+
+    expect(fixture.nativeElement.querySelector('.th-confidence')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.td-confidence')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-confidence-indicator')).toBeNull();
+  });
+
+  it('Should_HideOnlyMinistralConfidence_When_DetectorsAreMixed', () => {
+    const mixedItem: PersonallyIdentifiableInformationScanResult = {
+      ...MOCK_ITEM,
+      detectedPersonallyIdentifiableInformationList: [
+        {
+          startPosition: 0,
+          endPosition: 10,
+          piiTypeLabel: 'EMAIL',
+          confidence: 0.9,
+          source: 'PRESIDIO',
+          maskedContext: 'user@***',
+        },
+        {
+          startPosition: 20,
+          endPosition: 30,
+          piiTypeLabel: 'IBAN',
+          confidence: 1,
+          source: 'MINISTRAL',
+          maskedContext: 'CH*** ****',
+        },
+      ],
+    };
+
+    createComponent(mixedItem);
+
+    expect(fixture.nativeElement.querySelector('.th-confidence')).toBeTruthy();
+    expect(fixture.nativeElement.querySelectorAll('.td-confidence')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelectorAll('app-confidence-indicator')).toHaveLength(1);
+  });
+
   it('Should_EmitCollapse_When_CloseButtonClicked', () => {
     fixture = TestBed.createComponent(PiiCardExpandedComponent);
     fixture.componentRef.setInput('item', MOCK_ITEM);

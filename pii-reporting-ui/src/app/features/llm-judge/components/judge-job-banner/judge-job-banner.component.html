@@ -1,0 +1,36 @@
+@if (jobs().length > 0) {
+  <output class="jb" [class.jb--done]="!active()" [attr.data-testid]="testIds.root">
+    <i class="pi" [class.pi-sparkles]="active()" [class.pi-check-circle]="!active()" aria-hidden="true"></i>
+    <div class="jb-text">
+      <div class="jb-title">{{ titleKey() | transloco }}</div>
+      <div class="jb-sub" [attr.data-testid]="testIds.progress">
+        {{ 'judge.banner.progress' | transloco: { done: processed(), total: total(), fp: falsePositives() } }}
+        @if (spacesTotal() > 1) {
+          · {{ 'judge.banner.spaces' | transloco: { done: spacesDone(), total: spacesTotal() } }}
+        }
+        @if (errors() > 0) {
+          · {{ 'judge.banner.errors' | transloco: { count: errors() } }}
+        }
+        @if (model()) {
+          · {{ model() }}
+        }
+      </div>
+    </div>
+    <div class="jb-track" aria-hidden="true">
+      <div class="jb-fill" [style.width.%]="percent()"></div>
+    </div>
+    <div class="jb-actions">
+      @if (active()) {
+        <button type="button" class="jb-btn" (click)="interrupt.emit()" [attr.data-testid]="testIds.interrupt">
+          <i class="pi pi-stop-circle" aria-hidden="true"></i>
+          {{ 'judge.banner.interrupt' | transloco }}
+        </button>
+      } @else {
+        <button type="button" class="jb-btn" (click)="dismissed.emit()" [attr.data-testid]="testIds.dismiss">
+          <i class="pi pi-times" aria-hidden="true"></i>
+          {{ 'judge.banner.dismiss' | transloco }}
+        </button>
+      }
+    </div>
+  </output>
+}

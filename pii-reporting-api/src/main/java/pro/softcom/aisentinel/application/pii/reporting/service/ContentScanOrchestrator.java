@@ -32,6 +32,7 @@ public class ContentScanOrchestrator {
     private final SeverityCalculationService severityCalculationService;
     private final ScanSeverityCountService scanSeverityCountService;
     private final ScanPiiTypeCountService scanPiiTypeCountService;
+    private final OutagePausedScans outagePausedScans;
 
     public ConfluenceContentScanResult createStartEvent(String scanId, String spaceKey, int total, double progress) {
         return scanEventFactory.createStartEvent(scanId, spaceKey, total, progress);
@@ -90,10 +91,15 @@ public class ContentScanOrchestrator {
     public void pauseScanAfterOutage(String scanId) {
         try {
             int paused = scanCheckpointService.pauseUnfinishedCheckpoints(scanId);
+            outagePausedScans.record(scanId);
             log.warn("[SCAN] Scan {} paused after an outage: {} checkpoint(s) moved to PAUSED", scanId, paused);
         } catch (Exception exception) {
             log.error("[SCAN] Failed to pause scan {} after an outage: {}", scanId, exception.getMessage());
         }
+    }
+
+    public void forgetOutagePause(String scanId) {
+        outagePausedScans.forget(scanId);
     }
 
     /**

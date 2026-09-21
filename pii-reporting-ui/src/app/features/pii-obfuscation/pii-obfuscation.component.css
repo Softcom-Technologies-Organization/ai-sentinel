@@ -503,3 +503,26 @@
 .ob-disabled .pi {
   font-size: 1.5rem;
 }
+
+.caption-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.ob-btn--ai {
+  border-color: var(--sentinel-judge-border);
+  background: var(--sentinel-judge-bg);
+  color: var(--sentinel-judge-color);
+  font-weight: 600;
+}
+
+.ob-btn--ai:hover:not(:disabled) {
+  background: var(--sentinel-judge-border);
+}
+
+.ob-segment-sparkle {
+  color: var(--sentinel-judge-color);
+  font-size: 0.7rem;
+  margin: 0 0.15rem;
+}

@@ -106,6 +106,12 @@
   --sentinel-ministral-avatar-bg: #fff4f0;   /* lightest orange tint -- avatar background */
   --sentinel-ministral-avatar-border: #ffb896; /* soft orange -- avatar border */
 
+  /* LLM judge identity (violet): launch button, verdict badges, progress banner */
+  --sentinel-judge-color: #7c3aed;             /* violet-600 */
+  --sentinel-judge-color-dark: #5b21b6;        /* violet-800 -- hover */
+  --sentinel-judge-bg: #f5f3ff;                /* violet-50 */
+  --sentinel-judge-border: #ddd6fe;            /* violet-200 */
+
   /* Unknown detector */
   --sentinel-detector-unknown-bg: #f4f4f5;
   --sentinel-detector-unknown-color: #71717a;
@@ -167,6 +173,9 @@
   --sentinel-scan-btn-start: #2563eb;      /* blue-600 */
   --sentinel-scan-btn-end: #1d4ed8;        /* blue-700 */
   --sentinel-scan-btn-disabled: #94a3b8;   /* slate-400 */
+
+  --sentinel-judge-btn-start: #7c3aed;     /* violet-600 */
+  --sentinel-judge-btn-end: #5b21b6;       /* violet-800 */
 
   /* Masked/revealed highlights */
   --sentinel-masked-bg: #fef3c7;           /* amber-100 */
@@ -320,6 +329,11 @@
   --sentinel-presidio-avatar-bg: #121d33;  /* slightly lifted blue tint */
   --sentinel-presidio-avatar-border: #264a78; /* mid blue */
 
+  --sentinel-judge-color: #a78bfa;             /* violet-400 -- readable on dark */
+  --sentinel-judge-color-dark: #8b5cf6;        /* violet-500 -- hover */
+  --sentinel-judge-bg: #1e1b2e;                /* deep violet tint */
+  --sentinel-judge-border: #3b2f66;            /* muted violet */
+
   /* Regex -- amber */
   --sentinel-regex-bg: #1c1610;            /* very dark amber tint */
   --sentinel-regex-color: #fbbf24;         /* amber-400 -- brighter for dark bg */
@@ -405,6 +419,9 @@
   --sentinel-scan-btn-start: #3b82f6;      /* blue-500 */
   --sentinel-scan-btn-end: #2563eb;        /* blue-600 */
   --sentinel-scan-btn-disabled: #4b5563;   /* grey-600 */
+
+  --sentinel-judge-btn-start: #8b5cf6;     /* violet-500 */
+  --sentinel-judge-btn-end: #6d28d9;       /* violet-700 */
 
   /* Masked/revealed highlights -- amber toned, darkened bg for dark mode */
   --sentinel-masked-bg: #2a2010;           /* dark amber surface */

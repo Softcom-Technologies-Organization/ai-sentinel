@@ -71,6 +71,7 @@ describe('ScanControlService', () => {
       selectSpace: vi.fn(),
       activeSpaceKey: signal(null),
       selectedSpaceKey: signal(null),
+      selectedSpaces: signal<{ key: string }[]>([]),
       clearHistory: vi.fn()
     };
 
@@ -193,12 +194,83 @@ describe('ScanControlService', () => {
   });
 
   it('Should_StreamSelectedSpaces_When_ConfirmAccepted', () => {
+    uiStateMock.selectedSpaces.set([{ key: 'SPACE1' }, { key: 'SPACE2' }]);
     service.startSelected(['SPACE1', 'SPACE2']);
     const confirmCall = confirmMock.confirm.mock.calls[0][0];
     confirmCall.accept();
 
     expect(apiMock.startSelectedSpacesStream).toHaveBeenCalledWith(['SPACE1', 'SPACE2']);
     expect(pollingMock.start).toHaveBeenCalledWith(3000);
+    expect(uiStateMock.selectedSpaces()).toEqual([]);
+    expect(dataManagementMock.currentScanSpaceKeys()).toEqual(['SPACE1', 'SPACE2']);
+    expect(dataManagementMock.queue()).toEqual(['SPACE1', 'SPACE2']);
+    expect(apiMock.purgeAllScans).not.toHaveBeenCalled();
+  });
+
+  it('Should_ScanOnlyNewSelection_When_PreviousSelectedScanCompleted', () => {
+    uiStateMock.selectedSpaces.set([{ key: 'SPACE1' }]);
+    service.startSelected(['SPACE1']);
+    confirmMock.confirm.mock.calls[0][0].accept();
+    pollingMock.actionPending.set(false);
+    pollingMock.scanCompleted$.next();
+    uiStateMock.selectedSpaces.update((spaces: { key: string }[]) => [...spaces, { key: 'SPACE2' }]);
+
+    service.startSelected(uiStateMock.selectedSpaces().map((space: { key: string }) => space.key));
+    confirmMock.confirm.mock.calls[1][0].accept();
+
+    expect(apiMock.startSelectedSpacesStream).toHaveBeenLastCalledWith(['SPACE2']);
+    expect(dataManagementMock.currentScanSpaceKeys()).toEqual(['SPACE2']);
+  });
+
+  it('Should_PreserveSelection_When_SelectedScanConfirmationRejected', () => {
+    uiStateMock.selectedSpaces.set([{ key: 'SPACE1' }]);
+
+    service.startSelected(['SPACE1']);
+    expect(uiStateMock.selectedSpaces()).toEqual([{ key: 'SPACE1' }]);
+    confirmMock.confirm.mock.calls[0][0].reject();
+
+    expect(uiStateMock.selectedSpaces()).toEqual([{ key: 'SPACE1' }]);
+    expect(apiMock.startSelectedSpacesStream).not.toHaveBeenCalled();
+  });
+
+  it.each(['scanActive', 'actionPending'] as const)(
+    'Should_PreserveSelection_When_SelectedScanBlockedBy_%s',
+    (state) => {
+      uiStateMock.selectedSpaces.set([{ key: 'SPACE1' }]);
+      pollingMock[state].set(true);
+
+      service.startSelected(['SPACE1']);
+
+      expect(uiStateMock.selectedSpaces()).toEqual([{ key: 'SPACE1' }]);
+      expect(confirmMock.confirm).not.toHaveBeenCalled();
+      expect(apiMock.startSelectedSpacesStream).not.toHaveBeenCalled();
+    }
+  );
+
+  it('Should_PreserveNewSelection_When_RunningScanCompletes', () => {
+    uiStateMock.selectedSpaces.set([{ key: 'SPACE1' }]);
+    service.startSelected(['SPACE1']);
+    confirmMock.confirm.mock.calls[0][0].accept();
+    uiStateMock.selectedSpaces.set([{ key: 'SPACE2' }]);
+
+    pollingMock.scanCompleted$.next();
+
+    expect(uiStateMock.selectedSpaces()).toEqual([{ key: 'SPACE2' }]);
+  });
+
+  it('Should_PreserveScopeAndNewSelection_When_SelectedScanResumes', () => {
+    uiStateMock.selectedSpaces.set([{ key: 'SPACE1' }]);
+    service.startSelected(['SPACE1']);
+    confirmMock.confirm.mock.calls[0][0].accept();
+    service.pauseScan();
+    pollingMock.actionPending.set(false);
+    uiStateMock.selectedSpaces.set([{ key: 'SPACE2' }]);
+
+    service.resumeLastScan();
+
+    expect(dataManagementMock.currentScanSpaceKeys()).toEqual(['SPACE1']);
+    expect(uiStateMock.selectedSpaces()).toEqual([{ key: 'SPACE2' }]);
+    expect(apiMock.resumeScan).toHaveBeenCalledWith('scan-1');
   });
 
   it('Should_ResetStalePendingBadges_When_RelaunchSelected', () => {

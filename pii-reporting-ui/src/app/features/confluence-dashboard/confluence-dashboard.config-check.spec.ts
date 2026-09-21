@@ -12,7 +12,10 @@ import { DashboardUiStateService } from './services/dashboard-ui-state.service';
 import { PiiItemsStorageService } from './services/pii-items-storage.service';
 import { ScanControlService } from './services/scan-control.service';
 import { FilterUrlStateService } from './services/filter-url-state.service';
-import { SpacesDashboardUtils } from './spaces-dashboard.utils';
+import { UISpace, SpacesDashboardUtils } from './spaces-dashboard.utils';
+import { RemediationConfigService } from '../../core/services/remediation-config.service';
+import { JudgeApiService } from '../../core/services/judge-api.service';
+import { JudgeJobTrackerService } from '../llm-judge/services/judge-job-tracker.service';
 
 function config(configured: boolean): ConfluenceConnectionConfig {
   return {
@@ -22,7 +25,6 @@ function config(configured: boolean): ConfluenceConnectionConfig {
     readTimeout: 30000,
     maxRetries: 3,
     pagesLimit: 25,
-    maxPages: 100,
     deploymentType: 'CLOUD',
     configured
   };
@@ -46,9 +48,18 @@ describe('Confluence dashboard configuration check', () => {
     return TestBed.runInInjectionContext(() => new ConfluenceDashboardComponent());
   }
 
+  const scanActive = signal(false);
+  const actionPending = signal(false);
+  const spaces = signal<UISpace[]>([]);
+  const judgeReason = signal<string | null>(null);
+
   let filtering: { reload: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
+    scanActive.set(false);
+    actionPending.set(false);
+    spaces.set([]);
+    judgeReason.set(null);
     getConfig = vi.fn();
     filtering = { reload: vi.fn() };
     dataManagement = {
@@ -67,9 +78,12 @@ describe('Confluence dashboard configuration check', () => {
         { provide: SpaceFilteringService, useValue: filtering },
         { provide: DashboardUiStateService, useValue: {} },
         { provide: PiiItemsStorageService, useValue: {} },
-        { provide: ScanControlService, useValue: { reconnectIfScanRunning: vi.fn() } },
+        { provide: ScanControlService, useValue: { reconnectIfScanRunning: vi.fn(), scanActive, actionPending } },
         { provide: FilterUrlStateService, useValue: {} },
-        { provide: SpacesDashboardUtils, useValue: {} }
+        { provide: SpacesDashboardUtils, useValue: { allSpaces: spaces, canViewResult: (space: UISpace) => !!space.lastScanTs } },
+        { provide: RemediationConfigService, useValue: { enabled: signal(false) } },
+        { provide: JudgeApiService, useValue: {} },
+        { provide: JudgeJobTrackerService, useValue: { active: signal(false), launchUnavailableReason: judgeReason } }
       ]
     });
   });
@@ -132,4 +146,23 @@ describe('Confluence dashboard configuration check', () => {
     // order, so the ordering query has to run again or the table stays empty.
     expect(filtering.reload).toHaveBeenCalledTimes(1);
   });
+  it('Should_DisableJudge_When_NoScanDataAndEnableAfterCompletedScan', () => {
+    const component = createComponent();
+    expect(component.canLaunchJudge()).toBe(false);
+    component.openJudgeDialog();
+    expect(component.judgeDialogVisible()).toBe(false);
+
+    spaces.set([{ key: 'SPACE', name: 'Space', originalIndex: 0, lastScanTs: '2026-09-13T09:00:00Z' }]);
+    expect(component.canLaunchJudge()).toBe(true);
+
+    scanActive.set(true);
+    expect(component.canLaunchJudge()).toBe(false);
+    expect(component.judgeUnavailableReason()).toBe('judge.unavailable.scanInProgress');
+
+    scanActive.set(false);
+    expect(component.canLaunchJudge()).toBe(true);
+    actionPending.set(true);
+    expect(component.canLaunchJudge()).toBe(false);
+  });
+
 });

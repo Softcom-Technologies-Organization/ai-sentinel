@@ -72,6 +72,7 @@ export class PiiCardExpandedComponent {
         valueParts: display.parts,
         isRevealed: display.isRevealed,
         confidence: entity.confidence ?? 0,
+        confidenceAvailable: entity.source !== 'MINISTRAL' && entity.confidence !== undefined,
         detector: entity.source ?? 'UNKNOWN_SOURCE',
       };
     });
@@ -156,6 +157,9 @@ export class PiiCardExpandedComponent {
     const dir = this.sortDirection();
     if (col) {
       rows = [...rows].sort((a, b) => {
+        if (col === 'confidence' && a.confidenceAvailable !== b.confidenceAvailable) {
+          return a.confidenceAvailable ? -1 : 1;
+        }
         const valA = a[col];
         const valB = b[col];
         const cmp = typeof valA === 'string'
@@ -167,6 +171,10 @@ export class PiiCardExpandedComponent {
 
     return rows;
   });
+
+  readonly showConfidenceColumn = computed(() =>
+    this.filteredAndSortedRows().some(row => row.confidenceAvailable)
+  );
 
   onSort(column: SortColumn): void {
     if (this.sortColumn() === column) {

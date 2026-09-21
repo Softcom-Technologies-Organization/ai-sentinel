@@ -50,7 +50,7 @@ class PauseScanUseCaseTest {
         // An outage listed this scan for automatic retry moments before the operator
         // stopped it; their decision has to be the last word.
         String scanId = "scan-outage-then-operator";
-        outagePausedScans.record(scanId);
+        outagePausedScans.recordOutagePause(scanId);
 
         pauseScanUseCase.pauseScan(scanId);
 

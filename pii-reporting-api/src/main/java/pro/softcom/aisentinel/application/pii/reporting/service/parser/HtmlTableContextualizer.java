@@ -16,6 +16,9 @@ import java.util.UUID;
 
 final class HtmlTableContextualizer {
 
+    private static final String TABLE_TAG = "table";
+    private static final String THEAD_TAG = "thead";
+    private static final String COLGROUP_SCOPE = "colgroup";
     private static final int MAX_COLUMNS = 1_000;
     private static final int MAX_SPAN = 1_000;
     private static final int MAX_CELLS = 100_000;
@@ -27,8 +30,8 @@ final class HtmlTableContextualizer {
     static ExtractedContent extract(Document document, HtmlContentParser parser) {
         List<Replacement> replacements = new ArrayList<>();
         long remainingCharacters = MAX_ANALYSIS_CHARACTERS;
-        for (Element table : document.select("table")) {
-            if (table.parent().closest("table") != null) {
+        for (Element table : document.select(TABLE_TAG)) {
+            if (table.parents().stream().anyMatch(parent -> parent.normalName().equals(TABLE_TAG))) {
                 continue;
             }
             ExtractedContent content = extractTable(table.clone(), parser, remainingCharacters);
@@ -42,7 +45,7 @@ final class HtmlTableContextualizer {
 
     private static ExtractedContent extractTable(Element table, HtmlContentParser parser, long remainingCharacters) {
         Element original = table.clone();
-        if (table.select("table").size() > 1 || table.select("th, thead td").isEmpty()) {
+        if (table.select(TABLE_TAG).size() > 1 || table.select("th, thead td").isEmpty()) {
             return isolateCells(original, parser);
         }
         try {
@@ -135,7 +138,7 @@ final class HtmlTableContextualizer {
     private static List<Cell> placeRow(Element row, int position, Map<Element, Integer> groupEnds, List<Cell> occupied) {
         List<Element> elements = row.children().stream()
             .filter(element -> element.normalName().equals("td") || element.normalName().equals("th")).toList();
-        boolean headerRow = row.parent().normalName().equals("thead")
+        boolean headerRow = row.parent().normalName().equals(THEAD_TAG)
             || elements.stream().allMatch(element -> element.normalName().equals("th"));
         List<Cell> cells = new ArrayList<>();
         int column = 0;
@@ -185,7 +188,7 @@ final class HtmlTableContextualizer {
     private static List<ColumnGroup> columnGroups(Element table) {
         List<ColumnGroup> groups = new ArrayList<>();
         int column = 0;
-        for (Element group : table.children().select("colgroup")) {
+        for (Element group : table.children().select(COLGROUP_SCOPE)) {
             long width = group.children().isEmpty() ? span(group, "span")
                 : group.children().stream().mapToLong(child -> span(child, "span")).sum();
             if (width > MAX_COLUMNS - column) {
@@ -206,19 +209,19 @@ final class HtmlTableContextualizer {
     private record Cell(Element element, String text, int row, int rowEnd, int column, int columnEnd,
                         Element group, boolean headerRow) {
         boolean isHeader() {
-            return element.normalName().equals("th") || group.normalName().equals("thead");
+            return element.normalName().equals("th") || group.normalName().equals(THEAD_TAG);
         }
 
         boolean isColumnHeader() {
             String scope = scope();
-            return scope.equals("col") || scope.equals("colgroup")
+            return scope.equals("col") || scope.equals(COLGROUP_SCOPE)
                 || (scope.isEmpty() && headerRow);
         }
 
         String scope() {
             String scope = element.attr("scope").trim().toLowerCase(Locale.ROOT);
             return switch (scope) {
-                case "col", "colgroup", "row", "rowgroup" -> scope;
+                case "col", COLGROUP_SCOPE, "row", "rowgroup" -> scope;
                 default -> "";
             };
         }
@@ -268,7 +271,7 @@ final class HtmlTableContextualizer {
             Map<Integer, List<Cell>> target = cell.isColumnHeader() ? byColumn : byRow;
             int start = cell.isColumnHeader() ? cell.column() : cell.row();
             int end = cell.isColumnHeader() ? cell.columnEnd() : cell.rowEnd();
-            if (cell.scope().equals("colgroup")) {
+            if (cell.scope().equals(COLGROUP_SCOPE)) {
                 ColumnGroup group = columnGroups.stream()
                     .filter(candidate -> cell.column() >= candidate.start() && cell.column() < candidate.end())
                     .findFirst().orElse(new ColumnGroup(start, end));
@@ -299,7 +302,7 @@ final class HtmlTableContextualizer {
             var candidates = new LinkedHashSet<Cell>();
             for (int column = cell.column(); column < cell.columnEnd(); column++) {
                 candidates(byColumn, column).stream().filter(header -> header.rowEnd() <= cell.row())
-                    .filter(header -> header.group() == cell.group() || header.group().normalName().equals("thead"))
+                    .filter(header -> header.group() == cell.group() || header.group().normalName().equals(THEAD_TAG))
                     .forEach(candidates::add);
             }
             return candidates.stream().filter(header -> blocks.get(header)

@@ -1,6 +1,7 @@
 package pro.softcom.aisentinel.infrastructure.confluence.adapter.out;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
@@ -22,6 +23,7 @@ import pro.softcom.aisentinel.domain.confluence.extraction.ExtractedContent;
 import pro.softcom.aisentinel.infrastructure.document.validator.TextQualityValidator;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -98,7 +100,8 @@ public class TikaAttachmentTextExtractorAdapter implements AttachmentTextExtract
         }
     }
 
-    private Document parseDocument(AttachmentInfo info, ByteArrayInputStream input) throws Exception {
+    private Document parseDocument(AttachmentInfo info, ByteArrayInputStream input)
+            throws IOException, SAXException, TikaException {
         if (Set.of("xls", "xlsx").contains(info.extension().strip().toLowerCase(Locale.ROOT))) {
             return SpreadsheetAttachmentTableParser.parse(input);
         }

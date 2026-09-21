@@ -23,7 +23,7 @@ public final class OutagePausedScans {
      *
      * @param scanId the business identifier of the scan; blank ids are ignored
      */
-    public void record(String scanId) {
+    public void recordOutagePause(String scanId) {
         if (scanId != null && !scanId.isBlank()) {
             scanIds.add(scanId);
         }

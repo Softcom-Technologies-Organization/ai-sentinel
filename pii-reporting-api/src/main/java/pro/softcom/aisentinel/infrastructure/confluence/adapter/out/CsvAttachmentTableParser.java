@@ -40,17 +40,17 @@ final class CsvAttachmentTableParser {
             Element table = document.body().appendElement("table");
             int width = 0;
             int cells = 0;
-            for (CSVRecord record : parser) {
-                width = width == 0 ? record.size() : width;
-                cells += record.size();
-                if (width < 2 || record.size() != width || cells > MAX_CELLS) {
+            for (CSVRecord csvRecord : parser) {
+                width = width == 0 ? csvRecord.size() : width;
+                cells += csvRecord.size();
+                if (width < 2 || csvRecord.size() != width || cells > MAX_CELLS) {
                     return null;
                 }
                 Element row = table.appendElement("tr");
-                record.forEach(value -> row.appendElement("td").text(value));
+                csvRecord.forEach(value -> row.appendElement("td").text(value));
             }
             return table.childrenSize() >= 2 ? document : null;
-        } catch (IOException | RuntimeException ignored) {
+        } catch (IOException | RuntimeException _) {
             return null;
         }
     }

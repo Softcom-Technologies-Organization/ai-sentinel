@@ -262,8 +262,8 @@ class TikaAttachmentTextExtractorAdapterTest {
 
     @Test
     void Should_AssociateCsvHeaders_When_BomSemicolonQuotesAndMultilineValues() {
-        byte[] bytes = ("\ufeffNom;Email;Port\r\n\"Durand; Jean\";jean@example.test;587\r\n"
-                + "\"Martin\nAlice\";alice@example.test;443").getBytes(StandardCharsets.UTF_8);
+        byte[] bytes = "\ufeffNom;Email;Port\r\n\"Durand; Jean\";jean@example.test;587\r\n\"Martin\nAlice\";alice@example.test;443"
+                .getBytes(StandardCharsets.UTF_8);
 
         ExtractedContent content = adapter.extract(createAttachment("contacts.csv", "csv"), bytes).orElseThrow();
 

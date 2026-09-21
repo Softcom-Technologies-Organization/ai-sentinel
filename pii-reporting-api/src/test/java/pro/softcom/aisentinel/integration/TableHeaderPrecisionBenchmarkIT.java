@@ -190,8 +190,8 @@ class TableHeaderPrecisionBenchmarkIT {
         assertThat(cards(flattened)).hasSize(26);
         assertThat(cards(enriched)).isEmpty();
         assertThat(cards(headerless)).isEmpty();
-        var controls = extractCsv(("Reference;Value\nCard;4111 1111 1111 1111\n"
-                + "Coordinates;1138667\nCoordinates;2505047").getBytes(StandardCharsets.UTF_8));
+        var controls = extractCsv("Reference;Value\nCard;4111 1111 1111 1111\nCoordinates;1138667\nCoordinates;2505047"
+                .getBytes(StandardCharsets.UTF_8));
         var detectedControls = DetectionOffsetRemapper.remap(detect(controls.analysisText()), controls);
         assertThat(cards(detectedControls)).extracting(SensitiveData::value).containsExactly("4111 1111 1111 1111");
         log.info("CSV regression: flattened cards={}, enriched cards={}, headerless cards={}, retained control cards={}",

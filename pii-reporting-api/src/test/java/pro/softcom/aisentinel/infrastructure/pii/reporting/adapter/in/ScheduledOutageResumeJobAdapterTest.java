@@ -42,7 +42,7 @@ class ScheduledOutageResumeJobAdapterTest {
     @Test
     @DisplayName("Should_ResumeScan_When_OutagePausedItAndNothingIsRunning")
     void Should_ResumeScan_When_OutagePausedItAndNothingIsRunning() {
-        outagePausedScans.record("scan-1");
+        outagePausedScans.recordOutagePause("scan-1");
         when(scanExecutionOrchestratorPort.hasActiveScan()).thenReturn(false);
         when(streamConfluenceResumeScanPort.resumeAllSpaces("scan-1")).thenReturn(Flux.empty());
 
@@ -54,7 +54,7 @@ class ScheduledOutageResumeJobAdapterTest {
     @Test
     @DisplayName("Should_WaitForTheNextTick_When_AnotherScanIsAlreadyRunning")
     void Should_WaitForTheNextTick_When_AnotherScanIsAlreadyRunning() {
-        outagePausedScans.record("scan-2");
+        outagePausedScans.recordOutagePause("scan-2");
         when(scanExecutionOrchestratorPort.hasActiveScan()).thenReturn(true);
 
         job().retryScansPausedByAnOutage();
@@ -67,7 +67,7 @@ class ScheduledOutageResumeJobAdapterTest {
     void Should_NeverResumeScan_When_OperatorPausedItAfterTheOutage() {
         // The sequence that matters: the network drops and lists the scan for retry,
         // then the operator stops it on purpose. Their decision must be the last word.
-        outagePausedScans.record("scan-3");
+        outagePausedScans.recordOutagePause("scan-3");
         new PauseScanUseCase(scanCheckpointRepository, scanExecutionOrchestratorPort, outagePausedScans)
                 .pauseScan("scan-3");
 
@@ -79,7 +79,7 @@ class ScheduledOutageResumeJobAdapterTest {
     @Test
     @DisplayName("Should_LeaveScanListedForTheNextTick_When_ItsResumeThrows")
     void Should_LeaveScanListedForTheNextTick_When_ItsResumeThrows() {
-        outagePausedScans.record("scan-broken");
+        outagePausedScans.recordOutagePause("scan-broken");
         when(scanExecutionOrchestratorPort.hasActiveScan()).thenReturn(false);
         when(streamConfluenceResumeScanPort.resumeAllSpaces("scan-broken"))
                 .thenThrow(new IllegalStateException("detector client down"));

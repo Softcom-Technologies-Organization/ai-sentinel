@@ -210,7 +210,7 @@ class StreamConfluenceResumeScanUseCaseTest {
     @DisplayName("resumeAllSpaces - a resume takes the scan off the automatic retry list")
     void Should_StopTheAutomaticRetry_When_AResumeBegins() {
         String scanId = "SID-FORGET";
-        outagePausedScans.record(scanId);
+        outagePausedScans.recordOutagePause(scanId);
         when(scanCheckpointRepository.findByScan(scanId)).thenReturn(List.of());
 
         StepVerifier.create(streamConfluenceResumeScanPort.resumeAllSpaces(scanId)

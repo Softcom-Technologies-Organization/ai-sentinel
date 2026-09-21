@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import pro.softcom.aisentinel.domain.confluence.extraction.ExtractedContent.Segment;
 
 import java.util.stream.Stream;
 
@@ -32,7 +33,7 @@ class HtmlContentParserTest {
         content.segments().forEach(segment -> assertThat(content.analysisText()
             .substring(segment.analysisStart(), segment.analysisStart() + segment.length()))
             .isEqualTo(content.contextText().substring(segment.contextStart(), segment.contextStart() + segment.length())));
-        assertThat(content.segments().stream().mapToInt(segment -> segment.length()).sum())
+        assertThat(content.segments().stream().mapToInt(Segment::length).sum())
             .isEqualTo(content.contextText().length());
         assertThat(content.contextText().split("same@example.ch", -1)).hasSize(3);
     }

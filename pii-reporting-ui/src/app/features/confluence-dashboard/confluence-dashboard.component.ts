@@ -117,12 +117,19 @@ export class ConfluenceDashboardComponent implements OnInit, OnDestroy {
   readonly judgeTestIds = TestIds.judge;
   readonly judgeDialogVisible = signal(false);
   readonly judgeScopeOptions = signal<JudgeScopeOption[]>([]);
-  readonly judgeUnavailableReason = computed(() =>
-    this.actionPending() || this.scanActive()
-      ? 'judge.unavailable.scanInProgress'
-      : this.judgeTracker.launchUnavailableReason()
-        ?? (this.scannedSpaceKeys().length === 0 ? 'judge.unavailable.noScanData' : null)
-  );
+  readonly judgeUnavailableReason = computed(() => {
+    if (this.actionPending() || this.scanActive()) {
+      return 'judge.unavailable.scanInProgress';
+    }
+    const trackerReason = this.judgeTracker.launchUnavailableReason();
+    if (trackerReason !== null && trackerReason !== undefined) {
+      return trackerReason;
+    }
+    if (this.scannedSpaceKeys().length === 0) {
+      return 'judge.unavailable.noScanData';
+    }
+    return null;
+  });
   readonly canLaunchJudge = computed(() =>
     !this.judgeUnavailableReason() && !this.judgeTracker.active()
   );

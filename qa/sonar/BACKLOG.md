@@ -7,7 +7,7 @@
 > L'analyse `main` décrit la branche de travail `feature/findings-improvement`. Les numéros de
 > ligne sont valides sur ce commit et peuvent changer dès la première correction.
 
-**Restantes : 2 issues sur 17** — **0 security hotspot**.
+**Restantes : 0 issue sur 17** — **0 security hotspot**.
 
 Protocole d'exécution : [RUNBOOK.md](RUNBOOK.md).
 
@@ -17,7 +17,7 @@ Protocole d'exécution : [RUNBOOK.md](RUNBOOK.md).
 |--------|------|------------------|-----------------------------|-----------------------------|
 | API | OK | 0 | 83,5 % — OK | 0,0 % — OK |
 | Detector | OK | 0 | 88,4 % — OK | 0,04858 % — OK |
-| UI | ERROR | 2 | 76,1 % — ERROR | 0,0 % — OK |
+| UI | ERROR | 0 | 76,2 % — ERROR | 0,0 % — OK |
 
 La couverture UI est une dette de quality gate distincte des 17 issues ci-dessous.
 
@@ -26,8 +26,8 @@ La couverture UI est une dette de quality gate distincte des 17 issues ci-dessou
 | Vague | Périmètre | Issues | Statut |
 |-------|-----------|--------|--------|
 | **A** | Tests — mécanique pure | 3 | ✅ terminée et vérifiée |
-| **B** | Production — mécanique locale | 6 | 🔄 en cours |
-| **C** | Accessibilité UI — modifie le DOM rendu | 1 | ⬜ à faire |
+| **B** | Production — mécanique locale | 6 | ✅ terminée et vérifiée |
+| **C** | Accessibilité UI — modifie le DOM rendu | 1 | ✅ terminée et vérifiée |
 | **D** | Jugement requis — comportement ou contrat à préserver | 7 | ✅ terminée et vérifiée |
 
 Statuts : ⬜ à faire · 🔄 en cours · ✅ terminée et vérifiée · ⛔ annulée.
@@ -60,7 +60,7 @@ Vérification : tests ciblés des deux classes, puis `mvn test`.
 
 ### `typescript:S3358` — ternaire imbriqué (1)
 
-- [ ] `d18cd455-661c-4d41-8905-d45c6935c3f4` — `confluence-dashboard.component.ts:124`
+- [x] `d18cd455-661c-4d41-8905-d45c6935c3f4` — `confluence-dashboard.component.ts:124`
   — extraire le calcul de `judgeUnavailableReason` dans des branches explicites, à résultat
   identique.
 
@@ -94,7 +94,7 @@ Vérification : tests ciblés des fichiers touchés, puis suites complètes des 
 
 ### `Web:S6819` — élément HTML natif (1)
 
-- [ ] `8c388a68-e34c-406c-b2ee-7489bbd75034` — `judge-launch-dialog.component.html:120` — remplacer
+- [x] `8c388a68-e34c-406c-b2ee-7489bbd75034` — `judge-launch-dialog.component.html:120` — remplacer
   `<p role="status">` par `<output>` en conservant `aria-live="polite"`, puis vérifier les styles et
   l'annonce par lecteur d'écran.
 

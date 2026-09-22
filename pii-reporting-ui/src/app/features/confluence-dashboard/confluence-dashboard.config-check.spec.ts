@@ -149,17 +149,23 @@ describe('Confluence dashboard configuration check', () => {
   it('Should_DisableJudge_When_NoScanDataAndEnableAfterCompletedScan', () => {
     const component = createComponent();
     expect(component.canLaunchJudge()).toBe(false);
+    expect(component.judgeUnavailableReason()).toBe('judge.unavailable.noScanData');
     component.openJudgeDialog();
     expect(component.judgeDialogVisible()).toBe(false);
 
     spaces.set([{ key: 'SPACE', name: 'Space', originalIndex: 0, lastScanTs: '2026-09-13T09:00:00Z' }]);
     expect(component.canLaunchJudge()).toBe(true);
 
+    judgeReason.set('judge.unavailable.noModel');
+    expect(component.canLaunchJudge()).toBe(false);
+    expect(component.judgeUnavailableReason()).toBe('judge.unavailable.noModel');
+
     scanActive.set(true);
     expect(component.canLaunchJudge()).toBe(false);
     expect(component.judgeUnavailableReason()).toBe('judge.unavailable.scanInProgress');
 
     scanActive.set(false);
+    judgeReason.set(null);
     expect(component.canLaunchJudge()).toBe(true);
     actionPending.set(true);
     expect(component.canLaunchJudge()).toBe(false);

@@ -117,7 +117,7 @@
 
   <ng-template pTemplate="footer">
     @if (disabledReason(); as reason) {
-      <p role="status" aria-live="polite">{{ reason | transloco }}</p>
+      <output class="jd-status" aria-live="polite">{{ reason | transloco }}</output>
     }
     <button type="button" class="jd-btn" (click)="cancelled.emit()" [attr.data-testid]="testIds.cancel">
       {{ 'judge.dialog.cancel' | transloco }}

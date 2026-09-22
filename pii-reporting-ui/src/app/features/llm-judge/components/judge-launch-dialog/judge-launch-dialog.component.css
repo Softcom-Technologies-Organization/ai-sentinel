@@ -123,6 +123,11 @@
   background: var(--sentinel-bg-card);
 }
 
+.jd-status {
+  display: block;
+  margin: 1em 0;
+}
+
 .jd-btn {
   display: inline-flex;
   align-items: center;

@@ -148,6 +148,8 @@ describe('JudgeLaunchDialogComponent', () => {
     fixture.detectChanges();
     expect(query<HTMLButtonElement>('judge-launch').disabled).toBe(true);
     expect(document.body.textContent).toContain('Disponible après la fin du scan');
+    expect(fixture.nativeElement.querySelector('output')?.textContent)
+      .toContain('Disponible après la fin du scan');
     fixture.componentInstance.launch();
     expect(launched).not.toHaveBeenCalled();
 

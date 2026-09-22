@@ -186,6 +186,14 @@ class TestVersionMotif:
         # "6.6323" (a GPS coordinate fragment) has only two components.
         assert _evaluate("6.6323", "COORDINATE").keep is True
 
+    def test_should_keep_ascii_avs_shape(self) -> None:
+        assert _evaluate("756.1234.5678.97", "AVS_NUMBER").keep is True
+
+    def test_should_not_match_unicode_digits_as_ascii_avs(self) -> None:
+        value = "756.１２３４.５６７８.９７"
+        assert technical_artifact_denylist._DOTTED_AVS_RE.fullmatch(value) is None
+        assert _evaluate(value, "AVS_NUMBER").keep is True
+
 
 # ---------------------------------------------------------------------------
 # Base64-encoded image motif

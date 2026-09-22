@@ -107,6 +107,11 @@ def test_Should_PreserveValues_When_MinimumDoesNotReject(pii_type, value):
     assert FormatPostfilterValidator().filter_with_verdicts("", [entity]) == ([entity], [])
 
 
+def test_Should_PreserveLongCookieValue_When_NoAttributesArePresent():
+    entity = _entity("JSESSIONID=" + "a" * 100_000, "HTTP_COOKIE")
+    assert FormatPostfilterValidator().filter_with_verdicts("", [entity]) == ([entity], [])
+
+
 def _entity(value, pii_type):
     return PIIEntity(
         text=value,

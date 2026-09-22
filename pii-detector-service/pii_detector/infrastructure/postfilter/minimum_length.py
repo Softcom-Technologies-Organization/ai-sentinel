@@ -47,7 +47,7 @@ _SECRET_ASSIGNMENT = re.compile(
     r"access[_-]?token|client[_-]?secret|github[_-]?token|token|secret)\s*[:=]\s*(.*)$",
     re.IGNORECASE | re.DOTALL,
 )
-_COOKIE_ASSIGNMENT = re.compile(r"^[\w.-]+\s*=\s*([^;]*)(?:;.*)?$", re.DOTALL)
+_COOKIE_NAME = re.compile(r"[\w.-]+")
 
 
 def _unquote(value: str) -> str:
@@ -64,11 +64,13 @@ def _secret_value(value: str, pii_type: str) -> str:
         # Bare base64 padding is ambiguous with an empty cookie assignment.
         if re.fullmatch(r"[A-Za-z0-9+/]+={1,2}", span):
             return span
-        assignment = _COOKIE_ASSIGNMENT.fullmatch(span)
+        name, separator, cookie_value = span.partition("=")
+        if separator and _COOKIE_NAME.fullmatch(name.strip()):
+            span = _unquote(cookie_value.lstrip().partition(";")[0])
     else:
         assignment = _SECRET_ASSIGNMENT.fullmatch(span)
-    if assignment:
-        span = _unquote(assignment.group(1))
+        if assignment:
+            span = _unquote(assignment.group(1))
     if pii_type != "PASSWORD":
         span = re.sub(r"^(?:Bearer|Basic)\s+", "", span, flags=re.IGNORECASE)
     return span

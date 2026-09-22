@@ -166,7 +166,7 @@ _HEX_ARTIFACT_NAMES = {
     64: "sha256-digest",
 }
 _VERSION_RE = re.compile(r"v?\d+\.\d+\.\d+(?:[.-][0-9A-Za-z]+)?")
-_DOTTED_AVS_RE = re.compile(r"756\.[0-9]{4}\.[0-9]{4}\.[0-9]{2}")
+_DOTTED_AVS_RE = re.compile(r"756\.\d{4}\.\d{4}\.\d{2}", re.ASCII)
 _DOTTED_DATE_RE = re.compile(r"(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})")
 _YEAR_FIRST_DOTTED_DATE_RE = re.compile(r"\d{4}\.(\d{1,2})\.(\d{1,2})")
 _BASE64_IMAGE_SIGNATURES = ("iVBORw0KGgo", "/9j/", "R0lGOD")  # PNG/JPEG/GIF

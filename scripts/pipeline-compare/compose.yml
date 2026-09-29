@@ -1,0 +1,19 @@
+name: ai-sentinel-baseline
+services:
+  database:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: ai-sentinel-baseline
+      POSTGRES_USER: baseline
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Load baseline.env through run.sh}
+    ports:
+      - "127.0.0.1:5437:5432"
+    volumes:
+      - database:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U baseline -d ai-sentinel-baseline"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+volumes:
+  database:

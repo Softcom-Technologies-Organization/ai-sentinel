@@ -67,7 +67,7 @@ dependencies = [
 
     # Deterministic format pre-filter checksums (Luhn / IBAN mod-97 / AVS EAN-13).
     # LGPL-2.1+ : imported unmodified at runtime (linking) -> compatible; license to be tracked.
-    "python-stdnum>=1.20",
+    "python-stdnum>=2.2",
 
     # Credential plausibility post-filter (PASSWORD/API_KEY/SECRET mentions vs values).
     # zxcvbn (dwolfhub port) - MIT: guessability score for dictionary-word rejection.

@@ -29,6 +29,9 @@ from pii_detector.domain.entity.detector_failure import (
 from pii_detector.domain.entity.detector_source import DetectorSource
 from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.entity.pii_type import PIIType
+from pii_detector.infrastructure.detector.financial_recognizers import (
+    configure_financial_recognizers,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -451,6 +454,8 @@ class PresidioDetector:
         except Exception as e:
             self.logger.error(f"Failed to load Presidio analyzer with configured NLP engine: {e}")
             self._fallback_to_basic_analyzer()
+
+        configure_financial_recognizers(self._analyzer.registry, self._analyzer.supported_languages)
 
     def _should_use_nlp_provider(self) -> tuple:
         """Determine whether to use NlpEngineProvider or blank spaCy pipelines.

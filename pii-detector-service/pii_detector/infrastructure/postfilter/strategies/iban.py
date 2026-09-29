@@ -6,9 +6,9 @@ Rejects a value only when it has the canonical compact IBAN shape
 Any non-canonical / truncated form fails open, and any exception keeps the
 entity (fail-open absolute).
 
-``iban.is_valid`` checks length + mod-97 only (no ``check_country=True``),
-which is more conservative than country-aware validation (research §2 -- an
-unusual but valid Swiss BBAN must not be rejected). Measured on the corpus:
+``iban.is_valid`` also runs python-stdnum's domestic account check where one
+exists (BE, ES, ME, NO), like the Presidio IBAN recognizer; Swiss IBANs have
+no domestic check. Measured on the corpus:
 0 false positives caught (the IBAN FPs are base64 blobs out of shape ->
 fail-open), 0 collisions; the value is prod protection against any
 well-formed but mod-97-invalid IBAN.

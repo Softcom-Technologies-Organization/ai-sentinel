@@ -137,13 +137,13 @@ La désactivation par type n'économise pas nécessairement les appels au modèl
 
 Autre point à vérifier pendant cette comparaison : la [fusion](../../../pii-detector-service/pii_detector/domain/service/detection_merger.py) choisit les passages par type avant le filtrage. Une proposition plus longue ensuite rejetée ne doit pas faire perdre un candidat valide plus court déjà éliminé. Ce risque découle de l'ordre du code ; il n'est pas mesuré sur tes scans ici.
 
-## Vérifications et limites
+## Vérifications et limites de l'étude du 19 septembre
 
 - **158 tests existants passent**, ciblant les stratégies, le validateur commun, le corpus de référence et son intégration gRPC.
 - La sonde couvre **22 cas de post-filtrage**, **8 cas d'extraction Presidio** et **4 présentations AVS**, avec des assertions sur les défauts clés.
 - Le corpus synthétique existant conserve 93 valeurs sur 95 dites « gold » ; les deux rejets sont les UID à clé artificiellement incorrecte déjà documentés par les tests. Sur les 135 résultats bruts, 14 sont rejetés. Ces nombres décrivent le comportement actuel, pas un gain de précision de la proposition.
 - Aucun scan de production, aucun échantillon récent annoté et aucune configuration déployée n'ont été analysés. On ne peut donc pas chiffrer la part de tes faux positifs qui disparaîtrait, ni garantir le rappel après désactivation.
-- Aucune modification des détecteurs ou de la base n'a été effectuée. Les nouveaux fichiers sont les recherches, le rapport et la sonde.
+- Lors de l'étude du 19 septembre, aucune modification des détecteurs ou de la base n'avait été effectuée. Les nouveaux fichiers étaient les recherches, le rapport et la sonde.
 
 Reproduction depuis la racine du dépôt :
 
@@ -154,3 +154,21 @@ PYTHONPATH=pii-detector-service pii-detector-service/.venv/bin/python docs/resea
 Les assertions décrivent l'état observé le jour de l'étude : elles devront changer lorsque les défauts auront été corrigés. Les trois recherches ont passé la validation de leurs dix champs obligatoires : [cartes et IBAN](results/credit_cards_and_iban.json), [numéros sociaux](results/social_security_numbers.json), [identifiants fiscaux](results/tax_identification_numbers.json).
 
 Les incertitudes restantes sont explicites : article IBAN inaccessible, règles historiques et territoriales non exhaustives, algorithmes nationaux parfois documentés seulement dans les bibliothèques, mise à jour exhaustive des tables de pays non vérifiée et rappel sur tes documents non mesuré. Les versions locales ont été vérifiées par la sonde, même lorsque les recherches web indépendantes les indiquent comme inconnues.
+
+## Implémentation Presidio du 22 septembre 2026
+
+Les reconnaisseurs cartes et IBAN sont désormais remplacés dans le registre de chaque langue au chargement de [PresidioDetector](../../../pii-detector-service/pii_detector/infrastructure/detector/presidio_detector.py), y compris après son initialisation de secours. L'adaptation se trouve dans [financial_recognizers.py](../../../pii-detector-service/pii_detector/infrastructure/detector/financial_recognizers.py) et réutilise les dépendances installées.
+
+- **Cartes :** préfixes existants et série Mastercard `2221–2720`, profil de 13 à 19 chiffres, Luhn natif conservé. L'exclusion des numéros à 13 chiffres commençant par `1` est préservée et étendue aux présentations espacées. Les contrôles de bord empêchent l'extraction d'un suffixe valide dans une suite numérique plus longue.
+- **IBAN :** longueur propre à chaque pays tirée de la table `python-stdnum`, validation de toute la structure BBAN et de MOD-97. Les minuscules sont acceptées. Comme dans le post-filtre, le contrôle national de `stdnum` s'applique aussi, là où il existe (Belgique, Espagne, Monténégro, Norvège).
+- **Présentation :** formes compactes, espaces ordinaires, insécables et fines insécables, tirets. Les IBAN espacés suivent les groupes de quatre caractères. Les sauts de ligne et valeurs masquées ne sont pas réunis. La normalisation se limite à la validation ; texte et positions d'origine sont conservés.
+
+**Validation : 376 tests passent**, dont [48 cas financiers](../../../pii-detector-service/tests/unit/test_presidio_financial_recognizers.py), les suites Presidio et post-filtres existantes, et le benchmark d'intégration. Le nouveau module atteint 100 % de couverture des instructions. Le benchmark ne produit aucun faux positif carte ou IBAN sur ses dix textes ; cela ne mesure pas le gain sur les scans réels.
+
+Reproduction depuis la racine du dépôt :
+
+```bash
+cd pii-detector-service && TLDEXTRACT_CACHE=/tmp/ai-sentinel-presidio-tldextract .venv/bin/python -m pytest tests/unit/test_presidio*.py tests/unit/infrastructure/postfilter tests/integration/test_presidio_false_positive_benchmark.py --no-cov -o addopts='' -o log_cli=false -q
+```
+
+Cette livraison concerne uniquement l'extraction Presidio cartes/IBAN. Les post-filtres communs, SSN, Tax ID, Ministral et la configuration en base n'ont pas été modifiés. Le profil cartes ne couvre pas tous les PAN possibles ; la couverture des pays IBAN dépend de la version de `python-stdnum` installée. La comparaison sur un corpus récent annoté reste nécessaire avant de désactiver un autre détecteur.

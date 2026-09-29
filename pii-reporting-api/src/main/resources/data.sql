@@ -166,9 +166,6 @@ VALUES
     ('TH_TNIN', 'PRESIDIO', false, 0.95, 'Government ID', 'TH_TNIN', 'MEDIUM', 'TH', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
     ON CONFLICT (pii_type, detector) DO NOTHING;
 
--- ============================================================================
--- REGEX PII TYPES — national identifiers and credentials.
--- ============================================================================
 INSERT INTO pii_type_config
 (pii_type, detector, enabled, threshold, category, detector_label, severity, country_code, created_at, updated_at, updated_by)
 VALUES

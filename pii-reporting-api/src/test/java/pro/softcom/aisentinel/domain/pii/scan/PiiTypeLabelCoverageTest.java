@@ -32,7 +32,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * ({@code sql/data-*.sql}), normalizes each {@code pii_type} exactly like the
  * adapter (trim / upper-case / spaces and hyphens to underscores), and asserts
  * that {@code valueOf} succeeds for each one.
- * National REGEX rule IDs are mapped to their emitted SOCIALNUM/TAX_ID types.
  *
  * <p>Resource discovery is classpath-based ({@link PathMatchingResourcePatternResolver})
  * so it works both from the exploded build directory and from a packaged jar,

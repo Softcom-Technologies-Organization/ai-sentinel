@@ -57,8 +57,8 @@ validation_method = "insee_key"
 
 [patterns.ssn_switzerland]
 type = "AVS_NUMBER"
-pattern = '\b756\.[0-9]{4}\.[0-9]{4}\.[0-9]{2}\b'
-description = "Swiss Social Security Number (AHV format: 756.xxxx.xxxx.xx), validated with the EAN-13 check digit"
+pattern = '(?<!\w)(?<![0-9][ .\u00a0\u202f/-])756([ .\u00a0\u202f-]?)[0-9]{4}\1[0-9]{4}\1[0-9]{2}(?!\w|[ .\u00a0\u202f/-]?[0-9])'
+description = "Swiss Social Security Number (AHV: 756.xxxx.xxxx.xx, compact, or one space/dash separator throughout), validated with the EAN-13 check digit"
 score = 0.95
 priority = "high"
 country = "CH"

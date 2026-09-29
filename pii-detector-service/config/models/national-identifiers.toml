@@ -1,0 +1,1535 @@
+# Country-specific extraction rules. Activation and thresholds come from PostgreSQL.
+
+[[rules]]
+key = "SSN_FR_NIR"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "FR"
+label = "NIR (15)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[12][ \\u00a0\\u202f.-]?[0-9]{2}[ \\u00a0\\u202f.-]?[0-9]{2}[ \\u00a0\\u202f.-]?(?:[0-9]{2}|2[AB])[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{2})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "fr.nir"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "2 95 10 99 126 111 93"
+
+[[rules]]
+key = "SSN_BE_NISS"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "BE"
+label = "NISS / BIS"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{2}[ \\u00a0\\u202f.-]?[0-9]{2}[ \\u00a0\\u202f.-]?[0-9]{2}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{2})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "be.ssn"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "85 07 30 033 28"
+
+[[rules]]
+key = "SSN_AT_VNR"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "AT"
+label = "VNR / SVNR"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{4}[ \\u00a0\\u202f.-]?[0-9]{6})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "at.vnr"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "1237 010180"
+
+[[rules]]
+key = "SSN_BG_EGN"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "BG"
+label = "EGN"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{10})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "bg.egn"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "7523169263"
+
+[[rules]]
+key = "SSN_CZ_RC"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "CZ"
+label = "Rodné číslo (10)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{6}[ /\\u00a0\\u202f]?[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "cz.rc"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "710319/2745"
+
+[[rules]]
+key = "SSN_DK_CPR"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "DK"
+label = "CPR"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{6}[ \\u00a0\\u202f.-]?[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "dk.cpr"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "211062-5629"
+
+[[rules]]
+key = "SSN_EE_IK"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "EE"
+label = "Isikukood"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{11})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "ee.ik"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "36805280109"
+
+[[rules]]
+key = "SSN_FI_HETU"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "FI"
+label = "HETU"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{6}[+\\-ABCDEFUVWXY][0-9]{3}[0-9A-Y])(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "fi.hetu"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "131052-308T"
+
+[[rules]]
+key = "SSN_GR_AMKA"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "GR"
+label = "AMKA"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{11})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "gr.amka"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "01013099997"
+
+[[rules]]
+key = "SSN_HR_OIB"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "HR"
+label = "OIB"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{11})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "hr.oib"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "33392005961"
+
+[[rules]]
+key = "SSN_IE_PPS"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "IE"
+label = "PPS"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{7}[A-Z]{1,2})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "ie.pps"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "6433435OA"
+
+[[rules]]
+key = "SSN_IS_KENNITALA"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "IS"
+label = "Kennitala"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{6}[ \\u00a0\\u202f.-]?[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "is_.kennitala"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "120174-3399"
+
+[[rules]]
+key = "SSN_IT_CF"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "IT"
+label = "Codice fiscale"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z])(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "it.codicefiscale"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "RCCMNL83S18D969H"
+
+[[rules]]
+key = "SSN_LT_ASMENS"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "LT"
+label = "Asmens kodas"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{11})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "lt.asmens"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "33309240064"
+
+[[rules]]
+key = "SSN_NL_BSN"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "NL"
+label = "BSN"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:(?:[0-9]{9}|[0-9]{4}[ \\u00a0\\u202f.-]?[0-9]{2}[ \\u00a0\\u202f.-]?[0-9]{3}))(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "nl.bsn"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "111222333"
+
+[[rules]]
+key = "SSN_NO_FNR"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "NO"
+label = "Fødselsnummer"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{6}[ \\u00a0\\u202f.-]?[0-9]{5})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "no.fodselsnummer"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "151086 95088"
+
+[[rules]]
+key = "SSN_PL_PESEL"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "PL"
+label = "PESEL"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{11})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "pl.pesel"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "44051401359"
+
+[[rules]]
+key = "SSN_RO_CNP"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "RO"
+label = "CNP"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{13})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "ro.cnp"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "1630615123457"
+
+[[rules]]
+key = "SSN_SE_PERSONNUMMER"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "SE"
+label = "Personnummer"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:(?:[0-9]{2})?[0-9]{6}[-+]?[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "se.personnummer"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "880320-0016"
+
+[[rules]]
+key = "SSN_SI_EMSO"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "SI"
+label = "EMŠO"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{13})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "si.emso"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "0101006500006"
+
+[[rules]]
+key = "SSN_SK_RC"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "SK"
+label = "Rodné číslo (10)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{6}[ /\\u00a0\\u202f]?[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "sk.rc"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "710319/2745"
+
+[[rules]]
+key = "SSN_GB_NINO"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "GB"
+label = "National Insurance number"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:(?!BG|GB|KN|NK|NT|TN|ZZ)[A-CEGHJ-PR-TW-Z][A-CEGHJ-NPR-TW-Z][ \\u00a0\\u202f-]?[0-9]{2}[ \\u00a0\\u202f-]?[0-9]{2}[ \\u00a0\\u202f-]?[0-9]{2}[ \\u00a0\\u202f-]?[A-D])(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "format"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "AB 12 34 56 C"
+
+[[rules]]
+key = "SSN_US_SSN"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "US"
+label = "Social Security Number"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:(?!000|666|9[0-9]{2})[0-9]{3}[ \\u00a0\\u202f-]?(?!00)[0-9]{2}[ \\u00a0\\u202f-]?(?!0000)[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "us.ssn"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "536-90-4399"
+
+[[rules]]
+key = "SSN_CA_SIN"
+entity_type = "SOCIALNUM"
+category = "SSN"
+country = "CA"
+label = "Social Insurance Number"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "ca.sin"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "123-456-782"
+
+[[rules]]
+key = "TAX_ID_CH_AVS"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "CH"
+label = "TIN personnel (AVS)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:756[ \\u00a0\\u202f.-]?[0-9]{4}[ \\u00a0\\u202f.-]?[0-9]{4}[ \\u00a0\\u202f.-]?[0-9]{2})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "ch.ssn"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "756.9217.0769.85"
+
+[[rules]]
+key = "TAX_ID_CH_UID"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "CH"
+label = "UID / IDE"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:CHE[ \\u00a0\\u202f-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "ch.uid"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "CHE-100.155.212"
+
+[[rules]]
+key = "TAX_ID_FR_NIF"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "FR"
+label = "NIF personnel"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{2}[ \\u00a0\\u202f.-]?[0-9]{2}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "fr.nif"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "30 23 217 600 053"
+
+[[rules]]
+key = "TAX_ID_DE_IDNR"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "DE"
+label = "IdNr"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{2}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "de.idnr"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "36 574 261 809"
+
+[[rules]]
+key = "TAX_ID_AT_TIN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "AT"
+label = "Steuernummer"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{2}[ /\\u00a0\\u202f-]?[0-9]{3}[ /\\u00a0\\u202f-]?[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "at.tin"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "59-119/9013"
+
+[[rules]]
+key = "TAX_ID_ES_NIF"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "ES"
+label = "NIF / NIE / CIF"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9A-Z][ \\u00a0\\u202f-]?[0-9]{7}[ \\u00a0\\u202f-]?[0-9A-Z])(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "es.nif"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "X-5253868-R"
+
+[[rules]]
+key = "TAX_ID_PT_NIF"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "PT"
+label = "NIF"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "pt.nif"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "501 964 843"
+
+[[rules]]
+key = "TAX_ID_PL_NIP"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "PL"
+label = "NIP"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{2}[ \\u00a0\\u202f.-]?[0-9]{2})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "pl.nip"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "856-734-62-15"
+
+[[rules]]
+key = "TAX_ID_GB_UTR"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "GB"
+label = "Unique Taxpayer Reference"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{5}[ \\u00a0\\u202f.-]?[0-9]{5})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "gb.utr"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "1955839661"
+
+[[rules]]
+key = "TAX_ID_BG_PNF"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "BG"
+label = "LNCh / PNF"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{4}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "bg.pnf"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "7111 042 925"
+
+[[rules]]
+key = "TAX_ID_LV_PERSONAS"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "LV"
+label = "Personas kods"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{6}[ \\u00a0\\u202f.-]?[0-9]{5})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "lv.pvn"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "161175-19997"
+
+[[rules]]
+key = "TAX_ID_BY_UNP"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "BY"
+label = "UNP"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:(?:[1-7][0-9]|[ABCEHKM][ABCEHKMOPT])[0-9]{7})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "by.unp"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "200988541"
+
+[[rules]]
+key = "TAX_ID_MD_IDNO"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "MD"
+label = "IDNO"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{13})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "md.idno"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "1008600038413"
+
+[[rules]]
+key = "TAX_ID_ME_PIB"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "ME"
+label = "PIB"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{8})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "me.pib"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "02655284"
+
+[[rules]]
+key = "TAX_ID_MK_EDB"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "MK"
+label = "EDB"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{13})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "mk.edb"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "4030000375897"
+
+[[rules]]
+key = "TAX_ID_RS_PIB"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "RS"
+label = "PIB"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{9})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "rs.pib"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "101134702"
+
+[[rules]]
+key = "TAX_ID_UA_RNTRC"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "UA"
+label = "RNTRC"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{10})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "ua.rntrc"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "1759013776"
+
+[[rules]]
+key = "TAX_ID_BE_NISS"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "BE"
+label = "NISS / BIS (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{2}[ \\u00a0\\u202f.-]?[0-9]{2}[ \\u00a0\\u202f.-]?[0-9]{2}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{2})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "be.ssn"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "85 07 30 033 28"
+
+[[rules]]
+key = "TAX_ID_BG_EGN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "BG"
+label = "EGN (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{10})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "bg.egn"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "7523169263"
+
+[[rules]]
+key = "TAX_ID_CZ_RC"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "CZ"
+label = "Rodné číslo (10) (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{6}[ /\\u00a0\\u202f]?[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "cz.rc"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "710319/2745"
+
+[[rules]]
+key = "TAX_ID_DK_CPR"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "DK"
+label = "CPR (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{6}[ \\u00a0\\u202f.-]?[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "dk.cpr"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "211062-5629"
+
+[[rules]]
+key = "TAX_ID_EE_IK"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "EE"
+label = "Isikukood (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{11})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "ee.ik"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "36805280109"
+
+[[rules]]
+key = "TAX_ID_FI_HETU"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "FI"
+label = "HETU (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{6}[+\\-ABCDEFUVWXY][0-9]{3}[0-9A-Y])(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "fi.hetu"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "131052-308T"
+
+[[rules]]
+key = "TAX_ID_HR_OIB"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "HR"
+label = "OIB (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{11})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "hr.oib"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "33392005961"
+
+[[rules]]
+key = "TAX_ID_IE_PPS"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "IE"
+label = "PPS (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{7}[A-Z]{1,2})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "ie.pps"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "6433435OA"
+
+[[rules]]
+key = "TAX_ID_IS_KENNITALA"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "IS"
+label = "Kennitala (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{6}[ \\u00a0\\u202f.-]?[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "is_.kennitala"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "120174-3399"
+
+[[rules]]
+key = "TAX_ID_IT_CF"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "IT"
+label = "Codice fiscale (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z])(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "it.codicefiscale"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "RCCMNL83S18D969H"
+
+[[rules]]
+key = "TAX_ID_LT_ASMENS"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "LT"
+label = "Asmens kodas (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{11})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "lt.asmens"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "33309240064"
+
+[[rules]]
+key = "TAX_ID_NL_BSN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "NL"
+label = "BSN (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:(?:[0-9]{9}|[0-9]{4}[ \\u00a0\\u202f.-]?[0-9]{2}[ \\u00a0\\u202f.-]?[0-9]{3}))(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "nl.bsn"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "111222333"
+
+[[rules]]
+key = "TAX_ID_NO_FNR"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "NO"
+label = "Fødselsnummer (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{6}[ \\u00a0\\u202f.-]?[0-9]{5})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "no.fodselsnummer"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "151086 95088"
+
+[[rules]]
+key = "TAX_ID_PL_PESEL"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "PL"
+label = "PESEL (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{11})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "pl.pesel"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "44051401359"
+
+[[rules]]
+key = "TAX_ID_RO_CNP"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "RO"
+label = "CNP (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{13})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "ro.cnp"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "1630615123457"
+
+[[rules]]
+key = "TAX_ID_SE_PERSONNUMMER"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "SE"
+label = "Personnummer (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:(?:[0-9]{2})?[0-9]{6}[-+]?[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "se.personnummer"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "880320-0016"
+
+[[rules]]
+key = "TAX_ID_SI_EMSO"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "SI"
+label = "EMŠO (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{13})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "si.emso"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "0101006500006"
+
+[[rules]]
+key = "TAX_ID_SK_RC"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "SK"
+label = "Rodné číslo (10) (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{6}[ /\\u00a0\\u202f]?[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "sk.rc"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "710319/2745"
+
+[[rules]]
+key = "TAX_ID_US_SSN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "US"
+label = "Social Security Number (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:(?!000|666|9[0-9]{2})[0-9]{3}[ \\u00a0\\u202f-]?(?!00)[0-9]{2}[ \\u00a0\\u202f-]?(?!0000)[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "us.ssn"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "536-90-4399"
+
+[[rules]]
+key = "TAX_ID_CA_SIN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "CA"
+label = "Social Insurance Number (TIN)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "ca.sin"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "123-456-782"
+
+[[rules]]
+key = "TAX_ID_AT_UID"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "AT"
+label = "VAT / UID"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:AT[ \\u00a0\\u202f-]?U[0-9]{8})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "at.uid"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "AT U13585627"
+
+[[rules]]
+key = "TAX_ID_BE_VAT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "BE"
+label = "VAT / VAT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:BE[ \\u00a0\\u202f-]?[01]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "be.vat"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "BE 0428.759.497"
+
+[[rules]]
+key = "TAX_ID_BG_VAT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "BG"
+label = "VAT / VAT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:BG[ \\u00a0\\u202f-]?[0-9]{9,10})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "bg.vat"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "BG175074752"
+
+[[rules]]
+key = "TAX_ID_CY_VAT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "CY"
+label = "VAT / VAT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:CY[ \\u00a0\\u202f-]?[0-9]{8}[A-Z])(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "cy.vat"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "CY-10259033P"
+
+[[rules]]
+key = "TAX_ID_CZ_DIC"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "CZ"
+label = "VAT / DIC"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:CZ[ \\u00a0\\u202f-]?[0-9]{8,10})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "cz.dic"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "CZ25123891"
+
+[[rules]]
+key = "TAX_ID_DE_VAT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "DE"
+label = "VAT / VAT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:DE[ \\u00a0\\u202f-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "de.vat"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "DE136695976"
+
+[[rules]]
+key = "TAX_ID_DK_CVR"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "DK"
+label = "VAT / CVR"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:DK[ \\u00a0\\u202f-]?[0-9]{8})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "dk.cvr"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "DK13585628"
+
+[[rules]]
+key = "TAX_ID_EE_KMKR"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "EE"
+label = "VAT / KMKR"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:EE[ \\u00a0\\u202f-]?[0-9]{9})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "ee.kmkr"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "EE100594102"
+
+[[rules]]
+key = "TAX_ID_ES_VAT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "ES"
+label = "VAT / VAT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:ES[ \\u00a0\\u202f-]?[A-Z0-9][0-9]{7}[A-Z0-9])(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "es.nif"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "ESB64717838"
+
+[[rules]]
+key = "TAX_ID_FI_ALV"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "FI"
+label = "VAT / ALV"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:FI[ \\u00a0\\u202f-]?[0-9]{8})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "fi.alv"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "FI20774740"
+
+[[rules]]
+key = "TAX_ID_FR_VAT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "FR"
+label = "VAT / VAT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:FR[ \\u00a0\\u202f-]?[A-HJ-NP-Z0-9]{2}[ \\u00a0\\u202f-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "fr.tva"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "FR23334175221"
+
+[[rules]]
+key = "TAX_ID_GR_VAT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "GR"
+label = "VAT / VAT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:EL[ \\u00a0\\u202f-]?[0-9]{9})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "gr.vat"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "EL094259216"
+
+[[rules]]
+key = "TAX_ID_HR_VAT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "HR"
+label = "VAT / VAT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:HR[ \\u00a0\\u202f-]?[0-9]{11})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "hr.oib"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "HR33392005961"
+
+[[rules]]
+key = "TAX_ID_HU_ANUM"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "HU"
+label = "VAT / ANUM"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:HU[ \\u00a0\\u202f-]?[0-9]{8})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "hu.anum"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "HU12892312"
+
+[[rules]]
+key = "TAX_ID_IE_VAT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "IE"
+label = "VAT / VAT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:IE[ \\u00a0\\u202f-]?[0-9][A-Z0-9+*][0-9]{5}[A-Z]{1,2})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "ie.vat"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "IE6433435OA"
+
+[[rules]]
+key = "TAX_ID_IT_IVA"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "IT"
+label = "VAT / IVA"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:IT[ \\u00a0\\u202f-]?[0-9]{11})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "it.iva"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "IT00743110157"
+
+[[rules]]
+key = "TAX_ID_LT_PVM"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "LT"
+label = "VAT / PVM"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:LT[ \\u00a0\\u202f-]?(?:[0-9]{9}|[0-9]{12}))(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "lt.pvm"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "LT100001919017"
+
+[[rules]]
+key = "TAX_ID_LU_VAT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "LU"
+label = "VAT / VAT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:LU[ \\u00a0\\u202f-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{2})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "lu.tva"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "LU 150 274 42"
+
+[[rules]]
+key = "TAX_ID_LV_PVN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "LV"
+label = "VAT / PVN"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:LV[ \\u00a0\\u202f-]?[0-9]{4}[ \\u00a0\\u202f.-]?[0-9]{4}[ \\u00a0\\u202f.-]?[0-9]{3})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "lv.pvn"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "LV40003521600"
+
+[[rules]]
+key = "TAX_ID_MT_VAT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "MT"
+label = "VAT / VAT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:MT[ \\u00a0\\u202f-]?[0-9]{4}[ \\u00a0\\u202f.-]?[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "mt.vat"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "MT1167-9112"
+
+[[rules]]
+key = "TAX_ID_NL_BTW"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "NL"
+label = "VAT / BTW"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:NL[ \\u00a0\\u202f-]?[0-9]{9}B[0-9]{2})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "nl.btw"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "NL002455799B11"
+
+[[rules]]
+key = "TAX_ID_NO_MVA"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "NO"
+label = "VAT / MVA"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:NO[ \\u00a0\\u202f-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f-]?MVA)(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "no.mva"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "NO 995 525 828 MVA"
+
+[[rules]]
+key = "TAX_ID_PL_VAT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "PL"
+label = "VAT / VAT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:PL[ \\u00a0\\u202f-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{2}[ \\u00a0\\u202f.-]?[0-9]{2})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "pl.nip"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "PL8567346215"
+
+[[rules]]
+key = "TAX_ID_PT_VAT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "PT"
+label = "VAT / VAT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:PT[ \\u00a0\\u202f-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "pt.nif"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "PT501964843"
+
+[[rules]]
+key = "TAX_ID_RO_VAT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "RO"
+label = "VAT / VAT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:RO[ \\u00a0\\u202f-]?[0-9]{2,10})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "ro.cf"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "RO18547290"
+
+[[rules]]
+key = "TAX_ID_SE_VAT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "SE"
+label = "VAT / VAT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:SE[ \\u00a0\\u202f-]?[0-9]{10}01)(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "se.vat"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "SE123456789701"
+
+[[rules]]
+key = "TAX_ID_SI_DDV"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "SI"
+label = "VAT / DDV"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:SI[ \\u00a0\\u202f-]?[0-9]{4}[ \\u00a0\\u202f.-]?[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "si.ddv"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "SI50223054"
+
+[[rules]]
+key = "TAX_ID_SK_DPH"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "SK"
+label = "VAT / DPH"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:SK[ \\u00a0\\u202f-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{2}[ \\u00a0\\u202f.-]?[0-9]{2})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "sk.dph"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "SK2022749619"
+
+[[rules]]
+key = "TAX_ID_GB_VAT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "GB"
+label = "VAT / VAT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:GB[ \\u00a0\\u202f-]?[0-9]{3}[ \\u00a0\\u202f.-]?[0-9]{4}[ \\u00a0\\u202f.-]?[0-9]{2}(?:[ \\u00a0\\u202f-]?[0-9]{3})?)(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "gb.vat"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "GB 980 7806 84"
+
+[[rules]]
+key = "TAX_ID_AL_NIPT"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "AL"
+label = "NIPT"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[JKL][0-9]{8}[A-Z])(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "al.nipt"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "K22218003V"
+
+[[rules]]
+key = "TAX_ID_US_EIN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "US"
+label = "États-Unis — EIN (entreprises)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{2}[ \\u00a0\\u202f-]?[0-9]{7})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "us.ein"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "91-1144442"
+
+[[rules]]
+key = "TAX_ID_US_ITIN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "US"
+label = "États-Unis — ITIN (personnes)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:9[0-9]{2}[ \\u00a0\\u202f-]?(?:5[0-9]|6[0-5]|7[0-9]|8[0-8]|9[0-24-9])[ \\u00a0\\u202f-]?[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "format"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "912-90-3456"
+
+[[rules]]
+key = "TAX_ID_US_PTIN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "US"
+label = "États-Unis — PTIN (préparateurs fiscaux)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:P[ \\u00a0\\u202f-]?[0-9]{8})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "us.ptin"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "P-00634642"
+
+[[rules]]
+key = "TAX_ID_CA_BN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "CA"
+label = "Canada — BN (entreprises)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{5}[ \\u00a0\\u202f-]?[0-9]{4}(?:[ \\u00a0\\u202f-]?(?:RC|RM|RP|RT)[ \\u00a0\\u202f-]?[0-9]{4})?)(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "ca.bn"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "12302 6635 RC 0001"
+
+[[rules]]
+key = "TAX_ID_CN_RIC"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "CN"
+label = "Chine — RIC (TIN personnel)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{17}[0-9X])(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "cn.ric"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "360426199101010071"
+
+[[rules]]
+key = "TAX_ID_CN_USCC"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "CN"
+label = "Chine — USCC (entreprises)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{8}[0-9A-HJ-NPQRTUWXY]{10})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "cn.uscc"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "91110000600037341L"
+
+[[rules]]
+key = "TAX_ID_IN_PAN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "IN"
+label = "Inde — PAN (personnes et entités)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[A-Z]{5}[0-9]{4}[A-Z])(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "in_.pan"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "ACUPA7085R"
+
+[[rules]]
+key = "TAX_ID_IN_GSTIN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "IN"
+label = "Inde — GSTIN (TVA)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z])(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "in_.gstin"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "27AAPFU0939F1ZV"
+
+[[rules]]
+key = "TAX_ID_RU_INN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "RU"
+label = "Russie — INN (personnes et entreprises)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:(?:[0-9]{12}|[0-9]{10}))(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "ru.inn"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "123456789047"
+
+[[rules]]
+key = "TAX_ID_JP_MY_NUMBER"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "JP"
+label = "Japon — My Number (personnes)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{4}[ \\u00a0\\u202f-]?[0-9]{4}[ \\u00a0\\u202f-]?[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "jp.in_"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "6214 9832 0257"
+
+[[rules]]
+key = "TAX_ID_JP_CN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "JP"
+label = "Japon — Corporate Number (entités)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[1-9][ \\u00a0\\u202f-]?[0-9]{4}[ \\u00a0\\u202f-]?[0-9]{4}[ \\u00a0\\u202f-]?[0-9]{4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "jp.cn"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "5-8356-7825-6246"
+
+[[rules]]
+key = "TAX_ID_BR_CPF"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "BR"
+label = "Brésil — CPF (personnes)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{3}\\.?[0-9]{3}\\.?[0-9]{3}-?[0-9]{2})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "br.cpf"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "390.533.447-05"
+
+[[rules]]
+key = "TAX_ID_BR_CNPJ"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "BR"
+label = "Brésil — CNPJ (entités, numérique ou alphanumérique)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[A-Z0-9]{2}\\.?[A-Z0-9]{3}\\.?[A-Z0-9]{3}/?[A-Z0-9]{4}-?[0-9]{2})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "br.cnpj"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "12.ABC.345/01DE-35"
+
+[[rules]]
+key = "TAX_ID_AU_TFN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "AU"
+label = "Australie — TFN (personnes et organisations)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{2,3}[ \\u00a0\\u202f-]?[0-9]{3}[ \\u00a0\\u202f-]?[0-9]{3})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "au.tfn"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "123 456 782"
+
+[[rules]]
+key = "TAX_ID_AU_ABN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "AU"
+label = "Australie — ABN (entreprises)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{2}[ \\u00a0\\u202f-]?[0-9]{3}[ \\u00a0\\u202f-]?[0-9]{3}[ \\u00a0\\u202f-]?[0-9]{3})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "au.abn"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "83 914 571 673"
+
+[[rules]]
+key = "TAX_ID_KR_BRN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "KR"
+label = "Corée du Sud — BRN (entreprises)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{3}[ \\u00a0\\u202f-]?[0-9]{2}[ \\u00a0\\u202f-]?[0-9]{5})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "kr.brn"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "116-82-00276"
+
+[[rules]]
+key = "TAX_ID_MX_RFC"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "MX"
+label = "Mexique — RFC (personnes et entreprises)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[A-Z&Ñ]{3,4}[ \\u00a0\\u202f-]?[0-9]{6}[ \\u00a0\\u202f-]?[0-9A-Z]{3})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "mx.rfc"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "GODE 561231 GR8"
+
+[[rules]]
+key = "TAX_ID_ID_NPWP"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "ID"
+label = "Indonésie — NPWP (15 chiffres ou 16 avec préfixe 0)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:0?[0-9]{2}\\.?[0-9]{3}\\.?[0-9]{3}\\.?[0-9]-?[0-9]{3}\\.?[0-9]{3})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "id.npwp"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "01.312.166.0-091.000"
+
+[[rules]]
+key = "TAX_ID_ID_NIK"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "ID"
+label = "Indonésie — NIK (TIN personnel à 16 chiffres)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[1-9][0-9]{15})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "id.nik"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "3171011708450001"
+
+[[rules]]
+key = "TAX_ID_TR_TCKN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "TR"
+label = "Turquie — TCKN (TIN personnel)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[1-9][0-9]{10})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "tr.tckimlik"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "17291716060"
+
+[[rules]]
+key = "TAX_ID_TR_VKN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "TR"
+label = "Turquie — VKN (entreprises et autres contribuables)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{10})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "tr.vkn"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "4540536920"
+
+[[rules]]
+key = "TAX_ID_SG_UEN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "SG"
+label = "Singapour — UEN (entreprises)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:(?:[0-9]{8,9}[A-Z]|[RST][0-9]{2}[A-Z]{2}[0-9]{4}[A-Z]))(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "sg.uen"
+score = 0.95
+default_enabled = true
+checksum = true
+example = "S16FC0121D"
+
+[[rules]]
+key = "TAX_ID_SG_NRIC_FIN"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "SG"
+label = "Singapour — NRIC/FIN (TIN personnel)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[STFGM][0-9]{7}[A-Z])(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "format"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "S1234567D"
+
+[[rules]]
+key = "TAX_ID_HK_HKID"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "HK"
+label = "Hong Kong — HKID (TIN personnel)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[A-Z]{1,2}[0-9]{6}(?:[0-9A]|\\([0-9A]\\)))(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "format"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "A123456(3)"
+
+[[rules]]
+key = "TAX_ID_HK_BR"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "HK"
+label = "Hong Kong — BR (entreprises)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:[0-9]{8})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "format"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "99999999"
+
+[[rules]]
+key = "TAX_ID_PA_RUC_PERSON"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "PA"
+label = "Panama — RUC personnel (variante numérique)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:(?:[1-9]|1[0-3])-[0-9]{1,4}-[0-9]{1,4})(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "format"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "8-100-678"
+
+[[rules]]
+key = "TAX_ID_PA_RUC_ENTITY"
+entity_type = "TAX_ID"
+category = "TAX_ID"
+country = "PA"
+label = "Panama — RUC entreprises (depuis 2014)"
+pattern = "(?<!\\w)(?<![0-9][ .\\u00a0\\u202f/-])(?:(?:[0-9]{9}-2|[0-9]{8}-3)-(?:201[4-9]|20[2-9][0-9]))(?!\\w|[ .\\u00a0\\u202f/-]?[0-9])"
+validator = "format"
+score = 0.75
+default_enabled = false
+checksum = false
+example = "155986022-2-2019"

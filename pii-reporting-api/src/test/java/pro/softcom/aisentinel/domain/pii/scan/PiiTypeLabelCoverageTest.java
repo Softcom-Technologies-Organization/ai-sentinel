@@ -32,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * ({@code sql/data-*.sql}), normalizes each {@code pii_type} exactly like the
  * adapter (trim / upper-case / spaces and hyphens to underscores), and asserts
  * that {@code valueOf} succeeds for each one.
+ * National REGEX rule IDs are mapped to their emitted SOCIALNUM/TAX_ID types.
  *
  * <p>Resource discovery is classpath-based ({@link PathMatchingResourcePatternResolver})
  * so it works both from the exploded build directory and from a packaged jar,
@@ -87,9 +88,19 @@ class PiiTypeLabelCoverageTest {
             String content = new String(in.readAllBytes(), StandardCharsets.UTF_8);
             Matcher matcher = TUPLE_PATTERN.matcher(content);
             while (matcher.find()) {
-                types.add(matcher.group(1));
+                types.add(emittedType(matcher.group(1), matcher.group(2)));
             }
         }
+    }
+
+    private String emittedType(String configuredType, String detector) {
+        if (!"REGEX".equals(detector)) {
+            return configuredType;
+        }
+        if (configuredType.startsWith("SSN_")) {
+            return "SOCIALNUM";
+        }
+        return configuredType.startsWith("TAX_ID_") ? "TAX_ID" : configuredType;
     }
 
     /**

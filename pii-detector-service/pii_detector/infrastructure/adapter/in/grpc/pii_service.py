@@ -1322,7 +1322,12 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
 
         # Prefer detector-specific composite key (e.g. "REGEX:IP_ADDRESS"),
         # fall back to plain pii_type key for backward compatibility.
-        type_config = pii_type_configs.get(f"{entity_source}:{entity_type_upper}")
+        # National REGEX rules are configured per rule (e.g. "REGEX:SSN_FR_NIR"),
+        # not under the canonical type they emit.
+        rule_key = entity.get('_config_pii_type')
+        type_config = rule_key and pii_type_configs.get(f"{entity_source}:{rule_key}")
+        if not type_config:
+            type_config = pii_type_configs.get(f"{entity_source}:{entity_type_upper}")
         if not type_config:
             type_config = pii_type_configs.get(entity_type_upper)
 

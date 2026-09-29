@@ -144,8 +144,8 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
           .map(categoryGroup => {
             const filteredTypes = categoryGroup.types.filter(type => {
               // Get translated name and description
-              const typeName = this.translocoService.translate(`settings.piiTypes.typeNames.${type.piiType}`).toLowerCase();
-              const typeDescription = this.translocoService.translate(`settings.piiTypes.typeDescriptions.${type.piiType}`).toLowerCase();
+              const typeName = this.piiTypeText(type, 'typeNames').toLowerCase();
+              const typeDescription = this.piiTypeText(type, 'typeDescriptions').toLowerCase();
               const countryCode = (type.countryCode || '').toLowerCase();
 
               // Search in name, description, and country code
@@ -380,7 +380,19 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
    * category reads as disabled so its toggle stays off.
    */
   isCategoryEnabled(categoryGroup: CategoryGroup): boolean {
-    return categoryGroup.types.length > 0 && categoryGroup.types.every(type => type.enabled);
+    const types = this.categoryTypes(categoryGroup);
+    return types.length > 0 && types.every(type => type.enabled);
+  }
+
+  categoryTypes(categoryGroup: CategoryGroup): PiiTypeConfig[] {
+    return this.groupedPiiTypes()
+      .find(group => group.detector === categoryGroup.types[0]?.detector)
+      ?.categories.find(group => group.category === categoryGroup.category)?.types
+      ?? categoryGroup.types;
+  }
+
+  categoryEnabledCount(categoryGroup: CategoryGroup): number {
+    return this.categoryTypes(categoryGroup).filter(type => type.enabled).length;
   }
 
   /**
@@ -389,7 +401,7 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
    * series of manual toggles.
    */
   onCategoryToggleChange(categoryGroup: CategoryGroup, enabled: boolean): void {
-    categoryGroup.types
+    this.categoryTypes(categoryGroup)
       .filter(type => type.enabled !== enabled)
       .forEach(type => this.onPiiTypeToggleChange(type, enabled));
   }
@@ -869,12 +881,19 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
     this.searchTerm.set('');
   }
 
+  piiTypeText(type: PiiTypeConfig, field: 'typeNames' | 'typeDescriptions'): string {
+    if (type.detector === 'REGEX' && /^(SSN|TAX_ID)_/.test(type.piiType)) {
+      return field === 'typeNames' ? type.detectorLabel || type.piiType : '';
+    }
+    return this.translocoService.translate(`settings.piiTypes.${field}.${type.piiType}`);
+  }
+
   /**
    * Highlight search term in text.
    */
   highlightText(text: string, originalKey: string): string {
     // Get translated text first
-    const translatedText = this.translocoService.translate(originalKey);
+    const translatedText = originalKey ? this.translocoService.translate(originalKey) : text;
 
     const term = this.searchTerm().trim();
     if (!term) {

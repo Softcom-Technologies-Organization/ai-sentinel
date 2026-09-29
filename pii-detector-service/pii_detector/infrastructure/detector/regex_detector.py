@@ -7,6 +7,7 @@ complementing ML-based detectors with rule-based patterns.
 
 import logging
 import re
+from importlib import import_module
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -112,6 +113,9 @@ class RegexDetector:
             config_path = self._get_default_config_path()
         
         self.patterns = self._load_patterns(config_path)
+        self._national_validators = {}
+        if config_path.resolve() == self._get_default_config_path().resolve():
+            self.patterns.extend(self._load_national_patterns(config_path.with_name("national-identifiers.toml")))
         self.validation_settings = self._load_validation_settings(config_path)
         
         self.logger.info(
@@ -140,7 +144,7 @@ class RegexDetector:
         self.logger.debug("RegexDetector requires no model loading")
     
     def detect_pii(
-        self, text: str, threshold: Optional[float] = None
+        self, text: str, threshold: Optional[float] = None, pii_type_configs: Optional[dict] = None
     ) -> List[PIIEntity]:
         """
         Detect PII using regex patterns.
@@ -169,7 +173,7 @@ class RegexDetector:
         
         try:
             # Detect matches for all patterns
-            all_matches = self._detect_all_patterns(text)
+            all_matches = self._detect_all_patterns(text, pii_type_configs)
             
             # Validate matches requiring validation
             validated_matches = self._validate_matches(all_matches)
@@ -284,7 +288,34 @@ class RegexDetector:
             self.logger.warning(f"Failed to load validation settings: {e}")
             return {}
     
-    def _detect_all_patterns(self, text: str) -> List[PIIEntity]:
+    def _load_national_patterns(self, path: Path) -> List[RegexPattern]:
+        patterns = []
+        for rule in toml.load(path)["rules"]:
+            method = rule["validator"]
+            if method != "format":
+                self._national_validators[method] = import_module(f"stdnum.{method}").is_valid
+            pattern = RegexPattern(
+                name=rule["key"], pii_type=rule["entity_type"],
+                pattern="(?i)" + rule["pattern"], score=rule["score"], priority="medium",
+                description=rule["label"], country=rule["country"],
+                requires_validation=method != "format", validation_method=method,
+            )
+            pattern.config_key = rule["key"]
+            patterns.append(pattern)
+        return patterns
+
+    @staticmethod
+    def _pattern_is_enabled(pattern: RegexPattern, configs: Optional[dict]) -> bool:
+        key = getattr(pattern, "config_key", None)
+        if configs is None:
+            return pattern.enabled and key is None
+        key = key or pattern.pii_type
+        config = configs.get(f"REGEX:{key}", configs.get(key, {}))
+        return (config.get("detector", "ALL") in ("REGEX", "ALL")
+                and config.get("enabled", False)
+                and pattern.score >= float(config.get("threshold", 0.0)))
+
+    def _detect_all_patterns(self, text: str, pii_type_configs: Optional[dict] = None) -> List[PIIEntity]:
         """
         Apply all enabled regex patterns to text.
         
@@ -297,7 +328,7 @@ class RegexDetector:
         all_matches = []
         
         for pattern in self.patterns:
-            if not pattern.enabled:
+            if not self._pattern_is_enabled(pattern, pii_type_configs):
                 continue
             
             matches = pattern.compiled.finditer(text)
@@ -318,6 +349,7 @@ class RegexDetector:
                 entity._requires_validation = pattern.requires_validation
                 entity._validation_method = pattern.validation_method
                 entity._priority = pattern.priority
+                entity._config_pii_type = getattr(pattern, "config_key", pattern.pii_type)
                 
                 all_matches.append(entity)
         
@@ -342,6 +374,7 @@ class RegexDetector:
             "insee_key": self._validate_insee_key,
             "avs_ean13": self._validate_avs_ean13,
             "be_nrn": self._validate_be_nrn,
+            **self._national_validators,
         }
 
         validated = []
@@ -364,7 +397,9 @@ class RegexDetector:
             if validator is None:
                 # Unknown validation method, keep the match
                 validated.append(match)
-            elif validator(match.text):
+            elif validator(match.text.replace("\u00a0", " ").replace("\u202f", " ")) and (
+                validation_method != "be.ssn" or self._validate_be_nrn(match.text)
+            ):
                 validated.append(match)
             else:
                 self.logger.debug(

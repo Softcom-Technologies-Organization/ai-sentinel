@@ -84,6 +84,10 @@ const FR_TRANSLATIONS = {
     confluence: { messages: { loadError: 'Erreur', saveSuccess: 'OK', saveError: 'Erreur' } },
     actions: { resetAll: 'Reset', cancel: 'Annuler', saveAll: 'Sauvegarder' },
     validation: { atLeastOneDetector: 'Au moins un' },
+    piiTypes: {
+      categoryEnabledCount: '{{enabled}} / {{total}} règles activées',
+      categoryNames: { SSN: 'Numéros de sécurité sociale', TAX_ID: 'Identifiants fiscaux' },
+    },
   },
 };
 
@@ -387,6 +391,97 @@ describe('PiiSettingsComponent', () => {
   });
 
   // ========== onSavePiiTypes ==========
+
+  describe('Regex category controls', () => {
+    function loadRegexCategories(enabled: [boolean, boolean]): void {
+      const types: PiiTypeConfig[] = [
+        { id: 10, piiType: 'SSN_CH_AVS', detectorLabel: 'AVS / AHV', detector: 'REGEX', category: 'SSN', countryCode: 'CH', enabled: enabled[0], threshold: 0.8 },
+        { id: 11, piiType: 'SSN_US_SSN', detectorLabel: 'Social Security Number', detector: 'REGEX', category: 'SSN', countryCode: 'US', enabled: enabled[1], threshold: 0.9 },
+        { id: 12, piiType: 'TAX_ID_CH_UID', detectorLabel: 'IDE / UID', detector: 'REGEX', category: 'TAX_ID', countryCode: 'CH', enabled: enabled[0], threshold: 0.8 },
+        { id: 13, piiType: 'TAX_ID_RU_INN', detectorLabel: 'INN', detector: 'REGEX', category: 'TAX_ID', countryCode: 'RU', enabled: enabled[1], threshold: 0.9 },
+      ];
+      component.ngOnInit();
+      httpMock.expectOne('/api/v1/pii-detection/config').flush(MOCK_DETECTOR_CONFIG);
+      httpMock.expectOne('/api/v1/pii-detection/pii-types/grouped').flush([
+        { detector: 'REGEX', categories: [
+          { category: 'SSN', types: types.slice(0, 2) },
+          { category: 'TAX_ID', types: types.slice(2) },
+        ] },
+        { detector: 'PRESIDIO', categories: [{ category: 'SSN', types: [
+          { ...types[1], id: 14, detector: 'PRESIDIO', enabled: true },
+        ] }] },
+      ]);
+      component.setActiveSection('pii_types');
+      component.onSearchChange('CH');
+    }
+
+    it.each([0, 1])('Should_ShowPartialState_When_CategoryContainsHiddenDisabledRules_%i', async (index) => {
+      loadRegexCategories([true, false]);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const header = (fixture.nativeElement as HTMLElement).querySelectorAll('.category-subheader')[index];
+      const toggle = header.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+      expect(toggle.checked).toBe(false);
+      expect(header.textContent).toContain('1 / 2 règles activées');
+
+      toggle.click();
+      fixture.detectChanges();
+
+      const categories = component.groupedPiiTypes()[0].categories;
+      expect(categories[index].types.map(type => type.enabled)).toEqual([true, true]);
+      expect(categories[1 - index].types.map(type => type.enabled)).toEqual([true, false]);
+      expect(component.modifiedTypesCount).toBe(1);
+    });
+
+    it.each([0, 1])('Should_SaveEveryCategoryRule_When_ToggledOffUnderCountryFilter_%i', async (index) => {
+      loadRegexCategories([true, true]);
+      const hiddenType = component.groupedPiiTypes()[0].categories[index].types[1];
+      component.onPiiTypeThresholdChange(hiddenType, 0.85);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const header = (fixture.nativeElement as HTMLElement).querySelectorAll('.category-subheader')[index];
+      header.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click();
+      component.onSaveAll();
+
+      const request = httpMock.expectOne('/api/v1/pii-detection/pii-types/bulk');
+      const expectedTypes = index === 0 ? ['SSN_CH_AVS', 'SSN_US_SSN'] : ['TAX_ID_CH_UID', 'TAX_ID_RU_INN'];
+      expect(request.request.body).toEqual(expect.arrayContaining([
+        { piiType: expectedTypes[0], detector: 'REGEX', enabled: false, threshold: 0.8 },
+        { piiType: expectedTypes[1], detector: 'REGEX', enabled: false, threshold: 0.85 },
+      ]));
+      expect(request.request.body).toHaveLength(2);
+      request.flush(component.groupedPiiTypes()[0].categories[index].types);
+      expect(component.hasUnsavedTypeChanges()).toBe(false);
+      expect(component.groupedPiiTypes()[1].categories[0].types[0].enabled).toBe(true);
+    });
+
+    it('Should_ClearPendingChanges_When_CategoryIsToggledBackUnderFilter', () => {
+      loadRegexCategories([true, true]);
+      component.onCategoryToggleChange(component.filteredPiiTypes()[0].categories[0], false);
+      expect(component.modifiedTypesCount).toBe(2);
+
+      component.onCategoryToggleChange(component.filteredPiiTypes()[0].categories[0], true);
+
+      expect(component.hasUnsavedTypeChanges()).toBe(false);
+      expect(component.groupedPiiTypes()[0].categories[0].types.map(type => type.enabled)).toEqual([true, true]);
+    });
+
+    it('Should_FindAndLabelNationalRules_When_SearchUsesFormatName', () => {
+      loadRegexCategories([true, true]);
+      component.onSearchChange('AHV');
+      fixture.detectChanges();
+
+      const rows = (fixture.nativeElement as HTMLElement).querySelectorAll('.pii-type-row');
+      expect(rows).toHaveLength(1);
+      expect(rows[0].querySelector('.type-name')?.textContent).toBe('AVS / AHV');
+      expect(rows[0].textContent).toContain('(CH)');
+      expect(rows[0].textContent).not.toContain('settings.piiTypes.type');
+    });
+  });
 
   it('Should_NotCallBackend_When_SavePiiTypesWithoutModifications', () => {
     component.onSavePiiTypes();

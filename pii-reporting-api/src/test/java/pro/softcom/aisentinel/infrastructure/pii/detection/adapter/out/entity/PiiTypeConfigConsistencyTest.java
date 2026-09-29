@@ -5,6 +5,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.core.ConnectionCallback;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -13,6 +17,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out.jpa.PiiTypeConfigJpaRepository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,6 +47,41 @@ class PiiTypeConfigConsistencyTest {
 
     @Autowired
     private PiiTypeConfigJpaRepository repository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Test
+    void Should_SeedNationalRulesDisabledAndKeepOperatorChoices_When_ReplayingSeed() {
+        assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM pii_type_config "
+                + "WHERE detector = 'REGEX' AND (pii_type LIKE 'SSN\\_%' OR pii_type LIKE 'TAX\\_ID\\_%') "
+                + "AND enabled", Integer.class)).isZero();
+        jdbcTemplate.update("UPDATE pii_type_config SET enabled = true, threshold = 0.99 "
+                + "WHERE pii_type = 'SSN_FR_NIR' AND detector = 'REGEX'");
+        jdbcTemplate.update("UPDATE pii_type_config SET enabled = false, threshold = 0.98 "
+                + "WHERE pii_type IN ('AVS_NUMBER', 'SOCIALNUM') AND detector = 'REGEX'");
+
+        replaySeed();
+
+        assertThat(regexRule("SSN_FR_NIR")).containsEntry("enabled", true)
+                .containsEntry("threshold", 0.99);
+        assertThat(regexRule("SOCIALNUM")).containsEntry("enabled", false)
+                .containsEntry("threshold", 0.98);
+        assertThat(regexRule("AVS_NUMBER")).containsEntry("enabled", false)
+                .containsEntry("threshold", 0.98).containsEntry("category", "SSN");
+    }
+
+    private Map<String, Object> regexRule(String type) {
+        return jdbcTemplate.queryForMap("SELECT enabled, threshold, category FROM pii_type_config "
+                + "WHERE pii_type = ? AND detector = 'REGEX'", type);
+    }
+
+    private void replaySeed() {
+        jdbcTemplate.execute((ConnectionCallback<Void>) connection -> {
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource("data.sql"));
+            return null;
+        });
+    }
 
     @Test
     @DisplayName("Should_LoadAllDbValues_When_LoadingFromDataSql")

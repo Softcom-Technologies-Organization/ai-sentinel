@@ -167,18 +167,116 @@ VALUES
     ON CONFLICT (pii_type, detector) DO NOTHING;
 
 -- ============================================================================
--- REGEX PII TYPES — all enabled (high precision, low false-positive rate)
--- Scope limited to formats with no Presidio equivalent: national identifiers
--- (AVS/CH, SOCIALNUM for FR+BE) and credentials (API_KEY). IP_ADDRESS,
--- MAC_ADDRESS, CREDIT_CARD_NUMBER and PHONE_NUMBER are covered by Presidio and
--- deliberately not detected by REGEX to avoid cross-detector duplication.
+-- REGEX PII TYPES — national identifiers and credentials.
 -- ============================================================================
 INSERT INTO pii_type_config
 (pii_type, detector, enabled, threshold, category, detector_label, severity, country_code, created_at, updated_at, updated_by)
 VALUES
-    ('AVS_NUMBER', 'REGEX', true, 0.95, 'MEDICAL',        'avs number',             'HIGH', 'CH', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('AVS_NUMBER', 'REGEX', true, 0.95, 'SSN',            'avs number',             'HIGH', 'CH', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('SOCIALNUM',  'REGEX', true, 0.75, 'IDENTITY',       'social security number', 'HIGH', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('API_KEY',    'REGEX', true, 0.95, 'IT_CREDENTIALS', 'api key',                'HIGH', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
+    ON CONFLICT (pii_type, detector) DO NOTHING;
+
+UPDATE pii_type_config SET category = 'SSN'
+WHERE pii_type = 'AVS_NUMBER' AND detector = 'REGEX' AND category IS DISTINCT FROM 'SSN';
+
+-- National rules mirror pii-detector-service/config/models/national-identifiers.toml.
+-- All ship disabled: without country or keyword context, their short checksums
+-- accept a large share of arbitrary digit runs.
+INSERT INTO pii_type_config
+(pii_type, detector, enabled, threshold, category, detector_label, severity, country_code, created_at, updated_at, updated_by)
+VALUES
+    ('SSN_FR_NIR', 'REGEX', false, 0.95, 'SSN', 'NIR (15)', 'HIGH', 'FR', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_BE_NISS', 'REGEX', false, 0.95, 'SSN', 'NISS / BIS', 'HIGH', 'BE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_AT_VNR', 'REGEX', false, 0.95, 'SSN', 'VNR / SVNR', 'HIGH', 'AT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_BG_EGN', 'REGEX', false, 0.95, 'SSN', 'EGN', 'HIGH', 'BG', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_CZ_RC', 'REGEX', false, 0.95, 'SSN', 'Rodné číslo (10)', 'HIGH', 'CZ', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_DK_CPR', 'REGEX', false, 0.75, 'SSN', 'CPR', 'HIGH', 'DK', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_EE_IK', 'REGEX', false, 0.95, 'SSN', 'Isikukood', 'HIGH', 'EE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_FI_HETU', 'REGEX', false, 0.95, 'SSN', 'HETU', 'HIGH', 'FI', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_GR_AMKA', 'REGEX', false, 0.95, 'SSN', 'AMKA', 'HIGH', 'GR', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_HR_OIB', 'REGEX', false, 0.95, 'SSN', 'OIB', 'HIGH', 'HR', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_IE_PPS', 'REGEX', false, 0.95, 'SSN', 'PPS', 'HIGH', 'IE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_IS_KENNITALA', 'REGEX', false, 0.95, 'SSN', 'Kennitala', 'HIGH', 'IS', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_IT_CF', 'REGEX', false, 0.95, 'SSN', 'Codice fiscale', 'HIGH', 'IT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_LT_ASMENS', 'REGEX', false, 0.95, 'SSN', 'Asmens kodas', 'HIGH', 'LT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_NL_BSN', 'REGEX', false, 0.95, 'SSN', 'BSN', 'HIGH', 'NL', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_NO_FNR', 'REGEX', false, 0.95, 'SSN', 'Fødselsnummer', 'HIGH', 'NO', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_PL_PESEL', 'REGEX', false, 0.95, 'SSN', 'PESEL', 'HIGH', 'PL', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_RO_CNP', 'REGEX', false, 0.95, 'SSN', 'CNP', 'HIGH', 'RO', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_SE_PERSONNUMMER', 'REGEX', false, 0.95, 'SSN', 'Personnummer', 'HIGH', 'SE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_SI_EMSO', 'REGEX', false, 0.95, 'SSN', 'EMŠO', 'HIGH', 'SI', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_SK_RC', 'REGEX', false, 0.95, 'SSN', 'Rodné číslo (10)', 'HIGH', 'SK', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_GB_NINO', 'REGEX', false, 0.75, 'SSN', 'National Insurance number', 'HIGH', 'GB', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_US_SSN', 'REGEX', false, 0.75, 'SSN', 'Social Security Number', 'HIGH', 'US', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('SSN_CA_SIN', 'REGEX', false, 0.95, 'SSN', 'Social Insurance Number', 'HIGH', 'CA', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_CH_AVS', 'REGEX', false, 0.95, 'TAX_ID', 'TIN personnel (AVS)', 'HIGH', 'CH', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_CH_UID', 'REGEX', false, 0.95, 'TAX_ID', 'UID / IDE', 'HIGH', 'CH', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_FR_NIF', 'REGEX', false, 0.95, 'TAX_ID', 'NIF personnel', 'HIGH', 'FR', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_DE_IDNR', 'REGEX', false, 0.95, 'TAX_ID', 'IdNr', 'HIGH', 'DE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_AT_TIN', 'REGEX', false, 0.95, 'TAX_ID', 'Steuernummer', 'HIGH', 'AT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_ES_NIF', 'REGEX', false, 0.95, 'TAX_ID', 'NIF / NIE / CIF', 'HIGH', 'ES', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_PT_NIF', 'REGEX', false, 0.95, 'TAX_ID', 'NIF', 'HIGH', 'PT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_PL_NIP', 'REGEX', false, 0.95, 'TAX_ID', 'NIP', 'HIGH', 'PL', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_GB_UTR', 'REGEX', false, 0.95, 'TAX_ID', 'Unique Taxpayer Reference', 'HIGH', 'GB', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_BG_PNF', 'REGEX', false, 0.95, 'TAX_ID', 'LNCh / PNF', 'HIGH', 'BG', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_LV_PERSONAS', 'REGEX', false, 0.95, 'TAX_ID', 'Personas kods', 'HIGH', 'LV', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_BY_UNP', 'REGEX', false, 0.95, 'TAX_ID', 'UNP', 'HIGH', 'BY', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_MD_IDNO', 'REGEX', false, 0.95, 'TAX_ID', 'IDNO', 'HIGH', 'MD', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_ME_PIB', 'REGEX', false, 0.95, 'TAX_ID', 'PIB', 'HIGH', 'ME', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_MK_EDB', 'REGEX', false, 0.95, 'TAX_ID', 'EDB', 'HIGH', 'MK', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_RS_PIB', 'REGEX', false, 0.95, 'TAX_ID', 'PIB', 'HIGH', 'RS', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_UA_RNTRC', 'REGEX', false, 0.95, 'TAX_ID', 'RNTRC', 'HIGH', 'UA', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_BE_NISS', 'REGEX', false, 0.95, 'TAX_ID', 'NISS / BIS (TIN)', 'HIGH', 'BE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_BG_EGN', 'REGEX', false, 0.95, 'TAX_ID', 'EGN (TIN)', 'HIGH', 'BG', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_CZ_RC', 'REGEX', false, 0.95, 'TAX_ID', 'Rodné číslo (10) (TIN)', 'HIGH', 'CZ', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_DK_CPR', 'REGEX', false, 0.75, 'TAX_ID', 'CPR (TIN)', 'HIGH', 'DK', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_EE_IK', 'REGEX', false, 0.95, 'TAX_ID', 'Isikukood (TIN)', 'HIGH', 'EE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_FI_HETU', 'REGEX', false, 0.95, 'TAX_ID', 'HETU (TIN)', 'HIGH', 'FI', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_HR_OIB', 'REGEX', false, 0.95, 'TAX_ID', 'OIB (TIN)', 'HIGH', 'HR', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_IE_PPS', 'REGEX', false, 0.95, 'TAX_ID', 'PPS (TIN)', 'HIGH', 'IE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_IS_KENNITALA', 'REGEX', false, 0.95, 'TAX_ID', 'Kennitala (TIN)', 'HIGH', 'IS', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_IT_CF', 'REGEX', false, 0.95, 'TAX_ID', 'Codice fiscale (TIN)', 'HIGH', 'IT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_LT_ASMENS', 'REGEX', false, 0.95, 'TAX_ID', 'Asmens kodas (TIN)', 'HIGH', 'LT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_NL_BSN', 'REGEX', false, 0.95, 'TAX_ID', 'BSN (TIN)', 'HIGH', 'NL', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_NO_FNR', 'REGEX', false, 0.95, 'TAX_ID', 'Fødselsnummer (TIN)', 'HIGH', 'NO', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_PL_PESEL', 'REGEX', false, 0.95, 'TAX_ID', 'PESEL (TIN)', 'HIGH', 'PL', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_RO_CNP', 'REGEX', false, 0.95, 'TAX_ID', 'CNP (TIN)', 'HIGH', 'RO', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_SE_PERSONNUMMER', 'REGEX', false, 0.95, 'TAX_ID', 'Personnummer (TIN)', 'HIGH', 'SE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_SI_EMSO', 'REGEX', false, 0.95, 'TAX_ID', 'EMŠO (TIN)', 'HIGH', 'SI', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_SK_RC', 'REGEX', false, 0.95, 'TAX_ID', 'Rodné číslo (10) (TIN)', 'HIGH', 'SK', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_US_SSN', 'REGEX', false, 0.75, 'TAX_ID', 'Social Security Number (TIN)', 'HIGH', 'US', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_CA_SIN', 'REGEX', false, 0.95, 'TAX_ID', 'Social Insurance Number (TIN)', 'HIGH', 'CA', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_AT_UID', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / UID', 'HIGH', 'AT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_BE_VAT', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / VAT', 'HIGH', 'BE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_BG_VAT', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / VAT', 'HIGH', 'BG', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_CY_VAT', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / VAT', 'HIGH', 'CY', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_CZ_DIC', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / DIC', 'HIGH', 'CZ', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_DE_VAT', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / VAT', 'HIGH', 'DE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_DK_CVR', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / CVR', 'HIGH', 'DK', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_EE_KMKR', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / KMKR', 'HIGH', 'EE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_ES_VAT', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / VAT', 'HIGH', 'ES', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_FI_ALV', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / ALV', 'HIGH', 'FI', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_FR_VAT', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / VAT', 'HIGH', 'FR', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_GR_VAT', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / VAT', 'HIGH', 'GR', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_HR_VAT', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / VAT', 'HIGH', 'HR', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_HU_ANUM', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / ANUM', 'HIGH', 'HU', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_IE_VAT', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / VAT', 'HIGH', 'IE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_IT_IVA', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / IVA', 'HIGH', 'IT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_LT_PVM', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / PVM', 'HIGH', 'LT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_LU_VAT', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / VAT', 'HIGH', 'LU', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_LV_PVN', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / PVN', 'HIGH', 'LV', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_MT_VAT', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / VAT', 'HIGH', 'MT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_NL_BTW', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / BTW', 'HIGH', 'NL', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_NO_MVA', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / MVA', 'HIGH', 'NO', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_PL_VAT', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / VAT', 'HIGH', 'PL', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_PT_VAT', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / VAT', 'HIGH', 'PT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_RO_VAT', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / VAT', 'HIGH', 'RO', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_SE_VAT', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / VAT', 'HIGH', 'SE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_SI_DDV', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / DDV', 'HIGH', 'SI', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_SK_DPH', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / DPH', 'HIGH', 'SK', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_GB_VAT', 'REGEX', false, 0.95, 'TAX_ID', 'VAT / VAT', 'HIGH', 'GB', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('TAX_ID_AL_NIPT', 'REGEX', false, 0.75, 'TAX_ID', 'NIPT', 'HIGH', 'AL', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
     ON CONFLICT (pii_type, detector) DO NOTHING;
 
 -- ============================================================================

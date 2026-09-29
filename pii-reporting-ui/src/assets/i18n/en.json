@@ -425,6 +425,7 @@
       "ministralNoThreshold": "Ministral does not use a confidence threshold.",
       "toggle": "Toggle {{type}}",
       "categoryToggle": "Toggle the whole {{category}} category",
+      "categoryEnabledCount": "{{enabled}} / {{total}} rules enabled",
       "detectors": {
         "presidio": "Presidio Detector",
         "ministral": "Ministral-PII Detector"
@@ -435,6 +436,8 @@
         "MINISTRAL": "Ministral-PII"
       },
       "categoryNames": {
+        "SSN": "Social security numbers (SSN)",
+        "TAX_ID": "Tax identifiers (Tax ID)",
         "TEMPORAL": "Sensitive dates",
         "CONTACT": "Contact Information",
         "IDENTITY": "Identity & Names",

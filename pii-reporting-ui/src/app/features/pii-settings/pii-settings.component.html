@@ -520,13 +520,21 @@
                                         <i class="pi pi-folder-open"></i>
                                         {{ 'settings.piiTypes.categoryNames.' + categoryGroup.category | transloco }}
                                     </span>
-                                    <p-toggleswitch
-                                        styleClass="category-toggle"
-                                        [ngModel]="isCategoryEnabled(categoryGroup) && isDetectorEnabled(detectorGroup.detector)"
-                                        (ngModelChange)="onCategoryToggleChange(categoryGroup, $event)"
-                                        [disabled]="!isDetectorEnabled(detectorGroup.detector)"
-                                        [ariaLabel]="'settings.piiTypes.categoryToggle' | transloco: {category: ('settings.piiTypes.categoryNames.' + categoryGroup.category | transloco)}">
-                                    </p-toggleswitch>
+                                    <div class="flex align-items-center gap-2">
+                                        <output aria-live="polite">
+                                            {{ 'settings.piiTypes.categoryEnabledCount' | transloco: {
+                                                enabled: isDetectorEnabled(detectorGroup.detector) ? categoryEnabledCount(categoryGroup) : 0,
+                                                total: categoryTypes(categoryGroup).length
+                                            } }}
+                                        </output>
+                                        <p-toggleswitch
+                                            styleClass="category-toggle"
+                                            [ngModel]="isCategoryEnabled(categoryGroup) && isDetectorEnabled(detectorGroup.detector)"
+                                            (ngModelChange)="onCategoryToggleChange(categoryGroup, $event)"
+                                            [disabled]="!isDetectorEnabled(detectorGroup.detector)"
+                                            [ariaLabel]="'settings.piiTypes.categoryToggle' | transloco: {category: ('settings.piiTypes.categoryNames.' + categoryGroup.category | transloco)}">
+                                        </p-toggleswitch>
+                                    </div>
                                 </div>
 
                                 <!-- PII type rows -->
@@ -535,11 +543,13 @@
                                         <div class="pii-type-info">
                                             <span class="type-name"
                                                   [class.disabled-text]="!type.enabled || !isDetectorEnabled(detectorGroup.detector)"
-                                                  [innerHTML]="highlightText('', 'settings.piiTypes.typeNames.' + type.piiType)"></span>
+                                                  [innerHTML]="highlightText(piiTypeText(type, 'typeNames'), '')"></span>
                                             @if (type.countryCode) {
                                                 <span class="type-country">({{ type.countryCode }})</span>
                                             }
-                                            <p class="type-description" [innerHTML]="highlightText('', 'settings.piiTypes.typeDescriptions.' + type.piiType)"></p>
+                                            @if (piiTypeText(type, 'typeDescriptions'); as description) {
+                                                <p class="type-description" [innerHTML]="highlightText(description, '')"></p>
+                                            }
                                         </div>
 
                                         <div class="pii-type-controls">
@@ -548,7 +558,7 @@
                                                     [ngModel]="type.enabled && isDetectorEnabled(detectorGroup.detector)"
                                                     (ngModelChange)="onPiiTypeToggleChange(type, $event)"
                                                     [disabled]="!isDetectorEnabled(detectorGroup.detector)"
-                                                    [ariaLabel]="'settings.piiTypes.toggle' | transloco: {type: type.detectorLabel || (('settings.piiTypes.typeNames.' + type.piiType) | transloco)}">
+                                                    [ariaLabel]="'settings.piiTypes.toggle' | transloco: {type: piiTypeText(type, 'typeNames')}">
                                                 </p-toggleswitch>
                                             </div>
                                             @if (type.enabled && isDetectorEnabled(detectorGroup.detector) && detectorGroup.detector !== 'MINISTRAL' && detectorGroup.detector !== 'REGEX') {

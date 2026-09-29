@@ -117,7 +117,7 @@ export interface BulkUpdatePiiTypeConfigRequest {
  * Grouped PII types by detector and category for UI display.
  */
 export interface GroupedPiiTypes {
-  detector: 'PRESIDIO' | 'MINISTRAL';
+  detector: DetectorType;
   categories: CategoryGroup[];
 }
 

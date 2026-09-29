@@ -513,7 +513,7 @@ class CompositePIIDetector:
 
         if use_regex and self.regex_detector:
             _run(self.regex_detector, DetectorSource.REGEX,
-                 lambda: self._run_regex_detection(text, threshold))
+                 lambda: self._run_regex_detection(text, threshold, pii_type_configs))
         if use_presidio and self.presidio_detector:
             _run(self.presidio_detector, DetectorSource.PRESIDIO,
                  lambda: self._run_presidio_detection(text, threshold))
@@ -619,7 +619,7 @@ class CompositePIIDetector:
         return masked_text, entities
 
     def _run_regex_detection(
-        self, text: str, threshold: Optional[float]
+        self, text: str, threshold: Optional[float], pii_type_configs: Optional[dict] = None
     ) -> List[PIIEntity]:
         """
         Run regex-based detection.
@@ -634,6 +634,8 @@ class CompositePIIDetector:
         Returns:
             List of detected entities
         """
+        if pii_type_configs is not None:
+            return self.regex_detector.detect_pii(text, threshold, pii_type_configs=pii_type_configs)
         return self.regex_detector.detect_pii(text, threshold)
 
     def _run_ministral_detection(

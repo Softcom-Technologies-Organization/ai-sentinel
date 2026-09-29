@@ -11,6 +11,7 @@ secrets/*.txt
 /pii-detector-service/.scannerwork/
 /pii-reporting-ui/.scannerwork/
 /.idea/
+/.worktrees/
 /.run/
 /**/.coverage
 /pii-reporting-ui/playwright-report/
@@ -55,3 +56,4 @@ ${PROJECT_DIR}/
 
 # Local deployment certificates (corporate CA, JDK truststore) - never commit
 /certs/
+/.agent-chat/

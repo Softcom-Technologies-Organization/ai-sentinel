@@ -1,0 +1,525 @@
+# =============================================================================
+# pii_types.toml — the judged vocabulary, mirrored from the running config
+# =============================================================================
+# One section per pii_type the judge is asked about. The vocabulary is the set
+# of types ENABLED in pii-reporting-api/src/main/resources/data.sql that the two
+# public datasets actually document. `label` is the French label production
+# sends as `type_label` (ContentPiiDetection.PiiTypeLabel), so the judge sees
+# the same two strings it sees in production.
+#
+# Types enabled in data.sql but ABSENT here, because neither dataset labels
+# them — listed so the gap is on record rather than inferred from a short table:
+#   TAX_ID, LICENSE_PLATE, VEHICLE_IDENTIFIER, CERTIFICATE_LICENSE_NUMBER,
+#   MAC_ADDRESS, HTTP_COOKIE, DEVICE_IDENTIFIER, SOFTWARE_LICENSE,
+#   CLIENT_SECRET, GITHUB_TOKEN, ACCESS_TOKEN, CRYPTO (Presidio),
+#   NRP (Presidio), AVS_NUMBER (Regex).
+# TAX_ID and VEHICLE_IDENTIFIER are exactly where the PCYBER judge run found the
+# most noise, so their absence is the sharpest limit of this benchmark.
+#
+# Per-type keys
+#   label        production `type_label`
+#   detectors    which detector(s) emit this pii_type in data.sql
+#   category     pii_type_config.category
+#   gold         "<dataset>:<label>" span sources for TRUE positives
+#   gold_filter  optional regex the span text must match (splits IP into v4/v6)
+#   competing    "<dataset>:<label>" sources for the competing_type FP family:
+#                a real value of a neighbouring type, claimed under this one.
+#                A candidate is kept ONLY when the surrounding text names that
+#                neighbouring type — see [rival_mentions] below for why
+#   mentions     surface forms that NAME the type. Three uses: the type_mention
+#                FP family takes them as spans, a true positive is tagged
+#                `with_clue` when one sits within 60 characters of it, and they
+#                are what qualifies a competing-type candidate
+#   violations   names from [shapes] whose matches CANNOT be an instance of this
+#                type. Leave empty when no shape is safely impossible
+# =============================================================================
+
+schema_version = "2"
+seed_reference = "pii-reporting-api/src/main/resources/data.sql"
+
+# -----------------------------------------------------------------------------
+# [shapes] — character runs harvested from the document text for the
+# format_violation family. Each one must be IMPOSSIBLE for the types that claim
+# it: that is what makes the FALSE_POSITIVE label a fact about the format spec
+# rather than a bet on what the dataset forgot to label.
+# -----------------------------------------------------------------------------
+# The lookarounds exclude \w on both sides so a run glued to a word — the "1942"
+# of "mathieu.amatter1942" — is never harvested: no detector emits that, and a
+# benchmark item no detector can produce measures nothing.
+#
+# Length bounds are the impossibility argument, one per type family:
+#   digits_2_6      shorter than any social security number (9 digits at the
+#                   very least, 13 for an AVS, 15 for a NIR)
+#   digits_2_7      shorter than the 8-digit floor of an ISO/IEC 7812 card PAN
+#   digits_4_19     an IBAN always opens with two letters, so a run of digits
+#                   alone is never one, whatever its length
+#   digits_7_plus   longer than any CVV, whose 3-or-4 length IS a real spec
+#   digits_13_plus  longer than the 12-digit ceiling ISO 9564-1 sets for a PIN
+#   digits_21_plus  longer than a card PAN (19) and than any routing number
+#   upper_3_7       a BIC is exactly 8 or 11 characters
+#   two_octets      two dotted groups are not an IPv4 address
+#   amount_grouped  thousand separators AND a two-digit decimal part: that is a
+#                   monetary amount, and no identifier of any type here carries
+#                   a decimal part. The decimals are mandatory on purpose — "021
+#                   000 021" is a US routing number printed in groups, not an
+#                   amount, and an optional decimal part would have caught it
+[shapes]
+digits_2_6      = "(?<![\\w.,-])\\d{2,6}(?![\\w.,-])"
+digits_2_7      = "(?<![\\w.,-])\\d{2,7}(?![\\w.,-])"
+digits_4_19     = "(?<![\\w.,-])\\d{4,19}(?![\\w.,-])"
+digits_7_plus   = "(?<![\\w.,-])\\d{7,}(?![\\w.,-])"
+digits_13_plus  = "(?<![\\w.,-])\\d{13,}(?![\\w.,-])"
+digits_21_plus  = "(?<![\\w.,-])\\d{21,}(?![\\w.,-])"
+amount_grouped  = "(?<![\\w.,-])\\d{1,3}(?:[ .,]\\d{3})+[.,]\\d{2}(?![\\w.,-])"
+upper_3_7       = "(?<![A-Za-z0-9])[A-Z]{3,7}(?![A-Za-z0-9])"
+two_octets      = "(?<![\\w.])\\d{1,3}\\.\\d{1,3}(?![\\w.])"
+dotted_date     = "(?<![\\w.])\\d{1,2}\\.\\d{1,2}\\.\\d{2,4}(?![\\w.])"
+clock_time      = "(?<![\\w:])\\d{1,2}:\\d{2}(?::\\d{2})?(?![\\w:])"
+
+# -----------------------------------------------------------------------------
+# [placeholders] — masked or templated values, harvested verbatim from the text.
+# Shared by every type: a masked value is a false positive whatever the claimed
+# type, which is motive (c) "PAS UNE VALEUR" of the production prompt.
+# -----------------------------------------------------------------------------
+[placeholders]
+patterns = [
+    "[Xx]{3,}(?:[- ][Xx]{2,}){0,4}",
+    "\\*{3,}\\d{0,4}",
+    "\\$\\{[A-Za-z0-9_]{3,40}\\}",
+    "\\{\\{[A-Za-z0-9_. ]{3,40}\\}\\}",
+    "<[A-Za-z0-9_ -]{0,20}(?:your|votre|insert|placeholder|todo|xxx)[A-Za-z0-9_ -]{0,20}>",
+    "YOUR_[A-Z0-9_]{3,40}",
+    "\\b[A-Z]{2,}_(?:HERE|PLACEHOLDER|GOES_HERE)\\b",
+    "\\[[A-Za-z][A-Za-z ._/-]{2,38}\\]",
+]
+
+# -----------------------------------------------------------------------------
+# [rival_mentions] — surface forms that name a dataset label which no judged
+# type claims as gold.
+#
+# Why this table has to exist. The production prompt only allows a rejection on
+# motive (b) when "le contexte designe explicitement une AUTRE entite", and
+# forbids rejecting for lack of context. A bare BBAN claimed as a card number is
+# indistinguishable from a PAN on the value alone — Luhn is off limits — so a
+# judge answering UNSURE there is RIGHT, and counting it as a miss would grade
+# the judge against the opposite of the prompt it was given.
+#
+# So a competing-type candidate is kept only when the 60 characters around it
+# name the rival. For a label some judged type owns as gold, that type's own
+# `mentions` do the job. For the rest, the forms live here.
+# -----------------------------------------------------------------------------
+[rival_mentions]
+"gretelai:customer_id"    = ["customer ID", "customer number", "client ID", "identifiant client", "numéro de client", "référence client"]
+"gretelai:employee_id"    = ["employee ID", "employee number", "staff ID", "matricule", "identifiant employé", "numéro d'employé"]
+"gretelai:phone_number"   = ["phone number", "telephone", "phone", "mobile number", "numéro de téléphone", "téléphone", "portable"]
+"ai4privacy:TEL"          = ["phone number", "telephone", "phone", "mobile number", "numéro de téléphone", "téléphone", "portable"]
+"gretelai:passport_number" = ["passport number", "passport", "numéro de passeport", "passeport"]
+"ai4privacy:PASSPORT"     = ["passport number", "passport", "numéro de passeport", "passeport"]
+"ai4privacy:POSTCODE"     = ["postal code", "postcode", "zip code", "code postal", "NPA"]
+"ai4privacy:GEOCOORD"     = ["latitude", "longitude", "coordinates", "coordonnées", "GPS"]
+"gretelai:local_latlng"   = ["latitude", "longitude", "coordinates", "coordonnées", "GPS"]
+"gretelai:user_name"      = ["username", "user name", "login", "nom d'utilisateur", "identifiant de connexion"]
+"ai4privacy:USERNAME"     = ["username", "user name", "login", "nom d'utilisateur", "identifiant de connexion"]
+"ai4privacy:EMAIL"        = ["email address", "e-mail", "email", "adresse e-mail", "courriel"]
+
+# =============================================================================
+# FINANCIAL
+# =============================================================================
+
+[types.CREDIT_DEBIT_CARD]
+label     = "Carte de crédit ou de débit"
+detectors = ["MINISTRAL"]
+category  = "FINANCIAL"
+gold      = ["gretelai:credit_card_number"]
+competing = [
+    "gretelai:bban",
+    "gretelai:iban",
+    "gretelai:bank_routing_number",
+    "gretelai:credit_card_security_code",
+    "gretelai:account_pin",
+    "gretelai:customer_id",
+]
+violations = ["digits_2_7", "digits_21_plus", "amount_grouped"]
+mentions.English = ["credit card", "debit card", "card number", "payment card", "bank card"]
+mentions.French  = ["carte de crédit", "carte de débit", "carte bancaire", "numéro de carte", "carte de paiement"]
+
+[types.CREDIT_CARD]
+label     = "Carte de crédit"
+detectors = ["PRESIDIO"]
+category  = "Financial"
+gold      = ["gretelai:credit_card_number"]
+competing = [
+    "gretelai:bban",
+    "gretelai:iban",
+    "gretelai:bank_routing_number",
+    "gretelai:credit_card_security_code",
+    "gretelai:account_pin",
+    "gretelai:customer_id",
+]
+violations = ["digits_2_7", "digits_21_plus", "amount_grouped"]
+mentions.English = ["credit card", "debit card", "card number", "payment card", "bank card"]
+mentions.French  = ["carte de crédit", "carte de débit", "carte bancaire", "numéro de carte", "carte de paiement"]
+
+[types.CVV]
+label     = "Cryptogramme de carte (CVV/CVC)"
+detectors = ["MINISTRAL"]
+category  = "FINANCIAL"
+gold      = ["gretelai:credit_card_security_code"]
+competing = [
+    "gretelai:account_pin",
+    "gretelai:credit_card_number",
+    "gretelai:bban",
+    "ai4privacy:POSTCODE",
+]
+violations = ["digits_7_plus", "amount_grouped"]
+mentions.English = ["security code", "card verification", "CVV", "CVC", "CVV2"]
+mentions.French  = ["cryptogramme", "code de sécurité", "cryptogramme visuel", "CVV", "CVC"]
+
+[types.PIN]
+label     = "Code PIN"
+detectors = ["MINISTRAL"]
+category  = "FINANCIAL"
+gold      = ["gretelai:account_pin"]
+competing = [
+    "gretelai:credit_card_security_code",
+    "gretelai:credit_card_number",
+    "ai4privacy:POSTCODE",
+    "gretelai:customer_id",
+]
+violations = ["digits_13_plus", "amount_grouped"]
+mentions.English = ["PIN code", "PIN number", "personal identification number", "account PIN"]
+mentions.French  = ["code PIN", "code confidentiel", "code secret", "numéro d'identification personnel"]
+
+[types.ACCOUNT_NUMBER]
+label     = "Numéro de compte"
+detectors = ["MINISTRAL"]
+category  = "FINANCIAL"
+gold      = ["gretelai:bban"]
+competing = [
+    "gretelai:swift_bic_code",
+    "gretelai:bank_routing_number",
+    "gretelai:credit_card_number",
+    "gretelai:customer_id",
+    "gretelai:employee_id",
+]
+violations = ["amount_grouped"]
+mentions.English = ["account number", "bank account", "account no"]
+mentions.French  = ["numéro de compte", "compte bancaire", "n° de compte", "numéro du compte"]
+
+[types.BANK_ROUTING_NUMBER]
+label     = "Numéro de routage bancaire"
+detectors = ["MINISTRAL"]
+category  = "FINANCIAL"
+gold      = ["gretelai:bank_routing_number"]
+competing = [
+    "gretelai:bban",
+    "gretelai:iban",
+    "gretelai:swift_bic_code",
+    "gretelai:credit_card_number",
+    "gretelai:customer_id",
+]
+violations = ["digits_21_plus", "amount_grouped"]
+mentions.English = ["routing number", "routing transit number", "ABA number", "sort code"]
+mentions.French  = ["numéro de routage", "code guichet", "code banque", "numéro d'acheminement"]
+
+[types.IBAN]
+label     = "Identifiant bancaire international (IBAN)"
+detectors = ["MINISTRAL"]
+category  = "FINANCIAL"
+gold      = ["gretelai:iban"]
+competing = [
+    "gretelai:bban",
+    "gretelai:swift_bic_code",
+    "gretelai:bank_routing_number",
+    "gretelai:credit_card_number",
+]
+violations = ["digits_4_19", "digits_21_plus", "amount_grouped"]
+mentions.English = ["IBAN", "international bank account number", "IBAN number"]
+mentions.French  = ["IBAN", "numéro IBAN", "identifiant bancaire international"]
+
+[types.IBAN_CODE]
+label     = "Identifiant bancaire international (IBAN)"
+detectors = ["PRESIDIO"]
+category  = "Financial"
+gold      = ["gretelai:iban"]
+competing = [
+    "gretelai:bban",
+    "gretelai:swift_bic_code",
+    "gretelai:bank_routing_number",
+    "gretelai:credit_card_number",
+]
+violations = ["digits_4_19", "digits_21_plus", "amount_grouped"]
+mentions.English = ["IBAN", "international bank account number", "IBAN number"]
+mentions.French  = ["IBAN", "numéro IBAN", "identifiant bancaire international"]
+
+[types.SWIFT_BIC]
+label     = "Code BIC/SWIFT"
+detectors = ["MINISTRAL"]
+category  = "FINANCIAL"
+gold      = ["gretelai:swift_bic_code"]
+competing = [
+    "gretelai:iban",
+    "gretelai:bban",
+    "gretelai:bank_routing_number",
+]
+violations = ["upper_3_7", "digits_4_19"]
+mentions.English = ["SWIFT code", "BIC code", "SWIFT/BIC", "bank identifier code"]
+mentions.French  = ["code SWIFT", "code BIC", "identifiant de banque", "BIC/SWIFT"]
+
+# =============================================================================
+# GOVERNMENT / LEGAL IDS
+# =============================================================================
+
+[types.SOCIAL_SECURITY_NUMBER]
+label     = "Numéro de sécurité sociale"
+detectors = ["MINISTRAL"]
+category  = "GOV_ID"
+gold      = ["gretelai:ssn", "ai4privacy:SOCIALNUMBER"]
+competing = [
+    "ai4privacy:IDCARD",
+    "ai4privacy:PASSPORT",
+    "ai4privacy:DRIVERLICENSE",
+    "ai4privacy:TEL",
+    "gretelai:customer_id",
+    "gretelai:employee_id",
+    "gretelai:phone_number",
+    "gretelai:bank_routing_number",
+]
+violations = ["digits_2_6", "digits_21_plus", "amount_grouped", "dotted_date"]
+mentions.English = ["social security number", "social security", "SSN", "national insurance number"]
+mentions.French  = ["numéro de sécurité sociale", "sécurité sociale", "numéro AVS", "numéro NIR", "n° de sécurité sociale"]
+
+[types.SOCIALNUM]
+label     = "Numéro de sécurité sociale"
+detectors = ["REGEX"]
+category  = "IDENTITY"
+gold      = ["gretelai:ssn", "ai4privacy:SOCIALNUMBER"]
+competing = [
+    "ai4privacy:IDCARD",
+    "ai4privacy:PASSPORT",
+    "ai4privacy:DRIVERLICENSE",
+    "ai4privacy:TEL",
+    "gretelai:customer_id",
+    "gretelai:employee_id",
+    "gretelai:phone_number",
+    "gretelai:bank_routing_number",
+]
+violations = ["digits_2_6", "digits_21_plus", "amount_grouped", "dotted_date"]
+mentions.English = ["social security number", "social security", "SSN", "national insurance number"]
+mentions.French  = ["numéro de sécurité sociale", "sécurité sociale", "numéro AVS", "numéro NIR", "n° de sécurité sociale"]
+
+[types.NATIONAL_ID]
+label     = "Carte d'identité"
+detectors = ["MINISTRAL"]
+category  = "GOV_ID"
+gold      = ["ai4privacy:IDCARD"]
+competing = [
+    "ai4privacy:PASSPORT",
+    "ai4privacy:DRIVERLICENSE",
+    "ai4privacy:SOCIALNUMBER",
+    "ai4privacy:TEL",
+    "gretelai:phone_number",
+    "gretelai:customer_id",
+    "gretelai:employee_id",
+]
+violations = ["amount_grouped", "clock_time"]
+mentions.English = ["identity card", "ID card", "national identity card", "identity card number"]
+mentions.French  = ["carte d'identité", "numéro de carte d'identité", "CNI", "pièce d'identité"]
+
+[types.DRIVER_LICENSE_NUMBER]
+label     = "Numéro de permis de conduire"
+detectors = ["MINISTRAL"]
+category  = "GOV_ID"
+gold      = ["gretelai:driver_license_number", "ai4privacy:DRIVERLICENSE"]
+competing = [
+    "ai4privacy:PASSPORT",
+    "ai4privacy:IDCARD",
+    "ai4privacy:SOCIALNUMBER",
+    "ai4privacy:TEL",
+    "gretelai:passport_number",
+    "gretelai:phone_number",
+    "gretelai:customer_id",
+]
+violations = ["amount_grouped", "clock_time"]
+mentions.English = ["driver's license", "driving licence", "driver licence number", "driving license number"]
+mentions.French  = ["permis de conduire", "numéro de permis", "n° de permis de conduire"]
+
+# =============================================================================
+# DIGITAL / NETWORK
+# =============================================================================
+
+[types.IP_ADDRESS]
+label     = "Adresse IP"
+detectors = ["MINISTRAL"]
+category  = "DIGITAL"
+gold      = ["gretelai:ipv4", "gretelai:ipv6", "ai4privacy:IP"]
+competing = [
+    "ai4privacy:GEOCOORD",
+    "gretelai:local_latlng",
+    "ai4privacy:POSTCODE",
+]
+violations = ["two_octets", "dotted_date", "clock_time"]
+mentions.English = ["IP address", "IPv4 address", "IPv6 address", "source IP", "host IP"]
+mentions.French  = ["adresse IP", "adresse IPv4", "adresse IPv6", "IP source"]
+
+[types.IPV4]
+label     = "Adresse IPv4"
+detectors = ["MINISTRAL"]
+category  = "DIGITAL"
+gold      = ["gretelai:ipv4", "ai4privacy:IP"]
+gold_filter = "^\\d{1,3}(?:\\.\\d{1,3}){3}$"
+competing = [
+    "ai4privacy:GEOCOORD",
+    "gretelai:local_latlng",
+    "ai4privacy:POSTCODE",
+]
+violations = ["two_octets", "dotted_date", "clock_time"]
+mentions.English = ["IPv4 address", "IP address", "IPv4"]
+mentions.French  = ["adresse IPv4", "adresse IP", "IPv4"]
+
+[types.IPV6]
+label     = "Adresse IPv6"
+detectors = ["MINISTRAL"]
+category  = "DIGITAL"
+gold      = ["gretelai:ipv6", "ai4privacy:IP"]
+gold_filter = "^(?=.*:)[0-9A-Fa-f:]+$"
+competing = [
+    "ai4privacy:GEOCOORD",
+    "gretelai:local_latlng",
+    "ai4privacy:POSTCODE",
+]
+violations = ["two_octets", "dotted_date", "clock_time"]
+mentions.English = ["IPv6 address", "IP address", "IPv6"]
+mentions.French  = ["adresse IPv6", "adresse IP", "IPv6"]
+
+[types.PASSWORD]
+label     = "Mot de passe ou code PIN"
+detectors = ["MINISTRAL"]
+category  = "DIGITAL"
+gold      = ["gretelai:password", "ai4privacy:PASS"]
+competing = [
+    "gretelai:api_key",
+    "gretelai:user_name",
+    "ai4privacy:USERNAME",
+    "ai4privacy:EMAIL",
+]
+violations = []
+mentions.English = ["password", "passphrase", "login password", "account password"]
+mentions.French  = ["mot de passe", "phrase secrète", "mot de passe du compte", "code PIN", "code confidentiel"]
+
+[types.API_KEY]
+label     = "Clé API"
+detectors = ["MINISTRAL", "REGEX"]
+category  = "DIGITAL"
+gold      = ["gretelai:api_key"]
+competing = [
+    "gretelai:password",
+    "gretelai:user_name",
+    "gretelai:swift_bic_code",
+    "ai4privacy:USERNAME",
+]
+violations = []
+mentions.English = ["API key", "api key", "access key", "API token"]
+mentions.French  = ["clé API", "clé d'API", "jeton d'API", "clé d'accès"]
+
+# =============================================================================
+# [rationale] — the calls a reviewer should sanity-check, written out rather
+# than buried in a diff. Every competing pair below says a real value of label L
+# claimed under type T is a FALSE POSITIVE **when the surrounding text names L**,
+# and why that is a fact rather than an opinion. The clue requirement is not a
+# detail: without it, several of these pairs would ask the judge for the opposite
+# of what the production prompt orders.
+# =============================================================================
+[rationale]
+clue_requirement = """\
+Every competing-type candidate must have the rival type named within 60 \
+characters. The production prompt allows motive (b) only when "le contexte \
+designe explicitement une AUTRE entite" and forbids rejecting for lack of \
+context; it also forbids computing a checksum. A bare BBAN claimed as a card \
+number is therefore genuinely undecidable, and a judge answering UNSURE is \
+right. Grading it as a miss would measure the judge against the opposite of its \
+own instructions."""
+
+bban_vs_iban = """\
+A BBAN is the domestic account number; an IBAN is that number prefixed by a \
+country code and two check digits. A bare BBAN claimed as an IBAN fails the \
+IBAN spec outright — motive (a), no context needed. The REVERSE pair is NOT \
+declared: an IBAN claimed as an account number is a MORE PRECISE form of the \
+same thing, which the prompt's guardrail on motive (b) explicitly forbids \
+rejecting."""
+
+swift_vs_account = """\
+A BIC is eight or eleven characters opening with four LETTERS (ISO 9362); an \
+account number, a BBAN and a routing number are numeric or start with digits. \
+The pair rests on that alphabet and length argument, not on "identifies the \
+bank rather than the account" — a routing number identifies the bank too, so \
+that phrasing refuted itself."""
+
+cvv_vs_pin = """\
+A CVV is three or four digits (a real spec); a PIN is four to twelve \
+(ISO 9564-1). On the value alone the two overlap completely, which is why this \
+pair only counts when the context names the rival. Without the clue requirement \
+it would be undecidable, and the shapes reflect the same asymmetry: \
+digits_7_plus is impossible for a CVV, only digits_13_plus is impossible for a \
+PIN."""
+
+idcard_vs_socialnumber = """\
+In several jurisdictions the number printed on the identity card IS the social \
+security number, so the two are not separable on the value. The pair therefore \
+relies entirely on the clue requirement: it counts only where the text names \
+the rival registry."""
+
+tel_vs_socialnumber = """\
+A phone number named as such in the context, claimed as a social security \
+number, is the textbook numeric over-fire: same digit-count range, no shared \
+semantics, and the context settles it."""
+
+ip_vs_geocoord = """\
+A latitude or longitude carries a decimal part, which no octet of an IPv4 \
+address does; the sign is a further hint but not a reliable one, since many \
+notations omit it. The pair also requires the context to name the coordinates."""
+
+password_vs_api_key = """\
+Both are secrets, and the production prompt explicitly forbids rejecting a \
+secret for being weak or public. The pair is kept because the ROLE differs: an \
+API key authenticates a program against a service, a password authenticates a \
+person. A judge asked "is this a password" about something the context calls an \
+API key should say no for the role, not for the strength."""
+
+no_violations_for_secrets = """\
+PASSWORD and API_KEY declare no format_violation shape, and that is deliberate: \
+neither has a published specification, so no run of characters is provably \
+impossible for them. Their FP quota is filled by the three other families."""
+
+national_id_violations = """\
+NATIONAL_ID and DRIVER_LICENSE_NUMBER keep only amount_grouped and clock_time. \
+Short document numbers exist, national specs vary, and the production prompt \
+forbids motive (a) outside certainty about the spec — a digits_2_6 shape would \
+have labelled as false positive something a correct judge must leave alone."""
+
+routing_violations = """\
+BANK_ROUTING_NUMBER keeps only digits_21_plus and amount_grouped. A run of 3 to \
+6 digits is a NORMAL routing number (UK sort code 6, Swiss clearing 3 to 5), \
+not an impossible one, so the digits_2_6 shape was removed."""
+
+socialnum_duplicate = """\
+SOCIALNUM (Regex) and SOCIAL_SECURITY_NUMBER (Ministral) are two enabled rows \
+of pii_type_config for the same concept, and production sends the judge the \
+pii_type string verbatim. They are benchmarked separately on purpose: if a \
+judge scores differently on the two strings, that difference is real and \
+operators need to see it. Because the sampling seed is derived from the \
+gold/competing signature rather than from the type name, both arms judge the \
+SAME spans, so the difference is attributable to the pii_type and type_label \
+strings alone. Use --type to drop one when the run budget is tight."""
+
+card_duplicate = """\
+CREDIT_CARD (Presidio) and CREDIT_DEBIT_CARD (Ministral), like IBAN_CODE and \
+IBAN, are the same concept under two enabled pii_type strings with two \
+different French labels. Same reasoning, same shared sampling seed, as \
+socialnum_duplicate."""
+
+password_label_covers_pin = """\
+PASSWORD is seeded with the label "Mot de passe ou code PIN", so the French PIN \
+surface forms are listed among its mentions. The consequence is intended: a bare \
+"code PIN" phrase is a type_mention false positive for PASSWORD too, and a true \
+PASSWORD next to that phrase is tagged with_clue rather than misleading_clue."""

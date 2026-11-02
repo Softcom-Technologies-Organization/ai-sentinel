@@ -25,7 +25,7 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class JudgeDtoMapper {
 
-    static final double DEFAULT_CONFIDENCE_THRESHOLD = 0.8;
+    static final double DEFAULT_CONFIDENCE_THRESHOLD = 0.95;
 
     private final RemediationJobDtoMapper selectionMapper;
 
@@ -38,14 +38,16 @@ public class JudgeDtoMapper {
     }
 
     public JudgeLaunchCommand toCommand(JudgeLaunchRequestDto request, String actor) {
-        if (request == null || request.applyMode() == null) {
-            throw new IllegalArgumentException("applyMode is required");
+        if (request == null) {
+            throw new IllegalArgumentException("request is required");
         }
         double threshold = request.confidenceThreshold() == null
                 ? DEFAULT_CONFIDENCE_THRESHOLD
                 : request.confidenceThreshold();
+        JudgeApplyMode applyMode = request.applyMode() == null
+                ? JudgeApplyMode.PROPOSE : JudgeApplyMode.valueOf(request.applyMode().toUpperCase(Locale.ROOT));
         return new JudgeLaunchCommand(toScope(request.scope()), request.model(),
-                JudgeApplyMode.valueOf(request.applyMode().toUpperCase(Locale.ROOT)), threshold, actor);
+                applyMode, threshold, actor);
     }
 
     public JudgePlanDto toDto(JudgePlan plan) {

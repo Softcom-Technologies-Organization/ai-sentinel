@@ -1,0 +1,141 @@
+# =============================================================================
+# datasets.toml — where the labelled documents come from
+# =============================================================================
+# Frozen Hugging Face coordinates. Files are named explicitly rather than
+# resolved through `datasets.load_dataset`: both repos ship one file per
+# language, so naming them is how the corpus language mix is chosen, and the
+# only runtime dependencies are `huggingface_hub` (pinned download) and
+# `pyarrow` (gretelai is parquet; ai4privacy is plain JSONL).
+#
+# Both repos are public: HUGGING_FACE_API_KEY is optional and only raises the
+# anonymous rate limit.
+#
+# Language mix: the production corpus is a Swiss Confluence in French, German
+# and English. French and English are in; German is available in both repos and
+# can be added by listing its file here (nothing else changes).
+# =============================================================================
+
+schema_version = "1"
+
+# -----------------------------------------------------------------------------
+# gretelai/synthetic_pii_finance_multilingual
+#   `pii_spans` is a JSON *string* -> [{start, end, label}].
+#   Long, structured finance documents (SWIFT messages, statements, contracts):
+#   the closest public stand-in for the attachments ai-sentinel actually scans.
+# -----------------------------------------------------------------------------
+[sources.gretelai]
+repo         = "gretelai/synthetic_pii_finance_multilingual"
+revision     = "7b844d16738527a04264f50214cb426a4cea0897"
+format       = "parquet"
+text_field   = "generated_text"
+spans_field  = "pii_spans"
+spans_format = "json_string"
+
+[[sources.gretelai.files]]
+path = "data/English_test-00000-of-00001.parquet"
+lang = "English"
+
+[[sources.gretelai.files]]
+path = "data/France_test-00000-of-00001.parquet"
+lang = "French"
+
+# The train split carries the same generator and the same label vocabulary; it
+# is here for volume only. The `large` tier needs ~100 true positives per type
+# and the test split alone tops out at 47 for `password` and 54 for `api_key`.
+# Nothing is fine-tuned on this corpus, so there is no train/test leak to guard.
+[[sources.gretelai.files]]
+path = "data/English_train-00000-of-00001.parquet"
+lang = "English"
+
+[[sources.gretelai.files]]
+path = "data/France_train-00000-of-00001.parquet"
+lang = "French"
+
+# -----------------------------------------------------------------------------
+# ai4privacy/pii-masking-300k (OpenPII)
+#   `privacy_mask` is a native list of {value, start, end, label}.
+#   Short conversational and form-like documents: the other half of what a wiki
+#   page looks like.
+# -----------------------------------------------------------------------------
+[sources.ai4privacy]
+repo         = "ai4privacy/pii-masking-300k"
+revision     = "c8c77895a005822682b66ab547fc0422579bc1d3"
+format       = "jsonl"
+text_field   = "source_text"
+spans_field  = "privacy_mask"
+spans_format = "object_list"
+
+[[sources.ai4privacy.files]]
+path = "data/validation/1english_openpii_8k.jsonl"
+lang = "English"
+
+[[sources.ai4privacy.files]]
+path = "data/validation/french_openpii_8k.jsonl"
+lang = "French"
+
+# =============================================================================
+# [sizes] — how many findings per pii_type each tier draws.
+# `n` is the count of TRUE positives AND, separately, of FALSE positives: a tier
+# of 20 yields 40 findings per type.
+# =============================================================================
+[sizes.light]
+n = 20
+
+[sizes.normal]
+n = 50
+
+[sizes.large]
+n = 100
+
+# =============================================================================
+# [context] — the text window handed to the judge.
+# Mirrors JudgeContextWindow.SIDE_CHARS in pii-reporting-api: production sends
+# the judge 300 characters each side of the value, never the whole document.
+# Changing this number makes the benchmark measure something production does
+# not do.
+# =============================================================================
+[context]
+side_chars = 300
+
+# =============================================================================
+# [fp_families] — the shape of the generated false positives, and the share of
+# the FP quota each one targets. Shares are a target, not a guarantee: a family
+# that cannot be filled for a given type hands its slots to the others and the
+# build log says so.
+#
+# Grounding: the judge run on the PCYBER Confluence space (2026-09-18,
+# deepseek-v4-flash-0731@q2_k_xl, threshold 0.8) rejected 414 of 897 findings.
+# The types that over-fire there are SOCIAL_SECURITY_NUMBER (120 FP, 0 TP),
+# TAX_ID (62), CREDIT_CARD (84), IBAN (69) and CREDIT_DEBIT_CARD (56) — numeric
+# identifiers and, above all, the phrase that *names* the type being taken for
+# the value itself.
+# =============================================================================
+[fp_families.type_mention]
+share = 0.40
+description = """\
+The span is the phrase that names the type, not a value: "payment by >>>credit \
+card<<<", ">>>numéro de sécurité sociale<<< : voir dossier". This is the \
+dominant semantic failure observed on PCYBER and the reason this family gets \
+the largest share."""
+
+[fp_families.competing_type]
+share = 0.30
+description = """\
+A genuine value of a neighbouring type, claimed under this one: a BBAN claimed \
+as an IBAN, a customer id claimed as a social security number. Declared pair by \
+pair in pii_types.toml, never inferred."""
+
+[fp_families.format_violation]
+share = 0.20
+description = """\
+A run of characters taken from the document that cannot be an instance of the \
+type — too short, too long, wrong alphabet. Shapes are chosen so that a real \
+instance of the type can never match, which is what makes the FP label \
+defensible rather than a guess about unlabelled data."""
+
+[fp_families.placeholder]
+share = 0.10
+description = """\
+A masked or templated value found in the document: ****1234, XXX-XX-XXXX, \
+${DB_PASSWORD}, <votre-cle>. Opportunistic: a corpus without them yields none \
+and the build log reports the shortfall."""

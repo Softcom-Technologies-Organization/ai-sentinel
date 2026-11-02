@@ -46,6 +46,8 @@ public record PiiDetectionConfig(
      * @throws IllegalArgumentException if threshold is out of range or other validation fails
      */
     public PiiDetectionConfig {
+        lmStudioJudgeModel = lmStudioJudgeModel == null || lmStudioJudgeModel.isBlank()
+                ? "qwen3.8-flash-next-iq3_s" : lmStudioJudgeModel;
         if (defaultThreshold == null) {
             throw new IllegalArgumentException("Default threshold cannot be null");
         }

@@ -169,7 +169,7 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 DEFAULT_LM_STUDIO_HOST, // lmStudioHost
                 DEFAULT_LM_STUDIO_PORT, // lmStudioPort
                 null,  // lmStudioModel (detector service default)
-                null,  // lmStudioJudgeModel (reuse the detection model)
+                null,
                 DEFAULT_MINISTRAL_CONCURRENCY, // ministralConcurrency (sequential)
                 true,  // ministralConcurrencyAuto (auto-tune at startup)
                 null,  // ministralConcurrencyTunedSignature (never tuned)

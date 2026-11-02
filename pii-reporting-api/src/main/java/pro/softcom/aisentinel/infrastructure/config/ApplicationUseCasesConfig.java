@@ -52,6 +52,7 @@ import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointReposi
 import pro.softcom.aisentinel.application.pii.security.PiiAccessAuditService;
 import pro.softcom.aisentinel.application.pii.security.ScanResultEncryptor;
 import pro.softcom.aisentinel.application.pii.security.port.out.SavePiiAuditPort;
+import pro.softcom.aisentinel.domain.pii.judge.JudgeEndpoint;
 import pro.softcom.aisentinel.domain.pii.security.EncryptionService;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.ConfluenceCloudHttpClientAdapter;
 import pro.softcom.aisentinel.infrastructure.confluence.adapter.out.ConfluenceDataCenterHttpClientAdapter;
@@ -105,8 +106,9 @@ public class ApplicationUseCasesConfig {
 
     @Bean
     public ListLmStudioModelsUseCase listLmStudioModelsUseCase(PiiDetectorClient piiDetectorClient,
-                                                              PiiDetectionConfigRepository piiDetectionConfigRepository) {
-        return new ListLmStudioModelsUseCase(piiDetectorClient, piiDetectionConfigRepository);
+                                                              PiiDetectionConfigRepository piiDetectionConfigRepository,
+                                                              JudgeEndpoint judgeEndpoint) {
+        return new ListLmStudioModelsUseCase(piiDetectorClient, piiDetectionConfigRepository, judgeEndpoint);
     }
 
     @Bean

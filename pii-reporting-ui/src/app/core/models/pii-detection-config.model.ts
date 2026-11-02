@@ -18,7 +18,7 @@ export interface PiiDetectionConfig {
   lmStudioPort: number;
   /** LM Studio identifier of the Ministral-PII quantization to prompt; null = detector default. */
   lmStudioModel: string | null;
-  /** Any chat model is accepted here, unlike lmStudioModel; null = reuse lmStudioModel. */
+  /** Chat model served by the judge endpoint; null = the default Qwen judge. */
   lmStudioJudgeModel: string | null;
   updatedAt?: string;
   updatedBy?: string;
@@ -45,7 +45,7 @@ export interface UpdatePiiDetectionConfigRequest {
 }
 
 /**
- * One model LM Studio has on disk, as offered by the model picker.
+ * One model available on the detection or judge endpoint.
  */
 export interface LmStudioModel {
   id: string;
@@ -55,7 +55,7 @@ export interface LmStudioModel {
 }
 
 /**
- * Ministral-PII models available on the LM Studio endpoint.
+ * Models available on the detection or judge endpoint.
  */
 export interface LmStudioModelListing {
   endpoint: string;

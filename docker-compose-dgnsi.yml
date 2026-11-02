@@ -1,7 +1,7 @@
 # Docker Compose override for DGNSI deployment
 # - Injects the corporate CA so SSL verification works behind the DGNSI proxy.
-# - Pins the images to a self-built ":v1.2.0-rc.1" tag, loaded from a tar (offline,
-#   no GHCR pull) — see the deployment folder README.
+# - Uses release candidate images loaded from a tar (no GHCR pull).
+# - Connects the judge to Strata on the Docker host; Ministral keeps its own endpoint.
 #
 # Prerequisites (in the run directory):
 #   ./certs/corporate-ca.pem  - corporate CA bundle (PEM) for the Python detector
@@ -15,9 +15,12 @@ services:
   # PII DETECTOR (Python/gRPC) — corporate CA for outbound HTTPS / model download
   # ============================================================================
   pii-detector:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-pii-detector:v1.2.0-rc.1
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-pii-detector:v1.2.0-rc.2-strata-qwen
     pull_policy: never
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
+      LLM_JUDGE_API_KEY: ${LLM_JUDGE_API_KEY:-}
       REQUESTS_CA_BUNDLE: /etc/ssl/certs/corporate-ca.pem
       SSL_CERT_FILE: /etc/ssl/certs/corporate-ca.pem
       CURL_CA_BUNDLE: /etc/ssl/certs/corporate-ca.pem
@@ -29,9 +32,11 @@ services:
   # (Confluence, SharePoint, Jira connectors)
   # ============================================================================
   pii-reporting-api:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-api:v1.2.0-rc.1
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-api:v1.2.0-rc.2-strata-qwen
     pull_policy: never
     environment:
+      LLM_JUDGE_HOST: ${LLM_JUDGE_HOST:-host.docker.internal}
+      LLM_JUDGE_PORT: ${LLM_JUDGE_PORT:-8081}
       # Replaces the JVM default truststore, so ./certs/cacerts MUST be a full
       # PKCS12 truststore (default roots + corporate CA), not the CA alone.
       JAVA_TOOL_OPTIONS: >-
@@ -45,5 +50,5 @@ services:
   # PII REPORTING UI (Angular + Nginx) — pinned to the self-built tag
   # ============================================================================
   pii-reporting-ui:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-ui:v1.2.0-rc.1
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-ui:v1.2.0-rc.2-strata-qwen
     pull_policy: never

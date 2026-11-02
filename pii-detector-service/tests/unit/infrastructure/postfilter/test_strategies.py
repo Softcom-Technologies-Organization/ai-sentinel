@@ -14,18 +14,11 @@ from pii_detector.infrastructure.postfilter.postfilter_strategy import (
     PostfilterStrategy,
 )
 from pii_detector.infrastructure.postfilter.registry import STRATEGIES
-from pii_detector.infrastructure.postfilter.technical_artifact_denylist import (
-    CREDENTIAL_LABELS,
-)
 from pii_detector.infrastructure.postfilter.strategies.avs_number import (
     AvsNumberStrategy,
 )
 from pii_detector.infrastructure.postfilter.strategies.card_number import (
     CardNumberStrategy,
-)
-from pii_detector.infrastructure.postfilter.strategies.credential_plausibility import (
-    CREDENTIAL_PII_TYPES,
-    CredentialPlausibilityStrategy,
 )
 from pii_detector.infrastructure.postfilter.strategies.iban import IbanStrategy
 from pii_detector.infrastructure.postfilter.strategies.ip_address import (
@@ -302,140 +295,6 @@ class TestSwiftBicStrategy:
 
 
 # ---------------------------------------------------------------------------
-# CREDENTIAL PLAUSIBILITY (PASSWORD / API_KEY / SECRET ...)
-# ---------------------------------------------------------------------------
-
-
-class TestCredentialPlausibilityStrategy:
-    @pytest.mark.parametrize(
-        "value",
-        [
-            "password",
-            "mdp",
-            "Mdp",
-            "mot de passe",
-            "mot-de-passe",
-            "mots de passes",
-            "key",
-            "SECRET",
-            "TBD",
-            "PW Change",
-        ],
-    )
-    def test_should_reject_when_value_is_a_credential_keyword(
-        self, value: str
-    ) -> None:
-        verdict = CredentialPlausibilityStrategy().evaluate(value)
-        assert verdict.keep is False
-        assert "keyword" in verdict.reason
-
-    @pytest.mark.parametrize(
-        "value",
-        [
-            "spring.datasource.password",
-            "spring.liquibase.password",
-            "eureka.password",
-            "esb-password",
-            "cipher-service.salt",
-            "push.iOS.passphrase",
-        ],
-    )
-    def test_should_reject_when_value_is_a_config_property_key(
-        self, value: str
-    ) -> None:
-        verdict = CredentialPlausibilityStrategy().evaluate(value)
-        assert verdict.keep is False
-        assert "property" in verdict.reason
-
-    @pytest.mark.parametrize(
-        "value",
-        [
-            "${DB_PASSWORD}",
-            "<le password du owner du schema>",
-            "ZZZZ",
-            "webservice.password=*********************",
-            "security.user.password=<PASSWORD>",
-            "your_password_here",
-            "mySafePassword",
-        ],
-    )
-    def test_should_reject_when_value_is_a_placeholder(
-        self, value: str
-    ) -> None:
-        verdict = CredentialPlausibilityStrategy().evaluate(value)
-        assert verdict.keep is False
-        assert "placeholder" in verdict.reason
-
-    @pytest.mark.parametrize(
-        "value",
-        [
-            "dans Keepass IN",
-            "Mdp : Voir dans KeePass",
-            "mot de passe OTP également",
-            "10.4.1 Règles pour le mot de passe",
-            "c'est le mot de passe utilisé pour se connecter au backoffice.",
-        ],
-    )
-    def test_should_reject_when_value_mentions_a_password_in_prose(
-        self, value: str
-    ) -> None:
-        verdict = CredentialPlausibilityStrategy().evaluate(value)
-        assert verdict.keep is False
-        assert "natural-language" in verdict.reason
-
-    def test_should_reject_stopword_sentence_without_password_word(
-        self,
-    ) -> None:
-        verdict = CredentialPlausibilityStrategy().evaluate(
-            "la valeur est dans le coffre de l'équipe"
-        )
-        assert verdict.keep is False
-        assert "sentence" in verdict.reason
-
-    @pytest.mark.parametrize("value", ["sunshine", "bonjour", "eureka"])
-    def test_should_reject_single_dictionary_word_via_zxcvbn(
-        self, value: str
-    ) -> None:
-        verdict = CredentialPlausibilityStrategy().evaluate(value)
-        assert verdict.keep is False
-        assert "zxcvbn" in verdict.reason
-
-    @pytest.mark.parametrize(
-        "value",
-        [
-            # weak-but-real corporate passwords (digits/symbols shield them)
-            "Geneva2024!",
-            "VD_Compta81724",
-            "b0njour",
-            # random secrets (entropy keep-guard or no rule matches)
-            "x$^56fwm137s1a#2@oalxbnk0z541lsd",
-            "KRTmEWQYj41PbGhx",
-            "Basic ZGVtbzpkZW1v",
-            # known secret-format markers (K0)
-            "sk_live_4eC39HqLyjWDarjtT1zdp7dc",
-            "AKIAIOSFODNN7EXAMPLE",
-            "ghp_xxxxxxxxxxxxxxxxxxxx",
-            # assignment embedding a plausible real value
-            "webservice.password = mA24k9Xe",
-            "MDP = Battery5678",
-            # spaced passphrase: no stopword -> survives the sentence net
-            "correct horse battery staple",
-            # conservative keeps, documented in the module docstring
-            "monMotDePasse",
-            "N0t-a-key",
-        ],
-    )
-    def test_should_keep_plausible_credential_values(
-        self, value: str
-    ) -> None:
-        assert CredentialPlausibilityStrategy().evaluate(value).keep is True
-
-    @pytest.mark.parametrize("value", [None, 42, ""])
-    def test_should_fail_open_on_non_str_or_empty(self, value) -> None:
-        assert CredentialPlausibilityStrategy().evaluate(value).keep is True
-
-
-# ---------------------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------------------
 
@@ -461,7 +320,7 @@ class TestRegistry:
             "BIC",
             "SWIFT_CODE",
             "SWIFT",
-        } | CREDENTIAL_PII_TYPES
+        }
 
     def test_should_register_strategies_satisfying_the_protocol(self) -> None:
         for strategy in STRATEGIES.values():
@@ -483,25 +342,11 @@ class TestRegistry:
         assert verdict.keep is False
         assert "luhn" in verdict.reason
 
-    def test_should_cover_every_denylist_credential_label(self) -> None:
-        # Pass 1 carves credential labels out of the artifact denylist; the
-        # plausibility strategy must scrutinise every one of them in pass 2.
-        assert CREDENTIAL_LABELS <= CREDENTIAL_PII_TYPES
-
     def test_should_alias_ipv4_to_ip_address_instance(self) -> None:
         assert STRATEGIES["IPV4"] is STRATEGIES["IP_ADDRESS"]
 
     def test_should_alias_credit_card_to_card_number_instance(self) -> None:
         assert STRATEGIES["CREDIT_CARD"] is STRATEGIES["CARD_NUMBER"]
-
-    def test_should_share_one_credential_instance_across_all_keys(
-        self,
-    ) -> None:
-        instances = {id(STRATEGIES[key]) for key in CREDENTIAL_PII_TYPES}
-        assert len(instances) == 1
-        assert isinstance(
-            STRATEGIES["PASSWORD"], CredentialPlausibilityStrategy
-        )
 
     def test_should_reject_unparsable_ip_via_ipv4_alias_key(self) -> None:
         # Real finding from the 2026-07 scan: IPV4-labelled non-address.

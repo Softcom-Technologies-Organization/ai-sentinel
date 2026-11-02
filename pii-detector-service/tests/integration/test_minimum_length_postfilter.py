@@ -15,23 +15,32 @@ pii_service = importlib.import_module("pii_detector.infrastructure.adapter.in.gr
 @pytest.mark.parametrize(
     "source", [DetectorSource.MINISTRAL, DetectorSource.REGEX, DetectorSource.PRESIDIO]
 )
-def test_Should_SerializeLengthRejections_When_PostfilterEnabled(monkeypatch, enabled, source):
-    content = "Ab1!x Ab1!xy 1234"
+def test_Should_PreserveSecretsAndSerializeStructuredRejections_When_PostfilterEnabled(
+    monkeypatch, enabled, source
+):
+    candidates = [
+        ("Ab1!x", "PASSWORD"),
+        ("1234", "PASSWORD"),
+        ("secret", "PASSWORD"),
+        ("the moon is blue", "PASSPHRASE"),
+        ("a", "API_KEY"),
+        ("ghp_abc", "GITHUB_TOKEN"),
+        ("JSESSIONID=abc; Secure", "HTTP_COOKIE"),
+        ("1234", "SOCIAL_SECURITY_NUMBER"),
+        ("4321", "ACCOUNT_NUMBER"),
+    ]
+    content = "\n".join(f"{kind}: {value}" for value, kind in candidates)
     entities = [
         PIIEntity(
             text=value,
             pii_type=kind,
             type_label=kind,
-            start=start,
-            end=start + len(value),
+            start=content.index(f"{kind}: {value}") + len(kind) + 2,
+            end=content.index(f"{kind}: {value}") + len(kind) + 2 + len(value),
             score=1.0,
             source=source,
         )
-        for value, kind, start in [
-            ("Ab1!x", "PASSWORD", 0),
-            ("Ab1!xy", "PASSWORD", 6),
-            ("1234", "SOCIAL_SECURITY_NUMBER", 13),
-        ]
+        for value, kind in candidates
     ]
     detector = Mock()
     detector._apply_masks.return_value = content
@@ -41,7 +50,7 @@ def test_Should_SerializeLengthRejections_When_PostfilterEnabled(monkeypatch, en
     servicer = pii_service.PIIDetectionServicer(enable_memory_monitoring=False)
     configs = {
         kind: {"enabled": True, "threshold": 0.5, "detector": "ALL"}
-        for kind in ("PASSWORD", "SOCIAL_SECURITY_NUMBER")
+        for _, kind in candidates
     }
     monkeypatch.setattr(
         servicer,
@@ -61,12 +70,15 @@ def test_Should_SerializeLengthRejections_When_PostfilterEnabled(monkeypatch, en
 
     context.set_code.assert_not_called()
     assert [entity.text for entity in response.entities] == (
-        ["Ab1!xy", "1234"] if enabled else ["Ab1!x", "Ab1!xy", "1234"]
+        [value for value, _ in candidates[:-1]]
+        if enabled else [value for value, _ in candidates]
     )
     assert len(response.discarded_entities) == int(enabled)
     if enabled:
         rejected = response.discarded_entities[0]
-        assert (rejected.entity.text, rejected.entity.start, rejected.entity.end) == ("Ab1!x", 0, 5)
+        assert (rejected.entity.text, rejected.entity.start, rejected.entity.end) == (
+            "4321", entities[-1].start, entities[-1].end
+        )
         assert rejected.judge_verdict == "FALSE_POSITIVE"
-        assert rejected.judge_reason == "minimum length: PASSWORD measured 5, required 6"
+        assert rejected.judge_reason == "minimum length: ACCOUNT_NUMBER measured 4, required 5"
         assert response.detector_stats[0].entities_discarded == 1

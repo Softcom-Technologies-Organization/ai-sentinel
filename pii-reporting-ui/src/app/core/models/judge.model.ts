@@ -17,7 +17,7 @@ export interface JudgeScopeDto {
 
 export interface JudgeLaunchRequest {
   scope: JudgeScopeDto;
-  /** LM Studio model identifier; null = the model configured for detection. */
+  /** Judge model identifier; null = the configured judge model. */
   model: string | null;
   applyMode: JudgeApplyMode;
   confidenceThreshold: number;

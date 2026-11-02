@@ -2,6 +2,9 @@ package pro.softcom.aisentinel.domain.pii.detection;
 
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -13,6 +16,27 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Unit tests for PiiDetectionConfig domain model.
  */
 class PiiDetectionConfigTest {
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = " ")
+    void Should_ExposeDefaultJudgeModel_When_NotConfigured(String judgeModel) {
+        PiiDetectionConfig config = new PiiDetectionConfig(1, true, true, true, 2048, 410,
+                new BigDecimal("0.30"), true, "localhost", 1234, "ministral", judgeModel,
+                1, true, null, LocalDateTime.now(), "system");
+
+        assertThat(config.lmStudioJudgeModel()).isEqualTo("qwen3.8-flash-next-iq3_s");
+        assertThat(config.lmStudioModel()).isEqualTo("ministral");
+    }
+
+    @Test
+    void Should_PreserveJudgeModel_When_ExplicitlyConfigured() {
+        PiiDetectionConfig config = new PiiDetectionConfig(1, true, true, true, 2048, 410,
+                new BigDecimal("0.30"), true, "localhost", 1234, "ministral", "custom-judge",
+                1, true, null, LocalDateTime.now(), "system");
+
+        assertThat(config.lmStudioJudgeModel()).isEqualTo("custom-judge");
+    }
 
     @Test
     void Should_CreateConfig_When_AllParametersValid() {

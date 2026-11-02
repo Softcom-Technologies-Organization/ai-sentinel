@@ -355,8 +355,10 @@
       "modelNotLoaded": "non chargé",
       "modelFamilyWarning": "Ce modèle n'est pas une quantisation de {{family}} : le découpage en tokens ne serait plus fiable.",
       "judgeModel": "Modèle juge",
-      "judgeModelPlaceholder": "Aucun — reprendre le modèle de détection",
-      "judgeModelHint": "Modèle interrogé par le juge LLM pour trancher les détections. N'importe quel modèle de chat convient : le juge ne dépend pas du tokenizer du détecteur. Vide = le modèle de détection ci-dessus est réutilisé.",
+      "judgeModelPlaceholder": "Par défaut : qwen3.8-flash-next-iq3_s",
+      "judgeModelHint": "Modèle interrogé par le juge LLM sur le serveur configuré pour le juge (Strata en contexte DGNSI). Vide = Qwen 3.8 Next Flash par défaut.",
+      "judgeModelListError": "Liste du juge indisponible ({{error}}). Saisissez l'identifiant du modèle à la main.",
+      "judgeModelNotListed": "non listé par le serveur du juge",
       "judgeModelRefresh": "Recharger la liste des modèles du juge"
     },
     "detectors": {
@@ -1171,7 +1173,7 @@
       "scope": "Périmètre",
       "model": "Modèle juge",
       "modelLoading": "Chargement des modèles…",
-      "modelPlaceholder": "Identifiant du modèle LM Studio",
+      "modelPlaceholder": "Identifiant du modèle juge",
       "notLoaded": "non chargé",
       "apply": "Application des verdicts",
       "propose": "Proposer pour validation",

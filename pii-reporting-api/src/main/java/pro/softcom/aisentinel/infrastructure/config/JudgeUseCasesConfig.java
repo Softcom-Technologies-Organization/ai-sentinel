@@ -1,6 +1,7 @@
 package pro.softcom.aisentinel.infrastructure.config;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionConfigRepository;
@@ -19,6 +20,7 @@ import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery
 import pro.softcom.aisentinel.application.pii.reporting.port.out.PersonallyIdentifiableInformationScanExecutionOrchestratorPort;
 import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
+import pro.softcom.aisentinel.domain.pii.judge.JudgeEndpoint;
 
 import java.time.Clock;
 import java.util.concurrent.ExecutorService;
@@ -30,16 +32,23 @@ import java.util.concurrent.ExecutorService;
 public class JudgeUseCasesConfig {
 
     @Bean
+    public JudgeEndpoint judgeEndpoint(@Value("${llm.judge.host:}") String host,
+                                       @Value("${llm.judge.port:#{null}}") Integer port) {
+        return new JudgeEndpoint(host, port);
+    }
+
+    @Bean
     public JudgeJobRunner judgeJobRunner(ScanResultQuery scanResultQuery,
                                          ScanEventFindingResolver scanEventFindingResolver,
                                          FindingRemediationStore findingRemediationStore,
                                          JudgeJobStore judgeJobStore,
                                          PiiDetectorClient piiDetectorClient,
                                          PiiDetectionConfigRepository piiDetectionConfigRepository,
-                                         PublishRemediationEventPort publishRemediationEventPort) {
+                                         PublishRemediationEventPort publishRemediationEventPort,
+                                         JudgeEndpoint judgeEndpoint) {
         return new JudgeJobRunner(scanResultQuery, scanEventFindingResolver, findingRemediationStore,
                 judgeJobStore, piiDetectorClient, piiDetectionConfigRepository, publishRemediationEventPort,
-                Clock.systemUTC());
+                Clock.systemUTC(), judgeEndpoint);
     }
 
     @Bean

@@ -73,6 +73,7 @@ from pii_detector.infrastructure.text_processing.semantic_chunker import (
 
 DETECTOR_NAMESPACE = "MINISTRAL"
 MINISTRAL_DEFAULT_MODEL_ID = "ministral-3b-pii-preview@q8_0"
+JUDGE_DEFAULT_MODEL_ID = "qwen3.8-flash-next-iq3_s"
 # Identifier prefix shared by every quantization of the Ministral-PII model. The
 # chunker tokenizes with this family's tokenizer, so the model picker
 # (``list_models``) offers nothing outside it.
@@ -366,7 +367,7 @@ class MinistralDetector:
         lm_studio_port: Optional[int] = None,
         all_models: bool = False,
     ) -> Dict[str, Any]:
-        """Models LM Studio has on disk, for the dashboard's pickers.
+        """Models available for the dashboard's detection and judge pickers.
 
         By default only the ``MINISTRAL_MODEL_FAMILY`` quantizations are offered:
         the chunker tokenizes with that family's tokenizer, so another detection
@@ -374,17 +375,19 @@ class MinistralDetector:
         filter (every chat model, embeddings excluded) for the LLM judge, which
         accepts any model. Returns ``{"endpoint", "family", "models": [{id,
         quantization, publisher, state}], "error"}``; ``error`` is set and
-        ``models`` empty when the endpoint is unreachable or does not expose LM
-        Studio's model list.
+        ``models`` empty when the endpoint is unreachable. Judge servers can
+        expose an OpenAI-compatible model list instead of LM Studio's catalogue.
         """
         base_url = self._resolve_base_url(lm_studio_host, lm_studio_port)
         listed = self._fetch_lm_studio_models(base_url)
+        if listed is None and all_models:
+            listed = self._fetch_openai_judge_models(base_url)
         if listed is None:
             return {
                 "endpoint": base_url,
                 "family": MINISTRAL_MODEL_FAMILY,
                 "models": [],
-                "error": f"LM Studio model list unavailable at {base_url}",
+                "error": f"Model list unavailable at {base_url}",
             }
         family = MINISTRAL_MODEL_FAMILY.lower()
         models = [
@@ -424,10 +427,12 @@ class MinistralDetector:
         """
         base_url = self._resolve_base_url(lm_studio_host, lm_studio_port)
         payload = build_judge_payload(
-            lm_studio_model or self._model_id, pii_type, type_label, value, context
+            lm_studio_model or JUDGE_DEFAULT_MODEL_ID, pii_type, type_label, value, context
         )
         try:
-            response = self._get_client().post(f"{base_url}/chat/completions", json=payload)
+            response = self._get_client().post(
+                f"{base_url}/chat/completions", json=payload, headers=self._judge_headers()
+            )
             response.raise_for_status()
             content = self._extract_content(response.json())
         except (httpx.HTTPError, httpx.TimeoutException, DetectorUnavailableError, ValueError) as exc:
@@ -439,6 +444,32 @@ class MinistralDetector:
                 "error": f"{type(exc).__name__}: {exc}"[:300],
             }
         return {**parse_verdict(content), "error": ""}
+
+    @staticmethod
+    def _judge_headers() -> Dict[str, str]:
+        api_key = os.environ.get("LLM_JUDGE_API_KEY", "").strip()
+        return {"Authorization": f"Bearer {api_key}"} if api_key else {}
+
+    def _fetch_openai_judge_models(self, base_url: str) -> Optional[List[Dict[str, Any]]]:
+        try:
+            response = self._get_client().get(
+                f"{base_url}/models", headers=self._judge_headers(), timeout=PROBE_TIMEOUT_SECONDS
+            )
+            response.raise_for_status()
+            payload = response.json()
+        except (httpx.HTTPError, ValueError):
+            return None
+        listed = payload.get("data") if isinstance(payload, dict) else None
+        if not isinstance(listed, list):
+            return None
+        models = []
+        for model in listed:
+            if not isinstance(model, dict) or not model.get("id"):
+                continue
+            status = model.get("status")
+            state = status.get("value", "") if isinstance(status, dict) else ""
+            models.append({**model, "state": model.get("state") or state})
+        return models
 
     def _fetch_lm_studio_models(self, base_url: str) -> Optional[List[Dict[str, Any]]]:
         """Models LM Studio has on disk (its own ``/api/v0/models``), loaded or not.

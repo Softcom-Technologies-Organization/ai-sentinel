@@ -7,6 +7,21 @@ my-files/
 # Git
 .git
 .gitignore
+.agents/
+.claude/
+.codex/
+.worktrees/
+graphify-out/
+benchmarks/
+qa/
+secrets/
+certs/
+personally-identifiable-information-scan-results/
+**/.venv/
+**/node_modules/
+**/__pycache__/
+**/.pytest_cache/
+**/.coverage
 
 # Documentation at root
 README.md

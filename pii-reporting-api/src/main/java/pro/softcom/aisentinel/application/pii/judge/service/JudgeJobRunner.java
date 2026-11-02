@@ -15,6 +15,7 @@ import pro.softcom.aisentinel.domain.pii.judge.FindingJudgeAnswer;
 import pro.softcom.aisentinel.domain.pii.judge.FindingJudgeRequest;
 import pro.softcom.aisentinel.domain.pii.judge.FindingJudgement;
 import pro.softcom.aisentinel.domain.pii.judge.JudgeApplyMode;
+import pro.softcom.aisentinel.domain.pii.judge.JudgeEndpoint;
 import pro.softcom.aisentinel.domain.pii.judge.JudgeJob;
 import pro.softcom.aisentinel.domain.pii.judge.JudgeJobStatus;
 import pro.softcom.aisentinel.domain.pii.judge.JudgeVerdict;
@@ -50,6 +51,7 @@ public class JudgeJobRunner {
     private final PiiDetectionConfigRepository detectionConfigRepository;
     private final PublishRemediationEventPort publishRemediationEventPort;
     private final Clock clock;
+    private final JudgeEndpoint judgeEndpoint;
 
     public void run(JudgeJob job, String scanId, Set<String> findingIds) {
         try {
@@ -65,7 +67,8 @@ public class JudgeJobRunner {
 
     private Endpoint endpointOf(JudgeJob job) {
         PiiDetectionConfig config = detectionConfigRepository.findConfig();
-        return new Endpoint(job.model(), config.lmStudioHost(), config.lmStudioPort());
+        JudgeEndpoint endpoint = judgeEndpoint.resolve(config.lmStudioHost(), config.lmStudioPort());
+        return new Endpoint(job.model(), endpoint.host(), endpoint.port());
     }
 
     private List<EligibleFinding> decryptedFindings(String spaceKey, String scanId, Set<String> findingIds) {

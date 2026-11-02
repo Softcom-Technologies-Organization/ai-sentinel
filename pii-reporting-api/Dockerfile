@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM maven:4.0.0-rc-4-amazoncorretto-25 AS build
+FROM maven:3.9.16-amazoncorretto-25 AS build
 
 WORKDIR /workspace
 
@@ -14,12 +14,11 @@ RUN mvn -B clean package -DskipTests -Pdocker-build
 
 FROM amazoncorretto:25 AS runtime
 
-# Install Infisical CLI
-# Note: curl-minimal and bash are already installed in amazoncorretto:24 base image
-RUN curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.rpm.sh' | bash \
+RUN curl -fsSL 'https://artifacts-cli.infisical.com/setup.rpm.sh' -o /tmp/infisical-setup.sh \
+    && bash /tmp/infisical-setup.sh \
     && yum install -y infisical \
     && yum clean all \
-    && rm -rf /var/cache/yum
+    && rm -rf /var/cache/yum /tmp/infisical-setup.sh
 
 WORKDIR /app
 

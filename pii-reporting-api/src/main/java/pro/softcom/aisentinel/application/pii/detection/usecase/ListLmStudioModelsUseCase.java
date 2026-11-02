@@ -6,6 +6,7 @@ import pro.softcom.aisentinel.application.pii.detection.port.in.ListLmStudioMode
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionConfigRepository;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.pii.detection.PiiDetectionConfig;
+import pro.softcom.aisentinel.domain.pii.judge.JudgeEndpoint;
 import pro.softcom.aisentinel.domain.pii.scan.LmStudioModelListing;
 
 /**
@@ -19,17 +20,23 @@ public class ListLmStudioModelsUseCase implements ListLmStudioModelsPort {
 
     private final PiiDetectorClient piiDetectorClient;
     private final PiiDetectionConfigRepository configRepository;
+    private final JudgeEndpoint judgeEndpoint;
 
     public ListLmStudioModelsUseCase(PiiDetectorClient piiDetectorClient,
-                                     PiiDetectionConfigRepository configRepository) {
+                                     PiiDetectionConfigRepository configRepository,
+                                     JudgeEndpoint judgeEndpoint) {
         this.piiDetectorClient = piiDetectorClient;
         this.configRepository = configRepository;
+        this.judgeEndpoint = judgeEndpoint;
     }
 
     @Override
     public LmStudioModelListing listModels(String lmStudioHost, Integer lmStudioPort, boolean allModels) {
-        String host = lmStudioHost;
-        Integer port = lmStudioPort;
+        JudgeEndpoint endpoint = allModels
+                ? judgeEndpoint.resolve(lmStudioHost, lmStudioPort)
+                : new JudgeEndpoint(lmStudioHost, lmStudioPort);
+        String host = endpoint.host();
+        Integer port = endpoint.port();
         if (host == null || host.isBlank() || port == null) {
             PiiDetectionConfig config = configRepository.findConfig();
             host = host == null || host.isBlank() ? config.lmStudioHost() : host;

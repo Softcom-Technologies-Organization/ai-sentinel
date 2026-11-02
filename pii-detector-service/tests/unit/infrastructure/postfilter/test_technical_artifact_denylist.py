@@ -134,10 +134,9 @@ class TestTraceparentMotif:
         assert verdict.keep is False
         assert "traceparent" in verdict.reason
 
-    def test_should_reject_traceparent_even_with_credential_label(self) -> None:
-        # Unambiguous motif: drops unconditionally, whatever the label.
+    def test_Should_PreserveTraceparentShape_When_LabelIsCredential(self) -> None:
         value = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
-        assert _evaluate(value, "ACCESS_TOKEN").keep is False
+        assert _evaluate(value, "ACCESS_TOKEN").keep is True
 
 
 # ---------------------------------------------------------------------------

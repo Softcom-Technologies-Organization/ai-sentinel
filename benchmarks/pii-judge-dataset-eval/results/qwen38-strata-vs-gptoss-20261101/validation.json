@@ -1,0 +1,252 @@
+{
+  "checked_at_utc": "2026-11-02T16:51:33.997425+00:00",
+  "snapshot_files_verified": 34,
+  "equal_protocol_fields": [
+    "dataset_sha256",
+    "partitions",
+    "groups",
+    "thresholds",
+    "seed",
+    "strategies",
+    "prompts_sha256",
+    "prompt_builder_sha256",
+    "lmstudio_driver_sha256",
+    "runner_sha256",
+    "rendered_prompts"
+  ],
+  "dataset_n": 3600,
+  "calibration_n": 1240,
+  "test_n": 2360,
+  "pii_types": 18,
+  "document_groups": 2722,
+  "test_document_groups": 1803,
+  "group_overlap": 0,
+  "coverage": [
+    {
+      "model": "qwen",
+      "file": "checklist__calibration.jsonl",
+      "n": 1240,
+      "errors": 1,
+      "unparseable": 0,
+      "unsure": 22
+    },
+    {
+      "model": "qwen",
+      "file": "checklist__test.jsonl",
+      "n": 2360,
+      "errors": 0,
+      "unparseable": 0,
+      "unsure": 37
+    },
+    {
+      "model": "qwen",
+      "file": "concise__calibration.jsonl",
+      "n": 1240,
+      "errors": 0,
+      "unparseable": 0,
+      "unsure": 3
+    },
+    {
+      "model": "qwen",
+      "file": "few_shot__calibration.jsonl",
+      "n": 1240,
+      "errors": 0,
+      "unparseable": 0,
+      "unsure": 1
+    },
+    {
+      "model": "qwen",
+      "file": "general__calibration.jsonl",
+      "n": 1240,
+      "errors": 0,
+      "unparseable": 0,
+      "unsure": 3
+    },
+    {
+      "model": "qwen",
+      "file": "general__test.jsonl",
+      "n": 2360,
+      "errors": 0,
+      "unparseable": 0,
+      "unsure": 13
+    },
+    {
+      "model": "qwen",
+      "file": "per_type__calibration.jsonl",
+      "n": 1240,
+      "errors": 0,
+      "unparseable": 0,
+      "unsure": 11
+    },
+    {
+      "model": "qwen",
+      "file": "per_type__test.jsonl",
+      "n": 2360,
+      "errors": 0,
+      "unparseable": 0,
+      "unsure": 17
+    },
+    {
+      "model": "qwen",
+      "file": "per_type_financial_only__calibration.jsonl",
+      "n": 1240,
+      "errors": 0,
+      "unparseable": 0,
+      "unsure": 14
+    },
+    {
+      "model": "gpt",
+      "file": "checklist__calibration.jsonl",
+      "n": 1240,
+      "errors": 0,
+      "unparseable": 0,
+      "unsure": 1
+    },
+    {
+      "model": "gpt",
+      "file": "concise__calibration.jsonl",
+      "n": 1240,
+      "errors": 0,
+      "unparseable": 0,
+      "unsure": 6
+    },
+    {
+      "model": "gpt",
+      "file": "few_shot__calibration.jsonl",
+      "n": 1240,
+      "errors": 0,
+      "unparseable": 0,
+      "unsure": 30
+    },
+    {
+      "model": "gpt",
+      "file": "general__calibration.jsonl",
+      "n": 1240,
+      "errors": 1,
+      "unparseable": 0,
+      "unsure": 58
+    },
+    {
+      "model": "gpt",
+      "file": "general__test.jsonl",
+      "n": 2360,
+      "errors": 0,
+      "unparseable": 0,
+      "unsure": 115
+    },
+    {
+      "model": "gpt",
+      "file": "per_type__calibration.jsonl",
+      "n": 1240,
+      "errors": 0,
+      "unparseable": 0,
+      "unsure": 11
+    },
+    {
+      "model": "gpt",
+      "file": "per_type__test.jsonl",
+      "n": 2360,
+      "errors": 2,
+      "unparseable": 0,
+      "unsure": 18
+    },
+    {
+      "model": "gpt",
+      "file": "per_type_financial_only__calibration.jsonl",
+      "n": 1240,
+      "errors": 0,
+      "unparseable": 0,
+      "unsure": 63
+    }
+  ],
+  "independent_metrics_and_paired_ci": {
+    "max_f1": {
+      "metrics": [
+        {
+          "n": 2360,
+          "tp": 1096,
+          "fp": 2,
+          "tn": 1161,
+          "fn": 101,
+          "precision": 0.9981785063752276,
+          "recall": 0.9156223893065998,
+          "f1": 0.955119825708061
+        },
+        {
+          "n": 2360,
+          "tp": 1101,
+          "fp": 166,
+          "tn": 997,
+          "fn": 96,
+          "precision": 0.8689818468823993,
+          "recall": 0.9197994987468672,
+          "f1": 0.8936688311688312
+        }
+      ],
+      "delta_f1_points": 6.145099453922976,
+      "ci95_points": [
+        4.720760809580915,
+        7.441048196786948
+      ]
+    },
+    "general_0.8": {
+      "metrics": [
+        {
+          "n": 2360,
+          "tp": 1073,
+          "fp": 16,
+          "tn": 1147,
+          "fn": 124,
+          "precision": 0.9853076216712581,
+          "recall": 0.8964076858813701,
+          "f1": 0.9387576552930884
+        },
+        {
+          "n": 2360,
+          "tp": 1015,
+          "fp": 243,
+          "tn": 920,
+          "fn": 182,
+          "precision": 0.8068362480127186,
+          "recall": 0.847953216374269,
+          "f1": 0.8268839103869654
+        }
+      ],
+      "delta_f1_points": 11.187374490612301,
+      "ci95_points": [
+        9.413407740564889,
+        12.90584401827148
+      ]
+    },
+    "recall_priority": {
+      "metrics": [
+        {
+          "n": 2360,
+          "tp": 1194,
+          "fp": 340,
+          "tn": 823,
+          "fn": 3,
+          "precision": 0.7783572359843546,
+          "recall": 0.9974937343358395,
+          "f1": 0.8744049798608569
+        },
+        {
+          "n": 2360,
+          "tp": 1196,
+          "fp": 1128,
+          "tn": 35,
+          "fn": 1,
+          "precision": 0.5146299483648882,
+          "recall": 0.9991645781119465,
+          "f1": 0.6793524566884408
+        }
+      ],
+      "delta_f1_points": 19.505252317241606,
+      "ci95_points": [
+        17.98798035073756,
+        20.87121590635037
+      ]
+    }
+  },
+  "gpt_test_error_diagnostic": "Two HTTP 400 responses; LM Studio logs show Channel Error caused by Engine protocol predict request failed: fetch failed. Original responses retained under fail-open scoring."
+}

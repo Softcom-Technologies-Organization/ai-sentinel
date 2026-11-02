@@ -5,7 +5,7 @@ import json
 
 from pii_detector.infrastructure.judge.llm_finding_judge import (
     JUDGE_MAX_TOKENS,
-    SYSTEM_PROMPT,
+    system_prompt,
     build_payload,
     mark_span,
     parse_verdict,
@@ -43,7 +43,7 @@ class TestBuildPayload:
         assert payload["model"] == "judge@q8"
         assert payload["temperature"] == 0
         assert payload["max_tokens"] == JUDGE_MAX_TOKENS
-        assert payload["messages"][0] == {"role": "system", "content": SYSTEM_PROMPT}
+        assert payload["messages"][0] == {"role": "system", "content": system_prompt("EMAIL")}
         assert payload["response_format"]["json_schema"]["strict"] is True
         assert payload["response_format"]["json_schema"]["schema"]["required"] == [
             "reason", "confidence", "verdict",

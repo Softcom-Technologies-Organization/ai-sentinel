@@ -726,16 +726,16 @@
                                     type="button"
                                     data-testid="refreshLmStudioJudgeModels"
                                     icon="pi pi-refresh"
-                                    [loading]="lmStudioModelsLoading()"
-                                    (click)="loadLmStudioModels()"
-                                    (keydown.enter)="loadLmStudioModels()"
+                                    [loading]="judgeModelsLoading()"
+                                    (click)="loadJudgeModels()"
+                                    (keydown.enter)="loadJudgeModels()"
                                     styleClass="p-button-outlined p-button-sm"
                                     [ariaLabel]="'settings.lmStudio.judgeModelRefresh' | transloco">
                                 </p-button>
                             </div>
                             <small id="lmStudioJudgeModelHint" class="advanced-param-hint">
-                                @if (lmStudioModelsError()) {
-                                    {{ 'settings.lmStudio.modelListError' | transloco: {error: lmStudioModelsError()} }}
+                                @if (judgeModelsError()) {
+                                    {{ 'settings.lmStudio.judgeModelListError' | transloco: {error: judgeModelsError()} }}
                                 } @else {
                                     {{ 'settings.lmStudio.judgeModelHint' | transloco }}
                                 }

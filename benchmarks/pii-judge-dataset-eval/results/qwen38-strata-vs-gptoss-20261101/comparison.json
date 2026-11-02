@@ -1,0 +1,1802 @@
+{
+  "dataset_sha256": "b08d9c5da559610d6d4da7a05e051a8cd73e2ef6288742e4e8498b5122f3f5df",
+  "test_n": 2360,
+  "models": [
+    {
+      "key": "qwen3.8-flash-next",
+      "label": "Qwen3.8-Flash-Next IQ3_S (Strata)",
+      "engine": "strata",
+      "model": "qwen3.8-flash-next-iq3_s",
+      "size_gb": 83.6,
+      "max_tokens": 2048,
+      "parallel": 4,
+      "context_length": 32768,
+      "extra_body": {
+        "chat_template_kwargs": {
+          "enable_thinking": false
+        }
+      },
+      "note": ""
+    },
+    {
+      "key": "gpt-oss-120b",
+      "label": "GPT-OSS-120B (MoE, reasoning low)",
+      "engine": "lmstudio",
+      "model": "openai/gpt-oss-120b",
+      "size_gb": 63.39,
+      "max_tokens": 2048,
+      "parallel": 4,
+      "context_length": 8192,
+      "extra_body": {
+        "reasoning_effort": "low"
+      },
+      "note": ""
+    }
+  ],
+  "objectives": {
+    "max_f1": {
+      "settings": [
+        {
+          "strategy": "per_type",
+          "threshold": 0.95
+        },
+        {
+          "strategy": "per_type",
+          "threshold": 0.9
+        }
+      ],
+      "metrics": [
+        {
+          "n": 2360,
+          "tp": 1096,
+          "fp": 2,
+          "tn": 1161,
+          "fn": 101,
+          "precision": 0.9981785063752276,
+          "recall": 0.9156223893065998,
+          "f1": 0.955119825708061,
+          "fp_elimination": 0.998280309544282,
+          "utility": 0.1298366294067068,
+          "unsure": 17,
+          "errors": 0
+        },
+        {
+          "n": 2360,
+          "tp": 1101,
+          "fp": 166,
+          "tn": 997,
+          "fn": 96,
+          "precision": 0.8689818468823993,
+          "recall": 0.9197994987468672,
+          "f1": 0.8936688311688312,
+          "fp_elimination": 0.8572656921754084,
+          "utility": 0.03181427343078246,
+          "unsure": 18,
+          "errors": 2
+        }
+      ],
+      "paired_f1_delta_ci95": [
+        0.04720760809580914,
+        0.07441048196786948
+      ],
+      "by_type": {
+        "ACCOUNT_NUMBER": [
+          {
+            "n": 130,
+            "tp": 50,
+            "fp": 0,
+            "tn": 60,
+            "fn": 20,
+            "precision": 1.0,
+            "recall": 0.7142857142857143,
+            "f1": 0.8333333333333334,
+            "fp_elimination": 1.0,
+            "utility": -2.3333333333333335,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 130,
+            "tp": 52,
+            "fp": 5,
+            "tn": 55,
+            "fn": 18,
+            "precision": 0.9122807017543859,
+            "recall": 0.7428571428571429,
+            "f1": 0.8188976377952756,
+            "fp_elimination": 0.9166666666666666,
+            "utility": -2.0833333333333335,
+            "unsure": 0,
+            "errors": 1
+          }
+        ],
+        "API_KEY": [
+          {
+            "n": 134,
+            "tp": 60,
+            "fp": 0,
+            "tn": 70,
+            "fn": 4,
+            "precision": 1.0,
+            "recall": 0.9375,
+            "f1": 0.967741935483871,
+            "fp_elimination": 1.0,
+            "utility": 0.42857142857142855,
+            "unsure": 4,
+            "errors": 0
+          },
+          {
+            "n": 134,
+            "tp": 61,
+            "fp": 33,
+            "tn": 37,
+            "fn": 3,
+            "precision": 0.648936170212766,
+            "recall": 0.953125,
+            "f1": 0.7721518987341772,
+            "fp_elimination": 0.5285714285714286,
+            "utility": 0.1,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "BANK_ROUTING_NUMBER": [
+          {
+            "n": 114,
+            "tp": 56,
+            "fp": 0,
+            "tn": 54,
+            "fn": 4,
+            "precision": 1.0,
+            "recall": 0.9333333333333333,
+            "f1": 0.9655172413793104,
+            "fp_elimination": 1.0,
+            "utility": 0.25925925925925924,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 114,
+            "tp": 58,
+            "fp": 14,
+            "tn": 40,
+            "fn": 2,
+            "precision": 0.8055555555555556,
+            "recall": 0.9666666666666667,
+            "f1": 0.8787878787878788,
+            "fp_elimination": 0.7407407407407407,
+            "utility": 0.37037037037037035,
+            "unsure": 1,
+            "errors": 0
+          }
+        ],
+        "CREDIT_CARD": [
+          {
+            "n": 136,
+            "tp": 58,
+            "fp": 0,
+            "tn": 66,
+            "fn": 12,
+            "precision": 1.0,
+            "recall": 0.8285714285714286,
+            "f1": 0.90625,
+            "fp_elimination": 1.0,
+            "utility": -0.8181818181818182,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 136,
+            "tp": 64,
+            "fp": 1,
+            "tn": 65,
+            "fn": 6,
+            "precision": 0.9846153846153847,
+            "recall": 0.9142857142857143,
+            "f1": 0.9481481481481482,
+            "fp_elimination": 0.9848484848484849,
+            "utility": 0.07575757575757576,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "CREDIT_DEBIT_CARD": [
+          {
+            "n": 136,
+            "tp": 59,
+            "fp": 0,
+            "tn": 66,
+            "fn": 11,
+            "precision": 1.0,
+            "recall": 0.8428571428571429,
+            "f1": 0.9147286821705426,
+            "fp_elimination": 1.0,
+            "utility": -0.6666666666666666,
+            "unsure": 1,
+            "errors": 0
+          },
+          {
+            "n": 136,
+            "tp": 64,
+            "fp": 0,
+            "tn": 66,
+            "fn": 6,
+            "precision": 1.0,
+            "recall": 0.9142857142857143,
+            "f1": 0.9552238805970149,
+            "fp_elimination": 1.0,
+            "utility": 0.09090909090909091,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "CVV": [
+          {
+            "n": 130,
+            "tp": 53,
+            "fp": 0,
+            "tn": 67,
+            "fn": 10,
+            "precision": 1.0,
+            "recall": 0.8412698412698413,
+            "f1": 0.9137931034482759,
+            "fp_elimination": 1.0,
+            "utility": -0.4925373134328358,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 130,
+            "tp": 58,
+            "fp": 6,
+            "tn": 61,
+            "fn": 5,
+            "precision": 0.90625,
+            "recall": 0.9206349206349206,
+            "f1": 0.9133858267716536,
+            "fp_elimination": 0.9104477611940298,
+            "utility": 0.16417910447761194,
+            "unsure": 1,
+            "errors": 0
+          }
+        ],
+        "DRIVER_LICENSE_NUMBER": [
+          {
+            "n": 136,
+            "tp": 61,
+            "fp": 1,
+            "tn": 72,
+            "fn": 2,
+            "precision": 0.9838709677419355,
+            "recall": 0.9682539682539683,
+            "f1": 0.976,
+            "fp_elimination": 0.9863013698630136,
+            "utility": 0.7123287671232876,
+            "unsure": 2,
+            "errors": 0
+          },
+          {
+            "n": 136,
+            "tp": 60,
+            "fp": 6,
+            "tn": 67,
+            "fn": 3,
+            "precision": 0.9090909090909091,
+            "recall": 0.9523809523809523,
+            "f1": 0.9302325581395349,
+            "fp_elimination": 0.9178082191780822,
+            "utility": 0.5068493150684932,
+            "unsure": 1,
+            "errors": 0
+          }
+        ],
+        "IBAN": [
+          {
+            "n": 121,
+            "tp": 66,
+            "fp": 0,
+            "tn": 55,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "fp_elimination": 1.0,
+            "utility": 1.0,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 121,
+            "tp": 59,
+            "fp": 7,
+            "tn": 48,
+            "fn": 7,
+            "precision": 0.8939393939393939,
+            "recall": 0.8939393939393939,
+            "f1": 0.8939393939393939,
+            "fp_elimination": 0.8727272727272727,
+            "utility": -0.4,
+            "unsure": 0,
+            "errors": 1
+          }
+        ],
+        "IBAN_CODE": [
+          {
+            "n": 121,
+            "tp": 66,
+            "fp": 0,
+            "tn": 55,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "fp_elimination": 1.0,
+            "utility": 1.0,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 121,
+            "tp": 62,
+            "fp": 7,
+            "tn": 48,
+            "fn": 4,
+            "precision": 0.8985507246376812,
+            "recall": 0.9393939393939394,
+            "f1": 0.9185185185185185,
+            "fp_elimination": 0.8727272727272727,
+            "utility": 0.14545454545454545,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "IPV4": [
+          {
+            "n": 130,
+            "tp": 66,
+            "fp": 0,
+            "tn": 64,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "fp_elimination": 1.0,
+            "utility": 1.0,
+            "unsure": 1,
+            "errors": 0
+          },
+          {
+            "n": 130,
+            "tp": 66,
+            "fp": 8,
+            "tn": 56,
+            "fn": 0,
+            "precision": 0.8918918918918919,
+            "recall": 1.0,
+            "f1": 0.9428571428571428,
+            "fp_elimination": 0.875,
+            "utility": 0.875,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "IPV6": [
+          {
+            "n": 131,
+            "tp": 75,
+            "fp": 0,
+            "tn": 56,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "fp_elimination": 1.0,
+            "utility": 1.0,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 131,
+            "tp": 74,
+            "fp": 14,
+            "tn": 42,
+            "fn": 1,
+            "precision": 0.8409090909090909,
+            "recall": 0.9866666666666667,
+            "f1": 0.9079754601226994,
+            "fp_elimination": 0.75,
+            "utility": 0.5714285714285714,
+            "unsure": 1,
+            "errors": 0
+          }
+        ],
+        "IP_ADDRESS": [
+          {
+            "n": 131,
+            "tp": 65,
+            "fp": 1,
+            "tn": 63,
+            "fn": 2,
+            "precision": 0.9848484848484849,
+            "recall": 0.9701492537313433,
+            "f1": 0.9774436090225563,
+            "fp_elimination": 0.984375,
+            "utility": 0.671875,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 131,
+            "tp": 67,
+            "fp": 10,
+            "tn": 54,
+            "fn": 0,
+            "precision": 0.8701298701298701,
+            "recall": 1.0,
+            "f1": 0.9305555555555556,
+            "fp_elimination": 0.84375,
+            "utility": 0.84375,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "NATIONAL_ID": [
+          {
+            "n": 136,
+            "tp": 55,
+            "fp": 0,
+            "tn": 71,
+            "fn": 10,
+            "precision": 1.0,
+            "recall": 0.8461538461538461,
+            "f1": 0.9166666666666666,
+            "fp_elimination": 1.0,
+            "utility": -0.4084507042253521,
+            "unsure": 3,
+            "errors": 0
+          },
+          {
+            "n": 136,
+            "tp": 56,
+            "fp": 4,
+            "tn": 67,
+            "fn": 9,
+            "precision": 0.9333333333333333,
+            "recall": 0.8615384615384616,
+            "f1": 0.896,
+            "fp_elimination": 0.9436619718309859,
+            "utility": -0.323943661971831,
+            "unsure": 4,
+            "errors": 0
+          }
+        ],
+        "PASSWORD": [
+          {
+            "n": 143,
+            "tp": 61,
+            "fp": 0,
+            "tn": 76,
+            "fn": 6,
+            "precision": 1.0,
+            "recall": 0.9104477611940298,
+            "f1": 0.953125,
+            "fp_elimination": 1.0,
+            "utility": 0.21052631578947367,
+            "unsure": 1,
+            "errors": 0
+          },
+          {
+            "n": 143,
+            "tp": 64,
+            "fp": 16,
+            "tn": 60,
+            "fn": 3,
+            "precision": 0.8,
+            "recall": 0.9552238805970149,
+            "f1": 0.8707482993197279,
+            "fp_elimination": 0.7894736842105263,
+            "utility": 0.39473684210526316,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "PIN": [
+          {
+            "n": 142,
+            "tp": 57,
+            "fp": 0,
+            "tn": 71,
+            "fn": 14,
+            "precision": 1.0,
+            "recall": 0.8028169014084507,
+            "f1": 0.890625,
+            "fp_elimination": 1.0,
+            "utility": -0.971830985915493,
+            "unsure": 2,
+            "errors": 0
+          },
+          {
+            "n": 142,
+            "tp": 57,
+            "fp": 10,
+            "tn": 61,
+            "fn": 14,
+            "precision": 0.8507462686567164,
+            "recall": 0.8028169014084507,
+            "f1": 0.8260869565217391,
+            "fp_elimination": 0.8591549295774648,
+            "utility": -1.1126760563380282,
+            "unsure": 1,
+            "errors": 0
+          }
+        ],
+        "SOCIALNUM": [
+          {
+            "n": 126,
+            "tp": 58,
+            "fp": 0,
+            "tn": 66,
+            "fn": 2,
+            "precision": 1.0,
+            "recall": 0.9666666666666667,
+            "f1": 0.9830508474576272,
+            "fp_elimination": 1.0,
+            "utility": 0.696969696969697,
+            "unsure": 3,
+            "errors": 0
+          },
+          {
+            "n": 126,
+            "tp": 58,
+            "fp": 8,
+            "tn": 58,
+            "fn": 2,
+            "precision": 0.8787878787878788,
+            "recall": 0.9666666666666667,
+            "f1": 0.9206349206349206,
+            "fp_elimination": 0.8787878787878788,
+            "utility": 0.5757575757575758,
+            "unsure": 5,
+            "errors": 0
+          }
+        ],
+        "SOCIAL_SECURITY_NUMBER": [
+          {
+            "n": 126,
+            "tp": 56,
+            "fp": 0,
+            "tn": 66,
+            "fn": 4,
+            "precision": 1.0,
+            "recall": 0.9333333333333333,
+            "f1": 0.9655172413793104,
+            "fp_elimination": 1.0,
+            "utility": 0.3939393939393939,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 126,
+            "tp": 58,
+            "fp": 9,
+            "tn": 57,
+            "fn": 2,
+            "precision": 0.8656716417910447,
+            "recall": 0.9666666666666667,
+            "f1": 0.9133858267716536,
+            "fp_elimination": 0.8636363636363636,
+            "utility": 0.5606060606060606,
+            "unsure": 4,
+            "errors": 0
+          }
+        ],
+        "SWIFT_BIC": [
+          {
+            "n": 137,
+            "tp": 74,
+            "fp": 0,
+            "tn": 63,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "fp_elimination": 1.0,
+            "utility": 1.0,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 137,
+            "tp": 63,
+            "fp": 8,
+            "tn": 55,
+            "fn": 11,
+            "precision": 0.8873239436619719,
+            "recall": 0.8513513513513513,
+            "f1": 0.8689655172413793,
+            "fp_elimination": 0.873015873015873,
+            "utility": -0.873015873015873,
+            "unsure": 0,
+            "errors": 0
+          }
+        ]
+      }
+    },
+    "general_0.8": {
+      "settings": [
+        {
+          "strategy": "general",
+          "threshold": 0.8
+        },
+        {
+          "strategy": "general",
+          "threshold": 0.8
+        }
+      ],
+      "metrics": [
+        {
+          "n": 2360,
+          "tp": 1073,
+          "fp": 16,
+          "tn": 1147,
+          "fn": 124,
+          "precision": 0.9853076216712581,
+          "recall": 0.8964076858813701,
+          "f1": 0.9387576552930884,
+          "fp_elimination": 0.9862424763542562,
+          "utility": -0.07996560619088564,
+          "unsure": 13,
+          "errors": 0
+        },
+        {
+          "n": 2360,
+          "tp": 1015,
+          "fp": 243,
+          "tn": 920,
+          "fn": 182,
+          "precision": 0.8068362480127186,
+          "recall": 0.847953216374269,
+          "f1": 0.8268839103869654,
+          "fp_elimination": 0.7910576096302665,
+          "utility": -0.7738607050730868,
+          "unsure": 115,
+          "errors": 0
+        }
+      ],
+      "paired_f1_delta_ci95": [
+        0.09413407740564889,
+        0.1290584401827148
+      ],
+      "by_type": {
+        "ACCOUNT_NUMBER": [
+          {
+            "n": 130,
+            "tp": 52,
+            "fp": 1,
+            "tn": 59,
+            "fn": 18,
+            "precision": 0.9811320754716981,
+            "recall": 0.7428571428571429,
+            "f1": 0.8455284552845529,
+            "fp_elimination": 0.9833333333333333,
+            "utility": -2.0166666666666666,
+            "unsure": 1,
+            "errors": 0
+          },
+          {
+            "n": 130,
+            "tp": 52,
+            "fp": 13,
+            "tn": 47,
+            "fn": 18,
+            "precision": 0.8,
+            "recall": 0.7428571428571429,
+            "f1": 0.7703703703703704,
+            "fp_elimination": 0.7833333333333333,
+            "utility": -2.216666666666667,
+            "unsure": 11,
+            "errors": 0
+          }
+        ],
+        "API_KEY": [
+          {
+            "n": 134,
+            "tp": 57,
+            "fp": 0,
+            "tn": 70,
+            "fn": 7,
+            "precision": 1.0,
+            "recall": 0.890625,
+            "f1": 0.9421487603305785,
+            "fp_elimination": 1.0,
+            "utility": 0.0,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 134,
+            "tp": 61,
+            "fp": 44,
+            "tn": 26,
+            "fn": 3,
+            "precision": 0.580952380952381,
+            "recall": 0.953125,
+            "f1": 0.7218934911242604,
+            "fp_elimination": 0.37142857142857144,
+            "utility": -0.05714285714285714,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "BANK_ROUTING_NUMBER": [
+          {
+            "n": 114,
+            "tp": 53,
+            "fp": 2,
+            "tn": 52,
+            "fn": 7,
+            "precision": 0.9636363636363636,
+            "recall": 0.8833333333333333,
+            "f1": 0.9217391304347826,
+            "fp_elimination": 0.9629629629629629,
+            "utility": -0.3333333333333333,
+            "unsure": 1,
+            "errors": 0
+          },
+          {
+            "n": 114,
+            "tp": 56,
+            "fp": 9,
+            "tn": 45,
+            "fn": 4,
+            "precision": 0.8615384615384616,
+            "recall": 0.9333333333333333,
+            "f1": 0.896,
+            "fp_elimination": 0.8333333333333334,
+            "utility": 0.09259259259259259,
+            "unsure": 1,
+            "errors": 0
+          }
+        ],
+        "CREDIT_CARD": [
+          {
+            "n": 136,
+            "tp": 53,
+            "fp": 2,
+            "tn": 64,
+            "fn": 17,
+            "precision": 0.9636363636363636,
+            "recall": 0.7571428571428571,
+            "f1": 0.848,
+            "fp_elimination": 0.9696969696969697,
+            "utility": -1.606060606060606,
+            "unsure": 3,
+            "errors": 0
+          },
+          {
+            "n": 136,
+            "tp": 51,
+            "fp": 0,
+            "tn": 66,
+            "fn": 19,
+            "precision": 1.0,
+            "recall": 0.7285714285714285,
+            "f1": 0.8429752066115702,
+            "fp_elimination": 1.0,
+            "utility": -1.878787878787879,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "CREDIT_DEBIT_CARD": [
+          {
+            "n": 136,
+            "tp": 56,
+            "fp": 2,
+            "tn": 64,
+            "fn": 14,
+            "precision": 0.9655172413793104,
+            "recall": 0.8,
+            "f1": 0.875,
+            "fp_elimination": 0.9696969696969697,
+            "utility": -1.1515151515151516,
+            "unsure": 1,
+            "errors": 0
+          },
+          {
+            "n": 136,
+            "tp": 51,
+            "fp": 1,
+            "tn": 65,
+            "fn": 19,
+            "precision": 0.9807692307692307,
+            "recall": 0.7285714285714285,
+            "f1": 0.8360655737704918,
+            "fp_elimination": 0.9848484848484849,
+            "utility": -1.893939393939394,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "CVV": [
+          {
+            "n": 130,
+            "tp": 53,
+            "fp": 0,
+            "tn": 67,
+            "fn": 10,
+            "precision": 1.0,
+            "recall": 0.8412698412698413,
+            "f1": 0.9137931034482759,
+            "fp_elimination": 1.0,
+            "utility": -0.4925373134328358,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 130,
+            "tp": 60,
+            "fp": 10,
+            "tn": 57,
+            "fn": 3,
+            "precision": 0.8571428571428571,
+            "recall": 0.9523809523809523,
+            "f1": 0.9022556390977443,
+            "fp_elimination": 0.8507462686567164,
+            "utility": 0.40298507462686567,
+            "unsure": 1,
+            "errors": 0
+          }
+        ],
+        "DRIVER_LICENSE_NUMBER": [
+          {
+            "n": 136,
+            "tp": 59,
+            "fp": 2,
+            "tn": 71,
+            "fn": 4,
+            "precision": 0.9672131147540983,
+            "recall": 0.9365079365079365,
+            "f1": 0.9516129032258065,
+            "fp_elimination": 0.9726027397260274,
+            "utility": 0.4246575342465753,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 136,
+            "tp": 46,
+            "fp": 19,
+            "tn": 54,
+            "fn": 17,
+            "precision": 0.7076923076923077,
+            "recall": 0.7301587301587301,
+            "f1": 0.71875,
+            "fp_elimination": 0.7397260273972602,
+            "utility": -1.5890410958904109,
+            "unsure": 29,
+            "errors": 0
+          }
+        ],
+        "IBAN": [
+          {
+            "n": 121,
+            "tp": 66,
+            "fp": 0,
+            "tn": 55,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "fp_elimination": 1.0,
+            "utility": 1.0,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 121,
+            "tp": 62,
+            "fp": 10,
+            "tn": 45,
+            "fn": 4,
+            "precision": 0.8611111111111112,
+            "recall": 0.9393939393939394,
+            "f1": 0.8985507246376812,
+            "fp_elimination": 0.8181818181818182,
+            "utility": 0.09090909090909091,
+            "unsure": 1,
+            "errors": 0
+          }
+        ],
+        "IBAN_CODE": [
+          {
+            "n": 121,
+            "tp": 66,
+            "fp": 0,
+            "tn": 55,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "fp_elimination": 1.0,
+            "utility": 1.0,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 121,
+            "tp": 62,
+            "fp": 10,
+            "tn": 45,
+            "fn": 4,
+            "precision": 0.8611111111111112,
+            "recall": 0.9393939393939394,
+            "f1": 0.8985507246376812,
+            "fp_elimination": 0.8181818181818182,
+            "utility": 0.09090909090909091,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "IPV4": [
+          {
+            "n": 130,
+            "tp": 66,
+            "fp": 0,
+            "tn": 64,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "fp_elimination": 1.0,
+            "utility": 1.0,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 130,
+            "tp": 65,
+            "fp": 12,
+            "tn": 52,
+            "fn": 1,
+            "precision": 0.8441558441558441,
+            "recall": 0.9848484848484849,
+            "f1": 0.9090909090909091,
+            "fp_elimination": 0.8125,
+            "utility": 0.65625,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "IPV6": [
+          {
+            "n": 131,
+            "tp": 75,
+            "fp": 0,
+            "tn": 56,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "fp_elimination": 1.0,
+            "utility": 1.0,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 131,
+            "tp": 74,
+            "fp": 13,
+            "tn": 43,
+            "fn": 1,
+            "precision": 0.8505747126436781,
+            "recall": 0.9866666666666667,
+            "f1": 0.9135802469135802,
+            "fp_elimination": 0.7678571428571429,
+            "utility": 0.5892857142857143,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "IP_ADDRESS": [
+          {
+            "n": 131,
+            "tp": 65,
+            "fp": 1,
+            "tn": 63,
+            "fn": 2,
+            "precision": 0.9848484848484849,
+            "recall": 0.9701492537313433,
+            "f1": 0.9774436090225563,
+            "fp_elimination": 0.984375,
+            "utility": 0.671875,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 131,
+            "tp": 67,
+            "fp": 19,
+            "tn": 45,
+            "fn": 0,
+            "precision": 0.7790697674418605,
+            "recall": 1.0,
+            "f1": 0.8758169934640523,
+            "fp_elimination": 0.703125,
+            "utility": 0.703125,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "NATIONAL_ID": [
+          {
+            "n": 136,
+            "tp": 55,
+            "fp": 5,
+            "tn": 66,
+            "fn": 10,
+            "precision": 0.9166666666666666,
+            "recall": 0.8461538461538461,
+            "f1": 0.88,
+            "fp_elimination": 0.9295774647887324,
+            "utility": -0.4788732394366197,
+            "unsure": 3,
+            "errors": 0
+          },
+          {
+            "n": 136,
+            "tp": 55,
+            "fp": 19,
+            "tn": 52,
+            "fn": 10,
+            "precision": 0.7432432432432432,
+            "recall": 0.8461538461538461,
+            "f1": 0.7913669064748201,
+            "fp_elimination": 0.7323943661971831,
+            "utility": -0.676056338028169,
+            "unsure": 63,
+            "errors": 0
+          }
+        ],
+        "PASSWORD": [
+          {
+            "n": 143,
+            "tp": 60,
+            "fp": 0,
+            "tn": 76,
+            "fn": 7,
+            "precision": 1.0,
+            "recall": 0.8955223880597015,
+            "f1": 0.9448818897637795,
+            "fp_elimination": 1.0,
+            "utility": 0.07894736842105263,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 143,
+            "tp": 66,
+            "fp": 25,
+            "tn": 51,
+            "fn": 1,
+            "precision": 0.7252747252747253,
+            "recall": 0.9850746268656716,
+            "f1": 0.8354430379746836,
+            "fp_elimination": 0.6710526315789473,
+            "utility": 0.5394736842105263,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "PIN": [
+          {
+            "n": 142,
+            "tp": 57,
+            "fp": 1,
+            "tn": 70,
+            "fn": 14,
+            "precision": 0.9827586206896551,
+            "recall": 0.8028169014084507,
+            "f1": 0.8837209302325582,
+            "fp_elimination": 0.9859154929577465,
+            "utility": -0.9859154929577465,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 142,
+            "tp": 60,
+            "fp": 14,
+            "tn": 57,
+            "fn": 11,
+            "precision": 0.8108108108108109,
+            "recall": 0.8450704225352113,
+            "f1": 0.8275862068965517,
+            "fp_elimination": 0.8028169014084507,
+            "utility": -0.7464788732394366,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "SOCIALNUM": [
+          {
+            "n": 126,
+            "tp": 55,
+            "fp": 0,
+            "tn": 66,
+            "fn": 5,
+            "precision": 1.0,
+            "recall": 0.9166666666666666,
+            "f1": 0.9565217391304348,
+            "fp_elimination": 1.0,
+            "utility": 0.24242424242424243,
+            "unsure": 1,
+            "errors": 0
+          },
+          {
+            "n": 126,
+            "tp": 29,
+            "fp": 8,
+            "tn": 58,
+            "fn": 31,
+            "precision": 0.7837837837837838,
+            "recall": 0.48333333333333334,
+            "f1": 0.5979381443298969,
+            "fp_elimination": 0.8787878787878788,
+            "utility": -3.8181818181818183,
+            "unsure": 1,
+            "errors": 0
+          }
+        ],
+        "SOCIAL_SECURITY_NUMBER": [
+          {
+            "n": 126,
+            "tp": 54,
+            "fp": 0,
+            "tn": 66,
+            "fn": 6,
+            "precision": 1.0,
+            "recall": 0.9,
+            "f1": 0.9473684210526315,
+            "fp_elimination": 1.0,
+            "utility": 0.09090909090909091,
+            "unsure": 3,
+            "errors": 0
+          },
+          {
+            "n": 126,
+            "tp": 38,
+            "fp": 8,
+            "tn": 58,
+            "fn": 22,
+            "precision": 0.8260869565217391,
+            "recall": 0.6333333333333333,
+            "f1": 0.7169811320754716,
+            "fp_elimination": 0.8787878787878788,
+            "utility": -2.4545454545454546,
+            "unsure": 8,
+            "errors": 0
+          }
+        ],
+        "SWIFT_BIC": [
+          {
+            "n": 137,
+            "tp": 71,
+            "fp": 0,
+            "tn": 63,
+            "fn": 3,
+            "precision": 1.0,
+            "recall": 0.9594594594594594,
+            "f1": 0.9793103448275862,
+            "fp_elimination": 1.0,
+            "utility": 0.5238095238095238,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 137,
+            "tp": 60,
+            "fp": 9,
+            "tn": 54,
+            "fn": 14,
+            "precision": 0.8695652173913043,
+            "recall": 0.8108108108108109,
+            "f1": 0.8391608391608392,
+            "fp_elimination": 0.8571428571428571,
+            "utility": -1.3650793650793651,
+            "unsure": 0,
+            "errors": 0
+          }
+        ]
+      }
+    },
+    "recall_priority": {
+      "settings": [
+        {
+          "strategy": "checklist",
+          "threshold": 0.975
+        },
+        {
+          "strategy": "per_type",
+          "threshold": 0.999
+        }
+      ],
+      "metrics": [
+        {
+          "n": 2360,
+          "tp": 1194,
+          "fp": 340,
+          "tn": 823,
+          "fn": 3,
+          "precision": 0.7783572359843546,
+          "recall": 0.9974937343358395,
+          "f1": 0.8744049798608569,
+          "fp_elimination": 0.7076526225279449,
+          "utility": 0.6818572656921754,
+          "unsure": 37,
+          "errors": 0
+        },
+        {
+          "n": 2360,
+          "tp": 1196,
+          "fp": 1128,
+          "tn": 35,
+          "fn": 1,
+          "precision": 0.5146299483648882,
+          "recall": 0.9991645781119465,
+          "f1": 0.6793524566884408,
+          "fp_elimination": 0.03009458297506449,
+          "utility": 0.021496130696474634,
+          "unsure": 18,
+          "errors": 2
+        }
+      ],
+      "paired_f1_delta_ci95": [
+        0.1798798035073756,
+        0.20871215906350368
+      ],
+      "by_type": {
+        "ACCOUNT_NUMBER": [
+          {
+            "n": 130,
+            "tp": 69,
+            "fp": 26,
+            "tn": 34,
+            "fn": 1,
+            "precision": 0.7263157894736842,
+            "recall": 0.9857142857142858,
+            "f1": 0.8363636363636363,
+            "fp_elimination": 0.5666666666666667,
+            "utility": 0.4,
+            "unsure": 2,
+            "errors": 0
+          },
+          {
+            "n": 130,
+            "tp": 70,
+            "fp": 60,
+            "tn": 0,
+            "fn": 0,
+            "precision": 0.5384615384615384,
+            "recall": 1.0,
+            "f1": 0.7,
+            "fp_elimination": 0.0,
+            "utility": 0.0,
+            "unsure": 0,
+            "errors": 1
+          }
+        ],
+        "API_KEY": [
+          {
+            "n": 134,
+            "tp": 64,
+            "fp": 27,
+            "tn": 43,
+            "fn": 0,
+            "precision": 0.7032967032967034,
+            "recall": 1.0,
+            "f1": 0.8258064516129032,
+            "fp_elimination": 0.6142857142857143,
+            "utility": 0.6142857142857143,
+            "unsure": 3,
+            "errors": 0
+          },
+          {
+            "n": 134,
+            "tp": 64,
+            "fp": 70,
+            "tn": 0,
+            "fn": 0,
+            "precision": 0.47761194029850745,
+            "recall": 1.0,
+            "f1": 0.6464646464646465,
+            "fp_elimination": 0.0,
+            "utility": 0.0,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "BANK_ROUTING_NUMBER": [
+          {
+            "n": 114,
+            "tp": 60,
+            "fp": 16,
+            "tn": 38,
+            "fn": 0,
+            "precision": 0.7894736842105263,
+            "recall": 1.0,
+            "f1": 0.8823529411764706,
+            "fp_elimination": 0.7037037037037037,
+            "utility": 0.7037037037037037,
+            "unsure": 2,
+            "errors": 0
+          },
+          {
+            "n": 114,
+            "tp": 60,
+            "fp": 54,
+            "tn": 0,
+            "fn": 0,
+            "precision": 0.5263157894736842,
+            "recall": 1.0,
+            "f1": 0.6896551724137931,
+            "fp_elimination": 0.0,
+            "utility": 0.0,
+            "unsure": 1,
+            "errors": 0
+          }
+        ],
+        "CREDIT_CARD": [
+          {
+            "n": 136,
+            "tp": 70,
+            "fp": 13,
+            "tn": 53,
+            "fn": 0,
+            "precision": 0.8433734939759037,
+            "recall": 1.0,
+            "f1": 0.9150326797385621,
+            "fp_elimination": 0.803030303030303,
+            "utility": 0.803030303030303,
+            "unsure": 1,
+            "errors": 0
+          },
+          {
+            "n": 136,
+            "tp": 70,
+            "fp": 66,
+            "tn": 0,
+            "fn": 0,
+            "precision": 0.5147058823529411,
+            "recall": 1.0,
+            "f1": 0.6796116504854369,
+            "fp_elimination": 0.0,
+            "utility": 0.0,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "CREDIT_DEBIT_CARD": [
+          {
+            "n": 136,
+            "tp": 70,
+            "fp": 23,
+            "tn": 43,
+            "fn": 0,
+            "precision": 0.7526881720430108,
+            "recall": 1.0,
+            "f1": 0.8588957055214724,
+            "fp_elimination": 0.6515151515151515,
+            "utility": 0.6515151515151515,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 136,
+            "tp": 70,
+            "fp": 64,
+            "tn": 2,
+            "fn": 0,
+            "precision": 0.5223880597014925,
+            "recall": 1.0,
+            "f1": 0.6862745098039216,
+            "fp_elimination": 0.030303030303030304,
+            "utility": 0.030303030303030304,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "CVV": [
+          {
+            "n": 130,
+            "tp": 63,
+            "fp": 23,
+            "tn": 44,
+            "fn": 0,
+            "precision": 0.7325581395348837,
+            "recall": 1.0,
+            "f1": 0.8456375838926175,
+            "fp_elimination": 0.6567164179104478,
+            "utility": 0.6567164179104478,
+            "unsure": 1,
+            "errors": 0
+          },
+          {
+            "n": 130,
+            "tp": 63,
+            "fp": 66,
+            "tn": 1,
+            "fn": 0,
+            "precision": 0.4883720930232558,
+            "recall": 1.0,
+            "f1": 0.65625,
+            "fp_elimination": 0.014925373134328358,
+            "utility": 0.014925373134328358,
+            "unsure": 1,
+            "errors": 0
+          }
+        ],
+        "DRIVER_LICENSE_NUMBER": [
+          {
+            "n": 136,
+            "tp": 63,
+            "fp": 22,
+            "tn": 51,
+            "fn": 0,
+            "precision": 0.7411764705882353,
+            "recall": 1.0,
+            "f1": 0.8513513513513513,
+            "fp_elimination": 0.6986301369863014,
+            "utility": 0.6986301369863014,
+            "unsure": 6,
+            "errors": 0
+          },
+          {
+            "n": 136,
+            "tp": 63,
+            "fp": 73,
+            "tn": 0,
+            "fn": 0,
+            "precision": 0.4632352941176471,
+            "recall": 1.0,
+            "f1": 0.6331658291457286,
+            "fp_elimination": 0.0,
+            "utility": 0.0,
+            "unsure": 1,
+            "errors": 0
+          }
+        ],
+        "IBAN": [
+          {
+            "n": 121,
+            "tp": 65,
+            "fp": 17,
+            "tn": 38,
+            "fn": 1,
+            "precision": 0.7926829268292683,
+            "recall": 0.9848484848484849,
+            "f1": 0.8783783783783784,
+            "fp_elimination": 0.6909090909090909,
+            "utility": 0.509090909090909,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 121,
+            "tp": 66,
+            "fp": 54,
+            "tn": 1,
+            "fn": 0,
+            "precision": 0.55,
+            "recall": 1.0,
+            "f1": 0.7096774193548387,
+            "fp_elimination": 0.01818181818181818,
+            "utility": 0.01818181818181818,
+            "unsure": 0,
+            "errors": 1
+          }
+        ],
+        "IBAN_CODE": [
+          {
+            "n": 121,
+            "tp": 65,
+            "fp": 19,
+            "tn": 36,
+            "fn": 1,
+            "precision": 0.7738095238095238,
+            "recall": 0.9848484848484849,
+            "f1": 0.8666666666666667,
+            "fp_elimination": 0.6545454545454545,
+            "utility": 0.4727272727272727,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 121,
+            "tp": 66,
+            "fp": 54,
+            "tn": 1,
+            "fn": 0,
+            "precision": 0.55,
+            "recall": 1.0,
+            "f1": 0.7096774193548387,
+            "fp_elimination": 0.01818181818181818,
+            "utility": 0.01818181818181818,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "IPV4": [
+          {
+            "n": 130,
+            "tp": 66,
+            "fp": 0,
+            "tn": 64,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "fp_elimination": 1.0,
+            "utility": 1.0,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 130,
+            "tp": 66,
+            "fp": 52,
+            "tn": 12,
+            "fn": 0,
+            "precision": 0.559322033898305,
+            "recall": 1.0,
+            "f1": 0.717391304347826,
+            "fp_elimination": 0.1875,
+            "utility": 0.1875,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "IPV6": [
+          {
+            "n": 131,
+            "tp": 75,
+            "fp": 0,
+            "tn": 56,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "fp_elimination": 1.0,
+            "utility": 1.0,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 131,
+            "tp": 75,
+            "fp": 55,
+            "tn": 1,
+            "fn": 0,
+            "precision": 0.5769230769230769,
+            "recall": 1.0,
+            "f1": 0.7317073170731707,
+            "fp_elimination": 0.017857142857142856,
+            "utility": 0.017857142857142856,
+            "unsure": 1,
+            "errors": 0
+          }
+        ],
+        "IP_ADDRESS": [
+          {
+            "n": 131,
+            "tp": 67,
+            "fp": 2,
+            "tn": 62,
+            "fn": 0,
+            "precision": 0.9710144927536232,
+            "recall": 1.0,
+            "f1": 0.9852941176470589,
+            "fp_elimination": 0.96875,
+            "utility": 0.96875,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 131,
+            "tp": 67,
+            "fp": 62,
+            "tn": 2,
+            "fn": 0,
+            "precision": 0.5193798449612403,
+            "recall": 1.0,
+            "f1": 0.6836734693877551,
+            "fp_elimination": 0.03125,
+            "utility": 0.03125,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "NATIONAL_ID": [
+          {
+            "n": 136,
+            "tp": 65,
+            "fp": 22,
+            "tn": 49,
+            "fn": 0,
+            "precision": 0.7471264367816092,
+            "recall": 1.0,
+            "f1": 0.8552631578947368,
+            "fp_elimination": 0.6901408450704225,
+            "utility": 0.6901408450704225,
+            "unsure": 5,
+            "errors": 0
+          },
+          {
+            "n": 136,
+            "tp": 65,
+            "fp": 71,
+            "tn": 0,
+            "fn": 0,
+            "precision": 0.47794117647058826,
+            "recall": 1.0,
+            "f1": 0.6467661691542289,
+            "fp_elimination": 0.0,
+            "utility": 0.0,
+            "unsure": 4,
+            "errors": 0
+          }
+        ],
+        "PASSWORD": [
+          {
+            "n": 143,
+            "tp": 67,
+            "fp": 25,
+            "tn": 51,
+            "fn": 0,
+            "precision": 0.7282608695652174,
+            "recall": 1.0,
+            "f1": 0.8427672955974843,
+            "fp_elimination": 0.6710526315789473,
+            "utility": 0.6710526315789473,
+            "unsure": 3,
+            "errors": 0
+          },
+          {
+            "n": 143,
+            "tp": 67,
+            "fp": 69,
+            "tn": 7,
+            "fn": 0,
+            "precision": 0.49264705882352944,
+            "recall": 1.0,
+            "f1": 0.6600985221674877,
+            "fp_elimination": 0.09210526315789473,
+            "utility": 0.09210526315789473,
+            "unsure": 0,
+            "errors": 0
+          }
+        ],
+        "PIN": [
+          {
+            "n": 142,
+            "tp": 71,
+            "fp": 30,
+            "tn": 41,
+            "fn": 0,
+            "precision": 0.7029702970297029,
+            "recall": 1.0,
+            "f1": 0.8255813953488372,
+            "fp_elimination": 0.5774647887323944,
+            "utility": 0.5774647887323944,
+            "unsure": 4,
+            "errors": 0
+          },
+          {
+            "n": 142,
+            "tp": 71,
+            "fp": 65,
+            "tn": 6,
+            "fn": 0,
+            "precision": 0.5220588235294118,
+            "recall": 1.0,
+            "f1": 0.6859903381642513,
+            "fp_elimination": 0.08450704225352113,
+            "utility": 0.08450704225352113,
+            "unsure": 1,
+            "errors": 0
+          }
+        ],
+        "SOCIALNUM": [
+          {
+            "n": 126,
+            "tp": 60,
+            "fp": 30,
+            "tn": 36,
+            "fn": 0,
+            "precision": 0.6666666666666666,
+            "recall": 1.0,
+            "f1": 0.8,
+            "fp_elimination": 0.5454545454545454,
+            "utility": 0.5454545454545454,
+            "unsure": 5,
+            "errors": 0
+          },
+          {
+            "n": 126,
+            "tp": 60,
+            "fp": 66,
+            "tn": 0,
+            "fn": 0,
+            "precision": 0.47619047619047616,
+            "recall": 1.0,
+            "f1": 0.6451612903225806,
+            "fp_elimination": 0.0,
+            "utility": 0.0,
+            "unsure": 5,
+            "errors": 0
+          }
+        ],
+        "SOCIAL_SECURITY_NUMBER": [
+          {
+            "n": 126,
+            "tp": 60,
+            "fp": 28,
+            "tn": 38,
+            "fn": 0,
+            "precision": 0.6818181818181818,
+            "recall": 1.0,
+            "f1": 0.8108108108108109,
+            "fp_elimination": 0.5757575757575758,
+            "utility": 0.5757575757575758,
+            "unsure": 5,
+            "errors": 0
+          },
+          {
+            "n": 126,
+            "tp": 60,
+            "fp": 65,
+            "tn": 1,
+            "fn": 0,
+            "precision": 0.48,
+            "recall": 1.0,
+            "f1": 0.6486486486486487,
+            "fp_elimination": 0.015151515151515152,
+            "utility": 0.015151515151515152,
+            "unsure": 4,
+            "errors": 0
+          }
+        ],
+        "SWIFT_BIC": [
+          {
+            "n": 137,
+            "tp": 74,
+            "fp": 17,
+            "tn": 46,
+            "fn": 0,
+            "precision": 0.8131868131868132,
+            "recall": 1.0,
+            "f1": 0.896969696969697,
+            "fp_elimination": 0.7301587301587301,
+            "utility": 0.7301587301587301,
+            "unsure": 0,
+            "errors": 0
+          },
+          {
+            "n": 137,
+            "tp": 73,
+            "fp": 62,
+            "tn": 1,
+            "fn": 1,
+            "precision": 0.5407407407407407,
+            "recall": 0.9864864864864865,
+            "f1": 0.6985645933014354,
+            "fp_elimination": 0.015873015873015872,
+            "utility": -0.14285714285714285,
+            "unsure": 0,
+            "errors": 0
+          }
+        ]
+      }
+    }
+  }
+}

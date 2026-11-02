@@ -355,8 +355,10 @@
       "modelNotLoaded": "not loaded",
       "modelFamilyWarning": "This model is not a quantization of {{family}}: token chunking would no longer be reliable.",
       "judgeModel": "Judge model",
-      "judgeModelPlaceholder": "None — reuse the detection model",
-      "judgeModelHint": "Model the LLM judge prompts to rule on detections. Any chat model works: the judge does not depend on the detector's tokenizer. Empty = the detection model above is reused.",
+      "judgeModelPlaceholder": "Default: qwen3.8-flash-next-iq3_s",
+      "judgeModelHint": "Model used by the LLM judge on the configured judge server (Strata for DGNSI). Empty = Qwen 3.8 Next Flash by default.",
+      "judgeModelListError": "Judge model list unavailable ({{error}}). Type the model identifier by hand.",
+      "judgeModelNotListed": "not listed by the judge server",
       "judgeModelRefresh": "Reload the judge model list"
     },
     "detectors": {
@@ -1171,7 +1173,7 @@
       "scope": "Scope",
       "model": "Judge model",
       "modelLoading": "Loading models…",
-      "modelPlaceholder": "LM Studio model identifier",
+      "modelPlaceholder": "Judge model identifier",
       "notLoaded": "not loaded",
       "apply": "Applying verdicts",
       "propose": "Propose for review",

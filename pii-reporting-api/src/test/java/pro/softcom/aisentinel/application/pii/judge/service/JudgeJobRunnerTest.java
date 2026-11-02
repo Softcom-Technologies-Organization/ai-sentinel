@@ -21,6 +21,7 @@ import pro.softcom.aisentinel.domain.pii.detection.PiiDetectionConfig;
 import pro.softcom.aisentinel.domain.pii.judge.FindingJudgeAnswer;
 import pro.softcom.aisentinel.domain.pii.judge.FindingJudgeRequest;
 import pro.softcom.aisentinel.domain.pii.judge.JudgeApplyMode;
+import pro.softcom.aisentinel.domain.pii.judge.JudgeEndpoint;
 import pro.softcom.aisentinel.domain.pii.judge.JudgeJob;
 import pro.softcom.aisentinel.domain.pii.judge.JudgeJobStatus;
 import pro.softcom.aisentinel.domain.pii.judge.JudgeVerdict;
@@ -83,7 +84,7 @@ class JudgeJobRunnerTest {
     void setUp() {
         runner = new JudgeJobRunner(scanResultQuery, findingResolver, findingRemediationStore, judgeJobStore,
                 piiDetectorClient, detectionConfigRepository, publishRemediationEventPort,
-                Clock.fixed(NOW, ZoneOffset.UTC));
+                Clock.fixed(NOW, ZoneOffset.UTC), new JudgeEndpoint(null, null));
         iban = finding("IBAN", "CH93 0076 2011 6238 5295 7", "fp-iban");
         email = finding("EMAIL", "a@b.ch", "fp-email");
         lenient().when(detectionConfigRepository.findConfig()).thenReturn(config());
@@ -221,6 +222,23 @@ class JudgeJobRunnerTest {
             softly.assertThat(request.lmStudioHost()).isEqualTo("localhost");
             softly.assertThat(request.lmStudioPort()).isEqualTo(1234);
         });
+    }
+
+    @Test
+    void Should_SendJudgeEndpointAndRequestedModel_When_StrataConfigured() {
+        runner = new JudgeJobRunner(scanResultQuery, findingResolver, findingRemediationStore, judgeJobStore,
+                piiDetectorClient, detectionConfigRepository, publishRemediationEventPort,
+                Clock.fixed(NOW, ZoneOffset.UTC), new JudgeEndpoint("strata", 8081));
+        when(findingResolver.resolve(any())).thenReturn(new Resolution(List.of(iban), 0));
+        when(piiDetectorClient.judgeFinding(any())).thenReturn(answer("TRUE_POSITIVE", 0.99));
+
+        runner.run(job(JudgeApplyMode.PROPOSE), SCAN_ID, Set.of(iban.findingId()));
+
+        ArgumentCaptor<FindingJudgeRequest> captor = ArgumentCaptor.forClass(FindingJudgeRequest.class);
+        verify(piiDetectorClient).judgeFinding(captor.capture());
+        assertThat(captor.getValue().lmStudioHost()).isEqualTo("strata");
+        assertThat(captor.getValue().lmStudioPort()).isEqualTo(8081);
+        assertThat(captor.getValue().model()).isEqualTo("judge@q8");
     }
 
     private List<FindingRemediation> upsertedRows() {

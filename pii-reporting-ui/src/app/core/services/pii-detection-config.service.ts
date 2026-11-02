@@ -47,8 +47,7 @@ export class PiiDetectionConfigService {
   }
 
   /**
-   * List the models available on the given LM Studio endpoint: the Ministral-PII family for
-   * detection, or every chat model when the LLM judge picker asks (allModels).
+   * List detection models, or judge models from the separately configured endpoint (allModels).
    */
   listLmStudioModels(host: string, port: number, allModels = false): Observable<LmStudioModelListing> {
     return this.http.get<LmStudioModelListing>(`${this.lmStudioApiUrl}/models`, {

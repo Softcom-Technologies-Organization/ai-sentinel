@@ -181,10 +181,6 @@ services:
         echo "[infisical-config] ================================================";
         echo "";
         
-        # Install required tools
-        echo "[infisical-config] Installing curl and jq...";
-        apk add --no-cache curl jq > /dev/null 2>&1 || { echo "[ERROR] Failed to install dependencies"; exit 1; };
-        
         INFISICAL_URL="http://infisical:8080";
         ADMIN_EMAIL="admin@ai-sentinel.local";
         ORG_NAME="AI Sentinel";
@@ -200,6 +196,9 @@ services:
           exit 0;
         fi;
         
+        echo "[infisical-config] Installing curl and jq...";
+        apk add --no-cache curl jq > /dev/null 2>&1 || { echo "[ERROR] Failed to install dependencies"; exit 1; };
+
         echo "[infisical-config] Waiting for Infisical API to be ready...";
         max_retries=30;
         retry=0;
@@ -557,7 +556,7 @@ services:
   # PII DETECTOR SERVICE (Python/gRPC) - PRE-BUILT IMAGE
   # ============================================================================
   pii-detector:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-pii-detector:v1.2.0-rc.1
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-pii-detector:v1.2.0-rc.2-strata-qwen
     container_name: pii-detector-service
     restart: unless-stopped
     
@@ -609,7 +608,7 @@ services:
       infisical:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "python -c 'import grpc; channel = grpc.insecure_channel(\"localhost:50051\"); channel.close()'"]
+      test: ["CMD-SHELL", "python -c 'import grpc; channel = grpc.insecure_channel(\"localhost:50051\"); grpc.channel_ready_future(channel).result(timeout=5); channel.close()'"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -621,7 +620,7 @@ services:
   # PII REPORTING API (Spring Boot) - PRE-BUILT IMAGE
   # ============================================================================
   pii-reporting-api:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-api:v1.2.0-rc.1
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-api:v1.2.0-rc.2-strata-qwen
     container_name: pii-reporting-api
     restart: unless-stopped
     ports:
@@ -643,6 +642,7 @@ services:
       PII_DETECTOR_CLIENT: armeria
       PII_DETECTOR_HOST: pii-detector
       PII_DETECTOR_PORT: 50051
+      PII_REPORTING_ALLOW_SECRET_REVEAL: ${PII_REPORTING_ALLOW_SECRET_REVEAL:-false}
       # Number of Confluence pages in flight at once (attachment download, text
       # extraction and detection). Detection itself is bounded by the detector's
       # PII_WORKER_PROCESSES, so keep this at 2-3x that value: the extra pages
@@ -676,7 +676,7 @@ services:
   # PII REPORTING UI (Angular + Nginx) - PRE-BUILT IMAGE
   # ============================================================================
   pii-reporting-ui:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-ui:v1.2.0-rc.1
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-ui:v1.2.0-rc.2-strata-qwen
     container_name: pii-reporting-ui
     restart: unless-stopped
     ports:

@@ -1,0 +1,11 @@
+TYPE = CREDIT_CARD (Carte de credit) : le numero principal de la carte, le PAN, celui qui est imprime sur le recto.
+FORMAT : ISO/IEC 7812, de huit a dix-neuf chiffres ouverts par un prefixe d'emetteur, les espaces et les tirets qui groupent les chiffres etant ignores. Spec internationale stable : une suite de deux a sept chiffres, une suite de vingt et un chiffres ou plus, ou une suite qui melange des lettres, une virgule, un point decimal ou un symbole monetaire violent le format. Ne verifie jamais la cle de controle toi-meme. Un PAN est fait de chiffres : une expression en toutes lettres qui nomme la carte ou son numero, en francais comme en anglais, placee apres une preposition ou en etiquette devant un deux-points, est le nom du champ et non son contenu, donc le motif PAS UNE VALEUR. C'est ici l'erreur la plus frequente.
+TYPES CONCURRENTS A NOMMER : le motif TYPE CONCURRENT ne vaut que si le contexte NOMME le type rival dans les mots qui entourent la value ; sans cette mention, reponds UNSURE et jamais FALSE_POSITIVE. Les cas ci-dessous qui relevent des motifs VIOLATION DE FORMAT ou PAS UNE VALEUR gardent leur propre motif et n'ont pas besoin de cette mention.
+- un IBAN, ou un numero de compte national ecrit sans prefixe de pays ;
+- un code d'acheminement bancaire, un code de banque ou un code guichet ;
+- le cryptogramme de verification de la carte, qui releve d'un type distinct ;
+- le code confidentiel de la carte ;
+- un identifiant de client, d'adherent, de contrat ou d'abonnement ;
+- un numero de suivi de colis, de commande, de facture ou de bon de livraison ;
+- un montant, une date, un numero de serie ou un identifiant d'artefact de build.
+CE QUI RESTE TRUE_POSITIVE : un numero de test ou d'exemple publie par un prestataire de paiement ; un numero de carte de debit, qui reste un numero de carte ; un numero ecrit par blocs ou d'un seul tenant ; un numero rattache a un compte d'entreprise, le motif PAS UNE PERSONNE ne s'appliquant pas a un numero ; et surtout un numero nu, sans nom de porteur, sans date d'expiration et sans le moindre mot-cle autour, qui reste TRUE_POSITIVE. Seule une valeur deja masquee, reduite a ses derniers chiffres derriere des etoiles ou des X, ou un gabarit de documentation, retombe sous le motif PAS UNE VALEUR.

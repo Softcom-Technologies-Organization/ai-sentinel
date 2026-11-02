@@ -26,7 +26,7 @@ COPY pii-detector-service/config ./config
 COPY proto /proto
 
 RUN pip install --upgrade pip \
-    && pip install --pre -e . --extra-index-url https://download.pytorch.org/whl/cpu \
+    && pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu \
     && python -m pii_detector.proto.generate_pb
 
 FROM python:3.11-slim AS runtime
@@ -39,10 +39,11 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 # Install Infisical CLI
 RUN apt-get update \
     && apt-get install --no-install-recommends -y bash ca-certificates curl \
-    && curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | bash \
+    && curl -fsSL 'https://artifacts-cli.infisical.com/setup.deb.sh' -o /tmp/infisical-setup.sh \
+    && bash /tmp/infisical-setup.sh \
     && apt-get update \
     && apt-get install -y infisical \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* /tmp/infisical-setup.sh
 
 WORKDIR /app
 

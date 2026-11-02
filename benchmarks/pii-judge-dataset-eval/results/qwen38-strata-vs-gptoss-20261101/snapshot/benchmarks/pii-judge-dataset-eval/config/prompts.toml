@@ -1,0 +1,92 @@
+# =============================================================================
+# prompts.toml — which prompt a finding is judged with
+# =============================================================================
+# A strategy answers one question: given a finding of type T, what system prompt
+# does the judge receive? Every prompt body lives in a plain Markdown file under
+# prompts/ and is read verbatim — editing a prompt never means editing Python.
+#
+# Keys
+#   label         shown in the report
+#   system        the trunk, relative to prompts/
+#   bodies        optional directory of per-type bodies, relative to prompts/.
+#                 A finding of type T gets <bodies>/<T>.md, or <bodies>/_default.md
+#                 when that file does not exist, or nothing when neither does
+#   insert_before the body is spliced into the trunk at the paragraph starting
+#                 with this text. Keeping the anchor here rather than as a marker
+#                 inside the file is what lets prompts/general/production-v2.md
+#                 stay byte-identical to the production constant, which
+#                 self_test.py asserts on every run
+#   types         optional whitelist: only these types get a specific body, the
+#                 rest fall back exactly as if their file were missing. This is
+#                 the "specific prompt for some types, general for the others"
+#                 mode, and the ablation that measures what a missing body costs
+#
+# Add a strategy by adding a section. Nothing else has to change.
+#
+#   python run_judges.py --judge gpt-oss-120b --strategy per_type
+#
+# Caveat carried into the report: OpenJev takes no system prompt. It scores the
+# three verdict options directly, so the strategy axis does not apply to it and
+# its row is identical under every strategy.
+# =============================================================================
+
+schema_version = "1"
+default = "general"
+
+# The production baseline: the exact prompt pii-detector-service sends today.
+# Every other strategy is measured against this one.
+[strategies.general]
+label  = "Générique (prompt de production)"
+system = "general/production-v2.md"
+
+# Same trunk, plus a body written for the judged type: its format spec, the
+# neighbouring types it gets confused with, and what must stay TRUE_POSITIVE.
+[strategies.per_type]
+label         = "Un corps par type de PII"
+system        = "general/production-v2.md"
+bodies        = "per-type"
+insert_before = "GARDE-FOUS SUR LES MOTIFS"
+
+# Ablation: only the financial types get their body, everything else falls back
+# to the neutral one. Measures what a MISSING body costs, which is the real
+# question for the enabled types no dataset covers (TAX_ID, LICENSE_PLATE…).
+[strategies.per_type_financial_only]
+label         = "Corps par type, financiers seulement (ablation)"
+system        = "general/production-v2.md"
+bodies        = "per-type"
+insert_before = "GARDE-FOUS SUR LES MOTIFS"
+types         = [
+    "CREDIT_DEBIT_CARD", "CREDIT_CARD", "CVV", "PIN",
+    "ACCOUNT_NUMBER", "BANK_ROUTING_NUMBER", "IBAN", "IBAN_CODE", "SWIFT_BIC",
+]
+
+# Three alternative trunks, each one replacing the production prompt entirely.
+# They isolate a different lever than the per-type bodies do — how the SAME
+# instructions are shaped — so a campaign can attribute a gain to the trunk or to
+# the type-specific content, never to both at once.
+#
+# Each one carries a paragraph opening with "SORTIE :", which is the anchor that
+# lets it be combined with the per-type bodies. Doing so takes four lines:
+#
+#   [strategies.concise_per_type]
+#   label         = "Tronc court + corps par type"
+#   system        = "strategies/concise.md"
+#   bodies        = "per-type"
+#   insert_before = "SORTIE :"
+
+# Is the long guardrail section of the production trunk earning its tokens, or
+# drowning the instruction?
+[strategies.concise]
+label  = "Tronc court"
+system = "strategies/concise.md"
+
+# Does spelling out the ORDER of the reasoning change the verdicts?
+[strategies.checklist]
+label  = "Checklist ordonnée avant conclusion"
+system = "strategies/checklist.md"
+
+# Six worked examples, one per failure mode. Invented, Swiss-flavoured, and
+# never drawn from the dataset — self_test.py fails on a verbatim match.
+[strategies.few_shot]
+label  = "Tronc de production + six exemples résolus"
+system = "strategies/few-shot.md"

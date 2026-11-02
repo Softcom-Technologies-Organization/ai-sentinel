@@ -109,8 +109,10 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
   });
   private benchPollSubscription: Subscription | null = null;
 
-  // LM Studio model pickers, fed by the detector service's view of LM Studio
   lmStudioModels = signal<LmStudioModel[]>([]);
+  judgeModels = signal<LmStudioModel[]>([]);
+  judgeModelsError = signal<string | null>(null);
+  judgeModelsLoading = signal(false);
   lmStudioModelFamily = signal('');
   lmStudioModelsError = signal<string | null>(null);
   lmStudioModelsLoading = signal(false);
@@ -123,7 +125,7 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
     return this.lmStudioModels().filter((model) => model.id.toLowerCase().startsWith(family));
   });
   lmStudioModelsAvailable = computed(() => this.lmStudioFamilyModels().length > 0);
-  lmStudioJudgeModelsAvailable = computed(() => this.lmStudioModels().length > 0);
+  lmStudioJudgeModelsAvailable = computed(() => this.judgeModels().length > 0);
 
   // Collapsible detector groups in PII types section
   collapsedDetectors = signal<Set<string>>(new Set());
@@ -918,15 +920,10 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
     this.activeSection.set(section);
     if (section === 'lm_studio') {
       this.loadLmStudioModels();
+      this.loadJudgeModels();
     }
   }
 
-  /**
-   * Ask the detector service which models LM Studio has on disk, for the host and port currently
-   * typed in the form. The whole catalogue is fetched once and feeds both pickers: the judge
-   * accepts any of them, the detector only the family. On failure the pickers fall back to a
-   * free-text field so the operator is never blocked.
-   */
   loadLmStudioModels(): void {
     const host = this.configForm.get('lmStudioHost')?.value;
     const port = this.configForm.get('lmStudioPort')?.value;
@@ -934,7 +931,7 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
       return;
     }
     this.lmStudioModelsLoading.set(true);
-    this.configService.listLmStudioModels(host, port, true).subscribe({
+    this.configService.listLmStudioModels(host, port).subscribe({
       next: (listing) => {
         this.lmStudioModels.set(listing.models ?? []);
         this.lmStudioModelFamily.set(listing.family ?? '');
@@ -950,6 +947,24 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
     });
   }
 
+  loadJudgeModels(): void {
+    const host = this.configForm.get('lmStudioHost')?.value;
+    const port = this.configForm.get('lmStudioPort')?.value;
+    this.judgeModelsLoading.set(true);
+    this.configService.listLmStudioModels(host, port, true).subscribe({
+      next: (listing) => {
+        this.judgeModels.set(listing.models ?? []);
+        this.judgeModelsError.set(listing.error || null);
+        this.judgeModelsLoading.set(false);
+      },
+      error: (err) => {
+        this.judgeModels.set([]);
+        this.judgeModelsError.set(err.error?.message || err.message || 'Unknown error');
+        this.judgeModelsLoading.set(false);
+      }
+    });
+  }
+
   /**
    * Options of the detection model picker: the family quantizations LM Studio lists, plus the
    * stored value when LM Studio no longer has it, so the current setting stays visible.
@@ -958,9 +973,8 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
     return this.toModelOptions(this.lmStudioFamilyModels(), 'lmStudioModel');
   }
 
-  /** Same picker for the LLM judge, over every model LM Studio serves. */
   lmStudioJudgeModelOptions(): {label: string; value: string}[] {
-    return this.toModelOptions(this.lmStudioModels(), 'lmStudioJudgeModel');
+    return this.toModelOptions(this.judgeModels(), 'lmStudioJudgeModel');
   }
 
   private toModelOptions(models: LmStudioModel[], controlName: string): {label: string; value: string}[] {
@@ -973,7 +987,8 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
     if (current && !options.some((option) => option.value === current)) {
       options.unshift({
         value: current,
-        label: `${current} · ` + this.translocoService.translate('settings.lmStudio.modelNotListed')
+        label: `${current} · ` + this.translocoService.translate(controlName === 'lmStudioJudgeModel'
+          ? 'settings.lmStudio.judgeModelNotListed' : 'settings.lmStudio.modelNotListed')
       });
     }
     return options;

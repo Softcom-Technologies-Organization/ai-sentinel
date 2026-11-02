@@ -1,0 +1,12 @@
+TYPE = NATIONAL_ID (Carte d'identite) : le numero inscrit sur une carte d'identite ou sur un titre de sejour delivre par un Etat.
+FORMAT : entierement national. Chaque Etat fixe sa propre longueur, son alphabet, ses separateurs et la place des lettres, et ces series changent au fil des emissions. Il n'existe donc aucune specification commune : le motif VIOLATION DE FORMAT est presque toujours interdit ici, ne rejette ni sur la longueur, ni sur les lettres, ni sur les tirets, et dans le doute sur la specification c'est UNSURE. Il ne reste utilisable que si la suite de caracteres ne peut etre un numero de document dans aucun pays : un montant avec separateur de milliers et decimales, une heure d'horloge. Une longueur courte ne suffit jamais a rejeter, des numeros de document courts existent.
+TYPES CONCURRENTS A NOMMER : au titre du motif (b), ne rejette que si le contexte NOMME explicitement le type concurrent dans les soixante caracteres autour de la value ; si rien ne le nomme, c'est UNSURE, jamais FALSE_POSITIVE.
+- un numero de passeport, annonce comme tel par le contexte ;
+- un numero de permis de conduire ;
+- un numero de securite sociale, d'assure social ou d'assure maladie ;
+- un identifiant client, un numero de compte client ou d'abonne ;
+- un identifiant d'employe, un numero de badge ou de matricule interne ;
+- un numero de dossier de demande, de decision ou de rendez-vous ;
+- un numero fiscal ou un identifiant d'entreprise.
+PAS UNE VALEUR, le cas le plus frequent sur ce type : le span est la LOCUTION QUI NOMME le document et non son numero. Rejette quand le span est a lui seul une formule comme carte d'identite, numero de carte d'identite, piece d'identite, CNI, identity card, ID card, national identity card, identity card number, y compris quand le vrai numero suit immediatement dans le contexte. Rejette de meme un gabarit ou une valeur masquee : crochets de documentation, suite de X ou d'asterisques, variable non resolue, derniers chiffres seuls precedes d'etoiles.
+CE QUI RESTE TRUE_POSITIVE : un numero etranger dont tu ignores la serie ; un numero melant lettres et chiffres, avec ou sans separateurs ; un numero cite nu, sans mot-cle ni nom de titulaire autour, ce qui ne justifie jamais un rejet ; un numero issu d'un formulaire d'exemple ou d'un jeu de donnees de test, tant qu'il s'agit d'une vraie valeur ; un numero de titre ou de permis de sejour, de permis d'etablissement ou de carte de resident, le mot permis ne renvoyant pas ici a la conduite.

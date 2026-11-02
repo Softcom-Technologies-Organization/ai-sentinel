@@ -1,4 +1,4 @@
-package pro.softcom.aisentinel.infrastructure.pii.detection.adapter.out;
+package pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -13,6 +13,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -20,9 +22,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
 import pii_detection.PIIDetectionServiceGrpc;
 import pii_detection.PiiDetection;
+import pro.softcom.aisentinel.domain.pii.judge.FindingJudgeAnswer;
+import pro.softcom.aisentinel.domain.pii.judge.FindingJudgeRequest;
+import pro.softcom.aisentinel.domain.pii.judge.JudgeVerdict;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
 import pro.softcom.aisentinel.domain.pii.scan.DetectorHealth;
-import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.GrpcPiiDetectorArmeriaClientAdapter;
 import pro.softcom.aisentinel.infrastructure.pii.scan.adapter.out.config.PiiDetectorConfig;
 
 import java.time.Duration;
@@ -30,6 +34,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -77,6 +82,47 @@ class GrpcPiiDetectorArmeriaClientAdapterTest {
         adapterLogger.detachAppender(logAppender);
         logAppender.stop();
         meterRegistry.close();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"0.0,UNSURE", "0.949,UNSURE", "0.95,FALSE_POSITIVE", "0.99,FALSE_POSITIVE", "1.0,FALSE_POSITIVE"})
+    void Should_PreserveDecimalConfidence_When_JudgeResponseCrossesGrpc(double confidence, JudgeVerdict expected) {
+        when(stub.withDeadlineAfter(anyLong(), any())).thenReturn(stub);
+        when(stub.judgeFinding(any())).thenReturn(PiiDetection.JudgeFindingResponse.newBuilder()
+                .setVerdict("FALSE_POSITIVE").setConfidence((float) confidence).build());
+        var adapter = new GrpcPiiDetectorArmeriaClientAdapter(config, stub, meterRegistry);
+
+        FindingJudgeAnswer answer = adapter.judgeFinding(new FindingJudgeRequest(
+                "PASSWORD", "Password", "1234", "password=1234", "qwen", "strata", 8081));
+
+        assertThat(answer.confidence()).isEqualTo(confidence);
+        assertThat(answer.verdictHonoring(0.95)).contains(expected);
+    }
+
+    @Test
+    void Should_KeepFindingAndDefaultOptionalFields_When_JudgeReturnsError() {
+        when(stub.withDeadlineAfter(anyLong(), any())).thenReturn(stub);
+        when(stub.judgeFinding(any())).thenReturn(PiiDetection.JudgeFindingResponse.newBuilder()
+                .setVerdict("ERROR").setError("unreachable").build());
+        var adapter = new GrpcPiiDetectorArmeriaClientAdapter(config, stub, meterRegistry);
+
+        FindingJudgeAnswer answer = adapter.judgeFinding(new FindingJudgeRequest(
+                null, null, null, null, null, null, null));
+
+        assertThat(answer.verdictHonoring(0.95)).isEmpty();
+        assertThat(answer.error()).isEqualTo("unreachable");
+        verify(stub).judgeFinding(PiiDetection.JudgeFindingRequest.getDefaultInstance());
+    }
+
+    @Test
+    void Should_ReportFailure_When_JudgeRpcFails() {
+        when(stub.withDeadlineAfter(anyLong(), any())).thenReturn(stub);
+        when(stub.judgeFinding(any())).thenThrow(new IllegalStateException("unavailable"));
+        var adapter = new GrpcPiiDetectorArmeriaClientAdapter(config, stub, meterRegistry);
+        var request = new FindingJudgeRequest("PASSWORD", "Password", "1234", "password=1234",
+                "qwen", "strata", 8081);
+
+        assertThatThrownBy(() -> adapter.judgeFinding(request)).isInstanceOf(PiiDetectionException.class);
     }
 
     @Test

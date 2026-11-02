@@ -30,7 +30,7 @@ class TestJudgeFinding:
     def test_Should_PostToOverriddenEndpointWithModel_When_Given(self):
         calls = []
 
-        def post(url, json):
+        def post(url, json, headers):
             calls.append((url, json))
             return _completion({"reason": "ok", "confidence": 0.97, "verdict": "TRUE_POSITIVE"})
 
@@ -45,20 +45,20 @@ class TestJudgeFinding:
         assert "contexte   : mail >>>a@b.ch<<<" in payload["messages"][1]["content"]
         assert answer == {"verdict": "TRUE_POSITIVE", "confidence": 0.97, "reason": "ok", "error": ""}
 
-    def test_Should_FallBackToDetectorModel_When_NoModelGiven(self):
+    def test_Should_FallBackToQwenJudge_When_NoModelGiven(self):
         calls = []
 
-        def post(url, json):
+        def post(url, json, headers):
             calls.append(json)
             return _completion({"reason": "ok", "confidence": 0.5, "verdict": "UNSURE"})
 
         detector = _detector(post)
         detector.judge_finding("EMAIL", "Email", "a@b.ch", "ctx")
 
-        assert calls[0]["model"] == detector.model_id
+        assert calls[0]["model"] == "qwen3.8-flash-next-iq3_s"
 
     def test_Should_ReturnErrorVerdict_When_EndpointUnreachable(self):
-        def post(url, json):
+        def post(url, json, headers):
             raise httpx.ConnectError("connection refused")
 
         answer = _detector(post).judge_finding("EMAIL", "Email", "a@b.ch", "ctx")
@@ -71,7 +71,19 @@ class TestJudgeFinding:
         response.raise_for_status = MagicMock()
         response.json = MagicMock(return_value={"error": "model not loaded"})
 
-        answer = _detector(lambda url, json: response).judge_finding("EMAIL", "Email", "a@b.ch", "ctx")
+        answer = _detector(lambda url, **kwargs: response).judge_finding("EMAIL", "Email", "a@b.ch", "ctx")
 
         assert answer["verdict"] == "ERROR"
         assert "DetectorUnavailableError" in answer["error"]
+
+    def test_Should_AuthenticateJudge_When_StrataKeyConfigured(self, monkeypatch):
+        monkeypatch.setenv("LLM_JUDGE_API_KEY", "synthetic-test-key")
+        response = _completion({"reason": "ok", "confidence": 1.0, "verdict": "TRUE_POSITIVE"})
+        detector = _detector(None)
+        detector._client.post.return_value = response
+
+        detector.judge_finding("PASSWORD", "Password", "secret", "Password: secret")
+
+        assert detector._client.post.call_args.kwargs["headers"] == {
+            "Authorization": "Bearer synthetic-test-key",
+        }

@@ -17,7 +17,6 @@ import pro.softcom.aisentinel.application.pii.reporting.port.out.PersonallyIdent
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery;
 import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
-import pro.softcom.aisentinel.domain.pii.detection.PiiDetectionConfig;
 import pro.softcom.aisentinel.domain.pii.judge.JudgeJob;
 import pro.softcom.aisentinel.domain.pii.judge.JudgeJobAlreadyRunningException;
 import pro.softcom.aisentinel.domain.pii.judge.JudgeJobStatus;
@@ -129,16 +128,11 @@ public class JudgeEvaluationUseCase implements JudgeEvaluationPort {
         return prepared;
     }
 
-    /**
-     * A model picked for this run wins; otherwise the configured judge model; otherwise the
-     * detection model, so an installation that never configured a judge model keeps working.
-     */
     private String resolveModel(String requested) {
         if (isSet(requested)) {
             return requested;
         }
-        PiiDetectionConfig config = detectionConfigRepository.findConfig();
-        return isSet(config.lmStudioJudgeModel()) ? config.lmStudioJudgeModel() : config.lmStudioModel();
+        return detectionConfigRepository.findConfig().lmStudioJudgeModel();
     }
 
     private static boolean isSet(String model) {

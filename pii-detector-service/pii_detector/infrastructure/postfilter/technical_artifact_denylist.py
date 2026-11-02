@@ -42,19 +42,20 @@ from pii_detector.infrastructure.postfilter.postfilter_strategy import (
 # Carve-outs
 # ---------------------------------------------------------------------------
 
-# Labels meaning "this is a credential": ambiguous shapes (UUID, hex) are
-# never dropped for them. Unambiguous motifs (traceparent, base64 image)
-# still drop unconditionally.
+# A credential value can have any shape; only the context-aware judge can reject it.
 CREDENTIAL_LABELS = frozenset(
     {
         "API_KEY",
         "CLIENT_SECRET",
         "PASSWORD",
+        "PASSPHRASE",
         "SECRET",
+        "SECRET_KEY",
         "ACCESS_TOKEN",
         "HTTP_COOKIE",
         "COOKIE",
         "TOKEN",
+        "JWT_TOKEN",
         "AUTH_TOKEN",
         "REFRESH_TOKEN",
         "SESSION_TOKEN",
@@ -62,6 +63,8 @@ CREDENTIAL_LABELS = frozenset(
         "CREDENTIALS",
         "PRIVATE_KEY",
         "AWS_ACCESS_KEY",
+        "AWS_KEY",
+        "CONNECTION_STRING",
         "GOOGLE_API_KEY",
         "GITHUB_TOKEN",
     }
@@ -277,14 +280,10 @@ def _is_plausible_dotted_date(value: str) -> bool:
 
 def _evaluate_text_patterns(core: str, pii_type: str) -> PostfilterVerdict:
     if _UUID_RE.fullmatch(core):
-        if pii_type in CREDENTIAL_LABELS:
-            return PASS
         return PostfilterVerdict(False, "technical artifact: uuid")
     if _TRACEPARENT_RE.fullmatch(core):
         return PostfilterVerdict(False, "technical artifact: w3c traceparent")
     if _PURE_HEX_RE.fullmatch(core) and len(core) in _HEX_ARTIFACT_NAMES:
-        if pii_type in CREDENTIAL_LABELS:
-            return PASS
         name = _HEX_ARTIFACT_NAMES[len(core)]
         return PostfilterVerdict(
             False, f"technical artifact: {name} (hex-{len(core)})"
@@ -335,12 +334,12 @@ def evaluate(value, pii_type) -> PostfilterVerdict:
     span = value.strip()
     if not span:
         return PASS
-    if has_credential_marker(span):
+    normalized_type = _normalize_pii_type(pii_type)
+    if normalized_type in CREDENTIAL_LABELS or has_credential_marker(span):
         return PASS
     core = _split_context_prefix(span)
     if core is None:
         return PASS
-    normalized_type = _normalize_pii_type(pii_type)
     verdict = _evaluate_text_patterns(core, normalized_type)
     if not verdict.keep:
         return verdict

@@ -254,13 +254,13 @@ class JudgeEvaluationUseCaseTest {
     }
 
     @Test
-    @DisplayName("Should_FallBackToConfiguredModel_When_NoModelRequested")
-    void Should_FallBackToConfiguredModel_When_NoModelRequested() {
+    @DisplayName("Should_UseQwenDefault_When_NoJudgeModelConfigured")
+    void Should_UseQwenDefault_When_NoJudgeModelConfigured() {
         when(selectionResolver.resolve(any())).thenReturn(resolved(1, 0));
 
         useCase.launch(command(new JudgeScope(List.of("A"), null), null));
 
-        verify(judgeJobStore).create(argThat(job -> "ministral-3b-pii-preview@q8_0".equals(job.model())));
+        verify(judgeJobStore).create(argThat(job -> "qwen3.8-flash-next-iq3_s".equals(job.model())));
     }
 
     @Test
@@ -275,14 +275,14 @@ class JudgeEvaluationUseCaseTest {
     }
 
     @Test
-    @DisplayName("Should_FallBackToDetectionModel_When_ConfiguredJudgeModelIsBlank")
-    void Should_FallBackToDetectionModel_When_ConfiguredJudgeModelIsBlank() {
+    @DisplayName("Should_UseQwenDefault_When_ConfiguredJudgeModelIsBlank")
+    void Should_UseQwenDefault_When_ConfiguredJudgeModelIsBlank() {
         when(detectionConfigRepository.findConfig()).thenReturn(config("   "));
         when(selectionResolver.resolve(any())).thenReturn(resolved(1, 0));
 
         useCase.launch(command(new JudgeScope(List.of("A"), null), null));
 
-        verify(judgeJobStore).create(argThat(job -> "ministral-3b-pii-preview@q8_0".equals(job.model())));
+        verify(judgeJobStore).create(argThat(job -> "qwen3.8-flash-next-iq3_s".equals(job.model())));
     }
 
     @Test

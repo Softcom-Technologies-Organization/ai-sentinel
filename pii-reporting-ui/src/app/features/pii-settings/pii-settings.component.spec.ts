@@ -79,6 +79,7 @@ const FR_TRANSLATIONS = {
       modelLoaded: 'chargé',
       modelNotLoaded: 'non chargé',
       modelNotListed: 'non listé par LM Studio',
+      judgeModelNotListed: 'non listé par le serveur du juge',
     },
     messages: { loadError: 'Erreur', saveAllSuccess: 'Sauvegardé', saveAllError: 'Erreur' },
     confluence: { messages: { loadError: 'Erreur', saveSuccess: 'OK', saveError: 'Erreur' } },
@@ -621,14 +622,26 @@ describe('PiiSettingsComponent', () => {
   describe('LM Studio model picker', () => {
     const MODELS_URL = '/api/v1/pii-detection/lm-studio/models';
 
-    it('Should_ListModelsForTypedEndpoint_When_LmStudioSectionOpened', () => {
+    const JUDGE_LISTING = {
+      endpoint: 'http://strata:1235/v1',
+      family: '',
+      models: [{ id: 'qwen3.8-flash-next-iq3_s', quantization: 'IQ3_S', publisher: 'Qwen', loaded: true }],
+      error: '',
+    };
+
+    function openModelSettings(): void {
       component.setActiveSection('lm_studio');
+      httpMock.expectOne((r) => r.url === MODELS_URL && r.params.get('all') === 'true')
+        .flush(JUDGE_LISTING);
+    }
+
+    it('Should_ListModelsForTypedEndpoint_When_LmStudioSectionOpened', () => {
+      openModelSettings();
 
       const req = httpMock.expectOne((r) => r.url === MODELS_URL);
       expect(req.request.params.get('host')).toBe('localhost');
       expect(req.request.params.get('port')).toBe('1234');
-      // One catalogue request feeds both pickers, so it must not be filtered server-side
-      expect(req.request.params.get('all')).toBe('true');
+      expect(req.request.params.get('all')).toBeNull();
       req.flush({
         endpoint: 'http://localhost:1234/v1',
         family: 'ministral-3b-pii-preview',
@@ -650,7 +663,7 @@ describe('PiiSettingsComponent', () => {
     });
 
     it('Should_KeepStoredModelSelectable_When_LmStudioNoLongerListsIt', () => {
-      component.setActiveSection('lm_studio');
+      openModelSettings();
       httpMock.expectOne((r) => r.url === MODELS_URL).flush({
         endpoint: 'http://localhost:1234/v1',
         family: 'ministral-3b-pii-preview',
@@ -666,7 +679,7 @@ describe('PiiSettingsComponent', () => {
     });
 
     it('Should_FallBackToTextInput_When_ModelListUnavailable', () => {
-      component.setActiveSection('lm_studio');
+      openModelSettings();
       httpMock.expectOne((r) => r.url === MODELS_URL).flush({
         endpoint: 'http://localhost:1234/v1',
         family: 'ministral-3b-pii-preview',
@@ -696,7 +709,7 @@ describe('PiiSettingsComponent', () => {
     });
 
     it('Should_TolerateSparseListing_When_LmStudioOmitsFields', () => {
-      component.setActiveSection('lm_studio');
+      openModelSettings();
       httpMock.expectOne((r) => r.url === MODELS_URL).flush({
         endpoint: 'http://localhost:1234/v1',
         family: null,
@@ -711,8 +724,8 @@ describe('PiiSettingsComponent', () => {
       expect(component.isLmStudioModelOutsideFamily()).toBe(false);
     });
 
-    it('Should_SplitCatalogueBetweenPickers_When_LmStudioServesModelsOutsideTheFamily', () => {
-      component.setActiveSection('lm_studio');
+    it('Should_KeepDetectionAndJudgeCataloguesSeparate_When_EndpointsDiffer', () => {
+      openModelSettings();
       httpMock.expectOne((r) => r.url === MODELS_URL).flush({
         endpoint: 'http://localhost:1234/v1',
         family: 'ministral-3b-pii-preview',
@@ -727,9 +740,9 @@ describe('PiiSettingsComponent', () => {
 
       expect(component.lmStudioModelOptions().map((o) => o.value)).toEqual(['ministral-3b-pii-preview@q8_0']);
       expect(component.lmStudioJudgeModelOptions().map((o) => o.value)).toEqual([
-        'ministral-3b-pii-preview@q8_0', 'google/gemma-4-31b', 'openai/gpt-oss-120b',
+        'qwen3.8-flash-next-iq3_s',
       ]);
-      expect(component.lmStudioJudgeModelOptions()[1].label).toContain('non chargé');
+      expect(component.lmStudioJudgeModelOptions()[0].label).toContain('chargé');
 
       const el = fixture.nativeElement as HTMLElement;
       expect(el.querySelector('[data-testid="lmStudioJudgeModelSelect"]')).not.toBeNull();
@@ -737,7 +750,7 @@ describe('PiiSettingsComponent', () => {
     });
 
     it('Should_NotWarnAboutFamily_When_JudgeModelIsOutsideIt', () => {
-      component.setActiveSection('lm_studio');
+      openModelSettings();
       httpMock.expectOne((r) => r.url === MODELS_URL).flush({
         endpoint: 'http://localhost:1234/v1',
         family: 'ministral-3b-pii-preview',
@@ -756,7 +769,7 @@ describe('PiiSettingsComponent', () => {
     });
 
     it('Should_OfferOnlyTheFamilyToTheDetector_When_LmStudioServesNoneOfIt', () => {
-      component.setActiveSection('lm_studio');
+      openModelSettings();
       httpMock.expectOne((r) => r.url === MODELS_URL).flush({
         endpoint: 'http://localhost:1234/v1',
         family: 'ministral-3b-pii-preview',
@@ -771,13 +784,45 @@ describe('PiiSettingsComponent', () => {
     });
 
     it('Should_FallBackToTextInput_When_ModelListRequestFails', () => {
-      component.setActiveSection('lm_studio');
+      openModelSettings();
       httpMock.expectOne((r) => r.url === MODELS_URL).flush('boom', { status: 502, statusText: 'Bad Gateway' });
       fixture.detectChanges();
 
       expect(component.lmStudioModelsAvailable()).toBe(false);
       expect(component.lmStudioModelsError()).not.toBeNull();
       expect(component.lmStudioModelsLoading()).toBe(false);
+      expect(component.lmStudioJudgeModelOptions()[0].value).toBe('qwen3.8-flash-next-iq3_s');
+      expect(component.judgeModelsError()).toBeNull();
+    });
+
+    it('Should_KeepDetectionModels_When_JudgeListingFails', () => {
+      component.setActiveSection('lm_studio');
+      httpMock.expectOne((r) => r.url === MODELS_URL && !r.params.has('all')).flush({
+        endpoint: 'http://localhost:1234/v1',
+        family: 'ministral-3b-pii-preview',
+        models: [{ id: 'ministral-3b-pii-preview@q8_0', quantization: 'Q8_0', publisher: 'mradermacher', loaded: true }],
+        error: '',
+      });
+      httpMock.expectOne((r) => r.url === MODELS_URL && r.params.get('all') === 'true')
+        .flush('unavailable', { status: 502, statusText: 'Bad Gateway' });
+      fixture.detectChanges();
+
+      expect(component.lmStudioModelsAvailable()).toBe(true);
+      expect(component.lmStudioModelsError()).toBeNull();
+      expect(component.lmStudioJudgeModelsAvailable()).toBe(false);
+      expect(component.judgeModelsError()).not.toBeNull();
+      expect(component.judgeModelsLoading()).toBe(false);
+    });
+
+    it('Should_KeepJudgeSelectionVisible_When_ModelIsNotListed', () => {
+      openModelSettings();
+      httpMock.expectOne((r) => r.url === MODELS_URL).flush({ models: [], family: '', error: '' });
+      component.configForm.patchValue({ lmStudioJudgeModel: 'custom-judge-model' });
+
+      expect(component.lmStudioJudgeModelOptions()[0]).toEqual({
+        value: 'custom-judge-model',
+        label: 'custom-judge-model · non listé par le serveur du juge',
+      });
     });
   });
 

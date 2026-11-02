@@ -62,6 +62,11 @@ pii-detector:
   connection-timeout-ms: ${PII_DETECTOR_CONNECTION_TIMEOUT_MS:1800000}  # 30 min — investigation parity recall: anciennement 5 min, suspect de couper les longues detections sur machines CPU-bound
   request-timeout-ms: ${PII_DETECTOR_REQUEST_TIMEOUT_MS:1800000}        # 30 min — investigation parity recall: anciennement 5 min, suspect de couper les longues detections sur machines CPU-bound
 
+llm:
+  judge:
+    host: ${LLM_JUDGE_HOST:}
+    port: ${LLM_JUDGE_PORT:}
+
 # Scan Timeouts Configuration
 scan:
   timeouts:

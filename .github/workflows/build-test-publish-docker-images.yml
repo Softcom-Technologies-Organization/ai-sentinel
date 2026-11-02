@@ -59,22 +59,28 @@ jobs:
         run: |
           VERSION=$(grep -A 10 '^\[project\]' pii-detector-service/pyproject.toml | grep '^version = ' | sed 's/version = "\(.*\)"/\1/' | head -1)
           OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
           # Handle custom tag from workflow_dispatch
           if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ] && [ "${{ github.event.inputs.tag }}" != "manual" ]; then
             CUSTOM_TAG="${{ github.event.inputs.tag }}"
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$CUSTOM_TAG" >> $GITHUB_OUTPUT
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$CUSTOM_TAG" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$VERSION,ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:latest" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$VERSION,ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:latest" >> "$GITHUB_OUTPUT"
+          elif [[ "$GITHUB_REF" == refs/heads/release/* ]]; then
             # Extract tag from branch name (e.g., release/v1.1.0-rc.1 -> v1.1.0-rc.1)
             RELEASE_TAG="${{ github.ref_name }}"
             RELEASE_TAG="${RELEASE_TAG#release/}"
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$RELEASE_TAG" >> $GITHUB_OUTPUT
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$RELEASE_TAG" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$VERSION" >> $GITHUB_OUTPUT
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-pii-detector:$VERSION" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -88,12 +94,14 @@ jobs:
         with:
           context: .
           file: ./pii-detector-service/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.version.outputs.image_tags }}
           labels: |
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
             org.opencontainers.image.description="PII Detector Service - Python/gRPC service for detecting Personal Identifiable Information"
-            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.licenses=Apache-2.0
+            org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
 
   build-and-publish-api:
@@ -117,21 +125,27 @@ jobs:
         run: |
           VERSION=$(grep -A 2 '<artifactId>ai-sentinel</artifactId>' pii-reporting-api/pom.xml | grep '<version>' | sed 's/.*<version>\(.*\)<\/version>.*/\1/' | sed 's/-SNAPSHOT$//' | sed 's/-RELEASE$//')
           OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
           # Handle custom tag from workflow_dispatch
           if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ] && [ "${{ github.event.inputs.tag }}" != "manual" ]; then
             CUSTOM_TAG="${{ github.event.inputs.tag }}"
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$CUSTOM_TAG" >> $GITHUB_OUTPUT
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$CUSTOM_TAG" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$VERSION,ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:latest" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$VERSION,ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:latest" >> "$GITHUB_OUTPUT"
+          elif [[ "$GITHUB_REF" == refs/heads/release/* ]]; then
             RELEASE_TAG="${{ github.ref_name }}"
             RELEASE_TAG="${RELEASE_TAG#release/}"
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$RELEASE_TAG" >> $GITHUB_OUTPUT
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$RELEASE_TAG" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$VERSION" >> $GITHUB_OUTPUT
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-api:$VERSION" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -145,12 +159,14 @@ jobs:
         with:
           context: .
           file: ./pii-reporting-api/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.version.outputs.image_tags }}
           labels: |
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
             org.opencontainers.image.description="PII Reporting API - Spring Boot backend for managing PII scan reports"
-            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.licenses=Apache-2.0
+            org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
 
   build-and-publish-ui:
@@ -174,21 +190,27 @@ jobs:
         run: |
           VERSION=$(grep '"version":' pii-reporting-ui/package.json | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
           OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
           # Handle custom tag from workflow_dispatch
           if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ] && [ "${{ github.event.inputs.tag }}" != "manual" ]; then
             CUSTOM_TAG="${{ github.event.inputs.tag }}"
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$CUSTOM_TAG" >> $GITHUB_OUTPUT
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$CUSTOM_TAG" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$VERSION,ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:latest" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$VERSION,ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:latest" >> "$GITHUB_OUTPUT"
+          elif [[ "$GITHUB_REF" == refs/heads/release/* ]]; then
             RELEASE_TAG="${{ github.ref_name }}"
             RELEASE_TAG="${RELEASE_TAG#release/}"
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$RELEASE_TAG" >> $GITHUB_OUTPUT
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$RELEASE_TAG" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
-            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$VERSION" >> $GITHUB_OUTPUT
+            echo "image_tags=ghcr.io/$OWNER_LOWER/ai-sentinel-reporting-ui:$VERSION" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -202,10 +224,12 @@ jobs:
         with:
           context: ./pii-reporting-ui
           file: ./pii-reporting-ui/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.version.outputs.image_tags }}
           labels: |
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
             org.opencontainers.image.description="PII Reporting UI - Angular frontend for visualizing PII scan results"
-            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.licenses=Apache-2.0
+            org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.version.outputs.version }}

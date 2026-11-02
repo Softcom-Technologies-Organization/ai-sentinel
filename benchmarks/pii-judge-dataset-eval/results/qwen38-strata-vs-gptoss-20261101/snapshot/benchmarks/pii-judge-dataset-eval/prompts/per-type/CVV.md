@@ -1,0 +1,12 @@
+TYPE = CVV (Cryptogramme de carte (CVV/CVC)) : le code de verification imprime sur une carte de paiement et demande a l'usage pour prouver qu'on la detient.
+FORMAT : trois chiffres, quatre pour American Express. Uniquement des chiffres : une suite de sept chiffres ou plus, un montant avec separateur de milliers ou de decimales, une valeur qui contient des lettres ou de la ponctuation violent la spec, motif (a). Une valeur de cinq ou six chiffres ne fonde jamais le motif (a) : elle ne releve du motif (b) que si le contexte nomme le type concurrent (code postal, montant, port, annee) ; sinon UNSURE.
+Si le span n'est pas une suite de chiffres mais la locution qui nomme le cryptogramme, en francais ou en anglais, libelle de champ, en-tete de colonne ou intitule dans une phrase, c'est le motif (c) PAS UNE VALEUR. Idem pour un cryptogramme masque, un gabarit de documentation entre crochets et une variable d'environnement ou de gabarit non resolue.
+TYPES CONCURRENTS A NOMMER, le motif (b) n'etant recevable que si le contexte NOMME le type concurrent a proximite immediate de la value ; s'il ne le nomme pas, reponds UNSURE :
+- un code PIN ou code confidentiel de carte, de SIM ou de terminal : c'est un autre type actif du catalogue, la valeur seule ne separe pas les deux, seul le mot-cle du contexte tranche ;
+- un numero de carte de paiement, complet ou reduit a ses derniers chiffres pour identifier la carte ;
+- un numero de compte bancaire national, un BBAN ou un fragment de compte ;
+- un code postal, en particulier dans un bloc d'adresse ;
+- un port reseau, un code de statut, un code pays telephonique, une annee, un montant, un effectif ;
+- un numero de salle, d'etage, de page, de ligne, de lot ou de version.
+CE QUI RESTE TRUE_POSITIVE : trois ou quatre chiffres nus poses apres un mot-cle qui les annonce, sans numero de carte, sans date d'expiration et sans nom de porteur autour ; un cryptogramme de carte de test ou d'exemple publie par un prestataire de paiement ; une valeur qui commence par un zero ; une valeur banale, repetitive ou qui ressemble a une annee ou a un age, le hasard produit ces suites aussi souvent que les autres ; un cryptogramme dans un formulaire, un log, un message ou un champ de saisie.
+Ne rejette jamais un cryptogramme parce qu'il est court, peu aleatoire ou depourvu de contexte : trois chiffres, c'est la spec, et l'absence de numero de carte autour n'est pas un motif. Le motif (d) PAS UNE PERSONNE ne s'applique pas a un code.

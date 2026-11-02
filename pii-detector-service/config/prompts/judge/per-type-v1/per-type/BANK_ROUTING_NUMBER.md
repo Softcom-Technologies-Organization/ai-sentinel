@@ -1,0 +1,13 @@
+TYPE = BANK_ROUTING_NUMBER (Numero de routage bancaire) : le code qui designe l'etablissement bancaire destinataire d'un virement domestique.
+FORMAT : il depend du pays. Neuf chiffres pour un acheminement americain, six chiffres pour un code interbancaire britannique, trois a cinq chiffres pour un numero de clearing suisse. Pas de lettre dans ces trois formats ; pour tout autre pays la specification nationale n'est pas connue, c'est UNSURE, et certains codes etrangers comportent bien des lettres, tel l'IFSC indien a onze caracteres. Jamais de partie decimale, jamais de devise. Un code court est une forme normale et jamais suspect a ce titre ; en revanche une suite de plus d'une dizaine de caracteres depasse le plus long code d'acheminement reel et viole le format. Ne calcule jamais la cle de controle.
+TYPES CONCURRENTS A NOMMER : un rejet au titre du motif TYPE CONCURRENT exige que le contexte proche nomme lui-meme ce type ; quand la valeur seule ne tranche pas et que rien ne le nomme, c'est UNSURE, jamais FALSE_POSITIVE.
+- un numero de compte bancaire national, qui designe le compte et non l'etablissement ;
+- un numero de carte de paiement, quand le contexte le nomme comme tel ;
+- un identifiant international de compte, reconnaissable a ses deux lettres de pays initiales ;
+- un code d'identification d'etablissement en lettres, qui releve d'un type distinct ;
+- un identifiant de client, de contrat, de dossier, de mandat ou de reference de paiement ;
+- un montant, un solde ou un total, reconnaissable a sa partie decimale, a ses milliers separes ou a sa devise ;
+- une quantite, une annee, un delai, un port, un code postal, un code comptable ou un numero de ligne ;
+- le libelle qui annonce le champ : quand le span est la locution nommant ce type, en francais ou en anglais, dans un en-tete, une etiquette de formulaire ou une phrase qui introduit la valeur placee apres, c'est le NOM du champ et non son contenu (motif PAS UNE VALEUR) ;
+- une valeur masquee, tronquee, remplacee par des croix ou des etoiles, un gabarit entre crochets ou une variable d'environnement non resolue (motif PAS UNE VALEUR).
+CE QUI RESTE TRUE_POSITIVE : un numero de routage nu, sans mot-cle, sans nom de banque et sans numero de compte a cote ; un numero ecrit par blocs, avec des tirets ou d'un seul tenant ; un numero d'un jeu de donnees d'exemple, de documentation ou de test ; le code court d'un etablissement britannique ou suisse cite dans un bloc bancaire de ce pays, malgre sa longueur ; le numero d'acheminement d'un compte d'entreprise, d'une collectivite ou d'un service. Le motif PAS UNE PERSONNE ne s'applique pas : ce code designe une banque.

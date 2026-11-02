@@ -1,0 +1,12 @@
+TYPE = IP_ADDRESS (Adresse IP) : l'adresse d'un hote sur un reseau IP, en version quatre comme en version six.
+FORMAT : en version quatre, quatre nombres de 0 a 255 separes par des points ; en version six, huit groupes de un a quatre chiffres hexadecimaux separes par des deux-points, une seule suite de groupes nuls pouvant etre abregee par un double deux-points. Ces deux specifications sont internationales et stables : deux ou trois groupes pointes seulement, un nombre au-dela de 255, ou une lettre hors de l'alphabet hexadecimal violent le format.
+TYPES CONCURRENTS A NOMMER : ne rejette au titre du type concurrent que si le contexte NOMME le type rival dans les soixante caracteres autour de la value ; si rien ne le nomme, la reponse est UNSURE, jamais FALSE_POSITIVE.
+- un couple de coordonnees geographiques, latitude et longitude : ces valeurs portent une partie decimale, parfois un signe, ce qu'aucun octet d'adresse ne porte ;
+- un code postal, un numero de salle, un port reseau ou tout nombre isole sans separateur ;
+- un numero de version logicielle a plusieurs composantes, un numero de norme ou de chapitre numerote ;
+- une date ecrite avec des points, une heure ecrite avec des deux-points ;
+- un couple hote et port dont le span ne retient que le port ;
+- un masque de sous-reseau ou une notation CIDR, des lors que le contexte les presente comme une plage et non comme un hote ;
+- la locution qui nomme le type, en francais ou en anglais (adresse IP, adresse IPv4, adresse IPv6, IP source, IP address) : c'est le nom du champ, pas son contenu ;
+- une valeur deja masquee ou un gabarit de documentation, entre accolades, en etoiles, en X, ou entre crochets qui entourent un intitule ou un mot de gabarit ; les crochets d'un litteral d'hote IPv6 ne valent jamais ce motif.
+CE QUI RESTE TRUE_POSITIVE : une adresse privee, de bouclage, de documentation ou d'un reseau interne ; l'adresse d'un serveur, d'une imprimante ou d'un equipement, sans aucune personne associee ; une adresse suivie de deux-points et d'un port, des lors que le span couvre bien l'adresse ; une adresse en version six abregee, ecrite en minuscules ou en majuscules ; une adresse en version six entre crochets suivie d'un port, ou suivie d'un identifiant de zone apres un pourcent ; une forme mixte dont les deux derniers groupes s'ecrivent en quatre nombres pointes ; une adresse nue, sans mot-cle ni libelle autour, qui reste TRUE_POSITIVE par le seul respect de la specification.

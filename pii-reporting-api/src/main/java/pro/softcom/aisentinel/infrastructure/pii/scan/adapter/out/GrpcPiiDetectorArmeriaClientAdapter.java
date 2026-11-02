@@ -136,7 +136,9 @@ public class GrpcPiiDetectorArmeriaClientAdapter implements PiiDetectorClient {
             PiiDetection.JudgeFindingResponse response = blockingStub
                     .withDeadlineAfter(JUDGE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
                     .judgeFinding(grpcRequest);
-            return new FindingJudgeAnswer(response.getVerdict(), response.getConfidence(),
+            // Preserve decimal thresholds such as 0.95 when widening the protobuf float to double.
+            double confidence = Double.parseDouble(Float.toString(response.getConfidence()));
+            return new FindingJudgeAnswer(response.getVerdict(), confidence,
                     response.getReason(), response.getError());
         } catch (Exception e) {
             throw PiiDetectionException.serviceError("Failed to judge finding: " + e.getMessage(), e);

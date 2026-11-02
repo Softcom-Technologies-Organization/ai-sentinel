@@ -2,12 +2,12 @@ package pro.softcom.aisentinel.application.pii.detection.usecase;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionConfigRepository;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.pii.detection.PiiDetectionConfig;
+import pro.softcom.aisentinel.domain.pii.judge.JudgeEndpoint;
 import pro.softcom.aisentinel.domain.pii.scan.LmStudioModel;
 import pro.softcom.aisentinel.domain.pii.scan.LmStudioModelListing;
 
@@ -29,8 +29,9 @@ class ListLmStudioModelsUseCaseTest {
     @Mock
     private PiiDetectionConfigRepository configRepository;
 
-    @InjectMocks
-    private ListLmStudioModelsUseCase useCase;
+    private ListLmStudioModelsUseCase useCase() {
+        return new ListLmStudioModelsUseCase(piiDetectorClient, configRepository, new JudgeEndpoint(null, null));
+    }
 
     private static final LmStudioModelListing LISTING = new LmStudioModelListing(
         "http://lmstudio:1234/v1", "ministral-3b-pii-preview",
@@ -41,7 +42,7 @@ class ListLmStudioModelsUseCaseTest {
     void Should_QueryGivenEndpoint_When_HostAndPortProvided() {
         when(piiDetectorClient.listLmStudioModels("lmstudio", 4321, false)).thenReturn(LISTING);
 
-        LmStudioModelListing result = useCase.listModels("lmstudio", 4321, false);
+        LmStudioModelListing result = useCase().listModels("lmstudio", 4321, false);
 
         assertThat(result).isEqualTo(LISTING);
         verify(configRepository, never()).findConfig();
@@ -55,7 +56,7 @@ class ListLmStudioModelsUseCaseTest {
             LocalDateTime.now(), "system"));
         when(piiDetectorClient.listLmStudioModels("10.10.17.145", 1234, false)).thenReturn(LISTING);
 
-        LmStudioModelListing result = useCase.listModels(" ", null, false);
+        LmStudioModelListing result = useCase().listModels(" ", null, false);
 
         assertThat(result.models()).hasSize(1);
         verify(piiDetectorClient).listLmStudioModels("10.10.17.145", 1234, false);
@@ -66,9 +67,29 @@ class ListLmStudioModelsUseCaseTest {
         LmStudioModelListing failed = new LmStudioModelListing("http://lmstudio:1234/v1", "", null, "unreachable");
         when(piiDetectorClient.listLmStudioModels("lmstudio", 1234, false)).thenReturn(failed);
 
-        LmStudioModelListing result = useCase.listModels("lmstudio", 1234, false);
+        LmStudioModelListing result = useCase().listModels("lmstudio", 1234, false);
 
         assertThat(result.failed()).isTrue();
         assertThat(result.models()).isEmpty();
+    }
+
+    @Test
+    void Should_QueryJudgeEndpoint_When_AllModelsRequested() {
+        var useCase = new ListLmStudioModelsUseCase(piiDetectorClient, configRepository,
+                new JudgeEndpoint("strata", 8081));
+        when(piiDetectorClient.listLmStudioModels("strata", 8081, true)).thenReturn(LISTING);
+
+        assertThat(useCase.listModels("ministral", 1234, true)).isEqualTo(LISTING);
+
+        verify(configRepository, never()).findConfig();
+    }
+
+    @Test
+    void Should_KeepDetectionEndpoint_When_OnlyDetectionModelsRequested() {
+        var useCase = new ListLmStudioModelsUseCase(piiDetectorClient, configRepository,
+                new JudgeEndpoint("strata", 8081));
+        when(piiDetectorClient.listLmStudioModels("ministral", 1234, false)).thenReturn(LISTING);
+
+        assertThat(useCase.listModels("ministral", 1234, false)).isEqualTo(LISTING);
     }
 }

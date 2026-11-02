@@ -1,0 +1,14 @@
+#!/bin/bash
+set -euo pipefail
+cd /Users/Thibaut.Vuillaume/Workspace/ai-sentinel
+trap 'printf "Campagne interrompue : consulter run.log avant de reprendre.\n" > /Users/Thibaut.Vuillaume/Workspace/ai-sentinel/benchmarks/pii-judge-dataset-eval/results/qwen38-strata-vs-gptoss-20261101/STATUS.md' ERR
+printf "Qwen : calibrage puis test en cours.\n" > /Users/Thibaut.Vuillaume/Workspace/ai-sentinel/benchmarks/pii-judge-dataset-eval/results/qwen38-strata-vs-gptoss-20261101/STATUS.md
+/Users/Thibaut.Vuillaume/Workspace/ai-sentinel/pii-detector-service/.venv/bin/python /Users/Thibaut.Vuillaume/Workspace/ai-sentinel/benchmarks/pii-judge-dataset-eval/results/qwen38-strata-vs-gptoss-20261101/snapshot/benchmarks/pii-judge-dataset-eval/calibrate_gpt_oss.py --judge qwen3.8-flash-next --keep-loaded --output /Users/Thibaut.Vuillaume/Workspace/ai-sentinel/benchmarks/pii-judge-dataset-eval/results/qwen38-strata-vs-gptoss-20261101/qwen
+printf "Qwen terminé. GPT-OSS : calibrage puis test en cours.\n" > /Users/Thibaut.Vuillaume/Workspace/ai-sentinel/benchmarks/pii-judge-dataset-eval/results/qwen38-strata-vs-gptoss-20261101/STATUS.md
+/Users/Thibaut.Vuillaume/.local/bin/strata launch --stop --preset 'Qwen3.8 local'
+/Users/Thibaut.Vuillaume/Workspace/ai-sentinel/pii-detector-service/.venv/bin/python /Users/Thibaut.Vuillaume/Workspace/ai-sentinel/benchmarks/pii-judge-dataset-eval/results/qwen38-strata-vs-gptoss-20261101/snapshot/benchmarks/pii-judge-dataset-eval/calibrate_gpt_oss.py --output /Users/Thibaut.Vuillaume/Workspace/ai-sentinel/benchmarks/pii-judge-dataset-eval/results/qwen38-strata-vs-gptoss-20261101/gpt
+/Users/Thibaut.Vuillaume/Workspace/ai-sentinel/pii-detector-service/.venv/bin/python /Users/Thibaut.Vuillaume/Workspace/ai-sentinel/benchmarks/pii-judge-dataset-eval/results/qwen38-strata-vs-gptoss-20261101/snapshot/benchmarks/pii-judge-dataset-eval/compare_calibrated_judges.py /Users/Thibaut.Vuillaume/Workspace/ai-sentinel/benchmarks/pii-judge-dataset-eval/results/qwen38-strata-vs-gptoss-20261101/qwen /Users/Thibaut.Vuillaume/Workspace/ai-sentinel/benchmarks/pii-judge-dataset-eval/results/qwen38-strata-vs-gptoss-20261101/gpt /Users/Thibaut.Vuillaume/Workspace/ai-sentinel/benchmarks/pii-judge-dataset-eval/results/qwen38-strata-vs-gptoss-20261101
+/Users/Thibaut.Vuillaume/.lmstudio/bin/lms unload openai/gpt-oss-120b
+printf "Benchmark terminé. Rapport : RAPPORT.md. Qwen en cours de remise en service.\n" > /Users/Thibaut.Vuillaume/Workspace/ai-sentinel/benchmarks/pii-judge-dataset-eval/results/qwen38-strata-vs-gptoss-20261101/STATUS.md
+/Users/Thibaut.Vuillaume/.local/bin/strata launch --preset 'Qwen3.8 local' --no-tui
+printf "Benchmark terminé, rapport disponible dans RAPPORT.md ; Qwen remis en service.\n" > /Users/Thibaut.Vuillaume/Workspace/ai-sentinel/benchmarks/pii-judge-dataset-eval/results/qwen38-strata-vs-gptoss-20261101/STATUS.md

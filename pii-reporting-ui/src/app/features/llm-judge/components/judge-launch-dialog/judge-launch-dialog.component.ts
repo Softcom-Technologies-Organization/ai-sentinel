@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ButtonModule } from 'primeng/button';
@@ -26,7 +26,8 @@ interface ModelOption {
   label: string;
 }
 
-export const DEFAULT_CONFIDENCE_PERCENT = 80;
+export const DEFAULT_CONFIDENCE_PERCENT = 95;
+const DEFAULT_JUDGE_MODEL = 'qwen3.8-flash-next-iq3_s';
 const SECONDS_PER_CALL = 2;
 
 /**
@@ -77,8 +78,8 @@ export class JudgeLaunchDialogComponent {
 
   constructor() {
     effect(() => {
-      if (this.visible() && this.modelOptions().length === 0 && !this.modelsLoading()) {
-        this.refreshModels();
+      if (this.visible()) {
+        untracked(() => this.refreshModels());
       }
     });
   }
@@ -103,20 +104,18 @@ export class JudgeLaunchDialogComponent {
     });
   }
 
-  /**
-   * Re-asks LM Studio which models it has: the operator may have loaded or downloaded one
-   * while the dialog was open. A model already picked stays picked.
-   */
   refreshModels(): void {
     this.modelsLoading.set(true);
     this.detectionConfig.getConfig().subscribe({
-      next: (config) => this.listModels(config.lmStudioHost, config.lmStudioPort,
-        config.lmStudioJudgeModel ?? config.lmStudioModel),
+      next: (config) => {
+        this.selectedModel.set(this.selectedModel() ?? config.lmStudioJudgeModel ?? DEFAULT_JUDGE_MODEL);
+        this.listModels(config.lmStudioHost, config.lmStudioPort);
+      },
       error: () => this.modelsLoading.set(false)
     });
   }
 
-  private listModels(host: string, port: number, configuredModel: string | null): void {
+  private listModels(host: string, port: number): void {
     this.detectionConfig.listLmStudioModels(host, port, true).subscribe({
       next: (listing) => {
         const notLoaded = this.transloco.translate('judge.dialog.notLoaded');
@@ -125,9 +124,6 @@ export class JudgeLaunchDialogComponent {
           id: model.id,
           label: model.loaded ? model.id : `${model.id} · ${notLoaded}`
         })));
-        this.selectedModel.set(
-          this.selectedModel() ?? configuredModel ?? listing.models.find((model) => model.loaded)?.id ?? null
-        );
         this.modelsLoading.set(false);
       },
       error: () => this.modelsLoading.set(false)

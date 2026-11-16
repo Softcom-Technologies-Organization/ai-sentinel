@@ -53,7 +53,7 @@ class ListLmStudioModelsUseCaseTest {
         when(configRepository.findConfig()).thenReturn(new PiiDetectionConfig(
             1, true, true, true, 2048, 410, new BigDecimal("0.30"), true,
             "10.10.17.145", 1234, "ministral-3b-pii-preview@q8_0", null, 4, true, null,
-            LocalDateTime.now(), "system"));
+            LocalDateTime.now(), "system", null));
         when(piiDetectorClient.listLmStudioModels("10.10.17.145", 1234, false)).thenReturn(LISTING);
 
         LmStudioModelListing result = useCase().listModels(" ", null, false);

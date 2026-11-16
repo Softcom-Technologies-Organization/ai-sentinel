@@ -6,6 +6,9 @@ import pro.softcom.aisentinel.application.pii.detection.port.in.ManagePiiDetecti
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionConfigRepository;
 import pro.softcom.aisentinel.domain.pii.detection.PiiDetectionConfig;
 
+import pro.softcom.aisentinel.application.pii.judge.service.JudgeCategoryPolicy;
+
+import java.util.List;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
@@ -19,15 +22,22 @@ public class ManagePiiDetectionConfigUseCase implements ManagePiiDetectionConfig
     private static final Integer CONFIG_ID = 1;
 
     private final PiiDetectionConfigRepository repository;
+    private final JudgeCategoryPolicy categoryPolicy;
 
-    public ManagePiiDetectionConfigUseCase(PiiDetectionConfigRepository repository) {
+    public ManagePiiDetectionConfigUseCase(PiiDetectionConfigRepository repository, JudgeCategoryPolicy categoryPolicy) {
         this.repository = repository;
+        this.categoryPolicy = categoryPolicy;
     }
 
     @Override
     public PiiDetectionConfig getConfig() {
         log.debug("Retrieving PII detection configuration");
         return repository.findConfig();
+    }
+
+    @Override
+    public List<String> getJudgeCategories() {
+        return categoryPolicy.availableCategories();
     }
 
     @Override
@@ -53,7 +63,9 @@ public class ManagePiiDetectionConfigUseCase implements ManagePiiDetectionConfig
                 command.ministralConcurrencyAuto(),
                 command.ministralConcurrencyTunedSignature(),
                 LocalDateTime.now(ZoneId.systemDefault()),
-                command.updatedBy()
+                command.updatedBy(),
+                command.judgeEnabledCategories() == null ? repository.findConfig().judgeEnabledCategories()
+                        : categoryPolicy.validate(command.judgeEnabledCategories())
         );
 
         repository.updateConfig(newConfig);

@@ -1,6 +1,7 @@
 package pro.softcom.aisentinel.infrastructure.pii.detection.adapter.in.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.time.LocalDateTime;
 
 /**
@@ -42,6 +43,8 @@ public record PiiDetectionConfigResponseDto(
     boolean ministralConcurrencyAuto,
     String ministralConcurrencyTunedSignature,
     LocalDateTime updatedAt,
-    String updatedBy
+    String updatedBy,
+    List<String> judgeEnabledCategories,
+    List<String> judgeAvailableCategories
 ) {
 }

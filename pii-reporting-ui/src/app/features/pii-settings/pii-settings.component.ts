@@ -226,6 +226,23 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
     this.stopBenchPolling();
   }
 
+  isJudgeCategoryEnabled(category: string): boolean {
+    const selected: string[] | null = this.configForm.controls['judgeEnabledCategories'].value;
+    return selected === null || selected.includes(category);
+  }
+
+  onJudgeCategoryToggle(category: string, enabled: boolean): void {
+    const control = this.configForm.controls['judgeEnabledCategories'];
+    const selected = new Set<string>(control.value ?? this.currentConfig()?.judgeAvailableCategories ?? []);
+    if (enabled) {
+      selected.add(category);
+    } else {
+      selected.delete(category);
+    }
+    control.setValue([...selected]);
+    control.markAsDirty();
+  }
+
   private initForm(): void {
     this.configForm = this.fb.group({
       presidioEnabled: [true],
@@ -241,7 +258,8 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
       lmStudioHost: ['localhost', [Validators.required, Validators.pattern(/^[^\s/]+$/)]],
       lmStudioPort: [1234, [Validators.required, Validators.min(1), Validators.max(65535)]],
       lmStudioModel: [null as string | null],
-      lmStudioJudgeModel: [null as string | null]
+      lmStudioJudgeModel: [null as string | null],
+      judgeEnabledCategories: [null as string[] | null]
     }, {
       validators: [this.atLeastOneDetectorValidator, this.overlapLessThanChunkSizeValidator]
     } as AbstractControlOptions);
@@ -302,7 +320,8 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
           lmStudioHost: detectorConfig.lmStudioHost,
           lmStudioPort: detectorConfig.lmStudioPort,
           lmStudioModel: detectorConfig.lmStudioModel ?? null,
-          lmStudioJudgeModel: detectorConfig.lmStudioJudgeModel ?? null
+          lmStudioJudgeModel: detectorConfig.lmStudioJudgeModel ?? null,
+          judgeEnabledCategories: detectorConfig.judgeEnabledCategories ?? null
         });
 
         // Set PII types
@@ -801,7 +820,8 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
         lmStudioHost: this.currentConfig()!.lmStudioHost,
         lmStudioPort: this.currentConfig()!.lmStudioPort,
         lmStudioModel: this.currentConfig()!.lmStudioModel ?? null,
-        lmStudioJudgeModel: this.currentConfig()!.lmStudioJudgeModel ?? null
+        lmStudioJudgeModel: this.currentConfig()!.lmStudioJudgeModel ?? null,
+        judgeEnabledCategories: this.currentConfig()!.judgeEnabledCategories ?? null
       });
       this.configForm.markAsPristine();
       // Restore the collapse state to match the reset detector toggles.

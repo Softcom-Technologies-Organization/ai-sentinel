@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionConfigRepository;
+import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRepository;
+import pro.softcom.aisentinel.application.pii.judge.service.JudgeCategoryPolicy;
 import pro.softcom.aisentinel.application.pii.judge.port.in.JudgeEvaluationPort;
 import pro.softcom.aisentinel.application.pii.judge.port.in.TrackJudgeJobPort;
 import pro.softcom.aisentinel.application.pii.judge.port.out.JudgeJobStore;
@@ -32,6 +34,12 @@ import java.util.concurrent.ExecutorService;
 public class JudgeUseCasesConfig {
 
     @Bean
+    public JudgeCategoryPolicy judgeCategoryPolicy(PiiDetectionConfigRepository configRepository,
+                                                    PiiTypeConfigRepository typeRepository) {
+        return new JudgeCategoryPolicy(configRepository, typeRepository);
+    }
+
+    @Bean
     public JudgeEndpoint judgeEndpoint(@Value("${llm.judge.host:}") String host,
                                        @Value("${llm.judge.port:#{null}}") Integer port) {
         return new JudgeEndpoint(host, port);
@@ -45,10 +53,11 @@ public class JudgeUseCasesConfig {
                                          PiiDetectorClient piiDetectorClient,
                                          PiiDetectionConfigRepository piiDetectionConfigRepository,
                                          PublishRemediationEventPort publishRemediationEventPort,
-                                         JudgeEndpoint judgeEndpoint) {
+                                         JudgeEndpoint judgeEndpoint,
+                                         JudgeCategoryPolicy categoryPolicy) {
         return new JudgeJobRunner(scanResultQuery, scanEventFindingResolver, findingRemediationStore,
                 judgeJobStore, piiDetectorClient, piiDetectionConfigRepository, publishRemediationEventPort,
-                Clock.systemUTC(), judgeEndpoint);
+                Clock.systemUTC(), judgeEndpoint, categoryPolicy);
     }
 
     @Bean
@@ -60,10 +69,11 @@ public class JudgeUseCasesConfig {
                                                    ScanCheckpointRepository checkpointRepository,
                                                    ScanResultQuery scanResultQuery,
                                                    PersonallyIdentifiableInformationScanExecutionOrchestratorPort scanExecutionOrchestrator,
-                                                   @Qualifier("remediationJobExecutor") ExecutorService jobExecutor) {
+                                                   @Qualifier("remediationJobExecutor") ExecutorService jobExecutor,
+                                                   JudgeCategoryPolicy categoryPolicy) {
         return new JudgeEvaluationUseCase(remediationConfigPort, selectionResolver, judgeJobStore,
                 piiDetectionConfigRepository, judgeJobRunner, jobExecutor, checkpointRepository,
-                scanResultQuery, scanExecutionOrchestrator, Clock.systemUTC());
+                scanResultQuery, scanExecutionOrchestrator, Clock.systemUTC(), categoryPolicy);
     }
 
     @Bean

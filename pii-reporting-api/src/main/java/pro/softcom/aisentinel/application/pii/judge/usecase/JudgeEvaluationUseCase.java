@@ -9,6 +9,7 @@ import pro.softcom.aisentinel.application.pii.judge.port.in.JudgePlan;
 import pro.softcom.aisentinel.application.pii.judge.port.in.JudgeScope;
 import pro.softcom.aisentinel.application.pii.judge.port.out.JudgeJobStore;
 import pro.softcom.aisentinel.application.pii.judge.service.JudgeJobRunner;
+import pro.softcom.aisentinel.application.pii.judge.service.JudgeCategoryPolicy;
 import pro.softcom.aisentinel.application.pii.remediation.port.out.RemediationConfigPort;
 import pro.softcom.aisentinel.application.pii.remediation.service.EligibleFinding;
 import pro.softcom.aisentinel.application.pii.remediation.service.SelectionResolver;
@@ -59,6 +60,7 @@ public class JudgeEvaluationUseCase implements JudgeEvaluationPort {
     private final ScanResultQuery scanResultQuery;
     private final PersonallyIdentifiableInformationScanExecutionOrchestratorPort scanExecutionOrchestrator;
     private final Clock clock;
+    private final JudgeCategoryPolicy categoryPolicy;
 
     @Override
     public JudgePlan plan(JudgeScope scope) {
@@ -145,8 +147,9 @@ public class JudgeEvaluationUseCase implements JudgeEvaluationPort {
         }
     }
 
-    private static List<EligibleFinding> findingsOf(ResolvedSelection resolved) {
-        return Stream.concat(resolved.pageFindings().stream(), resolved.attachmentFindings().stream()).toList();
+    private List<EligibleFinding> findingsOf(ResolvedSelection resolved) {
+        return Stream.concat(resolved.pageFindings().stream(), resolved.attachmentFindings().stream())
+                .filter(finding -> categoryPolicy.allows(finding.reference())).toList();
     }
 
     private static Set<String> idsOf(List<EligibleFinding> findings) {

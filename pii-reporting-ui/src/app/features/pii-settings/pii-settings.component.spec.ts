@@ -23,6 +23,8 @@ const MOCK_DETECTOR_CONFIG: PiiDetectionConfig = {
   lmStudioPort: 1234,
   lmStudioModel: 'ministral-3b-pii-preview@q8_0',
   lmStudioJudgeModel: null,
+  judgeEnabledCategories: null,
+  judgeAvailableCategories: ['CONTACT', 'FINANCIAL', 'PERSONAL'],
   updatedAt: '2026-03-16T10:00:00',
 };
 
@@ -131,6 +133,55 @@ describe('PiiSettingsComponent', () => {
 
   afterEach(() => {
     httpMock.verify();
+  });
+
+  it('Should_SaveExplicitEmptySelectionAndKeepDetectorSettings_When_AllJudgeCategoriesDisabled', () => {
+    for (const category of MOCK_DETECTOR_CONFIG.judgeAvailableCategories!) {
+      component.onJudgeCategoryToggle(category, false);
+    }
+    expect(component.configForm.valid).toBe(true);
+    expect(component.configForm.value.judgeEnabledCategories).toEqual([]);
+    expect(component.hasUnsavedTypeChanges()).toBe(false);
+    component.onSaveAll();
+    const request = httpMock.expectOne('/api/v1/pii-detection/config');
+    expect(request.request.body.judgeEnabledCategories).toEqual([]);
+    expect(request.request.body.presidioEnabled).toBe(MOCK_DETECTOR_CONFIG.presidioEnabled);
+    expect(request.request.body.lmStudioJudgeModel).toBeNull();
+    request.flush({ ...MOCK_DETECTOR_CONFIG, judgeEnabledCategories: [] });
+    expect(component.currentConfig()?.judgeEnabledCategories).toEqual([]);
+    expect(component.configForm.pristine).toBe(true);
+  });
+
+  it('Should_ResetJudgeSelectionAndPreserveItOnOtherSaves_When_StoredSelectionExists', () => {
+    component.currentConfig.set({ ...MOCK_DETECTOR_CONFIG, judgeEnabledCategories: ['FINANCIAL'] });
+    component.onResetDetectorConfig();
+    component.onJudgeCategoryToggle('CONTACT', true);
+    expect(component.configForm.dirty).toBe(true);
+    component.onResetDetectorConfig();
+    expect(component.isJudgeCategoryEnabled('CONTACT')).toBe(false);
+    expect(component.isJudgeCategoryEnabled('FINANCIAL')).toBe(true);
+    component.configForm.patchValue({ presidioEnabled: false, defaultThreshold: 0.8 });
+    component.configForm.markAsDirty();
+    component.onSaveAll();
+    const request = httpMock.expectOne('/api/v1/pii-detection/config');
+    expect(request.request.body.judgeEnabledCategories).toEqual(['FINANCIAL']);
+    request.flush({ ...MOCK_DETECTOR_CONFIG, presidioEnabled: false, judgeEnabledCategories: ['FINANCIAL'] });
+  });
+
+  it('Should_RenderIndependentLabelledTogglesAndEmptyState_When_JudgeSettingsOpened', () => {
+    component.setActiveSection('lm_studio');
+    httpMock.match(req => req.url.includes('lm-studio')).forEach(req => req.flush({ models: [] }));
+    fixture.detectChanges();
+    for (const category of MOCK_DETECTOR_CONFIG.judgeAvailableCategories!) {
+      const input = fixture.nativeElement.querySelector('#judgeCategory-' + category) as HTMLInputElement;
+      const label = fixture.nativeElement.querySelector('label[for="judgeCategory-' + category + '"]');
+      expect(input).toBeTruthy();
+      expect(label).toBeTruthy();
+      expect(input.disabled).toBe(false);
+      component.onJudgeCategoryToggle(category, false);
+    }
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="judgeNoCategories"]')).toBeTruthy();
   });
 
   it('Should_NotStickOnSpinner_When_OnlyConfluenceSettingsChanged', () => {

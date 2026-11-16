@@ -52,6 +52,7 @@ public class JudgeJobRunner {
     private final PublishRemediationEventPort publishRemediationEventPort;
     private final Clock clock;
     private final JudgeEndpoint judgeEndpoint;
+    private final JudgeCategoryPolicy categoryPolicy;
 
     public void run(JudgeJob job, String scanId, Set<String> findingIds) {
         try {
@@ -98,7 +99,13 @@ public class JudgeJobRunner {
     }
 
     private JudgeJob judgeOne(JudgeJob job, EligibleFinding finding, Run run) {
+        if (!categoryPolicy.allows(finding.reference())) {
+            return job.toBuilder().total(job.total() - 1).updatedAt(clock.instant()).build();
+        }
         FindingJudgeAnswer answer = piiDetectorClient.judgeFinding(requestFor(finding, run.endpoint()));
+        if (!categoryPolicy.allows(finding.reference())) {
+            return job.toBuilder().total(job.total() - 1).updatedAt(clock.instant()).build();
+        }
         Optional<JudgeVerdict> verdict = answer.verdictHonoring(job.confidenceThreshold());
         JudgeJob.JudgeJobBuilder next = job.toBuilder().processed(job.processed() + 1).updatedAt(clock.instant());
         if (verdict.isEmpty()) {

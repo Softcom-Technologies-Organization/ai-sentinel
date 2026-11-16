@@ -31,6 +31,7 @@ import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRe
 import pro.softcom.aisentinel.application.pii.detection.usecase.ListLmStudioModelsUseCase;
 import pro.softcom.aisentinel.application.pii.detection.usecase.ManageConcurrencyBenchmarkUseCase;
 import pro.softcom.aisentinel.application.pii.detection.usecase.ManagePiiDetectionConfigUseCase;
+import pro.softcom.aisentinel.application.pii.judge.service.JudgeCategoryPolicy;
 import pro.softcom.aisentinel.application.pii.detection.usecase.ManagePiiTypeConfigsUseCase;
 import pro.softcom.aisentinel.application.pii.export.DetectionReportMapper;
 import pro.softcom.aisentinel.application.pii.export.port.in.ExportDetectionReportPort;
@@ -345,8 +346,9 @@ public class ApplicationUseCasesConfig {
     }
 
     @Bean
-    public ManagePiiDetectionConfigPort managePiiDetectionConfigPort(PiiDetectionConfigRepository piiDetectionConfigRepository) {
-        return new ManagePiiDetectionConfigUseCase(piiDetectionConfigRepository);
+    public ManagePiiDetectionConfigPort managePiiDetectionConfigPort(PiiDetectionConfigRepository piiDetectionConfigRepository,
+                                                                         JudgeCategoryPolicy categoryPolicy) {
+        return new ManagePiiDetectionConfigUseCase(piiDetectionConfigRepository, categoryPolicy);
     }
 
     @Bean

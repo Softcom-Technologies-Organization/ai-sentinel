@@ -741,6 +741,29 @@
                                 }
                             </small>
                         </div>
+                        <fieldset class="advanced-param-field" aria-describedby="judgeCategoriesHint" data-testid="judgeCategories">
+                            <legend>{{ 'settings.lmStudio.judgeCategories' | transloco }}</legend>
+                            <small id="judgeCategoriesHint" class="advanced-param-hint">
+                                {{ 'settings.lmStudio.judgeCategoriesHint' | transloco }}
+                            </small>
+                            @for (category of currentConfig()?.judgeAvailableCategories ?? []; track category) {
+                                <div class="flex align-items-center justify-content-between gap-3 py-2">
+                                    <label [for]="'judgeCategory-' + category">
+                                        {{ 'settings.piiTypes.categoryNames.' + category | transloco }}
+                                    </label>
+                                    <p-toggleswitch
+                                        [inputId]="'judgeCategory-' + category"
+                                        [ngModel]="isJudgeCategoryEnabled(category)"
+                                        (ngModelChange)="onJudgeCategoryToggle(category, $event)"
+                                        [ngModelOptions]="{standalone: true}" />
+                                </div>
+                            }
+                            @if (configForm.controls['judgeEnabledCategories'].value?.length === 0) {
+                                <p-message severity="info" data-testid="judgeNoCategories">
+                                    {{ 'settings.lmStudio.judgeNoCategories' | transloco }}
+                                </p-message>
+                            }
+                        </fieldset>
                     </div>
                 </form>
             }

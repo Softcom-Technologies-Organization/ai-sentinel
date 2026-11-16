@@ -174,7 +174,7 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 true,  // ministralConcurrencyAuto (auto-tune at startup)
                 null,  // ministralConcurrencyTunedSignature (never tuned)
                 LocalDateTime.now(ZoneId.of("UTC")),
-                "system"
+                "system", null
         );
 
         self.updateConfig(defaultConfig);
@@ -202,7 +202,8 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 entity.getMinistralConcurrencyAuto() == null || entity.getMinistralConcurrencyAuto(),
                 entity.getMinistralConcurrencyTunedSignature(),
                 entity.getUpdatedAt(),
-                entity.getUpdatedBy()
+                entity.getUpdatedBy(),
+                entity.getJudgeEnabledCategories()
         );
     }
 
@@ -223,6 +224,7 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 .lmStudioPort(config.lmStudioPort())
                 .lmStudioModel(config.lmStudioModel())
                 .lmStudioJudgeModel(config.lmStudioJudgeModel())
+                .judgeEnabledCategories(config.judgeEnabledCategories())
                 .ministralConcurrency(config.ministralConcurrency())
                 .ministralConcurrencyAuto(config.ministralConcurrencyAuto())
                 .ministralConcurrencyTunedSignature(config.ministralConcurrencyTunedSignature())

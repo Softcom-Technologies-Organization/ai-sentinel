@@ -20,6 +20,8 @@ export interface PiiDetectionConfig {
   lmStudioModel: string | null;
   /** Chat model served by the judge endpoint; null = the default Qwen judge. */
   lmStudioJudgeModel: string | null;
+  judgeEnabledCategories?: string[] | null;
+  judgeAvailableCategories?: string[];
   updatedAt?: string;
   updatedBy?: string;
 }
@@ -42,6 +44,7 @@ export interface UpdatePiiDetectionConfigRequest {
   lmStudioPort: number;
   lmStudioModel: string | null;
   lmStudioJudgeModel: string | null;
+  judgeEnabledCategories?: string[] | null;
 }
 
 /**

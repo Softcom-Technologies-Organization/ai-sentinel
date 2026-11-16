@@ -12,6 +12,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import java.util.List;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -111,6 +114,10 @@ public class PiiDetectionConfigEntity {
      */
     @Column(name = "lm_studio_judge_model")
     private String lmStudioJudgeModel;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "judge_enabled_categories", columnDefinition = "jsonb")
+    private List<String> judgeEnabledCategories;
 
     /**
      * Number of chunk prompts the Ministral-PII detector sends concurrently to

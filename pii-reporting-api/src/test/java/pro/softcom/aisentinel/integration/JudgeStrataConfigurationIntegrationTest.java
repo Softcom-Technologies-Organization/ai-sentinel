@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionConfigRepository;
+import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRepository;
 import pro.softcom.aisentinel.application.pii.judge.port.out.JudgeJobStore;
 import pro.softcom.aisentinel.application.pii.remediation.port.out.FindingRemediationStore;
 import pro.softcom.aisentinel.application.pii.remediation.port.out.PublishRemediationEventPort;
@@ -33,6 +34,7 @@ class JudgeStrataConfigurationIntegrationTest {
             .withBean(JudgeJobStore.class, () -> mock(JudgeJobStore.class))
             .withBean(PiiDetectorClient.class, () -> mock(PiiDetectorClient.class))
             .withBean(PiiDetectionConfigRepository.class, () -> mock(PiiDetectionConfigRepository.class))
+            .withBean(PiiTypeConfigRepository.class, () -> mock(PiiTypeConfigRepository.class))
             .withBean(PublishRemediationEventPort.class, () -> mock(PublishRemediationEventPort.class))
             .withBean(RemediationConfigPort.class, () -> mock(RemediationConfigPort.class))
             .withBean(SelectionResolver.class, () -> mock(SelectionResolver.class))

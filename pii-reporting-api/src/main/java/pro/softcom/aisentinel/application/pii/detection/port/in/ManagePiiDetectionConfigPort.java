@@ -3,6 +3,7 @@ package pro.softcom.aisentinel.application.pii.detection.port.in;
 import pro.softcom.aisentinel.domain.pii.detection.PiiDetectionConfig;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * Port IN for managing PII detection configuration.
@@ -16,6 +17,8 @@ public interface ManagePiiDetectionConfigPort {
      * @return The current configuration
      */
     PiiDetectionConfig getConfig();
+
+    List<String> getJudgeCategories();
 
     /**
      * Updates the PII detection configuration.
@@ -60,7 +63,8 @@ public interface ManagePiiDetectionConfigPort {
             Integer ministralConcurrency,
             boolean ministralConcurrencyAuto,
             String ministralConcurrencyTunedSignature,
-            String updatedBy
+            String updatedBy,
+            List<String> judgeEnabledCategories
     ) {
     }
 }

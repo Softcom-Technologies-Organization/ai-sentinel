@@ -45,7 +45,7 @@ class PiiDetectionConfigControllerTest {
     void Should_ReturnPostfilterEnabledInResponse_When_GetConfig() throws Exception {
         PiiDetectionConfig domainConfig = new PiiDetectionConfig(
             1, true, true, false, 1024, 128, new BigDecimal("0.75"), true, "localhost", 1234, null, null, 1, true, null,
-            LocalDateTime.now(), "admin"
+            LocalDateTime.now(), "admin", null
         );
         when(managePiiDetectionConfigPort.getConfig()).thenReturn(domainConfig);
 
@@ -58,7 +58,7 @@ class PiiDetectionConfigControllerTest {
     void Should_UpdatePostfilterEnabled_When_PutRequestEnablesFlag() throws Exception {
         PiiDetectionConfig persisted = new PiiDetectionConfig(
             1, true, true, false, 1024, 128, new BigDecimal("0.75"), true, "localhost", 1234, null, null, 1, true, null,
-            LocalDateTime.now(), "admin"
+            LocalDateTime.now(), "admin", null
         );
         when(managePiiDetectionConfigPort.updateConfig(any(UpdatePiiDetectionConfigCommand.class)))
             .thenReturn(persisted);
@@ -96,7 +96,7 @@ class PiiDetectionConfigControllerTest {
         PiiDetectionConfig domainConfig = new PiiDetectionConfig(
             1, true, true, false, 1024, 128, new BigDecimal("0.75"), true, "localhost", 1234,
             "ministral-3b-pii-preview@q8_0", "google/gemma-4-31b", 1, true, null,
-            LocalDateTime.now(), "admin"
+            LocalDateTime.now(), "admin", null
         );
         when(managePiiDetectionConfigPort.getConfig()).thenReturn(domainConfig);
 
@@ -111,7 +111,7 @@ class PiiDetectionConfigControllerTest {
         PiiDetectionConfig persisted = new PiiDetectionConfig(
             1, true, true, false, 1024, 128, new BigDecimal("0.75"), true, "localhost", 1234,
             "ministral-3b-pii-preview@q8_0", "google/gemma-4-31b", 1, true, null,
-            LocalDateTime.now(), "admin"
+            LocalDateTime.now(), "admin", null
         );
         when(managePiiDetectionConfigPort.updateConfig(any(UpdatePiiDetectionConfigCommand.class)))
             .thenReturn(persisted);
@@ -150,7 +150,7 @@ class PiiDetectionConfigControllerTest {
     void Should_DefaultPostfilterEnabledToFalse_When_OmittedInUpdateRequest() throws Exception {
         PiiDetectionConfig persisted = new PiiDetectionConfig(
             1, true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null,
-            LocalDateTime.now(), "admin"
+            LocalDateTime.now(), "admin", null
         );
         when(managePiiDetectionConfigPort.updateConfig(any(UpdatePiiDetectionConfigCommand.class)))
             .thenReturn(persisted);

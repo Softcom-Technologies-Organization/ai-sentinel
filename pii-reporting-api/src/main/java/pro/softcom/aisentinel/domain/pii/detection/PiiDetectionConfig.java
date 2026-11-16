@@ -1,6 +1,7 @@
 package pro.softcom.aisentinel.domain.pii.detection;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.time.LocalDateTime;
 
 /**
@@ -29,7 +30,8 @@ public record PiiDetectionConfig(
         boolean ministralConcurrencyAuto,
         String ministralConcurrencyTunedSignature,
         LocalDateTime updatedAt,
-        String updatedBy) {
+        String updatedBy,
+        List<String> judgeEnabledCategories) {
 
     private static final BigDecimal MIN_THRESHOLD = BigDecimal.ZERO;
     private static final BigDecimal MAX_THRESHOLD = BigDecimal.ONE;
@@ -46,6 +48,7 @@ public record PiiDetectionConfig(
      * @throws IllegalArgumentException if threshold is out of range or other validation fails
      */
     public PiiDetectionConfig {
+        judgeEnabledCategories = judgeEnabledCategories == null ? null : List.copyOf(judgeEnabledCategories);
         lmStudioJudgeModel = lmStudioJudgeModel == null || lmStudioJudgeModel.isBlank()
                 ? "qwen3.8-flash-next-iq3_s" : lmStudioJudgeModel;
         if (defaultThreshold == null) {

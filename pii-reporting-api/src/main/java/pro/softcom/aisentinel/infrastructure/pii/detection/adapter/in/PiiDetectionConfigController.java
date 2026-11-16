@@ -84,7 +84,8 @@ public class PiiDetectionConfigController {
             request.ministralConcurrency(),
             request.ministralConcurrencyAuto(),
             request.ministralConcurrencyTunedSignature(),
-            updatedBy
+            updatedBy,
+            request.judgeEnabledCategories()
         );
 
         PiiDetectionConfig updatedConfig = managePiiDetectionConfigPort.updateConfig(command);
@@ -114,7 +115,9 @@ public class PiiDetectionConfigController {
             config.ministralConcurrencyAuto(),
             config.ministralConcurrencyTunedSignature(),
             config.updatedAt(),
-            config.updatedBy()
+            config.updatedBy(),
+            config.judgeEnabledCategories(),
+            managePiiDetectionConfigPort.getJudgeCategories()
         );
     }
 }

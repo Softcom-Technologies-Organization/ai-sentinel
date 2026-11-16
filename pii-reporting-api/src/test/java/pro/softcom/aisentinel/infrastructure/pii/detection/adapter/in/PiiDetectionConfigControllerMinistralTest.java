@@ -47,7 +47,7 @@ class PiiDetectionConfigControllerMinistralTest {
     void Should_ExposeMinistralFields_When_GetConfig() throws Exception {
         PiiDetectionConfig config = new PiiDetectionConfig(
             1, true, true, true, 2048, 256, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null,
-            LocalDateTime.now(), "admin"
+            LocalDateTime.now(), "admin", null
         );
         when(managePiiDetectionConfigPort.getConfig()).thenReturn(config);
 
@@ -62,7 +62,7 @@ class PiiDetectionConfigControllerMinistralTest {
     void Should_DefaultMinistralEnabledFalse_When_GetConfig() throws Exception {
         PiiDetectionConfig config = new PiiDetectionConfig(
             1, true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null,
-            LocalDateTime.now(), "admin"
+            LocalDateTime.now(), "admin", null
         );
         when(managePiiDetectionConfigPort.getConfig()).thenReturn(config);
 
@@ -75,7 +75,7 @@ class PiiDetectionConfigControllerMinistralTest {
     void Should_PersistMinistralFields_When_PutConfig() throws Exception {
         PiiDetectionConfig persisted = new PiiDetectionConfig(
             1, true, true, true, 2048, 256, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null,
-            LocalDateTime.now(), "admin"
+            LocalDateTime.now(), "admin", null
         );
         when(managePiiDetectionConfigPort.updateConfig(any(UpdatePiiDetectionConfigCommand.class)))
             .thenReturn(persisted);

@@ -10,6 +10,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionConfigRepository;
+import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRepository;
+import pro.softcom.aisentinel.application.pii.judge.service.JudgeCategoryPolicy;
 import pro.softcom.aisentinel.application.pii.judge.port.in.JudgeLaunchCommand;
 import pro.softcom.aisentinel.application.pii.judge.port.in.JudgePlan;
 import pro.softcom.aisentinel.application.pii.judge.port.in.JudgeScope;
@@ -33,6 +35,7 @@ import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
 import pro.softcom.aisentinel.domain.pii.reporting.LastScanMeta;
 import pro.softcom.aisentinel.domain.pii.judge.JudgeScanInProgressException;
 import pro.softcom.aisentinel.domain.pii.detection.PiiDetectionConfig;
+import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
 import pro.softcom.aisentinel.domain.pii.judge.JudgeApplyMode;
 import pro.softcom.aisentinel.domain.pii.judge.JudgeJob;
 import pro.softcom.aisentinel.domain.pii.judge.JudgeJobAlreadyRunningException;
@@ -52,6 +55,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -80,6 +84,8 @@ class JudgeEvaluationUseCaseTest {
     @Mock
     private PiiDetectionConfigRepository detectionConfigRepository;
     @Mock
+    private PiiTypeConfigRepository typeConfigRepository;
+    @Mock
     private JudgeJobRunner jobRunner;
 
     @Mock
@@ -95,7 +101,7 @@ class JudgeEvaluationUseCaseTest {
     @BeforeEach
     void setUp() {
         useCase = new JudgeEvaluationUseCase(remediationConfigPort, selectionResolver, judgeJobStore,
-                detectionConfigRepository, jobRunner, Runnable::run, checkpointRepository, scanResultQuery, scanExecutionOrchestrator, Clock.fixed(NOW, ZoneOffset.UTC));
+                detectionConfigRepository, jobRunner, Runnable::run, checkpointRepository, scanResultQuery, scanExecutionOrchestrator, Clock.fixed(NOW, ZoneOffset.UTC), new JudgeCategoryPolicy(detectionConfigRepository, typeConfigRepository));
         lenient().when(remediationConfigPort.isRemediationEnabled()).thenReturn(true);
         lenient().when(judgeJobStore.findActiveBySpace(anyString())).thenReturn(Optional.empty());
         lenient().when(detectionConfigRepository.findConfig()).thenReturn(config());
@@ -109,7 +115,7 @@ class JudgeEvaluationUseCaseTest {
                 mock(FindingRemediationStore.class), new ScanEventFindingResolver(severityService), new SelectionEvaluator());
         useCase = new JudgeEvaluationUseCase(remediationConfigPort, resolver, judgeJobStore,
                 detectionConfigRepository, jobRunner, Runnable::run, checkpointRepository, scanResultQuery,
-                scanExecutionOrchestrator, Clock.fixed(NOW, ZoneOffset.UTC));
+                scanExecutionOrchestrator, Clock.fixed(NOW, ZoneOffset.UTC), new JudgeCategoryPolicy(detectionConfigRepository, typeConfigRepository));
         when(scanResultQuery.findLatestScan()).thenReturn(Optional.of(new LastScanMeta("scan-other", NOW, 1)));
         when(checkpointRepository.findLatestBySpace("PCYBER"))
                 .thenReturn(Optional.of(ScanCheckpoint.builder().scanId("scan-cyber").spaceKey("PCYBER").build()));
@@ -353,13 +359,41 @@ class JudgeEvaluationUseCaseTest {
                 .createdAt(NOW).updatedAt(NOW).build();
     }
 
+    @Test
+    void Should_ExcludePagesAndAttachments_When_AllCategoriesDisabledBeforeLaunch() {
+        when(selectionResolver.resolve(any())).thenReturn(resolved(2, 3));
+        JudgeScope scope = new JudgeScope(List.of("A"), null);
+        org.assertj.core.api.Assertions.assertThat(useCase.plan(scope).totalFindings()).isEqualTo(5);
+        when(detectionConfigRepository.findConfig()).thenReturn(config(null, List.of()));
+        org.assertj.core.api.Assertions.assertThat(useCase.plan(scope).totalFindings()).isZero();
+        assertThatThrownBy(() -> useCase.launch(command(scope, "judge"))).isInstanceOf(IllegalArgumentException.class);
+        verify(judgeJobStore, never()).create(any());
+        verifyNoInteractions(jobRunner);
+    }
+
+    @Test
+    void Should_KeepPageAndAttachmentFindings_When_CategoryEnabledRegardlessOfDetectorFlags() {
+        when(selectionResolver.resolve(any())).thenReturn(resolved(1, 1));
+        when(detectionConfigRepository.findConfig()).thenReturn(config(null, List.of("FINANCIAL")));
+        when(typeConfigRepository.findAll()).thenReturn(List.of(PiiTypeConfig.builder()
+                .piiType("IBAN").detector("MINISTRAL").category("FINANCIAL").enabled(false).build()));
+        JudgeScope scope = new JudgeScope(List.of("A"), null);
+        org.assertj.core.api.Assertions.assertThat(useCase.plan(scope).totalFindings()).isEqualTo(2);
+        useCase.launch(command(scope, "judge"));
+        verify(jobRunner).run(any(), eq("scan-1"), argThat(ids -> ids.size() == 2));
+    }
+
     private static PiiDetectionConfig config() {
         return config(null);
     }
 
     private static PiiDetectionConfig config(String lmStudioJudgeModel) {
+        return config(lmStudioJudgeModel, null);
+    }
+
+    private static PiiDetectionConfig config(String lmStudioJudgeModel, List<String> categories) {
         return new PiiDetectionConfig(1, true, true, true, 2048, 410, BigDecimal.valueOf(0.75), true,
                 "localhost", 1234, "ministral-3b-pii-preview@q8_0", lmStudioJudgeModel, 4, false, null,
-                LocalDateTime.of(2026, 9, 3, 10, 0), "tester");
+                LocalDateTime.of(2026, 9, 3, 10, 0), "tester", categories);
     }
 }

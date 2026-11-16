@@ -3,11 +3,15 @@ package pro.softcom.aisentinel.application.pii.judge.service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pro.softcom.aisentinel.application.pii.detection.port.out.PiiDetectionConfigRepository;
+import pro.softcom.aisentinel.application.pii.detection.port.out.PiiTypeConfigRepository;
+import pro.softcom.aisentinel.application.pii.judge.service.JudgeCategoryPolicy;
 import pro.softcom.aisentinel.application.pii.judge.port.out.JudgeJobStore;
 import pro.softcom.aisentinel.application.pii.remediation.port.out.FindingRemediationStore;
 import pro.softcom.aisentinel.application.pii.remediation.port.out.PublishRemediationEventPort;
@@ -18,6 +22,7 @@ import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorException;
 import pro.softcom.aisentinel.domain.pii.detection.PiiDetectionConfig;
+import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
 import pro.softcom.aisentinel.domain.pii.judge.FindingJudgeAnswer;
 import pro.softcom.aisentinel.domain.pii.judge.FindingJudgeRequest;
 import pro.softcom.aisentinel.domain.pii.judge.JudgeApplyMode;
@@ -48,6 +53,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -74,6 +80,8 @@ class JudgeJobRunnerTest {
     @Mock
     private PiiDetectionConfigRepository detectionConfigRepository;
     @Mock
+    private PiiTypeConfigRepository typeConfigRepository;
+    @Mock
     private PublishRemediationEventPort publishRemediationEventPort;
 
     private JudgeJobRunner runner;
@@ -84,7 +92,7 @@ class JudgeJobRunnerTest {
     void setUp() {
         runner = new JudgeJobRunner(scanResultQuery, findingResolver, findingRemediationStore, judgeJobStore,
                 piiDetectorClient, detectionConfigRepository, publishRemediationEventPort,
-                Clock.fixed(NOW, ZoneOffset.UTC), new JudgeEndpoint(null, null));
+                Clock.fixed(NOW, ZoneOffset.UTC), new JudgeEndpoint(null, null), new JudgeCategoryPolicy(detectionConfigRepository, typeConfigRepository));
         iban = finding("IBAN", "CH93 0076 2011 6238 5295 7", "fp-iban");
         email = finding("EMAIL", "a@b.ch", "fp-email");
         lenient().when(detectionConfigRepository.findConfig()).thenReturn(config());
@@ -228,7 +236,7 @@ class JudgeJobRunnerTest {
     void Should_SendJudgeEndpointAndRequestedModel_When_StrataConfigured() {
         runner = new JudgeJobRunner(scanResultQuery, findingResolver, findingRemediationStore, judgeJobStore,
                 piiDetectorClient, detectionConfigRepository, publishRemediationEventPort,
-                Clock.fixed(NOW, ZoneOffset.UTC), new JudgeEndpoint("strata", 8081));
+                Clock.fixed(NOW, ZoneOffset.UTC), new JudgeEndpoint("strata", 8081), new JudgeCategoryPolicy(detectionConfigRepository, typeConfigRepository));
         when(findingResolver.resolve(any())).thenReturn(new Resolution(List.of(iban), 0));
         when(piiDetectorClient.judgeFinding(any())).thenReturn(answer("TRUE_POSITIVE", 0.99));
 
@@ -283,9 +291,50 @@ class JudgeJobRunnerTest {
                 .status(status).actor("someone").occurredAt(NOW).build();
     }
 
+    @ParameterizedTest
+    @EnumSource(JudgeApplyMode.class)
+    void Should_SkipExcludedFindingsWithoutErrors_When_AllCategoriesDisabled(JudgeApplyMode mode) {
+        when(detectionConfigRepository.findConfig()).thenReturn(config(List.of()));
+        runner.run(job(mode), SCAN_ID, Set.of(iban.findingId(), email.findingId()));
+        verify(piiDetectorClient, never()).judgeFinding(any());
+        verify(findingRemediationStore, never()).upsertAll(any());
+        assertThat(lastJobUpdate().total()).isZero();
+        assertThat(lastJobUpdate().processed()).isZero();
+        assertThat(lastJobUpdate().errors()).isZero();
+    }
+
+    @ParameterizedTest
+    @EnumSource(JudgeApplyMode.class)
+    void Should_NotWriteVerdict_When_CategoryDisabledDuringModelCall(JudgeApplyMode mode) {
+        when(typeConfigRepository.findAll()).thenReturn(List.of(PiiTypeConfig.builder()
+                .piiType("IBAN").detector("MINISTRAL").category("FINANCIAL").build()));
+        when(detectionConfigRepository.findConfig()).thenReturn(config(List.of("FINANCIAL")));
+        when(piiDetectorClient.judgeFinding(any())).thenAnswer(invocation -> {
+            when(detectionConfigRepository.findConfig()).thenReturn(config(List.of()));
+            return answer("FALSE_POSITIVE", 0.99);
+        });
+        runner.run(job(mode), SCAN_ID, Set.of(iban.findingId(), email.findingId()));
+        verify(piiDetectorClient, times(1)).judgeFinding(any());
+        verify(findingRemediationStore, never()).upsertAll(any());
+        assertThat(lastJobUpdate().total()).isZero();
+        assertThat(lastJobUpdate().errors()).isZero();
+    }
+
+    @Test
+    void Should_KeepPreparedIds_When_CategoryIsEnabledLater() {
+        when(piiDetectorClient.judgeFinding(any())).thenReturn(answer("TRUE_POSITIVE", 0.99));
+        runner.run(job(JudgeApplyMode.PROPOSE).toBuilder().total(1).build(), SCAN_ID, Set.of(iban.findingId()));
+        verify(piiDetectorClient, times(1)).judgeFinding(any());
+        assertThat(upsertedRows()).extracting(FindingRemediation::findingId).containsExactly(iban.findingId());
+    }
+
     private static PiiDetectionConfig config() {
+        return config(null);
+    }
+
+    private static PiiDetectionConfig config(List<String> categories) {
         return new PiiDetectionConfig(1, true, true, true, 2048, 410, BigDecimal.valueOf(0.75), true,
                 "localhost", 1234, "ministral-3b-pii-preview@q8_0", null, 4, false, null,
-                LocalDateTime.of(2026, 9, 3, 10, 0), "tester");
+                LocalDateTime.of(2026, 9, 3, 10, 0), "tester", categories);
     }
 }

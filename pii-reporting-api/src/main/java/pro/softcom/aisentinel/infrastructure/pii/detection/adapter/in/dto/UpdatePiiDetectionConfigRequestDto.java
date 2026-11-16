@@ -11,6 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * DTO for updating PII detection configuration via REST API.
@@ -102,7 +103,9 @@ public record UpdatePiiDetectionConfigRequestDto(
     Boolean ministralConcurrencyAuto,
 
     @JsonProperty("ministralConcurrencyTunedSignature")
-    String ministralConcurrencyTunedSignature
+    String ministralConcurrencyTunedSignature,
+
+    List<@NotBlank String> judgeEnabledCategories
 ) {
     /**
      * Validates business rules for the configuration request.

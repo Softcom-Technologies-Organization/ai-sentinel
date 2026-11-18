@@ -93,7 +93,7 @@ public class TestPiiDetectionClientConfiguration {
                 String value = m.group().trim();
                 if (value.length() < 8 || value.contains("@")) continue; // avoid overlaps
                 items.add(new ContentPiiDetection.SensitiveData(
-                    "PHONE", "Telephone",
+                    "PHONE", "Téléphone",
                     value,
                     ctx(m.start(), m.end()),
                     m.start(), m.end(), 0.80, "phone", DetectorSource.REGEX));

@@ -394,6 +394,6 @@ class JudgeEvaluationUseCaseTest {
     private static PiiDetectionConfig config(String lmStudioJudgeModel, List<String> categories) {
         return new PiiDetectionConfig(1, true, true, true, 2048, 410, BigDecimal.valueOf(0.75), true,
                 "localhost", 1234, "ministral-3b-pii-preview@q8_0", lmStudioJudgeModel, 4, false, null,
-                LocalDateTime.of(2026, 9, 3, 10, 0), "tester", categories);
+                LocalDateTime.of(2026, 9, 3, 10, 0), "tester", false, true, true, true, null, null, null, categories);
     }
 }

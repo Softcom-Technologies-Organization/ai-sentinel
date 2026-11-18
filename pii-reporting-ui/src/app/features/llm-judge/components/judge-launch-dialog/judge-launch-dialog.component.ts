@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, OnDestroy, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ButtonModule } from 'primeng/button';
@@ -8,6 +8,8 @@ import { TooltipModule } from 'primeng/tooltip';
 import { JudgeApplyMode, JudgeLaunchRequest, JudgeScopeDto } from '../../../../core/models/judge.model';
 import { PiiDetectionConfigService } from '../../../../core/services/pii-detection-config.service';
 import { TestIds } from '../../../test-ids.constants';
+import { JUDGE_PROVIDERS, JudgeProvider, LmStudioModelListing } from '../../../../core/models/pii-detection-config.model';
+import { Subscription, switchMap } from 'rxjs';
 
 /** One selectable scope; labels are translation keys, the hint may be a key or a literal (space names). */
 export interface JudgeScopeOption {
@@ -27,7 +29,6 @@ interface ModelOption {
 }
 
 export const DEFAULT_CONFIDENCE_PERCENT = 95;
-const DEFAULT_JUDGE_MODEL = 'qwen3.8-flash-next-iq3_s';
 const SECONDS_PER_CALL = 2;
 
 /**
@@ -43,7 +44,7 @@ const SECONDS_PER_CALL = 2;
   templateUrl: './judge-launch-dialog.component.html',
   styleUrl: './judge-launch-dialog.component.css',
 })
-export class JudgeLaunchDialogComponent {
+export class JudgeLaunchDialogComponent implements OnDestroy {
   readonly visible = input.required<boolean>();
   readonly scopeOptions = input.required<JudgeScopeOption[]>();
 
@@ -67,6 +68,11 @@ export class JudgeLaunchDialogComponent {
   readonly thresholdPercent = signal(DEFAULT_CONFIDENCE_PERCENT);
   readonly modelOptions = signal<ModelOption[]>([]);
   readonly modelsLoading = signal(false);
+  readonly modelsError = signal<string | null>(null);
+  readonly judgeProvider = signal<JudgeProvider | null>(null);
+  readonly judgeEndpoint = signal<string | null>(null);
+  readonly providerLabel = computed(() => JUDGE_PROVIDERS.find(provider => provider.value === this.judgeProvider())?.label);
+  private modelsSubscription: Subscription | null = null;
 
   readonly selectedOption = computed(() => {
     const options = this.scopeOptions();
@@ -74,14 +80,22 @@ export class JudgeLaunchDialogComponent {
   });
   readonly selectedCount = computed(() => this.selectedOption()?.count ?? 0);
   readonly estimatedMinutes = computed(() => Math.max(1, Math.ceil((this.selectedCount() * SECONDS_PER_CALL) / 60)));
-  readonly canLaunch = computed(() => !this.disabledReason() && this.selectedCount() > 0 && this.selectedOption() !== null);
+  readonly modelReady = computed(() => !this.modelsLoading() && !this.modelsError()
+    && (!this.judgeProvider() || !!this.selectedModel()?.trim()));
+  readonly canLaunch = computed(() => !this.disabledReason() && this.selectedCount() > 0 && this.modelReady());
 
   constructor() {
     effect(() => {
       if (this.visible()) {
         untracked(() => this.refreshModels());
+      } else {
+        this.modelsSubscription?.unsubscribe();
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.modelsSubscription?.unsubscribe();
   }
 
   onThresholdInput(event: Event): void {
@@ -105,28 +119,43 @@ export class JudgeLaunchDialogComponent {
   }
 
   refreshModels(): void {
+    this.modelsSubscription?.unsubscribe();
     this.modelsLoading.set(true);
-    this.detectionConfig.getConfig().subscribe({
-      next: (config) => {
-        this.selectedModel.set(this.selectedModel() ?? config.lmStudioJudgeModel ?? DEFAULT_JUDGE_MODEL);
-        this.listModels(config.lmStudioHost, config.lmStudioPort);
-      },
-      error: () => this.modelsLoading.set(false)
+    this.modelsError.set(null);
+    this.selectedModel.set(null);
+    this.modelOptions.set([]);
+    this.judgeEndpoint.set(null);
+    this.judgeProvider.set(null);
+    this.modelsSubscription = this.detectionConfig.getConfig().pipe(
+      switchMap(config => {
+        this.selectedModel.set(config.lmStudioJudgeModel ?? null);
+        this.judgeProvider.set(config.judgeProvider ?? null);
+        return this.detectionConfig.listLmStudioModels(
+          config.judgeProvider ? config.judgeHost ?? undefined : undefined,
+          config.judgeProvider ? config.judgePort ?? undefined : undefined,
+          true);
+      })
+    ).subscribe({
+      next: listing => this.applyModelListing(listing),
+      error: () => {
+        this.modelsError.set('judge.dialog.serverError');
+        this.modelsLoading.set(false);
+      }
     });
   }
 
-  private listModels(host: string, port: number): void {
-    this.detectionConfig.listLmStudioModels(host, port, true).subscribe({
-      next: (listing) => {
-        const notLoaded = this.transloco.translate('judge.dialog.notLoaded');
-        const loadedFirst = [...listing.models].sort((a, b) => Number(b.loaded) - Number(a.loaded));
-        this.modelOptions.set(loadedFirst.map((model) => ({
-          id: model.id,
-          label: model.loaded ? model.id : `${model.id} · ${notLoaded}`
-        })));
-        this.modelsLoading.set(false);
-      },
-      error: () => this.modelsLoading.set(false)
-    });
+  private applyModelListing(listing: LmStudioModelListing): void {
+    const notLoaded = this.transloco.translate('judge.dialog.notLoaded');
+    const hasLoadState = this.judgeProvider() === 'LM_STUDIO';
+    const models = hasLoadState ? [...listing.models].sort((a, b) => Number(b.loaded) - Number(a.loaded)) : listing.models;
+    this.modelOptions.set(models.map(model => ({
+      id: model.id,
+      label: !hasLoadState || model.loaded ? model.id : `${model.id} · ${notLoaded}`
+    })));
+    this.judgeEndpoint.set(listing.endpoint);
+    this.modelsError.set(listing.error ? 'judge.dialog.serverError' : null);
+    if (!listing.error && listing.models.length === 0) this.modelsError.set('judge.dialog.noModels');
+    if (!this.selectedModel() && listing.models.length === 1) this.selectedModel.set(listing.models[0].id);
+    this.modelsLoading.set(false);
   }
 }

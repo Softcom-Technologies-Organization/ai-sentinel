@@ -258,7 +258,7 @@
       "detectors": "Detection Engines",
       "thresholds": "Thresholds & Performance",
       "piiTypes": "PII Types",
-      "lmStudio": "LM Studio",
+      "lmStudio": "External local LLMs",
       "confluence": "Confluence Connection"
     },
     "subtitle": "Configure detection engines, thresholds and types of information to detect",
@@ -334,20 +334,20 @@
       "detectors": "Detection Engines",
       "threshold": "Detection Threshold",
       "performance": "Performance Optimization",
-      "lmStudio": "LM Studio Endpoint"
+      "lmStudio": "External local LLMs"
     },
     "lmStudio": {
-      "description": "Host and port of the OpenAI-compatible LM Studio instance serving the Ministral-PII model. Applied at the start of each new or resumed scan.",
-      "host": "Host",
+      "description": "Configure LLMs hosted on local servers outside the application. The main scan model detects personal data; the judge model reviews the results on demand, after the scan.",
+      "host": "Detection server host",
       "hostPlaceholder": "localhost",
       "hostHint": "Hostname or IP address of the LM Studio instance (e.g. localhost or 192.168.1.20).",
       "hostError": "Host is required and must not contain spaces or slashes.",
-      "port": "Port",
+      "port": "Detection server port",
       "portHint": "TCP port exposed by LM Studio (1-65535, default 1234).",
       "portError": "Port must be between 1 and 65535.",
-      "model": "Model",
+      "model": "Main scan LLM model",
       "modelPlaceholder": "ministral-3b-pii-preview@q4_k_m",
-      "modelHint": "Quantization of the Ministral-PII model to prompt, among those LM Studio has on disk. Changing the model re-runs the concurrency tuning at the next startup.",
+      "modelHint": "Model used by the Ministral-PII detector during the main scan. Choose a Ministral-PII family quantization available on the server. Changing the model re-runs concurrency tuning at the next startup.",
       "modelRefresh": "Reload the model list",
       "modelListError": "List unavailable ({{error}}). Type the LM Studio identifier by hand.",
       "modelNotListed": "not listed by LM Studio",
@@ -357,12 +357,17 @@
       "judgeCategories": "Categories evaluated by the judge",
       "judgeCategoriesHint": "These choices apply only to the judge and do not change the detectors. When a category selection is applied, unclassified types are skipped and a shared type requires all its categories to be enabled.",
       "judgeNoCategories": "No category selected: the judge will not evaluate any finding.",
-      "judgeModel": "Judge model",
-      "judgeModelPlaceholder": "Default: qwen3.8-flash-next-iq3_s",
-      "judgeModelHint": "Model used by the LLM judge on the configured judge server (Strata for DGNSI). Empty = Qwen 3.8 Next Flash by default.",
+      "judgeModel": "Post-filtering judge model",
+      "judgeModelPlaceholder": "Select or enter a model",
+      "judgeModelHint": "Model used only for on-demand post-filtering, on the configured judge server. Leave empty to use Qwen 3.8 Next Flash by default.",
       "judgeModelListError": "Judge model list unavailable ({{error}}). Type the model identifier by hand.",
       "judgeModelNotListed": "not listed by the judge server",
-      "judgeModelRefresh": "Reload the judge model list"
+      "judgeModelRefresh": "Reload the judge model list",
+      "judgeDescription": "The judge model reviews findings from the main scan to identify false positives. Run this post-filtering on demand from the results, after the scan; it does not run automatically. It remains available when the Ministral-PII detector is disabled.",
+      "judgeTitle": "After the scan — on-demand post-filtering",
+      "modelDisabledHint": "Model selection is available when the Ministral-PII detector is enabled under Detection Engine.",
+      "scanDescription": "Connection to the Ministral-PII detector server and selection of the LLM used during the main scan. These settings apply when starting or resuming a scan.",
+      "scanTitle": "Main scan — personal data detection"
     },
     "detectors": {
       "presidio": {
@@ -404,7 +409,13 @@
         "label": "Deterministic pre-filter",
         "description": "Rejects values whose format is mechanically invalid (IP, MAC, IBAN)."
       },
-      "detectorLabel": "Detector"
+      "detectorLabel": "Detector",
+      "trio": {
+        "label": "Trio PII",
+        "description": "Bards, CBX and Ettin analyze text in parallel. Choose the models and their PII types.",
+        "models": "Trio models",
+        "modelRequired": "Enable at least one trio model or disable the Trio PII detector."
+      }
     },
     "threshold": {
       "label": "Default Confidence Threshold",
@@ -438,7 +449,10 @@
       "detectorNames": {
         "PRESIDIO": "Presidio",
         "REGEX": "Regex",
-        "MINISTRAL": "Ministral-PII"
+        "MINISTRAL": "Ministral-PII",
+        "BARDS": "Bards",
+        "CBX": "CBX",
+        "ETTIN": "Ettin"
       },
       "categoryNames": {
         "SSN": "Social security numbers (SSN)",
@@ -463,7 +477,7 @@
         "Network": "Network Identifiers",
         "Medical": "Medical Information",
         "Business": "Business Identifiers",
-          "PERSONAL": "Personal Information",
+        "PERSONAL": "Personal Information",
         "Personal": "Personal Information",
         "LEGAL_ASSET": "Legal Assets",
         "IT_CREDENTIALS": "IT Credentials",
@@ -700,7 +714,39 @@
         "BIOMETRIC_IDENTIFIER": "Biometric identifier",
         "HEALTH_PLAN_BENEFICIARY_NUMBER": "Health plan beneficiary number",
         "BLOOD_TYPE": "Blood type",
-        "TIME": "Time"
+        "TIME": "Time",
+        "ACCOUNT_IDENTIFIER": "Account identifier",
+        "AUTH_SECRET": "Authentication secret",
+        "BANK_ACCOUNT_IDENTIFIER": "Bank account identifier",
+        "BIOMETRIC_DATA": "Biometric data",
+        "CERTIFICATE_SECRET": "Certificate secret",
+        "CLOUD_CREDENTIAL": "Cloud credential",
+        "CONTACT_HANDLE": "Contact handle",
+        "CRIMINAL_OFFENCE_DATA": "Criminal offence data",
+        "DATABASE_CREDENTIAL": "Database credential",
+        "DOCUMENT_IDENTIFIER": "Document identifier",
+        "DOCUMENT_REFERENCE": "Document reference",
+        "ENCRYPTION_KEY": "Encryption key",
+        "ETHNIC_ORIGIN": "Ethnic origin",
+        "FINANCIAL_AMOUNT": "Financial amount",
+        "GENERIC_SECRET": "Generic secret",
+        "GEO_LOCATION": "Geographical location",
+        "HEALTH_DATA": "Health data",
+        "IDENTIFYING_LINK": "Identifying link",
+        "ORGANIZATION_IDENTIFIER": "Organization identifier",
+        "PAYMENT_CARD_SECURITY": "Payment card security code",
+        "PERSON_ALIAS": "Person alias",
+        "PERSON_ATTRIBUTE": "Personal attribute",
+        "PERSON_IDENTIFIER": "Person identifier",
+        "PERSON_ROLE_OR_TITLE": "Person role or title",
+        "POLITICAL_OPINION": "Political opinion",
+        "PRIVATE_KEY": "Private key",
+        "PROPER_NAME": "Proper name",
+        "RELIGION_OR_BELIEF": "Religion or belief",
+        "SESSION_SECRET": "Session secret",
+        "SEXUAL_ORIENTATION": "Sexual orientation",
+        "TRADE_UNION_MEMBERSHIP": "Trade union membership",
+        "WEBHOOK_SECRET": "Webhook secret"
       },
       "typeDescriptions": {
         "FULL_NAME": "A person's full name (first + last)",
@@ -951,6 +997,20 @@
       "loadError": "Error loading configuration: {{error}}",
       "saveAllSuccess": "All configurations saved successfully",
       "saveAllError": "Error saving configurations: {{error}}"
+    },
+    "judge": {
+      "detectorTitle": "Ministral detector — LM Studio",
+      "title": "LLM judge",
+      "description": "Choose the server and model used to evaluate findings. These settings are independent of the Ministral detector.",
+      "provider": "Provider",
+      "hostHint": "Hostname or IP address of the judge server (e.g. localhost or 192.168.1.20).",
+      "inherited": "Existing configuration",
+      "inheritedHint": "The server defined by the deployment configuration remains in use. Choose a provider to override it.",
+      "endpoint": "Effective endpoint:",
+      "modelsError": "Unable to load judge models. Check that the server is running and verify its host and port, then refresh the list. You can also enter a model identifier.",
+      "required": "Enter a host, port and model for the selected provider.",
+      "host": "Judge server host",
+      "port": "Judge server port"
     }
   },
   "piiPageCard": {
@@ -1171,7 +1231,9 @@
       "cancel": "Cancel the evaluation",
       "notYetAvailable": "Not available yet"
     },
-    "dashboard": { "tooltip": "Have the LLM judge review the pending findings of scanned spaces" },
+    "dashboard": {
+      "tooltip": "Have the LLM judge review the pending findings of scanned spaces"
+    },
     "dialog": {
       "title": "Review findings with the LLM judge",
       "scope": "Scope",
@@ -1188,7 +1250,9 @@
       "duration": "Estimated duration <b>~{{minutes}} min</b>",
       "threshold": "Confidence threshold",
       "cancel": "Cancel",
-      "launch": "Start review ({{count}})"
+      "launch": "Start review ({{count}})",
+      "serverError": "Unable to load the judge configuration or models. Check the server in Settings → LLM servers, then refresh the list.",
+      "noModels": "No models are available on this server. Load a model on the server, then refresh the list."
     },
     "scope": {
       "allPending": "All pending findings",
@@ -1222,7 +1286,9 @@
       "clear": "Clear",
       "launch": "Review with LLM judge ({{count}})"
     },
-    "toast": { "completed": "Review completed: <b>{{fp}}</b> false positive(s) proposed for confirmation." }
+    "toast": {
+      "completed": "Review completed: <b>{{fp}}</b> false positive(s) proposed for confirmation."
+    }
   },
   "obfuscation": {
     "entry": {

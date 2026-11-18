@@ -23,7 +23,7 @@ _CARD_PATTERN = Pattern(
 def _iban_pattern() -> Pattern:
     countries = []
     for _, country, _, properties, _ in numdb.get("iban").prefixes:
-        length = sum(int(size) for size in re.findall(r"([0-9]+)!", properties["bban"]))
+        length = sum(int(size) for size in re.findall(r"(\d{1,2})!", properties["bban"], re.ASCII))
         blocks, remainder = divmod(length, 4)
         pattern = rf"{country}[0-9]{{2}}(?:{_SEPARATOR_PATTERN}?[A-Z0-9]{{4}}){{{blocks}}}"
         if remainder:

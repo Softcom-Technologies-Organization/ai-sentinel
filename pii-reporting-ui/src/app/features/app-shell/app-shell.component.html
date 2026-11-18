@@ -19,12 +19,13 @@
             [resizable]="false"
             [style]="{width: '75vw', height: '95vh'}"
             styleClass="settings-fullscreen-dialog"
-            [header]="'settings.title' | transloco"
-            (onHide)="onSettingsDialogHide()">
-    <app-pii-settings [dialogMode]="true"
-                      [initialTab]="settingsInitialTab()"
-                      (closeDialog)="closeSettingsDialog()"
-                      (settingsSaved)="onSettingsSaved()">
-    </app-pii-settings>
+            [header]="'settings.title' | transloco">
+    @if (showSettingsDialog()) {
+      <app-pii-settings [dialogMode]="true"
+                        [initialTab]="settingsInitialTab()"
+                        (closeDialog)="closeSettingsDialog()"
+                        (settingsSaved)="onSettingsSaved()">
+      </app-pii-settings>
+    }
   </p-dialog>
 </div>

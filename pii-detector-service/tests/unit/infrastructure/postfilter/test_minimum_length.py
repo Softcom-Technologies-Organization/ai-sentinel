@@ -20,6 +20,9 @@ from pii_detector.infrastructure.postfilter.format_postfilter_validator import (
         ("CREDIT_DEBIT_CARD", "12345678901", "123456789012"),
         ("AVS_NUMBER", "1234567890", "12345678901"),
         ("MAC_ADDRESS", "01:23:45:67:89:a", "01:23:45:67:89:ab"),
+        ("MEDICAL_RECORD_NUMBER", "MR-12", "MR-123"),
+        ("PHONE_NUMBER", "52 37 41", "952 37 41"),
+        ("FAX_NUMBER", "52 37 41", "952 37 41"),
         *[
             (kind, "1234", "12345")
             for kind in (

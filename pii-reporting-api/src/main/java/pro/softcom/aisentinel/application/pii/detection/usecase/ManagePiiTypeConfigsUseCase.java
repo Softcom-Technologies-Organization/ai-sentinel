@@ -6,6 +6,7 @@ import pro.softcom.aisentinel.domain.pii.detection.PiiTypeConfig;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -14,7 +15,7 @@ import java.util.stream.Collectors;
  * Business rules:
  * - Each PII type + detector combination is unique
  * - Threshold must be between 0.0 and 1.0
- * - Detector must be PRESIDIO, REGEX, or MINISTRAL
+ * - Detector must be PRESIDIO, REGEX, MINISTRAL, BARDS, CBX, or ETTIN
  * - Updates are transactional
  */
 public class ManagePiiTypeConfigsUseCase implements ManagePiiTypeConfigsPort {
@@ -78,10 +79,9 @@ public class ManagePiiTypeConfigsUseCase implements ManagePiiTypeConfigsPort {
         if (detector == null) {
             throw new IllegalArgumentException("Detector cannot be null");
         }
-        if (!detector.equals("PRESIDIO") && !detector.equals("REGEX")
-                && !detector.equals("MINISTRAL")) {
+        if (!Set.of("PRESIDIO", "REGEX", "MINISTRAL", "BARDS", "CBX", "ETTIN").contains(detector)) {
             throw new IllegalArgumentException(
-                    "Detector must be one of: PRESIDIO, REGEX, MINISTRAL. Got: " + detector
+                    "Detector must be one of: PRESIDIO, REGEX, MINISTRAL, BARDS, CBX, ETTIN. Got: " + detector
             );
         }
     }

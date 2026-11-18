@@ -75,7 +75,22 @@ def _create_schema_and_load_data(conn) -> None:
                 id              INTEGER PRIMARY KEY,
                 presidio_enabled BOOLEAN NOT NULL,
                 regex_enabled   BOOLEAN NOT NULL,
+                ministral_enabled BOOLEAN NOT NULL,
+                ministral_chunk_size INTEGER NOT NULL,
+                ministral_overlap INTEGER NOT NULL,
                 default_threshold NUMERIC(4,2) NOT NULL,
+                postfilter_enabled BOOLEAN NOT NULL,
+                lm_studio_host VARCHAR(255) NOT NULL,
+                lm_studio_port INTEGER NOT NULL,
+                lm_studio_model VARCHAR(255),
+                lm_studio_judge_model VARCHAR(255),
+                ministral_concurrency INTEGER NOT NULL,
+                ministral_concurrency_auto BOOLEAN NOT NULL,
+                ministral_concurrency_tuned_signature VARCHAR(255),
+                concurrency_bench_requested BOOLEAN NOT NULL,
+                concurrency_bench_status VARCHAR(255) NOT NULL,
+                concurrency_bench_progress INTEGER NOT NULL,
+                concurrency_bench_max_concurrency INTEGER NOT NULL,
                 updated_at      TIMESTAMP NULL,
                 updated_by      VARCHAR(128) NULL
             );
@@ -89,11 +104,10 @@ def _create_schema_and_load_data(conn) -> None:
                 detector       VARCHAR(32) NOT NULL,
                 enabled        BOOLEAN NOT NULL,
                 threshold      NUMERIC(4,2) NOT NULL,
-                display_name   VARCHAR(256) NOT NULL,
-                description    TEXT NULL,
                 category       VARCHAR(128) NULL,
                 country_code   VARCHAR(8) NULL,
                 detector_label VARCHAR(128) NULL,
+                severity       VARCHAR(16) NOT NULL,
                 created_at     TIMESTAMP NULL,
                 updated_at     TIMESTAMP NULL,
                 updated_by     VARCHAR(128) NULL,
@@ -112,33 +126,8 @@ def _create_schema_and_load_data(conn) -> None:
         with data_sql_path.open("r", encoding="utf-8") as f:
             sql_script = f.read()
 
-        # Clean SQL script: remove comments and empty lines
-        cleaned_lines = []
-        for line in sql_script.split("\n"):
-            line = line.strip()
-            # Skip comment-only lines and empty lines
-            if line and not line.startswith("--"):
-                cleaned_lines.append(line)
-        
-        cleaned_sql = " ".join(cleaned_lines)
-        
-        # Split by semicolon to get individual statements
-        statements = [stmt.strip() for stmt in cleaned_sql.split(";") if stmt.strip()]
-        
-        # Execute each statement
-        executed_count = 0
-        for stmt in statements:
-            try:
-                cur.execute(stmt)
-                executed_count += 1
-            except Exception as e:
-                # Log failed statement for debugging
-                print(f"WARNING: Failed to execute statement: {str(e)}")
-                print(f"Statement was: {stmt[:100]}...")
-                # Don't raise - continue with other statements
-        
+        cur.execute(sql_script)
         conn.commit()
-        print(f"INFO: Successfully executed {executed_count}/{len(statements)} SQL statements from data.sql")
 
 
 def _get_env_db_params() -> Optional[dict]:
@@ -221,6 +210,8 @@ def postgres_container() -> Generator[PostgresContainer, None, None]:
 
                 yield pg
                 return
+        except psycopg2.Error:
+            raise
         except Exception as e:
             # Fall back to env-based if provided; else skip
             env_params = _get_env_db_params()
@@ -235,17 +226,16 @@ def postgres_container() -> Generator[PostgresContainer, None, None]:
     if env_params:
         try:
             conn = psycopg2.connect(**env_params)
-            try:
-                _create_schema_and_load_data(conn)
-            finally:
-                conn.close()
-            # Ensure env is set (already is) for adapter
-            yield None  # type: ignore
-            return
-        except Exception as e:
+        except psycopg2.OperationalError as e:
             pytest.skip(
                 f"Skipping integration tests - failed to use local Postgres from env: {e}"
             )
+        try:
+            _create_schema_and_load_data(conn)
+        finally:
+            conn.close()
+        yield None  # type: ignore
+        return
 
     # Branch 3: Skip explicitly with clear reason
     reason = (

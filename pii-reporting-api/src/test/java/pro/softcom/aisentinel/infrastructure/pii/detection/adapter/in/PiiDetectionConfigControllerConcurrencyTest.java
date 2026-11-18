@@ -50,7 +50,7 @@ class PiiDetectionConfigControllerConcurrencyTest {
             1, true, true, true, 2048, 256, new BigDecimal("0.75"), false, "localhost", 1234, null,
             null,
             4, false, "localhost:1234|ministral",
-            LocalDateTime.now(), "admin", null
+            LocalDateTime.now(), "admin", false, true, true, true, null, null, null, null
         );
         when(managePiiDetectionConfigPort.getConfig()).thenReturn(config);
 
@@ -67,7 +67,7 @@ class PiiDetectionConfigControllerConcurrencyTest {
             1, true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null,
             null,
             1, true, null,
-            LocalDateTime.now(), "admin", null
+            LocalDateTime.now(), "admin", false, true, true, true, null, null, null, null
         );
         when(managePiiDetectionConfigPort.getConfig()).thenReturn(config);
 
@@ -84,7 +84,7 @@ class PiiDetectionConfigControllerConcurrencyTest {
             1, true, true, true, 2048, 256, new BigDecimal("0.75"), false, "localhost", 1234, null,
             null,
             8, false, "localhost:1234|ministral",
-            LocalDateTime.now(), "admin", null
+            LocalDateTime.now(), "admin", false, true, true, true, null, null, null, null
         );
         when(managePiiDetectionConfigPort.updateConfig(any(UpdatePiiDetectionConfigCommand.class)))
             .thenReturn(persisted);

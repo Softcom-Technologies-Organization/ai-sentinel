@@ -2,6 +2,8 @@ package pro.softcom.aisentinel.application.pii.detection.usecase;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -23,6 +25,17 @@ class ManagePiiTypeConfigsUseCaseTest {
 
     @InjectMocks
     private ManagePiiTypeConfigsUseCase useCase;
+
+    @ParameterizedTest
+    @ValueSource(strings = {"BARDS", "CBX", "ETTIN"})
+    void Should_UpdateTrioType_When_ChildDetectorIsKnown(String detector) {
+        PiiTypeConfig expected = PiiTypeConfig.builder()
+                .piiType("PASSWORD").detector(detector).enabled(false).threshold(0.7).build();
+        when(repository.updateAtomically("PASSWORD", detector, false, 0.7, "admin"))
+                .thenReturn(expected);
+
+        assertThat(useCase.updateConfig("PASSWORD", detector, false, 0.7, "admin")).isSameAs(expected);
+    }
 
     // ====== updateConfig detector validation ======
 

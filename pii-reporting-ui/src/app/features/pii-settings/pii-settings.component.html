@@ -124,6 +124,38 @@
                             </div>
                         </div>
 
+                        <section class="detector-card trio" aria-labelledby="trio-title">
+                            <div class="detector-card-main">
+                                <div class="detector-info">
+                                    <h4 id="trio-title" class="detector-name">{{ 'settings.detectors.trio.label' | transloco }}</h4>
+                                    <div class="detector-desc">{{ 'settings.detectors.trio.description' | transloco }}</div>
+                                </div>
+                                <p-toggleswitch
+                                    formControlName="trioEnabled"
+                                    (onChange)="onDetectorMasterToggle('TRIO')"
+                                    [ariaLabel]="'settings.detectors.trio.label' | transloco">
+                                </p-toggleswitch>
+                            </div>
+                            <fieldset class="advanced-params">
+                                <legend class="advanced-params-title">{{ 'settings.detectors.trio.models' | transloco }}</legend>
+                                @for (model of trioModels; track model.detector) {
+                                    <div class="trio-model-row">
+                                        <label [for]="model.control">{{ model.label }}</label>
+                                        <p-toggleswitch
+                                            [inputId]="model.control"
+                                            [ngModel]="configForm.get(model.control)?.value"
+                                            [ngModelOptions]="{standalone: true}"
+                                            (ngModelChange)="onTrioModelToggle(model.detector, $event)"
+                                            [disabled]="!configForm.get('trioEnabled')?.value">
+                                        </p-toggleswitch>
+                                    </div>
+                                }
+                            </fieldset>
+                            @if (configForm.hasError('trioModelRequired')) {
+                                <p-message severity="error">{{ 'settings.detectors.trio.modelRequired' | transloco }}</p-message>
+                            }
+                        </section>
+
                         <!-- Ministral-PII -->
                         <div class="detector-card ministral"
                              [class.enabled]="configForm.get('ministralEnabled')?.value"
@@ -481,28 +513,28 @@
                 }
 
                 <!-- PII Types grouped by detector -->
-                @for (detectorGroup of filteredPiiTypes(); track detectorGroup.detector) {
+                @for (displayGroup of displayedPiiGroups(); track displayGroup.detector) {
                     <div class="detector-group">
                         <!-- Detector group header -->
                         <div class="detector-group-header"
-                             [class.collapsed]="isDetectorCollapsed(detectorGroup.detector)">
+                             [class.collapsed]="isDetectorCollapsed(displayGroup.detector)">
                             <div class="detector-group-left">
                                 <button type="button"
                                         class="collapse-toggle"
-                                        (click)="toggleDetectorCollapse(detectorGroup.detector)"
-                                        [attr.aria-expanded]="!isDetectorCollapsed(detectorGroup.detector)"
-                                        [attr.aria-label]="(isDetectorCollapsed(detectorGroup.detector) ? 'dashboard.table.expand' : 'dashboard.table.collapse') | transloco">
+                                        (click)="toggleDetectorCollapse(displayGroup.detector)"
+                                        [attr.aria-expanded]="!isDetectorCollapsed(displayGroup.detector)"
+                                        [attr.aria-label]="(isDetectorCollapsed(displayGroup.detector) ? 'dashboard.table.expand' : 'dashboard.table.collapse') | transloco">
                                     <i class="pi"
-                                       [class.pi-chevron-down]="!isDetectorCollapsed(detectorGroup.detector)"
-                                       [class.pi-chevron-right]="isDetectorCollapsed(detectorGroup.detector)"></i>
+                                       [class.pi-chevron-down]="!isDetectorCollapsed(displayGroup.detector)"
+                                       [class.pi-chevron-right]="isDetectorCollapsed(displayGroup.detector)"></i>
                                 </button>
                                 <span class="detector-badge"
-                                      [class.presidio]="detectorGroup.detector === 'PRESIDIO'"
-                                      [class.regex]="detectorGroup.detector === 'REGEX'"
-                                      [class.ministral]="detectorGroup.detector === 'MINISTRAL'">
-                                    {{ detectorGroup.detector }}
+                                      [class.presidio]="displayGroup.detector === 'PRESIDIO'"
+                                      [class.regex]="displayGroup.detector === 'REGEX'"
+                                      [class.ministral]="displayGroup.detector === 'MINISTRAL'">
+                                    {{ displayGroup.detector === 'TRIO' ? ('settings.detectors.trio.label' | transloco) : displayGroup.detector }}
                                 </span>
-                                @if (detectorGroup.detector === 'MINISTRAL') {
+                                @if (displayGroup.detector === 'MINISTRAL') {
                                     <span class="ministral-no-threshold-hint">
                                         <i class="pi pi-info-circle" aria-hidden="true"></i>
                                         {{ 'settings.piiTypes.ministralNoThreshold' | transloco }}
@@ -512,7 +544,11 @@
                         </div>
 
                         <!-- Categories (collapsible) -->
-                        @if (!isDetectorCollapsed(detectorGroup.detector)) {
+                        @if (!isDetectorCollapsed(displayGroup.detector)) {
+                            @for (detectorGroup of displayGroup.groups; track detectorGroup.detector) {
+                                @if (displayGroup.detector === 'TRIO') {
+                                    <h4 class="trio-type-heading">{{ detectorGroup.detector }}</h4>
+                                }
                             @for (categoryGroup of detectorGroup.categories; track categoryGroup.category) {
                                 <!-- Category sub-header -->
                                 <div class="category-subheader">
@@ -564,6 +600,7 @@
                                             @if (type.enabled && isDetectorEnabled(detectorGroup.detector) && detectorGroup.detector !== 'MINISTRAL' && detectorGroup.detector !== 'REGEX') {
                                                 <p-inputNumber
                                                     [(ngModel)]="type.threshold"
+                                                    [ariaLabel]="('settings.piiTypes.threshold' | transloco) + ' — ' + detectorGroup.detector + ' — ' + piiTypeText(type, 'typeNames')"
                                                     (ngModelChange)="onPiiTypeThresholdChange(type, $event)"
                                                     [min]="0"
                                                     [max]="1"
@@ -580,19 +617,20 @@
                                     </div>
                                 }
                             }
+                            }
                         }
                     </div>
                 }
             }
 
-            <!-- ===== SECTION: LM STUDIO ===== -->
             @if (activeSection() === 'lm_studio') {
                 <form [formGroup]="configForm">
                     <h3 class="section-title">{{ 'settings.sections.lmStudio' | transloco }}</h3>
                     <p class="section-desc">{{ 'settings.lmStudio.description' | transloco }}</p>
 
-                    <div class="threshold-card">
-                        <!-- Host -->
+                    <section class="threshold-card" aria-labelledby="mainScanTitle">
+                        <h4 id="mainScanTitle" class="m-0">{{ 'settings.lmStudio.scanTitle' | transloco }}</h4>
+                        <p class="section-desc">{{ 'settings.lmStudio.scanDescription' | transloco }}</p>
                         <div class="advanced-param-field">
                             <label for="lmStudioHost" class="advanced-param-label">
                                 {{ 'settings.lmStudio.host' | transloco }}
@@ -614,7 +652,6 @@
                             }
                         </div>
 
-                        <!-- Port -->
                         <div class="advanced-param-field">
                             <label for="lmStudioPort" class="advanced-param-label">
                                 {{ 'settings.lmStudio.port' | transloco }}
@@ -641,12 +678,21 @@
                             }
                         </div>
 
-                        <!-- Model: a quantization of the Ministral-PII family, listed by LM Studio itself -->
                         <div class="advanced-param-field">
-                            <label for="lmStudioModel" class="advanced-param-label">
+                            <label for="lmStudioModel" class="advanced-param-label"
+                                [attr.tabindex]="isDetectorEnabled('MINISTRAL') ? null : 0"
+                                [pTooltip]="'settings.lmStudio.modelDisabledHint' | transloco"
+                                [tooltipDisabled]="isDetectorEnabled('MINISTRAL')"
+                                tooltipEvent="both"
+                                tooltipPosition="top">
                                 {{ 'settings.lmStudio.model' | transloco }}
                             </label>
-                            <div class="inline-controls">
+                            <div class="inline-controls"
+                                role="group"
+                                [attr.aria-label]="'settings.lmStudio.model' | transloco"
+                                [pTooltip]="'settings.lmStudio.modelDisabledHint' | transloco"
+                                [tooltipDisabled]="isDetectorEnabled('MINISTRAL')"
+                                tooltipPosition="top">
                                 @if (lmStudioModelsAvailable()) {
                                     <p-select
                                         inputId="lmStudioModel"
@@ -674,6 +720,7 @@
                                     data-testid="refreshLmStudioModels"
                                     icon="pi pi-refresh"
                                     [loading]="lmStudioModelsLoading()"
+                                    [disabled]="!isDetectorEnabled('MINISTRAL')"
                                     (click)="loadLmStudioModels()"
                                     (keydown.enter)="loadLmStudioModels()"
                                     styleClass="p-button-outlined p-button-sm"
@@ -681,7 +728,9 @@
                                 </p-button>
                             </div>
                             <small id="lmStudioModelHint" class="advanced-param-hint">
-                                @if (lmStudioModelsError()) {
+                                @if (!isDetectorEnabled('MINISTRAL')) {
+                                    {{ 'settings.lmStudio.modelDisabledHint' | transloco }}
+                                } @else if (lmStudioModelsError()) {
                                     {{ 'settings.lmStudio.modelListError' | transloco: {error: lmStudioModelsError()} }}
                                 } @else {
                                     {{ 'settings.lmStudio.modelHint' | transloco }}
@@ -694,6 +743,44 @@
                             }
                         </div>
 
+                    </section>
+
+                    <section class="threshold-card" aria-labelledby="judgeTitle">
+                        <h4 id="judgeTitle" class="m-0">{{ 'settings.lmStudio.judgeTitle' | transloco }}</h4>
+                        <p class="section-desc">{{ 'settings.lmStudio.judgeDescription' | transloco }}</p>
+                        <div class="advanced-param-field">
+                            <label for="judgeProvider" class="advanced-param-label">{{ 'settings.judge.provider' | transloco }}</label>
+                            <p-select inputId="judgeProvider" formControlName="judgeProvider"
+                                [options]="judgeProviders" optionLabel="label" optionValue="value"
+                                [placeholder]="'settings.judge.inherited' | transloco"
+                                (onChange)="onJudgeProviderChange($event.value)" />
+                        </div>
+                        @if (configForm.get('judgeProvider')?.value) {
+                            <div class="advanced-param-field">
+                                <label for="judgeHost" class="advanced-param-label">{{ 'settings.judge.host' | transloco }}</label>
+                                <input id="judgeHost" pInputText formControlName="judgeHost"
+                                    (blur)="loadJudgeModels()" aria-describedby="judgeHostHint" />
+                                <small id="judgeHostHint" class="advanced-param-hint">{{ 'settings.judge.hostHint' | transloco }}</small>
+                                @if (configForm.get('judgeHost')?.invalid) {
+                                    <small class="field-error" role="alert">{{ 'settings.lmStudio.hostError' | transloco }}</small>
+                                }
+                            </div>
+                            <div class="advanced-param-field">
+                                <label for="judgePort" class="advanced-param-label">{{ 'settings.judge.port' | transloco }}</label>
+                                <p-inputNumber inputId="judgePort" formControlName="judgePort"
+                                    [min]="1" [max]="65535" [useGrouping]="false" (onBlur)="loadJudgeModels()" />
+                                @if (configForm.get('judgePort')?.invalid) {
+                                    <small class="field-error" role="alert">{{ 'settings.lmStudio.portError' | transloco }}</small>
+                                }
+                            </div>
+                        } @else {
+                            <p class="advanced-param-hint">{{ 'settings.judge.inheritedHint' | transloco }}</p>
+                        }
+                        @if (judgeEndpoint()) {
+                            <p class="advanced-param-hint" data-testid="judgeEndpoint" aria-live="polite">
+                                {{ 'settings.judge.endpoint' | transloco }} <code>{{ judgeEndpoint() }}</code>
+                            </p>
+                        }
                         <div class="advanced-param-field">
                             <label for="lmStudioJudgeModel" class="advanced-param-label">
                                 {{ 'settings.lmStudio.judgeModel' | transloco }}
@@ -722,24 +809,24 @@
                                         [placeholder]="'settings.lmStudio.judgeModelPlaceholder' | transloco"
                                         [attr.aria-describedby]="'lmStudioJudgeModelHint'" />
                                 }
-                                <p-button
+                                <button pButton
                                     type="button"
                                     data-testid="refreshLmStudioJudgeModels"
                                     icon="pi pi-refresh"
                                     [loading]="judgeModelsLoading()"
+                                    [disabled]="judgeModelsLoading()"
                                     (click)="loadJudgeModels()"
-                                    (keydown.enter)="loadJudgeModels()"
-                                    styleClass="p-button-outlined p-button-sm"
-                                    [ariaLabel]="'settings.lmStudio.judgeModelRefresh' | transloco">
-                                </p-button>
+                                    class="p-button-outlined p-button-sm"
+                                    [attr.aria-label]="'settings.lmStudio.judgeModelRefresh' | transloco">
+                                </button>
                             </div>
-                            <small id="lmStudioJudgeModelHint" class="advanced-param-hint">
-                                @if (judgeModelsError()) {
-                                    {{ 'settings.lmStudio.judgeModelListError' | transloco: {error: judgeModelsError()} }}
-                                } @else {
-                                    {{ 'settings.lmStudio.judgeModelHint' | transloco }}
-                                }
-                            </small>
+                            <small id="lmStudioJudgeModelHint" class="advanced-param-hint">{{ 'settings.lmStudio.judgeModelHint' | transloco }}</small>
+                            @if (judgeModelsError()) {
+                                <small class="field-error" role="alert">{{ 'settings.judge.modelsError' | transloco }}</small>
+                            }
+                            @if (configForm.hasError('judgeConfigurationRequired')) {
+                                <small class="field-error" role="alert">{{ 'settings.judge.required' | transloco }}</small>
+                            }
                         </div>
                         <fieldset class="advanced-param-field" aria-describedby="judgeCategoriesHint" data-testid="judgeCategories">
                             <legend>{{ 'settings.lmStudio.judgeCategories' | transloco }}</legend>
@@ -764,7 +851,7 @@
                                 </p-message>
                             }
                         </fieldset>
-                    </div>
+                    </section>
                 </form>
             }
 

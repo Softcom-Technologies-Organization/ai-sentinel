@@ -27,6 +27,7 @@ from pii_detector.domain.entity.pii_entity import PIIEntity
 from pii_detector.domain.port.pii_detector_protocol import PIIDetectorProtocol
 from pii_detector.domain.service.detection_merger import DetectionMerger
 from pii_detector.infrastructure.detector.regex_detector import RegexDetector
+from pii_detector.infrastructure.detector.trio_detector import TrioDetector
 
 try:
     from pii_detector.infrastructure.detector.presidio_detector import PresidioDetector
@@ -61,7 +62,8 @@ class CompositePIIDetector:
         merger: Optional[DetectionMerger] = None,
         enable_regex: bool = True,
         enable_presidio: bool = True,
-        enable_ministral: bool = False
+        enable_ministral: bool = False,
+        trio_detector: Optional[TrioDetector] = None,
     ):
         """
         Initialize composite detector.
@@ -91,6 +93,7 @@ class CompositePIIDetector:
         # extractor, disabled by default per DB flag)
         self.ministral_detector = ministral_detector
         self.enable_ministral = enable_ministral and self.ministral_detector is not None
+        self.trio_detector = trio_detector or TrioDetector()
 
         # Initialize merger
         self._merger = merger or DetectionMerger(log_provenance=True)
@@ -187,6 +190,7 @@ class CompositePIIDetector:
         lm_studio_port: Optional[int] = None,
         ministral_concurrency: Optional[int] = None,
         lm_studio_model: Optional[str] = None,
+        enabled_trio_models: tuple[str, ...] = (),
     ) -> List[PIIEntity]:
         """
         Detect PII using the Regex, Presidio and Ministral detectors.
@@ -215,7 +219,7 @@ class CompositePIIDetector:
             text, threshold, enable_regex, enable_presidio, enable_ministral,
             pii_type_configs, ministral_chunk_size, ministral_overlap,
             lm_studio_host, lm_studio_port, ministral_concurrency,
-            lm_studio_model,
+            lm_studio_model, enabled_trio_models,
         )
         return entities
 
@@ -233,6 +237,7 @@ class CompositePIIDetector:
         lm_studio_port: Optional[int] = None,
         ministral_concurrency: Optional[int] = None,
         lm_studio_model: Optional[str] = None,
+        enabled_trio_models: tuple[str, ...] = (),
     ) -> Tuple[List[PIIEntity], List[Dict]]:
         """Detect PII and return per-detector execution stats alongside results.
 
@@ -269,13 +274,29 @@ class CompositePIIDetector:
             lm_studio_model,
         )
 
-        if not results_per_detector:
+        if not results_per_detector and not enabled_trio_models:
             self.logger.warning("No detectors available")
             return [], stats
 
         merged_entities = self._merger.merge(results_per_detector)
         self._log_detection_summary(results_per_detector, merged_entities)
+        if enabled_trio_models:
+            trio_entities, trio_stats = self.trio_detector.detect(
+                text, enabled_trio_models, pii_type_configs
+            )
+            merged_entities = self._merge_trio_entities(merged_entities, trio_entities)
+            stats.extend(trio_stats)
         return merged_entities, stats
+
+    @staticmethod
+    def _merge_trio_entities(entities, trio_entities):
+        # Partial overlaps carry complementary coverage in the measured trio.
+        unique = {}
+        for entity in entities + trio_entities:
+            key = (entity.start, entity.end, getattr(entity.pii_type, "name", entity.pii_type))
+            if key not in unique or entity.score > unique[key].score:
+                unique[key] = entity
+        return sorted(unique.values(), key=lambda entity: (entity.start, entity.end))
 
     def check_detectors_health(
         self,
@@ -285,6 +306,7 @@ class CompositePIIDetector:
         lm_studio_host: Optional[str] = None,
         lm_studio_port: Optional[int] = None,
         lm_studio_model: Optional[str] = None,
+        enabled_trio_models: tuple[str, ...] = (),
     ) -> List[Dict]:
         """Report whether each ENABLED detector can actually run right now.
 
@@ -318,6 +340,7 @@ class CompositePIIDetector:
             health.append(
                 self._ministral_health(lm_studio_host, lm_studio_port, lm_studio_model)
             )
+        health.extend(self.trio_detector.check_health(enabled_trio_models))
         return health
 
     @staticmethod
@@ -722,8 +745,8 @@ class CompositePIIDetector:
         last_pos = 0
 
         for entity in sorted_entities:
-            # Skip if entity overlaps with previous one
             if entity.start < last_pos:
+                last_pos = max(last_pos, entity.end)
                 continue
 
             parts.append(text[last_pos:entity.start])

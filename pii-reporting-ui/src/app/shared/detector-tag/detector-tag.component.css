@@ -29,3 +29,9 @@
   color: var(--sentinel-detector-unknown-color);
   border: 1px solid var(--sentinel-detector-unknown-border);
 }
+
+.detector-trio {
+  background: var(--sentinel-bg-surface);
+  color: var(--sentinel-text-default);
+  border: 1px solid var(--sentinel-border-medium);
+}

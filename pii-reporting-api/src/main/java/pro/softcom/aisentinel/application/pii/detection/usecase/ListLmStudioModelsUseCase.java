@@ -32,17 +32,14 @@ public class ListLmStudioModelsUseCase implements ListLmStudioModelsPort {
 
     @Override
     public LmStudioModelListing listModels(String lmStudioHost, Integer lmStudioPort, boolean allModels) {
-        JudgeEndpoint endpoint = allModels
-                ? judgeEndpoint.resolve(lmStudioHost, lmStudioPort)
-                : new JudgeEndpoint(lmStudioHost, lmStudioPort);
-        String host = endpoint.host();
-        Integer port = endpoint.port();
-        if (host == null || host.isBlank() || port == null) {
+        JudgeEndpoint endpoint = new JudgeEndpoint(lmStudioHost, lmStudioPort);
+        if (endpoint.host() == null || endpoint.port() == null) {
             PiiDetectionConfig config = configRepository.findConfig();
-            host = host == null || host.isBlank() ? config.lmStudioHost() : host;
-            port = port == null ? config.lmStudioPort() : port;
+            JudgeEndpoint fallback = allModels ? config.judgeEndpoint(judgeEndpoint)
+                    : new JudgeEndpoint(config.lmStudioHost(), config.lmStudioPort());
+            endpoint = endpoint.resolve(fallback.host(), fallback.port());
         }
-        log.debug("Listing LM Studio models at {}:{} (allModels={})", host, port, allModels);
-        return piiDetectorClient.listLmStudioModels(host, port, allModels);
+        log.debug("Listing LM Studio models at {}:{} (allModels={})", endpoint.host(), endpoint.port(), allModels);
+        return piiDetectorClient.listLmStudioModels(endpoint.host(), endpoint.port(), allModels);
     }
 }

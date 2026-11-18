@@ -24,7 +24,6 @@ import pro.softcom.aisentinel.application.pii.reporting.port.out.PersonallyIdent
 import pro.softcom.aisentinel.application.pii.reporting.port.out.ScanResultQuery;
 import pro.softcom.aisentinel.application.pii.scan.port.out.ScanCheckpointRepository;
 import pro.softcom.aisentinel.domain.pii.ScanStatus;
-import pro.softcom.aisentinel.domain.pii.reporting.LastScanMeta;
 import pro.softcom.aisentinel.domain.pii.reporting.ScanCheckpoint;
 import pro.softcom.aisentinel.infrastructure.pii.judge.adapter.in.PiiJudgeController;
 import pro.softcom.aisentinel.infrastructure.pii.judge.adapter.in.mapper.JudgeDtoMapper;
@@ -34,7 +33,6 @@ import pro.softcom.aisentinel.infrastructure.shared.adapter.in.GlobalExceptionHa
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.Executor;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -79,12 +77,9 @@ class JudgeLaunchGuardIntegrationTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = ScanStatus.class, names = {"RUNNING", "NOT_STARTED", "PAUSED"})
+    @EnumSource(value = ScanStatus.class, names = {"RUNNING", "NOT_STARTED"})
     void Should_ReturnConflictWithoutScheduling_When_ScanUnfinished(ScanStatus scanStatus) throws Exception {
         when(checkpointRepository.findAllLatestCheckpoints()).thenReturn(List.of(checkpoint(scanStatus)));
-        if (scanStatus == ScanStatus.PAUSED) {
-            when(scanResultQuery.findLatestScan()).thenReturn(Optional.of(new LastScanMeta("scan", Instant.EPOCH, 1)));
-        }
 
         mvc.perform(post(JOBS_URL).contentType(MediaType.APPLICATION_JSON).content(REQUEST))
                 .andExpect(status().isConflict())
@@ -104,9 +99,10 @@ class JudgeLaunchGuardIntegrationTest {
         verifyNoInteractions(jobExecutor, jobRunner);
     }
 
-    @Test
-    void Should_AcceptJob_When_ScanFinishedWithFindings() throws Exception {
-        when(checkpointRepository.findAllLatestCheckpoints()).thenReturn(List.of(checkpoint(ScanStatus.COMPLETED)));
+    @ParameterizedTest
+    @EnumSource(value = ScanStatus.class, names = {"COMPLETED", "PAUSED"})
+    void Should_AcceptJob_When_ScanIsIdleWithFindings(ScanStatus scanStatus) throws Exception {
+        when(checkpointRepository.findAllLatestCheckpoints()).thenReturn(List.of(checkpoint(scanStatus)));
         when(selectionResolver.resolve(any())).thenReturn(new ResolvedSelection("scan",
                 List.of(EligibleFinding.builder().findingId("finding").build()), List.of(), 0));
         when(clock.instant()).thenReturn(Instant.EPOCH);

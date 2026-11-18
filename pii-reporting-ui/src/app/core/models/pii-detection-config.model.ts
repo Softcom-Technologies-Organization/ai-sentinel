@@ -1,4 +1,11 @@
-export type DetectorType = 'PRESIDIO' | 'REGEX' | 'MINISTRAL';
+export type DetectorType = 'PRESIDIO' | 'REGEX' | 'MINISTRAL' | 'BARDS' | 'CBX' | 'ETTIN';
+
+export const JUDGE_PROVIDERS = [
+  {value: 'LM_STUDIO', label: 'LM Studio', port: 1234},
+  {value: 'OMLX', label: 'oMLX', port: 8000},
+  {value: 'STRATA', label: 'Strata', port: 8080}
+] as const;
+export type JudgeProvider = typeof JUDGE_PROVIDERS[number]['value'];
 
 /**
  * PII Detection Configuration model matching backend DTO.
@@ -8,6 +15,10 @@ export interface PiiDetectionConfig {
   regexEnabled: boolean;
   postfilterEnabled: boolean;
   ministralEnabled: boolean;
+  trioEnabled: boolean;
+  bardsEnabled: boolean;
+  cbxEnabled: boolean;
+  ettinEnabled: boolean;
   ministralChunkSize: number;
   ministralOverlap: number;
   ministralConcurrency: number;
@@ -22,6 +33,9 @@ export interface PiiDetectionConfig {
   lmStudioJudgeModel: string | null;
   judgeEnabledCategories?: string[] | null;
   judgeAvailableCategories?: string[];
+  judgeProvider: JudgeProvider | null;
+  judgeHost: string | null;
+  judgePort: number | null;
   updatedAt?: string;
   updatedBy?: string;
 }
@@ -34,6 +48,10 @@ export interface UpdatePiiDetectionConfigRequest {
   regexEnabled: boolean;
   postfilterEnabled: boolean;
   ministralEnabled: boolean;
+  trioEnabled: boolean;
+  bardsEnabled: boolean;
+  cbxEnabled: boolean;
+  ettinEnabled: boolean;
   ministralChunkSize: number;
   ministralOverlap: number;
   ministralConcurrency: number;
@@ -45,6 +63,9 @@ export interface UpdatePiiDetectionConfigRequest {
   lmStudioModel: string | null;
   lmStudioJudgeModel: string | null;
   judgeEnabledCategories?: string[] | null;
+  judgeProvider: JudgeProvider | null;
+  judgeHost: string | null;
+  judgePort: number | null;
 }
 
 /**

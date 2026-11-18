@@ -85,6 +85,8 @@ public class PiiDetectionConfigController {
             request.ministralConcurrencyAuto(),
             request.ministralConcurrencyTunedSignature(),
             updatedBy,
+            request.trioEnabled(), request.bardsEnabled(), request.cbxEnabled(), request.ettinEnabled(),
+            request.judgeProvider(), request.judgeHost(), request.judgePort(),
             request.judgeEnabledCategories()
         );
 
@@ -116,6 +118,8 @@ public class PiiDetectionConfigController {
             config.ministralConcurrencyTunedSignature(),
             config.updatedAt(),
             config.updatedBy(),
+            config.trioEnabled(), config.bardsEnabled(), config.cbxEnabled(), config.ettinEnabled(),
+            config.judgeProvider(), config.judgeHost(), config.judgePort(),
             config.judgeEnabledCategories(),
             managePiiDetectionConfigPort.getJudgeCategories()
         );

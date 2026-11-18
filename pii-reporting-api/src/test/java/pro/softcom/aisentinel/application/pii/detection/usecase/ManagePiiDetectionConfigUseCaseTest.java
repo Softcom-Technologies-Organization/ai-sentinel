@@ -45,17 +45,17 @@ class ManagePiiDetectionConfigUseCaseTest {
     void storedConfig() {
         lenient().when(repository.findConfig()).thenReturn(new PiiDetectionConfig(1, true, true, false,
                 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null,
-                LocalDateTime.now(), "system", null));
+                LocalDateTime.now(), "system", false, true, true, true, null, null, null, null));
     }
 
     @Test
     void Should_PreserveDisabledCategories_When_OldClientOmitsSelection() {
         PiiDetectionConfig existing = new PiiDetectionConfig(1, true, true, false, 1024, 128,
                 new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null,
-                LocalDateTime.now(), "operator", List.of("CONTACT"));
+                LocalDateTime.now(), "operator", false, true, true, true, null, null, null, List.of("CONTACT"));
         when(repository.findConfig()).thenReturn(existing);
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(true, true, false,
-                1024, 128, new BigDecimal("0.8"), false, "localhost", 1234, null, null, 1, true, null, "admin", null);
+                1024, 128, new BigDecimal("0.8"), false, "localhost", 1234, null, null, 1, true, null, "admin", false, true, true, true, null, null, null, null);
         assertThat(useCase.updateConfig(command).judgeEnabledCategories()).containsExactly("CONTACT");
     }
 
@@ -63,8 +63,60 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_PersistExplicitEmptySelection_When_AllCategoriesDisabled() {
         when(categoryPolicy.validate(List.of())).thenReturn(List.of());
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(true, true, false,
-                1024, 128, new BigDecimal("0.8"), false, "localhost", 1234, null, null, 1, true, null, "admin", List.of());
+                1024, 128, new BigDecimal("0.8"), false, "localhost", 1234, null, null, 1, true, null, "admin", false, true, true, true, null, null, null, List.of());
         assertThat(useCase.updateConfig(command).judgeEnabledCategories()).isEmpty();
+    }
+
+    @Test
+    void Should_PersistJudgeEndpoint_When_ExplicitlyConfigured() {
+        UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
+                true, false, false, 2048, 410, new BigDecimal("0.30"), false,
+                "localhost", 1234, null, "manual-model", 1, false, null, "admin",
+                false, true, true, true, "OMLX", "omlx", 8000, null);
+
+        PiiDetectionConfig saved = useCase.updateConfig(command);
+
+        assertThat(saved.judgeProvider()).isEqualTo("OMLX");
+        assertThat(saved.judgeHost()).isEqualTo("omlx");
+        assertThat(saved.judgePort()).isEqualTo(8000);
+        assertThat(saved.lmStudioJudgeModel()).isEqualTo("manual-model");
+        verify(repository).updateConfig(saved);
+    }
+
+    @Test
+    void Should_PersistTrioAndJudgeCategories_When_ConfiguredTogether() {
+        List<String> categories = List.of("CONTACT");
+        when(categoryPolicy.validate(categories)).thenReturn(categories);
+        UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
+                false, false, false, 2048, 410, new BigDecimal("0.30"), false,
+                "localhost", 1234, null, "manual-model", 1, false, null, "admin",
+                true, false, true, false, "OMLX", "omlx", 8000, categories);
+
+        PiiDetectionConfig saved = useCase.updateConfig(command);
+
+        assertThat(saved.trioEnabled()).isTrue();
+        assertThat(saved.bardsEnabled()).isFalse();
+        assertThat(saved.cbxEnabled()).isTrue();
+        assertThat(saved.ettinEnabled()).isFalse();
+        assertThat(saved.judgeProvider()).isEqualTo("OMLX");
+        assertThat(saved.judgeHost()).isEqualTo("omlx");
+        assertThat(saved.judgeEnabledCategories()).containsExactly("CONTACT");
+        verify(repository).updateConfig(saved);
+    }
+
+    @Test
+    void Should_PersistTrioChildren_When_TrioOnlyConfigured() {
+        UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
+                false, false, false, 2048, 410, new BigDecimal("0.30"), false,
+                "localhost", 1234, null, null, 1, false, null, "admin", true, false, true, false, null, null, null, null);
+
+        PiiDetectionConfig saved = useCase.updateConfig(command);
+
+        assertThat(saved.trioEnabled()).isTrue();
+        assertThat(saved.bardsEnabled()).isFalse();
+        assertThat(saved.cbxEnabled()).isTrue();
+        assertThat(saved.ettinEnabled()).isFalse();
+        verify(repository).updateConfig(saved);
     }
 
     @Test
@@ -72,7 +124,7 @@ class ManagePiiDetectionConfigUseCaseTest {
         // Arrange
         PiiDetectionConfig expectedConfig = new PiiDetectionConfig(
             1, true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null,
-            LocalDateTime.now(ZoneId.systemDefault()), "system", null
+            LocalDateTime.now(ZoneId.systemDefault()), "system", false, true, true, true, null, null, null, null
         );
         when(repository.findConfig()).thenReturn(expectedConfig);
 
@@ -88,7 +140,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_UpdateAndReturnConfig_When_ValidCommand() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            false, true, false, 1024, 128, new BigDecimal("0.80"), false, "localhost", 1234, null, null, 1, true, null, "testuser", null
+            false, true, false, 1024, 128, new BigDecimal("0.80"), false, "localhost", 1234, null, null, 1, true, null, "testuser", false, true, true, true, null, null, null, null
         );
 
         // Act
@@ -116,7 +168,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_PassPostfilterEnabledFlagThroughUseCase_When_CommandEnablesIt() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, false, true, 1024, 128, new BigDecimal("0.80"), true, "localhost", 1234, null, null, 1, true, null, "testuser", null
+            true, false, true, 1024, 128, new BigDecimal("0.80"), true, "localhost", 1234, null, null, 1, true, null, "testuser", false, true, true, true, null, null, null, null
         );
 
         // Act
@@ -135,7 +187,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_PassMinistralFieldsThroughUseCase_When_CommandEnablesIt() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, false, true, 2048, 256, new BigDecimal("0.80"), false, "localhost", 1234, null, null, 1, true, null, "testuser", null
+            true, false, true, 2048, 256, new BigDecimal("0.80"), false, "localhost", 1234, null, null, 1, true, null, "testuser", false, true, true, true, null, null, null, null
         );
 
         // Act
@@ -160,7 +212,7 @@ class ManagePiiDetectionConfigUseCaseTest {
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
             true, false, true, 2048, 256, new BigDecimal("0.80"), false, "localhost", 1234, null,
             null,
-            4, false, "localhost:1234|ministral", "testuser", null
+            4, false, "localhost:1234|ministral", "testuser", false, true, true, true, null, null, null, null
         );
 
         // Act
@@ -185,7 +237,7 @@ class ManagePiiDetectionConfigUseCaseTest {
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
             true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null,
             null,
-            21, false, null, "testuser", null
+            21, false, null, "testuser", false, true, true, true, null, null, null, null
         );
 
         // Act & Assert
@@ -198,7 +250,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_ThrowException_When_CommandHasInvalidThreshold() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, true, false, 1024, 128, new BigDecimal("1.5"), false, "localhost", 1234, null, null, 1, true, null, "testuser", null
+            true, true, false, 1024, 128, new BigDecimal("1.5"), false, "localhost", 1234, null, null, 1, true, null, "testuser", false, true, true, true, null, null, null, null
         );
 
         // Act & Assert
@@ -211,7 +263,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_ThrowException_When_CommandHasNegativeThreshold() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, true, false, 1024, 128, new BigDecimal("-0.1"), false, "localhost", 1234, null, null, 1, true, null, "testuser", null
+            true, true, false, 1024, 128, new BigDecimal("-0.1"), false, "localhost", 1234, null, null, 1, true, null, "testuser", false, true, true, true, null, null, null, null
         );
 
         // Act & Assert
@@ -224,7 +276,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_ThrowException_When_NoDetectorsEnabled() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            false, false, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser", null
+            false, false, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser", false, true, true, true, null, null, null, null
         );
 
         // Act & Assert
@@ -237,7 +289,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_UpdateConfig_When_OnlyPresidioEnabled() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, false, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser", null
+            true, false, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser", false, true, true, true, null, null, null, null
         );
 
         // Act
@@ -255,7 +307,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_UpdateConfig_When_OnlyRegexEnabled() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            false, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser", null
+            false, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser", false, true, true, true, null, null, null, null
         );
 
         // Act
@@ -273,7 +325,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_UpdateConfig_When_OnlyMinistralEnabled() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            false, false, true, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser", null
+            false, false, true, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser", false, true, true, true, null, null, null, null
         );
 
         // Act
@@ -291,7 +343,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_AcceptBoundaryThreshold_When_ThresholdIsZero() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, false, false, 1024, 128, BigDecimal.ZERO, false, "localhost", 1234, null, null, 1, true, null, "testuser", null
+            true, false, false, 1024, 128, BigDecimal.ZERO, false, "localhost", 1234, null, null, 1, true, null, "testuser", false, true, true, true, null, null, null, null
         );
 
         // Act
@@ -305,7 +357,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_AcceptBoundaryThreshold_When_ThresholdIsOne() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, false, false, 1024, 128, BigDecimal.ONE, false, "localhost", 1234, null, null, 1, true, null, "testuser", null
+            true, false, false, 1024, 128, BigDecimal.ONE, false, "localhost", 1234, null, null, 1, true, null, "testuser", false, true, true, true, null, null, null, null
         );
 
         // Act
@@ -319,7 +371,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_SetConfigIdToOne_When_UpdatingConfig() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser", null
+            true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser", false, true, true, true, null, null, null, null
         );
 
         // Act
@@ -335,7 +387,7 @@ class ManagePiiDetectionConfigUseCaseTest {
     void Should_PropagateException_When_RepositoryThrowsException() {
         // Arrange
         UpdatePiiDetectionConfigCommand command = new UpdatePiiDetectionConfigCommand(
-            true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser", null
+            true, true, false, 1024, 128, new BigDecimal("0.75"), false, "localhost", 1234, null, null, 1, true, null, "testuser", false, true, true, true, null, null, null, null
         );
         doThrow(new RuntimeException("Database error"))
             .when(repository).updateConfig(any());

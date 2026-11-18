@@ -42,6 +42,10 @@
     </fieldset>
 
     <div class="jd-field">
+      <p class="jd-server" data-testid="judge-server" aria-live="polite">
+        {{ providerLabel() || ('settings.judge.inherited' | transloco) }}
+        @if (judgeEndpoint()) { <code>{{ judgeEndpoint() }}</code> }
+      </p>
       <label class="jd-label" for="judge-model">{{ 'judge.dialog.model' | transloco }}</label>
       <div class="jd-model-row">
       <p-select
@@ -57,20 +61,23 @@
         styleClass="jd-select"
         [attr.data-testid]="testIds.model"
       />
-      <p-button
+      <button pButton
         type="button"
         icon="pi pi-refresh"
         [outlined]="true"
         size="small"
         [loading]="modelsLoading()"
+        [disabled]="modelsLoading()"
         (click)="refreshModels()"
-        (keydown.enter)="refreshModels()"
-        [ariaLabel]="'settings.lmStudio.modelRefresh' | transloco"
-        [pTooltip]="'settings.lmStudio.modelRefresh' | transloco"
+        [attr.aria-label]="'settings.lmStudio.judgeModelRefresh' | transloco"
+        [pTooltip]="'settings.lmStudio.judgeModelRefresh' | transloco"
         tooltipPosition="top"
         [attr.data-testid]="testIds.refreshModels"
-      />
+      ></button>
       </div>
+      @if (modelsError(); as error) {
+        <p class="jd-error" role="alert" data-testid="judge-model-error">{{ error | transloco }}</p>
+      }
     </div>
 
     <fieldset class="jd-field">

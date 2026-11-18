@@ -13,9 +13,10 @@ ALTER TABLE pii_type_config DROP CONSTRAINT IF EXISTS pii_type_config_pii_type_c
 -- ============================================================================
 -- PII Detection Global Config (Singleton with id=1)
 -- ============================================================================
-INSERT INTO pii_detection_config (id, presidio_enabled, regex_enabled, default_threshold, postfilter_enabled, updated_at, updated_by)
-VALUES (1, true, true, 0.30, false, CURRENT_TIMESTAMP, 'system')
-ON CONFLICT (id) DO NOTHING;
+UPDATE pii_detection_config
+SET presidio_enabled = true, regex_enabled = true, ministral_enabled = false,
+    trio_enabled = false, default_threshold = 0.30, postfilter_enabled = false
+WHERE id = 1;
 
 -- ============================================================================
 -- PRESIDIO PII TYPES
@@ -29,6 +30,7 @@ VALUES
     ('IBAN_CODE',       'PRESIDIO', true,  0.75, 'Financial', 'IBAN_CODE',       'HIGH',   CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('CRYPTO',          'PRESIDIO', true,  0.80, 'Financial', 'CRYPTO',          'HIGH',   CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('MAC_ADDRESS',     'PRESIDIO', true,  0.80, 'Network',   'MAC_ADDRESS',     'LOW',    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
+    ('IP_ADDRESS',      'PRESIDIO', true,  0.80, 'Network',   'IP_ADDRESS',      'LOW',    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('MEDICAL_LICENSE', 'PRESIDIO', true,  0.90, 'Medical',   'MEDICAL_LICENSE', 'HIGH',   CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('NRP',             'PRESIDIO', true,  0.90, 'Personal',  'NRP',             'MEDIUM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system')
     ON CONFLICT (pii_type, detector) DO NOTHING;
@@ -40,7 +42,6 @@ VALUES
     ('EMAIL_ADDRESS', 'PRESIDIO', false, 0.70, 'Contact',  'EMAIL_ADDRESS', 'LOW',    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('PHONE_NUMBER',  'PRESIDIO', false, 0.90, 'Contact',  'PHONE',         'LOW',    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('URL',           'PRESIDIO', false, 0.70, 'Contact',  'URL',           'LOW',    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
-    ('IP_ADDRESS',    'PRESIDIO', false, 0.80, 'Network',  'IP_ADDRESS',    'LOW',    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('PERSON',        'PRESIDIO', false, 0.90, 'Personal', 'PERSON',        'LOW',    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('LOCATION',      'PRESIDIO', false, 0.75, 'Location', 'LOCATION',      'LOW',    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),
     ('DATE_TIME',     'PRESIDIO', false, 0.75, 'Personal', 'DATE',          'LOW',    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'system'),

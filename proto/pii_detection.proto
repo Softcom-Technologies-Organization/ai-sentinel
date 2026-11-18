@@ -81,9 +81,8 @@ message DetectorRunStats {
   DetectorSource source = 1;
 
   // Wall-clock duration of this detector's execution for this request, in
-  // milliseconds. Detectors run sequentially within a request, so this is
-  // the real time spent by this detector (safe to sum per detector across
-  // requests to obtain cumulated busy time).
+  // milliseconds. Concurrent detectors overlap: sum per source across requests,
+  // never across sources to infer the request's elapsed time.
   int64 duration_ms = 2;
 
   // For real detectors: number of raw entities found (pre-merge).
@@ -272,4 +271,7 @@ enum DetectorSource {
   POSTFILTER = 7;
   // Specialised LLM PII detector (Ministral-PII).
   MINISTRAL = 8;
+  BARDS = 9;
+  CBX = 10;
+  ETTIN = 11;
 }

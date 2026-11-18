@@ -51,7 +51,9 @@ class JudgeDtoMapperTest {
 
     @Test
     void Should_RejectThreshold_When_OutsideRange() {
-        assertThatThrownBy(() -> mapper.toCommand(request(1.01), "tester"))
+        JudgeLaunchRequestDto request = request(1.01);
+
+        assertThatThrownBy(() -> mapper.toCommand(request, "tester"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

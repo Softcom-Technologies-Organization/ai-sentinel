@@ -256,6 +256,29 @@ class JudgeJobRunnerTest {
         return captor.getAllValues().stream().flatMap(Collection::stream).toList();
     }
 
+    @Test
+    void Should_PreferSavedEndpoint_When_JudgingWithEnvironmentFallback() {
+        runner = new JudgeJobRunner(scanResultQuery, findingResolver, findingRemediationStore, judgeJobStore,
+                piiDetectorClient, detectionConfigRepository, publishRemediationEventPort,
+                Clock.fixed(NOW, ZoneOffset.UTC), new JudgeEndpoint("strata", 8080),
+                new JudgeCategoryPolicy(detectionConfigRepository, typeConfigRepository));
+        when(detectionConfigRepository.findConfig()).thenReturn(new PiiDetectionConfig(
+                1, true, true, true, 2048, 410, BigDecimal.valueOf(0.75), true,
+                "localhost", 1234, "ministral", "manual-model", 4, false, null,
+                LocalDateTime.of(2026, 9, 3, 10, 0), "tester", false, true, true, true,
+                "OMLX", "omlx", 8000, null));
+        when(findingResolver.resolve(any())).thenReturn(new Resolution(List.of(iban), 0));
+        when(piiDetectorClient.judgeFinding(any())).thenReturn(answer("TRUE_POSITIVE", 0.99));
+
+        runner.run(job(JudgeApplyMode.PROPOSE), SCAN_ID, Set.of(iban.findingId()));
+
+        ArgumentCaptor<FindingJudgeRequest> captor = ArgumentCaptor.forClass(FindingJudgeRequest.class);
+        verify(piiDetectorClient).judgeFinding(captor.capture());
+        assertThat(captor.getValue().lmStudioHost()).isEqualTo("omlx");
+        assertThat(captor.getValue().lmStudioPort()).isEqualTo(8000);
+        assertThat(captor.getValue().model()).isEqualTo("judge@q8");
+    }
+
     private JudgeJob lastJobUpdate() {
         ArgumentCaptor<JudgeJob> captor = ArgumentCaptor.forClass(JudgeJob.class);
         verify(judgeJobStore, atLeastOnce()).update(captor.capture());
@@ -335,6 +358,6 @@ class JudgeJobRunnerTest {
     private static PiiDetectionConfig config(List<String> categories) {
         return new PiiDetectionConfig(1, true, true, true, 2048, 410, BigDecimal.valueOf(0.75), true,
                 "localhost", 1234, "ministral-3b-pii-preview@q8_0", null, 4, false, null,
-                LocalDateTime.of(2026, 9, 3, 10, 0), "tester", categories);
+                LocalDateTime.of(2026, 9, 3, 10, 0), "tester", false, true, true, true, null, null, null, categories);
     }
 }

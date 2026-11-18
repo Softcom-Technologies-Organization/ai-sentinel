@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
@@ -52,23 +53,99 @@ class PiiTypeConfigConsistencyTest {
     private JdbcTemplate jdbcTemplate;
 
     @Test
-    void Should_SeedNationalRulesDisabledAndKeepOperatorChoices_When_ReplayingSeed() {
-        assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM pii_type_config "
-                + "WHERE detector = 'REGEX' AND (pii_type LIKE 'SSN\\_%' OR pii_type LIKE 'TAX\\_ID\\_%') "
-                + "AND enabled", Integer.class)).isZero();
-        jdbcTemplate.update("UPDATE pii_type_config SET enabled = true, threshold = 0.99 "
-                + "WHERE pii_type = 'SSN_FR_NIR' AND detector = 'REGEX'");
-        jdbcTemplate.update("UPDATE pii_type_config SET enabled = false, threshold = 0.98 "
-                + "WHERE pii_type IN ('AVS_NUMBER', 'SOCIALNUM') AND detector = 'REGEX'");
+    void Should_AddNullableJudgeColumns_When_MigratingLegacyConfiguration() {
+        jdbcTemplate.update("UPDATE pii_detection_config SET lm_studio_judge_model = 'legacy-model' WHERE id = 1");
+        jdbcTemplate.execute("ALTER TABLE pii_detection_config DROP COLUMN judge_provider, "
+                + "DROP COLUMN judge_host, DROP COLUMN judge_port");
+        jdbcTemplate.execute((ConnectionCallback<Void>) connection -> {
+            var migration = new FileSystemResource("init-scripts/022-judge-provider.sql");
+            ScriptUtils.executeSqlScript(connection, migration);
+            ScriptUtils.executeSqlScript(connection, migration);
+            return null;
+        });
+
+        assertThat(jdbcTemplate.queryForMap("SELECT judge_provider, judge_host, judge_port, lm_studio_judge_model "
+                + "FROM pii_detection_config WHERE id = 1"))
+                .containsEntry("judge_provider", null).containsEntry("judge_host", null)
+                .containsEntry("judge_port", null).containsEntry("lm_studio_judge_model", "legacy-model");
+    }
+
+    @Test
+    void Should_PreserveJudgeConfiguration_When_ReplayingSeed() {
+        jdbcTemplate.update("UPDATE pii_detection_config SET judge_provider = 'OMLX', "
+                + "judge_host = 'omlx', judge_port = 8000, lm_studio_judge_model = 'manual-model' WHERE id = 1");
 
         replaySeed();
 
-        assertThat(regexRule("SSN_FR_NIR")).containsEntry("enabled", true)
-                .containsEntry("threshold", 0.99);
+        assertThat(jdbcTemplate.queryForMap("SELECT judge_provider, judge_host, judge_port, lm_studio_judge_model "
+                + "FROM pii_detection_config WHERE id = 1"))
+                .containsEntry("judge_provider", "OMLX").containsEntry("judge_host", "omlx")
+                .containsEntry("judge_port", 8000).containsEntry("lm_studio_judge_model", "manual-model");
+    }
+
+    @Test
+    void Should_PreserveTrioChoices_When_ReplayingSeed() {
+        jdbcTemplate.update("UPDATE pii_type_config SET enabled = false, threshold = 0.67 "
+                + "WHERE pii_type = 'PASSWORD' AND detector = 'ETTIN'");
+        jdbcTemplate.update("UPDATE pii_detection_config SET trio_enabled = true, "
+                + "bards_enabled = false, cbx_enabled = true, ettin_enabled = false WHERE id = 1");
+
+        replaySeed();
+
+        assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM pii_type_config "
+                + "WHERE detector IN ('BARDS', 'CBX', 'ETTIN')", Integer.class)).isEqualTo(104);
+        assertThat(jdbcTemplate.queryForMap("SELECT enabled, threshold FROM pii_type_config "
+                + "WHERE pii_type = 'PASSWORD' AND detector = 'ETTIN'"))
+                .containsEntry("enabled", false).containsEntry("threshold", 0.67);
+        assertThat(jdbcTemplate.queryForMap("SELECT trio_enabled, bards_enabled, cbx_enabled, ettin_enabled "
+                + "FROM pii_detection_config WHERE id = 1"))
+                .containsEntry("trio_enabled", true).containsEntry("bards_enabled", false)
+                .containsEntry("cbx_enabled", true).containsEntry("ettin_enabled", false);
+    }
+
+    @Test
+    void Should_RemoveRetiredRulesAndKeepOperatorChoices_When_ReplayingSeed() {
+        jdbcTemplate.update("INSERT INTO pii_type_config "
+                + "(pii_type, detector, enabled, threshold, category, created_at, updated_at, updated_by) "
+                + "SELECT retired.pii_type, retired.detector, true, 0.99, 'SSN', "
+                + "CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'operator' FROM (VALUES "
+                + "('SSN_FR_NIR', 'REGEX'), ('TAX_ID_CH_UID', 'REGEX'), "
+                + "('SSN_FR_NIR', 'PRESIDIO'), ('CUSTOM_REFERENCE', 'REGEX')) AS retired(pii_type, detector)");
+        jdbcTemplate.update("UPDATE pii_type_config SET enabled = false, threshold = 0.98 "
+                + "WHERE pii_type IN ('AVS_NUMBER', 'SOCIALNUM') AND detector = 'REGEX'");
+
+        jdbcTemplate.update("UPDATE pii_detection_config "
+                + "SET judge_enabled_categories = '[\"SSN\",\"TAX_ID\",\"IDENTITY\"]'::jsonb");
+
+        replaySeed();
+        replaySeed();
+
+        assertThat(jdbcTemplate.queryForList("SELECT pii_type FROM pii_type_config "
+                + "WHERE detector = 'REGEX'", String.class))
+                .containsExactlyInAnyOrder("AVS_NUMBER", "SOCIALNUM", "API_KEY", "CUSTOM_REFERENCE");
+        assertThat(jdbcTemplate.queryForObject("SELECT enabled FROM pii_type_config "
+                + "WHERE detector = 'PRESIDIO' AND pii_type = 'SSN_FR_NIR'", Boolean.class)).isTrue();
+        assertThat(jdbcTemplate.queryForObject("SELECT judge_enabled_categories::text "
+                + "FROM pii_detection_config WHERE id = 1", String.class)).isEqualTo("[\"SSN\", \"IDENTITY\"]");
         assertThat(regexRule("SOCIALNUM")).containsEntry("enabled", false)
                 .containsEntry("threshold", 0.98);
         assertThat(regexRule("AVS_NUMBER")).containsEntry("enabled", false)
                 .containsEntry("threshold", 0.98).containsEntry("category", "SSN");
+    }
+
+    @Test
+    void Should_KeepJudgeCategory_When_CustomRuleStillUsesIt() {
+        jdbcTemplate.update("UPDATE pii_type_config SET category = 'Tax ID' "
+                + "WHERE pii_type = 'API_KEY' AND detector = 'REGEX'");
+        jdbcTemplate.update("UPDATE pii_detection_config SET judge_enabled_categories = '[\"TAX_ID\"]'::jsonb");
+
+        replaySeed();
+
+        assertThat(jdbcTemplate.queryForObject("SELECT judge_enabled_categories::text "
+                + "FROM pii_detection_config WHERE id = 1", String.class)).isEqualTo("[\"TAX_ID\"]");
+        jdbcTemplate.update("UPDATE pii_type_config SET category = 'IT_CREDENTIALS' "
+                + "WHERE pii_type = 'API_KEY' AND detector = 'REGEX'");
+        replaySeed();
     }
 
     private Map<String, Object> regexRule(String type) {

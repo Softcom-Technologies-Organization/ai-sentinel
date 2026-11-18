@@ -64,14 +64,14 @@ class JudgeCategoryPolicyTest {
     }
 
     @Test
-    void Should_RequireEveryPossibleCategory_When_RegexRulesShareEmittedType() {
+    void Should_ResolveHistoricalRegexTypes_When_SelectingCategories() {
         when(types.findAll()).thenReturn(List.of(type("IDENTITY", "SOCIALNUM", "REGEX"),
-                type("SSN", "SSN_FR_NIR", "REGEX"), type("TAX_ID", "TAX_ID_CH_UID", "REGEX")));
+                type("SSN", "AVS_NUMBER", "REGEX")));
         when(config.judgeEnabledCategories()).thenReturn(List.of("IDENTITY"));
-        assertThat(policy.allows(finding("SOCIALNUM", "REGEX"))).isFalse();
-        when(config.judgeEnabledCategories()).thenReturn(List.of("IDENTITY", "SSN", "TAX_ID"));
         assertThat(policy.allows(finding("SOCIALNUM", "REGEX"))).isTrue();
-        assertThat(policy.allows(finding("TAX_ID", "REGEX"))).isTrue();
+        assertThat(policy.allows(finding("AVS_NUMBER", "REGEX"))).isFalse();
+        when(config.judgeEnabledCategories()).thenReturn(List.of("IDENTITY", "SSN"));
+        assertThat(policy.allows(finding("AVS_NUMBER", "REGEX"))).isTrue();
     }
 
     @Test

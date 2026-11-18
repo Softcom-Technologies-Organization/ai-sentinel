@@ -15,7 +15,7 @@ services:
   # PII DETECTOR (Python/gRPC) — corporate CA for outbound HTTPS / model download
   # ============================================================================
   pii-detector:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-pii-detector:v1.2.0-rc.2-strata-qwen
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-pii-detector:v1.2.0-rc.3-trio
     pull_policy: never
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -32,7 +32,7 @@ services:
   # (Confluence, SharePoint, Jira connectors)
   # ============================================================================
   pii-reporting-api:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-api:v1.2.0-rc.2-strata-qwen
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-api:v1.2.0-rc.3-trio
     pull_policy: never
     environment:
       LLM_JUDGE_HOST: ${LLM_JUDGE_HOST:-host.docker.internal}
@@ -50,5 +50,5 @@ services:
   # PII REPORTING UI (Angular + Nginx) — pinned to the self-built tag
   # ============================================================================
   pii-reporting-ui:
-    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-ui:v1.2.0-rc.2-strata-qwen
+    image: ghcr.io/softcom-technologies-organization/ai-sentinel-reporting-ui:v1.2.0-rc.3-trio
     pull_policy: never

@@ -31,7 +31,8 @@ class GrpcDirectConnectionTest {
             
             PiiDetection.PIIDetectionRequest request = 
                 PiiDetection.PIIDetectionRequest.newBuilder()
-                    .setContent("Test email john@gmail.com")
+                    .setContent("My email is john@gmail.com and my password is S3cretP@ssw0rd!")
+                    .setFetchConfigFromDb(true)
                     .setThreshold(0.5f)
                     .build();
             

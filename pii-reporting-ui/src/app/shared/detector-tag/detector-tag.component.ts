@@ -23,6 +23,9 @@ export class DetectorTagComponent {
     switch (this.detector()) {
       case 'PRESIDIO': return 'detector-presidio';
       case 'REGEX': return 'detector-regex';
+      case 'BARDS':
+      case 'CBX':
+      case 'ETTIN': return 'detector-trio';
       default: return 'detector-unknown';
     }
   }

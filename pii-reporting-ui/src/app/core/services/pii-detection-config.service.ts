@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   ConcurrencyBenchStatus,
+  DetectorType,
   LmStudioModelListing,
   GroupedPiiTypes,
   PiiDetectionConfig,
@@ -49,9 +50,13 @@ export class PiiDetectionConfigService {
   /**
    * List detection models, or judge models from the separately configured endpoint (allModels).
    */
-  listLmStudioModels(host: string, port: number, allModels = false): Observable<LmStudioModelListing> {
+  listLmStudioModels(host?: string, port?: number, allModels = false): Observable<LmStudioModelListing> {
     return this.http.get<LmStudioModelListing>(`${this.lmStudioApiUrl}/models`, {
-      params: {host, port: String(port), ...(allModels ? {all: 'true'} : {})}
+      params: {
+        ...(host ? {host} : {}),
+        ...(port == null ? {} : {port: String(port)}),
+        ...(allModels ? {all: 'true'} : {})
+      }
     });
   }
 
@@ -79,7 +84,7 @@ export class PiiDetectionConfigService {
   /**
    * Get PII type configurations for a specific detector.
    */
-  getPiiTypeConfigsByDetector(detector: 'PRESIDIO' | 'REGEX'): Observable<PiiTypeConfig[]> {
+  getPiiTypeConfigsByDetector(detector: DetectorType): Observable<PiiTypeConfig[]> {
     return this.http.get<PiiTypeConfig[]>(`${this.typesApiUrl}/${detector}`);
   }
 

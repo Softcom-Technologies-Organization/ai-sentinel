@@ -174,7 +174,7 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 true,  // ministralConcurrencyAuto (auto-tune at startup)
                 null,  // ministralConcurrencyTunedSignature (never tuned)
                 LocalDateTime.now(ZoneId.of("UTC")),
-                "system", null
+                "system", false, true, true, true, null, null, null, null
         );
 
         self.updateConfig(defaultConfig);
@@ -203,6 +203,11 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 entity.getMinistralConcurrencyTunedSignature(),
                 entity.getUpdatedAt(),
                 entity.getUpdatedBy(),
+                Boolean.TRUE.equals(entity.getTrioEnabled()),
+                !Boolean.FALSE.equals(entity.getBardsEnabled()),
+                !Boolean.FALSE.equals(entity.getCbxEnabled()),
+                !Boolean.FALSE.equals(entity.getEttinEnabled()),
+                entity.getJudgeProvider(), entity.getJudgeHost(), entity.getJudgePort(),
                 entity.getJudgeEnabledCategories()
         );
     }
@@ -216,6 +221,10 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 .presidioEnabled(config.presidioEnabled())
                 .regexEnabled(config.regexEnabled())
                 .ministralEnabled(config.ministralEnabled())
+                .trioEnabled(config.trioEnabled())
+                .bardsEnabled(config.bardsEnabled())
+                .cbxEnabled(config.cbxEnabled())
+                .ettinEnabled(config.ettinEnabled())
                 .ministralChunkSize(config.ministralChunkSize())
                 .ministralOverlap(config.ministralOverlap())
                 .defaultThreshold(config.defaultThreshold())
@@ -224,6 +233,9 @@ public class PiiDetectionConfigPersistenceAdapter implements PiiDetectionConfigR
                 .lmStudioPort(config.lmStudioPort())
                 .lmStudioModel(config.lmStudioModel())
                 .lmStudioJudgeModel(config.lmStudioJudgeModel())
+                .judgeProvider(config.judgeProvider())
+                .judgeHost(config.judgeHost())
+                .judgePort(config.judgePort())
                 .judgeEnabledCategories(config.judgeEnabledCategories())
                 .ministralConcurrency(config.ministralConcurrency())
                 .ministralConcurrencyAuto(config.ministralConcurrencyAuto())

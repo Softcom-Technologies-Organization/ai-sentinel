@@ -53,7 +53,7 @@ class ListLmStudioModelsUseCaseTest {
         when(configRepository.findConfig()).thenReturn(new PiiDetectionConfig(
             1, true, true, true, 2048, 410, new BigDecimal("0.30"), true,
             "10.10.17.145", 1234, "ministral-3b-pii-preview@q8_0", null, 4, true, null,
-            LocalDateTime.now(), "system", null));
+            LocalDateTime.now(), "system", false, true, true, true, null, null, null, null));
         when(piiDetectorClient.listLmStudioModels("10.10.17.145", 1234, false)).thenReturn(LISTING);
 
         LmStudioModelListing result = useCase().listModels(" ", null, false);
@@ -74,12 +74,12 @@ class ListLmStudioModelsUseCaseTest {
     }
 
     @Test
-    void Should_QueryJudgeEndpoint_When_AllModelsRequested() {
+    void Should_PreservePreviewEndpoint_When_JudgeEnvironmentIsConfigured() {
         var useCase = new ListLmStudioModelsUseCase(piiDetectorClient, configRepository,
                 new JudgeEndpoint("strata", 8081));
-        when(piiDetectorClient.listLmStudioModels("strata", 8081, true)).thenReturn(LISTING);
+        when(piiDetectorClient.listLmStudioModels("preview", 8000, true)).thenReturn(LISTING);
 
-        assertThat(useCase.listModels("ministral", 1234, true)).isEqualTo(LISTING);
+        assertThat(useCase.listModels("preview", 8000, true)).isEqualTo(LISTING);
 
         verify(configRepository, never()).findConfig();
     }
@@ -91,5 +91,48 @@ class ListLmStudioModelsUseCaseTest {
         when(piiDetectorClient.listLmStudioModels("ministral", 1234, false)).thenReturn(LISTING);
 
         assertThat(useCase.listModels("ministral", 1234, false)).isEqualTo(LISTING);
+    }
+
+    @Test
+    void Should_QuerySavedJudge_When_PreviewIsAbsent() {
+        when(configRepository.findConfig()).thenReturn(judgeConfig("OMLX", "omlx", 8000));
+        when(piiDetectorClient.listLmStudioModels("omlx", 8000, true)).thenReturn(LISTING);
+        var useCase = new ListLmStudioModelsUseCase(piiDetectorClient, configRepository,
+                new JudgeEndpoint("environment", 8080));
+
+        assertThat(useCase.listModels(null, null, true)).isEqualTo(LISTING);
+    }
+
+    @Test
+    void Should_QueryEnvironment_When_SavedJudgeIsAbsent() {
+        when(configRepository.findConfig()).thenReturn(judgeConfig(null, null, null));
+        when(piiDetectorClient.listLmStudioModels("environment", 8080, true)).thenReturn(LISTING);
+        var useCase = new ListLmStudioModelsUseCase(piiDetectorClient, configRepository,
+                new JudgeEndpoint("environment", 8080));
+
+        assertThat(useCase.listModels(null, null, true)).isEqualTo(LISTING);
+    }
+
+    @Test
+    void Should_FillOnlyMissingPreviewValue_When_JudgeIsSaved() {
+        when(configRepository.findConfig()).thenReturn(judgeConfig("OMLX", "omlx", 8000));
+        when(piiDetectorClient.listLmStudioModels("preview", 8000, true)).thenReturn(LISTING);
+
+        assertThat(useCase().listModels("preview", null, true)).isEqualTo(LISTING);
+    }
+
+    @Test
+    void Should_IgnoreSavedJudge_When_ListingDetectionModels() {
+        when(configRepository.findConfig()).thenReturn(judgeConfig("OMLX", "omlx", 8000));
+        when(piiDetectorClient.listLmStudioModels("localhost", 1234, false)).thenReturn(LISTING);
+
+        assertThat(useCase().listModels(null, null, false)).isEqualTo(LISTING);
+    }
+
+    private PiiDetectionConfig judgeConfig(String provider, String host, Integer port) {
+        return new PiiDetectionConfig(1, true, true, false, 2048, 410,
+                new BigDecimal("0.30"), false, "localhost", 1234, null, "manual-model",
+                1, false, null, LocalDateTime.now(), "test", false, true, true, true,
+                provider, host, port, null);
     }
 }

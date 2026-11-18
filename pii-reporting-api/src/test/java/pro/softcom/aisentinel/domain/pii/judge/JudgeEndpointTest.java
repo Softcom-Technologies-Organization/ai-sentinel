@@ -11,6 +11,24 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class JudgeEndpointTest {
 
     @Test
+    void Should_NormalizeHost_When_SurroundedByWhitespace() {
+        assertThat(new JudgeEndpoint(" omlx ", 8000).host()).isEqualTo("omlx");
+    }
+
+    @Test
+    void Should_RejectHost_When_TooLong() {
+        String host = "h".repeat(256);
+        assertThatThrownBy(() -> new JudgeEndpoint(host, 8000))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void Should_AcceptHost_When_AtLengthLimit() {
+        String host = "h".repeat(255);
+        assertThat(new JudgeEndpoint(host, 8000).host()).isEqualTo(host);
+    }
+
+    @Test
     void Should_UseJudgeEndpoint_When_Configured() {
         assertThat(new JudgeEndpoint("strata", 8081).resolve("ministral", 1234))
                 .isEqualTo(new JudgeEndpoint("strata", 8081));

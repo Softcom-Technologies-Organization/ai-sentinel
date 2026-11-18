@@ -5,7 +5,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { PiiSettingsComponent } from './pii-settings.component';
-import { CategoryGroup, ConcurrencyBenchStatus, PiiDetectionConfig, PiiTypeConfig } from '../../core/models/pii-detection-config.model';
+import { CategoryGroup, ConcurrencyBenchStatus, DetectorType, JudgeProvider, PiiDetectionConfig, PiiTypeConfig } from '../../core/models/pii-detection-config.model';
 import { ConfluenceConnectionConfig } from '../../core/models/confluence-connection-config.model';
 
 const MOCK_DETECTOR_CONFIG: PiiDetectionConfig = {
@@ -13,6 +13,10 @@ const MOCK_DETECTOR_CONFIG: PiiDetectionConfig = {
   regexEnabled: true,
   postfilterEnabled: false,
   ministralEnabled: false,
+  trioEnabled: false,
+  bardsEnabled: true,
+  cbxEnabled: true,
+  ettinEnabled: true,
   ministralChunkSize: 1024,
   ministralOverlap: 128,
   ministralConcurrency: 4,
@@ -25,6 +29,7 @@ const MOCK_DETECTOR_CONFIG: PiiDetectionConfig = {
   lmStudioJudgeModel: null,
   judgeEnabledCategories: null,
   judgeAvailableCategories: ['CONTACT', 'FINANCIAL', 'PERSONAL'],
+  judgeProvider: null, judgeHost: null, judgePort: null,
   updatedAt: '2026-03-16T10:00:00',
 };
 
@@ -47,6 +52,7 @@ const FR_TRANSLATIONS = {
     detectors: {
       presidio: { label: 'Presidio', description: 'desc' },
       regex: { label: 'Regex', description: 'desc' },
+      trio: { label: 'Trio PII', description: 'Trois modèles locaux en parallèle', models: 'Modèles', modelRequired: 'Activez au moins un modèle' },
       ministral: {
         label: 'Ministral-PII',
         description: 'desc',
@@ -82,6 +88,13 @@ const FR_TRANSLATIONS = {
       modelNotLoaded: 'non chargé',
       modelNotListed: 'non listé par LM Studio',
       judgeModelNotListed: 'non listé par le serveur du juge',
+      judgeModelRefresh: 'Actualiser les modèles du juge',
+    },
+    judge: {
+      inherited: 'Configuration existante', endpoint: 'Adresse effective :',
+      hostHint: 'Nom d’hôte ou adresse IP du serveur du juge.',
+      required: 'Renseignez un hôte, un port et un modèle pour le fournisseur choisi.',
+      modelsError: 'Vérifiez le serveur du juge, puis actualisez la liste.'
     },
     messages: { loadError: 'Erreur', saveAllSuccess: 'Sauvegardé', saveAllError: 'Erreur' },
     confluence: { messages: { loadError: 'Erreur', saveSuccess: 'OK', saveError: 'Erreur' } },
@@ -182,6 +195,102 @@ describe('PiiSettingsComponent', () => {
     }
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[data-testid="judgeNoCategories"]')).toBeTruthy();
+  });
+
+  it('Should_AcceptTrioAlone_When_OneModelIsEnabled', () => {
+    component.configForm.patchValue({
+      presidioEnabled: false, regexEnabled: false, ministralEnabled: false,
+      trioEnabled: true, bardsEnabled: false, cbxEnabled: true, ettinEnabled: false
+    });
+    expect(component.configForm.valid).toBe(true);
+  });
+
+  it('Should_RejectEmptyTrio_When_ParentIsEnabled', () => {
+    component.configForm.patchValue({
+      trioEnabled: true, bardsEnabled: false, cbxEnabled: false, ettinEnabled: false
+    });
+    expect(component.configForm.hasError('trioModelRequired')).toBe(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Activez au moins un modèle');
+  });
+
+  it('Should_PreserveChildSelections_When_TrioIsDisabled', () => {
+    component.configForm.patchValue({trioEnabled: true, bardsEnabled: true, cbxEnabled: false});
+    component.configForm.get('trioEnabled')!.setValue(false);
+    component.onDetectorMasterToggle('TRIO');
+    fixture.detectChanges();
+
+    expect(component.configForm.get('bardsEnabled')!.value).toBe(true);
+    expect(component.configForm.get('cbxEnabled')!.value).toBe(false);
+    expect(component.isDetectorEnabled('BARDS')).toBe(false);
+    const bardsInput = fixture.nativeElement.querySelector('#bardsEnabled') as HTMLInputElement;
+    expect(bardsInput.disabled).toBe(true);
+    expect(bardsInput.checked).toBe(true);
+
+    component.configForm.get('trioEnabled')!.setValue(true);
+    component.onDetectorMasterToggle('TRIO');
+    expect(component.isDetectorEnabled('BARDS')).toBe(true);
+    expect(component.isDetectorEnabled('CBX')).toBe(false);
+  });
+
+  it('Should_SaveAllTrioFlags_When_AChildSelectionChanges', () => {
+    component.configForm.patchValue({trioEnabled: true});
+    component.onTrioModelToggle('CBX', false);
+    component.onSaveAll();
+
+    const request = httpMock.expectOne('/api/v1/pii-detection/config');
+    expect(request.request.body).toMatchObject({
+      trioEnabled: true, bardsEnabled: true, cbxEnabled: false, ettinEnabled: true
+    });
+    request.flush({...MOCK_DETECTOR_CONFIG, trioEnabled: true, cbxEnabled: false});
+    expect(component.hasUnsavedChanges).toBe(false);
+    component.configForm.patchValue({cbxEnabled: true});
+    component.onResetDetectorConfig();
+    expect(component.configForm.get('cbxEnabled')!.value).toBe(false);
+  });
+
+  function trioType(detector: DetectorType, id: number): PiiTypeConfig {
+    return {id, detector, piiType: 'PASSWORD', detectorLabel: 'password', enabled: true, threshold: 0.5, category: 'DIGITAL'};
+  }
+
+  it('Should_ShowOneTrioGroup_When_AllThreeModelsHaveTypes', () => {
+    const types = [trioType('BARDS', 1), trioType('CBX', 2), trioType('ETTIN', 3)];
+    component.groupedPiiTypes.set(types.map(type => ({
+      detector: type.detector, categories: [{category: type.category, types: [type]}]
+    })));
+    component.configForm.patchValue({trioEnabled: true});
+    component.onDetectorMasterToggle('TRIO');
+    component.setActiveSection('pii_types');
+    fixture.detectChanges();
+
+    const groups = fixture.nativeElement.querySelectorAll('.detector-group');
+    expect(groups).toHaveLength(1);
+    expect(groups[0].querySelector('.detector-badge').textContent).toContain('Trio PII');
+    expect(Array.from(groups[0].querySelectorAll('.trio-type-heading'), (element: Element) => element.textContent?.trim()))
+      .toEqual(['BARDS', 'CBX', 'ETTIN']);
+  });
+
+  it('Should_SaveOnlySelectedModelType_When_AnotherModelSharesItsName', () => {
+    const bards = trioType('BARDS', 1);
+    const cbx = trioType('CBX', 2);
+    component.originalPiiTypes.set(new Map([['BARDS:PASSWORD', bards], ['CBX:PASSWORD', cbx]]));
+    component.groupedPiiTypes.set([bards, cbx].map(type => ({
+      detector: type.detector, categories: [{category: type.category, types: [type]}]
+    })));
+    component.onPiiTypeToggleChange(cbx, false);
+    expect(component.groupedPiiTypes()[0].categories[0].types[0].enabled).toBe(true);
+    component.onSavePiiTypes();
+
+    const request = httpMock.expectOne('/api/v1/pii-detection/pii-types/bulk');
+    expect(request.request.body).toEqual([{detector: 'CBX', piiType: 'PASSWORD', enabled: false, threshold: 0.5}]);
+    request.flush([{...cbx, enabled: false}]);
+    expect(component.hasUnsavedTypeChanges()).toBe(false);
+  });
+
+  it('Should_UseNativeLabel_When_TheTypeHasNoTranslation', () => {
+    const type = {...trioType('CBX', 1), piiType: 'NEW_SECRET', detectorLabel: 'New secret'};
+    expect(component.piiTypeText(type, 'typeNames')).toBe('New secret');
+    expect(component.piiTypeText(type, 'typeDescriptions')).toBe('');
   });
 
   it('Should_NotStickOnSpinner_When_OnlyConfluenceSettingsChanged', () => {
@@ -686,6 +795,61 @@ describe('PiiSettingsComponent', () => {
         .flush(JUDGE_LISTING);
     }
 
+    it.each([true, false])('Should_FollowDetectorStateAndKeepJudgeEditable_When_ModelListAvailableIs_%s', async (available) => {
+      openModelSettings();
+      httpMock.expectOne((r) => r.url === MODELS_URL).flush({
+        models: available ? [{ id: MOCK_DETECTOR_CONFIG.lmStudioModel, loaded: true }] : [],
+      });
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const el = fixture.nativeElement as HTMLElement;
+      const model = component.configForm.controls['lmStudioModel'];
+      const modelElement = el.querySelector(available
+        ? '[data-testid="lmStudioModelSelect"] [role="combobox"]'
+        : '[data-testid="lmStudioModelInput"]')!;
+      const label = el.querySelector('label[for="lmStudioModel"]') as HTMLElement;
+      const refresh = el.querySelector('[data-testid="refreshLmStudioModels"] button') as HTMLButtonElement;
+      expect(model.disabled).toBe(true);
+      expect(available ? modelElement.getAttribute('aria-disabled') === 'true'
+        : (modelElement as HTMLInputElement).disabled).toBe(true);
+      expect(refresh.disabled).toBe(true);
+      expect(label.tabIndex).toBe(0);
+      label.focus();
+      await vi.waitFor(() => expect(document.querySelector('[role="tooltip"]')?.textContent)
+        .toContain('settings.lmStudio.modelDisabledHint'));
+      label.blur();
+      expect(component.configForm.controls['lmStudioJudgeModel'].enabled).toBe(true);
+      expect(el.querySelector('[data-testid="lmStudioJudgeModelSelect"] [role="combobox"]')
+        ?.getAttribute('aria-disabled')).not.toBe('true');
+
+      component.configForm.controls['ministralEnabled'].setValue(true);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(model.enabled).toBe(true);
+      expect(available ? modelElement.getAttribute('aria-disabled') === 'true'
+        : (modelElement as HTMLInputElement).disabled).toBe(false);
+      expect(refresh.disabled).toBe(false);
+      expect(label.hasAttribute('tabindex')).toBe(false);
+
+      component.onResetDetectorConfig();
+      expect(model.disabled).toBe(true);
+      expect(model.value).toBe(MOCK_DETECTOR_CONFIG.lmStudioModel);
+      expect(component.configForm.pristine).toBe(true);
+    });
+
+    it.each(['onSaveDetectorConfig', 'onSaveAll'] as const)(
+      'Should_PreserveDisabledScanModel_When_SavingWith_%s', (save) => {
+        component.configForm.controls['lmStudioJudgeModel'].setValue('judge-model');
+        component.configForm.markAsDirty();
+        component[save]();
+        const request = httpMock.expectOne('/api/v1/pii-detection/config');
+        expect(request.request.body.lmStudioModel).toBe(MOCK_DETECTOR_CONFIG.lmStudioModel);
+        expect(request.request.body.ministralEnabled).toBe(false);
+        expect(request.request.body.lmStudioJudgeModel).toBe('judge-model');
+        request.flush({ ...MOCK_DETECTOR_CONFIG, lmStudioJudgeModel: 'judge-model' });
+      });
+
     it('Should_ListModelsForTypedEndpoint_When_LmStudioSectionOpened', () => {
       openModelSettings();
 
@@ -793,7 +957,7 @@ describe('PiiSettingsComponent', () => {
       expect(component.lmStudioJudgeModelOptions().map((o) => o.value)).toEqual([
         'qwen3.8-flash-next-iq3_s',
       ]);
-      expect(component.lmStudioJudgeModelOptions()[0].label).toContain('chargé');
+      expect(component.lmStudioJudgeModelOptions()[0].label).toBe('qwen3.8-flash-next-iq3_s');
 
       const el = fixture.nativeElement as HTMLElement;
       expect(el.querySelector('[data-testid="lmStudioJudgeModelSelect"]')).not.toBeNull();
@@ -872,8 +1036,133 @@ describe('PiiSettingsComponent', () => {
 
       expect(component.lmStudioJudgeModelOptions()[0]).toEqual({
         value: 'custom-judge-model',
-        label: 'custom-judge-model · non listé par le serveur du juge',
+        label: 'custom-judge-model',
       });
+    });
+
+    it('Should_UseDeploymentConfiguration_When_NoProviderIsSelected', () => {
+      component.loadJudgeModels();
+      const req = httpMock.expectOne(r => r.url === MODELS_URL);
+      expect(req.request.params.keys()).toEqual(['all']);
+      req.flush(JUDGE_LISTING);
+      expect(component.judgeEndpoint()).toBe(JUDGE_LISTING.endpoint);
+      expect(component.configForm.controls['judgeProvider'].value).toBeNull();
+      expect(component.configForm.controls['lmStudioJudgeModel'].value).toBeNull();
+      expect(component.isFormValid).toBe(true);
+      expect(component.hasUnsavedChanges).toBe(false);
+    });
+
+    it.each<JudgeProvider>(['OMLX', 'STRATA'])('Should_DisplayOnlyModelId_When_JudgeUses_%s', provider => {
+      component.activeSection.set('lm_studio');
+      component.onJudgeProviderChange(provider);
+      httpMock.expectOne(r => r.url === MODELS_URL).flush({ ...JUDGE_LISTING,
+        models: [{ ...JUDGE_LISTING.models[0], quantization: '', loaded: false }] });
+      fixture.detectChanges();
+      const element = fixture.nativeElement as HTMLElement;
+      expect(element.querySelector('#judgeHostHint')?.textContent).toContain('serveur du juge');
+      expect(element.querySelector('[data-testid="lmStudioJudgeModelSelect"]')?.textContent?.trim())
+        .toBe(JUDGE_LISTING.models[0].id);
+      component.configForm.controls['lmStudioJudgeModel'].setValue('custom-judge');
+      fixture.detectChanges();
+      expect(element.querySelector('[data-testid="lmStudioJudgeModelSelect"]')?.textContent?.trim()).toBe('custom-judge');
+      const refresh = element.querySelector<HTMLButtonElement>('[data-testid="refreshLmStudioJudgeModels"]');
+      expect(refresh?.tagName).toBe('BUTTON');
+      expect(refresh?.getAttribute('aria-label')).toBe('Actualiser les modèles du juge');
+      refresh?.click();
+      httpMock.expectOne(r => r.url === MODELS_URL).flush(JUDGE_LISTING);
+    });
+
+    it('Should_KeepLoadStateAndQuantization_When_JudgeUsesLmStudio', () => {
+      component.onJudgeProviderChange('LM_STUDIO');
+      httpMock.expectOne(r => r.url === MODELS_URL).flush({ ...JUDGE_LISTING,
+        models: [{ ...JUDGE_LISTING.models[0], loaded: false }] });
+      expect(component.lmStudioJudgeModelOptions()[0].label).toBe(`${JUDGE_LISTING.models[0].id} · IQ3_S · non chargé`);
+    });
+
+    it.each<[JudgeProvider, number]>([['LM_STUDIO', 1234], ['OMLX', 8000], ['STRATA', 8080]])(
+      'Should_ResetModelAndUseProviderPort_When_ProviderChangesTo_%s', (provider, port) => {
+        component.configForm.patchValue({ judgeHost: 'judge.internal', lmStudioJudgeModel: 'old-model' });
+        component.onJudgeProviderChange(provider);
+        expect(component.configForm.controls['lmStudioJudgeModel'].value).toBeNull();
+        expect(component.isFormValid).toBe(false);
+        const req = httpMock.expectOne(r => r.url === MODELS_URL);
+        expect(req.request.params.get('host')).toBe('judge.internal');
+        expect(req.request.params.get('port')).toBe(String(port));
+        expect(req.request.params.get('all')).toBe('true');
+        req.flush(JUDGE_LISTING);
+        expect(component.configForm.controls['lmStudioJudgeModel'].value).toBe(JUDGE_LISTING.models[0].id);
+        expect(component.isFormValid).toBe(true);
+        expect(component.configForm.controls['lmStudioHost'].value).toBe('localhost');
+        expect(component.configForm.controls['lmStudioPort'].value).toBe(1234);
+        expect(component.configForm.controls['lmStudioModel'].value).toBe(MOCK_DETECTOR_CONFIG.lmStudioModel);
+      });
+
+    it('Should_RequireModelWithoutChoosingArbitrarily_When_ServerListsSeveralModels', () => {
+      component.activeSection.set('lm_studio');
+      component.onJudgeProviderChange('OMLX');
+      httpMock.expectOne(r => r.url === MODELS_URL).flush({ ...JUDGE_LISTING,
+        models: [...JUDGE_LISTING.models, { ...JUDGE_LISTING.models[0], id: 'other-model' }] });
+      fixture.detectChanges();
+      expect(component.configForm.controls['judgeHost'].value).toBe('localhost');
+      expect(component.isFormValid).toBe(false);
+      expect(fixture.nativeElement.textContent).toContain('Renseignez un hôte, un port et un modèle');
+      component.configForm.controls['lmStudioJudgeModel'].setValue('   ');
+      expect(component.isFormValid).toBe(false);
+      component.configForm.controls['lmStudioJudgeModel'].setValue('other-model');
+      expect(component.isFormValid).toBe(true);
+    });
+
+    it('Should_SaveIndependentJudgeSettings_When_ProviderAndModelAreSelected', () => {
+      component.onJudgeProviderChange('OMLX');
+      httpMock.expectOne(r => r.url === MODELS_URL).flush(JUDGE_LISTING);
+      component.onSaveAll();
+      const req = httpMock.expectOne('/api/v1/pii-detection/config');
+      expect(req.request.body).toEqual(expect.objectContaining({
+        judgeProvider: 'OMLX', judgeHost: 'localhost', judgePort: 8000,
+        lmStudioJudgeModel: JUDGE_LISTING.models[0].id,
+        lmStudioHost: 'localhost', lmStudioPort: 1234, lmStudioModel: MOCK_DETECTOR_CONFIG.lmStudioModel
+      }));
+      req.flush({ ...MOCK_DETECTOR_CONFIG, ...req.request.body });
+      expect(component.hasUnsavedChanges).toBe(false);
+    });
+
+    it('Should_CancelOldListingAndClearModel_When_EndpointChangesBeforeResponse', () => {
+      component.onJudgeProviderChange('LM_STUDIO');
+      const old = httpMock.expectOne(r => r.url === MODELS_URL);
+      component.onJudgeProviderChange('STRATA');
+      expect(old.cancelled).toBe(true);
+      httpMock.expectOne(r => r.url === MODELS_URL).flush(JUDGE_LISTING);
+      component.configForm.controls['judgeHost'].setValue('another-host');
+      expect(component.configForm.controls['lmStudioJudgeModel'].value).toBeNull();
+      expect(component.judgeModels()).toEqual([]);
+      expect(component.judgeEndpoint()).toBeNull();
+      expect(component.isFormValid).toBe(false);
+    });
+
+    it.each([
+      { judgeHost: '', judgePort: 8000 },
+      { judgeHost: 'https://invalid-host', judgePort: 8000 },
+      { judgeHost: 'localhost', judgePort: null },
+      { judgeHost: 'localhost', judgePort: 70000 },
+      { judgeHost: 'localhost', judgePort: 1234.5 }
+    ])('Should_BlockSaveAndListing_When_JudgeEndpointIsInvalid', endpoint => {
+      component.configForm.patchValue({ judgeProvider: 'OMLX', ...endpoint, lmStudioJudgeModel: 'model' });
+      component.loadJudgeModels();
+      component.onSaveAll();
+      httpMock.expectNone(r => r.url === MODELS_URL || r.url.endsWith('/config'));
+      expect(component.isFormValid).toBe(false);
+    });
+
+    it('Should_RestoreSavedJudgeModel_When_ChangesAreReset', () => {
+      component.currentConfig.set({ ...MOCK_DETECTOR_CONFIG, judgeProvider: 'OMLX', judgeHost: 'saved-host', judgePort: 8000, lmStudioJudgeModel: 'saved-model' });
+      component.onJudgeProviderChange('STRATA');
+      const req = httpMock.expectOne(r => r.url === MODELS_URL);
+      component.onResetAll();
+      expect(req.cancelled).toBe(true);
+      expect(component.configForm.value).toEqual(expect.objectContaining({
+        judgeProvider: 'OMLX', judgeHost: 'saved-host', judgePort: 8000, lmStudioJudgeModel: 'saved-model'
+      }));
+      expect(component.hasUnsavedChanges).toBe(false);
     });
   });
 

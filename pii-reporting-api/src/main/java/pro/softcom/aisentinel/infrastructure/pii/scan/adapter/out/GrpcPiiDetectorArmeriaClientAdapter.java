@@ -340,6 +340,9 @@ public class GrpcPiiDetectorArmeriaClientAdapter implements PiiDetectorClient {
             case "PRESIDIO" -> PRESIDIO;
             case "REGEX" -> REGEX;
             case "MINISTRAL" -> MINISTRAL;
+            case "BARDS" -> DetectorSource.BARDS;
+            case "CBX" -> DetectorSource.CBX;
+            case "ETTIN" -> DetectorSource.ETTIN;
             case "POSTFILTER" -> POSTFILTER;
             default -> DetectorSource.UNKNOWN_SOURCE;
         };

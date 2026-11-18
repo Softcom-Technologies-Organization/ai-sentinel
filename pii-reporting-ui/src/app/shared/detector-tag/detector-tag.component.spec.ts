@@ -13,6 +13,9 @@ describe('DetectorTagComponent', () => {
   it.each([
     { name: 'Should_RenderPresidioTag_When_DetectorIsPresidio', detector: 'PRESIDIO', detectorClass: 'detector-presidio' },
     { name: 'Should_RenderRegexTag_When_DetectorIsRegex', detector: 'REGEX', detectorClass: 'detector-regex' },
+    { name: 'Should_RenderBardsTag_When_DetectorIsBards', detector: 'BARDS', detectorClass: 'detector-trio' },
+    { name: 'Should_RenderCbxTag_When_DetectorIsCbx', detector: 'CBX', detectorClass: 'detector-trio' },
+    { name: 'Should_RenderEttinTag_When_DetectorIsEttin', detector: 'ETTIN', detectorClass: 'detector-trio' },
     { name: 'Should_RenderUnknownTag_When_DetectorIsUnknownSource', detector: 'UNKNOWN_SOURCE', detectorClass: 'detector-unknown' },
   ])('$name', ({ detector, detectorClass }) => {
     fixture = TestBed.createComponent(DetectorTagComponent);

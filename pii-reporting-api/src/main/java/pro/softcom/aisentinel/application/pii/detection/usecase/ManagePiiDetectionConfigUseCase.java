@@ -64,6 +64,8 @@ public class ManagePiiDetectionConfigUseCase implements ManagePiiDetectionConfig
                 command.ministralConcurrencyTunedSignature(),
                 LocalDateTime.now(ZoneId.systemDefault()),
                 command.updatedBy(),
+                command.trioEnabled(), command.bardsEnabled(), command.cbxEnabled(), command.ettinEnabled(),
+                command.judgeProvider(), command.judgeHost(), command.judgePort(),
                 command.judgeEnabledCategories() == null ? repository.findConfig().judgeEnabledCategories()
                         : categoryPolicy.validate(command.judgeEnabledCategories())
         );

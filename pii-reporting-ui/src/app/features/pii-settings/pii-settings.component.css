@@ -956,3 +956,31 @@
   transform-origin: center;
 }
 
+
+.detector-card.trio {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.trio .detector-card-main,
+.trio-model-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.trio .detector-name {
+  margin: 0;
+}
+
+.trio-model-row + .trio-model-row {
+  margin-top: 12px;
+}
+
+.trio-type-heading {
+  margin: 0;
+  padding: 14px 16px;
+  color: var(--sentinel-text-default);
+  background: var(--sentinel-bg-surface);
+}

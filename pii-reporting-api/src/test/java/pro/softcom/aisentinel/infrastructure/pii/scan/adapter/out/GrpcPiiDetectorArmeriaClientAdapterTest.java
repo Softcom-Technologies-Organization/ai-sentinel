@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -459,6 +460,22 @@ class GrpcPiiDetectorArmeriaClientAdapterTest {
             softly.assertThat(result.sensitiveDataFound().get(2).source())
                     .isEqualTo(ContentPiiDetection.DetectorSource.UNKNOWN_SOURCE);
         });
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"BARDS", "CBX", "ETTIN"})
+    void Should_PreserveTrioProvenance_When_EntityCarriesNativeSource(String source) {
+        PiiDetection.PIIEntity entity = PiiDetection.PIIEntity.newBuilder()
+                .setType("PASSWORD").setText("secret").setStart(0).setEnd(6).setScore(0.9f)
+                .setSource(PiiDetection.DetectorSource.valueOf(source)).build();
+        when(stub.withDeadlineAfter(anyLong(), any())).thenReturn(stub);
+        when(stub.detectPII(any())).thenReturn(PiiDetection.PIIDetectionResponse.newBuilder()
+                .addEntities(entity).build());
+        GrpcPiiDetectorArmeriaClientAdapter service = new GrpcPiiDetectorArmeriaClientAdapter(config, stub, meterRegistry);
+
+        ContentPiiDetection result = service.analyzePageContent("p", "t", "s", "secret");
+
+        assertThat(result.sensitiveDataFound().getFirst().source().name()).isEqualTo(source);
     }
 
     @Test

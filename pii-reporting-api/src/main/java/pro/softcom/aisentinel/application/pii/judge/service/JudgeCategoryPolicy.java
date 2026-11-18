@@ -53,7 +53,6 @@ public class JudgeCategoryPolicy {
                 .map(PiiTypeConfig::getCategory)
                 .filter(category -> category != null && !category.isBlank())
                 .map(JudgeCategoryPolicy::categoryKey).collect(Collectors.toSet());
-        // National regex rules share emitted types with older rules; every possible category must be allowed.
         return !categories.isEmpty() && enabled.containsAll(categories);
     }
 
@@ -66,12 +65,6 @@ public class JudgeCategoryPolicy {
         String key = type.getPiiType();
         if (type.getDetector().equals("PRESIDIO")) {
             return PRESIDIO_TYPES.getOrDefault(key, key);
-        }
-        if (type.getDetector().equals("REGEX") && key.startsWith("SSN_")) {
-            return "SOCIALNUM";
-        }
-        if (type.getDetector().equals("REGEX") && key.startsWith("TAX_ID_")) {
-            return "TAX_ID";
         }
         return key;
     }

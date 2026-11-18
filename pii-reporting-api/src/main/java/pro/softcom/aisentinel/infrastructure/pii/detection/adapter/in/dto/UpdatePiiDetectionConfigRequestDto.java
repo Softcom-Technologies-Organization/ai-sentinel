@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
@@ -33,8 +34,7 @@ import java.util.List;
  * @param lmStudioPort        Port of the LM Studio endpoint serving the Ministral-PII model (1-65535)
  * @param lmStudioModel       LM Studio identifier of the Ministral-PII model the detector prompts.
  *                            Optional in the payload: {@code null} means "detector service default".
- * @param lmStudioJudgeModel  LM Studio identifier of the model the LLM judge prompts. Any chat model
- *                            is acceptable. Optional in the payload: {@code null} means "reuse lmStudioModel".
+ * @param lmStudioJudgeModel  Identifier of the chat model used by the LLM judge; a manual identifier is accepted.
  * @param ministralConcurrency               Number of chunk prompts sent concurrently to LM Studio (1-16, 1 = sequential)
  * @param ministralConcurrencyAuto           Whether the service auto-tunes the concurrency at startup
  * @param ministralConcurrencyTunedSignature The "host:port|model" signature the auto value was tuned for.
@@ -105,20 +105,29 @@ public record UpdatePiiDetectionConfigRequestDto(
     @JsonProperty("ministralConcurrencyTunedSignature")
     String ministralConcurrencyTunedSignature,
 
+    Boolean trioEnabled,
+    Boolean bardsEnabled,
+    Boolean cbxEnabled,
+    Boolean ettinEnabled,
+    @Pattern(regexp = "LM_STUDIO|OMLX|STRATA", message = "Unsupported judge provider")
+    String judgeProvider,
+    @Size(max = 255, message = "judgeHost must be at most 255 characters")
+    String judgeHost,
+    @Min(value = 1, message = "judgePort must be at least 1")
+    @Max(value = 65535, message = "judgePort must be at most 65535")
+    Integer judgePort,
     List<@NotBlank String> judgeEnabledCategories
 ) {
-    /**
-     * Validates business rules for the configuration request.
-     *
-     * <p>Business rule: At least one detector must be enabled to ensure
-     * the system can perform PII detection.
-     *
-     * @throws IllegalArgumentException if no detectors are enabled
-     */
     public UpdatePiiDetectionConfigRequestDto {
-        if (notAtLeastOneAnalyserEnabled()) {
-                throw new IllegalArgumentException("At least one detector must be enabled");
-            }
+        trioEnabled = Boolean.TRUE.equals(trioEnabled);
+        bardsEnabled = !Boolean.FALSE.equals(bardsEnabled);
+        cbxEnabled = !Boolean.FALSE.equals(cbxEnabled);
+        ettinEnabled = !Boolean.FALSE.equals(ettinEnabled);
+    }
+
+    @AssertTrue(message = "Judge host and port are required when a provider is selected")
+    public boolean isJudgeEndpointConfigured() {
+        return judgeProvider == null || (judgeHost != null && !judgeHost.isBlank() && judgePort != null);
     }
 
     /**
@@ -158,12 +167,14 @@ public record UpdatePiiDetectionConfigRequestDto(
         return postfilterEnabled != null && postfilterEnabled;
     }
 
-    private boolean notAtLeastOneAnalyserEnabled(){
-        return presidioEnabled != null
-            && regexEnabled != null
-            && ministralEnabled != null
-            && !presidioEnabled
-            && !regexEnabled
-            && !ministralEnabled;
+    @AssertTrue(message = "At least one detector must be enabled")
+    public boolean isAtLeastOneDetectorEnabled() {
+        return Boolean.TRUE.equals(presidioEnabled) || Boolean.TRUE.equals(regexEnabled)
+                || Boolean.TRUE.equals(ministralEnabled) || trioEnabled;
+    }
+
+    @AssertTrue(message = "Trio requires at least one enabled model")
+    public boolean isTrioConfigurationValid() {
+        return !trioEnabled || bardsEnabled || cbxEnabled || ettinEnabled;
     }
 }

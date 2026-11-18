@@ -92,6 +92,21 @@
   gap: 0.5rem;
 }
 
+.jd-server {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+.jd-error {
+  margin: 0;
+  color: var(--sentinel-text-primary);
+  font-size: 0.8125rem;
+}
+
 .jd-model-row .jd-select {
   flex: 1;
 }

@@ -258,7 +258,7 @@
       "detectors": "Moteurs de détection",
       "thresholds": "Seuils & Performance",
       "piiTypes": "Types d'IPI",
-      "lmStudio": "LM Studio",
+      "lmStudio": "LLM locaux externes",
       "confluence": "Connexion Confluence"
     },
     "subtitle": "Configurez les moteurs, seuils et types d'informations à détecter",
@@ -334,20 +334,20 @@
       "detectors": "Moteurs de détection",
       "threshold": "Seuil de détection",
       "performance": "Optimisation des performances",
-      "lmStudio": "Endpoint LM Studio"
+      "lmStudio": "LLM locaux externes"
     },
     "lmStudio": {
-      "description": "Hôte et port de l'instance LM Studio (compatible OpenAI) qui sert le modèle Ministral-PII. Appliqués au démarrage de chaque nouveau scan ou reprise de scan.",
-      "host": "Hôte",
+      "description": "Configurez les LLM hébergés sur des serveurs locaux externes à l’application. Le modèle du scan principal détecte les données personnelles ; le modèle juge réexamine les résultats à votre demande, après le scan.",
+      "host": "Hôte du serveur de détection",
       "hostPlaceholder": "localhost",
       "hostHint": "Nom d'hôte ou adresse IP de l'instance LM Studio (ex. localhost ou 192.168.1.20).",
       "hostError": "L'hôte est requis et ne doit pas contenir d'espaces ni de barres obliques.",
-      "port": "Port",
+      "port": "Port du serveur de détection",
       "portHint": "Port TCP exposé par LM Studio (1-65535, défaut 1234).",
       "portError": "Le port doit être compris entre 1 et 65535.",
-      "model": "Modèle",
+      "model": "Modèle LLM du scan principal",
       "modelPlaceholder": "ministral-3b-pii-preview@q4_k_m",
-      "modelHint": "Quantisation du modèle Ministral-PII à interroger, parmi celles que LM Studio a sur disque. Changer de modèle relance le calibrage de la concurrence au prochain démarrage.",
+      "modelHint": "Modèle utilisé par le détecteur Ministral-PII pendant le scan principal. Choisissez une quantisation de la famille Ministral-PII disponible sur le serveur. Changer de modèle relance le calibrage de la concurrence au prochain démarrage.",
       "modelRefresh": "Recharger la liste des modèles",
       "modelListError": "Liste indisponible ({{error}}). Saisissez l'identifiant LM Studio à la main.",
       "modelNotListed": "non listé par LM Studio",
@@ -357,12 +357,17 @@
       "judgeCategories": "Catégories évaluées par le juge",
       "judgeCategoriesHint": "Ces choix concernent uniquement le juge et ne modifient pas les détecteurs. Lorsqu’une sélection de catégories est appliquée, les types non classables sont ignorés et un type partagé nécessite l’activation de toutes ses catégories.",
       "judgeNoCategories": "Aucune catégorie sélectionnée : le juge n’évaluera aucune détection.",
-      "judgeModel": "Modèle juge",
-      "judgeModelPlaceholder": "Par défaut : qwen3.8-flash-next-iq3_s",
-      "judgeModelHint": "Modèle interrogé par le juge LLM sur le serveur configuré pour le juge (Strata en contexte DGNSI). Vide = Qwen 3.8 Next Flash par défaut.",
+      "judgeModel": "Modèle juge du post-filtrage",
+      "judgeModelPlaceholder": "Sélectionnez ou saisissez un modèle",
+      "judgeModelHint": "Modèle utilisé uniquement pour le post-filtrage à la demande, sur le serveur configuré pour le juge. Laissez vide pour utiliser Qwen 3.8 Next Flash par défaut.",
       "judgeModelListError": "Liste du juge indisponible ({{error}}). Saisissez l'identifiant du modèle à la main.",
       "judgeModelNotListed": "non listé par le serveur du juge",
-      "judgeModelRefresh": "Recharger la liste des modèles du juge"
+      "judgeModelRefresh": "Recharger la liste des modèles du juge",
+      "judgeDescription": "Le modèle juge réexamine les détections du scan principal pour identifier les faux positifs. Ce post-filtrage se lance à la demande depuis les résultats, après le scan ; il ne se lance pas automatiquement. Il reste disponible même si le détecteur Ministral-PII est désactivé.",
+      "judgeTitle": "Après le scan — post-filtrage à la demande",
+      "modelDisabledHint": "La sélection du modèle est disponible lorsque le détecteur Ministral-PII est activé dans « Moteur de détection ».",
+      "scanDescription": "Connexion au serveur du détecteur Ministral-PII et choix du LLM utilisé pendant le scan principal. Ces paramètres sont appliqués au démarrage ou à la reprise du scan.",
+      "scanTitle": "Scan principal — détection des données personnelles"
     },
     "detectors": {
       "presidio": {
@@ -404,7 +409,13 @@
         "label": "Post-filtre déterministe",
         "description": "Rejette les valeurs dont le format est mécaniquement invalide (IP, MAC, IBAN)."
       },
-      "detectorLabel": "Détecteur"
+      "detectorLabel": "Détecteur",
+      "trio": {
+        "label": "Trio PII",
+        "description": "Bards, CBX et Ettin analysent les textes en parallèle. Choisissez les modèles et leurs types d’IPI.",
+        "models": "Modèles du trio",
+        "modelRequired": "Activez au moins un modèle du trio ou désactivez le détecteur Trio PII."
+      }
     },
     "threshold": {
       "label": "Seuil de confiance par défaut",
@@ -438,7 +449,10 @@
       "detectorNames": {
         "PRESIDIO": "Presidio",
         "REGEX": "Regex",
-        "MINISTRAL": "Ministral-PII"
+        "MINISTRAL": "Ministral-PII",
+        "BARDS": "Bards",
+        "CBX": "CBX",
+        "ETTIN": "Ettin"
       },
       "categoryNames": {
         "SSN": "Numéros de sécurité sociale (SSN)",
@@ -463,7 +477,7 @@
         "Network": "Identifiants réseau",
         "Medical": "Informations médicales",
         "Business": "Identifiants professionnels",
-          "PERSONAL": "Informations personnelles",
+        "PERSONAL": "Informations personnelles",
         "Personal": "Informations personnelles",
         "LEGAL_ASSET": "Actifs juridiques",
         "IT_CREDENTIALS": "Identifiants informatiques",
@@ -700,7 +714,39 @@
         "BIOMETRIC_IDENTIFIER": "Identifiant biométrique",
         "HEALTH_PLAN_BENEFICIARY_NUMBER": "Numéro de bénéficiaire d'assurance santé",
         "BLOOD_TYPE": "Groupe sanguin",
-        "TIME": "Heure"
+        "TIME": "Heure",
+        "ACCOUNT_IDENTIFIER": "Identifiant de compte",
+        "AUTH_SECRET": "Secret d’authentification",
+        "BANK_ACCOUNT_IDENTIFIER": "Identifiant de compte bancaire",
+        "BIOMETRIC_DATA": "Données biométriques",
+        "CERTIFICATE_SECRET": "Secret de certificat",
+        "CLOUD_CREDENTIAL": "Identifiant de connexion cloud",
+        "CONTACT_HANDLE": "Identifiant de contact",
+        "CRIMINAL_OFFENCE_DATA": "Données relatives aux infractions",
+        "DATABASE_CREDENTIAL": "Identifiant de connexion à une base de données",
+        "DOCUMENT_IDENTIFIER": "Identifiant de document",
+        "DOCUMENT_REFERENCE": "Référence de document",
+        "ENCRYPTION_KEY": "Clé de chiffrement",
+        "ETHNIC_ORIGIN": "Origine ethnique",
+        "FINANCIAL_AMOUNT": "Montant financier",
+        "GENERIC_SECRET": "Secret générique",
+        "GEO_LOCATION": "Position géographique",
+        "HEALTH_DATA": "Données de santé",
+        "IDENTIFYING_LINK": "Lien permettant une identification",
+        "ORGANIZATION_IDENTIFIER": "Identifiant d’organisation",
+        "PAYMENT_CARD_SECURITY": "Code de sécurité de carte bancaire",
+        "PERSON_ALIAS": "Pseudonyme d’une personne",
+        "PERSON_ATTRIBUTE": "Caractéristique personnelle",
+        "PERSON_IDENTIFIER": "Identifiant personnel",
+        "PERSON_ROLE_OR_TITLE": "Rôle ou titre d’une personne",
+        "POLITICAL_OPINION": "Opinion politique",
+        "PRIVATE_KEY": "Clé privée",
+        "PROPER_NAME": "Nom propre",
+        "RELIGION_OR_BELIEF": "Religion ou conviction",
+        "SESSION_SECRET": "Secret de session",
+        "SEXUAL_ORIENTATION": "Orientation sexuelle",
+        "TRADE_UNION_MEMBERSHIP": "Appartenance syndicale",
+        "WEBHOOK_SECRET": "Secret de webhook"
       },
       "typeDescriptions": {
         "FULL_NAME": "Nom complet d'une personne (prénom + nom)",
@@ -951,6 +997,20 @@
       "loadError": "Erreur lors du chargement de la configuration : {{error}}",
       "saveAllSuccess": "Toutes les configurations enregistrées avec succès",
       "saveAllError": "Erreur lors de l'enregistrement des configurations : {{error}}"
+    },
+    "judge": {
+      "detectorTitle": "Détecteur Ministral — LM Studio",
+      "title": "Juge LLM",
+      "description": "Choisissez le serveur et le modèle utilisés pour évaluer les détections. Ces réglages sont indépendants du détecteur Ministral.",
+      "provider": "Fournisseur",
+      "hostHint": "Nom d’hôte ou adresse IP du serveur du juge (ex. localhost ou 192.168.1.20).",
+      "inherited": "Configuration existante",
+      "inheritedHint": "Le serveur défini par la configuration de déploiement reste utilisé. Choisissez un fournisseur pour le remplacer.",
+      "endpoint": "Adresse effective :",
+      "modelsError": "Impossible de charger les modèles du juge. Vérifiez que le serveur est démarré, ainsi que son hôte et son port, puis actualisez la liste. Vous pouvez aussi saisir un identifiant de modèle.",
+      "required": "Renseignez un hôte, un port et un modèle pour le fournisseur choisi.",
+      "host": "Hôte du serveur du juge",
+      "port": "Port du serveur du juge"
     }
   },
   "piiPageCard": {
@@ -1171,7 +1231,9 @@
       "cancel": "Annuler l'évaluation",
       "notYetAvailable": "Pas encore disponible"
     },
-    "dashboard": { "tooltip": "Évaluer par juge LLM les détections à traiter des espaces scannés" },
+    "dashboard": {
+      "tooltip": "Évaluer par juge LLM les détections à traiter des espaces scannés"
+    },
     "dialog": {
       "title": "Évaluer les détections par juge LLM",
       "scope": "Périmètre",
@@ -1188,7 +1250,9 @@
       "duration": "Durée estimée <b>~{{minutes}} min</b>",
       "threshold": "Seuil de confiance",
       "cancel": "Annuler",
-      "launch": "Lancer l'évaluation ({{count}})"
+      "launch": "Lancer l'évaluation ({{count}})",
+      "serverError": "Impossible de charger la configuration ou les modèles du juge. Vérifiez le serveur dans Paramètres → Serveurs LLM, puis actualisez la liste.",
+      "noModels": "Aucun modèle disponible sur ce serveur. Chargez un modèle dans le serveur, puis actualisez la liste."
     },
     "scope": {
       "allPending": "Toutes les détections à traiter",
@@ -1222,7 +1286,9 @@
       "clear": "Effacer",
       "launch": "Évaluer par juge LLM ({{count}})"
     },
-    "toast": { "completed": "Évaluation terminée : <b>{{fp}}</b> faux positif(s) proposé(s) à confirmer." }
+    "toast": {
+      "completed": "Évaluation terminée : <b>{{fp}}</b> faux positif(s) proposé(s) à confirmer."
+    }
   },
   "obfuscation": {
     "entry": {

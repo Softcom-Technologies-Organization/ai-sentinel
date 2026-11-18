@@ -20,6 +20,7 @@ from grpc_reflection.v1alpha import reflection
 
 # Import DetectorSource for mapping
 from pii_detector.domain.entity.detector_source import DetectorSource
+from pii_detector.infrastructure.detector.trio_detector import enabled_trio_models
 # Import PIIType for proper normalization
 from pii_detector.domain.entity.pii_type import PIIType
 # Import the generated gRPC code
@@ -555,6 +556,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
                 lm_studio_host=detector_flags.get('lm_studio_host'),
                 lm_studio_port=detector_flags.get('lm_studio_port'),
                 lm_studio_model=detector_flags.get('lm_studio_model'),
+                enabled_trio_models=detector_flags.get('enabled_trio_models', ()),
             )
         except Exception as exc:
             logger.exception(
@@ -820,6 +822,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
             'presidio_enabled': db_config.get('presidio_enabled', True),
             'regex_enabled': db_config.get('regex_enabled', False),
             'ministral_enabled': db_config.get('ministral_enabled', False),
+            'enabled_trio_models': enabled_trio_models(db_config),
             # Ministral-PII chunking knobs, threaded by _build_detection_kwargs
             # into the composite's detect_pii_with_stats and routed on to the
             # Ministral detector's detect_pii.
@@ -931,7 +934,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
         call_kwargs = self._build_detection_kwargs(
             detector_flags, pii_type_configs, request_id
         )
-        if self._worker_pool is not None:
+        if self._worker_pool is not None and not call_kwargs.get('enabled_trio_models'):
             # Delegate the CPU-bound inference to a pool worker; this gRPC
             # thread just blocks on the result, so K concurrent requests run
             # on K worker processes in parallel. Stats travel back through the
@@ -971,6 +974,8 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
 
         if 'pii_type_configs' in sig.parameters:
             kwargs['pii_type_configs'] = pii_type_configs
+        if detector_flags and 'enabled_trio_models' in sig.parameters:
+            kwargs['enabled_trio_models'] = detector_flags.get('enabled_trio_models', ())
 
         if detector_flags and 'enable_presidio' in sig.parameters:
             logger.debug(
@@ -1322,12 +1327,7 @@ class PIIDetectionServicer(pii_detection_pb2_grpc.PIIDetectionServiceServicer):
 
         # Prefer detector-specific composite key (e.g. "REGEX:IP_ADDRESS"),
         # fall back to plain pii_type key for backward compatibility.
-        # National REGEX rules are configured per rule (e.g. "REGEX:SSN_FR_NIR"),
-        # not under the canonical type they emit.
-        rule_key = entity.get('_config_pii_type')
-        type_config = rule_key and pii_type_configs.get(f"{entity_source}:{rule_key}")
-        if not type_config:
-            type_config = pii_type_configs.get(f"{entity_source}:{entity_type_upper}")
+        type_config = pii_type_configs.get(f"{entity_source}:{entity_type_upper}")
         if not type_config:
             type_config = pii_type_configs.get(entity_type_upper)
 

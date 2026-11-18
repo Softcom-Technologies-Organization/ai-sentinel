@@ -11,3 +11,6 @@ class DetectorSource(Enum):
     POSTFILTER = "POSTFILTER"
     # Specialised LLM PII detector (Ministral-PII).
     MINISTRAL = "MINISTRAL"
+    BARDS = "BARDS"
+    CBX = "CBX"
+    ETTIN = "ETTIN"

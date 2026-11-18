@@ -109,11 +109,19 @@ public class PiiDetectionConfigEntity {
 
     /**
      * Any chat model is accepted here, unlike {@link #lmStudioModel} which the
-     * chunker ties to the Ministral-PII tokenizer. {@code null} = reuse
-     * {@link #lmStudioModel}.
+     * chunker ties to the Ministral-PII tokenizer.
      */
     @Column(name = "lm_studio_judge_model")
     private String lmStudioJudgeModel;
+
+    @Column(name = "judge_provider", length = 16)
+    private String judgeProvider;
+
+    @Column(name = "judge_host")
+    private String judgeHost;
+
+    @Column(name = "judge_port")
+    private Integer judgePort;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "judge_enabled_categories", columnDefinition = "jsonb")
@@ -187,6 +195,30 @@ public class PiiDetectionConfigEntity {
     @ColumnDefault("4")
     @Column(name = "concurrency_bench_max_concurrency", nullable = false)
     private Integer concurrencyBenchMaxConcurrency = 4;
+
+    @NotNull
+    @Builder.Default
+    @ColumnDefault("false")
+    @Column(name = "trio_enabled", nullable = false)
+    private Boolean trioEnabled = false;
+
+    @NotNull
+    @Builder.Default
+    @ColumnDefault("true")
+    @Column(name = "bards_enabled", nullable = false)
+    private Boolean bardsEnabled = true;
+
+    @NotNull
+    @Builder.Default
+    @ColumnDefault("true")
+    @Column(name = "cbx_enabled", nullable = false)
+    private Boolean cbxEnabled = true;
+
+    @NotNull
+    @Builder.Default
+    @ColumnDefault("true")
+    @Column(name = "ettin_enabled", nullable = false)
+    private Boolean ettinEnabled = true;
 
     @NotNull
     @Column(name = "updated_at", nullable = false)

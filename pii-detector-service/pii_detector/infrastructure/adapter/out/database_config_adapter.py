@@ -77,6 +77,10 @@ class DatabaseConfigAdapter:
                     SELECT presidio_enabled,
                         regex_enabled,
                         ministral_enabled,
+                        (to_jsonb(pii_detection_config)->>'trio_enabled')::boolean AS trio_enabled,
+                        (to_jsonb(pii_detection_config)->>'bards_enabled')::boolean AS bards_enabled,
+                        (to_jsonb(pii_detection_config)->>'cbx_enabled')::boolean AS cbx_enabled,
+                        (to_jsonb(pii_detection_config)->>'ettin_enabled')::boolean AS ettin_enabled,
                         ministral_chunk_size,
                         ministral_overlap,
                         default_threshold,
@@ -134,6 +138,7 @@ class DatabaseConfigAdapter:
                 return None
 
             config = dict(result)
+            self._apply_trio_defaults(config)
             # Normalise the flags so downstream code can assume they are always
             # present (defaults applied when the migration is pending).
             config.setdefault("postfilter_enabled", False)
@@ -210,6 +215,12 @@ class DatabaseConfigAdapter:
                 cursor.close()
             if connection:
                 connection.close()
+
+    @staticmethod
+    def _apply_trio_defaults(config):
+        for name, default in (("trio", False), ("bards", True), ("cbx", True), ("ettin", True)):
+            if config.get(f"{name}_enabled") is None:
+                config[f"{name}_enabled"] = default
 
     def fetch_pii_type_configs(self, detector: str = None) -> Optional[dict]:
         """

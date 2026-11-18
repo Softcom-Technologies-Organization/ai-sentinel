@@ -72,6 +72,11 @@ public record ContentPiiDetection(
         DATE_OF_BIRTH("Date de naissance"),
         PERSON("Personne"),
         NAME("Nom"),
+        PROPER_NAME("Nom propre"),
+        PERSON_ALIAS("Pseudonyme de personne"),
+        PERSON_IDENTIFIER("Identifiant personnel"),
+        PERSON_ATTRIBUTE("Caractéristique personnelle"),
+        PERSON_ROLE_OR_TITLE("Fonction ou titre personnel"),
         PERSON_NAME("Nom"),
         FULL_NAME("Nom complet"),
         FIRST_NAME("Prénom"),
@@ -86,15 +91,21 @@ public record ContentPiiDetection(
         NRP("Nationalité, Religion ou Groupe Politique"),
         TITLE("Titre de civilité"),
         RACE("Origine raciale"),
+        ETHNIC_ORIGIN("Origine ethnique"),
         ETHNICITY("Origine ethnique"),
         RACE_ETHNICITY("Origine raciale ou ethnique"),
+        RELIGION_OR_BELIEF("Religion ou conviction"),
         RELIGION("Religion"),
         RELIGIOUS_BELIEF("Croyance religieuse"),
+        SEXUAL_ORIENTATION("Orientation sexuelle"),
         SEXUALITY("Orientation sexuelle"),
+        POLITICAL_OPINION("Opinion politique"),
+        TRADE_UNION_MEMBERSHIP("Appartenance syndicale"),
         POLITICAL_VIEW("Opinion politique"),
         LANGUAGE("Langue"),
 
         // Location
+        GEO_LOCATION("Localisation géographique"),
         LOCATION("Localisation"),
         ADDRESS("Adresse"),
         STREET("Rue"),
@@ -117,6 +128,7 @@ public record ContentPiiDetection(
         CREDIT_CARD("Carte de crédit"),
         CREDIT_CARD_NUMBER("Numéro de carte de crédit"),
         CREDIT_CARD_ISSUER("Émetteur de carte"),
+        PAYMENT_CARD_SECURITY("Code de sécurité de carte de paiement"),
         PAYMENT_CARD("Carte de paiement"),
         CARD_NUMBER("Numéro de carte de paiement"),
         CARD_EXPIRY("Date d'expiration de carte"),
@@ -124,6 +136,7 @@ public record ContentPiiDetection(
         CVV("Cryptogramme de carte (CVV/CVC)"),
         PIN("Code PIN"),
         MASKED_NUMBER("Numéro masqué"),
+        BANK_ACCOUNT_IDENTIFIER("Identifiant de compte bancaire"),
         BANK_ACCOUNT("Compte bancaire"),
         BANK_ACCOUNT_NUMBER("Numéro de compte bancaire"),
         ACCOUNT_NAME("Nom de compte"),
@@ -136,6 +149,7 @@ public record ContentPiiDetection(
         BITCOIN_ADDRESS("Adresse Bitcoin"),
         ETHEREUM_ADDRESS("Adresse Ethereum"),
         LITECOIN_ADDRESS("Adresse Litecoin"),
+        FINANCIAL_AMOUNT("Montant financier"),
         AMOUNT("Montant"),
         CURRENCY("Devise"),
         CURRENCY_CODE("Code de devise"),
@@ -170,6 +184,16 @@ public record ContentPiiDetection(
         UNIQUE_ID("Identifiant unique"),
 
         // IT & Credentials
+        AUTH_SECRET("Secret d'authentification"),
+        GENERIC_SECRET("Secret générique"),
+        PRIVATE_KEY("Clé privée"),
+        ENCRYPTION_KEY("Clé de chiffrement"),
+        CERTIFICATE_SECRET("Secret de certificat"),
+        CLOUD_CREDENTIAL("Identifiant d'accès cloud"),
+        DATABASE_CREDENTIAL("Identifiant d'accès à une base de données"),
+        JWT_TOKEN("Jeton JWT"),
+        WEBHOOK_SECRET("Secret de webhook"),
+        SESSION_SECRET("Secret de session"),
         PASSWORD("Mot de passe ou code PIN"),
         API_KEY("Clé API"),
         TOKEN("Jeton"),
@@ -177,6 +201,8 @@ public record ContentPiiDetection(
         SECRET("Secret"),
         SECRET_KEY("Clé secrète"),
         RECOVERY_CODE("Code de récupération"),
+        IDENTIFYING_LINK("Lien identifiant une personne"),
+        CONTACT_HANDLE("Identifiant de contact"),
         URL("URL"),
         IP_ADDRESS("Adresse IP"),
         MAC_ADDRESS("Adresse MAC"),
@@ -186,6 +212,7 @@ public record ContentPiiDetection(
         IMEI("Numéro IMEI"),
         SESSION("Session"),
         SESSION_ID("Identifiant de session"),
+        ACCOUNT_IDENTIFIER("Identifiant de compte"),
         ACCOUNT_ID("Identifiant de compte"),
         SENSITIVE_ACCOUNT_ID("Identifiant de compte sensible"),
         IPV4("Adresse IPv4"),
@@ -198,6 +225,7 @@ public record ContentPiiDetection(
         SOFTWARE_LICENSE("Clé de licence logicielle"),
 
         // Medical/Healthcare
+        HEALTH_DATA("Données de santé"),
         MEDICAL("Information médicale"),
         MEDICAL_LICENSE("Licence médicale"),
         PATIENT("Patient"),
@@ -216,6 +244,7 @@ public record ContentPiiDetection(
         // Professional
         EMPLOYEE("Employé"),
         JOB_TITLE("Poste"),
+        ORGANIZATION_IDENTIFIER("Identifiant d'organisation"),
         COMPANY("Entreprise"),
         DEPARTMENT("Département"),
         STUDENT("Étudiant"),
@@ -229,6 +258,9 @@ public record ContentPiiDetection(
         CUSTOMER_ID("Identifiant client"),
 
         // Legal
+        CRIMINAL_OFFENCE_DATA("Données relatives aux infractions pénales"),
+        DOCUMENT_IDENTIFIER("Identifiant de document"),
+        DOCUMENT_REFERENCE("Référence de document"),
         LEGAL("Information légale"),
         CASE_NUMBER("Numéro de dossier"),
         COURT("Tribunal"),
@@ -248,6 +280,7 @@ public record ContentPiiDetection(
         INSURANCE("Assurance"),
 
         // Biometric
+        BIOMETRIC_DATA("Données biométriques"),
         BIOMETRIC("Données biométriques"),
         FINGERPRINT("Empreinte digitale"),
         FACIAL("Reconnaissance faciale"),
@@ -334,7 +367,10 @@ public record ContentPiiDetection(
         /**
          * Specialised LLM PII detector (Ministral-PII).
          */
-        MINISTRAL
+        MINISTRAL,
+        BARDS,
+        CBX,
+        ETTIN
     }
 
     /**

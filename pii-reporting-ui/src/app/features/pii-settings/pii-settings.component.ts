@@ -1,4 +1,5 @@
 import { Component, computed, input, OnDestroy, OnInit, output, SecurityContext, signal, viewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer } from '@angular/platform-browser';
 import {
@@ -19,6 +20,7 @@ import { MessageModule } from 'primeng/message';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
@@ -28,13 +30,16 @@ import { PiiDetectionConfigService } from '../../core/services/pii-detection-con
 import {
     CategoryGroup,
     ConcurrencyBenchStatus,
+    DetectorType,
     GroupedPiiTypes,
+    JUDGE_PROVIDERS,
+    JudgeProvider,
     LmStudioModel,
     PiiDetectionConfig,
     PiiTypeConfig,
     UpdatePiiTypeConfigRequest
 } from '../../core/models/pii-detection-config.model';
-import { forkJoin, Observable, Subscription, switchMap, timer } from 'rxjs';
+import { forkJoin, merge, Observable, Subscription, switchMap, timer } from 'rxjs';
 import { ConfluenceSettingsComponent } from '../confluence-settings/confluence-settings.component';
 
 type SettingsSection = 'detectors' | 'thresholds' | 'pii_types' | 'lm_studio' | 'confluence';
@@ -60,6 +65,7 @@ type SettingsSection = 'detectors' | 'thresholds' | 'pii_types' | 'lm_studio' | 
         ProgressBarModule,
         ProgressSpinnerModule,
         ToastModule,
+        TooltipModule,
         IconFieldModule,
         InputIconModule,
         InputTextModule,
@@ -80,6 +86,12 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
   loading = signal(false);
   saving = signal(false);
   currentConfig = signal<PiiDetectionConfig | null>(null);
+
+  readonly trioModels = [
+    {detector: 'BARDS', control: 'bardsEnabled', label: 'Bards'},
+    {detector: 'CBX', control: 'cbxEnabled', label: 'CBX'},
+    {detector: 'ETTIN', control: 'ettinEnabled', label: 'Ettin'}
+  ] as const;
 
   // PII type configurations
   groupedPiiTypes = signal<GroupedPiiTypes[]>([]);
@@ -113,6 +125,10 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
   judgeModels = signal<LmStudioModel[]>([]);
   judgeModelsError = signal<string | null>(null);
   judgeModelsLoading = signal(false);
+  readonly judgeProviders = [...JUDGE_PROVIDERS];
+  readonly judgeEndpoint = signal<string | null>(null);
+  private judgeModelsSubscription: Subscription | null = null;
+  private judgeEndpointSubscription: Subscription | null = null;
   lmStudioModelFamily = signal('');
   lmStudioModelsError = signal<string | null>(null);
   lmStudioModelsLoading = signal(false);
@@ -171,6 +187,17 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
       .filter(det => det !== null) as GroupedPiiTypes[];
   });
 
+  readonly displayedPiiGroups = computed(() => {
+    const groups = this.filteredPiiTypes();
+    const trioGroups = groups.filter(group => this.isTrioModel(group.detector));
+    const standaloneGroups = groups
+      .filter(group => !this.isTrioModel(group.detector))
+      .map(group => ({detector: group.detector as string, groups: [group]}));
+    return trioGroups.length
+      ? [...standaloneGroups, {detector: 'TRIO', groups: trioGroups}]
+      : standaloneGroups;
+  });
+
   // Computed signal for checking if there are no results
   hasNoSearchResults = computed(() => {
     const term = this.searchTerm().trim();
@@ -209,7 +236,11 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
   private static readonly DETECTOR_MASTER_CONTROL: Readonly<Record<string, string>> = {
     PRESIDIO: 'presidioEnabled',
     REGEX: 'regexEnabled',
-    MINISTRAL: 'ministralEnabled'
+    MINISTRAL: 'ministralEnabled',
+    TRIO: 'trioEnabled',
+    BARDS: 'bardsEnabled',
+    CBX: 'cbxEnabled',
+    ETTIN: 'ettinEnabled'
   };
 
   ngOnInit(): void {
@@ -224,6 +255,8 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopBenchPolling();
+    this.judgeModelsSubscription?.unsubscribe();
+    this.judgeEndpointSubscription?.unsubscribe();
   }
 
   isJudgeCategoryEnabled(category: string): boolean {
@@ -249,6 +282,10 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
       regexEnabled: [true],
       postfilterEnabled: [false],
       ministralEnabled: [false],
+      trioEnabled: [false],
+      bardsEnabled: [true],
+      cbxEnabled: [true],
+      ettinEnabled: [true],
       ministralChunkSize: [2048, [Validators.required, Validators.min(256), Validators.max(4096)]],
       ministralOverlap: [410, [Validators.required, Validators.min(0), Validators.max(512)]],
       ministralConcurrency: [1, [Validators.required, Validators.min(1), Validators.max(this.benchConcurrencyMax)]],
@@ -257,12 +294,36 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
       defaultThreshold: [0.75, [Validators.required, Validators.min(0), Validators.max(1)]],
       lmStudioHost: ['localhost', [Validators.required, Validators.pattern(/^[^\s/]+$/)]],
       lmStudioPort: [1234, [Validators.required, Validators.min(1), Validators.max(65535)]],
-      lmStudioModel: [null as string | null],
+      lmStudioModel: [{value: null as string | null, disabled: true}],
       lmStudioJudgeModel: [null as string | null],
-      judgeEnabledCategories: [null as string[] | null]
+      judgeEnabledCategories: [null as string[] | null],
+      judgeProvider: [null as JudgeProvider | null],
+      judgeHost: [null as string | null, Validators.pattern(/^[^\s/]+$/)],
+      judgePort: [null as number | null, [Validators.min(1), Validators.max(65535), Validators.pattern(/^\d+$/)]]
     }, {
-      validators: [this.atLeastOneDetectorValidator, this.overlapLessThanChunkSizeValidator]
+      validators: [this.atLeastOneDetectorValidator, this.overlapLessThanChunkSizeValidator, this.judgeConfigValidator]
     } as AbstractControlOptions);
+    this.judgeEndpointSubscription = merge(
+      this.configForm.controls['judgeHost'].valueChanges,
+      this.configForm.controls['judgePort'].valueChanges
+    ).subscribe(() => this.clearJudgeModels());
+    this.configForm.controls['ministralEnabled'].valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(enabled => {
+        const model = this.configForm.controls['lmStudioModel'];
+        if (enabled) {
+          model.enable({emitEvent: false});
+        } else {
+          model.disable({emitEvent: false});
+        }
+      });
+  }
+
+  private judgeConfigValidator(group: FormGroup): {[key: string]: boolean} | null {
+    if (!group.get('judgeProvider')?.value) return null;
+    const {judgeHost, judgePort, lmStudioJudgeModel} = group.value;
+    return judgeHost?.trim() && judgePort && lmStudioJudgeModel?.trim()
+      ? null : {judgeConfigurationRequired: true};
   }
 
   /**
@@ -273,7 +334,14 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
     const regex = group.get('regexEnabled')?.value;
     const ministral = group.get('ministralEnabled')?.value;
 
-    if (!presidio && !regex && !ministral) {
+    const trio = group.get('trioEnabled')?.value;
+    const trioModel = ['bardsEnabled', 'cbxEnabled', 'ettinEnabled']
+      .some(control => group.get(control)?.value);
+
+    if (trio && !trioModel) {
+      return {trioModelRequired: true};
+    }
+    if (!presidio && !regex && !ministral && !(trio && trioModel)) {
       return {atLeastOneDetector: true};
     }
     return null;
@@ -311,6 +379,10 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
           regexEnabled: detectorConfig.regexEnabled,
           postfilterEnabled: detectorConfig.postfilterEnabled,
           ministralEnabled: detectorConfig.ministralEnabled,
+          trioEnabled: detectorConfig.trioEnabled,
+          bardsEnabled: detectorConfig.bardsEnabled,
+          cbxEnabled: detectorConfig.cbxEnabled,
+          ettinEnabled: detectorConfig.ettinEnabled,
           ministralChunkSize: detectorConfig.ministralChunkSize,
           ministralOverlap: detectorConfig.ministralOverlap,
           ministralConcurrency: detectorConfig.ministralConcurrency,
@@ -320,6 +392,9 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
           lmStudioHost: detectorConfig.lmStudioHost,
           lmStudioPort: detectorConfig.lmStudioPort,
           lmStudioModel: detectorConfig.lmStudioModel ?? null,
+          judgeProvider: detectorConfig.judgeProvider ?? null,
+          judgeHost: detectorConfig.judgeHost ?? null,
+          judgePort: detectorConfig.judgePort ?? null,
           lmStudioJudgeModel: detectorConfig.lmStudioJudgeModel ?? null,
           judgeEnabledCategories: detectorConfig.judgeEnabledCategories ?? null
         });
@@ -333,6 +408,10 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
         this.syncCollapsedWithDetectorState();
 
         this.loading.set(false);
+        if (this.activeSection() === 'lm_studio') {
+          this.loadLmStudioModels();
+          this.loadJudgeModels();
+        }
       },
       error: (err) => {
         console.error('Failed to load configurations:', err);
@@ -515,7 +594,7 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
     }
 
     this.saving.set(true);
-    const request = this.configForm.value;
+    const request = this.configForm.getRawValue();
 
     this.configService.updateConfig(request).subscribe({
       next: (config) => {
@@ -736,7 +815,7 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
 
     if (hasDetectorChanges && this.configForm.valid) {
       detectorRequestIndex = requests.length;
-      requests.push(this.configService.updateConfig(this.configForm.value));
+      requests.push(this.configService.updateConfig(this.configForm.getRawValue()));
     }
 
     if (hasTypeChanges) {
@@ -811,6 +890,10 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
         regexEnabled: this.currentConfig()!.regexEnabled,
         postfilterEnabled: this.currentConfig()!.postfilterEnabled,
         ministralEnabled: this.currentConfig()!.ministralEnabled,
+        trioEnabled: this.currentConfig()!.trioEnabled,
+        bardsEnabled: this.currentConfig()!.bardsEnabled,
+        cbxEnabled: this.currentConfig()!.cbxEnabled,
+        ettinEnabled: this.currentConfig()!.ettinEnabled,
         ministralChunkSize: this.currentConfig()!.ministralChunkSize,
         ministralOverlap: this.currentConfig()!.ministralOverlap,
         ministralConcurrency: this.currentConfig()!.ministralConcurrency,
@@ -820,6 +903,9 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
         lmStudioHost: this.currentConfig()!.lmStudioHost,
         lmStudioPort: this.currentConfig()!.lmStudioPort,
         lmStudioModel: this.currentConfig()!.lmStudioModel ?? null,
+        judgeProvider: this.currentConfig()!.judgeProvider ?? null,
+        judgeHost: this.currentConfig()!.judgeHost ?? null,
+        judgePort: this.currentConfig()!.judgePort ?? null,
         lmStudioJudgeModel: this.currentConfig()!.lmStudioJudgeModel ?? null,
         judgeEnabledCategories: this.currentConfig()!.judgeEnabledCategories ?? null
       });
@@ -907,7 +993,12 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
     if (type.detector === 'REGEX' && /^(SSN|TAX_ID)_/.test(type.piiType)) {
       return field === 'typeNames' ? type.detectorLabel || type.piiType : '';
     }
-    return this.translocoService.translate(`settings.piiTypes.${field}.${type.piiType}`);
+    const key = `settings.piiTypes.${field}.${type.piiType}`;
+    const translated = this.translocoService.translate(key);
+    if (translated !== key) {
+      return translated;
+    }
+    return field === 'typeNames' ? type.detectorLabel || type.piiType : '';
   }
 
   /**
@@ -968,14 +1059,23 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
   }
 
   loadJudgeModels(): void {
-    const host = this.configForm.get('lmStudioHost')?.value;
-    const port = this.configForm.get('lmStudioPort')?.value;
+    this.judgeModelsSubscription?.unsubscribe();
+    const {judgeProvider, judgeHost, judgePort} = this.configForm.value;
+    if (judgeProvider && (!judgeHost || !judgePort || this.configForm.controls['judgeHost'].invalid || this.configForm.controls['judgePort'].invalid)) return;
+    const host = judgeProvider ? judgeHost : undefined;
+    const port = judgeProvider ? judgePort : undefined;
     this.judgeModelsLoading.set(true);
-    this.configService.listLmStudioModels(host, port, true).subscribe({
+    this.judgeModelsError.set(null);
+    this.judgeModelsSubscription = this.configService.listLmStudioModels(host, port, true).subscribe({
       next: (listing) => {
         this.judgeModels.set(listing.models ?? []);
+        this.judgeEndpoint.set(listing.endpoint);
         this.judgeModelsError.set(listing.error || null);
         this.judgeModelsLoading.set(false);
+        if (judgeProvider && !listing.error && listing.models?.length === 1 && !this.configForm.controls['lmStudioJudgeModel'].value) {
+          this.configForm.controls['lmStudioJudgeModel'].setValue(listing.models[0].id);
+          this.configForm.markAsDirty();
+        }
       },
       error: (err) => {
         this.judgeModels.set([]);
@@ -983,6 +1083,28 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
         this.judgeModelsLoading.set(false);
       }
     });
+  }
+
+  onJudgeProviderChange(provider: JudgeProvider): void {
+    const selected = JUDGE_PROVIDERS.find(option => option.value === provider);
+    if (!selected) return;
+    this.configForm.patchValue({
+      judgeProvider: provider,
+      judgeHost: this.configForm.controls['judgeHost'].value || 'localhost',
+      judgePort: selected.port
+    });
+    this.clearJudgeModels();
+    this.configForm.markAsDirty();
+    this.loadJudgeModels();
+  }
+
+  private clearJudgeModels(): void {
+    this.judgeModelsSubscription?.unsubscribe();
+    this.judgeModels.set([]);
+    this.judgeEndpoint.set(null);
+    this.judgeModelsError.set(null);
+    this.judgeModelsLoading.set(false);
+    this.configForm.controls['lmStudioJudgeModel'].setValue(null);
   }
 
   /**
@@ -994,21 +1116,24 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
   }
 
   lmStudioJudgeModelOptions(): {label: string; value: string}[] {
-    return this.toModelOptions(this.judgeModels(), 'lmStudioJudgeModel');
+    const provider = this.configForm.controls['judgeProvider'].value;
+    return this.toModelOptions(this.judgeModels(), 'lmStudioJudgeModel', provider === 'LM_STUDIO');
   }
 
-  private toModelOptions(models: LmStudioModel[], controlName: string): {label: string; value: string}[] {
-    const options = models.map((model) => ({
-      value: model.id,
-      label: `${model.id} · ${model.quantization || '?'} · ` + this.translocoService.translate(
-        model.loaded ? 'settings.lmStudio.modelLoaded' : 'settings.lmStudio.modelNotLoaded')
-    }));
+  private toModelOptions(models: LmStudioModel[], controlName: string, includeDetails = true): {label: string; value: string}[] {
+    const options = models.map((model) => {
+      const statusKey = model.loaded ? 'settings.lmStudio.modelLoaded' : 'settings.lmStudio.modelNotLoaded';
+      const label = includeDetails
+        ? `${model.id} · ${model.quantization || '?'} · ${this.translocoService.translate(statusKey)}` : model.id;
+      return {value: model.id, label};
+    });
     const current = this.configForm.get(controlName)?.value as string | null;
     if (current && !options.some((option) => option.value === current)) {
+      const missingKey = controlName === 'lmStudioJudgeModel'
+        ? 'settings.lmStudio.judgeModelNotListed' : 'settings.lmStudio.modelNotListed';
       options.unshift({
         value: current,
-        label: `${current} · ` + this.translocoService.translate(controlName === 'lmStudioJudgeModel'
-          ? 'settings.lmStudio.judgeModelNotListed' : 'settings.lmStudio.modelNotListed')
+        label: includeDetails ? `${current} · ${this.translocoService.translate(missingKey)}` : current
       });
     }
     return options;
@@ -1052,7 +1177,19 @@ export class PiiSettingsComponent implements OnInit, OnDestroy {
     if (!control) {
       return true;
     }
-    return !!this.configForm.get(control)?.value;
+    const parentEnabled = !this.isTrioModel(detector) || !!this.configForm.get('trioEnabled')?.value;
+    return parentEnabled && !!this.configForm.get(control)?.value;
+  }
+
+  isTrioModel(detector: string): boolean {
+    return this.trioModels.some(model => model.detector === detector);
+  }
+
+  onTrioModelToggle(detector: DetectorType, enabled: boolean): void {
+    this.configForm.get(PiiSettingsComponent.DETECTOR_MASTER_CONTROL[detector])?.setValue(enabled);
+    this.configForm.markAsDirty();
+    this.configForm.markAsTouched();
+    this.onDetectorMasterToggle(detector);
   }
 
   /**

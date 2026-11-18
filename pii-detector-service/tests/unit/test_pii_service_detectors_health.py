@@ -90,6 +90,7 @@ class TestCheckDetectorsHealth:
             lm_studio_host="host.docker.internal",
             lm_studio_port=4321,
             lm_studio_model=None,
+            enabled_trio_models=(),
         )
 
     def test_Should_ReportNothing_When_ConfigurationUnreadable(self):

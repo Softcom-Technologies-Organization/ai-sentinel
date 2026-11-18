@@ -68,7 +68,7 @@ public class JudgeJobRunner {
 
     private Endpoint endpointOf(JudgeJob job) {
         PiiDetectionConfig config = detectionConfigRepository.findConfig();
-        JudgeEndpoint endpoint = judgeEndpoint.resolve(config.lmStudioHost(), config.lmStudioPort());
+        JudgeEndpoint endpoint = config.judgeEndpoint(judgeEndpoint);
         return new Endpoint(job.model(), endpoint.host(), endpoint.port());
     }
 

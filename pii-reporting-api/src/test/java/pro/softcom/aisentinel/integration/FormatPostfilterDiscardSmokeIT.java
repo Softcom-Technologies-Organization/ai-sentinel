@@ -14,9 +14,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import com.github.dockerjava.api.model.Bind;
-import com.github.dockerjava.api.model.HostConfig;
-import com.github.dockerjava.api.model.Volume;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -25,6 +23,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.MountableFile;
 import pro.softcom.aisentinel.AiSentinelApplication;
 import pro.softcom.aisentinel.application.pii.scan.port.out.PiiDetectorClient;
 import pro.softcom.aisentinel.domain.pii.scan.ContentPiiDetection;
@@ -41,31 +40,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 
-/**
- * Smoke test de bout en bout du <b>post-filtre déterministe de format</b>
- * (exécuté après détection dans {@code pii-detector-service}) :
- * vérifie que les entités au format mécaniquement impossible (échec
- * checksum/parse) remontent dans la réponse gRPC avec un verdict
- * {@code FALSE_POSITIVE} jusqu'au domaine Java
- * ({@link ContentPiiDetection#discardedByPostfilter()}).
- *
- * <p>Déterministe et <b>sans aucun LLM</b> : le pré-filtre n'appelle jamais de
- * réseau. Le détecteur (PRESIDIO + REGEX, seed standard + flag
- * {@code postfilter_enabled} forcé à {@code true}) écarte les valeurs au
- * format impossible et conserve les vrais positifs bien formés.
- *
- * <p>Le texte de test (PLAN.md §5) combine :
- * <ul>
- *   <li>un faux IP non parsable {@code 0.244.999.7} (octet &gt; 255) ;</li>
- *   <li>une plage horaire {@code 13:56:49-13:56:52} (séparateurs {@code :} ET
- *       {@code -} mélangés, jamais un MAC) ;</li>
- *   <li>un faux IBAN {@code CH00 0000 0000 0000 0000 0} (mod-97 KO) ;</li>
- *   <li>une vraie IP {@code 10.217.4.11} et un vrai IBAN
- *       {@code CH9300762011623852957} qui doivent RESTER détectés.</li>
- * </ul>
- *
- * <pre>mvn -Dtest=FormatpostfilterDiscardSmokeIT test</pre>
- */
+/** Controlled candidates isolate postfilter transport from detector recognition. */
 @Testcontainers
 @SpringBootTest(classes = AiSentinelApplication.class, webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("test")
@@ -120,12 +95,13 @@ class FormatPostfilterDiscardSmokeIT {
     @Container
     static final GenericContainer<?> piiDetector = new GenericContainer<>(buildPiiDetectorImage())
         .withCreateContainerCmdModifier(cmd -> cmd.withEntrypoint(""))
-        .withCommand("python", "-m", "pii_detector.server", "--port", String.valueOf(GRPC_PORT))
+        .withCopyFileToContainer(MountableFile.forClasspathResource("python/format_postfilter_fixture.py"),
+            "/app/format_postfilter_fixture.py")
+        .withCommand("python", "format_postfilter_fixture.py", "--port", String.valueOf(GRPC_PORT))
         .withExposedPorts(GRPC_PORT)
         .withNetwork(NETWORK)
         .withNetworkAliases("pii-detector")
-        .withCreateContainerCmdModifier(cmd -> cmd.withHostConfig(
-            new HostConfig().withBinds(new Bind(ensureHfCacheDir(), new Volume("/app/.cache/huggingface")))))
+        .withFileSystemBind(ensureHfCacheDir(), "/app/.cache/huggingface", BindMode.READ_WRITE)
         .withEnv("HF_HOME", "/app/.cache/huggingface")
         .withEnv("TRANSFORMERS_CACHE", "/app/.cache/huggingface")
         .withEnv("DB_HOST", POSTGRES_ALIAS)
@@ -163,7 +139,7 @@ class FormatPostfilterDiscardSmokeIT {
     @Autowired private PiiDetectorClient piiDetectorClient;
 
     @Test
-    void smokeFormatPostfilterDiscardEndToEnd() throws Exception {
+    void Should_TransportRejectedCandidates_When_PostfilterIsEnabled() throws Exception {
         log.info("[postfilter-smoke] === START ===");
         resetAndReseedDbWithPostfilterEnabled();
 
@@ -185,6 +161,8 @@ class FormatPostfilterDiscardSmokeIT {
             + "discarded_entities (proto/python/java) est cassé, le flag "
             + "postfilter_enabled n'est pas pris en compte, ou le détecteur n'a "
             + "rien remonté sur ces valeurs.");
+        Assertions.assertEquals(3, detection.discardedByPostfilter().size());
+        Assertions.assertEquals(2, detection.sensitiveDataFound().size());
 
         for (DiscardedSensitiveData discarded : detection.discardedByPostfilter()) {
             Assertions.assertEquals("FALSE_POSITIVE", discarded.judgeVerdict(),
@@ -217,6 +195,11 @@ class FormatPostfilterDiscardSmokeIT {
             + ") doit rester dans sensitiveDataFound, trouvé : "
             + detection.sensitiveDataFound());
 
+        jdbcTemplate.update("UPDATE pii_detection_config SET postfilter_enabled = false WHERE id = 1");
+        ContentPiiDetection unfiltered = piiDetectorClient.analyzeContent(SAMPLE_TEXT);
+        Assertions.assertTrue(unfiltered.discardedByPostfilter().isEmpty());
+        Assertions.assertEquals(5, unfiltered.sensitiveDataFound().size());
+
         log.info("[postfilter-smoke] === DONE — pré-filtre opérationnel via le canal partagé ===");
     }
 
@@ -245,7 +228,6 @@ class FormatPostfilterDiscardSmokeIT {
 
     private void resetAndReseedDbWithPostfilterEnabled() throws SQLException {
         jdbcTemplate.execute("DELETE FROM pii_type_config");
-        jdbcTemplate.execute("DELETE FROM pii_detection_config");
         Resource resource = new DefaultResourceLoader().getResource(SQL_SEED);
         try (Connection conn = dataSource.getConnection()) {
             ScriptUtils.executeSqlScript(conn, new EncodedResource(resource, StandardCharsets.UTF_8));
@@ -297,6 +279,6 @@ class FormatPostfilterDiscardSmokeIT {
             .withFileFromPath("pii-detector-service/docker-entrypoint.sh",
                 detectorRoot.resolve("docker-entrypoint.sh"))
             .withFileFromPath("proto", repoRoot.resolve("proto"))
-            .withDockerfile(detectorRoot.resolve("Dockerfile"));
+            .withDockerfilePath("pii-detector-service/Dockerfile");
     }
 }

@@ -41,7 +41,7 @@ class PiiTypeLabelCoverageTest {
 
     /** Matches the leading {@code ('TYPE','DETECTOR',} of each pii_type_config INSERT tuple. */
     private static final Pattern TUPLE_PATTERN = Pattern.compile(
-            "\\(\\s*'([^']+)'\\s*,\\s*'(PRESIDIO|REGEX|MINISTRAL)'\\s*,");
+            "\\(\\s*'([^']+)'\\s*,\\s*'(PRESIDIO|REGEX|MINISTRAL|BARDS|CBX|ETTIN)'\\s*,\\s*(?:true|false)\\b");
 
     private static final String PRODUCTION_SEED = "classpath:data.sql";
     private static final String TEST_SEEDS = "classpath*:sql/data-*.sql";
@@ -87,19 +87,9 @@ class PiiTypeLabelCoverageTest {
             String content = new String(in.readAllBytes(), StandardCharsets.UTF_8);
             Matcher matcher = TUPLE_PATTERN.matcher(content);
             while (matcher.find()) {
-                types.add(emittedType(matcher.group(1), matcher.group(2)));
+                types.add(matcher.group(1));
             }
         }
-    }
-
-    private String emittedType(String configuredType, String detector) {
-        if (!"REGEX".equals(detector)) {
-            return configuredType;
-        }
-        if (configuredType.startsWith("SSN_")) {
-            return "SOCIALNUM";
-        }
-        return configuredType.startsWith("TAX_ID_") ? "TAX_ID" : configuredType;
     }
 
     /**

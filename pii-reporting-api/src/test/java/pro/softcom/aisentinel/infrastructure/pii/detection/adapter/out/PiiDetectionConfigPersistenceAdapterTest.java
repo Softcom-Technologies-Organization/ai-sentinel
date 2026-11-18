@@ -83,6 +83,37 @@ class PiiDetectionConfigPersistenceAdapterTest {
     }
 
     @Test
+    void Should_RoundTripJudgeConfiguration_When_Saved() {
+        PiiDetectionConfig configured = new PiiDetectionConfig(1, true, false, false,
+                2048, 410, new BigDecimal("0.30"), false, "localhost", 1234, null, "manual-model",
+                1, false, null, LocalDateTime.now(), "admin", false, true, true, true,
+                "OMLX", "omlx", 8000, null);
+
+        persistenceAdapter.updateConfig(configured);
+        PiiDetectionConfig actual = persistenceAdapter.findConfig();
+
+        assertThat(actual.judgeProvider()).isEqualTo("OMLX");
+        assertThat(actual.judgeHost()).isEqualTo("omlx");
+        assertThat(actual.judgePort()).isEqualTo(8000);
+        assertThat(actual.lmStudioJudgeModel()).isEqualTo("manual-model");
+    }
+
+    @Test
+    void Should_PreserveTrioChildren_When_ConfigSavedAndRead() {
+        PiiDetectionConfig configured = new PiiDetectionConfig(1, false, false, false,
+                2048, 410, new BigDecimal("0.30"), false, "localhost", 1234, null, null,
+                1, false, null, LocalDateTime.now(), "admin", true, false, true, false, null, null, null, null);
+
+        persistenceAdapter.updateConfig(configured);
+        PiiDetectionConfig actual = persistenceAdapter.findConfig();
+
+        assertThat(actual.trioEnabled()).isTrue();
+        assertThat(actual.bardsEnabled()).isFalse();
+        assertThat(actual.cbxEnabled()).isTrue();
+        assertThat(actual.ettinEnabled()).isFalse();
+    }
+
+    @Test
     void Should_CreateAndPersistDefaultConfig_When_ConfigDoesNotExist() {
         jpaRepository.deleteAll();
 
@@ -135,7 +166,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
             newThreshold,
             false, "localhost", 1234, null, null, 1, true, null,
             updateTime,
-            "integration-test", null
+            "integration-test", false, true, true, true, null, null, null, null
         );
 
         persistenceAdapter.updateConfig(updatedConfig);
@@ -175,7 +206,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
             1024, 128, new BigDecimal("0.75"),
             true, "localhost", 1234, null, null, 1, true, null,
             LocalDateTime.now(),
-            "postfilter-enabler", null
+            "postfilter-enabler", false, true, true, true, null, null, null, null
         );
 
         persistenceAdapter.updateConfig(enabledConfig);
@@ -198,7 +229,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
             true, false, true, 2048, 256, new BigDecimal("0.75"),
             false, "localhost", 1234, null, null, 1, true, null,
             LocalDateTime.now(),
-            "ministral-enabler", null
+            "ministral-enabler", false, true, true, true, null, null, null, null
         );
 
         persistenceAdapter.updateConfig(config);
@@ -225,7 +256,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
             true, false, true, 2048, 256, new BigDecimal("0.75"),
             false, "localhost", 1234, null, null, 4, false, "localhost:1234|ministral",
             LocalDateTime.now(),
-            "concurrency-tuner", null
+            "concurrency-tuner", false, true, true, true, null, null, null, null
         );
 
         persistenceAdapter.updateConfig(config);
@@ -252,7 +283,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
             true, false, true, 2048, 256, new BigDecimal("0.75"),
             false, "localhost", 1234, "ministral-3b-pii-preview@q8_0", "google/gemma-4-31b", 1, true, null,
             LocalDateTime.now(),
-            "judge-configurator", null
+            "judge-configurator", false, true, true, true, null, null, null, null
         );
 
         persistenceAdapter.updateConfig(config);
@@ -345,7 +376,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
             false, true, false, 1024, 128, new BigDecimal("0.80"),
             false, "localhost", 1234, null, null, 1, true, null,
             LocalDateTime.now(),
-            "bench-preserver", null
+            "bench-preserver", false, true, true, true, null, null, null, null
         ));
 
         PiiDetectionConfigEntity reloaded = jpaRepository.findById(CONFIG_ID).orElseThrow();
@@ -369,7 +400,7 @@ class PiiDetectionConfigPersistenceAdapterTest {
             true, true, true, 2048, 256, new BigDecimal("0.75"),
             false, "localhost", 1234, null, null, 4, true, "localhost:1234|ministral",
             LocalDateTime.now(),
-            "concurrency-tuner", null
+            "concurrency-tuner", false, true, true, true, null, null, null, null
         ));
 
         ConcurrencyBenchStatus status = persistenceAdapter.findBenchStatus();

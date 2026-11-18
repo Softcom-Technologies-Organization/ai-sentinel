@@ -42,7 +42,7 @@ public interface ManagePiiDetectionConfigPort {
      * @param lmStudioHost        Host of the LM Studio endpoint serving the Ministral-PII model
      * @param lmStudioPort        Port of the LM Studio endpoint serving the Ministral-PII model
      * @param lmStudioModel       LM Studio identifier of the Ministral-PII model to prompt (null = service default)
-     * @param lmStudioJudgeModel  LM Studio identifier of the model the LLM judge prompts (null = reuse lmStudioModel)
+     * @param lmStudioJudgeModel  Identifier of the chat model used by the LLM judge
      * @param ministralConcurrency               Number of chunk prompts sent concurrently to LM Studio (1 = sequential)
      * @param ministralConcurrencyAuto           Whether the service auto-tunes the concurrency at startup
      * @param ministralConcurrencyTunedSignature The "host:port|model" signature the auto value was tuned for (null = never tuned)
@@ -64,6 +64,13 @@ public interface ManagePiiDetectionConfigPort {
             boolean ministralConcurrencyAuto,
             String ministralConcurrencyTunedSignature,
             String updatedBy,
+            boolean trioEnabled,
+            boolean bardsEnabled,
+            boolean cbxEnabled,
+            boolean ettinEnabled,
+            String judgeProvider,
+            String judgeHost,
+            Integer judgePort,
             List<String> judgeEnabledCategories
     ) {
     }

@@ -1,12 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TranslocoTestingModule } from '@jsverse/transloco';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { JudgeLaunchDialogComponent, JudgeScopeOption } from './judge-launch-dialog.component';
 import { PiiDetectionConfigService } from '../../../../core/services/pii-detection-config.service';
 import { JudgeLaunchRequest } from '../../../../core/models/judge.model';
+import { JudgeProvider, PiiDetectionConfig } from '../../../../core/models/pii-detection-config.model';
 
 const FR_TRANSLATIONS = {
+  settings: { judge: { inherited: 'Configuration existante' }, lmStudio: { judgeModelRefresh: 'Actualiser les modèles du juge' } },
   judge: {
     unavailable: { scanInProgress: 'Disponible après la fin du scan' },
     scope: {
@@ -20,6 +22,8 @@ const FR_TRANSLATIONS = {
       modelLoading: 'Chargement…',
       modelPlaceholder: 'Identifiant du modèle',
       notLoaded: 'non chargé',
+      serverError: 'Vérifiez le serveur dans Paramètres → Serveurs LLM, puis actualisez la liste.',
+      noModels: 'Chargez un modèle dans le serveur, puis actualisez la liste.',
       apply: 'Application des verdicts',
       propose: 'Proposer pour validation',
       proposeHint: 'hint',
@@ -47,8 +51,10 @@ const LISTING = {
   ],
 };
 const listLmStudioModels = vi.fn(() => of(LISTING));
-const CONFIG: { lmStudioHost: string; lmStudioPort: number; lmStudioModel: string; lmStudioJudgeModel: string | null } =
-  { lmStudioHost: 'localhost', lmStudioPort: 1234, lmStudioModel: 'ministral@q8', lmStudioJudgeModel: null };
+const CONFIG: Pick<PiiDetectionConfig, 'lmStudioHost' | 'lmStudioPort' | 'lmStudioModel' | 'lmStudioJudgeModel' | 'judgeProvider' | 'judgeHost' | 'judgePort'> = {
+  lmStudioHost: 'localhost', lmStudioPort: 1234, lmStudioModel: 'ministral@q8',
+  lmStudioJudgeModel: 'qwen3.8-flash-next-iq3_s', judgeProvider: null, judgeHost: null, judgePort: null
+};
 const getConfig = vi.fn(() => of(CONFIG));
 
 describe('JudgeLaunchDialogComponent', () => {
@@ -94,9 +100,11 @@ describe('JudgeLaunchDialogComponent', () => {
 
     expect(fixture.componentInstance.selectedOption()?.key).toBe('all');
     expect(fixture.componentInstance.selectedModel()).toBe('qwen3.8-flash-next-iq3_s');
-    expect(listLmStudioModels).toHaveBeenCalledWith('localhost', 1234, true);
+    expect(listLmStudioModels).toHaveBeenCalledWith(undefined, undefined, true);
+    expect(query('judge-server').textContent).toContain('Configuration existante');
+    expect(query('judge-server').textContent).toContain(LISTING.endpoint);
     expect(fixture.componentInstance.modelOptions().map((option) => option.label))
-      .toEqual(['qwen3.8-flash-next-iq3_s', 'qwen3.8-flash-next-q8_0 · non chargé']);
+      .toEqual(['qwen3.8-flash-next-q8_0', 'qwen3.8-flash-next-iq3_s']);
     expect(query('judge-estimate').textContent).toContain('95');
   });
 
@@ -123,7 +131,7 @@ describe('JudgeLaunchDialogComponent', () => {
     });
   });
 
-  it('Should_KeepQwenFallbackWithoutRetrying_When_JudgeModelListingFails', () => {
+  it('Should_ShowRecoveryInstructionsAndBlockLaunch_When_JudgeModelListingFails', () => {
     listLmStudioModels.mockReturnValueOnce(throwError(() => new Error('Judge unavailable')));
 
     createComponent();
@@ -132,6 +140,8 @@ describe('JudgeLaunchDialogComponent', () => {
     expect(fixture.componentInstance.selectedModel()).toBe('qwen3.8-flash-next-iq3_s');
     expect(fixture.componentInstance.modelsLoading()).toBe(false);
     expect(listLmStudioModels).toHaveBeenCalledTimes(1);
+    expect(query('judge-model-error').textContent).toContain('Vérifiez le serveur');
+    expect(query<HTMLButtonElement>('judge-launch').disabled).toBe(true);
   });
 
   it('Should_EmitLaunchRequestFromChoices_When_Launching', () => {
@@ -183,15 +193,109 @@ describe('JudgeLaunchDialogComponent', () => {
     expect(query<HTMLButtonElement>('judge-launch').disabled).toBe(false);
   });
 
-  it('Should_ReloadModelsAndKeepChoice_When_RefreshClicked', () => {
+  it('Should_ReplaceStaleSelectionAndEndpoint_When_ConfigChangesBeforeRefresh', () => {
     createComponent();
     fixture.componentInstance.selectedModel.set('qwen3.8-flash-next-q8_0');
+    getConfig.mockReturnValueOnce(of({ ...CONFIG, judgeProvider: 'OMLX', judgeHost: '127.0.0.1', judgePort: 8000,
+      lmStudioJudgeModel: 'Qwen3.8-Flash-Next-oQ4e-mtp' }));
+    listLmStudioModels.mockReturnValueOnce(of({ ...LISTING, endpoint: 'http://127.0.0.1:8000/v1',
+      models: [{ ...LISTING.models[0], id: 'Qwen3.8-Flash-Next-oQ4e-mtp' }] }));
 
     query<HTMLButtonElement>('judge-refresh-models').click();
     fixture.detectChanges();
 
     expect(listLmStudioModels).toHaveBeenCalledTimes(2);
-    expect(fixture.componentInstance.selectedModel()).toBe('qwen3.8-flash-next-q8_0');
-    expect(fixture.componentInstance.modelOptions()).toHaveLength(2);
+    expect(listLmStudioModels).toHaveBeenLastCalledWith('127.0.0.1', 8000, true);
+    expect(fixture.componentInstance.selectedModel()).toBe('Qwen3.8-Flash-Next-oQ4e-mtp');
+    expect(query('judge-server').textContent).toContain('oMLX');
+    expect(query('judge-server').textContent).toContain('http://127.0.0.1:8000/v1');
+    expect(fixture.componentInstance.modelOptions()).toHaveLength(1);
+  });
+
+  it('Should_AllowServerDefaultsWithoutInventingAModel_When_LegacyConfigHasNoModel', () => {
+    getConfig.mockReturnValueOnce(of({ ...CONFIG, lmStudioJudgeModel: null }));
+    createComponent();
+    const launched = vi.fn();
+    fixture.componentInstance.launched.subscribe(launched);
+    fixture.componentInstance.launch();
+    expect(launched).toHaveBeenCalledWith(expect.objectContaining({ model: null }));
+  });
+
+  it('Should_RequireAModel_When_ProviderIsExplicitAndSeveralModelsAreListed', () => {
+    getConfig.mockReturnValueOnce(of({ ...CONFIG, judgeProvider: 'STRATA', judgeHost: 'strata', judgePort: 8080, lmStudioJudgeModel: null }));
+    createComponent();
+    expect(fixture.componentInstance.canLaunch()).toBe(false);
+    fixture.componentInstance.selectedModel.set('custom-model');
+    expect(fixture.componentInstance.canLaunch()).toBe(true);
+    fixture.componentInstance.selectedModel.set('   ');
+    expect(fixture.componentInstance.canLaunch()).toBe(false);
+  });
+
+  it('Should_PreselectOnlyListedModel_When_NoJudgeModelIsConfigured', () => {
+    getConfig.mockReturnValueOnce(of({ ...CONFIG, lmStudioJudgeModel: null }));
+    listLmStudioModels.mockReturnValueOnce(of({ ...LISTING, models: [LISTING.models[0]] }));
+    createComponent();
+    expect(fixture.componentInstance.selectedModel()).toBe(LISTING.models[0].id);
+  });
+
+  it.each<JudgeProvider | null>(['OMLX', 'STRATA', null])('Should_DisplayOnlyModelIdsInServerOrder_When_JudgeUses_%s', provider => {
+    getConfig.mockReturnValueOnce(of({ ...CONFIG, judgeProvider: provider, judgeHost: 'judge', judgePort: 8000 }));
+    createComponent();
+    expect(fixture.componentInstance.modelOptions().map(option => option.label)).toEqual(LISTING.models.map(model => model.id));
+    const refresh = query<HTMLButtonElement>('judge-refresh-models');
+    expect(refresh.tagName).toBe('BUTTON');
+    expect(refresh.getAttribute('aria-label')).toBe('Actualiser les modèles du juge');
+  });
+
+  it('Should_KeepLoadState_When_JudgeUsesLmStudio', () => {
+    getConfig.mockReturnValueOnce(of({ ...CONFIG, judgeProvider: 'LM_STUDIO', judgeHost: 'judge', judgePort: 1234 }));
+    createComponent();
+    expect(fixture.componentInstance.modelOptions().map(option => option.label))
+      .toEqual(['qwen3.8-flash-next-iq3_s', 'qwen3.8-flash-next-q8_0 · non chargé']);
+  });
+
+  it.each([
+    { ...LISTING, models: [], error: '' },
+    { ...LISTING, error: 'backend.raw.error.key' }
+  ])('Should_ShowActionableError_When_ListingCannotBeUsed', listing => {
+    listLmStudioModels.mockReturnValueOnce(of(listing));
+    createComponent();
+    const message = query('judge-model-error').textContent;
+    expect(message).toContain('actualisez la liste');
+    expect(message).not.toContain('backend.raw.error.key');
+    expect(fixture.componentInstance.canLaunch()).toBe(false);
+  });
+
+  it('Should_ClearPreviousServerAndModel_When_ConfigReloadFails', () => {
+    createComponent();
+    getConfig.mockReturnValueOnce(throwError(() => new Error('Config unavailable')));
+    query<HTMLButtonElement>('judge-refresh-models').click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.selectedModel()).toBeNull();
+    expect(fixture.componentInstance.judgeEndpoint()).toBeNull();
+    expect(query('judge-model-error').textContent).toContain('Vérifiez le serveur');
+    expect(fixture.componentInstance.canLaunch()).toBe(false);
+  });
+
+  it('Should_IgnoreAnOldEndpointResponse_When_RefreshedWhileLoading', () => {
+    const pending = new Subject<typeof LISTING>();
+    listLmStudioModels.mockReturnValueOnce(pending);
+    createComponent();
+    expect(fixture.componentInstance.canLaunch()).toBe(false);
+    fixture.componentInstance.refreshModels();
+    pending.next({ ...LISTING, endpoint: 'http://old-server/v1' });
+    expect(fixture.componentInstance.judgeEndpoint()).toBe(LISTING.endpoint);
+    expect(fixture.componentInstance.canLaunch()).toBe(true);
+  });
+
+  it('Should_ReloadConfiguredModel_When_DialogIsReopened', () => {
+    createComponent();
+    fixture.componentInstance.selectedModel.set('temporary-selection');
+    fixture.componentRef.setInput('visible', false);
+    fixture.detectChanges();
+    getConfig.mockReturnValueOnce(of({ ...CONFIG, lmStudioJudgeModel: LISTING.models[0].id }));
+    fixture.componentRef.setInput('visible', true);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.selectedModel()).toBe(LISTING.models[0].id);
   });
 });
